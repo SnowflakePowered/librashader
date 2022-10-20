@@ -1,4 +1,4 @@
-use crate::error::ParsePresetError;
+use crate::error::{ParseErrorKind, ParsePresetError};
 use crate::parse::{Span, Token};
 use crate::{FilterMode, ScaleFactor, ScaleType, Scaling, WrapMode};
 use nom::bytes::complete::tag;
@@ -25,13 +25,54 @@ pub enum Value {
     SrgbFramebuffer(i32, bool),
     MipmapInput(i32, bool),
     WrapMode(i32, WrapMode),
-    Alias(String),
+    Alias(i32, String),
     Parameter(String, f32),
-    TexturePath(String, FilterMode, bool, PathBuf),
+    Texture {
+        name: String,
+        filter_mode: FilterMode,
+        wrap_mode: WrapMode,
+        mipmap: bool,
+        path: PathBuf,
+    },
 }
 
-fn from_int(input: Span) -> Result<i32, std::num::ParseIntError> {
-    i32::from_str(*input)
+fn from_int(input: Span) -> Result<i32, ParsePresetError> {
+    i32::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
+        offset: input.location_offset(),
+        row: input.location_line(),
+        col: input.get_column(),
+        kind: ParseErrorKind::Int,
+    })
+}
+
+fn from_float(input: Span) -> Result<f32, ParsePresetError> {
+    f32::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
+        offset: input.location_offset(),
+        row: input.location_line(),
+        col: input.get_column(),
+        kind: ParseErrorKind::Float,
+    })
+}
+
+fn from_bool(input: Span) -> Result<bool, ParsePresetError> {
+    if let Ok(i) = i32::from_str(input.trim()) {
+        return match i {
+            1 => Ok(true),
+            0 => Ok(false),
+            _ => Err(ParsePresetError::ParserError {
+                offset: input.location_offset(),
+                row: input.location_line(),
+                col: input.get_column(),
+                kind: ParseErrorKind::Bool,
+            }),
+        };
+    }
+    bool::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
+        offset: input.location_offset(),
+        row: input.location_line(),
+        col: input.get_column(),
+        kind: ParseErrorKind::Bool,
+    })
 }
 
 fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>, i32> {
@@ -39,6 +80,18 @@ fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>
     let (input, idx) = map_res(digit1, from_int)(input)?;
     let (input, _) = eof(input)?;
     Ok((input, idx))
+}
+
+fn parse_texture_key<'a, 'b>(
+    key: &'static str,
+    texture_name: &'b str,
+    input: Span<'a>,
+) -> IResult<Span<'a>, ()> {
+    let (input, _) = tag(texture_name)(input)?;
+    let (input, _) = tag("_")(input)?;
+    let (input, _) = tag(key)(input)?;
+    let (input, _) = eof(input)?;
+    Ok((input, ()))
 }
 
 pub const SHADER_MAX_REFERENCE_DEPTH: usize = 16;
@@ -88,11 +141,13 @@ fn load_child_reference_strings(
 
 pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetError> {
     let path = path.as_ref();
-    let path = path.canonicalize()
+    let path = path
+        .canonicalize()
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
 
     let mut contents = String::new();
-    File::open(&path).and_then(|mut f| f.read_to_string(&mut contents))
+    File::open(&path)
+        .and_then(|mut f| f.read_to_string(&mut contents))
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
 
     let tokens = super::token::do_lex(&contents)?;
@@ -162,12 +217,14 @@ pub fn parse_values(
                         offset: input.location_offset(),
                         row: input.location_line(),
                         col: input.get_column(),
+                        kind: ParseErrorKind::Index("shader"),
                     }
                 }
                 _ => ParsePresetError::ParserError {
                     offset: 0,
                     row: 0,
                     col: 0,
+                    kind: ParseErrorKind::Index("shader"),
                 },
             })?;
 
@@ -183,9 +240,7 @@ pub fn parse_values(
     // resolve texture paths
     let mut textures = Vec::new();
     for (ref path, tokens) in all_tokens.iter_mut() {
-        for token in tokens.drain_filter(|token|
-            texture_names.contains(token.key.fragment())
-        ) {
+        for token in tokens.drain_filter(|token| texture_names.contains(token.key.fragment())) {
             let mut relative_path = path.to_path_buf();
             relative_path.push(*token.value.fragment());
             relative_path
@@ -195,23 +250,93 @@ pub fn parse_values(
         }
     }
 
-    let tokens: Vec<Token> = all_tokens
+    let mut tokens: Vec<Token> = all_tokens
         .into_iter()
         .flat_map(|(_, token)| token)
         .collect();
+
+    for (texture, path) in textures {
+        let mipmap = tokens
+            .iter()
+            .position(|t| {
+                t.key.starts_with(*texture)
+                    && t.key.ends_with("_mipmap")
+                    && t.key.len() == texture.len() + "_mipmap".len()
+            })
+            .map(|idx| tokens.remove(idx))
+            .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+
+        let linear = tokens
+            .iter()
+            .position(|t| {
+                t.key.starts_with(*texture)
+                    && t.key.ends_with("_linear")
+                    && t.key.len() == texture.len() + "_linear".len()
+            })
+            .map(|idx| tokens.remove(idx))
+            .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+
+        let wrap_mode = tokens
+            .iter()
+            .position(|t| {
+                t.key.starts_with(*texture)
+                    && t.key.ends_with("_wrap_mode")
+                    && t.key.len() == texture.len() + "_wrap_mode".len()
+            })
+            .map(|idx| tokens.remove(idx))
+            // NOPANIC: infallible
+            .map_or_else(
+                || WrapMode::default(),
+                |v| WrapMode::from_str(*v.value).unwrap(),
+            );
+
+        values.push(Value::Texture {
+            name: texture.to_string(),
+            filter_mode: if linear {
+                FilterMode::Linear
+            } else {
+                FilterMode::Nearest
+            },
+            wrap_mode,
+            mipmap,
+            path,
+        })
+    }
+    for token in &tokens {
+        if parameter_names.contains(token.key.fragment()) {
+            let param_val = from_float(token.value)?;
+            values.push(Value::Parameter(
+                token.key.fragment().to_string(),
+                param_val,
+            ));
+            continue;
+        }
+        // todo: handle shader props
+
+        // handle undeclared parameters after parsing everything else as a last resort.
+        let param_val = from_float(token.value)?;
+        values.push(Value::Parameter(
+            token.key.fragment().to_string(),
+            param_val,
+        ));
+    }
+
+    eprintln!("{:?}", tokens);
     // all tokens should be ok to process now.
     Ok(values)
 }
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
     use crate::parse::value::parse_preset;
+    use std::path::PathBuf;
 
     #[test]
     pub fn parse_basic() {
-        let root = PathBuf::from("test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__5__POTATO.slangp");
+        let root =
+            PathBuf::from("test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
         let basic = parse_preset(&root);
         eprintln!("{:?}", basic);
+        assert!(basic.is_ok());
     }
 }

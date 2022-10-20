@@ -4,16 +4,18 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 #[repr(i32)]
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub enum FilterMode {
+    #[default]
     Linear = 0,
     Nearest,
     Unspecified,
 }
 
 #[repr(i32)]
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub enum WrapMode {
+    #[default]
     ClampToBorder = 0,
     ClampToEdge,
     Repeat,
@@ -21,8 +23,9 @@ pub enum WrapMode {
 }
 
 #[repr(i32)]
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub enum ScaleType {
+    #[default]
     Input = 0,
     Absolute,
     Viewport,
