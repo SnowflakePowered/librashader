@@ -15,6 +15,7 @@ use std::str::FromStr;
 #[derive(Debug)]
 pub enum Value {
     ShaderCount(i32),
+    FeedbackPass(i32),
     Shader(i32, PathBuf),
     ScaleX(i32, ScaleFactor),
     ScaleY(i32, ScaleFactor),
@@ -332,6 +333,11 @@ pub fn parse_values(
         if token.key.fragment() == &"shaders" {
             let shader_count = from_int(token.value)?;
             values.push(Value::ShaderCount(shader_count));
+            continue;
+        }
+        if token.key.fragment() == &"feedback_pass" {
+            let feedback_pass = from_int(token.value)?;
+            values.push(Value::FeedbackPass(feedback_pass));
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("filter_linear", token.key) {
