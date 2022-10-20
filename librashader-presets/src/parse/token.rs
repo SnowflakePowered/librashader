@@ -120,9 +120,11 @@ fn parse_tokens(mut span: Span) -> IResult<Span, Vec<Token>> {
         }
         if let Ok((input, _)) = multiline_comment(span) {
             span = input;
+            continue;
         }
         if let Ok((input, _)) = single_comment(span) {
             span = input;
+            continue;
         }
         let (input, token) = parse_key_value(span)?;
         span = input;
