@@ -1,28 +1,43 @@
-use std::collections::HashSet;
+use crate::error::ParsePresetError;
 use std::convert::Infallible;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-#[repr(C)]
+#[repr(i32)]
+#[derive(Debug)]
 pub enum FilterMode {
-    Linear,
+    Linear = 0,
     Nearest,
-    Unspecified
+    Unspecified,
 }
 
-#[repr(C)]
+#[repr(i32)]
+#[derive(Debug)]
 pub enum WrapMode {
-    ClampToBorder,
+    ClampToBorder = 0,
     ClampToEdge,
     Repeat,
     MirroredRepeat,
 }
 
-#[repr(C)]
+#[repr(i32)]
+#[derive(Debug)]
 pub enum ScaleType {
-    Input,
+    Input = 0,
     Absolute,
-    Viewport
+    Viewport,
+}
+
+#[derive(Debug)]
+pub enum ScaleFactor {
+    Float(f32),
+    Absolute(i32),
+}
+
+impl Default for ScaleFactor {
+    fn default() -> Self {
+        ScaleFactor::Float(1.0f32)
+    }
 }
 
 impl FromStr for WrapMode {
@@ -34,49 +49,47 @@ impl FromStr for WrapMode {
             "clamp_to_edge" => WrapMode::ClampToEdge,
             "repeat" => WrapMode::Repeat,
             "mirrored_repeat" => WrapMode::MirroredRepeat,
-            _ => WrapMode::ClampToBorder
+            _ => WrapMode::ClampToBorder,
         })
     }
 }
 
 impl FromStr for ScaleType {
-    type Err = Infallible;
+    type Err = ParsePresetError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "source" => ScaleType::Input,
-            "viewport" => ScaleType::Viewport,
-            "absolute" => ScaleType::Absolute,
-            _ => ScaleType::Input
-        })
+        match s {
+            "source" => Ok(ScaleType::Input),
+            "viewport" => Ok(ScaleType::Viewport),
+            "absolute" => Ok(ScaleType::Absolute),
+            _ => Err(ParsePresetError::InvalidScaleType(s.to_string())),
+        }
     }
-}
-
-pub enum ScaleFactor {
-    Float(f32),
-    Absolute(i32)
 }
 
 pub struct Scaling {
     pub scale_type: ScaleType,
-    pub factor: ScaleFactor
+    pub factor: ScaleFactor,
 }
 
 pub struct Scale2D {
+    pub valid: bool,
     pub x: Scaling,
-    pub y: Scaling
+    pub y: Scaling,
 }
 
 pub struct ShaderConfig {
+    pub id: usize,
     pub name: String,
     pub alias: String,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
-    pub frame_count_mod: usize,
+    pub frame_count_mod: i32,
     pub srgb_framebuffer: bool,
     pub float_framebuffer: bool,
+    pub feedback_pass: i32,
     pub mipmap_input: bool,
-    pub scaling: Scale2D
+    pub scaling: Scale2D,
 }
 
 pub struct TextureConfig {
@@ -84,7 +97,7 @@ pub struct TextureConfig {
     pub path: PathBuf,
     pub wrap_mode: WrapMode,
     pub filter: FilterMode,
-    pub mipmap: bool
+    pub mipmap: bool,
 }
 
 pub struct Parameter {
@@ -96,5 +109,5 @@ pub struct Preset {
     // Everything is in Vecs because the expect number of values is well below 64.
     pub shaders: Vec<ShaderConfig>,
     pub textures: Vec<TextureConfig>,
-    pub parameters: Vec<Parameter>
+    pub parameters: Vec<Parameter>,
 }
