@@ -87,7 +87,7 @@ pub struct ShaderConfig {
     pub alias: String,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
-    pub frame_count_mod: i32,
+    pub frame_count_mod: u32,
     pub srgb_framebuffer: bool,
     pub float_framebuffer: bool,
     pub feedback_pass: i32,

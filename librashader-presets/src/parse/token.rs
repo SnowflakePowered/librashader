@@ -169,10 +169,11 @@ mod test {
         eprintln!("{:?}", parsed)
     }
 
+    // todo: fix
     const TEST2: &'static str = r#"
-
-    shader0 = ../../shaders/base/add-params-all.slang
-    // no
+// Color Correction with Dogway's awesome Grade shader
+// Grade is after Afterglow so that brightening the black level does not break the afterglow
+shader9 = ../../shaders/dogway/hsm-grade.slang
     "#;
     const TEST: &'static str = r#"
 #reference "../../alt"

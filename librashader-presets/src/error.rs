@@ -29,6 +29,7 @@ pub enum ParsePresetError {
 pub enum ParseErrorKind {
     Index(&'static str),
     Int,
+    UnsignedInt,
     Float,
     Bool,
 }

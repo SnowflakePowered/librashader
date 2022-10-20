@@ -21,10 +21,11 @@ pub enum Value {
     Scale(i32, ScaleFactor),
     ScaleType(i32, ScaleType),
     FilterMode(i32, FilterMode),
+    WrapMode(i32, WrapMode),
+    FrameCountMod(i32, u32),
     FloatFramebuffer(i32, bool),
     SrgbFramebuffer(i32, bool),
     MipmapInput(i32, bool),
-    WrapMode(i32, WrapMode),
     Alias(i32, String),
     Parameter(String, f32),
     Texture {
@@ -37,20 +38,34 @@ pub enum Value {
 }
 
 fn from_int(input: Span) -> Result<i32, ParsePresetError> {
-    i32::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
+    i32::from_str(input.trim()).map_err(|_| {
+        eprintln!("{input}");
+        ParsePresetError::ParserError {
         offset: input.location_offset(),
         row: input.location_line(),
         col: input.get_column(),
         kind: ParseErrorKind::Int,
+    }})
+}
+
+fn from_ul(input: Span) -> Result<u32, ParsePresetError> {
+    u32::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
+        offset: input.location_offset(),
+        row: input.location_line(),
+        col: input.get_column(),
+        kind: ParseErrorKind::UnsignedInt,
     })
 }
 
 fn from_float(input: Span) -> Result<f32, ParsePresetError> {
-    f32::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
-        offset: input.location_offset(),
-        row: input.location_line(),
-        col: input.get_column(),
-        kind: ParseErrorKind::Float,
+    f32::from_str(input.trim()).map_err(|_| {
+        eprintln!("{:?}", input);
+        ParsePresetError::ParserError {
+            offset: input.location_offset(),
+            row: input.location_line(),
+            col: input.get_column(),
+            kind: ParseErrorKind::Float,
+        }
     })
 }
 
@@ -302,7 +317,10 @@ pub fn parse_values(
             path,
         })
     }
-    for token in &tokens {
+
+    let mut rest_tokens = Vec::new();
+    // no more textures left in the token tree
+    for token in tokens {
         if parameter_names.contains(token.key.fragment()) {
             let param_val = from_float(token.value)?;
             values.push(Value::Parameter(
@@ -311,8 +329,111 @@ pub fn parse_values(
             ));
             continue;
         }
-        // todo: handle shader props
+        if token.key.fragment() == &"shaders" {
+            let shader_count = from_int(token.value)?;
+            values.push(Value::ShaderCount(shader_count));
+            continue;
+        }
+        if let Ok((_, idx)) = parse_indexed_key("filter_linear", token.key) {
+            let linear = from_bool(token.value)?;
+            values.push(Value::FilterMode(idx, if linear { FilterMode::Linear } else { FilterMode::Nearest }));
+            continue;
+        }
 
+        if let Ok((_, idx)) = parse_indexed_key("wrap_mode", token.key) {
+            let wrap_mode = WrapMode::from_str(*token.value).unwrap();
+            values.push(Value::WrapMode(idx, wrap_mode));
+            continue;
+        }
+
+        if let Ok((_, idx)) = parse_indexed_key("frame_count_mod", token.key) {
+            let frame_count_mod = from_ul(token.value)?;
+            values.push(Value::FrameCountMod(idx, frame_count_mod));
+            continue;
+        }
+
+        if let Ok((_, idx)) = parse_indexed_key("srgb_framebuffer", token.key) {
+            let enabled = from_bool(token.value)?;
+            values.push(Value::SrgbFramebuffer(idx, enabled));
+            continue;
+        }
+
+        if let Ok((_, idx)) = parse_indexed_key("float_framebuffer", token.key) {
+            let enabled = from_bool(token.value)?;
+            values.push(Value::FloatFramebuffer(idx, enabled));
+            continue;
+        }
+
+        if let Ok((_, idx)) = parse_indexed_key("mipmap_input", token.key) {
+            let enabled = from_bool(token.value)?;
+            values.push(Value::MipmapInput(idx, enabled));
+            continue;
+        }
+
+        if let Ok((_, idx)) = parse_indexed_key("alias", token.key) {
+            values.push(Value::Alias(idx, token.value.to_string()));
+            continue;
+        }
+        if let Ok((_, idx)) = parse_indexed_key("scale_type", token.key) {
+            let scale_type = ScaleType::from_str(token.value.trim())?;
+            values.push(Value::ScaleType(idx, scale_type));
+            continue;
+        }
+        if let Ok((_, idx)) = parse_indexed_key("scale_type_x", token.key) {
+            let scale_type = ScaleType::from_str(token.value.trim())?;
+            values.push(Value::ScaleType(idx, scale_type));
+            continue;
+        }
+        if let Ok((_, idx)) = parse_indexed_key("scale_type_y", token.key) {
+            let scale_type = ScaleType::from_str(token.value.trim())?;
+            values.push(Value::ScaleType(idx, scale_type));
+            continue;
+        }
+        rest_tokens.push(token)
+    }
+
+    // todo: handle rest_tokens (scale needs to know abs or float),
+
+    for token in rest_tokens {
+        if let Ok((_, idx)) = parse_indexed_key("scale", token.key) {
+            let scale = if let Some(abs) = values.iter().find(|t| matches!(*t, &Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+                eprintln!("{abs:?}, {idx}");
+                let scale = from_int(token.value)?;
+                ScaleFactor::Absolute(scale)
+            } else {
+                let scale = from_float(token.value)?;
+                ScaleFactor::Float(scale)
+            };
+
+            values.push(Value::Scale(idx, scale));
+            continue;
+        }
+        if let Ok((_, idx)) = parse_indexed_key("scale_x", token.key) {
+            let scale = if let Some(abs) = values.iter().find(|t| matches!(*t, &Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+                let scale = from_int(token.value)?;
+                ScaleFactor::Absolute(scale)
+            } else {
+                let scale = from_float(token.value)?;
+                ScaleFactor::Float(scale)
+            };
+
+            values.push(Value::Scale(idx, scale));
+            continue;
+        }
+        if let Ok((_, idx)) = parse_indexed_key("scale_y", token.key) {
+            let scale = if let Some(abs) = values.iter().find(|t| matches!(*t, &Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+                let scale = from_int(token.value)?;
+                ScaleFactor::Absolute(scale)
+            } else {
+                let scale = from_float(token.value)?;
+                ScaleFactor::Float(scale)
+            };
+
+            values.push(Value::Scale(idx, scale));
+            continue;
+        }
+
+        eprintln!("{}", token.key);
         // handle undeclared parameters after parsing everything else as a last resort.
         let param_val = from_float(token.value)?;
         values.push(Value::Parameter(
@@ -321,7 +442,6 @@ pub fn parse_values(
         ));
     }
 
-    eprintln!("{:?}", tokens);
     // all tokens should be ok to process now.
     Ok(values)
 }
