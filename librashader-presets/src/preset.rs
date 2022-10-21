@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 #[repr(i32)]
-#[derive(Default, Debug)]
+#[derive(Copy, Clone, Default, Debug)]
 pub enum FilterMode {
     #[default]
     Linear = 0,
@@ -13,7 +13,7 @@ pub enum FilterMode {
 }
 
 #[repr(i32)]
-#[derive(Default, Debug)]
+#[derive(Copy, Clone, Default, Debug)]
 pub enum WrapMode {
     #[default]
     ClampToBorder = 0,
@@ -23,7 +23,7 @@ pub enum WrapMode {
 }
 
 #[repr(i32)]
-#[derive(Default, Debug)]
+#[derive(Default, Copy, Clone, Debug)]
 pub enum ScaleType {
     #[default]
     Input = 0,
@@ -31,7 +31,7 @@ pub enum ScaleType {
     Viewport,
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum ScaleFactor {
     Float(f32),
     Absolute(i32),
@@ -70,45 +70,52 @@ impl FromStr for ScaleType {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Scaling {
     pub scale_type: ScaleType,
     pub factor: ScaleFactor,
 }
 
+#[derive(Debug, Clone)]
 pub struct Scale2D {
     pub valid: bool,
     pub x: Scaling,
     pub y: Scaling,
 }
 
+#[derive(Debug, Clone)]
 pub struct ShaderConfig {
-    pub id: usize,
-    pub name: String,
-    pub alias: String,
+    pub id: i32,
+    pub name: PathBuf,
+    pub alias: Option<String>,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
     pub frame_count_mod: u32,
     pub srgb_framebuffer: bool,
     pub float_framebuffer: bool,
-    pub feedback_pass: i32,
     pub mipmap_input: bool,
     pub scaling: Scale2D,
 }
 
+#[derive(Debug, Clone)]
 pub struct TextureConfig {
     pub name: String,
     pub path: PathBuf,
     pub wrap_mode: WrapMode,
-    pub filter: FilterMode,
+    pub filter_mode: FilterMode,
     pub mipmap: bool,
 }
 
+#[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
     pub value: f32,
 }
 
+#[derive(Debug, Clone)]
 pub struct Preset {
+    pub shader_count: i32,
+    pub feedback_pass: i32,
     // Everything is in Vecs because the expect number of values is well below 64.
     pub shaders: Vec<ShaderConfig>,
     pub textures: Vec<TextureConfig>,

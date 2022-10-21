@@ -1,5 +1,5 @@
 use crate::error::{ParseErrorKind, ParsePresetError};
-use crate::parse::{Span, Token};
+use crate::parse::{remove_if, Span, Token};
 use crate::{FilterMode, ScaleFactor, ScaleType, Scaling, WrapMode};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
@@ -11,6 +11,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use crate::parse::token::do_lex;
 
 #[derive(Debug)]
 pub enum Value {
@@ -36,6 +37,26 @@ pub enum Value {
         mipmap: bool,
         path: PathBuf,
     },
+}
+
+impl Value {
+    pub(crate) fn shader_index(&self) -> Option<i32> {
+        match self {
+            Value::Shader(i, _) => Some(*i),
+            Value::ScaleX(i, _) => Some(*i),
+            Value::ScaleY(i, _) => Some(*i),
+            Value::Scale(i, _) => Some(*i),
+            Value::ScaleType(i, _) => Some(*i),
+            Value::FilterMode(i, _) => Some(*i),
+            Value::WrapMode(i, _) =>  Some(*i),
+            Value::FrameCountMod(i, _) =>  Some(*i),
+            Value::FloatFramebuffer(i, _) => Some(*i),
+            Value::SrgbFramebuffer(i, _) => Some(*i),
+            Value::MipmapInput(i, _) => Some(*i),
+            Value::Alias(i, _) => Some(*i),
+            _ => None
+        }
+    }
 }
 
 fn from_int(input: Span) -> Result<i32, ParsePresetError> {
@@ -135,7 +156,7 @@ fn load_child_reference_strings(
             .read_to_string(&mut reference_contents)
             .map_err(|e| ParsePresetError::IOError(reference_root.clone(), e))?;
 
-        let mut new_tokens = super::do_lex(&reference_contents)?;
+        let mut new_tokens = do_lex(&reference_contents)?;
         let mut new_references: Vec<PathBuf> = new_tokens
             .drain_filter(|token| *token.key.fragment() == "#reference")
             .map(|value| PathBuf::from(*value.value.fragment()))
@@ -195,7 +216,7 @@ pub fn parse_values(
     all_tokens.push((root_path.as_path(), tokens));
 
     for (path, string) in child_strings.iter() {
-        let mut tokens = crate::parse::do_lex(string.as_ref())?;
+        let mut tokens = do_lex(string.as_ref())?;
         tokens.retain(|token| *token.key.fragment() != "#reference");
         all_tokens.push((path.as_path(), tokens))
     }
@@ -272,34 +293,24 @@ pub fn parse_values(
         .collect();
 
     for (texture, path) in textures {
-        let mipmap = tokens
-            .iter()
-            .position(|t| {
-                t.key.starts_with(*texture)
-                    && t.key.ends_with("_mipmap")
-                    && t.key.len() == texture.len() + "_mipmap".len()
-            })
-            .map(|idx| tokens.remove(idx))
-            .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+        let mipmap = remove_if(&mut tokens, |t| {
+            t.key.starts_with(*texture)
+                && t.key.ends_with("_mipmap")
+                && t.key.len() == texture.len() + "_mipmap".len()
+        }).map_or_else(|| Ok(false), |v| from_bool(v.value))?;
 
-        let linear = tokens
-            .iter()
-            .position(|t| {
+        let linear = remove_if(&mut tokens, |t| {
                 t.key.starts_with(*texture)
                     && t.key.ends_with("_linear")
                     && t.key.len() == texture.len() + "_linear".len()
             })
-            .map(|idx| tokens.remove(idx))
             .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
 
-        let wrap_mode = tokens
-            .iter()
-            .position(|t| {
+        let wrap_mode = remove_if(&mut tokens, |t| {
                 t.key.starts_with(*texture)
                     && t.key.ends_with("_wrap_mode")
                     && t.key.len() == texture.len() + "_wrap_mode".len()
             })
-            .map(|idx| tokens.remove(idx))
             // NOPANIC: infallible
             .map_or_else(
                 || WrapMode::default(),
@@ -439,7 +450,6 @@ pub fn parse_values(
             continue;
         }
 
-        eprintln!("{}", token.key);
         // handle undeclared parameters after parsing everything else as a last resort.
         let param_val = from_float(token.value)?;
         values.push(Value::Parameter(
