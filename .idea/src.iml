@@ -2,6 +2,7 @@
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/librashader-preprocess/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-presets/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
