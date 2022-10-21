@@ -90,7 +90,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> Preset {
                 scale_y = scale;
             }
 
-            let mut shader = ShaderConfig {
+            let shader = ShaderConfig {
                 id,
                 name,
                 alias: shader_values.iter().find_map(|f| match f {
@@ -100,11 +100,11 @@ pub fn resolve_values(mut values: Vec<Value>) -> Preset {
                 filter: shader_values.iter().find_map(|f| match f {
                     Value::FilterMode(_, value) => Some(*value),
                     _ => None
-                }).unwrap_or(FilterMode::default()),
+                }).unwrap_or_default(),
                 wrap_mode: shader_values.iter().find_map(|f| match f {
                     Value::WrapMode(_, value) => Some(*value),
                     _ => None
-                }).unwrap_or(WrapMode::default()),
+                }).unwrap_or_default(),
                 frame_count_mod: shader_values.iter().find_map(|f| match f {
                     Value::FrameCountMod(_, value) => Some(*value),
                     _ => None

@@ -22,6 +22,8 @@ pub enum Value {
     ScaleY(i32, ScaleFactor),
     Scale(i32, ScaleFactor),
     ScaleType(i32, ScaleType),
+    ScaleTypeX(i32, ScaleType),
+    ScaleTypeY(i32, ScaleType),
     FilterMode(i32, FilterMode),
     WrapMode(i32, WrapMode),
     FrameCountMod(i32, u32),
@@ -47,6 +49,8 @@ impl Value {
             Value::ScaleY(i, _) => Some(*i),
             Value::Scale(i, _) => Some(*i),
             Value::ScaleType(i, _) => Some(*i),
+            Value::ScaleTypeX(i, _) => Some(*i),
+            Value::ScaleTypeY(i, _) => Some(*i),
             Value::FilterMode(i, _) => Some(*i),
             Value::WrapMode(i, _) =>  Some(*i),
             Value::FrameCountMod(i, _) =>  Some(*i),
@@ -144,6 +148,7 @@ fn load_child_reference_strings(
         if reference_depth > SHADER_MAX_REFERENCE_DEPTH {
             return Err(ParsePresetError::ExceededReferenceDepth);
         }
+        reference_depth += 1;
         let mut root_path = root_path.to_path_buf();
         root_path.push(reference_path);
         let mut reference_root = root_path
@@ -225,8 +230,8 @@ pub fn parse_values(
     let mut parameter_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
         for token in tokens.drain_filter(|token| *token.key.fragment() == "parameters") {
-            let parameter_name_string: &str = *token.value.fragment();
-            for parameter_name in parameter_name_string.split(";") {
+            let parameter_name_string: &str = token.value.fragment();
+            for parameter_name in parameter_name_string.split(';') {
                 parameter_names.push(parameter_name);
             }
         }
@@ -236,8 +241,8 @@ pub fn parse_values(
     let mut texture_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
         for token in tokens.drain_filter(|token| *token.key.fragment() == "textures") {
-            let texture_name_string: &str = *token.value.fragment();
-            for texture_name in texture_name_string.split(";") {
+            let texture_name_string: &str = token.value.fragment();
+            for texture_name in texture_name_string.split(';') {
                 texture_names.push(texture_name);
             }
         }
@@ -245,7 +250,7 @@ pub fn parse_values(
 
     let mut values = Vec::new();
     // resolve shader paths.
-    for (ref path, tokens) in all_tokens.iter_mut() {
+    for (path, tokens) in all_tokens.iter_mut() {
         for token in tokens.drain_filter(|token| parse_indexed_key("shader", token.key).is_ok()) {
             let (_, index) = parse_indexed_key("shader", token.key).map_err(|e| match e {
                 nom::Err::Error(e) | nom::Err::Failure(e) => {
@@ -276,7 +281,7 @@ pub fn parse_values(
 
     // resolve texture paths
     let mut textures = Vec::new();
-    for (ref path, tokens) in all_tokens.iter_mut() {
+    for (path, tokens) in all_tokens.iter_mut() {
         for token in tokens.drain_filter(|token| texture_names.contains(token.key.fragment())) {
             let mut relative_path = path.to_path_buf();
             relative_path.push(*token.value.fragment());
@@ -313,8 +318,8 @@ pub fn parse_values(
             })
             // NOPANIC: infallible
             .map_or_else(
-                || WrapMode::default(),
-                |v| WrapMode::from_str(*v.value).unwrap(),
+                WrapMode::default,
+                |v| WrapMode::from_str(&v.value).unwrap(),
             );
 
         values.push(Value::Texture {
@@ -358,7 +363,7 @@ pub fn parse_values(
         }
 
         if let Ok((_, idx)) = parse_indexed_key("wrap_mode", token.key) {
-            let wrap_mode = WrapMode::from_str(*token.value).unwrap();
+            let wrap_mode = WrapMode::from_str(&token.value).unwrap();
             values.push(Value::WrapMode(idx, wrap_mode));
             continue;
         }
@@ -398,12 +403,12 @@ pub fn parse_values(
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_type_x", token.key) {
             let scale_type = ScaleType::from_str(token.value.trim())?;
-            values.push(Value::ScaleType(idx, scale_type));
+            values.push(Value::ScaleTypeX(idx, scale_type));
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_type_y", token.key) {
             let scale_type = ScaleType::from_str(token.value.trim())?;
-            values.push(Value::ScaleType(idx, scale_type));
+            values.push(Value::ScaleTypeY(idx, scale_type));
             continue;
         }
         rest_tokens.push(token)
@@ -413,8 +418,7 @@ pub fn parse_values(
 
     for token in rest_tokens {
         if let Ok((_, idx)) = parse_indexed_key("scale", token.key) {
-            let scale = if let Some(abs) = values.iter().find(|t| matches!(*t, &Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
-                eprintln!("{abs:?}, {idx}");
+            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
                 let scale = from_int(token.value)?;
                 ScaleFactor::Absolute(scale)
             } else {
@@ -426,7 +430,7 @@ pub fn parse_values(
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_x", token.key) {
-            let scale = if let Some(abs) = values.iter().find(|t| matches!(*t, &Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleTypeX(match_idx, ScaleType::Absolute) if match_idx == idx)) {
                 let scale = from_int(token.value)?;
                 ScaleFactor::Absolute(scale)
             } else {
@@ -434,11 +438,11 @@ pub fn parse_values(
                 ScaleFactor::Float(scale)
             };
 
-            values.push(Value::Scale(idx, scale));
+            values.push(Value::ScaleX(idx, scale));
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_y", token.key) {
-            let scale = if let Some(abs) = values.iter().find(|t| matches!(*t, &Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleTypeY(match_idx, ScaleType::Absolute) if match_idx == idx)) {
                 let scale = from_int(token.value)?;
                 ScaleFactor::Absolute(scale)
             } else {
@@ -446,7 +450,7 @@ pub fn parse_values(
                 ScaleFactor::Float(scale)
             };
 
-            values.push(Value::Scale(idx, scale));
+            values.push(Value::ScaleY(idx, scale));
             continue;
         }
 

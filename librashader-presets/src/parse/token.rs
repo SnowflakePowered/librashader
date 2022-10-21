@@ -48,15 +48,6 @@ where
     }
 }
 
-fn from_float(input: &str) -> Result<f32, std::num::ParseFloatError> {
-    f32::from_str(input)
-}
-
-// accepts "true" or "false"
-fn from_bool(input: &str) -> Result<bool, std::str::ParseBoolError> {
-    bool::from_str(input)
-}
-
 fn parse_assignment(input: Span) -> IResult<Span, ()> {
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("=")(input)?;
@@ -134,7 +125,7 @@ fn parse_tokens(mut span: Span) -> IResult<Span, Vec<Token>> {
 }
 
 pub fn do_lex(input: &str) -> Result<Vec<Token>, ParsePresetError> {
-    let mut span = Span::new(input.trim_end());
+    let span = Span::new(input.trim_end());
     let (_, tokens) = parse_tokens(span).map_err(|e| match e {
         nom::Err::Error(e) | nom::Err::Failure(e) => {
             let input: Span = e.input;
