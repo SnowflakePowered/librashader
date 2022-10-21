@@ -72,12 +72,12 @@ pub fn resolve_values(mut values: Vec<Value>) -> Preset {
             });
 
             let mut scale_type_x = shader_values.iter().find_map(|f| match f {
-                Value::ScaleType(_, value) => Some(*value),
+                Value::ScaleTypeX(_, value) => Some(*value),
                 _ => None,
             });
 
             let mut scale_type_y = shader_values.iter().find_map(|f| match f {
-                Value::ScaleType(_, value) => Some(*value),
+                Value::ScaleTypeY(_, value) => Some(*value),
                 _ => None,
             });
 
