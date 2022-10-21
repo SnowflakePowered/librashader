@@ -424,7 +424,7 @@ pub fn parse_values(
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_x", token.key) {
-            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleTypeX(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleType(match_idx, ScaleType::Absolute) | Value::ScaleTypeX(match_idx, ScaleType::Absolute) if match_idx == idx)) {
                 let scale = from_int(token.value)?;
                 ScaleFactor::Absolute(scale)
             } else {
@@ -436,7 +436,7 @@ pub fn parse_values(
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_y", token.key) {
-            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleTypeY(match_idx, ScaleType::Absolute) if match_idx == idx)) {
+            let scale = if values.iter().any(|t| matches!(*t, Value::ScaleType(match_idx, ScaleType::Absolute) | Value::ScaleTypeY(match_idx, ScaleType::Absolute) if match_idx == idx)) {
                 let scale = from_int(token.value)?;
                 ScaleFactor::Absolute(scale)
             } else {
