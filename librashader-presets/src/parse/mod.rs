@@ -34,7 +34,7 @@ mod test {
     #[test]
     pub fn parse_preset() {
         let root =
-            PathBuf::from("test/slang-shaders/ntsc/ntsc-256px-svideo.slangp");
+            PathBuf::from("../test/slang-shaders/ntsc/ntsc-256px-svideo.slangp");
         let basic = Preset::try_parse(root);
         eprintln!("{:#?}", basic);
         assert!(basic.is_ok());

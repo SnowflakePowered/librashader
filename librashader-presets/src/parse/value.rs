@@ -468,7 +468,7 @@ mod test {
     #[test]
     pub fn parse_basic() {
         let root =
-            PathBuf::from("test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
+            PathBuf::from("../test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
         let basic = parse_preset(&root);
         eprintln!("{:?}", basic);
         assert!(basic.is_ok());
