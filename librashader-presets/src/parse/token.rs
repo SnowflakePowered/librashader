@@ -1,20 +1,17 @@
 use crate::error::ParsePresetError;
 use crate::parse::Span;
 use nom::branch::alt;
-use nom::bytes::complete::{is_not, take_till, take_until, take_while};
-use nom::character::complete::{char, digit1, line_ending, multispace1, not_line_ending};
-use nom::character::is_space;
+use nom::bytes::complete::is_not;
+use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
+
 use nom::combinator::{eof, map_res, value};
 use nom::error::{ErrorKind, ParseError};
-use nom::multi::many_till;
-use nom::sequence::{delimited, pair, preceded, separated_pair};
+
+use nom::sequence::{delimited, preceded};
 use nom::{
     bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength,
     InputTake,
 };
-use nom_locate::LocatedSpan;
-use std::num::ParseIntError;
-use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Token<'a> {
@@ -146,7 +143,7 @@ pub fn do_lex(input: &str) -> Result<Vec<Token>, ParsePresetError> {
 
 #[cfg(test)]
 mod test {
-    use crate::parse::token::{do_lex, parse_key_value, parse_tokens, single_comment, Span};
+    use crate::parse::token::{do_lex, single_comment};
 
     #[test]
     fn parses_single_line_comment() {

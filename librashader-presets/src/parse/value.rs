@@ -1,17 +1,17 @@
 use crate::error::{ParseErrorKind, ParsePresetError};
 use crate::parse::{remove_if, Span, Token};
-use crate::{FilterMode, ScaleFactor, ScaleType, Scaling, WrapMode};
+use crate::{FilterMode, ScaleFactor, ScaleType, WrapMode};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
-use nom::error::Error;
+
 use nom::IResult;
-use std::collections::HashMap;
+
+use crate::parse::token::do_lex;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use crate::parse::token::do_lex;
 
 #[derive(Debug)]
 pub enum Value {
@@ -52,13 +52,13 @@ impl Value {
             Value::ScaleTypeX(i, _) => Some(*i),
             Value::ScaleTypeY(i, _) => Some(*i),
             Value::FilterMode(i, _) => Some(*i),
-            Value::WrapMode(i, _) =>  Some(*i),
-            Value::FrameCountMod(i, _) =>  Some(*i),
+            Value::WrapMode(i, _) => Some(*i),
+            Value::FrameCountMod(i, _) => Some(*i),
             Value::FloatFramebuffer(i, _) => Some(*i),
             Value::SrgbFramebuffer(i, _) => Some(*i),
             Value::MipmapInput(i, _) => Some(*i),
             Value::Alias(i, _) => Some(*i),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -67,11 +67,12 @@ fn from_int(input: Span) -> Result<i32, ParsePresetError> {
     i32::from_str(input.trim()).map_err(|_| {
         eprintln!("{input}");
         ParsePresetError::ParserError {
-        offset: input.location_offset(),
-        row: input.location_line(),
-        col: input.get_column(),
-        kind: ParseErrorKind::Int,
-    }})
+            offset: input.location_offset(),
+            row: input.location_line(),
+            col: input.get_column(),
+            kind: ParseErrorKind::Int,
+        }
+    })
 }
 
 fn from_ul(input: Span) -> Result<u32, ParsePresetError> {
@@ -121,18 +122,6 @@ fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>
     let (input, idx) = map_res(digit1, from_int)(input)?;
     let (input, _) = eof(input)?;
     Ok((input, idx))
-}
-
-fn parse_texture_key<'a, 'b>(
-    key: &'static str,
-    texture_name: &'b str,
-    input: Span<'a>,
-) -> IResult<Span<'a>, ()> {
-    let (input, _) = tag(texture_name)(input)?;
-    let (input, _) = tag("_")(input)?;
-    let (input, _) = tag(key)(input)?;
-    let (input, _) = eof(input)?;
-    Ok((input, ()))
 }
 
 pub const SHADER_MAX_REFERENCE_DEPTH: usize = 16;
@@ -302,25 +291,23 @@ pub fn parse_values(
             t.key.starts_with(*texture)
                 && t.key.ends_with("_mipmap")
                 && t.key.len() == texture.len() + "_mipmap".len()
-        }).map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+        })
+        .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
 
         let linear = remove_if(&mut tokens, |t| {
-                t.key.starts_with(*texture)
-                    && t.key.ends_with("_linear")
-                    && t.key.len() == texture.len() + "_linear".len()
-            })
-            .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+            t.key.starts_with(*texture)
+                && t.key.ends_with("_linear")
+                && t.key.len() == texture.len() + "_linear".len()
+        })
+        .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
 
         let wrap_mode = remove_if(&mut tokens, |t| {
-                t.key.starts_with(*texture)
-                    && t.key.ends_with("_wrap_mode")
-                    && t.key.len() == texture.len() + "_wrap_mode".len()
-            })
-            // NOPANIC: infallible
-            .map_or_else(
-                WrapMode::default,
-                |v| WrapMode::from_str(&v.value).unwrap(),
-            );
+            t.key.starts_with(*texture)
+                && t.key.ends_with("_wrap_mode")
+                && t.key.len() == texture.len() + "_wrap_mode".len()
+        })
+        // NOPANIC: infallible
+        .map_or_else(WrapMode::default, |v| WrapMode::from_str(&v.value).unwrap());
 
         values.push(Value::Texture {
             name: texture.to_string(),
@@ -358,7 +345,14 @@ pub fn parse_values(
         }
         if let Ok((_, idx)) = parse_indexed_key("filter_linear", token.key) {
             let linear = from_bool(token.value)?;
-            values.push(Value::FilterMode(idx, if linear { FilterMode::Linear } else { FilterMode::Nearest }));
+            values.push(Value::FilterMode(
+                idx,
+                if linear {
+                    FilterMode::Linear
+                } else {
+                    FilterMode::Nearest
+                },
+            ));
             continue;
         }
 

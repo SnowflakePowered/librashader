@@ -1,15 +1,14 @@
 use std::path::Path;
-use nom::{ExtendInto, Offset};
+
 use nom_locate::LocatedSpan;
 use std::str;
 
+mod preset;
 mod token;
 mod value;
-mod preset;
 
 pub(crate) type Span<'a> = LocatedSpan<&'a str>;
 pub(crate) use token::Token;
-pub(crate) use value::Value;
 
 use crate::error::ParsePresetError;
 use crate::parse::preset::resolve_values;
@@ -17,9 +16,7 @@ use crate::parse::value::parse_preset;
 use crate::Preset;
 
 pub(crate) fn remove_if<T>(values: &mut Vec<T>, f: impl FnMut(&T) -> bool) -> Option<T> {
-    values.iter()
-        .position(f)
-        .map(|idx| values.remove(idx))
+    values.iter().position(f).map(|idx| values.remove(idx))
 }
 
 impl Preset {
@@ -31,8 +28,8 @@ impl Preset {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
     use crate::Preset;
+    use std::path::PathBuf;
 
     #[test]
     pub fn parse_preset() {

@@ -1,4 +1,3 @@
-use crate::parse::Span;
 use std::path::PathBuf;
 use thiserror::Error;
 
