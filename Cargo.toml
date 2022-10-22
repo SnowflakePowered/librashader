@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "librashader",
     "librashader-presets",
     "librashader-preprocess"
 ]

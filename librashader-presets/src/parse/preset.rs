@@ -1,8 +1,8 @@
 use crate::parse::remove_if;
 use crate::parse::value::Value;
-use crate::{Parameter, Preset, Scale2D, Scaling, ShaderConfig, TextureConfig};
+use crate::{ParameterConfig, ShaderPreset, Scale2D, Scaling, ShaderPassConfig, TextureConfig};
 
-pub fn resolve_values(mut values: Vec<Value>) -> Preset {
+pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     let textures: Vec<TextureConfig> = values
         .drain_filter(|f| matches!(*f, Value::Texture { .. }))
         .map(|value| {
@@ -26,11 +26,11 @@ pub fn resolve_values(mut values: Vec<Value>) -> Preset {
             }
         })
         .collect();
-    let parameters: Vec<Parameter> = values
+    let parameters: Vec<ParameterConfig> = values
         .drain_filter(|f| matches!(*f, Value::Parameter { .. }))
         .map(|value| {
             if let Value::Parameter(name, value) = value {
-                Parameter { name, value }
+                ParameterConfig { name, value }
             } else {
                 unreachable!("values should be all of type parameters")
             }
@@ -112,7 +112,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> Preset {
                 scale_y = scale;
             }
 
-            let shader = ShaderConfig {
+            let shader = ShaderPassConfig {
                 id,
                 name,
                 alias: shader_values.iter().find_map(|f| match f {
@@ -178,7 +178,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> Preset {
         }
     }
 
-    Preset {
+    ShaderPreset {
         shader_count,
         feedback_pass,
         shaders,

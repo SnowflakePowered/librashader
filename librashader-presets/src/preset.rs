@@ -84,7 +84,7 @@ pub struct Scale2D {
 }
 
 #[derive(Debug, Clone)]
-pub struct ShaderConfig {
+pub struct ShaderPassConfig {
     pub id: i32,
     pub name: PathBuf,
     pub alias: Option<String>,
@@ -107,17 +107,17 @@ pub struct TextureConfig {
 }
 
 #[derive(Debug, Clone)]
-pub struct Parameter {
+pub struct ParameterConfig {
     pub name: String,
     pub value: f32,
 }
 
 #[derive(Debug, Clone)]
-pub struct Preset {
+pub struct ShaderPreset {
     pub shader_count: i32,
     pub feedback_pass: i32,
     // Everything is in Vecs because the expect number of values is well below 64.
-    pub shaders: Vec<ShaderConfig>,
+    pub shaders: Vec<ShaderPassConfig>,
     pub textures: Vec<TextureConfig>,
-    pub parameters: Vec<Parameter>,
+    pub parameters: Vec<ParameterConfig>,
 }

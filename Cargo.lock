@@ -9,10 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c676a478f63e9fa2dd5368a42f28bba0d6c560b775f38583c8bbaa7fcd67c9c"
 
 [[package]]
+name = "librashader"
+version = "0.1.0"
+
+[[package]]
 name = "librashader-preprocess"
 version = "0.1.0"
 dependencies = [
- "librashader-presets",
+ "librashader",
+ "nom",
  "thiserror",
 ]
 
