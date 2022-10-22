@@ -9,6 +9,7 @@ pub struct ShaderSource {
     pub format: ShaderFormat,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct ShaderParameter {
     pub id: String,
     pub description: String,
@@ -19,7 +20,9 @@ pub struct ShaderParameter {
 }
 
 #[repr(u32)]
+#[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ShaderFormat {
+    #[default]
     Unknown = 0,
 
     /* 8-bit */
@@ -98,9 +101,9 @@ impl FromStr for ShaderFormat {
             "R32G32_UINT" => Self::R32G32Uint,
             "R32G32_SINT" => Self::R32G32Sint,
             "R32G32_SFLOAT" => Self::R32G32Sfloat,
-            "R32G32B32A32_UINT" => Self::R32G32A32Uint,
-            "R32G32B32A32_SINT" => Self::R32G32A32Sint,
-            "R32G32B32A32_SFLOAT" => Self::R32G32SA32float,
+            "R32G32B32A32_UINT" => Self::R32G32B32A32Uint,
+            "R32G32B32A32_SINT" => Self::R32G32B32A32Sint,
+            "R32G32B32A32_SFLOAT" => Self::R32G32B32A32Sfloat,
             _ => Self::Unknown,
         })
     }
