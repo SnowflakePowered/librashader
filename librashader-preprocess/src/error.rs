@@ -15,13 +15,12 @@ pub enum PreprocessError {
     UnexpectedEol(usize),
     #[error("error parsing pragma")]
     PragmaParseError(String),
-    #[error("duplicate parameter but arguments do not match")]
-    DuplicateParameterError(String),
+    #[error("duplicate pragma found")]
+    DuplicatePragmaError(String),
     #[error("shader format is unknown or not found")]
     UnknownShaderFormat,
-    #[error("tried to declare shader format twice")]
-    DuplicateShaderFormat,
-
+    #[error("stage must be either vertex or fragment")]
+    InvalidStage,
 }
 
 impl From<Infallible> for PreprocessError {

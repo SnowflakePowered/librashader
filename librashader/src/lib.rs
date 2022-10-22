@@ -1,6 +1,7 @@
 use std::convert::Infallible;
 use std::str::FromStr;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct ShaderSource {
     pub vertex: String,
     pub fragment: String,

@@ -7,6 +7,12 @@ use nom::sequence::delimited;
 use librashader::{ShaderFormat, ShaderParameter};
 use crate::PreprocessError;
 
+#[derive(Debug)]
+pub(crate) struct ShaderMeta {
+    pub(crate) format: ShaderFormat,
+    pub(crate) parameters: Vec<ShaderParameter>,
+    pub(crate) name: Option<String>
+}
 
 fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessError>{
     fn parse_parameter_string_inner(input: &str) -> IResult<&str, ShaderParameter> {
@@ -39,16 +45,17 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
     }
 }
 
-pub fn parse_pragma_meta(source: impl AsRef<str>) -> Result<(ShaderFormat, Vec<ShaderParameter>), PreprocessError> {
+pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, PreprocessError> {
     let source = source.as_ref();
     let mut parameters: Vec<ShaderParameter> = Vec::new();
     let mut format = ShaderFormat::default();
+    let mut name = None;
     for line in source.lines() {
         if line.starts_with("#pragma parameter ") {
             let parameter = parse_parameter_string(line)?;
             if let Some(existing) = parameters.iter().find(|&p| p.id == parameter.id) {
                 if existing != &parameter {
-                    return Err(PreprocessError::DuplicateParameterError(parameter.id))
+                    return Err(PreprocessError::DuplicatePragmaError(parameter.id))
                 }
             } else {
                 parameters.push(parameter);
@@ -57,7 +64,7 @@ pub fn parse_pragma_meta(source: impl AsRef<str>) -> Result<(ShaderFormat, Vec<S
 
         if line.starts_with("#pragma format ") {
             if format != ShaderFormat::Unknown {
-                return Err(PreprocessError::DuplicateShaderFormat)
+                return Err(PreprocessError::DuplicatePragmaError(line.to_string()))
             }
 
             let format_string = line["#pragma format ".len()..].trim();
@@ -67,9 +74,17 @@ pub fn parse_pragma_meta(source: impl AsRef<str>) -> Result<(ShaderFormat, Vec<S
                 return Err(PreprocessError::UnknownShaderFormat)
             }
         }
+
+        if line.starts_with("#pragma name ") {
+            if name.is_some() {
+                return Err(PreprocessError::DuplicatePragmaError(line.to_string()));
+            }
+
+            name = Some(line.trim().to_string())
+        }
     }
 
-    Ok((format, parameters))
+    Ok(ShaderMeta { name, format, parameters })
 }
 
 #[cfg(test)]

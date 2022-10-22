@@ -1,13 +1,54 @@
 mod error;
 mod include;
 mod pragma;
+mod stage;
 
+use std::path::Path;
 pub use error::*;
+use librashader::ShaderSource;
+use crate::include::read_source;
+
+
+pub(crate) trait SourceOutput {
+    fn push_line(&mut self, str: &str);
+    fn mark_line(&mut self, line_no: usize, comment: &str) {
+        self.push_line(&format!("#line {} \"{}\"", line_no, comment))
+    }
+}
+
+impl SourceOutput for String {
+    fn push_line(&mut self, str: &str) {
+        self.push_str(str);
+        self.push('\n');
+    }
+}
+
+pub fn load_shader_source(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
+    let source = read_source(path)?;
+    let meta = pragma::parse_pragma_meta(&source)?;
+    let text = stage::process_stages(&source)?;
+
+    Ok(ShaderSource {
+        vertex: text.vertex,
+        fragment: text.fragment,
+        name: meta.name,
+        parameters: meta.parameters,
+        format: meta.format,
+    })
+}
 
 #[cfg(test)]
 mod test {
     use crate::include::read_source;
-    use crate::pragma;
+    use crate::{load_shader_source, pragma};
+
+    #[test]
+    pub fn load_file() {
+        let result =
+            load_shader_source("../test/slang-shaders/blurs/shaders/royale/blur3x3-last-pass.slang")
+                .unwrap();
+        eprintln!("{result:#?}")
+    }
 
     #[test]
     pub fn preprocess_file() {

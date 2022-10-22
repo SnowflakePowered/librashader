@@ -1,4 +1,4 @@
-use crate::PreprocessError;
+use crate::{PreprocessError, SourceOutput};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -6,20 +6,6 @@ use std::str::Lines;
 
 const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &'static str =
     "#extension GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE : require";
-
-trait SourceOutput {
-    fn push_line(&mut self, str: &str);
-    fn mark_line(&mut self, line_no: usize, comment: &str) {
-        self.push_line(&format!("#line {} \"{}\"", line_no, comment))
-    }
-}
-
-impl SourceOutput for String {
-    fn push_line(&mut self, str: &str) {
-        self.push_str(str);
-        self.push('\n');
-    }
-}
 
 fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
     let path = path.as_ref();
