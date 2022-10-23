@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/librashader-preprocess/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-presets/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/librashader-reflect/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

@@ -1,0 +1,16 @@
+[package]
+name = "librashader-reflect"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+naga = { version = "0.10.0", features = ["glsl-in", "spv-in"] }
+shaderc = { version = "0.8.0" }
+spirv_cross = { version = "0.23.1", features = [ "glsl", "hlsl" ] }
+librashader = { path = "../librashader" }
+thiserror = "1.0.37"
+
+[dev-dependencies]
+librashader-preprocess = { path = "../librashader-preprocess", default-features = false }

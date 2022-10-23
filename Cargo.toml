@@ -2,5 +2,6 @@
 members = [
     "librashader",
     "librashader-presets",
-    "librashader-preprocess"
+    "librashader-preprocess",
+    "librashader-reflect"
 ]
