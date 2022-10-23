@@ -4,6 +4,7 @@ use std::io::Read;
 use std::path::Path;
 use std::str::Lines;
 
+#[cfg(feature = "line_directives")]
 const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &'static str =
     "#extension GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE : require";
 
@@ -33,7 +34,9 @@ pub fn read_source(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
         return Err(PreprocessError::UnexpectedEof);
     }
 
+    #[cfg(feature = "line_directives")]
     output.push_line(GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE);
+
     output.mark_line(2, path.file_name().and_then(|f| f.to_str()).unwrap_or(""));
     preprocess(lines, path, &mut output)?;
 

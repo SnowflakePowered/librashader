@@ -1,10 +1,10 @@
-use std::str::FromStr;
 use crate::{PreprocessError, SourceOutput};
+use std::str::FromStr;
 
 enum ActiveStage {
     Both,
     Fragment,
-    Vertex
+    Vertex,
 }
 
 impl FromStr for ActiveStage {
@@ -14,7 +14,7 @@ impl FromStr for ActiveStage {
         match s {
             "vertex" => Ok(ActiveStage::Vertex),
             "fragment" => Ok(ActiveStage::Fragment),
-            _ => Err(PreprocessError::InvalidStage)
+            _ => Err(PreprocessError::InvalidStage),
         }
     }
 }
@@ -22,7 +22,7 @@ impl FromStr for ActiveStage {
 #[derive(Default)]
 pub(crate) struct ShaderOutput {
     pub(crate) fragment: String,
-    pub(crate) vertex: String
+    pub(crate) vertex: String,
 }
 
 pub(crate) fn process_stages(source: &str) -> Result<ShaderOutput, PreprocessError> {
@@ -48,9 +48,7 @@ pub(crate) fn process_stages(source: &str) -> Result<ShaderOutput, PreprocessErr
             ActiveStage::Fragment => {
                 output.fragment.push_line(line);
             }
-            ActiveStage::Vertex => {
-                output.vertex.push_line(line)
-            }
+            ActiveStage::Vertex => output.vertex.push_line(line),
         }
     }
 

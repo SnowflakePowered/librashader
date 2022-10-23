@@ -1,6 +1,6 @@
 use crate::parse::remove_if;
 use crate::parse::value::Value;
-use crate::{ParameterConfig, ShaderPreset, Scale2D, Scaling, ShaderPassConfig, TextureConfig};
+use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPreset, TextureConfig};
 
 pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     let textures: Vec<TextureConfig> = values

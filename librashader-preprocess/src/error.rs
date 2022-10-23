@@ -1,7 +1,7 @@
+use librashader::ShaderParameter;
 use std::convert::Infallible;
 use std::path::PathBuf;
 use thiserror::Error;
-use librashader::ShaderParameter;
 
 #[derive(Error, Debug)]
 pub enum PreprocessError {

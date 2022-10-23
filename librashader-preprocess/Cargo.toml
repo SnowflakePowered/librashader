@@ -8,4 +8,8 @@ edition = "2021"
 [dependencies]
 thiserror = "1.0.37"
 nom = "7.1.1"
-librashader = { path = "../librashader"}
+librashader = { path = "../librashader" }
+
+[features]
+default = [ "line_directives" ]
+line_directives = []

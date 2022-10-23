@@ -1,20 +1,20 @@
-use std::str::FromStr;
+use crate::PreprocessError;
+use librashader::{ShaderFormat, ShaderParameter};
 use nom::bytes::complete::{is_not, tag, take_until, take_while};
 use nom::combinator::map_res;
-use nom::IResult;
 use nom::number::complete::float;
 use nom::sequence::delimited;
-use librashader::{ShaderFormat, ShaderParameter};
-use crate::PreprocessError;
+use nom::IResult;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub(crate) struct ShaderMeta {
     pub(crate) format: ShaderFormat,
     pub(crate) parameters: Vec<ShaderParameter>,
-    pub(crate) name: Option<String>
+    pub(crate) name: Option<String>,
 }
 
-fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessError>{
+fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessError> {
     fn parse_parameter_string_inner(input: &str) -> IResult<&str, ShaderParameter> {
         let (input, _) = tag("#pragma parameter ")(input)?;
         let (input, name) = take_while(|c| c != ' ')(input)?;
@@ -28,14 +28,17 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         let (input, maximum) = float(input)?;
         let (input, _) = tag(" ")(input)?;
         let (input, step) = float(input)?;
-        Ok((input, ShaderParameter {
-            id: name.to_string(),
-            description: description.to_string(),
-            initial,
-            minimum,
-            maximum,
-            step
-        }))
+        Ok((
+            input,
+            ShaderParameter {
+                id: name.to_string(),
+                description: description.to_string(),
+                initial,
+                minimum,
+                maximum,
+                step,
+            },
+        ))
     }
 
     if let Ok((_, parameter)) = parse_parameter_string_inner(input) {
@@ -55,7 +58,7 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
             let parameter = parse_parameter_string(line)?;
             if let Some(existing) = parameters.iter().find(|&p| p.id == parameter.id) {
                 if existing != &parameter {
-                    return Err(PreprocessError::DuplicatePragmaError(parameter.id))
+                    return Err(PreprocessError::DuplicatePragmaError(parameter.id));
                 }
             } else {
                 parameters.push(parameter);
@@ -64,14 +67,14 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
 
         if line.starts_with("#pragma format ") {
             if format != ShaderFormat::Unknown {
-                return Err(PreprocessError::DuplicatePragmaError(line.to_string()))
+                return Err(PreprocessError::DuplicatePragmaError(line.to_string()));
             }
 
             let format_string = line["#pragma format ".len()..].trim();
             format = ShaderFormat::from_str(&format_string)?;
 
             if format == ShaderFormat::Unknown {
-                return Err(PreprocessError::UnknownShaderFormat)
+                return Err(PreprocessError::UnknownShaderFormat);
             }
         }
 
@@ -84,13 +87,17 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
         }
     }
 
-    Ok(ShaderMeta { name, format, parameters })
+    Ok(ShaderMeta {
+        name,
+        format,
+        parameters,
+    })
 }
 
 #[cfg(test)]
 mod test {
-    use librashader::ShaderParameter;
     use crate::pragma::parse_parameter_string;
+    use librashader::ShaderParameter;
 
     #[test]
     fn parses_parameter_pragma() {
