@@ -26,8 +26,12 @@ impl TryFrom<GlslangCompilation> for NagaReflect {
 
     fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
         let ops = Options::default();
-        let vertex = naga::front::spv::parse_u8_slice(value.vertex.as_binary_u8(), &ops)?;
-        let fragment = naga::front::spv::parse_u8_slice(value.fragment.as_binary_u8(), &ops)?;
+        let vertex =
+            naga::front::spv::Parser::new(value.vertex.as_binary().to_vec().into_iter(), &ops)
+                .parse()?;
+        let fragment =
+            naga::front::spv::Parser::new(value.fragment.as_binary().to_vec().into_iter(), &ops)
+                .parse()?;
         Ok(NagaReflect { vertex, fragment })
     }
 }
@@ -36,15 +40,11 @@ impl TryFrom<GlslangCompilation> for NagaReflect {
 mod test {
     use crate::reflect::naga::NagaReflect;
     use naga::front::spv::Options;
+    use rspirv::binary::Disassemble;
 
     #[test]
     pub fn test_into() {
-        let result = librashader_preprocess::load_shader_source(
-            "../test/slang-shaders/blurs/shaders/royale/blur3x3-last-pass.slang",
-        )
-        .unwrap();
+        let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
         let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
-
-        println!("{:?}", NagaReflect::try_from(spirv))
     }
 }

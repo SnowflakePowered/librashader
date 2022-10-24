@@ -14,3 +14,4 @@ thiserror = "1.0.37"
 
 [dev-dependencies]
 librashader-preprocess = { path = "../librashader-preprocess", default-features = false }
+rspirv = "0.11.0+1.5.4"

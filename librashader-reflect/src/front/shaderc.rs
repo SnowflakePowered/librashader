@@ -101,7 +101,7 @@ fn get_shaderc_options() -> Result<CompileOptions<'static>, ShaderCompileError> 
 
 pub fn compile_spirv(source: &ShaderSource) -> Result<GlslangCompilation, ShaderCompileError> {
     let compiler = shaderc::Compiler::new().ok_or(ShaderCompileError::ShaderCInitError)?;
-    let name = source.name.as_deref().unwrap_or("shader.glsl");
+    let name = source.name.as_deref().unwrap_or("shader.slang");
     let options = get_shaderc_options()?;
 
     let vertex = compiler.compile_into_spirv(
