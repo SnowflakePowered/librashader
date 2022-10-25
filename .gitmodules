@@ -1,3 +1,6 @@
 [submodule "librashader-presets/test/slang-shaders"]
 	path = test/slang-shaders
 	url = https://github.com/libretro/slang-shaders
+[submodule "naga"]
+	path = naga
+	url = https://github.com/chyyran/naga

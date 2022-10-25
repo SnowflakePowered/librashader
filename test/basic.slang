@@ -26,7 +26,10 @@ void main()
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 0) out vec4 FragColor;
 layout(binding = 1) uniform sampler2D Source;
+// layout(binding = 1) uniform texture2D Source;
+// layout(binding = 2) uniform sampler _Source_sampler;
 void main()
 {
+   // FragColor = texture(sampler2D(Source, _Source_sampler), vTexCoord) * ColorMod;
    FragColor = texture(Source, vTexCoord) * ColorMod;
 }

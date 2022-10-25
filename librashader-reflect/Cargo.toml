@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-naga = { version = "0.10.0", features = ["glsl-in", "spv-in"] }
+naga = { version = "0.10.0", path = "../naga", features = ["glsl-in", "spv-in", "spv-out", "glsl-out", "wgsl-out"] }
 shaderc = { version = "0.8.0" }
 spirv_cross = { version = "0.23.1", features = [ "glsl", "hlsl" ] }
 librashader = { path = "../librashader" }

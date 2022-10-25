@@ -3,5 +3,6 @@ members = [
     "librashader",
     "librashader-presets",
     "librashader-preprocess",
-    "librashader-reflect"
+    "librashader-reflect",
+    "naga"
 ]

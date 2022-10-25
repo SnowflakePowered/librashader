@@ -43,8 +43,21 @@ mod test {
             "../test/slang-shaders/blurs/shaders/royale/blur3x3-last-pass.slang",
         )
         .unwrap();
-        eprintln!("{:#}", &result.fragment[2930..2945]);
         let spirv = compile_spirv(&result).unwrap();
         eprintln!("{:?}", spirv)
+    }
+
+    #[test]
+    pub fn compile_shader_roundtrip() {
+        let result = librashader_preprocess::load_shader_source(
+            "../test/basic.slang",
+        )
+            .unwrap();
+        let cross = crate::front::shaderc::compile_spirv(&result).unwrap();
+        let naga_fragment = naga::front::spv::parse_u8_slice(cross.fragment.as_binary_u8(), &naga::front::spv::Options::default())
+            .unwrap();
+        println!("{:#?}", naga_fragment.constants);
+        println!("{:#?}", naga_fragment.global_variables);
+        println!("{:#?}", naga_fragment.types);
     }
 }

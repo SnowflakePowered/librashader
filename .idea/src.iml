@@ -6,6 +6,9 @@
       <sourceFolder url="file://$MODULE_DIR$/librashader-presets/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-reflect/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/naga/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/naga/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/naga/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

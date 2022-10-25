@@ -1,10 +1,12 @@
+
 use crate::error::{ShaderReflectError, SemanticsErrorKind};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{MAX_BINDING_NUM, MAX_BINDINGS_COUNT, ShaderReflection};
+use crate::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderReflection};
 use crate::reflect::ReflectShader;
 use spirv_cross::spirv::{Ast, Decoration, Module, ShaderResources};
 use std::fmt::Debug;
-use spirv_cross::ErrorCode;
+use spirv_cross::{ErrorCode, hlsl};
+use spirv_cross::hlsl::{CompilerOptions, ShaderModel};
 
 pub struct CrossReflect<T>
 where
@@ -14,11 +16,7 @@ where
     fragment: Ast<T>,
 }
 
-impl<T> TryFrom<GlslangCompilation> for CrossReflect<T>
-where
-    T: spirv_cross::spirv::Target,
-    Ast<T>: spirv_cross::spirv::Compile<T>,
-    Ast<T>: spirv_cross::spirv::Parse<T>,
+impl TryFrom<GlslangCompilation> for CrossReflect<hlsl::Target>
 {
     type Error = ShaderReflectError;
 
@@ -26,8 +24,13 @@ where
         let vertex_module = Module::from_words(value.vertex.as_binary());
         let fragment_module = Module::from_words(value.fragment.as_binary());
 
-        let vertex = Ast::parse(&vertex_module)?;
-        let fragment = Ast::parse(&fragment_module)?;
+        let mut vertex = Ast::parse(&vertex_module)?;
+        let mut fragment = Ast::parse(&fragment_module)?;
+
+        let mut options = CompilerOptions::default();
+        options.shader_model = ShaderModel::V5_0;
+        fragment.set_compiler_options(&options)?;
+        vertex.set_compiler_options(&options)?;
 
         Ok(CrossReflect { vertex, fragment })
     }
@@ -175,7 +178,7 @@ where
             }
             (None, Some(fragment)) => {
                 if fragment >= MAX_BINDINGS_COUNT {
-                    return Err(ShaderReflectError::FragmentSemanticError(SemanticsErrorKind::InvalidBinding(vertex)));
+                    return Err(ShaderReflectError::FragmentSemanticError(SemanticsErrorKind::InvalidBinding(fragment)));
                 }
             }
             (None, None) => {}
@@ -196,7 +199,8 @@ mod test {
     pub fn test_into() {
         let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
         let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
-        let mut reflect = CrossReflect::<glsl::Target>::try_from(spirv).unwrap();
+        let mut reflect = CrossReflect::<hlsl::Target>::try_from(spirv).unwrap();
+        eprintln!("{:#}", reflect.fragment.compile().unwrap())
         // let mut loader = rspirv::dr::Loader::new();
         // rspirv::binary::parse_words(spirv.fragment.as_binary(), &mut loader).unwrap();
         // let module = loader.module();
