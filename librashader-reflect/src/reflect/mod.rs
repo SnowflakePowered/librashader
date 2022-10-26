@@ -1,6 +1,6 @@
 use rustc_hash::FxHashMap;
 use crate::error::ShaderReflectError;
-use crate::reflect::semantics::{SemanticMap, ShaderReflection, VariableSemantics, TextureSemantics};
+use crate::reflect::semantics::{SemanticMap, ShaderReflection, VariableSemantics, TextureSemantics, VariableMeta, TextureMeta};
 
 mod cross;
 mod naga;
@@ -11,15 +11,24 @@ pub trait ReflectShader {
     fn reflect(&self, options: &ReflectOptions) -> Result<ShaderReflection, ShaderReflectError>;
 }
 
+#[derive(Debug)]
 pub enum UniformSemantic {
     Variable(SemanticMap<VariableSemantics>),
     Texture(SemanticMap<TextureSemantics>)
 }
 
+#[derive(Debug)]
 pub struct ReflectOptions {
     pub pass_number: u32,
     pub uniform_semantics: FxHashMap<String, UniformSemantic>,
-    pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>
+    pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
+}
+
+#[derive(Debug, Default)]
+pub struct ReflectMeta {
+    pub parameter_meta: FxHashMap<u32, VariableMeta>,
+    pub variable_meta: FxHashMap<VariableSemantics, VariableMeta>,
+    pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureMeta>
 }
 
 pub fn builtin_uniform_semantics() -> FxHashMap<String, UniformSemantic> {
