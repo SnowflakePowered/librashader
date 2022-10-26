@@ -14,14 +14,16 @@ pub enum ShaderCompileError {
 
 #[derive(Debug)]
 pub enum SemanticsErrorKind {
-    InvalidUniformBufferSize(usize),
-    InvalidPushBufferSize(usize),
+    InvalidUniformBufferCount(usize),
+    InvalidPushBufferSize(u32),
     InvalidLocation(u32),
     InvalidDescriptorSet(u32),
     InvalidInputCount(usize),
     InvalidOutputCount(usize),
     InvalidBinding(u32),
     InvalidResourceType,
+    InvalidRange(u32),
+    UnknownSemantics(String)
 }
 
 #[derive(Error, Debug)]
@@ -30,14 +32,16 @@ pub enum ShaderReflectError {
     NagaCompileError(#[from] naga::front::spv::Error),
     #[error("spirv")]
     SpirvCrossError(#[from] spirv_cross::ErrorCode),
+    #[error("rspirv")]
+    RspirvParseError(#[from] rspirv::binary::ParseState),
     #[error("error when verifying vertex semantics")]
     VertexSemanticError(SemanticsErrorKind),
     #[error("error when verifying texture semantics")]
     FragmentSemanticError(SemanticsErrorKind),
     #[error("vertx and fragment shader must have same binding")]
-    MismatchedUniformBuffer { vertex: Option<u32>, fragment: Option<u32> },
-    #[error("binding exceeded max")]
-    InvalidBinding(u32)
+    MismatchedUniformBuffer { vertex: u32, fragment: u32 },
+    #[error("filter chain is non causal")]
+    NonCausalFilterChain { pass: u32, target: u32 }
 }
 
 impl From<Vec<naga::front::glsl::Error>> for ShaderCompileError {

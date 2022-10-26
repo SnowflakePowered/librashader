@@ -86,8 +86,12 @@ mod test {
 
         let mut validator = naga::valid::Validator::new(ValidationFlags::empty(), Capabilities::all());
         let info = validator.validate(&module).unwrap();
-        let mut out = Vec::new();
-        writer.write(&module, &info, None, &mut out).unwrap();
+        let mut spv_out = Vec::new();
+        let pipe = naga::back::spv::PipelineOptions {
+            shader_stage: ShaderStage::Fragment,
+            entry_point: "main".to_string()
+        };
+        writer.write(&module, &info, Some(&pipe), &mut spv_out).unwrap();
 
         let mut glsl_out = String::new();
         let opts = naga::back::glsl::Options {
@@ -107,13 +111,13 @@ mod test {
         let wgsl = naga::back::wgsl::write_string(&module, &info, naga::back::wgsl::WriterFlags::all()).unwrap();
 
         let mut loader = rspirv::dr::Loader::new();
-        rspirv::binary::parse_words(&out, &mut loader).unwrap();
+        rspirv::binary::parse_words(&spv_out, &mut loader).unwrap();
         let module = loader.module();
         println!("--- spirv --");
         println!("{:#}", module.disassemble());
         println!("--- cross glsl --");
 
-        let loaded = spirv_cross::spirv::Module::from_words(&out);
+        let loaded = spirv_cross::spirv::Module::from_words(&spv_out);
         let mut ast = spirv_cross::spirv::Ast::<spirv_cross::glsl::Target>::parse(&loaded)
             .unwrap();
         println!("{:#}", ast.compile().unwrap());

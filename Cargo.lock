@@ -427,10 +427,13 @@ dependencies = [
 name = "librashader-reflect"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "librashader",
  "librashader-preprocess",
  "naga",
  "rspirv",
+ "rspirv-reflect",
+ "rustc-hash",
  "shaderc",
  "spirv_cross",
  "thiserror",
@@ -687,6 +690,15 @@ dependencies = [
  "fxhash",
  "num-traits",
  "spirv",
+]
+
+[[package]]
+name = "rspirv-reflect"
+version = "0.7.0"
+source = "git+https://github.com/Traverse-Research/rspirv-reflect#8894d3570cd738c61e26b08349f55277092b9e3c"
+dependencies = [
+ "rspirv",
+ "thiserror",
 ]
 
 [[package]]
