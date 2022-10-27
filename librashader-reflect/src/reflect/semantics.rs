@@ -1,6 +1,6 @@
 use crate::error::ShaderReflectError;
-use bitflags::bitflags;
 use crate::reflect::ReflectMeta;
+use bitflags::bitflags;
 
 pub const BASE_SEMANTICS_COUNT: usize = 5;
 pub const MAX_BINDINGS_COUNT: u32 = 16;
@@ -34,6 +34,43 @@ pub enum TextureSemantics {
     User = 5,
 }
 
+impl TextureSemantics {
+    pub const TEXTURE_SEMANTICS: [TextureSemantics; 6] = [
+        TextureSemantics::Original,
+        TextureSemantics::Source,
+        TextureSemantics::OriginalHistory,
+        TextureSemantics::PassOutput,
+        TextureSemantics::PassFeedback,
+        TextureSemantics::User,
+    ];
+
+    pub fn size_uniform_name(&self) -> &'static str {
+        match self {
+            TextureSemantics::Original => "OriginalSize",
+            TextureSemantics::Source => "SourceSize",
+            TextureSemantics::OriginalHistory => "OriginalHistorySize",
+            TextureSemantics::PassOutput => "PassOutputSize",
+            TextureSemantics::PassFeedback => "PassFeedbackSize",
+            TextureSemantics::User => "UserSize",
+        }
+    }
+
+    pub fn texture_name(&self) -> &'static str {
+        match self {
+            TextureSemantics::Original => "Original",
+            TextureSemantics::Source => "Source",
+            TextureSemantics::OriginalHistory => "OriginalHistory",
+            TextureSemantics::PassOutput => "PassOutput",
+            TextureSemantics::PassFeedback => "PassFeedback",
+            TextureSemantics::User => "User",
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        !matches!(self, TextureSemantics::Original | TextureSemantics::Source)
+    }
+}
+
 pub struct TypeInfo {
     pub size: u32,
     pub columns: u32,
@@ -45,7 +82,7 @@ pub trait ValidateTypeSemantics<T> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct SemanticMap<T> {
     pub(crate) semantics: T,
-    pub(crate) index: u32
+    pub(crate) index: u32,
 }
 
 bitflags! {
@@ -78,27 +115,31 @@ pub struct PushReflection {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MemberOffset {
     Ubo(usize),
-    PushConstant(usize)
+    PushConstant(usize),
 }
 
 #[derive(Debug)]
 pub struct VariableMeta {
     // this might bite us in the back because retroarch keeps separate UBO/push offsets.. eh
     pub offset: MemberOffset,
-    pub components: u32
+    pub components: u32,
 }
 
 #[derive(Debug)]
-pub struct TextureMeta {
+pub struct TextureSizeMeta {
     // this might bite us in the back because retroarch keeps separate UBO/push offsets..
     pub offset: MemberOffset,
     pub stage_mask: BindingStage,
-    pub texture: bool
+}
+
+#[derive(Debug)]
+pub struct TextureImage {
+    pub binding: u32,
 }
 
 #[derive(Debug)]
 pub struct ShaderReflection {
     pub ubo: Option<UboReflection>,
     pub push_constant: Option<PushReflection>,
-    pub meta: ReflectMeta
+    pub meta: ReflectMeta,
 }

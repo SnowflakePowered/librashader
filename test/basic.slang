@@ -31,5 +31,5 @@ layout(binding = 1) uniform sampler2D Source;
 void main()
 {
    // FragColor = texture(sampler2D(Source, _Source_sampler), vTexCoord) * ColorMod;
-   FragColor = texture(Source, vTexCoord) * ColorMod;
+   FragColor = texture(Source, vTexCoord) * SourceSize[0];
 }

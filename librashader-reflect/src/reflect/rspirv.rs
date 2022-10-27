@@ -1,7 +1,7 @@
-use rspirv_reflect::Reflection;
-use shaderc::CompilationArtifact;
 use crate::error::ShaderReflectError;
 use crate::front::shaderc::GlslangCompilation;
+use rspirv_reflect::Reflection;
+use shaderc::CompilationArtifact;
 
 pub struct RspirvReflect {
     vertex: Reflection,
@@ -18,7 +18,6 @@ impl TryFrom<GlslangCompilation> for RspirvReflect {
     type Error = ShaderReflectError;
 
     fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
-
         let vertex = parse_reflection(value.vertex)?;
         let fragment = parse_reflection(value.fragment)?;
 

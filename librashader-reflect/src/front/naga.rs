@@ -18,14 +18,14 @@ pub fn compile_spirv(source: &ShaderSource) -> Result<NagaCompilation, ShaderCom
 
 #[cfg(test)]
 mod test {
-    use rspirv::binary::Disassemble;
     use crate::front::naga::compile_spirv;
-    use naga::front::glsl::{Options, Parser};
     use naga::back::glsl::{PipelineOptions, Version};
     use naga::back::spv::{Capability, WriterFlags};
-    use naga::{FastHashSet, ShaderStage};
+    use naga::front::glsl::{Options, Parser};
     use naga::front::spv::Options as SpvOptions;
     use naga::valid::{Capabilities, ModuleInfo, ValidationFlags};
+    use naga::{FastHashSet, ShaderStage};
+    use rspirv::binary::Disassemble;
     #[test]
     pub fn compile_naga_test() {
         let result = librashader_preprocess::load_shader_source(
@@ -53,13 +53,11 @@ mod test {
 
     #[test]
     pub fn compile_shader_roundtrip() {
-        let result = librashader_preprocess::load_shader_source(
-            "../test/basic.slang",
-        )
-            .unwrap();
+        let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
         let cross = crate::front::shaderc::compile_spirv(&result).unwrap();
-        let naga_fragment = naga::front::spv::parse_u8_slice(cross.fragment.as_binary_u8(), &SpvOptions::default())
-            .unwrap();
+        let naga_fragment =
+            naga::front::spv::parse_u8_slice(cross.fragment.as_binary_u8(), &SpvOptions::default())
+                .unwrap();
         println!("{:#?}", naga_fragment.constants);
         println!("{:#?}", naga_fragment.global_variables);
         println!("{:#?}", naga_fragment.types);
@@ -67,13 +65,12 @@ mod test {
 
     #[test]
     pub fn naga_playground() {
-        let result = librashader_preprocess::load_shader_source(
-            "../test/basic.slang",
-        )
-            .unwrap();
-        let spirv =  crate::front::shaderc::compile_spirv(&result).unwrap();
+        let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
+        let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
 
-        let module = naga::front::spv::parse_u8_slice(spirv.fragment.as_binary_u8(), &SpvOptions::default()).unwrap();
+        let module =
+            naga::front::spv::parse_u8_slice(spirv.fragment.as_binary_u8(), &SpvOptions::default())
+                .unwrap();
 
         let capability = FastHashSet::from_iter([Capability::Shader]);
         let mut writer = naga::back::spv::Writer::new(&naga::back::spv::Options {
@@ -81,34 +78,48 @@ mod test {
             flags: WriterFlags::all(),
             binding_map: Default::default(),
             capabilities: Some(capability),
-            bounds_check_policies: Default::default()
-        }).unwrap();
+            bounds_check_policies: Default::default(),
+        })
+        .unwrap();
 
-        let mut validator = naga::valid::Validator::new(ValidationFlags::empty(), Capabilities::all());
+        let mut validator =
+            naga::valid::Validator::new(ValidationFlags::empty(), Capabilities::all());
         let info = validator.validate(&module).unwrap();
         let mut spv_out = Vec::new();
         let pipe = naga::back::spv::PipelineOptions {
             shader_stage: ShaderStage::Fragment,
-            entry_point: "main".to_string()
+            entry_point: "main".to_string(),
         };
-        writer.write(&module, &info, Some(&pipe), &mut spv_out).unwrap();
+        writer
+            .write(&module, &info, Some(&pipe), &mut spv_out)
+            .unwrap();
 
         let mut glsl_out = String::new();
         let opts = naga::back::glsl::Options {
             version: Version::Desktop(330),
             writer_flags: naga::back::glsl::WriterFlags::all(),
-            binding_map: Default::default()
+            binding_map: Default::default(),
         };
         let pipe = PipelineOptions {
             shader_stage: ShaderStage::Fragment,
             entry_point: "main".to_string(),
-            multiview: None
+            multiview: None,
         };
-        let mut glsl_naga = naga::back::glsl::Writer::new(&mut glsl_out, &module, &info, &opts, &pipe, Default::default()).unwrap();
+        let mut glsl_naga = naga::back::glsl::Writer::new(
+            &mut glsl_out,
+            &module,
+            &info,
+            &opts,
+            &pipe,
+            Default::default(),
+        )
+        .unwrap();
 
         glsl_naga.write().unwrap();
 
-        let wgsl = naga::back::wgsl::write_string(&module, &info, naga::back::wgsl::WriterFlags::all()).unwrap();
+        let wgsl =
+            naga::back::wgsl::write_string(&module, &info, naga::back::wgsl::WriterFlags::all())
+                .unwrap();
 
         let mut loader = rspirv::dr::Loader::new();
         rspirv::binary::parse_words(&spv_out, &mut loader).unwrap();
@@ -118,8 +129,7 @@ mod test {
         println!("--- cross glsl --");
 
         let loaded = spirv_cross::spirv::Module::from_words(&spv_out);
-        let mut ast = spirv_cross::spirv::Ast::<spirv_cross::glsl::Target>::parse(&loaded)
-            .unwrap();
+        let mut ast = spirv_cross::spirv::Ast::<spirv_cross::glsl::Target>::parse(&loaded).unwrap();
         println!("{:#}", ast.compile().unwrap());
         println!("--- naga glsl---");
         println!("{:#}", glsl_out);

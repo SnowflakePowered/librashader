@@ -126,10 +126,7 @@ mod test {
     use crate::front::shaderc::compile_spirv;
     #[test]
     pub fn compile_shader() {
-        let result = librashader_preprocess::load_shader_source(
-            "../test/basic.slang",
-        )
-            .unwrap();
+        let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
         let spirv = compile_spirv(&result).unwrap();
     }
 }

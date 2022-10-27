@@ -1,11 +1,11 @@
+use crate::error::{SemanticsErrorKind, ShaderReflectError};
+use crate::reflect::semantics::{SemanticMap, ShaderReflection, TextureSizeMeta, TextureSemantics, VariableMeta, VariableSemantics, TextureImage};
 use rustc_hash::FxHashMap;
-use crate::error::ShaderReflectError;
-use crate::reflect::semantics::{SemanticMap, ShaderReflection, VariableSemantics, TextureSemantics, VariableMeta, TextureMeta};
 
 mod cross;
 mod naga;
-pub mod semantics;
 mod rspirv;
+pub mod semantics;
 
 pub trait ReflectShader {
     fn reflect(&self, options: &ReflectOptions) -> Result<ShaderReflection, ShaderReflectError>;
@@ -14,7 +14,7 @@ pub trait ReflectShader {
 #[derive(Debug)]
 pub enum UniformSemantic {
     Variable(SemanticMap<VariableSemantics>),
-    Texture(SemanticMap<TextureSemantics>)
+    Texture(SemanticMap<TextureSemantics>),
 }
 
 #[derive(Debug)]
@@ -28,35 +28,51 @@ pub struct ReflectOptions {
 pub struct ReflectMeta {
     pub parameter_meta: FxHashMap<u32, VariableMeta>,
     pub variable_meta: FxHashMap<VariableSemantics, VariableMeta>,
-    pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureMeta>
+    pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureImage>,
+    pub texture_size_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureSizeMeta>,
 }
 
 pub fn builtin_uniform_semantics() -> FxHashMap<String, UniformSemantic> {
     let mut map = FxHashMap::default();
 
-    map.insert("MVP".into(), UniformSemantic::Variable(SemanticMap {
-        semantics: VariableSemantics::MVP,
-        index: 0
-    }));
+    map.insert(
+        "MVP".into(),
+        UniformSemantic::Variable(SemanticMap {
+            semantics: VariableSemantics::MVP,
+            index: 0,
+        }),
+    );
 
-    map.insert("OutputSize".into(), UniformSemantic::Variable(SemanticMap {
-        semantics: VariableSemantics::Output,
-        index: 0
-    }));
+    map.insert(
+        "OutputSize".into(),
+        UniformSemantic::Variable(SemanticMap {
+            semantics: VariableSemantics::Output,
+            index: 0,
+        }),
+    );
 
-    map.insert("FinalViewportSize".into(), UniformSemantic::Variable(SemanticMap {
-        semantics: VariableSemantics::FinalViewport,
-        index: 0
-    }));
+    map.insert(
+        "FinalViewportSize".into(),
+        UniformSemantic::Variable(SemanticMap {
+            semantics: VariableSemantics::FinalViewport,
+            index: 0,
+        }),
+    );
 
-    map.insert("FrameCount".into(), UniformSemantic::Variable(SemanticMap {
-        semantics: VariableSemantics::FrameCount,
-        index: 0
-    }));
+    map.insert(
+        "FrameCount".into(),
+        UniformSemantic::Variable(SemanticMap {
+            semantics: VariableSemantics::FrameCount,
+            index: 0,
+        }),
+    );
 
-    map.insert("FrameDirection".into(), UniformSemantic::Variable(SemanticMap {
-        semantics: VariableSemantics::FrameDirection,
-        index: 0
-    }));
+    map.insert(
+        "FrameDirection".into(),
+        UniformSemantic::Variable(SemanticMap {
+            semantics: VariableSemantics::FrameDirection,
+            index: 0,
+        }),
+    );
     map
 }

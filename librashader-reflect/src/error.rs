@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::reflect::semantics::MemberOffset;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ShaderCompileError {
@@ -25,7 +25,7 @@ pub enum SemanticsErrorKind {
     InvalidResourceType,
     InvalidRange(u32),
     UnknownSemantics(String),
-    InvalidTypeForSemantic(String)
+    InvalidTypeForSemantic(String),
 }
 
 #[derive(Error, Debug)]
@@ -45,10 +45,19 @@ pub enum ShaderReflectError {
     #[error("filter chain is non causal")]
     NonCausalFilterChain { pass: u32, target: u32 },
     #[error("mismatched offset")]
-    MismatchedOffset { semantic: String, vertex: MemberOffset, fragment: MemberOffset },
+    MismatchedOffset {
+        semantic: String,
+        vertex: MemberOffset,
+        fragment: MemberOffset,
+    },
     #[error("mismatched component")]
-    MismatchedComponent { semantic: String, vertex: u32, fragment: u32 },
-
+    MismatchedComponent {
+        semantic: String,
+        vertex: u32,
+        fragment: u32,
+    },
+    #[error("the binding is already in use")]
+    BindingInUse(u32),
 }
 
 impl From<Vec<naga::front::glsl::Error>> for ShaderCompileError {
