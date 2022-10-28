@@ -1,5 +1,8 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
-use crate::reflect::semantics::{SemanticMap, ShaderReflection, TextureSizeMeta, TextureSemantics, VariableMeta, VariableSemantics, TextureImage};
+use crate::reflect::semantics::{
+    SemanticMap, ShaderReflection, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta,
+    VariableSemantics,
+};
 use rustc_hash::FxHashMap;
 
 mod cross;

@@ -1,6 +1,10 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{BindingStage, MemberOffset, PushReflection, SemanticMap, ShaderReflection, TextureSizeMeta, TextureSemantics, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, TextureImage};
+use crate::reflect::semantics::{
+    BindingStage, MemberOffset, PushReflection, SemanticMap, ShaderReflection, TextureImage,
+    TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics,
+    VariableMeta, VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
+};
 use crate::reflect::{ReflectMeta, ReflectOptions, ReflectShader, UniformSemantic};
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::{CompilerOptions, ShaderModel};
@@ -19,7 +23,7 @@ where
 
 impl ValidateTypeSemantics<Type> for VariableSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
-        let (&Type::Float { ref array, vecsize, columns } | &Type::Int { ref array, vecsize, columns } | &Type::UInt { ref array, vecsize, columns }) = ty else {
+        let (Type::Float { ref array, vecsize, columns } | Type::Int { ref array, vecsize, columns } | Type::UInt { ref array, vecsize, columns }) = *ty else {
             return None
         };
 
@@ -29,16 +33,16 @@ impl ValidateTypeSemantics<Type> for VariableSemantics {
 
         let valid = match self {
             VariableSemantics::MVP => {
-                matches!(ty, &Type::Float { .. }) && vecsize == 4 && columns == 4
+                matches!(ty, Type::Float { .. }) && vecsize == 4 && columns == 4
             }
             VariableSemantics::FrameCount => {
-                matches!(ty, &Type::UInt { .. }) && vecsize == 1 && columns == 1
+                matches!(ty, Type::UInt { .. }) && vecsize == 1 && columns == 1
             }
             VariableSemantics::FrameDirection => {
-                matches!(ty, &Type::Int { .. }) && vecsize == 1 && columns == 1
+                matches!(ty, Type::Int { .. }) && vecsize == 1 && columns == 1
             }
             VariableSemantics::FloatParameter => {
-                matches!(ty, &Type::Float { .. }) && vecsize == 1 && columns == 1
+                matches!(ty, Type::Float { .. }) && vecsize == 1 && columns == 1
             }
             _ => matches!(ty, Type::Float { .. }) && vecsize == 4 && columns == 1,
         };
@@ -56,7 +60,7 @@ impl ValidateTypeSemantics<Type> for VariableSemantics {
 
 impl ValidateTypeSemantics<Type> for TextureSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
-        let &Type::Float { ref array, vecsize, columns } = ty else {
+        let Type::Float { ref array, vecsize, columns } = *ty else {
             return None
         };
 
@@ -223,24 +227,15 @@ impl SemanticErrorBlame {
 }
 
 trait TextureSemanticMap<T> {
-    fn get_texture_semantic(
-        &self,
-        name: &str,
-    ) -> Option<SemanticMap<TextureSemantics>>;
+    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>>;
 }
 
 trait VariableSemanticMap<T> {
-    fn get_variable_semantic(
-        &self,
-        name: &str,
-    ) -> Option<SemanticMap<VariableSemantics>>;
+    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics>>;
 }
 
 impl VariableSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_variable_semantic(
-        &self,
-        name: &str,
-    ) -> Option<SemanticMap<VariableSemantics>> {
+    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics>> {
         match self.get(name) {
             // existing uniforms in the semantic map have priority
             None => match name {
@@ -264,7 +259,7 @@ impl VariableSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic>
                     semantics: VariableSemantics::FrameDirection,
                     index: 0,
                 }),
-                _ => None
+                _ => None,
             },
             Some(UniformSemantic::Variable(variable)) => Some(*variable),
             Some(UniformSemantic::Texture(_)) => None,
@@ -273,10 +268,7 @@ impl VariableSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic>
 }
 
 impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_texture_semantic(
-        &self,
-        name: &str,
-    ) -> Option<SemanticMap<TextureSemantics>> {
+    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>> {
         match self.get(name) {
             None => {
                 if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
@@ -288,7 +280,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> 
                         let Ok(index) = u32::from_str(index) else {
                             return None;
                         };
-                       return Some(SemanticMap {
+                        return Some(SemanticMap {
                             semantics: *semantics,
                             index,
                         });
@@ -299,7 +291,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> 
                         });
                     }
                 }
-                return None
+                return None;
             }
             Some(UniformSemantic::Variable(_)) => None,
             Some(UniformSemantic::Texture(texture)) => Some(*texture),
@@ -308,10 +300,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> 
 }
 
 impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<TextureSemantics>> {
-    fn get_texture_semantic(
-        &self,
-        name: &str,
-    ) -> Option<SemanticMap<TextureSemantics>> {
+    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>> {
         match self.get(name) {
             None => {
                 if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
@@ -332,7 +321,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
                         });
                     }
                 }
-                return None
+                return None;
             }
             Some(texture) => Some(*texture),
         }
@@ -403,10 +392,7 @@ where
                 _ => return Err(blame.error(SemanticsErrorKind::InvalidResourceType)),
             };
 
-            if let Some(parameter) = options
-                .uniform_semantics
-                .get_variable_semantic(&name)
-            {
+            if let Some(parameter) = options.uniform_semantics.get_variable_semantic(&name) {
                 let Some(typeinfo) = parameter.semantics.validate_type(&range_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
                 };
@@ -467,10 +453,7 @@ where
                         }
                     }
                 }
-            } else if let Some(texture) = options
-                .uniform_semantics
-                .get_texture_semantic(&name)
-            {
+            } else if let Some(texture) = options.uniform_semantics.get_texture_semantic(&name) {
                 let Some(_typeinfo) = texture.semantics.validate_type(&range_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
                 };
@@ -496,7 +479,7 @@ where
 
                     meta.stage_mask.insert(match blame {
                         SemanticErrorBlame::Vertex => BindingStage::VERTEX,
-                        SemanticErrorBlame::Fragment => BindingStage::FRAGMENT
+                        SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
                     });
                 } else {
                     meta.texture_size_meta.insert(
@@ -506,13 +489,13 @@ where
                             // todo: fix this.
                             stage_mask: match blame {
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
-                                SemanticErrorBlame::Fragment => BindingStage::FRAGMENT
-                            }
+                                SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
+                            },
                         },
                     );
                 }
             } else {
-                return Err(blame.error(SemanticsErrorKind::UnknownSemantics(name)))
+                return Err(blame.error(SemanticsErrorKind::UnknownSemantics(name)));
             }
         }
         Ok(())
@@ -575,13 +558,21 @@ where
             return Err(SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(texture.name.to_string())))
         };
 
-        if semantic.semantics == TextureSemantics::PassOutput && semantic.index >= options.pass_number {
-            return Err(ShaderReflectError::NonCausalFilterChain { pass: options.pass_number, target: semantic.index })
+        if semantic.semantics == TextureSemantics::PassOutput
+            && semantic.index >= options.pass_number
+        {
+            return Err(ShaderReflectError::NonCausalFilterChain {
+                pass: options.pass_number,
+                target: semantic.index,
+            });
         }
 
-        meta.texture_meta.insert(semantic, TextureImage {
-            binding: texture.binding
-        });
+        meta.texture_meta.insert(
+            semantic,
+            TextureImage {
+                binding: texture.binding,
+            },
+        );
         Ok(())
     }
 
@@ -743,7 +734,6 @@ where
         }
 
         // slang-reflection:611
-
 
         Ok(ShaderReflection {
             ubo,
