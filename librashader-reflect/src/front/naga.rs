@@ -23,7 +23,7 @@ mod test {
     use naga::back::spv::{Capability, WriterFlags};
     use naga::front::glsl::{Options, Parser};
     use naga::front::spv::Options as SpvOptions;
-    use naga::valid::{Capabilities, ModuleInfo, ValidationFlags};
+    use naga::valid::{Capabilities, ValidationFlags};
     use naga::{FastHashSet, ShaderStage};
     use rspirv::binary::Disassemble;
     #[test]
@@ -36,7 +36,7 @@ mod test {
         let fragment_source = result.fragment;
         let mut parser = Parser::default();
         println!("{fragment_source}");
-        let fragment = parser
+        let _fragment = parser
             .parse(&Options::from(ShaderStage::Fragment), &fragment_source)
             .unwrap();
     }
@@ -48,7 +48,7 @@ mod test {
         )
         .unwrap();
         let spirv = compile_spirv(&result).unwrap();
-        eprintln!("{:?}", spirv)
+        eprintln!("{spirv:?}")
     }
 
     #[test]
@@ -132,8 +132,8 @@ mod test {
         let mut ast = spirv_cross::spirv::Ast::<spirv_cross::glsl::Target>::parse(&loaded).unwrap();
         println!("{:#}", ast.compile().unwrap());
         println!("--- naga glsl---");
-        println!("{:#}", glsl_out);
+        println!("{glsl_out:#}");
         println!("--- naga wgsl---");
-        println!("{:#}", wgsl)
+        println!("{wgsl:#}")
     }
 }

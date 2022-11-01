@@ -1,6 +1,6 @@
 use crate::error::ShaderCompileError;
 use librashader::ShaderSource;
-use shaderc::{CompilationArtifact, CompileOptions, GlslProfile, Limit, ShaderKind};
+use shaderc::{CompilationArtifact, CompileOptions, Limit, ShaderKind};
 
 pub struct GlslangCompilation {
     pub(crate) vertex: CompilationArtifact,
@@ -127,6 +127,6 @@ mod test {
     #[test]
     pub fn compile_shader() {
         let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
-        let spirv = compile_spirv(&result).unwrap();
+        let _spirv = compile_spirv(&result).unwrap();
     }
 }

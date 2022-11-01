@@ -38,13 +38,13 @@ impl TryFrom<GlslangCompilation> for NagaReflect {
 
 #[cfg(test)]
 mod test {
-    use crate::reflect::naga::NagaReflect;
-    use naga::front::spv::Options;
-    use rspirv::binary::Disassemble;
+    
+    
+    
 
     #[test]
     pub fn test_into() {
         let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
-        let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
+        let _spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
     }
 }

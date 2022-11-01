@@ -10,7 +10,7 @@ use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::{CompilerOptions, ShaderModel};
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{hlsl, ErrorCode};
-use std::fmt::Debug;
+
 use std::str::FromStr;
 
 pub struct CrossReflect<T>
@@ -153,7 +153,7 @@ where
             ));
         }
 
-        let mut vert_mask = vertex_res.stage_inputs.iter().try_fold(0, |mask, input| {
+        let vert_mask = vertex_res.stage_inputs.iter().try_fold(0, |mask, input| {
             Ok::<u32, ErrorCode>(
                 mask | 1 << self.vertex.get_decoration(input.id, Decoration::Location)?,
             )
@@ -219,10 +219,10 @@ enum SemanticErrorBlame {
 
 impl SemanticErrorBlame {
     fn error(self, kind: SemanticsErrorKind) -> ShaderReflectError {
-        return match self {
+        match self {
             SemanticErrorBlame::Vertex => ShaderReflectError::VertexSemanticError(kind),
             SemanticErrorBlame::Fragment => ShaderReflectError::FragmentSemanticError(kind),
-        };
+        }
     }
 }
 
@@ -291,7 +291,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> 
                         });
                     }
                 }
-                return None;
+                None
             }
             Some(UniformSemantic::Variable(_)) => None,
             Some(UniformSemantic::Texture(texture)) => Some(*texture),
@@ -321,7 +321,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
                         });
                     }
                 }
-                return None;
+                None
             }
             Some(texture) => Some(*texture),
         }
@@ -377,7 +377,7 @@ where
         blame: SemanticErrorBlame,
     ) -> Result<(), ShaderReflectError> {
         let ranges = ast.get_active_buffer_ranges(resource.id)?;
-        eprintln!("{:?}", ranges);
+        eprintln!("{ranges:?}");
         for range in ranges {
             let name = ast.get_member_name(resource.base_type_id, range.index)?;
             let ubo_type = ast.get_type(resource.base_type_id)?;
@@ -483,7 +483,7 @@ where
                     });
                 } else {
                     meta.texture_size_meta.insert(
-                        texture.clone(),
+                        texture,
                         TextureSizeMeta {
                             offset,
                             // todo: fix this.
@@ -661,13 +661,13 @@ where
         let fragment_res = self.fragment.get_shader_resources()?;
         self.validate(&vertex_res, &fragment_res)?;
 
-        let vertex_ubo = vertex_res.uniform_buffers.first().map(|f| f);
-        let fragment_ubo = fragment_res.uniform_buffers.first().map(|f| f);
+        let vertex_ubo = vertex_res.uniform_buffers.first();
+        let fragment_ubo = fragment_res.uniform_buffers.first();
 
         let ubo = self.reflect_ubos(vertex_ubo, fragment_ubo)?;
 
-        let vertex_push = vertex_res.push_constant_buffers.first().map(|f| f);
-        let fragment_push = fragment_res.push_constant_buffers.first().map(|f| f);
+        let vertex_push = vertex_res.push_constant_buffers.first();
+        let fragment_push = fragment_res.push_constant_buffers.first();
 
         let push_constant = self.reflect_push_constant_buffer(vertex_push, fragment_push)?;
 
@@ -728,7 +728,7 @@ where
             if ubo_bindings & (1 << texture_data.binding) != 0 {
                 return Err(ShaderReflectError::BindingInUse(texture_data.binding));
             }
-            ubo_bindings |= (1 << texture_data.binding);
+            ubo_bindings |= 1 << texture_data.binding;
 
             self.reflect_texture_metas(texture_data, options, &mut meta)?;
         }
@@ -747,8 +747,8 @@ where
 mod test {
     use crate::reflect::cross::CrossReflect;
     use crate::reflect::{ReflectOptions, ReflectShader};
-    use rspirv::binary::Disassemble;
-    use spirv_cross::{glsl, hlsl};
+    
+    use spirv_cross::{hlsl};
 
     #[test]
     pub fn test_into() {
@@ -763,7 +763,7 @@ mod test {
                 non_uniform_semantics: Default::default(),
             })
             .unwrap();
-        eprintln!("{:#?}", huh);
+        eprintln!("{huh:#?}");
         eprintln!("{:#}", reflect.fragment.compile().unwrap())
         // let mut loader = rspirv::dr::Loader::new();
         // rspirv::binary::parse_words(spirv.fragment.as_binary(), &mut loader).unwrap();

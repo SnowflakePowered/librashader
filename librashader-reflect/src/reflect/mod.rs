@@ -1,4 +1,4 @@
-use crate::error::{SemanticsErrorKind, ShaderReflectError};
+use crate::error::{ShaderReflectError};
 use crate::reflect::semantics::{
     SemanticMap, ShaderReflection, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta,
     VariableSemantics,

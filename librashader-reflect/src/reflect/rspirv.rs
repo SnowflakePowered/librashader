@@ -32,7 +32,7 @@ mod test {
     pub fn test_into() {
         let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
         let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
-        let mut reflect = RspirvReflect::try_from(spirv).unwrap();
+        let reflect = RspirvReflect::try_from(spirv).unwrap();
         // let pcr = reflect.fragment.get_push_constant_range().unwrap()
         //     .unwrap();
         println!("{:?}", reflect.fragment.get_descriptor_sets());
