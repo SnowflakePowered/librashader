@@ -4,5 +4,6 @@ members = [
     "librashader-presets",
     "librashader-preprocess",
     "librashader-reflect",
+    "librashader-runtime-dx11",
     "naga"
 ]

@@ -1,17 +1,17 @@
 use crate::error::{ShaderReflectError};
 use crate::reflect::semantics::{
-    SemanticMap, ShaderReflection, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta,
+    SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta,
     VariableSemantics,
 };
 use rustc_hash::FxHashMap;
 
-mod cross;
+pub mod cross;
 mod naga;
 mod rspirv;
 pub mod semantics;
 
 pub trait ReflectShader {
-    fn reflect(&self, options: &ReflectOptions) -> Result<ShaderReflection, ShaderReflectError>;
+    fn reflect(&mut self, pass_number: u32, semantics: &ReflectSemantics) -> Result<ShaderReflection, ShaderReflectError>;
 }
 
 #[derive(Debug)]
@@ -21,8 +21,7 @@ pub enum UniformSemantic {
 }
 
 #[derive(Debug)]
-pub struct ReflectOptions {
-    pub pass_number: u32,
+pub struct ReflectSemantics {
     pub uniform_semantics: FxHashMap<String, UniformSemantic>,
     pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
 }
@@ -35,47 +34,4 @@ pub struct ReflectMeta {
     pub texture_size_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureSizeMeta>,
 }
 
-pub fn builtin_uniform_semantics() -> FxHashMap<String, UniformSemantic> {
-    let mut map = FxHashMap::default();
-
-    map.insert(
-        "MVP".into(),
-        UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::MVP,
-            index: 0,
-        }),
-    );
-
-    map.insert(
-        "OutputSize".into(),
-        UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::Output,
-            index: 0,
-        }),
-    );
-
-    map.insert(
-        "FinalViewportSize".into(),
-        UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::FinalViewport,
-            index: 0,
-        }),
-    );
-
-    map.insert(
-        "FrameCount".into(),
-        UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::FrameCount,
-            index: 0,
-        }),
-    );
-
-    map.insert(
-        "FrameDirection".into(),
-        UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::FrameDirection,
-            index: 0,
-        }),
-    );
-    map
-}
+pub use semantics::ShaderReflection;

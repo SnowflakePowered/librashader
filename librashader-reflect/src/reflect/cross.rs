@@ -1,17 +1,19 @@
-use crate::error::{SemanticsErrorKind, ShaderReflectError};
+use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
 use crate::reflect::semantics::{
     BindingStage, MemberOffset, PushReflection, SemanticMap, ShaderReflection, TextureImage,
     TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics,
     VariableMeta, VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
-use crate::reflect::{ReflectMeta, ReflectOptions, ReflectShader, UniformSemantic};
+use crate::reflect::{ReflectMeta, ReflectSemantics, ReflectShader, UniformSemantic};
 use rustc_hash::FxHashMap;
-use spirv_cross::hlsl::{CompilerOptions, ShaderModel};
+use spirv_cross::hlsl::{ShaderModel};
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
-use spirv_cross::{hlsl, ErrorCode};
+use spirv_cross::{hlsl, ErrorCode, glsl};
 
 use std::str::FromStr;
+use spirv_cross::glsl::Version;
+use crate::back::{CompiledShader, ShaderCompiler};
 
 pub struct CrossReflect<T>
 where
@@ -21,6 +23,7 @@ where
     fragment: Ast<T>,
 }
 
+pub type HlslReflect = CrossReflect<hlsl::Target>;
 impl ValidateTypeSemantics<Type> for VariableSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
         let (Type::Float { ref array, vecsize, columns } | Type::Int { ref array, vecsize, columns } | Type::UInt { ref array, vecsize, columns }) = *ty else {
@@ -89,8 +92,27 @@ impl TryFrom<GlslangCompilation> for CrossReflect<hlsl::Target> {
         let mut vertex = Ast::parse(&vertex_module)?;
         let mut fragment = Ast::parse(&fragment_module)?;
 
-        let mut options = CompilerOptions::default();
+        let mut options = hlsl::CompilerOptions::default();
         options.shader_model = ShaderModel::V5_0;
+        fragment.set_compiler_options(&options)?;
+        vertex.set_compiler_options(&options)?;
+
+        Ok(CrossReflect { vertex, fragment })
+    }
+}
+
+impl TryFrom<GlslangCompilation> for CrossReflect<glsl::Target> {
+    type Error = ShaderReflectError;
+
+    fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
+        let vertex_module = Module::from_words(value.vertex.as_binary());
+        let fragment_module = Module::from_words(value.fragment.as_binary());
+
+        let mut vertex = Ast::parse(&vertex_module)?;
+        let mut fragment = Ast::parse(&fragment_module)?;
+
+        let mut options = glsl::CompilerOptions::default();
+        options.version = Version::V3_30;
         fragment.set_compiler_options(&options)?;
         vertex.set_compiler_options(&options)?;
 
@@ -371,7 +393,8 @@ where
     fn reflect_buffer_range_metas(
         ast: &Ast<T>,
         resource: &Resource,
-        options: &ReflectOptions,
+        pass_number: u32,
+        semantics: &ReflectSemantics,
         meta: &mut ReflectMeta,
         offset_type: impl Fn(usize) -> MemberOffset,
         blame: SemanticErrorBlame,
@@ -392,7 +415,7 @@ where
                 _ => return Err(blame.error(SemanticsErrorKind::InvalidResourceType)),
             };
 
-            if let Some(parameter) = options.uniform_semantics.get_variable_semantic(&name) {
+            if let Some(parameter) = semantics.uniform_semantics.get_variable_semantic(&name) {
                 let Some(typeinfo) = parameter.semantics.validate_type(&range_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
                 };
@@ -453,15 +476,15 @@ where
                         }
                     }
                 }
-            } else if let Some(texture) = options.uniform_semantics.get_texture_semantic(&name) {
+            } else if let Some(texture) = semantics.uniform_semantics.get_texture_semantic(&name) {
                 let Some(_typeinfo) = texture.semantics.validate_type(&range_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
                 };
 
                 if let TextureSemantics::PassOutput = texture.semantics {
-                    if texture.index >= options.pass_number {
+                    if texture.index >= pass_number {
                         return Err(ShaderReflectError::NonCausalFilterChain {
-                            pass: options.pass_number,
+                            pass: pass_number,
                             target: texture.index,
                         });
                     }
@@ -486,7 +509,7 @@ where
                         texture,
                         TextureSizeMeta {
                             offset,
-                            // todo: fix this.
+                            // todo: fix this. to allow both
                             stage_mask: match blame {
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                                 SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
@@ -502,10 +525,18 @@ where
     }
 
     fn reflect_ubos(
-        &self,
+        &mut self,
         vertex_ubo: Option<&Resource>,
         fragment_ubo: Option<&Resource>,
     ) -> Result<Option<UboReflection>, ShaderReflectError> {
+        if let Some(vertex_ubo) = vertex_ubo {
+            self.vertex.set_decoration(vertex_ubo.id, Decoration::Binding, 0)?;
+        }
+
+        if let Some(fragment_ubo) = fragment_ubo {
+            self.fragment.set_decoration(fragment_ubo.id, Decoration::Binding, 0)?;
+        }
+
         match (vertex_ubo, fragment_ubo) {
             (None, None) => Ok(None),
             (Some(vertex_ubo), Some(fragment_ubo)) => {
@@ -551,18 +582,19 @@ where
     fn reflect_texture_metas(
         &self,
         texture: TextureData,
-        options: &ReflectOptions,
+        pass_number: u32,
+        semantics: &ReflectSemantics,
         meta: &mut ReflectMeta,
     ) -> Result<(), ShaderReflectError> {
-        let Some(semantic) = options.non_uniform_semantics.get_texture_semantic(texture.name) else {
+        let Some(semantic) = semantics.non_uniform_semantics.get_texture_semantic(texture.name) else {
             return Err(SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(texture.name.to_string())))
         };
 
         if semantic.semantics == TextureSemantics::PassOutput
-            && semantic.index >= options.pass_number
+            && semantic.index >= pass_number
         {
             return Err(ShaderReflectError::NonCausalFilterChain {
-                pass: options.pass_number,
+                pass: pass_number,
                 target: semantic.index,
             });
         }
@@ -605,10 +637,19 @@ where
     }
 
     fn reflect_push_constant_buffer(
-        &self,
+        &mut self,
         vertex_pcb: Option<&Resource>,
         fragment_pcb: Option<&Resource>,
     ) -> Result<Option<PushReflection>, ShaderReflectError> {
+        if let Some(vertex_pcb) = vertex_pcb {
+            self.vertex.set_decoration(vertex_pcb.id, Decoration::Binding, 1)?;
+        }
+
+        if let Some(fragment_pcb) = fragment_pcb {
+            self.fragment.set_decoration(fragment_pcb.id, Decoration::Binding, 1)?;
+        }
+
+
         match (vertex_pcb, fragment_pcb) {
             (None, None) => Ok(None),
             (Some(vertex_push), Some(fragment_push)) => {
@@ -656,7 +697,7 @@ where
     Ast<T>: spirv_cross::spirv::Compile<T>,
     Ast<T>: spirv_cross::spirv::Parse<T>,
 {
-    fn reflect(&self, options: &ReflectOptions) -> Result<ShaderReflection, ShaderReflectError> {
+    fn reflect(&mut self, pass_number: u32, semantics: &ReflectSemantics) -> Result<ShaderReflection, ShaderReflectError> {
         let vertex_res = self.vertex.get_shader_resources()?;
         let fragment_res = self.fragment.get_shader_resources()?;
         self.validate(&vertex_res, &fragment_res)?;
@@ -677,7 +718,8 @@ where
             Self::reflect_buffer_range_metas(
                 &self.vertex,
                 ubo,
-                options,
+                pass_number,
+                semantics,
                 &mut meta,
                 MemberOffset::Ubo,
                 SemanticErrorBlame::Vertex,
@@ -688,7 +730,8 @@ where
             Self::reflect_buffer_range_metas(
                 &self.fragment,
                 ubo,
-                options,
+                pass_number,
+                semantics,
                 &mut meta,
                 MemberOffset::Ubo,
                 SemanticErrorBlame::Fragment,
@@ -699,7 +742,8 @@ where
             Self::reflect_buffer_range_metas(
                 &self.vertex,
                 push,
-                options,
+                pass_number,
+                semantics,
                 &mut meta,
                 MemberOffset::PushConstant,
                 SemanticErrorBlame::Vertex,
@@ -710,14 +754,14 @@ where
             Self::reflect_buffer_range_metas(
                 &self.fragment,
                 push,
-                options,
+                pass_number,
+                semantics,
                 &mut meta,
                 MemberOffset::PushConstant,
                 SemanticErrorBlame::Fragment,
             )?;
         }
 
-        // todo: slang_reflection: 556
         let mut ubo_bindings = 0u16;
         if vertex_ubo.is_some() || fragment_ubo.is_some() {
             ubo_bindings = 1 << ubo.as_ref().expect("UBOs should be present").binding;
@@ -730,10 +774,8 @@ where
             }
             ubo_bindings |= 1 << texture_data.binding;
 
-            self.reflect_texture_metas(texture_data, options, &mut meta)?;
+            self.reflect_texture_metas(texture_data, pass_number, semantics, &mut meta)?;
         }
-
-        // slang-reflection:611
 
         Ok(ShaderReflection {
             ubo,
@@ -743,28 +785,76 @@ where
     }
 }
 
+impl ShaderCompiler<crate::back::targets::GLSL> for CrossReflect<glsl::Target> {
+    type Output = String;
+    type Options = glsl::CompilerOptions;
+
+    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output>, ShaderCompileError> {
+        self.vertex.set_compiler_options(options)?;
+        self.fragment.set_compiler_options(options)?;
+
+        Ok(CompiledShader {
+            vertex: self.vertex.compile()?,
+            fragment: self.fragment.compile()?
+        })
+    }
+}
+
+pub type HlslOptions = hlsl::CompilerOptions;
+
+impl ShaderCompiler<crate::back::targets::HLSL> for CrossReflect<hlsl::Target> {
+    type Output = String;
+    type Options = hlsl::CompilerOptions;
+
+    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output>, ShaderCompileError> {
+        self.vertex.set_compiler_options(options)?;
+        self.fragment.set_compiler_options(options)?;
+
+        Ok(CompiledShader {
+            vertex: self.vertex.compile()?,
+            fragment: self.fragment.compile()?
+        })
+    }
+}
+
+
 #[cfg(test)]
 mod test {
+    use rustc_hash::FxHashMap;
     use crate::reflect::cross::CrossReflect;
-    use crate::reflect::{ReflectOptions, ReflectShader};
+    use crate::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
     
-    use spirv_cross::{hlsl};
+    use spirv_cross::{glsl, hlsl};
+    use spirv_cross::glsl::{CompilerOptions, Version};
+    use crate::back::ShaderCompiler;
+    use crate::reflect::semantics::{SemanticMap, VariableSemantics};
 
     #[test]
     pub fn test_into() {
         let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
-
+        let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
+        
+        for (index, param) in result.parameters.iter().enumerate() {
+            uniform_semantics.insert(param.id.clone(), UniformSemantic::Variable(SemanticMap {
+                semantics: VariableSemantics::FloatParameter,
+                index: index as u32
+            }));
+        }
         let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
-        let mut reflect = CrossReflect::<hlsl::Target>::try_from(spirv).unwrap();
-        let huh = reflect
-            .reflect(&ReflectOptions {
-                pass_number: 0,
-                uniform_semantics: Default::default(),
+        let mut reflect = CrossReflect::<glsl::Target>::try_from(spirv).unwrap();
+        let shader_reflection = reflect
+            .reflect(0, &ReflectSemantics {
+                uniform_semantics,
                 non_uniform_semantics: Default::default(),
             })
             .unwrap();
-        eprintln!("{huh:#?}");
-        eprintln!("{:#}", reflect.fragment.compile().unwrap())
+        let mut opts = CompilerOptions::default();
+        opts.version = Version::V4_60;
+        opts.enable_420_pack_extension = false;
+        let compiled = reflect.compile(&opts, &shader_reflection)
+            .unwrap();
+        // eprintln!("{shader_reflection:#?}");
+        eprintln!("{:#}", compiled.fragment)
         // let mut loader = rspirv::dr::Loader::new();
         // rspirv::binary::parse_words(spirv.fragment.as_binary(), &mut loader).unwrap();
         // let module = loader.module();

@@ -1,5 +1,6 @@
 #![feature(let_else)]
 
-mod error;
-mod front;
-mod reflect;
+pub mod error;
+pub mod front;
+pub mod reflect;
+pub mod back;

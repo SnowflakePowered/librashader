@@ -4,9 +4,11 @@
 layout(set = 0, binding = 0, std140) uniform UBO
 {
    mat4 MVP;
-   vec4 SourceSize; // Not used here, but doesn't hurt
-   float ColorMod;
 };
+
+layout(push_constant) uniform Push {
+   float ColorMod;
+} params;
 
 #pragma name StockShader
 #pragma format R8G8B8A8_UNORM
@@ -26,10 +28,7 @@ void main()
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 0) out vec4 FragColor;
 layout(binding = 1) uniform sampler2D Source;
-// layout(binding = 1) uniform texture2D Source;
-// layout(binding = 2) uniform sampler _Source_sampler;
 void main()
 {
-   // FragColor = texture(sampler2D(Source, _Source_sampler), vTexCoord) * ColorMod;
-   FragColor = texture(Source, vTexCoord) * SourceSize[0];
+   FragColor = texture(Source, vTexCoord) * params.ColorMod;
 }

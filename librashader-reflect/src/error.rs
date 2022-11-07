@@ -11,6 +11,9 @@ pub enum ShaderCompileError {
 
     #[error("shaderc init")]
     ShaderCInitError,
+
+    #[error("cross")]
+    SpirvCrossCompileError(#[from] spirv_cross::ErrorCode),
 }
 
 #[derive(Debug)]

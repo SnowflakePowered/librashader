@@ -440,6 +440,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-runtime-dx11"
+version = "0.1.0"
+dependencies = [
+ "librashader",
+ "librashader-preprocess",
+ "librashader-presets",
+ "librashader-reflect",
+ "rustc-hash",
+ "spirv_cross",
+]
+
+[[package]]
 name = "log"
 version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
