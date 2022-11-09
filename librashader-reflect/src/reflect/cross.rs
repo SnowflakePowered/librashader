@@ -24,6 +24,8 @@ where
 }
 
 pub type HlslReflect = CrossReflect<hlsl::Target>;
+pub type GlslReflect = CrossReflect<glsl::Target>;
+
 impl ValidateTypeSemantics<Type> for VariableSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
         let (Type::Float { ref array, vecsize, columns } | Type::Int { ref array, vecsize, columns } | Type::UInt { ref array, vecsize, columns }) = *ty else {
@@ -785,17 +787,97 @@ where
     }
 }
 
+pub type GlslOptions = glsl::CompilerOptions;
+
 impl ShaderCompiler<crate::back::targets::GLSL> for CrossReflect<glsl::Target> {
     type Output = String;
     type Options = glsl::CompilerOptions;
+    type Context = Vec<u32>;
 
-    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output>, ShaderCompileError> {
+    // todo: compile should consume self
+    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output, Self::Context>, ShaderCompileError> {
         self.vertex.set_compiler_options(options)?;
         self.fragment.set_compiler_options(options)?;
 
+        let vertex_resources = self.vertex.get_shader_resources()?;
+        let fragment_resources = self.fragment.get_shader_resources()?;
+
+        for res in &vertex_resources.stage_inputs {
+            let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
+            self.vertex.set_name(res.id, &format!("RARCH_ATTRIBUTE_{location}"))?;
+            self.vertex.unset_decoration(res.id, Decoration::Location)?;
+        }
+        for res in &vertex_resources.stage_outputs {
+            let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
+            self.vertex.set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
+            self.vertex.unset_decoration(res.id, Decoration::Location)?;
+        }
+        for res in &fragment_resources.stage_inputs {
+            let location = self.fragment.get_decoration(res.id, Decoration::Location)?;
+            self.fragment.set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
+            self.fragment.unset_decoration(res.id, Decoration::Location)?;
+        }
+
+        if vertex_resources.push_constant_buffers.len() > 1 {
+            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one push constant buffer"))));
+        }
+        for res in &vertex_resources.push_constant_buffers {
+            self.vertex.set_name(res.id, "RARCH_PUSH_VERTEX_INSTANCE")?;
+            self.vertex.set_name(res.base_type_id, "RARCH_PUSH_VERTEX")?;
+        }
+
+        // todo: options
+        let flatten = false;
+
+        if vertex_resources.uniform_buffers.len() > 1 {
+            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one uniform buffer"))));
+        }
+        for res in &vertex_resources.uniform_buffers {
+            if flatten {
+                self.vertex.flatten_buffer_block(res.id)?;
+            }
+            self.vertex.set_name(res.id, "RARCH_UBO_VERTEX_INSTANCE")?;
+            self.vertex.set_name(res.base_type_id, "RARCH_UBO_VERTEX")?;
+            self.vertex.unset_decoration(res.id, Decoration::DescriptorSet)?;
+            self.vertex.unset_decoration(res.id, Decoration::Binding)?;
+
+        }
+
+        if fragment_resources.push_constant_buffers.len() > 1 {
+            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one push constant buffer"))));
+        }
+        for res in &fragment_resources.push_constant_buffers {
+            self.fragment.set_name(res.id, "RARCH_PUSH_FRAGMENT_INSTANCE")?;
+            self.fragment.set_name(res.base_type_id, "RARCH_PUSH_FRAGMENT")?;
+        }
+
+        if fragment_resources.uniform_buffers.len() > 1 {
+            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one uniform buffer"))));
+        }
+
+        for res in &fragment_resources.uniform_buffers {
+            if flatten {
+                self.fragment.flatten_buffer_block(res.id)?;
+            }
+            self.fragment.set_name(res.id, "RARCH_UBO_FRAGMENT_INSTANCE")?;
+            self.fragment.set_name(res.base_type_id, "RARCH_UBO_FRAGMENT")?;
+            self.fragment.unset_decoration(res.id, Decoration::DescriptorSet)?;
+            self.fragment.unset_decoration(res.id, Decoration::Binding)?;
+        }
+
+        let mut texture_fixups = Vec::new();
+        for res in &fragment_resources.sampled_images {
+            let binding = self.fragment.get_decoration(res.id, Decoration::Binding)?;
+            self.fragment.set_name(res.id, &format!("RARCH_TEXTURE_{binding}"))?;
+            self.fragment.unset_decoration(res.id, Decoration::DescriptorSet)?;
+            self.fragment.unset_decoration(res.id, Decoration::Binding)?;
+            texture_fixups.push(binding);
+        }
+
         Ok(CompiledShader {
             vertex: self.vertex.compile()?,
-            fragment: self.fragment.compile()?
+            fragment: self.fragment.compile()?,
+            context: texture_fixups
         })
     }
 }
@@ -812,7 +894,8 @@ impl ShaderCompiler<crate::back::targets::HLSL> for CrossReflect<hlsl::Target> {
 
         Ok(CompiledShader {
             vertex: self.vertex.compile()?,
-            fragment: self.fragment.compile()?
+            fragment: self.fragment.compile()?,
+            context: ()
         })
     }
 }

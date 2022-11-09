@@ -17,6 +17,7 @@ impl OutputTarget for MSL {}
 pub trait ShaderCompiler<T: OutputTarget> {
     type Output;
     type Options;
+    type Context = ();
 
-    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output>, ShaderCompileError>;
+    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output, Self::Context>, ShaderCompileError>;
 }
