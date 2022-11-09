@@ -10,3 +10,4 @@ pub struct CompiledShader<Source, Context = ()> {
     pub fragment: Source,
     pub context: Context,
 }
+

@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
 use rustc_hash::FxHashMap;
-use spirv_cross::glsl::{Precision, Version};
-use spirv_cross::hlsl::ShaderModel;
+
 use librashader::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::ShaderCompiler;
+use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::cross::{CrossReflect, GlslOptions, GlslReflect, HlslOptions, HlslReflect};
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
 use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, VariableSemantics};
-
+use librashader_reflect::reflect::{TextureSemanticMap, VariableSemanticMap};
 
 pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSemantic>, texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
                            config: &ShaderPassConfig) {
@@ -50,13 +50,13 @@ pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSema
 
 pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let preset = librashader_presets::ShaderPreset::try_parse(path)?;
-    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, GlslReflect)> = preset.shaders.iter()
+    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, GLSL)> = preset.shaders.iter()
         .map(|shader| {
             let source = librashader_preprocess::load_shader_source(&shader.name)
                 .unwrap();
             let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)
                 .unwrap();
-            let mut reflect = librashader_reflect::reflect::cross::GlslReflect::try_from(spirv).unwrap();
+            let mut reflect = librashader_reflect::back::targets::GLSL::try_from(spirv).unwrap();
             (shader, source, reflect)
         }).collect();
 
@@ -92,33 +92,35 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let mut reflections = Vec::new();
     let mut compiled = Vec::new();
 
-    for (index, (_, _, reflect)) in passes.iter_mut().enumerate() {
+    for (index, (config, source, reflect)) in passes.iter_mut().enumerate() {
         let reflection = reflect.reflect(index as u32, &semantics)
             .unwrap();
-        let mut options: GlslOptions = Default::default();
-        // todo: adjust ogl version
-        options.version = Version::V4_60;
-        options.fragment.default_float_precision = Precision::High;
-        options.fragment.default_int_precision = Precision::High;
-        options.enable_420_pack_extension = false;
 
 
-        let glsl = reflect.compile(&options, &reflection)
+        let glsl = reflect.compile(None)
             .unwrap();
 
         eprintln!("{:#}", glsl.vertex);
         eprintln!("{:#}", glsl.fragment);
+
+        // shader_gl3: 1375
+        reflection.meta.texture_meta.get(&SemanticMap {
+            semantics: TextureSemantics::PassOutput,
+            index: 0
+        }).unwrap().binding;
 
         compiled.push(glsl);
         reflections.push(reflection);
 
     }
 
+    // todo: build gl semantics
+
+    // shader_gl3:188
 
     eprintln!("{:#?}", reflections);
 
     eprintln!("{:#?}", compiled);
-    // //todo: add the semantics for other shit (slang_process:68)
     // eprintln!("{:?}", preset);
     // eprintln!("{:?}", reflect.reflect(&ReflectOptions {
     //     pass_number: i as u32,

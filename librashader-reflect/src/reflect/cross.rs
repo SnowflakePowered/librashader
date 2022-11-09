@@ -5,14 +5,14 @@ use crate::reflect::semantics::{
     TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics,
     VariableMeta, VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
-use crate::reflect::{ReflectMeta, ReflectSemantics, ReflectShader, UniformSemantic};
+use crate::reflect::{ReflectMeta, ReflectSemantics, ReflectShader, TextureSemanticMap, UniformSemantic, VariableSemanticMap};
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::{ShaderModel};
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{hlsl, ErrorCode, glsl};
 
 use std::str::FromStr;
-use spirv_cross::glsl::Version;
+use spirv_cross::glsl::{Precision, Version};
 use crate::back::{CompiledShader, ShaderCompiler};
 
 pub struct CrossReflect<T>
@@ -246,108 +246,6 @@ impl SemanticErrorBlame {
         match self {
             SemanticErrorBlame::Vertex => ShaderReflectError::VertexSemanticError(kind),
             SemanticErrorBlame::Fragment => ShaderReflectError::FragmentSemanticError(kind),
-        }
-    }
-}
-
-trait TextureSemanticMap<T> {
-    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>>;
-}
-
-trait VariableSemanticMap<T> {
-    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics>>;
-}
-
-impl VariableSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics>> {
-        match self.get(name) {
-            // existing uniforms in the semantic map have priority
-            None => match name {
-                "MVP" => Some(SemanticMap {
-                    semantics: VariableSemantics::MVP,
-                    index: 0,
-                }),
-                "OutputSize" => Some(SemanticMap {
-                    semantics: VariableSemantics::Output,
-                    index: 0,
-                }),
-                "FinalViewportSize" => Some(SemanticMap {
-                    semantics: VariableSemantics::FinalViewport,
-                    index: 0,
-                }),
-                "FrameCount" => Some(SemanticMap {
-                    semantics: VariableSemantics::FrameCount,
-                    index: 0,
-                }),
-                "FrameDirection" => Some(SemanticMap {
-                    semantics: VariableSemantics::FrameDirection,
-                    index: 0,
-                }),
-                _ => None,
-            },
-            Some(UniformSemantic::Variable(variable)) => Some(*variable),
-            Some(UniformSemantic::Texture(_)) => None,
-        }
-    }
-}
-
-impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>> {
-        match self.get(name) {
-            None => {
-                if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
-                    .iter()
-                    .find(|f| name.starts_with(f.size_uniform_name()))
-                {
-                    if semantics.is_array() {
-                        let index = &name[semantics.size_uniform_name().len()..];
-                        let Ok(index) = u32::from_str(index) else {
-                            return None;
-                        };
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index,
-                        });
-                    } else if name == semantics.size_uniform_name() {
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index: 0,
-                        });
-                    }
-                }
-                None
-            }
-            Some(UniformSemantic::Variable(_)) => None,
-            Some(UniformSemantic::Texture(texture)) => Some(*texture),
-        }
-    }
-}
-
-impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<TextureSemantics>> {
-    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>> {
-        match self.get(name) {
-            None => {
-                if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
-                    .iter()
-                    .find(|f| name.starts_with(f.texture_name()))
-                {
-                    if semantics.is_array() {
-                        let index = &name[semantics.texture_name().len()..];
-                        let Ok(index) = u32::from_str(index) else {return None};
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index,
-                        });
-                    } else if name == semantics.texture_name() {
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index: 0,
-                        });
-                    }
-                }
-                None
-            }
-            Some(texture) => Some(*texture),
         }
     }
 }
@@ -791,13 +689,19 @@ pub type GlslOptions = glsl::CompilerOptions;
 
 impl ShaderCompiler<crate::back::targets::GLSL> for CrossReflect<glsl::Target> {
     type Output = String;
-    type Options = glsl::CompilerOptions;
     type Context = Vec<u32>;
 
     // todo: compile should consume self
-    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output, Self::Context>, ShaderCompileError> {
-        self.vertex.set_compiler_options(options)?;
-        self.fragment.set_compiler_options(options)?;
+    fn compile(&mut self, _options: Self::Options) -> Result<CompiledShader<Self::Output, Self::Context>, ShaderCompileError> {
+        let mut options: GlslOptions = Default::default();
+        // todo: allow adjust ogl version
+        options.version = Version::V4_60;
+        options.fragment.default_float_precision = Precision::High;
+        options.fragment.default_int_precision = Precision::High;
+        options.enable_420_pack_extension = false;
+
+        self.vertex.set_compiler_options(&options)?;
+        self.fragment.set_compiler_options(&options)?;
 
         let vertex_resources = self.vertex.get_shader_resources()?;
         let fragment_resources = self.fragment.get_shader_resources()?;
@@ -886,11 +790,13 @@ pub type HlslOptions = hlsl::CompilerOptions;
 
 impl ShaderCompiler<crate::back::targets::HLSL> for CrossReflect<hlsl::Target> {
     type Output = String;
-    type Options = hlsl::CompilerOptions;
 
-    fn compile(&mut self, options: &Self::Options, reflection: &ShaderReflection) -> Result<CompiledShader<Self::Output>, ShaderCompileError> {
-        self.vertex.set_compiler_options(options)?;
-        self.fragment.set_compiler_options(options)?;
+    fn compile(&mut self, _options: Self::Options) -> Result<CompiledShader<Self::Output>, ShaderCompileError> {
+        let mut options = hlsl::CompilerOptions::default();
+        options.shader_model = ShaderModel::V5_0;
+
+        self.vertex.set_compiler_options(&options)?;
+        self.fragment.set_compiler_options(&options)?;
 
         Ok(CompiledShader {
             vertex: self.vertex.compile()?,

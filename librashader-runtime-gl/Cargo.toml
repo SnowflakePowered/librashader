@@ -10,7 +10,6 @@ edition = "2021"
 "librashader-presets" = { path = "../librashader-presets" }
 "librashader-preprocess" = { path = "../librashader-preprocess" }
 "librashader-reflect" = { path = "../librashader-reflect" }
-spirv_cross = { version = "0.23.1", features = [ "hlsl" ] }
 rustc-hash = "1.1.0"
 
 [dependencies.windows]

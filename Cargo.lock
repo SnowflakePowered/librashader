@@ -448,7 +448,6 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "rustc-hash",
- "spirv_cross",
  "windows",
 ]
 
@@ -461,7 +460,6 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "rustc-hash",
- "spirv_cross",
  "windows",
 ]
 
