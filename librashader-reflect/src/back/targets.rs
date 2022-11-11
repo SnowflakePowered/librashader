@@ -4,7 +4,6 @@ use crate::reflect::{ReflectSemantics, ReflectShader, ShaderReflection};
 
 pub trait OutputTarget {
     type Output;
-    type AdditionalContext;
 }
 
 pub struct GLSL;
@@ -14,15 +13,12 @@ pub struct MSL;
 
 impl OutputTarget for GLSL {
     type Output = String;
-    type AdditionalContext = Vec<u32>;
 }
 impl OutputTarget for HLSL {
     type Output = String;
-    type AdditionalContext = ();
 }
 impl OutputTarget for SpirV {
     type Output = Vec<u32>;
-    type AdditionalContext = ();
 }
 
 pub struct CompilerBackend<T> {
@@ -32,17 +28,21 @@ pub struct CompilerBackend<T> {
 pub trait FromCompilation<T> {
     type Target: OutputTarget;
     type Options;
+    type Context;
+
     fn from_compilation(
         compile: T,
-    ) -> Result<CompilerBackend<impl CompileShader<Self::Target> + ReflectShader>, ShaderReflectError>;
+    ) -> Result<CompilerBackend<impl CompileShader<Self::Target, Context=Self::Context> + ReflectShader>, ShaderReflectError>;
 }
 
 pub trait CompileShader<T: OutputTarget> {
     type Options;
+    type Context;
+
     fn compile(
-        &mut self,
+        self,
         options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<T::Output, T::AdditionalContext>, ShaderCompileError>;
+    ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError>;
 }
 
 impl<T> ReflectShader for CompilerBackend<T>
@@ -64,11 +64,12 @@ where
     E: OutputTarget,
 {
     type Options = T::Options;
+    type Context = T::Context;
 
     fn compile(
-        &mut self,
+        self,
         options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<E::Output, E::AdditionalContext>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<E::Output, Self::Context>, ShaderCompileError> {
         self.backend.compile(options)
     }
 }

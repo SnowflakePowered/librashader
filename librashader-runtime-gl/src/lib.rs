@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
+use gl::types::{GLenum, GLuint};
 use rustc_hash::FxHashMap;
 
 use librashader::ShaderSource;
@@ -48,6 +49,9 @@ pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSema
     }));
 
 }
+
+
+// todo: init gl
 
 pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let preset = librashader_presets::ShaderPreset::try_parse(path)?;
@@ -97,24 +101,36 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
         let reflection = reflect.reflect(index as u32, &semantics)?;
         let glsl = reflect.compile(GlVersion::V4_60)?;
 
+
         // shader_gl3: 1375
         reflection.meta.texture_meta.get(&SemanticMap {
             semantics: TextureSemantics::Source,
             index: 0
         }).unwrap().binding;
 
+        // unsafe {
+        //     let vertex = gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str());
+        //     let fragment = gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str());
+        //
+        //     let program = gl::CreateProgram();
+        //     gl::AttachShader(program, vertex);
+        //     gl::AttachShader(program, fragment);
+        //
+        // }
+
+
         compiled.push(glsl);
         reflections.push(reflection);
     }
 
-
-    // todo: build gl semantics
-
-    // shader_gl3:188
+    let mut glprogram: Vec<GLuint> = Vec::new();
+    for compilation in &compiled {
+        // compilation.context.compiler.vertex
+    }
 
     eprintln!("{:#?}", reflections);
 
-    eprintln!("{:#?}", compiled);
+    // eprintln!("{:#?}", compiled./);
     // eprintln!("{:?}", preset);
     // eprintln!("{:?}", reflect.reflect(&ReflectOptions {
     //     pass_number: i as u32,
@@ -123,6 +139,20 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     // }));
 
     Ok(())
+}
+
+unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
+    let shader = gl::CreateShader(stage);
+    gl::ShaderSource(shader, 1, &source.as_bytes().as_ptr().cast(), std::ptr::null());
+    gl::CompileShader(shader);
+
+    let mut compile_status = 0;
+    gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
+
+    if compile_status == 0 {
+        panic!("failed to compile")
+    }
+    shader
 }
 
 #[cfg(test)]

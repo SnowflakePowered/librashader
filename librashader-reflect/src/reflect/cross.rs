@@ -15,6 +15,7 @@ use spirv_cross::{glsl, hlsl, ErrorCode};
 
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
+use crate::back::cross::GlslangCompileContext;
 
 pub struct CrossReflect<T>
 where
@@ -23,6 +24,14 @@ where
     vertex: Ast<T>,
     fragment: Ast<T>,
 }
+
+pub struct CompiledAst<T>
+where
+T: spirv_cross::spirv::Target {
+    pub vertex: Ast<T>,
+    pub fragment: Ast<T>,
+}
+
 
 pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
 pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
@@ -674,12 +683,12 @@ where
 
 impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
     type Options = glsl::Version;
+    type Context = GlslangCompileContext;
 
-    // todo: compile should consume self
     fn compile(
-        &mut self,
+        mut self,
         version: Self::Options,
-    ) -> Result<ShaderCompilerOutput<String, Vec<u32>>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
         let mut options: glsl::CompilerOptions = Default::default();
         options.version = version;
         options.fragment.default_float_precision = glsl::Precision::High;
@@ -797,16 +806,23 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: texture_fixups,
+            context: GlslangCompileContext {
+                texture_fixups,
+                compiler: CompiledAst {
+                    vertex: self.vertex,
+                    fragment: self.fragment
+                }
+            },
         })
     }
 }
 
 impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
     type Options = Option<()>;
+    type Context = ();
 
     fn compile(
-        &mut self,
+        mut self,
         _options: Self::Options,
     ) -> Result<ShaderCompilerOutput<String>, ShaderCompileError> {
         let mut options = hlsl::CompilerOptions::default();

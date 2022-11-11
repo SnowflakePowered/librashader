@@ -10,13 +10,6 @@ edition = "2021"
 "librashader-presets" = { path = "../librashader-presets" }
 "librashader-preprocess" = { path = "../librashader-preprocess" }
 "librashader-reflect" = { path = "../librashader-reflect" }
+spirv_cross = "0.23.1"
 rustc-hash = "1.1.0"
-
-[dependencies.windows]
-version = "0.43.0"
-features = [
-    "Win32_Foundation",
-    "Win32_Graphics_Dxgi_Common",
-    "Win32_Graphics_Direct3D",
-    "Win32_Graphics_Direct3D11",
-]
+gl = "0.14.0"
