@@ -4,7 +4,7 @@ use std::path::Path;
 use rustc_hash::FxHashMap;
 use librashader::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::{CompileShader, ShaderCompiler};
+use librashader_reflect::back::{CompileShader};
 use librashader_reflect::back::targets::{FromCompilation, HLSL};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::cross::{CrossReflect};

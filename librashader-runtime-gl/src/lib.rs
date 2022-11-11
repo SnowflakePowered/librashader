@@ -94,26 +94,19 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let mut compiled = Vec::new();
 
     for (index, (config, source, reflect)) in passes.iter_mut().enumerate() {
-        let reflection = reflect.reflect(index as u32, &semantics)
-            .unwrap();
-
-
-        let glsl = reflect.compile(GlVersion::V4_60)
-            .unwrap();
-
-        eprintln!("{:#}", glsl.vertex);
-        eprintln!("{:#}", glsl.fragment);
+        let reflection = reflect.reflect(index as u32, &semantics)?;
+        let glsl = reflect.compile(GlVersion::V4_60)?;
 
         // shader_gl3: 1375
-        // reflection.meta.texture_meta.get(&SemanticMap {
-        //     semantics: TextureSemantics::PassOutput,
-        //     index: 0
-        // }).unwrap().binding;
+        reflection.meta.texture_meta.get(&SemanticMap {
+            semantics: TextureSemantics::Source,
+            index: 0
+        }).unwrap().binding;
 
         compiled.push(glsl);
         reflections.push(reflection);
-
     }
+
 
     // todo: build gl semantics
 

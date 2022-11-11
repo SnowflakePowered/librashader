@@ -1,9 +1,9 @@
 use crate::back::targets::{CompilerBackend, FromCompilation, GLSL, HLSL};
 use crate::back::CompileShader;
-use crate::error::{ShaderCompileError, ShaderReflectError};
+use crate::error::ShaderReflectError;
 use crate::front::shaderc::GlslangCompilation;
 use crate::reflect::cross::{GlslReflect, HlslReflect};
-use crate::reflect::{ReflectShader, ShaderReflection};
+use crate::reflect::ReflectShader;
 
 pub type GlVersion = spirv_cross::glsl::Version;
 impl FromCompilation<GlslangCompilation> for GLSL {

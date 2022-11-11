@@ -1,7 +1,6 @@
-use crate::back::CompiledShader;
+use crate::back::ShaderCompilerOutput;
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::reflect::{ReflectSemantics, ReflectShader, ShaderReflection};
-use std::marker::PhantomData;
 
 pub trait OutputTarget {
     type Output;
@@ -43,7 +42,7 @@ pub trait CompileShader<T: OutputTarget> {
     fn compile(
         &mut self,
         options: Self::Options,
-    ) -> Result<CompiledShader<T::Output, T::AdditionalContext>, ShaderCompileError>;
+    ) -> Result<ShaderCompilerOutput<T::Output, T::AdditionalContext>, ShaderCompileError>;
 }
 
 impl<T> ReflectShader for CompilerBackend<T>
@@ -69,16 +68,16 @@ where
     fn compile(
         &mut self,
         options: Self::Options,
-    ) -> Result<CompiledShader<E::Output, E::AdditionalContext>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<E::Output, E::AdditionalContext>, ShaderCompileError> {
         self.backend.compile(options)
     }
 }
 
 mod test {
-    use crate::back::targets::{CompilerBackend, FromCompilation, GLSL};
+    use crate::back::targets::{FromCompilation, GLSL};
     use crate::front::shaderc::GlslangCompilation;
     pub fn huh(value: GlslangCompilation) {
-        let x = GLSL::from_compilation(value).unwrap();
+        let _x = GLSL::from_compilation(value).unwrap();
     }
 }
 

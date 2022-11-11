@@ -1,22 +1,20 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
 use crate::reflect::semantics::{
-    BindingStage, MemberOffset, PushReflection, SemanticMap, ShaderReflection, TextureImage,
-    TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics,
-    VariableMeta, VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
+    BindingStage, MemberOffset, PushReflection, ShaderReflection, TextureImage, TextureSemantics,
+    TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta,
+    VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{
-    ReflectMeta, ReflectSemantics, ReflectShader, TextureSemanticMap, UniformSemantic,
-    VariableSemanticMap,
+    ReflectMeta, ReflectSemantics, ReflectShader, TextureSemanticMap, VariableSemanticMap,
 };
-use rustc_hash::FxHashMap;
+
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{glsl, hlsl, ErrorCode};
 
 use crate::back::targets::{GLSL, HLSL};
-use crate::back::{CompileShader, CompiledShader};
-use std::str::FromStr;
+use crate::back::{CompileShader, ShaderCompilerOutput};
 
 pub struct CrossReflect<T>
 where
@@ -99,8 +97,8 @@ where
         let vertex_module = Module::from_words(value.vertex.as_binary());
         let fragment_module = Module::from_words(value.fragment.as_binary());
 
-        let mut vertex = Ast::parse(&vertex_module)?;
-        let mut fragment = Ast::parse(&fragment_module)?;
+        let vertex = Ast::parse(&vertex_module)?;
+        let fragment = Ast::parse(&fragment_module)?;
 
         Ok(CrossReflect { vertex, fragment })
     }
@@ -681,7 +679,7 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
     fn compile(
         &mut self,
         version: Self::Options,
-    ) -> Result<CompiledShader<String, Vec<u32>>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<String, Vec<u32>>, ShaderCompileError> {
         let mut options: glsl::CompilerOptions = Default::default();
         options.version = version;
         options.fragment.default_float_precision = glsl::Precision::High;
@@ -796,7 +794,7 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             texture_fixups.push(binding);
         }
 
-        Ok(CompiledShader {
+        Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
             context: texture_fixups,
@@ -810,14 +808,14 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
     fn compile(
         &mut self,
         _options: Self::Options,
-    ) -> Result<CompiledShader<String>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<String>, ShaderCompileError> {
         let mut options = hlsl::CompilerOptions::default();
         options.shader_model = ShaderModel::V5_0;
 
         self.vertex.set_compiler_options(&options)?;
         self.fragment.set_compiler_options(&options)?;
 
-        Ok(CompiledShader {
+        Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
             context: (),
