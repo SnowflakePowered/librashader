@@ -16,5 +16,5 @@ rustc-hash = "1.1.0"
 rspirv = "0.11.0+1.5.4"
 
 rspirv-reflect = { git = "https://github.com/Traverse-Research/rspirv-reflect" }
+
 [dev-dependencies]
-librashader-preprocess = { path = "../librashader-preprocess", default-features = false }

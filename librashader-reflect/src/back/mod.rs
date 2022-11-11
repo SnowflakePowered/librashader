@@ -1,8 +1,11 @@
+pub mod cross;
 pub mod targets;
-mod cross;
 
 use std::fmt::Debug;
-pub use targets::ShaderCompiler;
+use rustc_hash::FxHashMap;
+pub use targets::CompileShader;
+use crate::reflect::semantics::{SemanticMap, TextureSemantics};
+use crate::reflect::UniformSemantic;
 
 #[derive(Debug)]
 pub struct CompiledShader<Source, Context = ()> {
@@ -10,4 +13,3 @@ pub struct CompiledShader<Source, Context = ()> {
     pub fragment: Source,
     pub context: Context,
 }
-

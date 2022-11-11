@@ -5,10 +5,11 @@ use rustc_hash::FxHashMap;
 
 use librashader::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::ShaderCompiler;
-use librashader_reflect::back::targets::GLSL;
+use librashader_reflect::back::CompileShader;
+use librashader_reflect::back::cross::GlVersion;
+use librashader_reflect::back::targets::{FromCompilation, GLSL};
 use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::cross::{CrossReflect, GlslOptions, GlslReflect, HlslOptions, HlslReflect};
+use librashader_reflect::reflect::cross::CrossReflect;
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
 use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, VariableSemantics};
 use librashader_reflect::reflect::{TextureSemanticMap, VariableSemanticMap};
@@ -50,13 +51,13 @@ pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSema
 
 pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let preset = librashader_presets::ShaderPreset::try_parse(path)?;
-    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, GLSL)> = preset.shaders.iter()
+    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, _)> = preset.shaders.iter()
         .map(|shader| {
             let source = librashader_preprocess::load_shader_source(&shader.name)
                 .unwrap();
             let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)
                 .unwrap();
-            let mut reflect = librashader_reflect::back::targets::GLSL::try_from(spirv).unwrap();
+            let mut reflect = GLSL::from_compilation(spirv).unwrap();
             (shader, source, reflect)
         }).collect();
 
@@ -97,17 +98,17 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
             .unwrap();
 
 
-        let glsl = reflect.compile(None)
+        let glsl = reflect.compile(GlVersion::V4_60)
             .unwrap();
 
         eprintln!("{:#}", glsl.vertex);
         eprintln!("{:#}", glsl.fragment);
 
         // shader_gl3: 1375
-        reflection.meta.texture_meta.get(&SemanticMap {
-            semantics: TextureSemantics::PassOutput,
-            index: 0
-        }).unwrap().binding;
+        // reflection.meta.texture_meta.get(&SemanticMap {
+        //     semantics: TextureSemantics::PassOutput,
+        //     index: 0
+        // }).unwrap().binding;
 
         compiled.push(glsl);
         reflections.push(reflection);

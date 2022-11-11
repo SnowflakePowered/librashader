@@ -1,10 +1,9 @@
-use std::str::FromStr;
-use crate::error::{ShaderReflectError};
+use crate::error::ShaderReflectError;
 use crate::reflect::semantics::{
-    SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta,
-    VariableSemantics,
+    SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
 };
 use rustc_hash::FxHashMap;
+use std::str::FromStr;
 
 pub mod cross;
 mod naga;
@@ -12,7 +11,11 @@ mod rspirv;
 pub mod semantics;
 
 pub trait ReflectShader {
-    fn reflect(&mut self, pass_number: u32, semantics: &ReflectSemantics) -> Result<ShaderReflection, ShaderReflectError>;
+    fn reflect(
+        &mut self,
+        pass_number: u32,
+        semantics: &ReflectSemantics,
+    ) -> Result<ShaderReflection, ShaderReflectError>;
 }
 
 pub trait TextureSemanticMap<T> {

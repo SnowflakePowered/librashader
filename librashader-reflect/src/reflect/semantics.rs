@@ -1,4 +1,3 @@
-
 use crate::reflect::ReflectMeta;
 use bitflags::bitflags;
 
@@ -143,4 +142,3 @@ pub struct ShaderReflection {
     pub push_constant: Option<PushReflection>,
     pub meta: ReflectMeta,
 }
-

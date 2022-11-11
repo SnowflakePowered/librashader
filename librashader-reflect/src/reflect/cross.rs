@@ -5,15 +5,18 @@ use crate::reflect::semantics::{
     TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics,
     VariableMeta, VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
-use crate::reflect::{ReflectMeta, ReflectSemantics, ReflectShader, TextureSemanticMap, UniformSemantic, VariableSemanticMap};
+use crate::reflect::{
+    ReflectMeta, ReflectSemantics, ReflectShader, TextureSemanticMap, UniformSemantic,
+    VariableSemanticMap,
+};
 use rustc_hash::FxHashMap;
-use spirv_cross::hlsl::{ShaderModel};
+use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
-use spirv_cross::{hlsl, ErrorCode, glsl};
+use spirv_cross::{glsl, hlsl, ErrorCode};
 
+use crate::back::targets::{GLSL, HLSL};
+use crate::back::{CompileShader, CompiledShader};
 use std::str::FromStr;
-use spirv_cross::glsl::{Precision, Version};
-use crate::back::{CompiledShader, ShaderCompiler};
 
 pub struct CrossReflect<T>
 where
@@ -23,8 +26,8 @@ where
     fragment: Ast<T>,
 }
 
-pub type HlslReflect = CrossReflect<hlsl::Target>;
-pub type GlslReflect = CrossReflect<glsl::Target>;
+pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
+pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
 
 impl ValidateTypeSemantics<Type> for VariableSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
@@ -84,7 +87,12 @@ impl ValidateTypeSemantics<Type> for TextureSemantics {
     }
 }
 
-impl TryFrom<GlslangCompilation> for CrossReflect<hlsl::Target> {
+impl<T> TryFrom<GlslangCompilation> for CrossReflect<T>
+where
+    T: spirv_cross::spirv::Target,
+    Ast<T>: spirv_cross::spirv::Compile<T>,
+    Ast<T>: spirv_cross::spirv::Parse<T>,
+{
     type Error = ShaderReflectError;
 
     fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
@@ -93,30 +101,6 @@ impl TryFrom<GlslangCompilation> for CrossReflect<hlsl::Target> {
 
         let mut vertex = Ast::parse(&vertex_module)?;
         let mut fragment = Ast::parse(&fragment_module)?;
-
-        let mut options = hlsl::CompilerOptions::default();
-        options.shader_model = ShaderModel::V5_0;
-        fragment.set_compiler_options(&options)?;
-        vertex.set_compiler_options(&options)?;
-
-        Ok(CrossReflect { vertex, fragment })
-    }
-}
-
-impl TryFrom<GlslangCompilation> for CrossReflect<glsl::Target> {
-    type Error = ShaderReflectError;
-
-    fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
-        let vertex_module = Module::from_words(value.vertex.as_binary());
-        let fragment_module = Module::from_words(value.fragment.as_binary());
-
-        let mut vertex = Ast::parse(&vertex_module)?;
-        let mut fragment = Ast::parse(&fragment_module)?;
-
-        let mut options = glsl::CompilerOptions::default();
-        options.version = Version::V3_30;
-        fragment.set_compiler_options(&options)?;
-        vertex.set_compiler_options(&options)?;
 
         Ok(CrossReflect { vertex, fragment })
     }
@@ -430,11 +414,13 @@ where
         fragment_ubo: Option<&Resource>,
     ) -> Result<Option<UboReflection>, ShaderReflectError> {
         if let Some(vertex_ubo) = vertex_ubo {
-            self.vertex.set_decoration(vertex_ubo.id, Decoration::Binding, 0)?;
+            self.vertex
+                .set_decoration(vertex_ubo.id, Decoration::Binding, 0)?;
         }
 
         if let Some(fragment_ubo) = fragment_ubo {
-            self.fragment.set_decoration(fragment_ubo.id, Decoration::Binding, 0)?;
+            self.fragment
+                .set_decoration(fragment_ubo.id, Decoration::Binding, 0)?;
         }
 
         match (vertex_ubo, fragment_ubo) {
@@ -490,9 +476,7 @@ where
             return Err(SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(texture.name.to_string())))
         };
 
-        if semantic.semantics == TextureSemantics::PassOutput
-            && semantic.index >= pass_number
-        {
+        if semantic.semantics == TextureSemantics::PassOutput && semantic.index >= pass_number {
             return Err(ShaderReflectError::NonCausalFilterChain {
                 pass: pass_number,
                 target: semantic.index,
@@ -542,13 +526,14 @@ where
         fragment_pcb: Option<&Resource>,
     ) -> Result<Option<PushReflection>, ShaderReflectError> {
         if let Some(vertex_pcb) = vertex_pcb {
-            self.vertex.set_decoration(vertex_pcb.id, Decoration::Binding, 1)?;
+            self.vertex
+                .set_decoration(vertex_pcb.id, Decoration::Binding, 1)?;
         }
 
         if let Some(fragment_pcb) = fragment_pcb {
-            self.fragment.set_decoration(fragment_pcb.id, Decoration::Binding, 1)?;
+            self.fragment
+                .set_decoration(fragment_pcb.id, Decoration::Binding, 1)?;
         }
-
 
         match (vertex_pcb, fragment_pcb) {
             (None, None) => Ok(None),
@@ -597,7 +582,11 @@ where
     Ast<T>: spirv_cross::spirv::Compile<T>,
     Ast<T>: spirv_cross::spirv::Parse<T>,
 {
-    fn reflect(&mut self, pass_number: u32, semantics: &ReflectSemantics) -> Result<ShaderReflection, ShaderReflectError> {
+    fn reflect(
+        &mut self,
+        pass_number: u32,
+        semantics: &ReflectSemantics,
+    ) -> Result<ShaderReflection, ShaderReflectError> {
         let vertex_res = self.vertex.get_shader_resources()?;
         let fragment_res = self.fragment.get_shader_resources()?;
         self.validate(&vertex_res, &fragment_res)?;
@@ -685,19 +674,18 @@ where
     }
 }
 
-pub type GlslOptions = glsl::CompilerOptions;
-
-impl ShaderCompiler<crate::back::targets::GLSL> for CrossReflect<glsl::Target> {
-    type Output = String;
-    type Context = Vec<u32>;
+impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
+    type Options = glsl::Version;
 
     // todo: compile should consume self
-    fn compile(&mut self, _options: Self::Options) -> Result<CompiledShader<Self::Output, Self::Context>, ShaderCompileError> {
-        let mut options: GlslOptions = Default::default();
-        // todo: allow adjust ogl version
-        options.version = Version::V4_60;
-        options.fragment.default_float_precision = Precision::High;
-        options.fragment.default_int_precision = Precision::High;
+    fn compile(
+        &mut self,
+        version: Self::Options,
+    ) -> Result<CompiledShader<String, Vec<u32>>, ShaderCompileError> {
+        let mut options: glsl::CompilerOptions = Default::default();
+        options.version = version;
+        options.fragment.default_float_precision = glsl::Precision::High;
+        options.fragment.default_int_precision = glsl::Precision::High;
         options.enable_420_pack_extension = false;
 
         self.vertex.set_compiler_options(&options)?;
@@ -708,33 +696,46 @@ impl ShaderCompiler<crate::back::targets::GLSL> for CrossReflect<glsl::Target> {
 
         for res in &vertex_resources.stage_inputs {
             let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
-            self.vertex.set_name(res.id, &format!("RARCH_ATTRIBUTE_{location}"))?;
+            self.vertex
+                .set_name(res.id, &format!("RARCH_ATTRIBUTE_{location}"))?;
             self.vertex.unset_decoration(res.id, Decoration::Location)?;
         }
         for res in &vertex_resources.stage_outputs {
             let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
-            self.vertex.set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
+            self.vertex
+                .set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
             self.vertex.unset_decoration(res.id, Decoration::Location)?;
         }
         for res in &fragment_resources.stage_inputs {
             let location = self.fragment.get_decoration(res.id, Decoration::Location)?;
-            self.fragment.set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
-            self.fragment.unset_decoration(res.id, Decoration::Location)?;
+            self.fragment
+                .set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
+            self.fragment
+                .unset_decoration(res.id, Decoration::Location)?;
         }
 
         if vertex_resources.push_constant_buffers.len() > 1 {
-            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one push constant buffer"))));
+            return Err(ShaderCompileError::SpirvCrossCompileError(
+                ErrorCode::CompilationError(String::from(
+                    "Cannot have more than one push constant buffer",
+                )),
+            ));
         }
         for res in &vertex_resources.push_constant_buffers {
             self.vertex.set_name(res.id, "RARCH_PUSH_VERTEX_INSTANCE")?;
-            self.vertex.set_name(res.base_type_id, "RARCH_PUSH_VERTEX")?;
+            self.vertex
+                .set_name(res.base_type_id, "RARCH_PUSH_VERTEX")?;
         }
 
         // todo: options
         let flatten = false;
 
         if vertex_resources.uniform_buffers.len() > 1 {
-            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one uniform buffer"))));
+            return Err(ShaderCompileError::SpirvCrossCompileError(
+                ErrorCode::CompilationError(String::from(
+                    "Cannot have more than one uniform buffer",
+                )),
+            ));
         }
         for res in &vertex_resources.uniform_buffers {
             if flatten {
@@ -742,56 +743,74 @@ impl ShaderCompiler<crate::back::targets::GLSL> for CrossReflect<glsl::Target> {
             }
             self.vertex.set_name(res.id, "RARCH_UBO_VERTEX_INSTANCE")?;
             self.vertex.set_name(res.base_type_id, "RARCH_UBO_VERTEX")?;
-            self.vertex.unset_decoration(res.id, Decoration::DescriptorSet)?;
+            self.vertex
+                .unset_decoration(res.id, Decoration::DescriptorSet)?;
             self.vertex.unset_decoration(res.id, Decoration::Binding)?;
-
         }
 
         if fragment_resources.push_constant_buffers.len() > 1 {
-            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one push constant buffer"))));
+            return Err(ShaderCompileError::SpirvCrossCompileError(
+                ErrorCode::CompilationError(String::from(
+                    "Cannot have more than one push constant buffer",
+                )),
+            ));
         }
         for res in &fragment_resources.push_constant_buffers {
-            self.fragment.set_name(res.id, "RARCH_PUSH_FRAGMENT_INSTANCE")?;
-            self.fragment.set_name(res.base_type_id, "RARCH_PUSH_FRAGMENT")?;
+            self.fragment
+                .set_name(res.id, "RARCH_PUSH_FRAGMENT_INSTANCE")?;
+            self.fragment
+                .set_name(res.base_type_id, "RARCH_PUSH_FRAGMENT")?;
         }
 
         if fragment_resources.uniform_buffers.len() > 1 {
-            return Err(ShaderCompileError::SpirvCrossCompileError(ErrorCode::CompilationError(String::from("Cannot have more than one uniform buffer"))));
+            return Err(ShaderCompileError::SpirvCrossCompileError(
+                ErrorCode::CompilationError(String::from(
+                    "Cannot have more than one uniform buffer",
+                )),
+            ));
         }
 
         for res in &fragment_resources.uniform_buffers {
             if flatten {
                 self.fragment.flatten_buffer_block(res.id)?;
             }
-            self.fragment.set_name(res.id, "RARCH_UBO_FRAGMENT_INSTANCE")?;
-            self.fragment.set_name(res.base_type_id, "RARCH_UBO_FRAGMENT")?;
-            self.fragment.unset_decoration(res.id, Decoration::DescriptorSet)?;
-            self.fragment.unset_decoration(res.id, Decoration::Binding)?;
+            self.fragment
+                .set_name(res.id, "RARCH_UBO_FRAGMENT_INSTANCE")?;
+            self.fragment
+                .set_name(res.base_type_id, "RARCH_UBO_FRAGMENT")?;
+            self.fragment
+                .unset_decoration(res.id, Decoration::DescriptorSet)?;
+            self.fragment
+                .unset_decoration(res.id, Decoration::Binding)?;
         }
 
         let mut texture_fixups = Vec::new();
         for res in &fragment_resources.sampled_images {
             let binding = self.fragment.get_decoration(res.id, Decoration::Binding)?;
-            self.fragment.set_name(res.id, &format!("RARCH_TEXTURE_{binding}"))?;
-            self.fragment.unset_decoration(res.id, Decoration::DescriptorSet)?;
-            self.fragment.unset_decoration(res.id, Decoration::Binding)?;
+            self.fragment
+                .set_name(res.id, &format!("RARCH_TEXTURE_{binding}"))?;
+            self.fragment
+                .unset_decoration(res.id, Decoration::DescriptorSet)?;
+            self.fragment
+                .unset_decoration(res.id, Decoration::Binding)?;
             texture_fixups.push(binding);
         }
 
         Ok(CompiledShader {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: texture_fixups
+            context: texture_fixups,
         })
     }
 }
 
-pub type HlslOptions = hlsl::CompilerOptions;
+impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
+    type Options = Option<()>;
 
-impl ShaderCompiler<crate::back::targets::HLSL> for CrossReflect<hlsl::Target> {
-    type Output = String;
-
-    fn compile(&mut self, _options: Self::Options) -> Result<CompiledShader<Self::Output>, ShaderCompileError> {
+    fn compile(
+        &mut self,
+        _options: Self::Options,
+    ) -> Result<CompiledShader<String>, ShaderCompileError> {
         let mut options = hlsl::CompilerOptions::default();
         options.shader_model = ShaderModel::V5_0;
 
@@ -801,47 +820,51 @@ impl ShaderCompiler<crate::back::targets::HLSL> for CrossReflect<hlsl::Target> {
         Ok(CompiledShader {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: ()
+            context: (),
         })
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use rustc_hash::FxHashMap;
     use crate::reflect::cross::CrossReflect;
     use crate::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
-    
-    use spirv_cross::{glsl, hlsl};
-    use spirv_cross::glsl::{CompilerOptions, Version};
-    use crate::back::ShaderCompiler;
+    use rustc_hash::FxHashMap;
+
+    use crate::back::CompileShader;
     use crate::reflect::semantics::{SemanticMap, VariableSemantics};
+    use spirv_cross::glsl::{CompilerOptions, Version};
+    use spirv_cross::{glsl, hlsl};
 
     #[test]
     pub fn test_into() {
         let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-        
+
         for (index, param) in result.parameters.iter().enumerate() {
-            uniform_semantics.insert(param.id.clone(), UniformSemantic::Variable(SemanticMap {
-                semantics: VariableSemantics::FloatParameter,
-                index: index as u32
-            }));
+            uniform_semantics.insert(
+                param.id.clone(),
+                UniformSemantic::Variable(SemanticMap {
+                    semantics: VariableSemantics::FloatParameter,
+                    index: index as u32,
+                }),
+            );
         }
         let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
         let mut reflect = CrossReflect::<glsl::Target>::try_from(spirv).unwrap();
         let shader_reflection = reflect
-            .reflect(0, &ReflectSemantics {
-                uniform_semantics,
-                non_uniform_semantics: Default::default(),
-            })
+            .reflect(
+                0,
+                &ReflectSemantics {
+                    uniform_semantics,
+                    non_uniform_semantics: Default::default(),
+                },
+            )
             .unwrap();
         let mut opts = CompilerOptions::default();
         opts.version = Version::V4_60;
         opts.enable_420_pack_extension = false;
-        let compiled = reflect.compile(&opts, &shader_reflection)
-            .unwrap();
+        let compiled = reflect.compile(&opts, &shader_reflection).unwrap();
         // eprintln!("{shader_reflection:#?}");
         eprintln!("{:#}", compiled.fragment)
         // let mut loader = rspirv::dr::Loader::new();

@@ -4,10 +4,10 @@ use std::path::Path;
 use rustc_hash::FxHashMap;
 use librashader::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::ShaderCompiler;
-use librashader_reflect::back::targets::HLSL;
+use librashader_reflect::back::{CompileShader, ShaderCompiler};
+use librashader_reflect::back::targets::{FromCompilation, HLSL};
 use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::cross::{CrossReflect, HlslOptions, HlslReflect};
+use librashader_reflect::reflect::cross::{CrossReflect};
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
 use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, VariableSemantics};
 
@@ -49,13 +49,13 @@ pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSema
 
 pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let preset = librashader_presets::ShaderPreset::try_parse(path)?;
-    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, HLSL)> = preset.shaders.iter()
+    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, _)> = preset.shaders.iter()
         .map(|shader| {
             let source = librashader_preprocess::load_shader_source(&shader.name)
                 .unwrap();
             let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)
                 .unwrap();
-            let mut reflect = librashader_reflect::back::targets::HLSL::try_from(spirv).unwrap();
+            let mut reflect = HLSL::from_compilation(spirv).unwrap();
             (shader, source, reflect)
         }).collect();
 
