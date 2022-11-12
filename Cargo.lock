@@ -256,6 +256,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cty"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
+
+[[package]]
 name = "derive_arbitrary"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -324,6 +330,28 @@ dependencies = [
  "khronos_api",
  "log",
  "xml-rs",
+]
+
+[[package]]
+name = "glfw"
+version = "0.47.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2c532509718cb34e0c449ec5ef74529c1af3a33b664e6b8ddfe29252f86f936"
+dependencies = [
+ "bitflags",
+ "glfw-sys",
+ "objc",
+ "raw-window-handle",
+ "winapi",
+]
+
+[[package]]
+name = "glfw-sys"
+version = "4.0.0+3.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5abed6d39a50226676aab893d6b4ad154da7e93fcdfed90d7696758a1b477ed1"
+dependencies = [
+ "cmake",
 ]
 
 [[package]]
@@ -481,6 +509,7 @@ name = "librashader-runtime-gl"
 version = "0.1.0"
 dependencies = [
  "gl",
+ "glfw",
  "librashader",
  "librashader-preprocess",
  "librashader-presets",
@@ -496,6 +525,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "malloc_buf"
+version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -588,6 +626,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1"
+dependencies = [
+ "malloc_buf",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -662,6 +709,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbe448f377a7d6961e30f5955f9b8d106c3f5e449d493ee1b125c1d43c2b5179"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "raw-window-handle"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b800beb9b6e7d2df1fe337c9e3d04e3af22a124460fb4c30fcc22c9117cefb41"
+dependencies = [
+ "cty",
 ]
 
 [[package]]

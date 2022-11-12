@@ -1,3 +1,5 @@
+mod hello_triangle;
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
@@ -97,7 +99,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let mut reflections = Vec::new();
     let mut compiled = Vec::new();
 
-    for (index, (config, source, reflect)) in passes.iter_mut().enumerate() {
+    for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
         let reflection = reflect.reflect(index as u32, &semantics)?;
         let glsl = reflect.compile(GlVersion::V4_60)?;
 
@@ -158,6 +160,12 @@ unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn triangle() {
+        let (glfw, window, events, shader, vao) = hello_triangle::setup();
+        hello_triangle::do_loop(glfw, window, events, shader, vao);
+    }
 
     #[test]
     fn load_preset() {
