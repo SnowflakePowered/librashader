@@ -6,14 +6,14 @@ use crate::reflect::cross::{CompiledAst, CrossReflect, GlslReflect, HlslReflect}
 use crate::reflect::ReflectShader;
 
 pub type GlVersion = spirv_cross::glsl::Version;
-pub struct GlslangCompileContext {
+pub struct GlslangGlslContext {
     pub texture_fixups: Vec<u32>,
     pub compiler: CompiledAst<spirv_cross::glsl::Target>
 }
 impl FromCompilation<GlslangCompilation> for GLSL {
     type Target = GLSL;
     type Options = GlVersion;
-    type Context = GlslangCompileContext;
+    type Context = GlslangGlslContext;
 
     fn from_compilation(
         compile: GlslangCompilation,

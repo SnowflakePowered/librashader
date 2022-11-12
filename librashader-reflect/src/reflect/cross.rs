@@ -15,7 +15,7 @@ use spirv_cross::{glsl, hlsl, ErrorCode};
 
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
-use crate::back::cross::GlslangCompileContext;
+use crate::back::cross::GlslangGlslContext;
 
 pub struct CrossReflect<T>
 where
@@ -291,7 +291,6 @@ where
         blame: SemanticErrorBlame,
     ) -> Result<(), ShaderReflectError> {
         let ranges = ast.get_active_buffer_ranges(resource.id)?;
-        eprintln!("{ranges:?}");
         for range in ranges {
             let name = ast.get_member_name(resource.base_type_id, range.index)?;
             let ubo_type = ast.get_type(resource.base_type_id)?;
@@ -333,6 +332,7 @@ where
                             meta.parameter_meta.insert(
                                 parameter.index,
                                 VariableMeta {
+                                    id: name,
                                     offset,
                                     components: typeinfo.size,
                                 },
@@ -360,6 +360,7 @@ where
                             meta.variable_meta.insert(
                                 *semantics,
                                 VariableMeta {
+                                    id: name,
                                     offset,
                                     components: typeinfo.size * typeinfo.columns,
                                 },
@@ -381,6 +382,7 @@ where
                     }
                 }
 
+                // this will break if range is both ubo and push buf whatever
                 let offset = offset_type(range.offset);
                 if let Some(meta) = meta.texture_size_meta.get_mut(&texture) {
                     if offset != meta.offset {
@@ -405,6 +407,7 @@ where
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                                 SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
                             },
+                            id: name
                         },
                     );
                 }
@@ -683,7 +686,7 @@ where
 
 impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
     type Options = glsl::Version;
-    type Context = GlslangCompileContext;
+    type Context = GlslangGlslContext;
 
     fn compile(
         mut self,
@@ -745,9 +748,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             ));
         }
         for res in &vertex_resources.uniform_buffers {
-            if flatten {
-                self.vertex.flatten_buffer_block(res.id)?;
-            }
+            // if flatten {
+            //     self.vertex.flatten_buffer_block(res.id)?;
+            // }
             self.vertex.set_name(res.id, "RARCH_UBO_VERTEX_INSTANCE")?;
             self.vertex.set_name(res.base_type_id, "RARCH_UBO_VERTEX")?;
             self.vertex
@@ -778,9 +781,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         }
 
         for res in &fragment_resources.uniform_buffers {
-            if flatten {
-                self.fragment.flatten_buffer_block(res.id)?;
-            }
+            // if flatten {
+            //     self.fragment.flatten_buffer_block(res.id)?;
+            // }
             self.fragment
                 .set_name(res.id, "RARCH_UBO_FRAGMENT_INSTANCE")?;
             self.fragment
@@ -806,7 +809,7 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: GlslangCompileContext {
+            context: GlslangGlslContext {
                 texture_fixups,
                 compiler: CompiledAst {
                     vertex: self.vertex,

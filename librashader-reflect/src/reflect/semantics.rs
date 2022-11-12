@@ -122,6 +122,7 @@ pub struct VariableMeta {
     // this might bite us in the back because retroarch keeps separate UBO/push offsets.. eh
     pub offset: MemberOffset,
     pub components: u32,
+    pub id: String,
 }
 
 #[derive(Debug)]
@@ -129,6 +130,7 @@ pub struct TextureSizeMeta {
     // this might bite us in the back because retroarch keeps separate UBO/push offsets..
     pub offset: MemberOffset,
     pub stage_mask: BindingStage,
+    pub id: String,
 }
 
 #[derive(Debug)]
