@@ -148,30 +148,26 @@ pub fn reflect_parameter(pipeline: GLuint, meta: &VariableMeta) -> ParameterLoca
 
 pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let preset = librashader_presets::ShaderPreset::try_parse(path)?;
-    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, _)> = preset.shaders.iter()
+    let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
+    let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> = Default::default();
+
+    let mut passes: Vec<(&ShaderPassConfig, ShaderSource,  _)> = preset.shaders.iter()
         .map(|shader| {
-            let source = librashader_preprocess::load_shader_source(&shader.name)
+            eprintln!("[gl] loading {}", &shader.name.display());
+            let source: ShaderSource = librashader_preprocess::load_shader_source(&shader.name)
                 .unwrap();
+
             let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)
                 .unwrap();
             let mut reflect = GLSL::from_compilation(spirv).unwrap();
+
             (shader, source, reflect)
         }).collect();
 
     // todo: this can probably be extracted out.
-    let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-    let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> = Default::default();
 
     for details in &passes {
         load_pass_semantics(&mut uniform_semantics, &mut texture_semantics, details.0)
-    }
-
-    // add float params
-    for (index, parameter) in preset.parameters.iter().enumerate() {
-        uniform_semantics.insert(parameter.name.clone(), UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::FloatParameter,
-            index: index as u32
-        }));
     }
 
     // add lut params
@@ -180,6 +176,11 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
             semantics: TextureSemantics::User,
             index: index as u32
         });
+
+        uniform_semantics.insert(format!("{}Size", texture.name), UniformSemantic::Texture(SemanticMap {
+            semantics: TextureSemantics::User,
+            index: index as u32
+        }));
     }
 
     let semantics = ReflectSemantics {
@@ -190,7 +191,18 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let mut filters = Vec::new();
 
     for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+        let mut semantics = semantics.clone();
+
+        // insert parameters parsed from source
+        for (index, parameter) in source.parameters.iter().enumerate() {
+            semantics.uniform_semantics.insert(parameter.id.clone(), UniformSemantic::Variable(SemanticMap {
+                semantics: VariableSemantics::FloatParameter,
+                index: index as u32
+            }));
+        }
+
         let reflection = reflect.reflect(index as u32, &semantics)?;
+
         let glsl = reflect.compile(GlVersion::V4_60)?;
 
         let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
@@ -268,14 +280,14 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
         }
 
 
-        eprintln!("{:#?}", semantics);
+        // eprintln!("{:#?}", semantics);
         eprintln!("{:#?}", reflection.meta);
         eprintln!("{:#?}", locations);
         eprintln!("{:#?}", reflection.push_constant);
-        eprintln!("====fragment====");
-        eprintln!("{:#}", glsl.fragment);
-        eprintln!("====vertex====");
-        eprintln!("{:#}", glsl.vertex);
+        // eprintln!("====fragment====");
+        // eprintln!("{:#}", glsl.fragment);
+        // eprintln!("====vertex====");
+        // eprintln!("{:#}", glsl.vertex);
 
         filters.push(FilterPass {
             reflection,
@@ -328,7 +340,8 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-            load("../test/basic.slangp")
+            // load("../test/basic.slangp")
+        load("../test/slang-shaders/crt/crt-royale.slangp")
                 .unwrap();
         hello_triangle::do_loop(glfw, window, events, shader, vao);
     }
