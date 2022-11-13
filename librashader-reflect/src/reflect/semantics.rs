@@ -79,9 +79,9 @@ pub trait ValidateTypeSemantics<T> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct SemanticMap<T> {
+pub struct SemanticMap<T, I=u32> {
     pub semantics: T,
-    pub index: u32,
+    pub index: I,
 }
 
 bitflags! {

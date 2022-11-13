@@ -23,33 +23,33 @@ pub trait TextureSemanticMap<T> {
 }
 
 pub trait VariableSemanticMap<T> {
-    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics>>;
+    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics, ()>>;
 }
 
 impl VariableSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics>> {
+    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics, ()>> {
         match self.get(name) {
             // existing uniforms in the semantic map have priority
             None => match name {
                 "MVP" => Some(SemanticMap {
                     semantics: VariableSemantics::MVP,
-                    index: 0,
+                    index: (),
                 }),
                 "OutputSize" => Some(SemanticMap {
                     semantics: VariableSemantics::Output,
-                    index: 0,
+                    index: (),
                 }),
                 "FinalViewportSize" => Some(SemanticMap {
                     semantics: VariableSemantics::FinalViewport,
-                    index: 0,
+                    index: (),
                 }),
                 "FrameCount" => Some(SemanticMap {
                     semantics: VariableSemantics::FrameCount,
-                    index: 0,
+                    index: (),
                 }),
                 "FrameDirection" => Some(SemanticMap {
                     semantics: VariableSemantics::FrameDirection,
-                    index: 0,
+                    index: (),
                 }),
                 _ => None,
             },
@@ -122,7 +122,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
 
 #[derive(Debug, Clone)]
 pub enum UniformSemantic {
-    Variable(SemanticMap<VariableSemantics>),
+    Variable(SemanticMap<VariableSemantics, ()>),
     Texture(SemanticMap<TextureSemantics>),
 }
 
@@ -134,7 +134,7 @@ pub struct ReflectSemantics {
 
 #[derive(Debug, Default)]
 pub struct ReflectMeta {
-    pub parameter_meta: FxHashMap<u32, VariableMeta>,
+    pub parameter_meta: FxHashMap<String, VariableMeta>,
     pub variable_meta: FxHashMap<VariableSemantics, VariableMeta>,
     pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureImage>,
     pub texture_size_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureSizeMeta>,

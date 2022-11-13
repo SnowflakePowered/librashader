@@ -161,6 +161,13 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
                 .unwrap();
             let mut reflect = GLSL::from_compilation(spirv).unwrap();
 
+            for parameter in source.parameters.iter() {
+                uniform_semantics.insert(parameter.id.clone(), UniformSemantic::Variable(SemanticMap {
+                    semantics: VariableSemantics::FloatParameter,
+                    index: ()
+                }));
+            }
+
             (shader, source, reflect)
         }).collect();
 
@@ -194,12 +201,12 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
         let mut semantics = semantics.clone();
 
         // insert parameters parsed from source
-        for (index, parameter) in source.parameters.iter().enumerate() {
-            semantics.uniform_semantics.insert(parameter.id.clone(), UniformSemantic::Variable(SemanticMap {
-                semantics: VariableSemantics::FloatParameter,
-                index: index as u32
-            }));
-        }
+        // for (index, parameter) in source.parameters.iter().enumerate() {
+        //     semantics.uniform_semantics.insert(parameter.id.clone(), UniformSemantic::Variable(SemanticMap {
+        //         semantics: VariableSemantics::FloatParameter,
+        //         index: 0
+        //     }));
+        // }
 
         let reflection = reflect.reflect(index as u32, &semantics)?;
 
@@ -278,7 +285,6 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
         for param in reflection.meta.variable_meta.values() {
             locations.insert(param.id.clone(), reflect_parameter(program, param));
         }
-
 
         // eprintln!("{:#?}", semantics);
         eprintln!("{:#?}", reflection.meta);

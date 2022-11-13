@@ -313,7 +313,7 @@ where
                 match &parameter.semantics {
                     VariableSemantics::FloatParameter => {
                         let offset = offset_type(range.offset);
-                        if let Some(meta) = meta.parameter_meta.get(&parameter.index) {
+                        if let Some(meta) = meta.parameter_meta.get(&name) {
                             if offset != meta.offset {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name,
@@ -330,7 +330,7 @@ where
                             }
                         } else {
                             meta.parameter_meta.insert(
-                                parameter.index,
+                                name.clone(),
                                 VariableMeta {
                                     id: name,
                                     offset,
@@ -863,7 +863,7 @@ mod test {
                 param.id.clone(),
                 UniformSemantic::Variable(SemanticMap {
                     semantics: VariableSemantics::FloatParameter,
-                    index: index as u32,
+                    index: (),
                 }),
             );
         }
