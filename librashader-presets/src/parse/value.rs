@@ -362,6 +362,14 @@ pub fn parse_values(
             continue;
         }
 
+        // crt-royale uses 'texture_wrap_mode' instead of 'wrap_mode', I have no idea
+        // how this possibly could work in RA, but here it is..
+        if let Ok((_, idx)) = parse_indexed_key("texture_wrap_mode", token.key) {
+            let wrap_mode = WrapMode::from_str(&token.value).unwrap();
+            values.push(Value::WrapMode(idx, wrap_mode));
+            continue;
+        }
+
         if let Ok((_, idx)) = parse_indexed_key("frame_count_mod", token.key) {
             let frame_count_mod = from_ul(token.value)?;
             values.push(Value::FrameCountMod(idx, frame_count_mod));

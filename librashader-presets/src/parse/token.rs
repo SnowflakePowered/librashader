@@ -1,10 +1,10 @@
 use crate::error::ParsePresetError;
 use crate::parse::Span;
 use nom::branch::alt;
-use nom::bytes::complete::is_not;
+use nom::bytes::complete::{is_not, take_until};
 use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
 
-use nom::combinator::{eof, map_res, value};
+use nom::combinator::{eof, map_res, opt, value};
 use nom::error::{ErrorKind, ParseError};
 
 use nom::sequence::{delimited, preceded};
@@ -12,6 +12,7 @@ use nom::{
     bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength,
     InputTake,
 };
+use nom::multi::many0;
 
 #[derive(Debug)]
 pub struct Token<'a> {
@@ -53,7 +54,9 @@ fn parse_assignment(input: Span) -> IResult<Span, ()> {
 }
 
 fn extract_from_quotes(input: Span) -> IResult<Span, Span> {
-    let (input, between) = delimited(char('"'), is_not("\""), preceded(char('"'), eof))(input)?;
+    let (input, between) = delimited(char('"'), is_not("\""), char('"'))(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, _) = eof(input)?;
     Ok((input, between))
 }
 
@@ -90,6 +93,12 @@ fn parse_reference(input: Span) -> IResult<Span, Token> {
 fn parse_key_value(input: Span) -> IResult<Span, Token> {
     let (input, (key, _)) = take_up_to(parse_assignment)(input)?;
     let (input, (_, value)) = map_res(not_line_ending, optional_quotes)(input)?;
+    let (_, value) = take_until::<_, _, nom::error::Error<Span>>("//")(value)
+        .unwrap_or((input, value));
+    let (_, value) = take_until::<_, _, nom::error::Error<Span>>("#")(value)
+        .unwrap_or((input, value));
+    let (_, (_, value)) = map_res(not_line_ending, optional_quotes)(value)?;
+
     Ok((input, Token { key, value }))
 }
 
@@ -155,7 +164,7 @@ mod test {
     #[test]
     fn parses_key_value_line() {
         let parsed = do_lex(TEST);
-        eprintln!("{:?}", parsed)
+        eprintln!("{:#?}", parsed)
     }
 
     // todo: fix
@@ -169,7 +178,7 @@ shader9 = ../../shaders/dogway/hsm-grade.slang
 shaders = 54
 
 shader0 = ../../shaders/base/add-params-all.slang
-alias0 = "CorePass"
+alias0 = "CorePass" # hello
 
 shader1 = ../../shaders/hyllian/cubic/hsm-drez-b-spline-x.slang
 filter_linear1 = false

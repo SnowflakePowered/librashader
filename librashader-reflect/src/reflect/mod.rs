@@ -120,13 +120,13 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UniformSemantic {
     Variable(SemanticMap<VariableSemantics>),
     Texture(SemanticMap<TextureSemantics>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReflectSemantics {
     pub uniform_semantics: FxHashMap<String, UniformSemantic>,
     pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
