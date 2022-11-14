@@ -1,3 +1,6 @@
+#[cfg(feature = "opengl")]
+pub mod gl;
+
 use std::convert::Infallible;
 use std::str::FromStr;
 
@@ -63,6 +66,40 @@ pub enum ShaderFormat {
     R32G32B32A32Uint,
     R32G32B32A32Sint,
     R32G32B32A32Sfloat,
+}
+
+#[repr(i32)]
+#[derive(Copy, Clone, Default, Debug)]
+pub enum FilterMode {
+    #[default]
+    Linear = 0,
+    Nearest,
+    Unspecified,
+}
+
+impl FromStr for WrapMode {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "clamp_to_border" => WrapMode::ClampToBorder,
+            "clamp_to_edge" => WrapMode::ClampToEdge,
+            "repeat" => WrapMode::Repeat,
+            "mirrored_repeat" => WrapMode::MirroredRepeat,
+            _ => WrapMode::ClampToBorder,
+        })
+    }
+}
+
+
+#[repr(i32)]
+#[derive(Copy, Clone, Default, Debug)]
+pub enum WrapMode {
+    #[default]
+    ClampToBorder = 0,
+    ClampToEdge,
+    Repeat,
+    MirroredRepeat,
 }
 
 impl FromStr for ShaderFormat {

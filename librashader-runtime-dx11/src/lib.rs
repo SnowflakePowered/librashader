@@ -71,7 +71,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     for (index, parameter) in preset.parameters.iter().enumerate() {
         uniform_semantics.insert(parameter.name.clone(), UniformSemantic::Variable(SemanticMap {
             semantics: VariableSemantics::FloatParameter,
-            index: index as u32
+            index: ()
         }));
     }
 

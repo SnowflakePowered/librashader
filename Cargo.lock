@@ -458,6 +458,9 @@ checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
 [[package]]
 name = "librashader"
 version = "0.1.0"
+dependencies = [
+ "gl",
+]
 
 [[package]]
 name = "librashader-preprocess"
@@ -472,6 +475,7 @@ dependencies = [
 name = "librashader-presets"
 version = "0.1.0"
 dependencies = [
+ "librashader",
  "nom",
  "nom_locate",
  "thiserror",

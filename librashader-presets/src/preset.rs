@@ -2,25 +2,7 @@ use crate::error::ParsePresetError;
 use std::convert::Infallible;
 use std::path::PathBuf;
 use std::str::FromStr;
-
-#[repr(i32)]
-#[derive(Copy, Clone, Default, Debug)]
-pub enum FilterMode {
-    #[default]
-    Linear = 0,
-    Nearest,
-    Unspecified,
-}
-
-#[repr(i32)]
-#[derive(Copy, Clone, Default, Debug)]
-pub enum WrapMode {
-    #[default]
-    ClampToBorder = 0,
-    ClampToEdge,
-    Repeat,
-    MirroredRepeat,
-}
+use librashader::{FilterMode, WrapMode};
 
 #[repr(i32)]
 #[derive(Default, Copy, Clone, Debug)]
@@ -40,20 +22,6 @@ pub enum ScaleFactor {
 impl Default for ScaleFactor {
     fn default() -> Self {
         ScaleFactor::Float(1.0f32)
-    }
-}
-
-impl FromStr for WrapMode {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "clamp_to_border" => WrapMode::ClampToBorder,
-            "clamp_to_edge" => WrapMode::ClampToEdge,
-            "repeat" => WrapMode::Repeat,
-            "mirrored_repeat" => WrapMode::MirroredRepeat,
-            _ => WrapMode::ClampToBorder,
-        })
     }
 }
 

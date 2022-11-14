@@ -1,6 +1,6 @@
 use crate::error::{ParseErrorKind, ParsePresetError};
 use crate::parse::{remove_if, Span, Token};
-use crate::{FilterMode, ScaleFactor, ScaleType, WrapMode};
+use crate::{ScaleFactor, ScaleType};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use librashader::{FilterMode, WrapMode};
 
 #[derive(Debug)]
 pub enum Value {
