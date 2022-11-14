@@ -22,6 +22,15 @@ pub enum VariableSemantics {
     FloatParameter = 5,
 }
 
+impl VariableSemantics {
+    pub const fn semantics(self) -> SemanticMap<VariableSemantics, ()> {
+        SemanticMap {
+            semantics: self,
+            index: ()
+        }
+    }
+}
+
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 #[repr(i32)]
 pub enum TextureSemantics {
@@ -67,6 +76,13 @@ impl TextureSemantics {
 
     pub fn is_array(&self) -> bool {
         !matches!(self, TextureSemantics::Original | TextureSemantics::Source)
+    }
+
+    pub const fn semantics(self, index: u32) -> SemanticMap<TextureSemantics, u32> {
+        SemanticMap {
+            semantics: self,
+            index
+        }
     }
 }
 

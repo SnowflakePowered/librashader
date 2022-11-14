@@ -1,5 +1,8 @@
 mod hello_triangle;
 mod filter;
+mod filter_pass;
+mod util;
+mod framebuffer;
 
 use std::collections::HashMap;
 use std::error::Error;
@@ -9,8 +12,10 @@ use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use glfw::Key::P;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
+use filter_pass::FilterPass;
+use framebuffer::Framebuffer;
 
-use librashader::{ShaderFormat, ShaderSource};
+use librashader::{FilterMode, ShaderFormat, ShaderSource, WrapMode};
 use librashader_presets::{ShaderPassConfig, ShaderPreset};
 use librashader_reflect::back::{CompileShader, ShaderCompilerOutput};
 use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
@@ -20,6 +25,7 @@ use librashader_reflect::reflect::cross::CrossReflect;
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, ShaderReflection, UniformSemantic};
 use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureSemantics, VariableMeta, VariableSemantics};
 use librashader_reflect::reflect::{TextureSemanticMap, VariableSemanticMap};
+use util::{Location, VariableLocation, RingBuffer, Size, Texture, TextureMeta, Viewport};
 
 unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
@@ -35,226 +41,76 @@ unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     shader
 }
 
-fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSemantic>, texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
+impl FilterChain {
+    fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSemantic>, texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
                            config: &ShaderPassConfig) {
-    let Some(alias) = &config.alias else {
-        return;
-    };
+        let Some(alias) = &config.alias else {
+            return;
+        };
 
-    // Ignore empty aliases
-    if alias.trim().is_empty() {
-        return;
+        // Ignore empty aliases
+        if alias.trim().is_empty() {
+            return;
+        }
+
+        let index = config.id as u32;
+
+        // PassOutput
+        texture_semantics.insert(alias.clone(), SemanticMap {
+            semantics: TextureSemantics::PassOutput,
+            index
+        });
+        uniform_semantics.insert(format!("{alias}Size"), UniformSemantic::Texture(SemanticMap {
+            semantics: TextureSemantics::PassOutput,
+            index
+        }));
+
+        // PassFeedback
+        texture_semantics.insert(format!("{alias}Feedback"), SemanticMap {
+            semantics: TextureSemantics::PassFeedback,
+            index
+        });
+        uniform_semantics.insert(format!("{alias}FeedbackSize"), UniformSemantic::Texture(SemanticMap {
+            semantics: TextureSemantics::PassFeedback,
+            index
+        }));
     }
 
-    let index = config.id as u32;
+    fn reflect_parameter(pipeline: GLuint, meta: &VariableMeta) -> VariableLocation {
+        // todo: support both ubo and pushco
+        // todo: fix this.
+        match meta.offset {
+            MemberOffset::Ubo(_) => {
+                let vert_name = format!("RARCH_UBO_VERTEX_INSTANCE.{}\0", meta.id);
+                let frag_name = format!("RARCH_UBO_FRAGMENT_INSTANCE.{}\0", meta.id);
+                unsafe {
+                    let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
+                    let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
 
-    // PassOutput
-    texture_semantics.insert(alias.clone(), SemanticMap {
-        semantics: TextureSemantics::PassOutput,
-        index
-    });
-    uniform_semantics.insert(format!("{alias}Size"), UniformSemantic::Texture(SemanticMap {
-        semantics: TextureSemantics::PassOutput,
-        index
-    }));
-
-    // PassFeedback
-    texture_semantics.insert(format!("{alias}Feedback"), SemanticMap {
-        semantics: TextureSemantics::PassFeedback,
-        index
-    });
-    uniform_semantics.insert(format!("{alias}FeedbackSize"), UniformSemantic::Texture(SemanticMap {
-        semantics: TextureSemantics::PassFeedback,
-        index
-    }));
-
-}
-
-pub struct RingBuffer<T, const SIZE: usize> {
-    items: [T; SIZE],
-    index: usize
-}
-
-impl <T, const SIZE: usize> RingBuffer<T, SIZE>
-where T: Copy, T: Default
-{
-    pub fn new() -> Self {
-        Self {
-            items: [T::default(); SIZE],
-            index: 0
-        }
-    }
-}
-
-impl <T, const SIZE: usize> RingBuffer<T, SIZE> {
-    pub fn current(&self) -> &T {
-        &self.items[self.index]
-    }
-
-    pub fn next(&mut self) {
-        self.index += 1;
-        if self.index >= SIZE {
-            self.index = 0
-        }
-    }
-}
-
-
-#[derive(Debug)]
-pub struct Location<T> {
-    vertex: T,
-    fragment: T,
-}
-
-#[derive(Debug)]
-pub enum ParameterLocation {
-    Ubo(Location<GLint>),
-    Push(Location<GLint>),
-}
-pub struct FilterPass {
-    reflection: ShaderReflection,
-    compiled: ShaderCompilerOutput<String, GlslangGlslContext>,
-    program: GLuint,
-    ubo_location: Location<GLuint>,
-    ubo_ring: Option<RingBuffer<GLuint, 16>>,
-    uniform_buffer: Vec<u8>,
-    push_buffer: Vec<u8>,
-    locations: FxHashMap<String, ParameterLocation>,
-    framebuffer: Framebuffer,
-    feedback_framebuffer: Framebuffer,
-}
-
-pub struct Framebuffer {
-    image: GLuint,
-    size: Size,
-    format: GLenum,
-    max_levels: u32,
-    levels: u32,
-    framebuffer: GLuint,
-    init: bool
-}
-
-impl Drop for Framebuffer {
-    fn drop(&mut self) {
-        if self.framebuffer != 0 {
-            unsafe {
-                gl::DeleteFramebuffers(1, &self.framebuffer);
-            }
-        }
-
-        if self.image != 0 {
-            unsafe {
-                gl::DeleteTextures(1, &self.image);
-            }
-        }
-    }
-}
-impl Framebuffer {
-    pub fn new(max_levels: u32) -> Framebuffer {
-        let mut framebuffer = 0;
-        unsafe {
-            gl::GenFramebuffers(1, &mut framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
-        }
-
-        Framebuffer {
-            image: 0,
-            size: Size { width: 1, height: 1 },
-            format: 0,
-            max_levels,
-            levels: 0,
-            framebuffer,
-            init: false
-        }
-    }
-
-    fn init(&mut self, mut size: Size, mut format: ShaderFormat) {
-        if format == ShaderFormat::Unknown {
-            format = ShaderFormat::R8G8B8A8Unorm;
-        }
-
-        self.format = GLenum::from(format);
-        self.size = size;
-
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-
-            // reset the framebuffer image
-            if self.image != 0 {
-                gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, 0, 0);
-                gl::DeleteTextures(1, &self.image);
-            }
-
-            gl::GenTextures(1, &mut self.image);
-            gl::BindTexture(1, self.image);
-
-            if size.width == 0 {
-                size.width = 1;
-            }
-            if size.height == 0 {
-                size.height = 1;
-            }
-
-            self.levels = calc_miplevel(size.width, size.height);
-            if self.levels > self.max_levels {
-                self.levels = self.max_levels;
-            }
-            if self.levels == 0 {
-                self.levels = 1;
-            }
-
-            gl::TexStorage2D(gl::TEXTURE_2D, self.levels as GLsizei, self.format, size.width as GLsizei, size.height as GLsizei);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER,
-                                   gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, self.image, 0);
-
-            let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-            if status != gl::FRAMEBUFFER_COMPLETE {
-                match status {
-                    gl::FRAMEBUFFER_UNSUPPORTED => {
-                        eprintln!("unsupported fbo");
-
-                        gl::FramebufferTexture2D(gl::FRAMEBUFFER,
-                                                 gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, 0, 0);
-                        gl::DeleteTextures(1, &self.image);
-                        gl::GenTextures(1, &mut self.image);
-                        gl::BindTexture(1, self.image);
-
-                        self.levels = calc_miplevel(size.width, size.height);
-                        if self.levels > self.max_levels {
-                            self.levels = self.max_levels;
-                        }
-                        if self.levels == 0 {
-                            self.levels = 1;
-                        }
-
-                        gl::TexStorage2D(gl::TEXTURE_2D, self.levels as GLsizei, gl::RGBA8, size.width as GLsizei, size.height as GLsizei);
-                        gl::FramebufferTexture2D(gl::FRAMEBUFFER,
-                                                 gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, self.image, 0);
-                        self.init = gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
-                    }
-                    _ => panic!("failed to complete: {status}")
+                    VariableLocation::Ubo(Location {
+                        vertex,
+                        fragment
+                    })
                 }
-            } else {
-                self.init = true;
             }
+            MemberOffset::PushConstant(_) => {
+                let vert_name = format!("RARCH_PUSH_VERTEX_INSTANCE.{}\0", meta.id);
+                let frag_name = format!("RARCH_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id);
+                unsafe {
+                    let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
+                    let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
 
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::BindTexture(gl::TEXTURE_2D, 0);
+                    VariableLocation::Push(Location {
+                        vertex,
+                        fragment
+                    })
+                }
+            }
         }
     }
+
 }
 
-pub fn calc_miplevel(width: u32, height: u32) -> u32 {
-    let mut size = std::cmp::max(width, height);
-    let mut levels = 0;
-    while size != 0 {
-        levels += 1;
-        size >>= 1;
-    }
-
-    return levels;
-}
 pub struct FilterChain {
     passes: Vec<FilterPass>,
     semantics: ReflectSemantics,
@@ -264,38 +120,6 @@ pub struct FilterChain {
     feedback: Vec<Texture>
 }
 
-pub fn reflect_parameter(pipeline: GLuint, meta: &VariableMeta) -> ParameterLocation {
-    // todo: support both ubo and pushco
-    // todo: fix this.
-    match meta.offset {
-        MemberOffset::Ubo(_) => {
-            let vert_name = format!("RARCH_UBO_VERTEX_INSTANCE.{}\0", meta.id);
-            let frag_name = format!("RARCH_UBO_FRAGMENT_INSTANCE.{}\0", meta.id);
-            unsafe {
-                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
-
-                ParameterLocation::Ubo(Location {
-                    vertex,
-                    fragment
-                })
-            }
-        }
-        MemberOffset::PushConstant(_) => {
-            let vert_name = format!("RARCH_PUSH_VERTEX_INSTANCE.{}\0", meta.id);
-            let frag_name = format!("RARCH_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id);
-            unsafe {
-                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
-
-                ParameterLocation::Push(Location {
-                    vertex,
-                    fragment
-                })
-            }
-        }
-    }
-}
 
 impl FilterChain {
     pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
@@ -326,7 +150,7 @@ impl FilterChain {
         // todo: this can probably be extracted out.
 
         for details in &passes {
-            load_pass_semantics(&mut uniform_semantics, &mut texture_semantics, details.0)
+            FilterChain::load_pass_semantics(&mut uniform_semantics, &mut texture_semantics, details.0)
         }
 
         // add lut params
@@ -405,8 +229,8 @@ impl FilterChain {
                 let size = ubo.size;
                 let mut ring: RingBuffer<GLuint, 16> = RingBuffer::new();
                 unsafe {
-                    gl::GenBuffers(16, ring.items.as_mut_ptr());
-                    for buffer in &ring.items {
+                    gl::GenBuffers(16, ring.items_mut().as_mut_ptr());
+                    for buffer in ring.items() {
                         gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
                         gl::BufferData(gl::UNIFORM_BUFFER, size as GLsizeiptr, std::ptr::null(), gl::STREAM_DRAW);
                     }
@@ -417,17 +241,17 @@ impl FilterChain {
                 None
             };
 
-            let uniform_buffer = vec![0; reflection.ubo.as_ref().map(|ubo| ubo.size as usize).unwrap_or(0)];
-            let push_buffer = vec![0; reflection.push_constant.as_ref().map(|push| push.size as usize).unwrap_or(0)];
+            let uniform_buffer = vec![0; reflection.ubo.as_ref().map(|ubo| ubo.size as usize).unwrap_or(0)].into_boxed_slice();
+            let push_buffer = vec![0; reflection.push_constant.as_ref().map(|push| push.size as usize).unwrap_or(0)].into_boxed_slice();
 
             // todo: reflect indexed parameters
             let mut locations = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
-                locations.insert(param.id.clone(), reflect_parameter(program, param));
+                locations.insert(param.id.clone(), FilterChain::reflect_parameter(program, param));
             }
 
             for param in reflection.meta.variable_meta.values() {
-                locations.insert(param.id.clone(), reflect_parameter(program, param));
+                locations.insert(param.id.clone(), FilterChain::reflect_parameter(program, param));
             }
 
 
@@ -489,32 +313,34 @@ impl FilterChain {
 
 
     // how much info do we actually need?
-    fn frame(&mut self, count: u64, vp: &Viewport, input: &Texture, clear: bool) {
+    // fn frame(&mut self, count: u64, vp: &Viewport, input: &Texture, clear: bool) {
+    //
+    //     // todo: make copy
+    //
+    //     let original = Texture {
+    //         handle: input.handle,
+    //         format: self.preset.shaders.first().,
+    //         size: Size {},
+    //         padded_size: Size {}
+    //     };
+    //     // todo: deal with the mess that is frame history
+    // }
+
+    fn do_final_pass(&mut self, count: u64, vp: &Viewport, input: Texture, clear: bool, mvp: &[f32]) {
+
+        // todo: make copy
+
+        // todo: get filter info from pass data.
+        let original = TextureMeta {
+            texture: input,
+            filter: gl::LINEAR,
+            mip_filter: gl::LINEAR_MIPMAP_LINEAR,
+            wrap_mode: Default::default()
+        };
+
 
         // todo: deal with the mess that is frame history
     }
-}
-
-#[derive(Debug, Copy, Clone)]
-struct Viewport {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32
-}
-
-#[derive(Debug, Copy, Clone)]
-struct Size {
-    width: u32,
-    height: u32,
-}
-
-#[derive(Debug, Copy, Clone)]
-struct Texture {
-    handle: GLuint,
-    format: GLenum,
-    size: Size,
-    padded_size: Size
 }
 
 
