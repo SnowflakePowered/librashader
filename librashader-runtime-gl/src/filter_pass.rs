@@ -1,14 +1,17 @@
 use std::iter::Filter;
-use gl::types::{GLint, GLuint};
+use gl::types::{GLenum, GLint, GLuint};
 use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_reflect::reflect::TextureSemanticMap;
 use librashader_reflect::reflect::VariableSemanticMap;
 use rustc_hash::FxHashMap;
-use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureSemantics, VariableMeta, VariableSemantics};
+use librashader::ShaderSource;
+use librashader_presets::ShaderPreset;
+use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureImage, TextureSemantics, VariableMeta, VariableSemantics};
+use crate::FilterChain;
 use crate::framebuffer::Framebuffer;
-use crate::util::{Location, VariableLocation, RingBuffer, Size, Texture};
+use crate::util::{Location, VariableLocation, RingBuffer, Size, Texture, TextureMeta};
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,
@@ -21,7 +24,7 @@ pub struct FilterPass {
     pub locations: FxHashMap<String, VariableLocation>,
     pub framebuffer: Framebuffer,
     pub feedback_framebuffer: Framebuffer,
-
+    pub source: ShaderSource,
 }
 
 impl FilterPass {
@@ -78,10 +81,21 @@ impl FilterPass {
         Self::build_uniform(location, buffer, value, gl::Uniform1f)
     }
 
+    fn set_texture(binding: &TextureImage, texture: &TextureMeta) {
+        unsafe {
+            gl::ActiveTexture((gl::TEXTURE0 + binding.binding) as GLenum);
+            gl::BindTexture(gl::TEXTURE_2D, texture.texture.handle);
+
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, GLenum::from(texture.filter) as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, texture.filter.gl_mip(texture.mip_filter) as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, GLenum::from(texture.wrap_mode) as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, GLenum::from(texture.wrap_mode) as GLint);
+        }
+    }
     // todo: build vec4 texture
 
     // framecount should be pre-modded
-    fn build_semantics(&mut self, mvp: Option<&[f32]>, frame_count: u32, frame_direction: u32, fb_size: Size, vp_size: Size, original: &Texture, source: &Texture) {
+    fn build_semantics(&mut self, parent: &FilterChain, mvp: Option<&[f32]>, frame_count: u32, frame_direction: u32, fb_size: Size, vp_size: Size, original: &TextureMeta, source: &TextureMeta) {
         if let Some(variable) = self.reflection.meta.variable_meta.get(&VariableSemantics::MVP) {
             let mvp = mvp.unwrap_or(&[
                 2f32, 0.0, 0.0, 0.0,
@@ -148,6 +162,66 @@ impl FilterPass {
 
             FilterPass::build_uint(location, &mut buffer[offset..][..4], frame_direction)
         }
+
+        if let Some(variable) = self.reflection.meta.texture_size_meta.get(&TextureSemantics::Original.semantics(0)) {
+            let location = self.locations.get(&variable.id).expect("variable did not have location mapped").location();
+            let (buffer, offset) = match variable.offset {
+                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, offset),
+                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, offset)
+            };
+            FilterPass::build_vec4(location, &mut buffer[offset..][..4], original.texture.size);
+
+            if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::Original.semantics(0)) {
+                FilterPass::set_texture(binding, original);
+            }
+        }
+
+        if let Some(variable) = self.reflection.meta.texture_size_meta.get(&TextureSemantics::Source.semantics(0)) {
+            let location = self.locations.get(&variable.id).expect("variable did not have location mapped").location();
+            let (buffer, offset) = match variable.offset {
+                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, offset),
+                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, offset)
+            };
+            FilterPass::build_vec4(location, &mut buffer[offset..][..4], original.texture.size);
+
+            if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::Source.semantics(0)) {
+                FilterPass::set_texture(binding, original);
+            }
+        }
+
+        if let Some(variable) = self.reflection.meta.texture_size_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
+            let location = self.locations.get(&variable.id).expect("variable did not have location mapped").location();
+            let (buffer, offset) = match variable.offset {
+                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, offset),
+                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, offset)
+            };
+            FilterPass::build_vec4(location, &mut buffer[offset..][..4], original.texture.size);
+
+            if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
+                FilterPass::set_texture(binding, original);
+            }
+        }
+
+        for variable in self.reflection.meta.parameter_meta.values() {
+            let location = self.locations.get(&variable.id).expect("variable did not have location mapped").location();
+            let (buffer, offset) = match variable.offset {
+                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, offset),
+                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, offset)
+            };
+
+            // presets override params
+            let default = self.source.parameters.iter().find(|&p| p.id == variable.id)
+                .map(|f| f.initial)
+                .unwrap_or(0f32);
+
+            let value = parent.preset.parameters.iter().find(|&p| p.name == variable.id)
+                .map(|p| p.value)
+                .unwrap_or(default);
+
+            FilterPass::build_float(location, &mut buffer[offset..][..4], value)
+        }
+
+        // todo history
 
 
     }

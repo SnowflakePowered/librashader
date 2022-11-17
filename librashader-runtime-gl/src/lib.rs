@@ -16,6 +16,7 @@ use filter_pass::FilterPass;
 use framebuffer::Framebuffer;
 
 use librashader::{FilterMode, ShaderFormat, ShaderSource, WrapMode};
+use librashader::image::Image;
 use librashader_presets::{ShaderPassConfig, ShaderPreset};
 use librashader_reflect::back::{CompileShader, ShaderCompilerOutput};
 use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
@@ -116,10 +117,10 @@ pub struct FilterChain {
     semantics: ReflectSemantics,
     preset: ShaderPreset,
     original_history: Vec<Framebuffer>,
-    history: Vec<Texture>,
-    feedback: Vec<Texture>
+    history: Vec<TextureMeta>,
+    feedback: Vec<TextureMeta>,
+    luts: FxHashMap<String, TextureMeta>
 }
-
 
 impl FilterChain {
     pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
@@ -273,11 +274,11 @@ impl FilterChain {
                 uniform_buffer,
                 push_buffer,
                 locations,
-
+                source,
                 // no idea if this works.
                 // retroarch checks if feedback frames are used but we'll just init it tbh.
                 framebuffer: Framebuffer::new(1),
-                feedback_framebuffer: Framebuffer::new(1)
+                feedback_framebuffer: Framebuffer::new(1),
             });
         }
 
@@ -287,7 +288,7 @@ impl FilterChain {
         //     // compilation.context.compiler.vertex
         // }
 
-//    eprintln!("{:#?}", reflections);
+        //    eprintln!("{:#?}", reflections);
 
         // eprintln!("{:#?}", compiled./);
         // eprintln!("{:?}", preset);
@@ -301,13 +302,84 @@ impl FilterChain {
         // gl3.cpp: 1942
 
 
+        // load luts
+        let mut luts = FxHashMap::default();
+
+        for texture in &preset.textures {
+            let image = Image::load(&texture.path)?;
+            let levels = if texture.mipmap {
+                util::calc_miplevel(image.width, image.height)
+            } else {
+                1u32
+            };
+
+            let mut handle = 0;
+            unsafe {
+                gl::GenTextures(1, &mut handle);
+                gl::BindTexture(gl::TEXTURE_2D, handle);
+                gl::TexStorage2D(gl::TEXTURE_2D, levels as GLsizei, gl::RGBA8,
+                                 image.width as GLsizei, image.height as GLsizei);
+
+                gl::PixelStorei(gl::UNPACK_ROW_LENGTH, 0);
+                gl::PixelStorei(gl::UNPACK_ALIGNMENT, 4);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
+                gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0,
+                                  image.width as GLsizei, image.height as GLsizei,
+                                  gl::RGBA, gl::UNSIGNED_BYTE, image.bytes.as_ptr().cast());
+
+                let mipmap = levels > 1;
+                let linear = texture.filter_mode == FilterMode::Linear;
+
+                // set mipmaps and wrapping
+
+                if mipmap {
+                    gl::GenerateMipmap(gl::TEXTURE_2D);
+                }
+
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, GLenum::from(texture.wrap_mode) as GLint);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, GLenum::from(texture.wrap_mode) as GLint);
+
+                if !linear {
+                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+                } else {
+                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+                    if mipmap {
+                        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER,
+                                          gl::LINEAR_MIPMAP_LINEAR as GLint);
+                    } else {
+                        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER,
+                                          gl::LINEAR as GLint);
+                    }
+                }
+
+                gl::BindTexture(gl::TEXTURE_2D, 0);
+            }
+
+            luts.insert(texture.name.clone(), TextureMeta {
+                texture: Texture {
+                    handle,
+                    format: gl::RGBA8,
+                    size: Size {
+                        width: image.width,
+                        height: image.height
+                    },
+                    padded_size: Size::default()
+                },
+                filter: texture.filter_mode,
+                mip_filter: texture.filter_mode,
+                wrap_mode: texture.wrap_mode
+            });
+        }
+
         Ok(FilterChain {
             passes: filters,
             semantics,
             preset,
             original_history: vec![],
             history: vec![],
-            feedback: vec![]
+            feedback: vec![],
+            luts,
         })
     }
 
@@ -333,8 +405,8 @@ impl FilterChain {
         // todo: get filter info from pass data.
         let original = TextureMeta {
             texture: input,
-            filter: gl::LINEAR,
-            mip_filter: gl::LINEAR_MIPMAP_LINEAR,
+            filter: FilterMode::Linear,
+            mip_filter: FilterMode::Linear,
             wrap_mode: Default::default()
         };
 
@@ -351,8 +423,8 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        FilterChain::load("../test/basic.slangp").unwrap();
-        // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
+        // FilterChain::load("../test/basic.slangp").unwrap();
+        FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 
         hello_triangle::do_loop(glfw, window, events, shader, vao);
     }

@@ -1,5 +1,6 @@
 #[cfg(feature = "opengl")]
 pub mod gl;
+pub mod image;
 
 use std::convert::Infallible;
 use std::str::FromStr;
@@ -69,7 +70,7 @@ pub enum ShaderFormat {
 }
 
 #[repr(i32)]
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
 pub enum FilterMode {
     #[default]
     Linear = 0,
@@ -93,7 +94,7 @@ impl FromStr for WrapMode {
 
 
 #[repr(i32)]
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
 pub enum WrapMode {
     #[default]
     ClampToBorder = 0,

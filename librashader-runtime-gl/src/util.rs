@@ -1,5 +1,5 @@
 use gl::types::{GLenum, GLint, GLuint};
-use librashader::WrapMode;
+use librashader::{FilterMode, WrapMode};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Location<T> {
@@ -34,8 +34,8 @@ pub fn calc_miplevel(width: u32, height: u32) -> u32 {
 
 pub struct TextureMeta {
     pub texture: Texture,
-    pub filter: GLenum,
-    pub mip_filter: GLenum,
+    pub filter: FilterMode,
+    pub mip_filter: FilterMode,
     pub wrap_mode: WrapMode
 }
 
@@ -47,7 +47,7 @@ pub struct Viewport {
     pub height: i32
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Size {
     pub width: u32,
     pub height: u32,

@@ -1,3 +1,4 @@
+use gl::types::GLenum;
 use crate::{FilterMode, ShaderFormat, WrapMode};
 
 impl From<ShaderFormat> for gl::types::GLenum {
@@ -45,6 +46,26 @@ impl From<WrapMode> for gl::types::GLenum {
             WrapMode::ClampToEdge => gl::CLAMP_TO_EDGE,
             WrapMode::Repeat => gl::REPEAT,
             WrapMode::MirroredRepeat => gl::MIRRORED_REPEAT
+        }
+    }
+}
+
+impl From<FilterMode> for gl::types::GLenum {
+    fn from(value: FilterMode) -> Self {
+        match value {
+            FilterMode::Linear => gl::LINEAR,
+            _ => gl::NEAREST
+        }
+    }
+}
+
+impl FilterMode {
+    pub fn gl_mip(&self, mip: FilterMode) -> gl::types::GLenum {
+        match (self, mip) {
+            (FilterMode::Linear, FilterMode::Linear) => gl::LINEAR_MIPMAP_LINEAR,
+            (FilterMode::Linear, FilterMode::Nearest) => gl::LINEAR_MIPMAP_NEAREST,
+            (FilterMode::Nearest, FilterMode::Linear) => gl::NEAREST_MIPMAP_LINEAR,
+            _ => gl::NEAREST_MIPMAP_NEAREST
         }
     }
 }
