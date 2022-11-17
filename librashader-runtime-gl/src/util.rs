@@ -32,8 +32,9 @@ pub fn calc_miplevel(width: u32, height: u32) -> u32 {
     return levels;
 }
 
-pub struct TextureMeta {
-    pub texture: Texture,
+#[derive(Debug, Copy, Clone)]
+pub struct Texture {
+    pub image: GlImage,
     pub filter: FilterMode,
     pub mip_filter: FilterMode,
     pub wrap_mode: WrapMode
@@ -43,8 +44,7 @@ pub struct TextureMeta {
 pub struct Viewport {
     pub x: i32,
     pub y: i32,
-    pub width: i32,
-    pub height: i32
+    pub size: Size,
 }
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -54,7 +54,7 @@ pub struct Size {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Texture {
+pub struct GlImage {
     pub handle: GLuint,
     pub format: GLenum,
     pub size: Size,

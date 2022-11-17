@@ -1,8 +1,23 @@
 use crate::error::ParsePresetError;
 use std::convert::Infallible;
+use std::ops::Mul;
 use std::path::PathBuf;
 use std::str::FromStr;
 use librashader::{FilterMode, WrapMode};
+
+#[derive(Debug, Clone)]
+pub struct ShaderPassConfig {
+    pub id: i32,
+    pub name: PathBuf,
+    pub alias: Option<String>,
+    pub filter: FilterMode,
+    pub wrap_mode: WrapMode,
+    pub frame_count_mod: u32,
+    pub srgb_framebuffer: bool,
+    pub float_framebuffer: bool,
+    pub mipmap_input: bool,
+    pub scaling: Scale2D,
+}
 
 #[repr(i32)]
 #[derive(Default, Copy, Clone, Debug)]
@@ -22,6 +37,37 @@ pub enum ScaleFactor {
 impl Default for ScaleFactor {
     fn default() -> Self {
         ScaleFactor::Float(1.0f32)
+    }
+}
+
+impl From<ScaleFactor> for f32 {
+    fn from(value: ScaleFactor) -> Self {
+        match value {
+            ScaleFactor::Float(f) => f,
+            ScaleFactor::Absolute(f) => f as f32,
+        }
+    }
+}
+
+impl Mul<ScaleFactor> for f32 {
+    type Output = f32;
+
+    fn mul(self, rhs: ScaleFactor) -> Self::Output {
+        match rhs {
+            ScaleFactor::Float(f) => f * self,
+            ScaleFactor::Absolute(f) => f as f32 * self
+        }
+    }
+}
+
+impl Mul<ScaleFactor> for u32 {
+    type Output = f32;
+
+    fn mul(self, rhs: ScaleFactor) -> Self::Output {
+        match rhs {
+            ScaleFactor::Float(f) => f * self as f32,
+            ScaleFactor::Absolute(f) => (f as u32 * self) as f32
+        }
     }
 }
 
@@ -49,20 +95,6 @@ pub struct Scale2D {
     pub valid: bool,
     pub x: Scaling,
     pub y: Scaling,
-}
-
-#[derive(Debug, Clone)]
-pub struct ShaderPassConfig {
-    pub id: i32,
-    pub name: PathBuf,
-    pub alias: Option<String>,
-    pub filter: FilterMode,
-    pub wrap_mode: WrapMode,
-    pub frame_count_mod: u32,
-    pub srgb_framebuffer: bool,
-    pub float_framebuffer: bool,
-    pub mipmap_input: bool,
-    pub scaling: Scale2D,
 }
 
 #[derive(Debug, Clone)]

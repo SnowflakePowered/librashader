@@ -26,7 +26,7 @@ use librashader_reflect::reflect::cross::CrossReflect;
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, ShaderReflection, UniformSemantic};
 use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureSemantics, VariableMeta, VariableSemantics};
 use librashader_reflect::reflect::{TextureSemanticMap, VariableSemanticMap};
-use util::{Location, VariableLocation, RingBuffer, Size, Texture, TextureMeta, Viewport};
+use util::{Location, VariableLocation, RingBuffer, Size, GlImage, Texture, Viewport};
 
 unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
@@ -117,9 +117,9 @@ pub struct FilterChain {
     semantics: ReflectSemantics,
     preset: ShaderPreset,
     original_history: Vec<Framebuffer>,
-    history: Vec<TextureMeta>,
-    feedback: Vec<TextureMeta>,
-    luts: FxHashMap<String, TextureMeta>
+    history: Vec<Texture>,
+    feedback: Vec<Texture>,
+    luts: FxHashMap<String, Texture>
 }
 
 impl FilterChain {
@@ -279,6 +279,7 @@ impl FilterChain {
                 // retroarch checks if feedback frames are used but we'll just init it tbh.
                 framebuffer: Framebuffer::new(1),
                 feedback_framebuffer: Framebuffer::new(1),
+                config: config.clone()
             });
         }
 
@@ -356,8 +357,8 @@ impl FilterChain {
                 gl::BindTexture(gl::TEXTURE_2D, 0);
             }
 
-            luts.insert(texture.name.clone(), TextureMeta {
-                texture: Texture {
+            luts.insert(texture.name.clone(), Texture {
+                image: GlImage {
                     handle,
                     format: gl::RGBA8,
                     size: Size {
@@ -372,6 +373,7 @@ impl FilterChain {
             });
         }
 
+        // todo: split params
         Ok(FilterChain {
             passes: filters,
             semantics,
@@ -385,30 +387,42 @@ impl FilterChain {
 
 
     // how much info do we actually need?
-    // fn frame(&mut self, count: u64, vp: &Viewport, input: &Texture, clear: bool) {
-    //
-    //     // todo: make copy
-    //
-    //     let original = Texture {
-    //         handle: input.handle,
-    //         format: self.preset.shaders.first().,
-    //         size: Size {},
-    //         padded_size: Size {}
-    //     };
-    //     // todo: deal with the mess that is frame history
-    // }
+    fn frame(&mut self, count: u32, vp: &Viewport, input: GlImage, clear: bool) {
 
-    fn do_final_pass(&mut self, count: u64, vp: &Viewport, input: Texture, clear: bool, mvp: &[f32]) {
+        let filter = self.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
+        let wrap_mode = self.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
+        let original = Texture {
+            image: input,
+            filter,
+            mip_filter: filter,
+            wrap_mode
+        };
+
+        let mut source = original.clone();
+
+        for passes in &mut self.passes {
+            // passes.build_semantics(&self, None, count, 1, vp, &original, &source);
+        }
+
+        // todo: deal with the mess that is frame history
+    }
+
+    pub fn do_final_pass(&mut self, count: u64, vp: &Viewport, input: GlImage, clear: bool, mvp: &[f32]) {
 
         // todo: make copy
 
         // todo: get filter info from pass data.
-        let original = TextureMeta {
-            texture: input,
-            filter: FilterMode::Linear,
-            mip_filter: FilterMode::Linear,
-            wrap_mode: Default::default()
+        let filter = self.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
+        let wrap_mode = self.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
+        let original = Texture {
+            image: input,
+            filter,
+            mip_filter: filter,
+            wrap_mode
         };
+
+
+
 
 
         // todo: deal with the mess that is frame history
@@ -423,8 +437,8 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        // FilterChain::load("../test/basic.slangp").unwrap();
-        FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
+        FilterChain::load("../test/basic.slangp").unwrap();
+        // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 
         hello_triangle::do_loop(glfw, window, events, shader, vao);
     }
