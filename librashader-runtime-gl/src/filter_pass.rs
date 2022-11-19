@@ -207,7 +207,7 @@ impl FilterPass {
             gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
             gl::Clear(gl::COLOR_BUFFER_BIT);
             //
-            gl::Viewport(viewport.x, viewport.y, fb_size.width as GLsizei, fb_size.height as GLsizei);
+            gl::Viewport(0, 0, fb_size.width as GLsizei, fb_size.height as GLsizei);
 
             if self.framebuffer.format == gl::SRGB8_ALPHA8 {
                 gl::Enable(gl::FRAMEBUFFER_SRGB);

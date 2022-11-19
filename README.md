@@ -1,5 +1,7 @@
 # librashader
 
+![image](https://user-images.githubusercontent.com/1000503/202840226-68e9d01f-aa0b-4bfa-9bc6-a1363f701b85.png)
+
 A preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 
 Heavily WIP.
