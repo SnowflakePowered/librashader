@@ -46,7 +46,7 @@ pub enum ShaderReflectError {
     #[error("vertx and fragment shader must have same binding")]
     MismatchedUniformBuffer { vertex: u32, fragment: u32 },
     #[error("filter chain is non causal")]
-    NonCausalFilterChain { pass: u32, target: u32 },
+    NonCausalFilterChain { pass: usize, target: usize },
     #[error("mismatched offset")]
     MismatchedOffset {
         semantic: String,

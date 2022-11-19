@@ -6,6 +6,15 @@ pub const MAX_BINDINGS_COUNT: u32 = 16;
 pub const MAX_PUSH_BUFFER_SIZE: u32 = 128;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
+pub enum UniformType {
+    MVP,
+    Size,
+    Unsigned,
+    Signed,
+    Float
+}
+
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 #[repr(i32)]
 pub enum VariableSemantics {
     // mat4, MVP
@@ -27,6 +36,17 @@ impl VariableSemantics {
         SemanticMap {
             semantics: self,
             index: ()
+        }
+    }
+
+    pub const fn binding_type(&self) -> UniformType {
+        match self {
+            VariableSemantics::MVP => UniformType::MVP,
+            VariableSemantics::Output => UniformType::Size,
+            VariableSemantics::FinalViewport => UniformType::Size,
+            VariableSemantics::FrameCount => UniformType::Unsigned,
+            VariableSemantics::FrameDirection => UniformType::Signed,
+            VariableSemantics::FloatParameter => UniformType::Float
         }
     }
 }
@@ -78,7 +98,7 @@ impl TextureSemantics {
         !matches!(self, TextureSemantics::Original | TextureSemantics::Source)
     }
 
-    pub const fn semantics(self, index: u32) -> SemanticMap<TextureSemantics, u32> {
+    pub const fn semantics(self, index: usize) -> SemanticMap<TextureSemantics> {
         SemanticMap {
             semantics: self,
             index
@@ -95,7 +115,7 @@ pub trait ValidateTypeSemantics<T> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct SemanticMap<T, I=u32> {
+pub struct SemanticMap<T, I=usize> {
     pub semantics: T,
     pub index: I,
 }
@@ -159,4 +179,29 @@ pub struct ShaderReflection {
     pub ubo: Option<UboReflection>,
     pub push_constant: Option<PushReflection>,
     pub meta: ReflectMeta,
+}
+
+pub trait UniformMeta {
+    fn offset(&self) -> MemberOffset;
+    fn id(&self) -> &str;
+}
+
+impl UniformMeta for VariableMeta {
+    fn offset(&self) -> MemberOffset {
+        self.offset
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl UniformMeta for TextureSizeMeta {
+    fn offset(&self) -> MemberOffset {
+        self.offset
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
 }

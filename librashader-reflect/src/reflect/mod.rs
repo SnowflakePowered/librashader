@@ -13,7 +13,7 @@ pub mod semantics;
 pub trait ReflectShader {
     fn reflect(
         &mut self,
-        pass_number: u32,
+        pass_number: usize,
         semantics: &ReflectSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError>;
 }
@@ -69,7 +69,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> 
                 {
                     if semantics.is_array() {
                         let index = &name[semantics.size_uniform_name().len()..];
-                        let Ok(index) = u32::from_str(index) else {
+                        let Ok(index) = usize::from_str(index) else {
                             return None;
                         };
                         return Some(SemanticMap {
@@ -101,7 +101,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
                 {
                     if semantics.is_array() {
                         let index = &name[semantics.texture_name().len()..];
-                        let Ok(index) = u32::from_str(index) else {return None};
+                        let Ok(index) = usize::from_str(index) else {return None};
                         return Some(SemanticMap {
                             semantics: *semantics,
                             index,

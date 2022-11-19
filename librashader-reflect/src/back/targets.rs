@@ -51,7 +51,7 @@ where
 {
     fn reflect(
         &mut self,
-        pass_number: u32,
+        pass_number: usize,
         semantics: &ReflectSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
         self.backend.reflect(pass_number, semantics)

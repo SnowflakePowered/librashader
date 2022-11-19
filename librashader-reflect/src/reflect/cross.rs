@@ -284,7 +284,7 @@ where
     fn reflect_buffer_range_metas(
         ast: &Ast<T>,
         resource: &Resource,
-        pass_number: u32,
+        pass_number: usize,
         semantics: &ReflectSemantics,
         meta: &mut ReflectMeta,
         offset_type: impl Fn(usize) -> MemberOffset,
@@ -478,7 +478,7 @@ where
     fn reflect_texture_metas(
         &self,
         texture: TextureData,
-        pass_number: u32,
+        pass_number: usize,
         semantics: &ReflectSemantics,
         meta: &mut ReflectMeta,
     ) -> Result<(), ShaderReflectError> {
@@ -594,7 +594,7 @@ where
 {
     fn reflect(
         &mut self,
-        pass_number: u32,
+        pass_number: usize,
         semantics: &ReflectSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
         let vertex_res = self.vertex.get_shader_resources()?;
@@ -707,19 +707,19 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         for res in &vertex_resources.stage_inputs {
             let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
             self.vertex
-                .set_name(res.id, &format!("RARCH_ATTRIBUTE_{location}"))?;
+                .set_name(res.id, &format!("LIBRA_ATTRIBUTE_{location}"))?;
             self.vertex.unset_decoration(res.id, Decoration::Location)?;
         }
         for res in &vertex_resources.stage_outputs {
             let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
             self.vertex
-                .set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
+                .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
             self.vertex.unset_decoration(res.id, Decoration::Location)?;
         }
         for res in &fragment_resources.stage_inputs {
             let location = self.fragment.get_decoration(res.id, Decoration::Location)?;
             self.fragment
-                .set_name(res.id, &format!("RARCH_VARYING_{location}"))?;
+                .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
             self.fragment
                 .unset_decoration(res.id, Decoration::Location)?;
         }
@@ -732,9 +732,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             ));
         }
         for res in &vertex_resources.push_constant_buffers {
-            self.vertex.set_name(res.id, "RARCH_PUSH_VERTEX_INSTANCE")?;
+            self.vertex.set_name(res.id, "LIBRA_PUSH_VERTEX_INSTANCE")?;
             self.vertex
-                .set_name(res.base_type_id, "RARCH_PUSH_VERTEX")?;
+                .set_name(res.base_type_id, "LIBRA_PUSH_VERTEX")?;
         }
 
         // todo: options
@@ -751,8 +751,8 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             // if flatten {
             //     self.vertex.flatten_buffer_block(res.id)?;
             // }
-            self.vertex.set_name(res.id, "RARCH_UBO_VERTEX_INSTANCE")?;
-            self.vertex.set_name(res.base_type_id, "RARCH_UBO_VERTEX")?;
+            self.vertex.set_name(res.id, "LIBRA_UBO_VERTEX_INSTANCE")?;
+            self.vertex.set_name(res.base_type_id, "LIBRA_UBO_VERTEX")?;
             self.vertex
                 .unset_decoration(res.id, Decoration::DescriptorSet)?;
             self.vertex.unset_decoration(res.id, Decoration::Binding)?;
@@ -767,9 +767,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         }
         for res in &fragment_resources.push_constant_buffers {
             self.fragment
-                .set_name(res.id, "RARCH_PUSH_FRAGMENT_INSTANCE")?;
+                .set_name(res.id, "LIBRA_PUSH_FRAGMENT_INSTANCE")?;
             self.fragment
-                .set_name(res.base_type_id, "RARCH_PUSH_FRAGMENT")?;
+                .set_name(res.base_type_id, "LIBRA_PUSH_FRAGMENT")?;
         }
 
         if fragment_resources.uniform_buffers.len() > 1 {
@@ -785,9 +785,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             //     self.fragment.flatten_buffer_block(res.id)?;
             // }
             self.fragment
-                .set_name(res.id, "RARCH_UBO_FRAGMENT_INSTANCE")?;
+                .set_name(res.id, "LIBRA_UBO_FRAGMENT_INSTANCE")?;
             self.fragment
-                .set_name(res.base_type_id, "RARCH_UBO_FRAGMENT")?;
+                .set_name(res.base_type_id, "LIBRA_UBO_FRAGMENT")?;
             self.fragment
                 .unset_decoration(res.id, Decoration::DescriptorSet)?;
             self.fragment
@@ -798,7 +798,7 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         for res in &fragment_resources.sampled_images {
             let binding = self.fragment.get_decoration(res.id, Decoration::Binding)?;
             self.fragment
-                .set_name(res.id, &format!("RARCH_TEXTURE_{binding}"))?;
+                .set_name(res.id, &format!("LIBRA_TEXTURE_{binding}"))?;
             self.fragment
                 .unset_decoration(res.id, Decoration::DescriptorSet)?;
             self.fragment

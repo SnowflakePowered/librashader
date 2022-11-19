@@ -5,6 +5,7 @@ mod filter;
 mod filter_pass;
 mod util;
 mod framebuffer;
+mod binding;
 
 use std::collections::HashMap;
 use std::error::Error;
@@ -26,9 +27,11 @@ use librashader_reflect::back::targets::{FromCompilation, GLSL};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::cross::CrossReflect;
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, ShaderReflection, UniformSemantic};
-use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureSemantics, VariableMeta, VariableSemantics};
+use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureSemantics, UniformMeta, VariableMeta, VariableSemantics};
 use librashader_reflect::reflect::{TextureSemanticMap, VariableSemanticMap};
-use util::{Location, VariableLocation, RingBuffer, Size, GlImage, Texture, Viewport};
+use binding::{UniformLocation, VariableLocation};
+use util::{GlImage, RingBuffer, Size, Texture, Viewport};
+use crate::binding::UniformBinding;
 
 unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
@@ -63,7 +66,7 @@ impl FilterChain {
             return;
         }
 
-        let index = config.id as u32;
+        let index = config.id as usize;
 
         // PassOutput
         texture_semantics.insert(alias.clone(), SemanticMap {
@@ -86,31 +89,31 @@ impl FilterChain {
         }));
     }
 
-    fn reflect_parameter(pipeline: GLuint, meta: &VariableMeta) -> VariableLocation {
+    fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
         // todo: support both ubo and pushco
         // todo: fix this.
-        match meta.offset {
+        match meta.offset() {
             MemberOffset::Ubo(_) => {
-                let vert_name = format!("RARCH_UBO_VERTEX_INSTANCE.{}\0", meta.id);
-                let frag_name = format!("RARCH_UBO_FRAGMENT_INSTANCE.{}\0", meta.id);
+                let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}\0", meta.id());
+                let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}\0", meta.id());
                 unsafe {
                     let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
                     let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
 
-                    VariableLocation::Ubo(Location {
+                    VariableLocation::Ubo(UniformLocation {
                         vertex,
                         fragment
                     })
                 }
             }
             MemberOffset::PushConstant(_) => {
-                let vert_name = format!("RARCH_PUSH_VERTEX_INSTANCE.{}\0", meta.id);
-                let frag_name = format!("RARCH_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id);
+                let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}\0", meta.id());
+                let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id());
                 unsafe {
                     let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
                     let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
 
-                    VariableLocation::Push(Location {
+                    VariableLocation::Push(UniformLocation {
                         vertex,
                         fragment
                     })
@@ -133,7 +136,7 @@ pub struct FilterCommon {
     original_history: Vec<Framebuffer>,
     history: Vec<Texture>,
     feedback: Vec<Texture>,
-    luts: FxHashMap<String, Texture>,
+    luts: FxHashMap<usize, Texture>,
     pub quad_vbo: GLuint,
     pub input_framebuffer: Framebuffer,
 }
@@ -174,12 +177,12 @@ impl FilterChain {
         for (index, texture) in preset.textures.iter().enumerate() {
             texture_semantics.insert(texture.name.clone(), SemanticMap {
                 semantics: TextureSemantics::User,
-                index: index as u32
+                index
             });
 
             uniform_semantics.insert(format!("{}Size", texture.name), UniformSemantic::Texture(SemanticMap {
                 semantics: TextureSemantics::User,
-                index: index as u32
+                index
             }));
         }
 
@@ -194,7 +197,7 @@ impl FilterChain {
         for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
             let mut semantics = semantics.clone();
 
-            let reflection = reflect.reflect(index as u32, &semantics)?;
+            let reflection = reflect.reflect(index, &semantics)?;
             let glsl = reflect.compile(GlVersion::V4_60)?;
 
             let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
@@ -210,7 +213,7 @@ impl FilterChain {
 
                 for res in &vertex_resources.stage_inputs {
                     let loc = glsl.context.compiler.vertex.get_decoration(res.id, Decoration::Location)?;
-                    let loc_name = format!("RARCH_ATTRIBUTE_{loc}\0");
+                    let loc_name = format!("LIBRA_ATTRIBUTE_{loc}\0");
                     eprintln!("{loc_name}");
                     gl::BindAttribLocation(program, loc, loc_name.as_str().as_ptr().cast())
                 }
@@ -225,7 +228,7 @@ impl FilterChain {
                 }
 
                 for binding in &glsl.context.texture_fixups {
-                    let loc_name = format!("RARCH_TEXTURE_{}\0", *binding);
+                    let loc_name = format!("LIBRA_TEXTURE_{}\0", *binding);
                     unsafe {
                         let location = gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
                         if location >= 0 {
@@ -236,9 +239,9 @@ impl FilterChain {
 
                 unsafe {
                     gl::UseProgram(0);
-                    (program, Location {
-                        vertex: gl::GetUniformBlockIndex(program, b"RARCH_UBO_VERTEX\0".as_ptr().cast()),
-                        fragment: gl::GetUniformBlockIndex(program, b"RARCH_UBO_FRAGMENT\0".as_ptr().cast()),
+                    (program, UniformLocation {
+                        vertex: gl::GetUniformBlockIndex(program, b"LIBRA_UBO_VERTEX\0".as_ptr().cast()),
+                        fragment: gl::GetUniformBlockIndex(program, b"LIBRA_UBO_FRAGMENT\0".as_ptr().cast()),
                     })
                 }
             };
@@ -265,12 +268,20 @@ impl FilterChain {
             // todo: reflect indexed parameters
             let mut locations = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
-                locations.insert(param.id.clone(), FilterChain::reflect_parameter(program, param));
+                locations.insert(UniformBinding::Parameter(param.id.clone()),
+                                 (FilterChain::reflect_uniform_location(program, param), param.offset));
             }
 
-            for param in reflection.meta.variable_meta.values() {
-                locations.insert(param.id.clone(), FilterChain::reflect_parameter(program, param));
+            for (semantics, param) in &reflection.meta.variable_meta {
+                locations.insert(UniformBinding::SemanticVariable(semantics.clone()),
+                                 (FilterChain::reflect_uniform_location(program, param), param.offset));
             }
+
+            for (semantics, param) in &reflection.meta.texture_size_meta {
+                locations.insert(UniformBinding::TextureSize(semantics.clone()),
+                                 (FilterChain::reflect_uniform_location(program, param), param.offset));
+            }
+
 
 
             // eprintln!("{:#?}", semantics);
@@ -290,7 +301,7 @@ impl FilterChain {
                 ubo_ring,
                 uniform_buffer,
                 push_buffer,
-                locations,
+                variable_bindings: locations,
                 source,
                 // no idea if this works.
                 // retroarch checks if feedback frames are used but we'll just init it tbh.
@@ -323,7 +334,7 @@ impl FilterChain {
         // load luts
         let mut luts = FxHashMap::default();
 
-        for texture in &preset.textures {
+        for (index, texture) in preset.textures.iter().enumerate() {
             let image = Image::load(&texture.path)?;
             let levels = if texture.mipmap {
                 util::calc_miplevel(image.width, image.height)
@@ -374,7 +385,7 @@ impl FilterChain {
                 gl::BindTexture(gl::TEXTURE_2D, 0);
             }
 
-            luts.insert(texture.name.clone(), Texture {
+            luts.insert(index, Texture {
                 image: GlImage {
                     handle,
                     format: gl::RGBA8,

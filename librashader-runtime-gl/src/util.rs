@@ -1,26 +1,6 @@
 use gl::types::{GLenum, GLint, GLuint};
 use librashader::{FilterMode, WrapMode};
 
-#[derive(Debug, Copy, Clone)]
-pub struct Location<T> {
-    pub vertex: T,
-    pub fragment: T,
-}
-
-#[derive(Debug)]
-pub enum VariableLocation {
-    Ubo(Location<GLint>),
-    Push(Location<GLint>),
-}
-
-impl VariableLocation {
-    pub fn location(&self) -> Location<GLint> {
-        match self {
-            VariableLocation::Ubo(l) | VariableLocation::Push(l) => *l
-        }
-    }
-}
-
 pub fn calc_miplevel(width: u32, height: u32) -> u32 {
     let mut size = std::cmp::max(width, height);
     let mut levels = 0;
