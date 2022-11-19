@@ -13,29 +13,13 @@ pub struct Framebuffer {
     pub init: bool
 }
 
-impl Drop for Framebuffer {
-    fn drop(&mut self) {
-        if self.framebuffer != 0 {
-            unsafe {
-                gl::DeleteFramebuffers(1, &self.framebuffer);
-            }
-        }
-
-        if self.image != 0 {
-            unsafe {
-                gl::DeleteTextures(1, &self.image);
-            }
-        }
-    }
-}
-
 impl Framebuffer {
     pub fn new(max_levels: u32) -> Framebuffer {
         let mut framebuffer = 0;
         unsafe {
             gl::GenFramebuffers(1, &mut framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
 
         Framebuffer {
@@ -49,12 +33,8 @@ impl Framebuffer {
         }
     }
 
-    fn init(&mut self, mut size: Size, mut format: ShaderFormat) {
-        if format == ShaderFormat::Unknown {
-            format = ShaderFormat::R8G8B8A8Unorm;
-        }
-
-        self.format = GLenum::from(format);
+    pub(crate) fn init(&mut self, mut size: Size, mut format: impl Into<GLenum>) {
+        self.format = format.into();
         self.size = size;
 
         unsafe {
@@ -67,7 +47,7 @@ impl Framebuffer {
             }
 
             gl::GenTextures(1, &mut self.image);
-            gl::BindTexture(1, self.image);
+            gl::BindTexture(gl::TEXTURE_2D, self.image);
 
             if size.width == 0 {
                 size.width = 1;
@@ -108,12 +88,12 @@ impl Framebuffer {
                             self.levels = 1;
                         }
 
-                        gl::TexStorage2D(gl::TEXTURE_2D, self.levels as GLsizei, gl::RGBA8, size.width as GLsizei, size.height as GLsizei);
+                        gl::TexStorage2D(gl::TEXTURE_2D, self.levels as GLsizei, ShaderFormat::R8G8B8A8Unorm.into(), size.width as GLsizei, size.height as GLsizei);
                         gl::FramebufferTexture2D(gl::FRAMEBUFFER,
                                                  gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, self.image, 0);
                         self.init = gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
-                    _ => panic!("failed to complete: {status}")
+                    _ => panic!("failed to complete: {status:x}")
                 }
             } else {
                 self.init = true;
@@ -121,6 +101,19 @@ impl Framebuffer {
 
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
+}
+
+impl Drop for Framebuffer {
+    fn drop(&mut self) {
+        unsafe {
+            if self.framebuffer != 0 {
+                gl::DeleteFramebuffers(1, &self.framebuffer);
+            }
+            if self.image != 0 {
+                gl::DeleteTextures(1, &self.image);
+            }
         }
     }
 }

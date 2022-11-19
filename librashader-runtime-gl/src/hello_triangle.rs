@@ -1,11 +1,14 @@
 use std::convert::TryInto;
+use std::ffi::{c_void, CStr};
 use std::sync::mpsc::Receiver;
 
 use glfw;
 use glfw::{Context, Glfw, Window, WindowEvent};
 use gl;
-use gl::types::{GLint, GLsizei, GLuint};
+use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use glfw::Key::P;
+use crate::FilterChain;
+use crate::util::{GlImage, Size, Viewport};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -72,12 +75,21 @@ pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
     shader_program
 }
 
+
+extern "system" fn debug_callback(source: GLenum, err_type: GLenum, id: GLuint, severity: GLenum, length: GLsizei, message: *const GLchar, _user: *mut c_void) {
+    unsafe {
+        let message = CStr::from_ptr(message);
+        eprintln!("{:?}", message);
+    }
+}
+
 pub fn setup() -> (Glfw, Window, Receiver<(f64, WindowEvent)>, GLuint, GLuint) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
     glfw.window_hint(glfw::WindowHint::Resizable(false));
+    glfw.window_hint(glfw::WindowHint::OpenGlDebugContext(true));
 
     let (mut window, events) = glfw.create_window(WIDTH, HEIGHT, TITLE, glfw::WindowMode::Windowed).unwrap();
     let (screen_width, screen_height) = window.get_framebuffer_size();
@@ -85,6 +97,18 @@ pub fn setup() -> (Glfw, Window, Receiver<(f64, WindowEvent)>, GLuint, GLuint) {
     window.make_current();
     window.set_key_polling(true);
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
+
+
+    unsafe {
+        gl::Enable(gl::DEBUG_OUTPUT);
+        gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
+
+        gl::DebugMessageCallback(Some(debug_callback), std::ptr::null_mut());
+        gl::DebugMessageControl(gl::DONT_CARE,
+                                gl::DONT_CARE,
+                                gl::DONT_CARE,
+                              0, std::ptr::null(), gl::TRUE);
+    }
 
     unsafe {
         gl::Viewport(0, 0, screen_width, screen_height);
@@ -192,7 +216,7 @@ void main()
     (glfw, window, events, shader_program, vao)
 }
 
-pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, WindowEvent)>, shader_program: GLuint, vao: GLuint) {
+pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, WindowEvent)>, triangle_program: GLuint, vao: GLuint, filter: &mut FilterChain) {
     let mut framebuffer_handle = 0;
     let mut rendered_texture = 0;
     let mut quad_vbuf = 0;
@@ -207,7 +231,7 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
         gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
 
         // empty image
-        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as GLint, WIDTH as GLsizei, HEIGHT as GLsizei, 0, gl::RGB, gl::UNSIGNED_BYTE, std::ptr::null_mut());
+        gl::TexStorage2D(gl::TEXTURE_2D, 1, gl::RGBA8, WIDTH as GLsizei, HEIGHT as GLsizei);
 
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
@@ -215,7 +239,7 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
 
         // set color attachment
-        gl::FramebufferTexture(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, rendered_texture, 0);
+        gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, rendered_texture, 0);
 
         let buffers = [gl::COLOR_ATTACHMENT0];
         gl::DrawBuffers(1, buffers.as_ptr());
@@ -290,12 +314,12 @@ void main()
             gl::Viewport(0, 0, WIDTH as GLsizei, HEIGHT as GLsizei);
 
             // clear color
-            // clear_color(Color(0.3, 0.4, 0.6, 1.0));
+            clear_color(Color(0.3, 0.4, 0.6, 1.0));
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
 
             // do the drawing
-            gl::UseProgram(shader_program);
+            gl::UseProgram(triangle_program);
             // select vertices
             gl::BindVertexArray(vao);
 
@@ -305,7 +329,33 @@ void main()
             // unselect vertices
             gl::BindVertexArray(0);
 
+            // unselect fbo
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 
+        }
+
+        // eprintln!("[core] rendered texture is {rendered_texture}");
+
+        unsafe {
+            filter.frame(0, &Viewport {
+                x: 0,
+                y: 0,
+                size: Size {
+                    width: WIDTH,
+                    height: HEIGHT
+                }
+            }, GlImage {
+                handle: rendered_texture,
+                format: gl::RGBA,
+                size: Size {
+                    width: WIDTH,
+                    height: HEIGHT
+                },
+                padded_size: Default::default()
+            }, false)
+        }
+
+        unsafe {
             // texture is done now.
 
             // todo: insert postprocessing stuff to rendered_texture

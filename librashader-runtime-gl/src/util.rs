@@ -47,7 +47,7 @@ pub struct Viewport {
     pub size: Size,
 }
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Size {
     pub width: u32,
     pub height: u32,

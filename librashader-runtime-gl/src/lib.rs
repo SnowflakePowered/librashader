@@ -1,3 +1,5 @@
+#![feature(strict_provenance)]
+
 mod hello_triangle;
 mod filter;
 mod filter_pass;
@@ -41,6 +43,13 @@ unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     }
     shader
 }
+
+static QUAD_VBO_DATA: &'static [f32; 16] = &[
+    0.0f32, 0.0f32, 0.0f32, 0.0f32,
+    1.0f32, 0.0f32, 1.0f32, 0.0f32,
+    0.0f32, 1.0f32, 0.0f32, 1.0f32,
+    1.0f32, 1.0f32, 1.0f32, 1.0f32,
+];
 
 impl FilterChain {
     fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSemantic>, texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
@@ -114,12 +123,19 @@ impl FilterChain {
 
 pub struct FilterChain {
     passes: Vec<FilterPass>,
+    common: FilterCommon,
+    pub quad_vao: GLuint,
+}
+
+pub struct FilterCommon {
     semantics: ReflectSemantics,
     preset: ShaderPreset,
     original_history: Vec<Framebuffer>,
     history: Vec<Texture>,
     feedback: Vec<Texture>,
-    luts: FxHashMap<String, Texture>
+    luts: FxHashMap<String, Texture>,
+    pub quad_vbo: GLuint,
+    pub input_framebuffer: Framebuffer,
 }
 
 impl FilterChain {
@@ -194,7 +210,8 @@ impl FilterChain {
 
                 for res in &vertex_resources.stage_inputs {
                     let loc = glsl.context.compiler.vertex.get_decoration(res.id, Decoration::Location)?;
-                    let loc_name = format!("RARCH_ATTRIBUTE_{loc}");
+                    let loc_name = format!("RARCH_ATTRIBUTE_{loc}\0");
+                    eprintln!("{loc_name}");
                     gl::BindAttribLocation(program, loc, loc_name.as_str().as_ptr().cast())
                 }
                 gl::LinkProgram(program);
@@ -208,7 +225,7 @@ impl FilterChain {
                 }
 
                 for binding in &glsl.context.texture_fixups {
-                    let loc_name = format!("RARCH_TEXTURE_{}", *binding);
+                    let loc_name = format!("RARCH_TEXTURE_{}\0", *binding);
                     unsafe {
                         let location = gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
                         if location >= 0 {
@@ -373,24 +390,51 @@ impl FilterChain {
             });
         }
 
+        let mut quad_vbo = 0;
+        unsafe {
+            gl::GenBuffers(1, &mut quad_vbo);
+            gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbo);
+            gl::BufferData(gl::ARRAY_BUFFER, std::mem::size_of_val(QUAD_VBO_DATA) as GLsizeiptr,
+                           QUAD_VBO_DATA.as_ptr().cast(), gl::STATIC_DRAW);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        }
+
+        let mut quad_vao = 0;
+        unsafe {
+            gl::GenVertexArrays(1, &mut quad_vao);
+        }
+
         // todo: split params
         Ok(FilterChain {
             passes: filters,
-            semantics,
-            preset,
-            original_history: vec![],
-            history: vec![],
-            feedback: vec![],
-            luts,
+            quad_vao,
+            common: FilterCommon {
+                semantics,
+                preset,
+                original_history: vec![],
+                history: vec![],
+                feedback: vec![],
+                luts,
+                quad_vbo,
+                input_framebuffer: Framebuffer::new(1)
+            }
         })
     }
 
 
     // how much info do we actually need?
-    fn frame(&mut self, count: u32, vp: &Viewport, input: GlImage, clear: bool) {
+    pub fn frame(&mut self, count: u32, vp: &Viewport, input: GlImage, clear: bool) {
+        //
+        // unsafe {
+        //     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        //     gl::BindVertexArray(self.quad_vao);
+        // }
 
-        let filter = self.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
-        let wrap_mode = self.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
+        // todo: copy framebuffer
+        // shader_gl3: 2067
+        let filter = self.common.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
+        let wrap_mode = self.common.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
+
         let original = Texture {
             image: input,
             filter,
@@ -401,9 +445,15 @@ impl FilterChain {
         let mut source = original.clone();
 
         for passes in &mut self.passes {
+            passes.build_commands(&self.common, None, count, 1, vp, &original, &source);
             // passes.build_semantics(&self, None, count, 1, vp, &original, &source);
         }
 
+
+        // unsafe {
+        //     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        //     gl::BindVertexArray(0);
+        // }
         // todo: deal with the mess that is frame history
     }
 
@@ -412,8 +462,8 @@ impl FilterChain {
         // todo: make copy
 
         // todo: get filter info from pass data.
-        let filter = self.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
-        let wrap_mode = self.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
+        let filter = self.common.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
+        let wrap_mode = self.common.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
         let original = Texture {
             image: input,
             filter,
@@ -437,10 +487,12 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        FilterChain::load("../test/basic.slangp").unwrap();
+        let mut filter = FilterChain::load("../test/basic.slangp").unwrap();
+
+
         // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 
-        hello_triangle::do_loop(glfw, window, events, shader, vao);
+        hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter );
     }
 
     // #[test]
