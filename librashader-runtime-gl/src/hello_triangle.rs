@@ -336,6 +336,7 @@ void main()
 
         // eprintln!("[core] rendered texture is {rendered_texture}");
 
+        // do offscreen passes
         unsafe {
             filter.frame(0, &Viewport {
                 x: 0,
@@ -346,7 +347,7 @@ void main()
                 }
             }, GlImage {
                 handle: rendered_texture,
-                format: gl::RGBA,
+                format: gl::RGBA8,
                 size: Size {
                     width: WIDTH,
                     height: HEIGHT

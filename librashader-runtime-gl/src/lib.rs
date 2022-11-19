@@ -425,10 +425,10 @@ impl FilterChain {
     // how much info do we actually need?
     pub fn frame(&mut self, count: u32, vp: &Viewport, input: GlImage, clear: bool) {
         //
-        // unsafe {
-        //     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        //     gl::BindVertexArray(self.quad_vao);
-        // }
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::BindVertexArray(self.quad_vao);
+        }
 
         // todo: copy framebuffer
         // shader_gl3: 2067
@@ -450,10 +450,10 @@ impl FilterChain {
         }
 
 
-        // unsafe {
-        //     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        //     gl::BindVertexArray(0);
-        // }
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::BindVertexArray(0);
+        }
         // todo: deal with the mess that is frame history
     }
 

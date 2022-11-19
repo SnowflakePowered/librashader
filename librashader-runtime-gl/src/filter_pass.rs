@@ -177,14 +177,15 @@ impl FilterPass {
         self.build_semantics(parent, mvp, frame_count, frame_direction, fb_size, viewport, original, source);
         // shader_gl3:1514
 
-        if !self.ubo_location.vertex == gl::INVALID_INDEX && !self.ubo_location.fragment == gl::INVALID_INDEX {
+        if self.ubo_location.vertex != gl::INVALID_INDEX && self.ubo_location.fragment != gl::INVALID_INDEX {
             if let (Some(ubo), Some(ring)) = (&self.reflection.ubo, &mut self.ubo_ring) {
                 let size = ubo.size;
                 let buffer = ring.current();
 
                 unsafe {
                     gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
-                    gl::BufferSubData(gl::UNIFORM_BUFFER, 0, size as GLsizeiptr, self.uniform_buffer.as_ptr().cast());
+                    gl::BufferSubData(gl::UNIFORM_BUFFER, 0, size as GLsizeiptr,
+                                      self.uniform_buffer.as_ptr().cast());
                     gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
 
                     if self.ubo_location.vertex != gl::INVALID_INDEX {
@@ -256,11 +257,12 @@ impl FilterPass {
                 -1.0, -1.0, 0.0, 1.0
             ]);
 
+            let mvp_size = mvp.len() * std::mem::size_of::<f32>();
             let (buffer, offset) = match variable.offset {
                 MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, offset),
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer, offset)
             };
-            FilterPass::build_mvp(&mut buffer[offset..][..mvp.len() * std::mem::size_of::<f32>()], mvp)
+            FilterPass::build_mvp(&mut buffer[offset..][..mvp_size], mvp)
         }
 
         if let Some(variable) = self.reflection.meta.variable_meta.get(&VariableSemantics::Output) {
