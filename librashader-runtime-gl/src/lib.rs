@@ -10,6 +10,7 @@ mod binding;
 use std::collections::HashMap;
 use std::error::Error;
 use std::iter::Filter;
+use std::ops::Deref;
 use std::path::Path;
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use glfw::Key::P;
@@ -37,7 +38,6 @@ unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
     gl::ShaderSource(shader, 1, &source.as_bytes().as_ptr().cast(), std::ptr::null());
     gl::CompileShader(shader);
-
     let mut compile_status = 0;
     gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
 
@@ -137,8 +137,8 @@ pub struct FilterCommon {
     history: Vec<Texture>,
     feedback: Vec<Texture>,
     luts: FxHashMap<usize, Texture>,
+    outputs: Vec<Framebuffer>,
     pub quad_vbo: GLuint,
-    pub input_framebuffer: Framebuffer,
 }
 
 impl FilterChain {
@@ -192,6 +192,7 @@ impl FilterChain {
         };
 
         let mut filters = Vec::new();
+        let mut output_framebuffers = Vec::new();
 
         // initialize passes
         for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
@@ -227,23 +228,22 @@ impl FilterChain {
                     panic!("failed to link program")
                 }
 
-                for binding in &glsl.context.texture_fixups {
+                gl::UseProgram(program);
+
+                for binding in &glsl.context.sampler_bindings {
                     let loc_name = format!("LIBRA_TEXTURE_{}\0", *binding);
-                    unsafe {
-                        let location = gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
-                        if location >= 0 {
-                            gl::Uniform1i(location, *binding as GLint);
-                        }
+                    let location = gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
+                    if location >= 0 {
+                        // eprintln!("setting sampler {location} to sample from {binding}");
+                        gl::Uniform1i(location, *binding as GLint);
                     }
                 }
 
-                unsafe {
-                    gl::UseProgram(0);
-                    (program, UniformLocation {
-                        vertex: gl::GetUniformBlockIndex(program, b"LIBRA_UBO_VERTEX\0".as_ptr().cast()),
-                        fragment: gl::GetUniformBlockIndex(program, b"LIBRA_UBO_FRAGMENT\0".as_ptr().cast()),
-                    })
-                }
+                gl::UseProgram(0);
+                (program, UniformLocation {
+                    vertex: gl::GetUniformBlockIndex(program, b"LIBRA_UBO_VERTEX\0".as_ptr().cast()),
+                    fragment: gl::GetUniformBlockIndex(program, b"LIBRA_UBO_FRAGMENT\0".as_ptr().cast()),
+                })
             };
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
@@ -282,12 +282,13 @@ impl FilterChain {
                                  (FilterChain::reflect_uniform_location(program, param), param.offset));
             }
 
-
+            // need output framebuffers.
+            output_framebuffers.push(Framebuffer::new(1));
 
             // eprintln!("{:#?}", semantics);
-            eprintln!("{:#?}", reflection.meta);
-            eprintln!("{:#?}", locations);
-            eprintln!("{:#?}", reflection.push_constant);
+            // eprintln!("{:#?}", reflection.meta);
+            // eprintln!("{:#?}", locations);
+            // eprintln!("{:#?}", reflection.push_constant);
             // eprintln!("====fragment====");
             // eprintln!("{:#}", glsl.fragment);
             // eprintln!("====vertex====");
@@ -305,31 +306,10 @@ impl FilterChain {
                 source,
                 // no idea if this works.
                 // retroarch checks if feedback frames are used but we'll just init it tbh.
-                framebuffer: Framebuffer::new(1),
                 feedback_framebuffer: Framebuffer::new(1),
                 config: config.clone()
             });
         }
-
-        eprintln!("{:?}", filters.iter().map(|f| f.program).collect::<Vec<_>>());
-        // let mut glprogram: Vec<GLuint> = Vec::new();
-        // for compilation in &compiled {
-        //     // compilation.context.compiler.vertex
-        // }
-
-        //    eprintln!("{:#?}", reflections);
-
-        // eprintln!("{:#?}", compiled./);
-        // eprintln!("{:?}", preset);
-        // eprintln!("{:?}", reflect.reflect(&ReflectOptions {
-        //     pass_number: i as u32,
-        //     uniform_semantics,
-        //     non_uniform_semantics: Default::default(),
-        // }));
-
-        // todo: apply shader pass
-        // gl3.cpp: 1942
-
 
         // load luts
         let mut luts = FxHashMap::default();
@@ -415,7 +395,6 @@ impl FilterChain {
             gl::GenVertexArrays(1, &mut quad_vao);
         }
 
-        // todo: split params
         Ok(FilterChain {
             passes: filters,
             quad_vao,
@@ -426,8 +405,8 @@ impl FilterChain {
                 history: vec![],
                 feedback: vec![],
                 luts,
+                outputs: output_framebuffers,
                 quad_vbo,
-                input_framebuffer: Framebuffer::new(1)
             }
         })
     }
@@ -455,37 +434,34 @@ impl FilterChain {
 
         let mut source = original.clone();
 
-        for passes in &mut self.passes {
-            passes.build_commands(&self.common, None, count, 1, vp, &original, &source);
+        let passes_len = self.passes.len();
+        let (pass, last) = self.passes.split_at_mut(passes_len - 1);
+
+        for (index, pass) in pass.iter_mut().enumerate() {
+            {
+                let target = &mut self.common.outputs[index];
+                let framebuffer_size = target.scale(pass.config.scaling.clone(), pass.get_format(), vp, &original, &source);
+            }
+            let target = &self.common.outputs[index];
+            pass.draw(&self.common, None, count, 1, vp, &original, &source, &target);
+            let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
+
+            // todo: update-pass-outputs
+            source = target;
             // passes.build_semantics(&self, None, count, 1, vp, &original, &source);
         }
 
+        assert_eq!(last.len(), 1);
+        for pass in last {
+            source.filter = pass.config.filter;
+            source.mip_filter = pass.config.filter;
+            pass.draw(&self.common, None, count, 1, vp, &original, &source, &vp.output);
+        }
 
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindVertexArray(0);
         }
-        // todo: deal with the mess that is frame history
-    }
-
-    pub fn do_final_pass(&mut self, count: u64, vp: &Viewport, input: GlImage, clear: bool, mvp: &[f32]) {
-
-        // todo: make copy
-
-        // todo: get filter info from pass data.
-        let filter = self.common.preset.shaders.first().map(|f| f.filter).unwrap_or_default();
-        let wrap_mode = self.common.preset.shaders.first().map(|f| f.wrap_mode).unwrap_or_default();
-        let original = Texture {
-            image: input,
-            filter,
-            mip_filter: filter,
-            wrap_mode
-        };
-
-
-
-
-
         // todo: deal with the mess that is frame history
     }
 }

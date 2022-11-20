@@ -1,8 +1,10 @@
 use gl::types::{GLenum, GLsizei, GLuint};
-use librashader::ShaderFormat;
+use librashader::{FilterMode, ShaderFormat, WrapMode};
+use librashader_presets::{Scale2D, ScaleType, Scaling};
 use crate::util;
-use crate::util::Size;
+use crate::util::{GlImage, Size, Texture, Viewport};
 
+#[derive(Debug)]
 pub struct Framebuffer {
     pub image: GLuint,
     pub size: Size,
@@ -33,7 +35,96 @@ impl Framebuffer {
         }
     }
 
-    pub(crate) fn init(&mut self, mut size: Size, mut format: impl Into<GLenum>) {
+    pub fn new_from_raw(texture: GLuint, handle: GLuint, format: GLenum, size: Size, miplevels: u32) -> Framebuffer {
+        Framebuffer {
+            image: texture,
+            size,
+            format,
+            max_levels: miplevels,
+            levels: miplevels,
+            framebuffer: handle,
+            init: true
+        }
+    }
+
+    pub fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
+        Texture {
+            image: GlImage {
+                handle: self.image,
+                format: self.format,
+                size: self.size,
+                padded_size: Default::default()
+            },
+            filter,
+            mip_filter: filter,
+            wrap_mode
+        }
+    }
+
+    pub fn scale(&mut self, scaling: Scale2D, format: ShaderFormat, viewport: &Viewport, original: &Texture, source: &Texture) -> Size {
+        let mut width = 0f32;
+        let mut height = 0f32;
+
+        match scaling.x {
+            Scaling {
+                scale_type: ScaleType::Input,
+                factor
+            } => {
+                width = source.image.size.width * factor
+            },
+            Scaling {
+                scale_type: ScaleType::Absolute,
+                factor
+            } => {
+                width = factor.into()
+            }
+            Scaling {
+                scale_type: ScaleType::Viewport,
+                factor
+            } => {
+                width = viewport.output.size.width * factor
+            }
+        };
+
+        match scaling.y {
+            Scaling {
+                scale_type: ScaleType::Input,
+                factor
+            } => {
+                height = source.image.size.height * factor
+            },
+            Scaling {
+                scale_type: ScaleType::Absolute,
+                factor
+            } => {
+                height = factor.into()
+            }
+            Scaling {
+                scale_type: ScaleType::Viewport,
+                factor
+            } => {
+                height = viewport.output.size.height * factor
+            }
+        };
+
+        let size = Size {
+            width: width.round() as u32,
+            height: height.round() as u32
+        };
+
+        if self.size != size {
+            self.size = size;
+
+            self.init(size,if format == ShaderFormat::Unknown {
+                ShaderFormat::R8G8B8A8Unorm
+            } else {
+                format
+            });
+        }
+        size
+    }
+
+    fn init(&mut self, mut size: Size, mut format: impl Into<GLenum>) {
         self.format = format.into();
         self.size = size;
 

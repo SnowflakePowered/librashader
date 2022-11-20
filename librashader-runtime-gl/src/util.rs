@@ -1,5 +1,6 @@
 use gl::types::{GLenum, GLint, GLuint};
 use librashader::{FilterMode, WrapMode};
+use crate::framebuffer::Framebuffer;
 
 pub fn calc_miplevel(width: u32, height: u32) -> u32 {
     let mut size = std::cmp::max(width, height);
@@ -21,10 +22,10 @@ pub struct Texture {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Viewport {
+pub struct Viewport<'a> {
     pub x: i32,
     pub y: i32,
-    pub size: Size,
+    pub output: &'a Framebuffer,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]

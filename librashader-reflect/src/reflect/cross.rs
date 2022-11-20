@@ -810,7 +810,7 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
             context: GlslangGlslContext {
-                texture_fixups,
+                sampler_bindings: texture_fixups,
                 compiler: CompiledAst {
                     vertex: self.vertex,
                     fragment: self.fragment

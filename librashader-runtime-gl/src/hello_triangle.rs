@@ -8,6 +8,7 @@ use gl;
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use glfw::Key::P;
 use crate::FilterChain;
+use crate::framebuffer::Framebuffer;
 use crate::util::{GlImage, Size, Viewport};
 
 const WIDTH: u32 = 900;
@@ -145,6 +146,10 @@ void main()
 }";
     let shader_program = compile_program(VERT_SHADER, FRAG_SHADER);
 
+    unsafe {
+        gl::ObjectLabel(gl::SHADER, shader_program, -1, b"color_shader\0".as_ptr().cast());
+    }
+
     let vertices = &[
         // positions      // colors
         0.5f32, -0.5, 0.0,   1.0, 0.0, 0.0,   // bottom right
@@ -154,6 +159,8 @@ void main()
     let mut vbo: gl::types::GLuint = 0;
     unsafe {
         gl::GenBuffers(1, &mut vbo);
+        gl::ObjectLabel(gl::BUFFER, vbo, -1, b"triangle_vbo\0".as_ptr().cast());
+
     }
 
     unsafe {
@@ -172,6 +179,8 @@ void main()
     let mut vao: gl::types::GLuint = 0;
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
+        gl::ObjectLabel(gl::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
+
     }
 
     unsafe {
@@ -216,19 +225,27 @@ void main()
     (glfw, window, events, shader_program, vao)
 }
 
-pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, WindowEvent)>, triangle_program: GLuint, vao: GLuint, filter: &mut FilterChain) {
-    let mut framebuffer_handle = 0;
+pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, WindowEvent)>, triangle_program: GLuint, triangle_vao: GLuint, filter: &mut FilterChain) {
+    let mut rendered_framebuffer = 0;
     let mut rendered_texture = 0;
     let mut quad_vbuf = 0;
 
+    let mut output_texture = 0;
+    let mut output_framebuffer_handle = 0;
+    let mut output_quad_vbuf = 0;
+
     unsafe {
         // do frmaebuffer
-        gl::GenFramebuffers(1, &mut framebuffer_handle);
-        gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_handle);
+        gl::GenFramebuffers(1, &mut rendered_framebuffer);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
+
+        gl::ObjectLabel(gl::FRAMEBUFFER, rendered_framebuffer, -1, b"rendered_framebuffer\0".as_ptr().cast());
 
         // make tetxure
         gl::GenTextures(1, &mut rendered_texture);
         gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
+
+        gl::ObjectLabel(gl::TEXTURE, rendered_texture, -1, b"rendered_texture\0".as_ptr().cast());
 
         // empty image
         gl::TexStorage2D(gl::TEXTURE_2D, 1, gl::RGBA8, WIDTH as GLsizei, HEIGHT as GLsizei);
@@ -259,6 +276,56 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
 
         gl::GenBuffers(1, &mut quad_vbuf);
         gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbuf);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,                                                       // target
+            (fullscreen_fbo.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
+            fullscreen_fbo.as_ptr() as *const gl::types::GLvoid, // pointer to data
+            gl::STATIC_DRAW,                               // usage
+        );
+    }
+
+    unsafe {
+        // do frmaebuffer
+        gl::GenFramebuffers(1, &mut output_framebuffer_handle);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, output_framebuffer_handle);
+
+        gl::ObjectLabel(gl::FRAMEBUFFER, output_framebuffer_handle, -1, b"output_framebuffer\0".as_ptr().cast());
+
+        // make tetxure
+        gl::GenTextures(1, &mut output_texture);
+        gl::BindTexture(gl::TEXTURE_2D, output_texture);
+
+        gl::ObjectLabel(gl::TEXTURE, output_texture, -1, b"output_texture\0".as_ptr().cast());
+
+        // empty image
+        gl::TexStorage2D(gl::TEXTURE_2D, 1, gl::RGBA8, WIDTH as GLsizei, HEIGHT as GLsizei);
+
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+
+        // set color attachment
+        gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, output_texture, 0);
+
+        let buffers = [gl::COLOR_ATTACHMENT0];
+        gl::DrawBuffers(1, buffers.as_ptr());
+
+        if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
+            panic!("failed to create fbo")
+        }
+
+        let fullscreen_fbo = [
+            -1.0f32, -1.0, 0.0,
+            1.0, -1.0, 0.0,
+            -1.0,  1.0, 0.0,
+            -1.0,  1.0, 0.0,
+            1.0, -1.0, 0.0,
+            1.0,  1.0, 0.0,
+        ];
+
+        gl::GenBuffers(1, &mut output_quad_vbuf);
+        gl::BindBuffer(gl::ARRAY_BUFFER, output_quad_vbuf);
         gl::BufferData(
             gl::ARRAY_BUFFER,                                                       // target
             (fullscreen_fbo.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
@@ -299,6 +366,11 @@ void main()
         gl::GenVertexArrays(1, &mut quad_vao);
     }
 
+    let fb = Framebuffer::new_from_raw(output_texture, output_framebuffer_handle, gl::RGBA8, Size {
+        width: WIDTH,
+        height: HEIGHT
+    }, 1);
+
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -307,7 +379,7 @@ void main()
 
         unsafe {
             // render to fb
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
             // gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 
 
@@ -321,7 +393,7 @@ void main()
             // do the drawing
             gl::UseProgram(triangle_program);
             // select vertices
-            gl::BindVertexArray(vao);
+            gl::BindVertexArray(triangle_vao);
 
             // draw to bound target
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
@@ -337,14 +409,16 @@ void main()
         // eprintln!("[core] rendered texture is {rendered_texture}");
 
         // do offscreen passes
+
+        // unsafe {
+        //     gl::ActiveTexture(gl::TEXTURE0);
+        //     gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
+        // }
         unsafe {
             filter.frame(0, &Viewport {
                 x: 0,
                 y: 0,
-                size: Size {
-                    width: WIDTH,
-                    height: HEIGHT
-                }
+                output: &fb
             }, GlImage {
                 handle: rendered_texture,
                 format: gl::RGBA8,
@@ -363,14 +437,16 @@ void main()
 
             // map quad to screen
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::UseProgram(quad_programid);
+
+
 
             gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
+            gl::BindTexture(gl::TEXTURE_2D, output_texture);
 
-            gl::UseProgram(quad_programid);
             gl::BindVertexArray(quad_vao);
 
-            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4)
+            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
         }
 
         window.swap_buffers();

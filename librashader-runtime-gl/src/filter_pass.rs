@@ -24,7 +24,6 @@ pub struct FilterPass {
     pub uniform_buffer: Box<[u8]>,
     pub push_buffer: Box<[u8]>,
     pub variable_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
-    pub framebuffer: Framebuffer,
     pub feedback_framebuffer: Framebuffer,
     pub source: ShaderSource,
     pub config: ShaderPassConfig
@@ -86,8 +85,8 @@ impl FilterPass {
 
     fn bind_texture(binding: &TextureImage, texture: &Texture) {
         unsafe {
-            // eprintln!("binding {} = texture {}", binding.binding, texture.image.handle);
-            gl::ActiveTexture((gl::TEXTURE0 + binding.binding) as GLenum);
+            // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
+            gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
 
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, GLenum::from(texture.filter) as GLint);
@@ -97,87 +96,25 @@ impl FilterPass {
         }
     }
 
-    fn scale_framebuffer(&mut self, format: ShaderFormat, viewport: &Viewport, original: &Texture, source: &Texture) -> Size {
-        let mut width = 0f32;
-        let mut height = 0f32;
-
-        match self.config.scaling.x {
-            Scaling {
-                scale_type: ScaleType::Input,
-                factor
-            } => {
-                width = source.image.size.width * factor
-            },
-            Scaling {
-                scale_type: ScaleType::Absolute,
-                factor
-            } => {
-                width = factor.into()
-            }
-            Scaling {
-                scale_type: ScaleType::Viewport,
-                factor
-            } => {
-                width = viewport.size.width * factor
-            }
-        };
-
-        match self.config.scaling.y {
-            Scaling {
-                scale_type: ScaleType::Input,
-                factor
-            } => {
-                height = source.image.size.height * factor
-            },
-            Scaling {
-                scale_type: ScaleType::Absolute,
-                factor
-            } => {
-                height = factor.into()
-            }
-            Scaling {
-                scale_type: ScaleType::Viewport,
-                factor
-            } => {
-                height = viewport.size.height * factor
-            }
-        };
-
-        let size = Size {
-            width: width.round() as u32,
-            height: height.round() as u32
-        };
-
-        if self.framebuffer.size != size {
-            self.framebuffer.size = size;
-
-            self.framebuffer.init(size,if format == ShaderFormat::Unknown {
-                ShaderFormat::R8G8B8A8Unorm
-            } else {
-                format
-            });
-        }
-        size
-    }
-
-    // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
-    pub fn build_commands(&mut self, parent: &FilterCommon, mvp: Option<&[f32]>, frame_count: u32, frame_direction: i32, viewport: &Viewport, original: &Texture, source: &Texture) {
+    pub fn get_format(&self) -> ShaderFormat {
         let mut fb_format = ShaderFormat::R8G8B8A8Unorm;
         if self.config.srgb_framebuffer {
             fb_format = ShaderFormat::R8G8B8A8Srgb;
         } else if self.config.float_framebuffer {
             fb_format = ShaderFormat::R16G16B16A16Sfloat;
         }
+        fb_format
+    }
 
-        let fb_size = self.scale_framebuffer(fb_format, viewport, original, source);
-
-        // println!("[frame] Using framebuffer {}, image {}", self.framebuffer.framebuffer, self.framebuffer.image);
+    // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
+    pub fn draw(&mut self, parent: &FilterCommon, mvp: Option<&[f32]>, frame_count: u32,
+                frame_direction: i32, viewport: &Viewport, original: &Texture, source: &Texture, output: &Framebuffer) {
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer.framebuffer);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, output.framebuffer);
             gl::UseProgram(self.program);
         }
 
-        self.build_semantics(parent, mvp, frame_count, frame_direction, fb_size, viewport, original, source);
+        self.build_semantics(parent, mvp, frame_count, frame_direction, output.size, viewport, original, source);
         // shader_gl3:1514
 
         if self.ubo_location.vertex != gl::INVALID_INDEX && self.ubo_location.fragment != gl::INVALID_INDEX {
@@ -205,14 +142,14 @@ impl FilterPass {
         // todo: final pass?
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer.framebuffer);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, output.framebuffer);
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
             gl::Clear(gl::COLOR_BUFFER_BIT);
             //
-            gl::Viewport(0, 0, fb_size.width as GLsizei, fb_size.height as GLsizei);
+            gl::Viewport(0, 0, output.size.width as GLsizei, output.size.height as GLsizei);
 
-            if self.framebuffer.format == gl::SRGB8_ALPHA8 {
+            if output.format == gl::SRGB8_ALPHA8 {
                 gl::Enable(gl::FRAMEBUFFER_SRGB);
             } else {
                 gl::Disable(gl::FRAMEBUFFER_SRGB);
@@ -280,7 +217,7 @@ impl FilterPass {
                 MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset)
             };
-            FilterPass::build_vec4(location.location(), &mut buffer[offset..][..4], viewport.size)
+            FilterPass::build_vec4(location.location(), &mut buffer[offset..][..4], viewport.output.size)
         }
 
         if let Some((location, offset)) = self.variable_bindings.get(&VariableSemantics::FrameCount.into()) {
