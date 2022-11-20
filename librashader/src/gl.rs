@@ -1,4 +1,3 @@
-use gl::types::GLenum;
 use crate::{FilterMode, ShaderFormat, WrapMode};
 
 impl From<ShaderFormat> for gl::types::GLenum {

@@ -4,15 +4,14 @@ use nom::branch::alt;
 use nom::bytes::complete::{is_not, take_until};
 use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
 
-use nom::combinator::{eof, map_res, opt, value};
+use nom::combinator::{eof, map_res, value};
 use nom::error::{ErrorKind, ParseError};
 
-use nom::sequence::{delimited, preceded};
+use nom::sequence::delimited;
 use nom::{
     bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength,
     InputTake,
 };
-use nom::multi::many0;
 
 #[derive(Debug)]
 pub struct Token<'a> {

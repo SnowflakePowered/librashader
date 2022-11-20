@@ -535,7 +535,6 @@ void main()
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
         }
 
-
         framecount += 1;
         window.swap_buffers();
     }

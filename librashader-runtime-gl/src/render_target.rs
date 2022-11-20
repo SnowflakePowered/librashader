@@ -1,6 +1,7 @@
 use crate::framebuffer::Framebuffer;
 use crate::util::Viewport;
 
+#[rustfmt::skip]
 static DEFAULT_MVP: &[f32] = &[
     2f32, 0.0, 0.0, 0.0,
     0.0, 2.0, 0.0, 0.0,

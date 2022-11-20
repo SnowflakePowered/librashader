@@ -7,9 +7,9 @@ use crate::util::{GlImage, RingBuffer, Size, Texture, Viewport};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader::image::Image;
 use librashader::{FilterMode, ShaderSource};
-use librashader_presets::{ShaderPassConfig, ShaderPreset};
-use librashader_reflect::back::cross::GlVersion;
-use librashader_reflect::back::targets::{FromCompilation, GLSL};
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
+use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};
 use librashader_reflect::back::CompileShader;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, SemanticMap, TextureSemantics, UniformMeta, VariableSemantics,
@@ -120,9 +120,23 @@ pub struct FilterCommon {
     pub(crate) quad_vbo: GLuint,
 }
 
+type ShaderPassMeta<'a> = (
+    &'a ShaderPassConfig,
+    ShaderSource,
+    CompilerBackend<
+        impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext>
+        + ReflectShader
+        + Sized,
+    >,
+);
+
 impl FilterChain {
-    pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
-        let preset = ShaderPreset::try_parse(path)?;
+    fn load_preset(
+        preset: &ShaderPreset,
+    ) -> (
+        Vec<ShaderPassMeta>,
+        ReflectSemantics,
+    ) {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
@@ -186,177 +200,13 @@ impl FilterChain {
             non_uniform_semantics: texture_semantics,
         };
 
-        let mut filters = Vec::new();
-        let mut output_framebuffers = Vec::new();
+        (passes, semantics)
+    }
 
-        // initialize passes
-        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
-            let semantics = semantics.clone();
-
-            let reflection = reflect.reflect(index, &semantics)?;
-            let glsl = reflect.compile(GlVersion::V4_60)?;
-
-            let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
-
-            // todo: split this out.
-            let (program, ubo_location) = unsafe {
-                let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str());
-                let fragment = util::gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str());
-
-                let program = gl::CreateProgram();
-                gl::AttachShader(program, vertex);
-                gl::AttachShader(program, fragment);
-
-                for res in &vertex_resources.stage_inputs {
-                    let loc = glsl
-                        .context
-                        .compiler
-                        .vertex
-                        .get_decoration(res.id, Decoration::Location)?;
-                    let loc_name = format!("LIBRA_ATTRIBUTE_{loc}\0");
-                    eprintln!("{loc_name}");
-                    gl::BindAttribLocation(program, loc, loc_name.as_str().as_ptr().cast())
-                }
-                gl::LinkProgram(program);
-                gl::DeleteShader(vertex);
-                gl::DeleteShader(fragment);
-
-                let mut status = 0;
-                gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
-                if status != 1 {
-                    panic!("failed to link program")
-                }
-
-                gl::UseProgram(program);
-
-                for binding in &glsl.context.sampler_bindings {
-                    let loc_name = format!("LIBRA_TEXTURE_{}\0", *binding);
-                    let location =
-                        gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
-                    if location >= 0 {
-                        // eprintln!("setting sampler {location} to sample from {binding}");
-                        gl::Uniform1i(location, *binding as GLint);
-                    }
-                }
-
-                gl::UseProgram(0);
-                (
-                    program,
-                    UniformLocation {
-                        vertex: gl::GetUniformBlockIndex(
-                            program,
-                            b"LIBRA_UBO_VERTEX\0".as_ptr().cast(),
-                        ),
-                        fragment: gl::GetUniformBlockIndex(
-                            program,
-                            b"LIBRA_UBO_FRAGMENT\0".as_ptr().cast(),
-                        ),
-                    },
-                )
-            };
-
-            let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let size = ubo.size;
-                let mut ring: RingBuffer<GLuint, 16> = RingBuffer::new();
-                unsafe {
-                    gl::GenBuffers(16, ring.items_mut().as_mut_ptr());
-                    for buffer in ring.items() {
-                        gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
-                        gl::BufferData(
-                            gl::UNIFORM_BUFFER,
-                            size as GLsizeiptr,
-                            std::ptr::null(),
-                            gl::STREAM_DRAW,
-                        );
-                    }
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
-                }
-                Some(ring)
-            } else {
-                None
-            };
-
-            let uniform_buffer = vec![
-                0;
-                reflection
-                    .ubo
-                    .as_ref()
-                    .map(|ubo| ubo.size as usize)
-                    .unwrap_or(0)
-            ]
-            .into_boxed_slice();
-            let push_buffer = vec![
-                0;
-                reflection
-                    .push_constant
-                    .as_ref()
-                    .map(|push| push.size as usize)
-                    .unwrap_or(0)
-            ]
-            .into_boxed_slice();
-
-            // todo: reflect indexed parameters
-            let mut locations = FxHashMap::default();
-            for param in reflection.meta.parameter_meta.values() {
-                locations.insert(
-                    UniformBinding::Parameter(param.id.clone()),
-                    (
-                        FilterChain::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
-                );
-            }
-
-            for (semantics, param) in &reflection.meta.variable_meta {
-                locations.insert(
-                    UniformBinding::SemanticVariable(*semantics),
-                    (
-                        FilterChain::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
-                );
-            }
-
-            for (semantics, param) in &reflection.meta.texture_size_meta {
-                locations.insert(
-                    UniformBinding::TextureSize(*semantics),
-                    (
-                        FilterChain::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
-                );
-            }
-
-            // need output framebuffers.
-            output_framebuffers.push(Framebuffer::new(1));
-
-            // eprintln!("{:#?}", semantics);
-            // eprintln!("{:#?}", reflection.meta);
-            // eprintln!("{:#?}", locations);
-            // eprintln!("{:#?}", reflection.push_constant);
-            // eprintln!("====fragment====");
-            // eprintln!("{:#}", glsl.fragment);
-            // eprintln!("====vertex====");
-            // eprintln!("{:#}", glsl.vertex);
-
-            filters.push(FilterPass {
-                reflection,
-                compiled: glsl,
-                program,
-                ubo_location,
-                ubo_ring,
-                uniform_buffer,
-                push_buffer,
-                variable_bindings: locations,
-                source,
-                config: config.clone(),
-            });
-        }
-
-        // load luts
+    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>, Box<dyn Error>> {
         let mut luts = FxHashMap::default();
 
-        for (index, texture) in preset.textures.iter().enumerate() {
+        for (index, texture) in textures.iter().enumerate() {
             let image = Image::load(&texture.path)?;
             let levels = if texture.mipmap {
                 util::calc_miplevel(image.width, image.height)
@@ -452,7 +302,191 @@ impl FilterChain {
                 },
             );
         }
+        Ok(luts)
+    }
 
+    pub fn init_passes(passes: Vec<ShaderPassMeta>, semantics: &ReflectSemantics) -> Result<Vec<FilterPass>, Box<dyn Error>> {
+        let mut filters = Vec::new();
+
+        // initialize passes
+        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+            let reflection = reflect.reflect(index, semantics)?;
+            let glsl = reflect.compile(GlVersion::V4_60)?;
+
+            let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
+
+            // todo: split this out.
+            let (program, ubo_location) = unsafe {
+                let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str());
+                let fragment = util::gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str());
+
+                let program = gl::CreateProgram();
+                gl::AttachShader(program, vertex);
+                gl::AttachShader(program, fragment);
+
+                for res in &vertex_resources.stage_inputs {
+                    let loc = glsl
+                        .context
+                        .compiler
+                        .vertex
+                        .get_decoration(res.id, Decoration::Location)?;
+                    let loc_name = format!("LIBRA_ATTRIBUTE_{loc}\0");
+                    eprintln!("{loc_name}");
+                    gl::BindAttribLocation(program, loc, loc_name.as_str().as_ptr().cast())
+                }
+                gl::LinkProgram(program);
+                gl::DeleteShader(vertex);
+                gl::DeleteShader(fragment);
+
+                let mut status = 0;
+                gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
+                if status != 1 {
+                    panic!("failed to link program")
+                }
+
+                gl::UseProgram(program);
+
+                for binding in &glsl.context.sampler_bindings {
+                    let loc_name = format!("LIBRA_TEXTURE_{}\0", *binding);
+                    let location =
+                        gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
+                    if location >= 0 {
+                        // eprintln!("setting sampler {location} to sample from {binding}");
+                        gl::Uniform1i(location, *binding as GLint);
+                    }
+                }
+
+                gl::UseProgram(0);
+                (
+                    program,
+                    UniformLocation {
+                        vertex: gl::GetUniformBlockIndex(
+                            program,
+                            b"LIBRA_UBO_VERTEX\0".as_ptr().cast(),
+                        ),
+                        fragment: gl::GetUniformBlockIndex(
+                            program,
+                            b"LIBRA_UBO_FRAGMENT\0".as_ptr().cast(),
+                        ),
+                    },
+                )
+            };
+
+            let ubo_ring = if let Some(ubo) = &reflection.ubo {
+                let size = ubo.size;
+                let mut ring: RingBuffer<GLuint, 16> = RingBuffer::new();
+                unsafe {
+                    gl::GenBuffers(16, ring.items_mut().as_mut_ptr());
+                    for buffer in ring.items() {
+                        gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
+                        gl::BufferData(
+                            gl::UNIFORM_BUFFER,
+                            size as GLsizeiptr,
+                            std::ptr::null(),
+                            gl::STREAM_DRAW,
+                        );
+                    }
+                    gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
+                }
+                Some(ring)
+            } else {
+                None
+            };
+
+            let uniform_buffer = vec![
+                0;
+                reflection
+                    .ubo
+                    .as_ref()
+                    .map(|ubo| ubo.size as usize)
+                    .unwrap_or(0)
+            ]
+                .into_boxed_slice();
+            let push_buffer = vec![
+                0;
+                reflection
+                    .push_constant
+                    .as_ref()
+                    .map(|push| push.size as usize)
+                    .unwrap_or(0)
+            ]
+                .into_boxed_slice();
+
+            // todo: reflect indexed parameters
+            let mut locations = FxHashMap::default();
+            for param in reflection.meta.parameter_meta.values() {
+                locations.insert(
+                    UniformBinding::Parameter(param.id.clone()),
+                    (
+                        FilterChain::reflect_uniform_location(program, param),
+                        param.offset,
+                    ),
+                );
+            }
+
+            for (semantics, param) in &reflection.meta.variable_meta {
+                locations.insert(
+                    UniformBinding::SemanticVariable(*semantics),
+                    (
+                        FilterChain::reflect_uniform_location(program, param),
+                        param.offset,
+                    ),
+                );
+            }
+
+            for (semantics, param) in &reflection.meta.texture_size_meta {
+                locations.insert(
+                    UniformBinding::TextureSize(*semantics),
+                    (
+                        FilterChain::reflect_uniform_location(program, param),
+                        param.offset,
+                    ),
+                );
+            }
+
+            // eprintln!("{:#?}", semantics);
+            // eprintln!("{:#?}", reflection.meta);
+            // eprintln!("{:#?}", locations);
+            // eprintln!("{:#?}", reflection.push_constant);
+            // eprintln!("====fragment====");
+            // eprintln!("{:#}", glsl.fragment);
+            // eprintln!("====vertex====");
+            // eprintln!("{:#}", glsl.vertex);
+
+            filters.push(FilterPass {
+                reflection,
+                compiled: glsl,
+                program,
+                ubo_location,
+                ubo_ring,
+                uniform_buffer,
+                push_buffer,
+                variable_bindings: locations,
+                source,
+                config: config.clone(),
+            });
+        }
+
+        Ok(filters)
+    }
+
+
+    pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
+        // load passes from preset
+        let preset = ShaderPreset::try_parse(path)?;
+        let (passes, semantics) = FilterChain::load_preset(&preset);
+
+        // initialize passes
+        let filters = FilterChain::init_passes(passes, &semantics)?;
+
+        // initialize output framebuffers
+        let mut output_framebuffers = Vec::new();
+        output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+
+        // load luts
+        let luts = FilterChain::load_luts(&preset.textures)?;
+
+        // create VBO objects
         let mut quad_vbo = 0;
         unsafe {
             gl::GenBuffers(1, &mut quad_vbo);

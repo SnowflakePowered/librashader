@@ -1,5 +1,3 @@
-use std::ffi::OsStr;
-use std::io::ErrorKind;
 use std::path::Path;
 
 pub struct Image {

@@ -1,5 +1,4 @@
 use crate::error::ParsePresetError;
-use std::convert::Infallible;
 use std::ops::Mul;
 use std::path::PathBuf;
 use std::str::FromStr;

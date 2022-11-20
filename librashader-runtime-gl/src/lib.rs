@@ -1,4 +1,5 @@
 #![feature(strict_provenance)]
+#![feature(type_alias_impl_trait)]
 
 mod binding;
 mod filter_chain;
