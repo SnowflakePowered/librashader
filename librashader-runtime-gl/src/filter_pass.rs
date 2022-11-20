@@ -13,14 +13,14 @@ use rustc_hash::FxHashMap;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
-use crate::util::{RingBuffer, Size, Texture, Viewport};
+use crate::util::{InlineRingBuffer, RingBuffer, Size, Texture, Viewport};
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,
     pub compiled: ShaderCompilerOutput<String, GlslangGlslContext>,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
-    pub ubo_ring: Option<RingBuffer<GLuint, 16>>,
+    pub ubo_ring: Option<InlineRingBuffer<GLuint, 16>>,
     pub uniform_buffer: Box<[u8]>,
     pub push_buffer: Box<[u8]>,
     pub variable_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
@@ -290,7 +290,7 @@ impl FilterPass {
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
             };
 
-            FilterPass::build_vec4(location.location(), &mut buffer[offset..][..4], fb_size)
+            FilterPass::build_vec4(location.location(), &mut buffer[offset..][..16], fb_size)
         }
 
         // bind FinalViewportSize
@@ -304,7 +304,7 @@ impl FilterPass {
             };
             FilterPass::build_vec4(
                 location.location(),
-                &mut buffer[offset..][..4],
+                &mut buffer[offset..][..16],
                 viewport.output.size,
             )
         }
@@ -359,7 +359,7 @@ impl FilterPass {
             };
             FilterPass::build_vec4(
                 location.location(),
-                &mut buffer[offset..][..4],
+                &mut buffer[offset..][..16],
                 original.image.size,
             );
         }
@@ -386,7 +386,7 @@ impl FilterPass {
             };
             FilterPass::build_vec4(
                 location.location(),
-                &mut buffer[offset..][..4],
+                &mut buffer[offset..][..16],
                 source.image.size,
             );
         }
@@ -411,7 +411,7 @@ impl FilterPass {
                 };
                 FilterPass::build_vec4(
                     location.location(),
-                    &mut buffer[offset..][..4],
+                    &mut buffer[offset..][..16],
                     output.image.size,
                 );
             }
@@ -488,7 +488,7 @@ impl FilterPass {
                 };
                 FilterPass::build_vec4(
                     location.location(),
-                    &mut buffer[offset..][..4],
+                    &mut buffer[offset..][..16],
                     lut.image.size,
                 );
             }

@@ -43,12 +43,22 @@ pub struct GlImage {
     pub padded_size: Size,
 }
 
-impl<T, const SIZE: usize> RingBuffer<T, SIZE> {
-    pub fn current(&self) -> &T {
+pub trait RingBuffer<T> {
+    fn current(&self) -> &T;
+    fn current_mut(&mut self) -> &mut T;
+    fn next(&mut self);
+}
+
+impl<T, const SIZE: usize> RingBuffer<T> for InlineRingBuffer<T, SIZE> {
+    fn current(&self) -> &T {
         &self.items[self.index]
     }
 
-    pub fn next(&mut self) {
+    fn current_mut(&mut self) -> &mut T {
+        &mut self.items[self.index]
+    }
+
+    fn next(&mut self) {
         self.index += 1;
         if self.index >= SIZE {
             self.index = 0
@@ -56,12 +66,12 @@ impl<T, const SIZE: usize> RingBuffer<T, SIZE> {
     }
 }
 
-pub struct RingBuffer<T, const SIZE: usize> {
+pub struct InlineRingBuffer<T, const SIZE: usize> {
     items: [T; SIZE],
     index: usize,
 }
 
-impl<T, const SIZE: usize> RingBuffer<T, SIZE>
+impl<T, const SIZE: usize> InlineRingBuffer<T, SIZE>
 where
     T: Copy,
     T: Default,
@@ -81,6 +91,53 @@ where
         &mut self.items
     }
 }
+
+
+pub struct AllocRingBuffer<T> {
+    items: Box<[T]>,
+    index: usize
+}
+
+impl<T> AllocRingBuffer<T>
+    where
+        T: Default,
+{
+    pub fn new(len: usize) -> Self {
+        let mut items = Vec::new();
+        items.resize_with(len, T::default);
+
+        Self {
+            items: items.into_boxed_slice(),
+            index: 0,
+        }
+    }
+
+    pub fn items(&self) -> &[T] {
+        &self.items
+    }
+
+    pub fn items_mut(&mut self) -> &mut [T] {
+        &mut self.items
+    }
+}
+
+impl <T> RingBuffer<T> for AllocRingBuffer<T> {
+    fn current(&self) -> &T {
+        &self.items[self.index]
+    }
+
+    fn current_mut(&mut self) -> &mut T {
+        &mut self.items[self.index]
+    }
+
+    fn next(&mut self) {
+        self.index += 1;
+        if self.index >= self.items.len() {
+            self.index = 0
+        }
+    }
+}
+
 
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);

@@ -17,7 +17,7 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        let mut filter = FilterChain::load("../test/basic.slangp").unwrap();
+        let mut filter = FilterChain::load("../test/slang-shaders/crt/crt-geom.slangp").unwrap();
 
         // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 

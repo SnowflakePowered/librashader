@@ -3,7 +3,7 @@ use crate::filter_pass::FilterPass;
 use crate::framebuffer::Framebuffer;
 use crate::render_target::RenderTarget;
 use crate::util;
-use crate::util::{GlImage, RingBuffer, Size, Texture, Viewport};
+use crate::util::{GlImage, InlineRingBuffer, Size, Texture, Viewport};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader::image::Image;
 use librashader::{FilterMode, ShaderSource};
@@ -373,7 +373,7 @@ impl FilterChain {
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
                 let size = ubo.size;
-                let mut ring: RingBuffer<GLuint, 16> = RingBuffer::new();
+                let mut ring: InlineRingBuffer<GLuint, 16> = InlineRingBuffer::new();
                 unsafe {
                     gl::GenBuffers(16, ring.items_mut().as_mut_ptr());
                     for buffer in ring.items() {
