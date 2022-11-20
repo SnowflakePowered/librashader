@@ -2,11 +2,10 @@ use std::convert::TryInto;
 use std::ffi::{c_void, CStr};
 use std::sync::mpsc::Receiver;
 
-use glfw;
 use glfw::{Context, Glfw, Window, WindowEvent};
-use gl;
+
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
-use glfw::Key::P;
+
 use crate::filter_chain::FilterChain;
 use crate::framebuffer::Framebuffer;
 use crate::util::{GlImage, Size, Viewport};
@@ -18,7 +17,12 @@ const TITLE: &str = "Hello From OpenGL World!";
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
     let vertex_shader = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };
     unsafe {
-        gl::ShaderSource(vertex_shader, 1, &vertex.as_bytes().as_ptr().cast(), &vertex.len().try_into().unwrap());
+        gl::ShaderSource(
+            vertex_shader,
+            1,
+            &vertex.as_bytes().as_ptr().cast(),
+            &vertex.len().try_into().unwrap(),
+        );
         gl::CompileShader(vertex_shader);
 
         let mut success = 0;
@@ -31,13 +35,21 @@ pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
             let mut v: Vec<u8> = Vec::with_capacity(1024);
             gl::GetShaderInfoLog(vertex_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
             v.set_len(log_len.try_into().unwrap());
-            panic!("Vertex Shader Compile Error: {}", String::from_utf8_lossy(&v));
+            panic!(
+                "Vertex Shader Compile Error: {}",
+                String::from_utf8_lossy(&v)
+            );
         }
     }
 
     let fragment_shader = unsafe { gl::CreateShader(gl::FRAGMENT_SHADER) };
     unsafe {
-        gl::ShaderSource(fragment_shader, 1, &fragment.as_bytes().as_ptr().cast(), &fragment.len().try_into().unwrap());
+        gl::ShaderSource(
+            fragment_shader,
+            1,
+            &fragment.as_bytes().as_ptr().cast(),
+            &fragment.len().try_into().unwrap(),
+        );
         gl::CompileShader(fragment_shader);
 
         let mut success = 0;
@@ -47,7 +59,10 @@ pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
             let mut log_len = 0_i32;
             gl::GetShaderInfoLog(fragment_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
             v.set_len(log_len.try_into().unwrap());
-            panic!("Fragment Shader Compile Error: {}", String::from_utf8_lossy(&v));
+            panic!(
+                "Fragment Shader Compile Error: {}",
+                String::from_utf8_lossy(&v)
+            );
         }
     }
 
@@ -76,39 +91,53 @@ pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
     shader_program
 }
 
-
-extern "system" fn debug_callback(source: GLenum, err_type: GLenum, id: GLuint, severity: GLenum, length: GLsizei, message: *const GLchar, _user: *mut c_void) {
+extern "system" fn debug_callback(
+    _source: GLenum,
+    _err_type: GLenum,
+    _id: GLuint,
+    _severity: GLenum,
+    _length: GLsizei,
+    message: *const GLchar,
+    _user: *mut c_void,
+) {
     unsafe {
         let message = CStr::from_ptr(message);
-        eprintln!("{:?}", message);
+        eprintln!("{message:?}");
     }
 }
 
 pub fn setup() -> (Glfw, Window, Receiver<(f64, WindowEvent)>, GLuint, GLuint) {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
-    glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+    glfw.window_hint(glfw::WindowHint::OpenGlProfile(
+        glfw::OpenGlProfileHint::Core,
+    ));
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
     glfw.window_hint(glfw::WindowHint::Resizable(false));
     glfw.window_hint(glfw::WindowHint::OpenGlDebugContext(true));
 
-    let (mut window, events) = glfw.create_window(WIDTH, HEIGHT, TITLE, glfw::WindowMode::Windowed).unwrap();
+    let (mut window, events) = glfw
+        .create_window(WIDTH, HEIGHT, TITLE, glfw::WindowMode::Windowed)
+        .unwrap();
     let (screen_width, screen_height) = window.get_framebuffer_size();
 
     window.make_current();
     window.set_key_polling(true);
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
-
     unsafe {
         gl::Enable(gl::DEBUG_OUTPUT);
         gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
 
         gl::DebugMessageCallback(Some(debug_callback), std::ptr::null_mut());
-        gl::DebugMessageControl(gl::DONT_CARE,
-                                gl::DONT_CARE,
-                                gl::DONT_CARE,
-                              0, std::ptr::null(), gl::TRUE);
+        gl::DebugMessageControl(
+            gl::DONT_CARE,
+            gl::DONT_CARE,
+            gl::DONT_CARE,
+            0,
+            std::ptr::null(),
+            gl::TRUE,
+        );
     }
 
     unsafe {
@@ -147,20 +176,24 @@ void main()
     let shader_program = compile_program(VERT_SHADER, FRAG_SHADER);
 
     unsafe {
-        gl::ObjectLabel(gl::SHADER, shader_program, -1, b"color_shader\0".as_ptr().cast());
+        gl::ObjectLabel(
+            gl::SHADER,
+            shader_program,
+            -1,
+            b"color_shader\0".as_ptr().cast(),
+        );
     }
 
     let vertices = &[
         // positions      // colors
-        0.5f32, -0.5, 0.0,   1.0, 0.0, 0.0,   // bottom right
-        -0.5, -0.5, 0.0,  0.0, 1.0, 0.0,   // bottom left
-        0.0,  0.5, 0.0,   0.0, 0.0, 1.0    // top
+        0.5f32, -0.5, 0.0, 1.0, 0.0, 0.0, // bottom right
+        -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
+        0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
     ];
     let mut vbo: gl::types::GLuint = 0;
     unsafe {
         gl::GenBuffers(1, &mut vbo);
         gl::ObjectLabel(gl::BUFFER, vbo, -1, b"triangle_vbo\0".as_ptr().cast());
-
     }
 
     unsafe {
@@ -180,7 +213,6 @@ void main()
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
         gl::ObjectLabel(gl::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
-
     }
 
     unsafe {
@@ -217,15 +249,24 @@ void main()
         gl::ClearColor(0.3, 0.3, 0.5, 1.0);
     }
 
-
     // -------------------------------------------
     println!("OpenGL version: {}", gl_get_string(gl::VERSION));
-    println!("GLSL version: {}", gl_get_string(gl::SHADING_LANGUAGE_VERSION));
+    println!(
+        "GLSL version: {}",
+        gl_get_string(gl::SHADING_LANGUAGE_VERSION)
+    );
 
     (glfw, window, events, shader_program, vao)
 }
 
-pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, WindowEvent)>, triangle_program: GLuint, triangle_vao: GLuint, filter: &mut FilterChain) {
+pub fn do_loop(
+    mut glfw: Glfw,
+    mut window: Window,
+    events: Receiver<(f64, WindowEvent)>,
+    triangle_program: GLuint,
+    triangle_vao: GLuint,
+    filter: &mut FilterChain,
+) {
     let mut rendered_framebuffer = 0;
     let mut rendered_texture = 0;
     let mut quad_vbuf = 0;
@@ -239,24 +280,54 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
         gl::GenFramebuffers(1, &mut rendered_framebuffer);
         gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
 
-        gl::ObjectLabel(gl::FRAMEBUFFER, rendered_framebuffer, -1, b"rendered_framebuffer\0".as_ptr().cast());
+        gl::ObjectLabel(
+            gl::FRAMEBUFFER,
+            rendered_framebuffer,
+            -1,
+            b"rendered_framebuffer\0".as_ptr().cast(),
+        );
 
         // make tetxure
         gl::GenTextures(1, &mut rendered_texture);
         gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
 
-        gl::ObjectLabel(gl::TEXTURE, rendered_texture, -1, b"rendered_texture\0".as_ptr().cast());
+        gl::ObjectLabel(
+            gl::TEXTURE,
+            rendered_texture,
+            -1,
+            b"rendered_texture\0".as_ptr().cast(),
+        );
 
         // empty image
-        gl::TexStorage2D(gl::TEXTURE_2D, 1, gl::RGBA8, WIDTH as GLsizei, HEIGHT as GLsizei);
+        gl::TexStorage2D(
+            gl::TEXTURE_2D,
+            1,
+            gl::RGBA8,
+            WIDTH as GLsizei,
+            HEIGHT as GLsizei,
+        );
 
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_WRAP_S,
+            gl::CLAMP_TO_EDGE as GLint,
+        );
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_WRAP_T,
+            gl::CLAMP_TO_EDGE as GLint,
+        );
 
         // set color attachment
-        gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, rendered_texture, 0);
+        gl::FramebufferTexture2D(
+            gl::FRAMEBUFFER,
+            gl::COLOR_ATTACHMENT0,
+            gl::TEXTURE_2D,
+            rendered_texture,
+            0,
+        );
 
         let buffers = [gl::COLOR_ATTACHMENT0];
         gl::DrawBuffers(1, buffers.as_ptr());
@@ -266,21 +337,17 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
         }
 
         let fullscreen_fbo = [
-            -1.0f32, -1.0, 0.0,
-            1.0, -1.0, 0.0,
-            -1.0,  1.0, 0.0,
-            -1.0,  1.0, 0.0,
-            1.0, -1.0, 0.0,
-            1.0,  1.0, 0.0,
+            -1.0f32, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,
+            1.0, 1.0, 0.0,
         ];
 
         gl::GenBuffers(1, &mut quad_vbuf);
         gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbuf);
         gl::BufferData(
-            gl::ARRAY_BUFFER,                                                       // target
+            gl::ARRAY_BUFFER, // target
             (fullscreen_fbo.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
             fullscreen_fbo.as_ptr() as *const gl::types::GLvoid, // pointer to data
-            gl::STATIC_DRAW,                               // usage
+            gl::STATIC_DRAW,                                     // usage
         );
     }
 
@@ -289,24 +356,54 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
         gl::GenFramebuffers(1, &mut output_framebuffer_handle);
         gl::BindFramebuffer(gl::FRAMEBUFFER, output_framebuffer_handle);
 
-        gl::ObjectLabel(gl::FRAMEBUFFER, output_framebuffer_handle, -1, b"output_framebuffer\0".as_ptr().cast());
+        gl::ObjectLabel(
+            gl::FRAMEBUFFER,
+            output_framebuffer_handle,
+            -1,
+            b"output_framebuffer\0".as_ptr().cast(),
+        );
 
         // make tetxure
         gl::GenTextures(1, &mut output_texture);
         gl::BindTexture(gl::TEXTURE_2D, output_texture);
 
-        gl::ObjectLabel(gl::TEXTURE, output_texture, -1, b"output_texture\0".as_ptr().cast());
+        gl::ObjectLabel(
+            gl::TEXTURE,
+            output_texture,
+            -1,
+            b"output_texture\0".as_ptr().cast(),
+        );
 
         // empty image
-        gl::TexStorage2D(gl::TEXTURE_2D, 1, gl::RGBA8, WIDTH as GLsizei, HEIGHT as GLsizei);
+        gl::TexStorage2D(
+            gl::TEXTURE_2D,
+            1,
+            gl::RGBA8,
+            WIDTH as GLsizei,
+            HEIGHT as GLsizei,
+        );
 
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_WRAP_S,
+            gl::CLAMP_TO_EDGE as GLint,
+        );
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_WRAP_T,
+            gl::CLAMP_TO_EDGE as GLint,
+        );
 
         // set color attachment
-        gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, output_texture, 0);
+        gl::FramebufferTexture2D(
+            gl::FRAMEBUFFER,
+            gl::COLOR_ATTACHMENT0,
+            gl::TEXTURE_2D,
+            output_texture,
+            0,
+        );
 
         let buffers = [gl::COLOR_ATTACHMENT0];
         gl::DrawBuffers(1, buffers.as_ptr());
@@ -316,21 +413,17 @@ pub fn do_loop(mut glfw: Glfw, mut window: Window, events: Receiver<(f64, Window
         }
 
         let fullscreen_fbo = [
-            -1.0f32, -1.0, 0.0,
-            1.0, -1.0, 0.0,
-            -1.0,  1.0, 0.0,
-            -1.0,  1.0, 0.0,
-            1.0, -1.0, 0.0,
-            1.0,  1.0, 0.0,
+            -1.0f32, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,
+            1.0, 1.0, 0.0,
         ];
 
         gl::GenBuffers(1, &mut output_quad_vbuf);
         gl::BindBuffer(gl::ARRAY_BUFFER, output_quad_vbuf);
         gl::BufferData(
-            gl::ARRAY_BUFFER,                                                       // target
+            gl::ARRAY_BUFFER, // target
             (fullscreen_fbo.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
             fullscreen_fbo.as_ptr() as *const gl::types::GLvoid, // pointer to data
-            gl::STATIC_DRAW,                               // usage
+            gl::STATIC_DRAW,                                     // usage
         );
     }
 
@@ -359,17 +452,22 @@ void main()
     color=texture(texSampler, v_tex);
 }";
 
-
     let quad_programid = compile_program(VERT_SHADER, FRAG_SHADER);
     let mut quad_vao = 0;
     unsafe {
         gl::GenVertexArrays(1, &mut quad_vao);
     }
 
-    let fb = Framebuffer::new_from_raw(output_texture, output_framebuffer_handle, gl::RGBA8, Size {
-        width: WIDTH,
-        height: HEIGHT
-    }, 1);
+    let fb = Framebuffer::new_from_raw(
+        output_texture,
+        output_framebuffer_handle,
+        gl::RGBA8,
+        Size {
+            width: WIDTH,
+            height: HEIGHT,
+        },
+        1,
+    );
 
     while !window.should_close() {
         glfw.poll_events();
@@ -382,13 +480,11 @@ void main()
             gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
             // gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 
-
             gl::Viewport(0, 0, WIDTH as GLsizei, HEIGHT as GLsizei);
 
             // clear color
             clear_color(Color(0.3, 0.4, 0.6, 1.0));
             gl::Clear(gl::COLOR_BUFFER_BIT);
-
 
             // do the drawing
             gl::UseProgram(triangle_program);
@@ -403,7 +499,6 @@ void main()
 
             // unselect fbo
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-
         }
 
         // eprintln!("[core] rendered texture is {rendered_texture}");
@@ -415,20 +510,25 @@ void main()
         //     gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
         // }
         unsafe {
-            filter.frame(0, &Viewport {
-                x: 0,
-                y: 0,
-                output: &fb,
-                mvp: None
-            }, GlImage {
-                handle: rendered_texture,
-                format: gl::RGBA8,
-                size: Size {
-                    width: WIDTH,
-                    height: HEIGHT
+            filter.frame(
+                0,
+                &Viewport {
+                    x: 0,
+                    y: 0,
+                    output: &fb,
+                    mvp: None,
                 },
-                padded_size: Default::default()
-            }, false)
+                GlImage {
+                    handle: rendered_texture,
+                    format: gl::RGBA8,
+                    size: Size {
+                        width: WIDTH,
+                        height: HEIGHT,
+                    },
+                    padded_size: Default::default(),
+                },
+                false,
+            )
         }
 
         unsafe {
@@ -439,8 +539,6 @@ void main()
             // map quad to screen
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::UseProgram(quad_programid);
-
-
 
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, output_texture);
@@ -467,14 +565,14 @@ pub fn gl_get_string<'a>(name: gl::types::GLenum) -> &'a str {
 }
 
 fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
-    use glfw::WindowEvent as Event;
-    use glfw::Key;
     use glfw::Action;
+    use glfw::Key;
+    use glfw::WindowEvent as Event;
 
     match event {
         Event::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true);
-        },
-        _ => {},
+        }
+        _ => {}
     }
 }

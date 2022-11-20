@@ -1,7 +1,8 @@
-use std::borrow::Borrow;
-use std::hash::{Hash, Hasher};
 use gl::types::GLint;
-use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureSemantics, VariableSemantics};
+use librashader_reflect::reflect::semantics::{
+    MemberOffset, SemanticMap, TextureSemantics, VariableSemantics,
+};
+use std::hash::Hash;
 
 #[derive(Debug)]
 pub enum VariableLocation {
@@ -12,7 +13,7 @@ pub enum VariableLocation {
 impl VariableLocation {
     pub fn location(&self) -> UniformLocation<GLint> {
         match self {
-            VariableLocation::Ubo(l) | VariableLocation::Push(l) => *l
+            VariableLocation::Ubo(l) | VariableLocation::Push(l) => *l,
         }
     }
 }
@@ -40,7 +41,7 @@ impl UniformLocation<GLint> {
 #[derive(Debug, Copy, Clone)]
 pub enum MemberLocation {
     Offset(MemberOffset),
-    Uniform(UniformLocation<GLint>)
+    Uniform(UniformLocation<GLint>),
 }
 
 #[derive(Debug, Copy, Clone)]

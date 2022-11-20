@@ -1,8 +1,8 @@
+use crate::util;
+use crate::util::{GlImage, Size, Texture, Viewport};
 use gl::types::{GLenum, GLsizei, GLuint};
 use librashader::{FilterMode, ShaderFormat, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
-use crate::util;
-use crate::util::{GlImage, Size, Texture, Viewport};
 
 #[derive(Debug)]
 pub struct Framebuffer {
@@ -12,7 +12,7 @@ pub struct Framebuffer {
     pub max_levels: u32,
     pub levels: u32,
     pub handle: GLuint,
-    pub init: bool
+    pub init: bool,
 }
 
 impl Framebuffer {
@@ -26,24 +26,33 @@ impl Framebuffer {
 
         Framebuffer {
             image: 0,
-            size: Size { width: 1, height: 1 },
+            size: Size {
+                width: 1,
+                height: 1,
+            },
             format: 0,
             max_levels,
             levels: 0,
             handle: framebuffer,
-            init: false
+            init: false,
         }
     }
 
-    pub fn new_from_raw(texture: GLuint, handle: GLuint, format: GLenum, size: Size, miplevels: u32) -> Framebuffer {
+    pub fn new_from_raw(
+        texture: GLuint,
+        handle: GLuint,
+        format: GLenum,
+        size: Size,
+        miplevels: u32,
+    ) -> Framebuffer {
         Framebuffer {
             image: texture,
             size,
             format,
             max_levels: miplevels,
             levels: miplevels,
-            handle: handle,
-            init: true
+            handle,
+            init: true,
         }
     }
 
@@ -53,78 +62,76 @@ impl Framebuffer {
                 handle: self.image,
                 format: self.format,
                 size: self.size,
-                padded_size: Default::default()
+                padded_size: Default::default(),
             },
             filter,
             mip_filter: filter,
-            wrap_mode
+            wrap_mode,
         }
     }
 
-    pub fn scale(&mut self, scaling: Scale2D, format: ShaderFormat, viewport: &Viewport, original: &Texture, source: &Texture) -> Size {
+    pub fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ShaderFormat,
+        viewport: &Viewport,
+        _original: &Texture,
+        source: &Texture,
+    ) -> Size {
         let mut width = 0f32;
         let mut height = 0f32;
 
         match scaling.x {
             Scaling {
                 scale_type: ScaleType::Input,
-                factor
-            } => {
-                width = source.image.size.width * factor
-            },
+                factor,
+            } => width = source.image.size.width * factor,
             Scaling {
                 scale_type: ScaleType::Absolute,
-                factor
-            } => {
-                width = factor.into()
-            }
+                factor,
+            } => width = factor.into(),
             Scaling {
                 scale_type: ScaleType::Viewport,
-                factor
-            } => {
-                width = viewport.output.size.width * factor
-            }
+                factor,
+            } => width = viewport.output.size.width * factor,
         };
 
         match scaling.y {
             Scaling {
                 scale_type: ScaleType::Input,
-                factor
-            } => {
-                height = source.image.size.height * factor
-            },
+                factor,
+            } => height = source.image.size.height * factor,
             Scaling {
                 scale_type: ScaleType::Absolute,
-                factor
-            } => {
-                height = factor.into()
-            }
+                factor,
+            } => height = factor.into(),
             Scaling {
                 scale_type: ScaleType::Viewport,
-                factor
-            } => {
-                height = viewport.output.size.height * factor
-            }
+                factor,
+            } => height = viewport.output.size.height * factor,
         };
 
         let size = Size {
             width: width.round() as u32,
-            height: height.round() as u32
+            height: height.round() as u32,
         };
 
         if self.size != size {
             self.size = size;
 
-            self.init(size,if format == ShaderFormat::Unknown {
-                ShaderFormat::R8G8B8A8Unorm
-            } else {
-                format
-            });
+            self.init(
+                size,
+                if format == ShaderFormat::Unknown {
+                    ShaderFormat::R8G8B8A8Unorm
+                } else {
+                    format
+                },
+            );
         }
         size
     }
 
-    fn init(&mut self, mut size: Size, mut format: impl Into<GLenum>) {
+    fn init(&mut self, mut size: Size, format: impl Into<GLenum>) {
         self.format = format.into();
         self.size = size;
 
@@ -133,7 +140,13 @@ impl Framebuffer {
 
             // reset the framebuffer image
             if self.image != 0 {
-                gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, 0, 0);
+                gl::FramebufferTexture2D(
+                    gl::FRAMEBUFFER,
+                    gl::COLOR_ATTACHMENT0,
+                    gl::TEXTURE_2D,
+                    0,
+                    0,
+                );
                 gl::DeleteTextures(1, &self.image);
             }
 
@@ -155,9 +168,20 @@ impl Framebuffer {
                 self.levels = 1;
             }
 
-            gl::TexStorage2D(gl::TEXTURE_2D, self.levels as GLsizei, self.format, size.width as GLsizei, size.height as GLsizei);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER,
-                                   gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, self.image, 0);
+            gl::TexStorage2D(
+                gl::TEXTURE_2D,
+                self.levels as GLsizei,
+                self.format,
+                size.width as GLsizei,
+                size.height as GLsizei,
+            );
+            gl::FramebufferTexture2D(
+                gl::FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT0,
+                gl::TEXTURE_2D,
+                self.image,
+                0,
+            );
 
             let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
             if status != gl::FRAMEBUFFER_COMPLETE {
@@ -165,8 +189,13 @@ impl Framebuffer {
                     gl::FRAMEBUFFER_UNSUPPORTED => {
                         eprintln!("unsupported fbo");
 
-                        gl::FramebufferTexture2D(gl::FRAMEBUFFER,
-                                                 gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, 0, 0);
+                        gl::FramebufferTexture2D(
+                            gl::FRAMEBUFFER,
+                            gl::COLOR_ATTACHMENT0,
+                            gl::TEXTURE_2D,
+                            0,
+                            0,
+                        );
                         gl::DeleteTextures(1, &self.image);
                         gl::GenTextures(1, &mut self.image);
                         gl::BindTexture(1, self.image);
@@ -179,12 +208,24 @@ impl Framebuffer {
                             self.levels = 1;
                         }
 
-                        gl::TexStorage2D(gl::TEXTURE_2D, self.levels as GLsizei, ShaderFormat::R8G8B8A8Unorm.into(), size.width as GLsizei, size.height as GLsizei);
-                        gl::FramebufferTexture2D(gl::FRAMEBUFFER,
-                                                 gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, self.image, 0);
-                        self.init = gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
+                        gl::TexStorage2D(
+                            gl::TEXTURE_2D,
+                            self.levels as GLsizei,
+                            ShaderFormat::R8G8B8A8Unorm.into(),
+                            size.width as GLsizei,
+                            size.height as GLsizei,
+                        );
+                        gl::FramebufferTexture2D(
+                            gl::FRAMEBUFFER,
+                            gl::COLOR_ATTACHMENT0,
+                            gl::TEXTURE_2D,
+                            self.image,
+                            0,
+                        );
+                        self.init =
+                            gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
-                    _ => panic!("failed to complete: {status:x}")
+                    _ => panic!("failed to complete: {status:x}"),
                 }
             } else {
                 self.init = true;

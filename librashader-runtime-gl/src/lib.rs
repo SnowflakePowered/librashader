@@ -1,28 +1,26 @@
 #![feature(strict_provenance)]
 
-mod hello_triangle;
-mod filter_pass;
-mod util;
-mod framebuffer;
 mod binding;
 mod filter_chain;
+mod filter_pass;
+mod framebuffer;
+mod hello_triangle;
 mod render_target;
-
+mod util;
 
 #[cfg(test)]
 mod tests {
-    use crate::filter_chain::FilterChain;
     use super::*;
+    use crate::filter_chain::FilterChain;
 
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
         let mut filter = FilterChain::load("../test/basic.slangp").unwrap();
 
-
         // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 
-        hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter );
+        hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }
 
     // #[test]

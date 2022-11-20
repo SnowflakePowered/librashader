@@ -1,6 +1,6 @@
-use gl::types::{GLenum, GLint, GLuint};
-use librashader::{FilterMode, WrapMode};
 use crate::framebuffer::Framebuffer;
+use gl::types::{GLenum, GLuint};
+use librashader::{FilterMode, WrapMode};
 
 pub fn calc_miplevel(width: u32, height: u32) -> u32 {
     let mut size = std::cmp::max(width, height);
@@ -10,7 +10,7 @@ pub fn calc_miplevel(width: u32, height: u32) -> u32 {
         size >>= 1;
     }
 
-    return levels;
+    levels
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -18,7 +18,7 @@ pub struct Texture {
     pub image: GlImage,
     pub filter: FilterMode,
     pub mip_filter: FilterMode,
-    pub wrap_mode: WrapMode
+    pub wrap_mode: WrapMode,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -26,7 +26,7 @@ pub struct Viewport<'a> {
     pub x: i32,
     pub y: i32,
     pub output: &'a Framebuffer,
-    pub mvp: Option<&'a [f32]>
+    pub mvp: Option<&'a [f32]>,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
@@ -40,10 +40,10 @@ pub struct GlImage {
     pub handle: GLuint,
     pub format: GLenum,
     pub size: Size,
-    pub padded_size: Size
+    pub padded_size: Size,
 }
 
-impl <T, const SIZE: usize> RingBuffer<T, SIZE> {
+impl<T, const SIZE: usize> RingBuffer<T, SIZE> {
     pub fn current(&self) -> &T {
         &self.items[self.index]
     }
@@ -58,16 +58,18 @@ impl <T, const SIZE: usize> RingBuffer<T, SIZE> {
 
 pub struct RingBuffer<T, const SIZE: usize> {
     items: [T; SIZE],
-    index: usize
+    index: usize,
 }
 
-impl <T, const SIZE: usize> RingBuffer<T, SIZE>
-where T: Copy, T: Default
+impl<T, const SIZE: usize> RingBuffer<T, SIZE>
+where
+    T: Copy,
+    T: Default,
 {
     pub fn new() -> Self {
         Self {
             items: [T::default(); SIZE],
-            index: 0
+            index: 0,
         }
     }
 
@@ -82,7 +84,12 @@ where T: Copy, T: Default
 
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
-    gl::ShaderSource(shader, 1, &source.as_bytes().as_ptr().cast(), std::ptr::null());
+    gl::ShaderSource(
+        shader,
+        1,
+        &source.as_bytes().as_ptr().cast(),
+        std::ptr::null(),
+    );
     gl::CompileShader(shader);
     let mut compile_status = 0;
     gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
