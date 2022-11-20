@@ -13,6 +13,7 @@ use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, Texture
 use crate::framebuffer::Framebuffer;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_chain::{FilterChain, FilterCommon};
+use crate::render_target::RenderTarget;
 use crate::util::{GlImage, RingBuffer, Size, Texture, Viewport};
 
 pub struct FilterPass {
@@ -24,7 +25,6 @@ pub struct FilterPass {
     pub uniform_buffer: Box<[u8]>,
     pub push_buffer: Box<[u8]>,
     pub variable_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
-    pub feedback_framebuffer: Framebuffer,
     pub source: ShaderSource,
     pub config: ShaderPassConfig
 }
@@ -107,14 +107,17 @@ impl FilterPass {
     }
 
     // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
-    pub fn draw(&mut self, parent: &FilterCommon, mvp: Option<&[f32]>, frame_count: u32,
-                frame_direction: i32, viewport: &Viewport, original: &Texture, source: &Texture, output: &Framebuffer) {
+    pub fn draw(&mut self, parent: &FilterCommon, frame_count: u32,
+                frame_direction: i32, viewport: &Viewport, original: &Texture, source: &Texture, output: RenderTarget) {
+
+        let framebuffer = output.framebuffer;
+
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, output.framebuffer);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::UseProgram(self.program);
         }
 
-        self.build_semantics(parent, mvp, frame_count, frame_direction, output.size, viewport, original, source);
+        self.build_semantics(parent, output.mvp, frame_count, frame_direction, framebuffer.size, viewport, original, source);
         // shader_gl3:1514
 
         if self.ubo_location.vertex != gl::INVALID_INDEX && self.ubo_location.fragment != gl::INVALID_INDEX {
@@ -142,14 +145,14 @@ impl FilterPass {
         // todo: final pass?
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, output.framebuffer);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
             gl::Clear(gl::COLOR_BUFFER_BIT);
             //
-            gl::Viewport(0, 0, output.size.width as GLsizei, output.size.height as GLsizei);
+            gl::Viewport(0, 0, framebuffer.size.width as GLsizei, framebuffer.size.height as GLsizei);
 
-            if output.format == gl::SRGB8_ALPHA8 {
+            if framebuffer.format == gl::SRGB8_ALPHA8 {
                 gl::Enable(gl::FRAMEBUFFER_SRGB);
             } else {
                 gl::Disable(gl::FRAMEBUFFER_SRGB);
@@ -161,6 +164,7 @@ impl FilterPass {
 
             gl::EnableVertexAttribArray(0);
             gl::EnableVertexAttribArray(1);
+
             gl::BindBuffer(gl::ARRAY_BUFFER, parent.quad_vbo);
 
             /// the provided pointers are of OpenGL provenance with respect to the buffer bound to quad_vbo,
@@ -187,14 +191,8 @@ impl FilterPass {
     }
 
     // framecount should be pre-modded
-    fn build_semantics(&mut self, parent: &FilterCommon, mvp: Option<&[f32]>, frame_count: u32, frame_direction: i32, fb_size: Size, viewport: &Viewport, original: &Texture, source: &Texture) {
+    fn build_semantics(&mut self, parent: &FilterCommon, mvp: &[f32], frame_count: u32, frame_direction: i32, fb_size: Size, viewport: &Viewport, original: &Texture, source: &Texture) {
         if let Some((_location, offset)) = self.variable_bindings.get(&VariableSemantics::MVP.into()) {
-                let mvp = mvp.unwrap_or(&[
-                    2f32, 0.0, 0.0, 0.0,
-                    0.0, 2.0, 0.0, 0.0,
-                    0.0, 0.0, 2.0, 0.0,
-                    -1.0, -1.0, 0.0, 1.0
-                ]);
                 let mvp_size = mvp.len() * std::mem::size_of::<f32>();
                 let (buffer, offset) = match offset {
                     MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),

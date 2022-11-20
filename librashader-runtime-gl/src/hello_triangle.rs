@@ -418,7 +418,8 @@ void main()
             filter.frame(0, &Viewport {
                 x: 0,
                 y: 0,
-                output: &fb
+                output: &fb,
+                mvp: None
             }, GlImage {
                 handle: rendered_texture,
                 format: gl::RGBA8,

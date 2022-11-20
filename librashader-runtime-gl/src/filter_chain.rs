@@ -14,6 +14,7 @@ use librashader_reflect::back::CompileShader;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::Framebuffer;
+use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{GlImage, RingBuffer, Size, Texture, Viewport};
 
@@ -97,23 +98,23 @@ impl FilterChain {
 pub struct FilterChain {
     passes: Vec<FilterPass>,
     common: FilterCommon,
-    pub quad_vao: GLuint,
+    quad_vao: GLuint,
 }
 
 pub struct FilterCommon {
     semantics: ReflectSemantics,
-    preset: ShaderPreset,
+    pub(crate) preset: ShaderPreset,
     original_history: Vec<Framebuffer>,
     history: Vec<Texture>,
     feedback: Vec<Texture>,
-    luts: FxHashMap<usize, Texture>,
+    pub(crate) luts: FxHashMap<usize, Texture>,
     outputs: Vec<Framebuffer>,
-    pub quad_vbo: GLuint,
+    pub(crate) quad_vbo: GLuint,
 }
 
 impl FilterChain {
     pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
-        let preset = librashader_presets::ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse(path)?;
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> = Default::default();
 
@@ -274,9 +275,6 @@ impl FilterChain {
                 push_buffer,
                 variable_bindings: locations,
                 source,
-                // no idea if this works.
-                // retroarch checks if feedback frames are used but we'll just init it tbh.
-                feedback_framebuffer: Framebuffer::new(1),
                 config: config.clone()
             });
         }
@@ -382,7 +380,10 @@ impl FilterChain {
     }
 
     pub fn frame(&mut self, count: u32, vp: &Viewport, input: GlImage, clear: bool) {
-        //
+        if self.passes.is_empty() {
+            return;
+        }
+
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindVertexArray(self.quad_vao);
@@ -411,7 +412,7 @@ impl FilterChain {
                 let framebuffer_size = target.scale(pass.config.scaling.clone(), pass.get_format(), vp, &original, &source);
             }
             let target = &self.common.outputs[index];
-            pass.draw(&self.common, None, count, 1, vp, &original, &source, &target);
+            pass.draw(&self.common, count, 1, vp, &original, &source, RenderTarget::new(target, None));
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
 
             // todo: update-pass-outputs
@@ -423,7 +424,7 @@ impl FilterChain {
         for pass in last {
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
-            pass.draw(&self.common, None, count, 1, vp, &original, &source, &vp.output);
+            pass.draw(&self.common, count, 1, vp, &original, &source, RenderTarget::new(&vp.output, vp.mvp));
         }
 
         unsafe {

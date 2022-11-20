@@ -11,7 +11,7 @@ pub struct Framebuffer {
     pub format: GLenum,
     pub max_levels: u32,
     pub levels: u32,
-    pub framebuffer: GLuint,
+    pub handle: GLuint,
     pub init: bool
 }
 
@@ -30,7 +30,7 @@ impl Framebuffer {
             format: 0,
             max_levels,
             levels: 0,
-            framebuffer,
+            handle: framebuffer,
             init: false
         }
     }
@@ -42,7 +42,7 @@ impl Framebuffer {
             format,
             max_levels: miplevels,
             levels: miplevels,
-            framebuffer: handle,
+            handle: handle,
             init: true
         }
     }
@@ -129,7 +129,7 @@ impl Framebuffer {
         self.size = size;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
 
             // reset the framebuffer image
             if self.image != 0 {
@@ -199,8 +199,8 @@ impl Framebuffer {
 impl Drop for Framebuffer {
     fn drop(&mut self) {
         unsafe {
-            if self.framebuffer != 0 {
-                gl::DeleteFramebuffers(1, &self.framebuffer);
+            if self.handle != 0 {
+                gl::DeleteFramebuffers(1, &self.handle);
             }
             if self.image != 0 {
                 gl::DeleteTextures(1, &self.image);
