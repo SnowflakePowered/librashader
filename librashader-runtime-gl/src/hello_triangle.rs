@@ -7,7 +7,7 @@ use glfw::{Context, Glfw, Window, WindowEvent};
 use gl;
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use glfw::Key::P;
-use crate::FilterChain;
+use crate::filter_chain::FilterChain;
 use crate::framebuffer::Framebuffer;
 use crate::util::{GlImage, Size, Viewport};
 

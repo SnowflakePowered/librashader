@@ -78,3 +78,16 @@ where T: Copy, T: Default
         &mut self.items
     }
 }
+
+pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
+    let shader = gl::CreateShader(stage);
+    gl::ShaderSource(shader, 1, &source.as_bytes().as_ptr().cast(), std::ptr::null());
+    gl::CompileShader(shader);
+    let mut compile_status = 0;
+    gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
+
+    if compile_status == 0 {
+        panic!("failed to compile")
+    }
+    shader
+}

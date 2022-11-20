@@ -10,9 +10,9 @@ use rustc_hash::FxHashMap;
 use librashader::{ShaderFormat, ShaderSource};
 use librashader_presets::{Scale2D, ScaleType, Scaling, ShaderPassConfig, ShaderPreset};
 use librashader_reflect::reflect::semantics::{MemberOffset, SemanticMap, TextureImage, TextureSemantics, VariableMeta, VariableSemantics};
-use crate::{FilterChain, FilterCommon};
 use crate::framebuffer::Framebuffer;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
+use crate::filter_chain::{FilterChain, FilterCommon};
 use crate::util::{GlImage, RingBuffer, Size, Texture, Viewport};
 
 pub struct FilterPass {
