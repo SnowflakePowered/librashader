@@ -135,6 +135,7 @@ impl FilterPass {
     // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
     pub fn draw(
         &mut self,
+        pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
@@ -151,6 +152,7 @@ impl FilterPass {
         }
 
         self.build_semantics(
+            pass_index,
             parent,
             output.mvp,
             frame_count,
@@ -256,6 +258,7 @@ impl FilterPass {
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,
+        pass_index: usize,
         parent: &FilterCommon,
         mvp: &[f32],
         frame_count: u32,
@@ -265,6 +268,7 @@ impl FilterPass {
         original: &Texture,
         source: &Texture,
     ) {
+        // Bind MVP
         if let Some((_location, offset)) =
             self.variable_bindings.get(&VariableSemantics::MVP.into())
         {
@@ -276,6 +280,7 @@ impl FilterPass {
             FilterPass::build_mvp(&mut buffer[offset..][..mvp_size], mvp)
         }
 
+        // bind OutputSize
         if let Some((location, offset)) = self
             .variable_bindings
             .get(&VariableSemantics::Output.into())
@@ -288,6 +293,7 @@ impl FilterPass {
             FilterPass::build_vec4(location.location(), &mut buffer[offset..][..4], fb_size)
         }
 
+        // bind FinalViewportSize
         if let Some((location, offset)) = self
             .variable_bindings
             .get(&VariableSemantics::FinalViewport.into())
@@ -303,6 +309,7 @@ impl FilterPass {
             )
         }
 
+        // bind FrameCount
         if let Some((location, offset)) = self
             .variable_bindings
             .get(&VariableSemantics::FrameCount.into())
@@ -314,6 +321,7 @@ impl FilterPass {
             FilterPass::build_uint(location.location(), &mut buffer[offset..][..4], frame_count)
         }
 
+        // bind FrameDirection
         if let Some((location, offset)) = self
             .variable_bindings
             .get(&VariableSemantics::FrameDirection.into())
@@ -329,6 +337,7 @@ impl FilterPass {
             )
         }
 
+        // bind Original sampler
         if let Some(binding) = self
             .reflection
             .meta
@@ -339,6 +348,7 @@ impl FilterPass {
             FilterPass::bind_texture(binding, original);
         }
 
+        // bind OriginalSize
         if let Some((location, offset)) = self
             .variable_bindings
             .get(&TextureSemantics::Original.semantics(0).into())
@@ -354,6 +364,7 @@ impl FilterPass {
             );
         }
 
+        // bind Source sampler
         if let Some(binding) = self
             .reflection
             .meta
@@ -363,6 +374,8 @@ impl FilterPass {
             // eprintln!("setting source binding to {}", binding.binding);
             FilterPass::bind_texture(binding, source);
         }
+
+        // bind SourceSize
         if let Some((location, offset)) = self
             .variable_bindings
             .get(&TextureSemantics::Source.semantics(0).into())
@@ -376,6 +389,32 @@ impl FilterPass {
                 &mut buffer[offset..][..4],
                 source.image.size,
             );
+        }
+
+        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::PassOutput.semantics(index))
+            {
+                FilterPass::bind_texture(binding, output);
+            }
+
+            if let Some((location, offset)) = self
+                .variable_bindings
+                .get(&TextureSemantics::PassOutput.semantics(index).into())
+            {
+                let (buffer, offset) = match offset {
+                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
+                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
+                };
+                FilterPass::build_vec4(
+                    location.location(),
+                    &mut buffer[offset..][..4],
+                    output.image.size,
+                );
+            }
         }
 
         // // todo: history
@@ -392,6 +431,8 @@ impl FilterPass {
         // //     FilterPass::build_vec4(location, &mut buffer[offset..][..4], original.image.size);
         // // }
         //
+
+        // bind float parameters
         for (id, (location, offset)) in
             self.variable_bindings
                 .iter()
@@ -426,30 +467,25 @@ impl FilterPass {
             FilterPass::build_float(location.location(), &mut buffer[offset..][..4], value)
         }
 
-        for (id, (location, offset)) in
-            self.variable_bindings
-                .iter()
-                .filter_map(|(binding, value)| match binding {
-                    UniformBinding::TextureSize(semantics) => {
-                        if semantics.semantics == TextureSemantics::User {
-                            Some((semantics, value))
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None,
-                })
-        {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
+        // bind luts
+        for (index, lut) in &parent.luts {
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::User.semantics(*index))
+            {
+                FilterPass::bind_texture(binding, lut);
+            }
 
-            if let Some(lut) = parent.luts.get(&id.index) {
-                if let Some(binding) = self.reflection.meta.texture_meta.get(id) {
-                    FilterPass::bind_texture(binding, lut);
-                }
-
+            if let Some((location, offset)) = self
+                .variable_bindings
+                .get(&TextureSemantics::User.semantics(*index).into())
+            {
+                let (buffer, offset) = match offset {
+                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
+                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
+                };
                 FilterPass::build_vec4(
                     location.location(),
                     &mut buffer[offset..][..4],

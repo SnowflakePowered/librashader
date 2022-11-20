@@ -104,19 +104,20 @@ impl FilterChain {
 }
 
 pub struct FilterChain {
-    passes: Vec<FilterPass>,
+    passes: Box<[FilterPass]>,
     common: FilterCommon,
     quad_vao: GLuint,
+    output_framebuffers: Box<[Framebuffer]>,
 }
 
 pub struct FilterCommon {
     semantics: ReflectSemantics,
     pub(crate) preset: ShaderPreset,
-    original_history: Vec<Framebuffer>,
-    history: Vec<Texture>,
-    feedback: Vec<Texture>,
+    pub original_history: Box<[Framebuffer]>,
+    pub history: Vec<Texture>,
+    pub feedback: Vec<Texture>,
     pub(crate) luts: FxHashMap<usize, Texture>,
-    outputs: Vec<Framebuffer>,
+    pub output_textures: Box<[Texture]>,
     pub(crate) quad_vbo: GLuint,
 }
 
@@ -125,18 +126,13 @@ type ShaderPassMeta<'a> = (
     ShaderSource,
     CompilerBackend<
         impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext>
-        + ReflectShader
-        + Sized,
+            + ReflectShader
+            + Sized,
     >,
 );
 
 impl FilterChain {
-    fn load_preset(
-        preset: &ShaderPreset,
-    ) -> (
-        Vec<ShaderPassMeta>,
-        ReflectSemantics,
-    ) {
+    fn load_preset(preset: &ShaderPreset) -> (Vec<ShaderPassMeta>, ReflectSemantics) {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
@@ -305,7 +301,10 @@ impl FilterChain {
         Ok(luts)
     }
 
-    pub fn init_passes(passes: Vec<ShaderPassMeta>, semantics: &ReflectSemantics) -> Result<Vec<FilterPass>, Box<dyn Error>> {
+    pub fn init_passes(
+        passes: Vec<ShaderPassMeta>,
+        semantics: &ReflectSemantics,
+    ) -> Result<Box<[FilterPass]>, Box<dyn Error>> {
         let mut filters = Vec::new();
 
         // initialize passes
@@ -401,7 +400,7 @@ impl FilterChain {
                     .map(|ubo| ubo.size as usize)
                     .unwrap_or(0)
             ]
-                .into_boxed_slice();
+            .into_boxed_slice();
             let push_buffer = vec![
                 0;
                 reflection
@@ -410,12 +409,12 @@ impl FilterChain {
                     .map(|push| push.size as usize)
                     .unwrap_or(0)
             ]
-                .into_boxed_slice();
+            .into_boxed_slice();
 
             // todo: reflect indexed parameters
-            let mut locations = FxHashMap::default();
+            let mut variable_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
-                locations.insert(
+                variable_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
                     (
                         FilterChain::reflect_uniform_location(program, param),
@@ -425,7 +424,7 @@ impl FilterChain {
             }
 
             for (semantics, param) in &reflection.meta.variable_meta {
-                locations.insert(
+                variable_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
                     (
                         FilterChain::reflect_uniform_location(program, param),
@@ -435,7 +434,7 @@ impl FilterChain {
             }
 
             for (semantics, param) in &reflection.meta.texture_size_meta {
-                locations.insert(
+                variable_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
                     (
                         FilterChain::reflect_uniform_location(program, param),
@@ -461,15 +460,90 @@ impl FilterChain {
                 ubo_ring,
                 uniform_buffer,
                 push_buffer,
-                variable_bindings: locations,
+                variable_bindings,
                 source,
                 config: config.clone(),
             });
         }
 
-        Ok(filters)
+        Ok(filters.into_boxed_slice())
     }
 
+    pub fn init_history(filters: &[FilterPass]) -> Box<[Framebuffer]> {
+        let mut required_images = 0;
+
+        for pass in filters {
+            // If a shader uses history size, but not history, we still need to keep the texture.
+            let texture_count = pass
+                .reflection
+                .meta
+                .texture_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+            let texture_size_count = pass
+                .reflection
+                .meta
+                .texture_size_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+
+            required_images = std::cmp::max(required_images, texture_count);
+            required_images = std::cmp::max(required_images, texture_size_count);
+        }
+
+        // not ussing frame history;
+        if required_images < 2 {
+            eprintln!("not using frame history");
+            return Vec::new().into_boxed_slice();
+        }
+
+        // history0 is aliased with the original
+        required_images -= 1;
+
+        let mut framebuffers = Vec::new();
+        framebuffers.resize_with(required_images, || Framebuffer::new(1));
+        framebuffers.into_boxed_slice()
+    }
+
+    pub fn init_feedback(filters: &[FilterPass]) -> Box<[Framebuffer]> {
+        let mut required_images = 0;
+
+        for pass in filters {
+            // If a shader uses history size, but not history, we still need to keep the texture.
+            let texture_count = pass
+                .reflection
+                .meta
+                .texture_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+            let texture_size_count = pass
+                .reflection
+                .meta
+                .texture_size_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+
+            required_images = std::cmp::max(required_images, texture_count);
+            required_images = std::cmp::max(required_images, texture_size_count);
+        }
+
+        // not ussing frame history;
+        if required_images < 2 {
+            eprintln!("not using frame history");
+            return Vec::new().into_boxed_slice();
+        }
+
+        // history0 is aliased with the original
+        required_images -= 1;
+
+        let mut framebuffers = Vec::new();
+        framebuffers.resize_with(required_images, || Framebuffer::new(1));
+        framebuffers.into_boxed_slice()
+    }
 
     pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
         // load passes from preset
@@ -482,9 +556,13 @@ impl FilterChain {
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        let mut output_textures = Vec::new();
+        output_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
         let luts = FilterChain::load_luts(&preset.textures)?;
+
+        let original_history = FilterChain::init_history(&filters);
 
         // create VBO objects
         let mut quad_vbo = 0;
@@ -507,18 +585,24 @@ impl FilterChain {
 
         Ok(FilterChain {
             passes: filters,
+            output_framebuffers: output_framebuffers.into_boxed_slice(),
             quad_vao,
             common: FilterCommon {
                 semantics,
                 preset,
-                original_history: vec![],
+                original_history,
                 history: vec![],
                 feedback: vec![],
                 luts,
-                outputs: output_framebuffers,
+                output_textures: output_textures.into_boxed_slice(),
                 quad_vbo,
             },
         })
+    }
+
+    pub(crate) fn get_output_texture(&self, index: usize) -> Texture {
+        let config = &self.passes[index].config;
+        self.output_framebuffers[index].as_texture(config.filter, config.wrap_mode)
     }
 
     pub fn frame(&mut self, count: usize, vp: &Viewport, input: GlImage, _clear: bool) {
@@ -562,7 +646,7 @@ impl FilterChain {
 
         for (index, pass) in pass.iter_mut().enumerate() {
             {
-                let target = &mut self.common.outputs[index];
+                let target = &mut self.output_framebuffers[index];
                 let _framebuffer_size = target.scale(
                     pass.config.scaling.clone(),
                     pass.get_format(),
@@ -571,8 +655,10 @@ impl FilterChain {
                     &source,
                 );
             }
-            let target = &self.common.outputs[index];
+
+            let target = &self.output_framebuffers[index];
             pass.draw(
+                index,
                 &self.common,
                 (count % pass.config.frame_count_mod as usize) as u32,
                 1,
@@ -581,11 +667,11 @@ impl FilterChain {
                 &source,
                 RenderTarget::new(target, None),
             );
-            let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
 
-            // todo: update-pass-outputs
+            let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
+            self.common.output_textures[index] = target;
             source = target;
-            // passes.build_semantics(&self, None, count, 1, vp, &original, &source);
+
         }
 
         assert_eq!(last.len(), 1);
@@ -593,6 +679,7 @@ impl FilterChain {
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
             pass.draw(
+                passes_len - 1,
                 &self.common,
                 (count % pass.config.frame_count_mod as usize) as u32,
                 1,

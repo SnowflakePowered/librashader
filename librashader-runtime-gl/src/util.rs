@@ -13,7 +13,7 @@ pub fn calc_miplevel(width: u32, height: u32) -> u32 {
     levels
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Texture {
     pub image: GlImage,
     pub filter: FilterMode,
@@ -35,7 +35,7 @@ pub struct Size {
     pub height: u32,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct GlImage {
     pub handle: GLuint,
     pub format: GLenum,
