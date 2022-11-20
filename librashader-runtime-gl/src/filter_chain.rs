@@ -487,7 +487,7 @@ impl FilterChain {
         })
     }
 
-    pub fn frame(&mut self, count: u32, vp: &Viewport, input: GlImage, _clear: bool) {
+    pub fn frame(&mut self, count: usize, vp: &Viewport, input: GlImage, _clear: bool) {
         if self.passes.is_empty() {
             return;
         }
@@ -540,7 +540,7 @@ impl FilterChain {
             let target = &self.common.outputs[index];
             pass.draw(
                 &self.common,
-                count,
+                (count % pass.config.frame_count_mod as usize) as u32,
                 1,
                 vp,
                 &original,
@@ -560,7 +560,7 @@ impl FilterChain {
             source.mip_filter = pass.config.filter;
             pass.draw(
                 &self.common,
-                count,
+                (count % pass.config.frame_count_mod as usize) as u32,
                 1,
                 vp,
                 &original,

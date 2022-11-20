@@ -2,7 +2,10 @@ use crate::framebuffer::Framebuffer;
 use crate::util::Viewport;
 
 static DEFAULT_MVP: &[f32] = &[
-    2f32, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, -1.0, -1.0, 0.0, 1.0,
+    2f32, 0.0, 0.0, 0.0,
+    0.0, 2.0, 0.0, 0.0,
+    0.0, 0.0, 2.0, 0.0,
+    -1.0, -1.0, 0.0, 1.0,
 ];
 
 #[derive(Debug, Copy, Clone)]

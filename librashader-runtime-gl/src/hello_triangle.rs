@@ -267,6 +267,7 @@ pub fn do_loop(
     triangle_vao: GLuint,
     filter: &mut FilterChain,
 ) {
+    let mut framecount = 0;
     let mut rendered_framebuffer = 0;
     let mut rendered_texture = 0;
     let mut quad_vbuf = 0;
@@ -478,8 +479,6 @@ void main()
         unsafe {
             // render to fb
             gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
-            // gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-
             gl::Viewport(0, 0, WIDTH as GLsizei, HEIGHT as GLsizei);
 
             // clear color
@@ -501,17 +500,9 @@ void main()
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
 
-        // eprintln!("[core] rendered texture is {rendered_texture}");
-
-        // do offscreen passes
-
-        // unsafe {
-        //     gl::ActiveTexture(gl::TEXTURE0);
-        //     gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
-        // }
         unsafe {
             filter.frame(
-                0,
+                framecount,
                 &Viewport {
                     x: 0,
                     y: 0,
@@ -533,10 +524,7 @@ void main()
 
         unsafe {
             // texture is done now.
-
-            // todo: insert postprocessing stuff to rendered_texture
-
-            // map quad to screen
+            // draw quad to screen
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::UseProgram(quad_programid);
 
@@ -544,10 +532,11 @@ void main()
             gl::BindTexture(gl::TEXTURE_2D, output_texture);
 
             gl::BindVertexArray(quad_vao);
-
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
         }
 
+
+        framecount += 1;
         window.swap_buffers();
     }
 }
