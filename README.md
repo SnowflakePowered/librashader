@@ -8,9 +8,37 @@ A preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten i
 
 Heavily WIP.
 
+## Supported Render APIs
+librashader supports OpenGL 3, Vulkan, DirectX 11, and DirectX 12. Support is WIP for all runtimes except OpenGL 3. Older versions
+of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
+
+| **API**    | **Status** | **`librashader` feature** |
+|------------|------------|---------------------------|
+| OpenGL 3   | ✔          | `gl`                      |
+| Vulkan     | 🚧         | `vk`                      |
+| DirectX 11 | 🚧         | `dx11`                    |
+| DirectX 12 | 🚧         | `dx12`                    |
+| OpenGL 2   | ❌          |                           |
+| DirectX 9  | ❌          |                           |
+| Metal      | ❌          |                           |
+
+
 ## License
-**There is not yet a functioning implementation of librashader but this section outlines its licensing goals in contrast to
-RetroArch.**
+Unless otherwise specified, _librashader_ is licensed under the GPLv3.
+
+     Copyright (C) 2022 Ronny Chan <ronny@ronnychan.ca>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 While librashader is an independent reimplementation of the RetroArch shader pipeline, referencing the RetroArch source
 code was indispensable to its creation. As it is therefore considered a derivative work, the core parts of librashader
