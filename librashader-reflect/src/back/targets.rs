@@ -1,6 +1,7 @@
-use crate::back::ShaderCompilerOutput;
+use crate::back::{CompileShader, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::reflect::{ReflectSemantics, ReflectShader, ShaderReflection};
+use crate::reflect::{ReflectShader, ShaderReflection};
+use crate::reflect::semantics::ReflectSemantics;
 
 pub trait OutputTarget {
     type Output;
@@ -8,7 +9,7 @@ pub trait OutputTarget {
 
 pub struct GLSL;
 pub struct HLSL;
-pub struct SpirV;
+pub struct SPIRV;
 pub struct MSL;
 
 impl OutputTarget for GLSL {
@@ -17,68 +18,13 @@ impl OutputTarget for GLSL {
 impl OutputTarget for HLSL {
     type Output = String;
 }
-impl OutputTarget for SpirV {
+impl OutputTarget for SPIRV {
     type Output = Vec<u32>;
 }
 
-pub struct CompilerBackend<T> {
-    pub(crate) backend: T,
-}
-
-pub trait FromCompilation<T> {
-    type Target: OutputTarget;
-    type Options;
-    type Context;
-
-    fn from_compilation(
-        compile: T,
-    ) -> Result<
-        CompilerBackend<impl CompileShader<Self::Target, Context = Self::Context> + ReflectShader>,
-        ShaderReflectError,
-    >;
-}
-
-pub trait CompileShader<T: OutputTarget> {
-    type Options;
-    type Context;
-
-    fn compile(
-        self,
-        options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError>;
-}
-
-impl<T> ReflectShader for CompilerBackend<T>
-where
-    T: ReflectShader,
-{
-    fn reflect(
-        &mut self,
-        pass_number: usize,
-        semantics: &ReflectSemantics,
-    ) -> Result<ShaderReflection, ShaderReflectError> {
-        self.backend.reflect(pass_number, semantics)
-    }
-}
-
-impl<T, E> CompileShader<E> for CompilerBackend<T>
-where
-    T: CompileShader<E>,
-    E: OutputTarget,
-{
-    type Options = T::Options;
-    type Context = T::Context;
-
-    fn compile(
-        self,
-        options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<E::Output, Self::Context>, ShaderCompileError> {
-        self.backend.compile(options)
-    }
-}
-
 mod test {
-    use crate::back::targets::{FromCompilation, GLSL};
+    use crate::back::FromCompilation;
+    use crate::back::targets::GLSL;
     use crate::front::shaderc::GlslangCompilation;
     pub fn huh(value: GlslangCompilation) {
         let _x = GLSL::from_compilation(value).unwrap();

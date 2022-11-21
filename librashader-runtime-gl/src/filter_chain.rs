@@ -10,18 +10,16 @@ use librashader_common::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
-use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};
-use librashader_reflect::back::CompileShader;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, SemanticMap, TextureSemantics, UniformMeta, VariableSemantics,
-};
-use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
+use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
+use librashader_reflect::back::targets::GLSL;
+use librashader_reflect::reflect::semantics::{MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformMeta, UniformSemantic, VariableSemantics};
+use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
+use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 
 pub struct FilterChain {

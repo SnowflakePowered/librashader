@@ -1,17 +1,13 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{
-    BindingStage, MemberOffset, PushReflection, ShaderReflection, TextureImage, TextureSemantics,
-    TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta,
-    VariableSemantics, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
-};
+use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureImage, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics};
 use crate::reflect::{
-    ReflectMeta, ReflectSemantics, ReflectShader, TextureSemanticMap, VariableSemanticMap,
+    ReflectMeta, ReflectShader,
 };
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
-use spirv_cross::{glsl, hlsl, ErrorCode};
+use spirv_cross::{ErrorCode, glsl, hlsl};
 
 use crate::back::cross::GlslangGlslContext;
 use crate::back::targets::{GLSL, HLSL};
@@ -846,11 +842,11 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
 #[cfg(test)]
 mod test {
     use crate::reflect::cross::CrossReflect;
-    use crate::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
+    use crate::reflect::ReflectShader;
     use rustc_hash::FxHashMap;
 
     use crate::back::CompileShader;
-    use crate::reflect::semantics::{SemanticMap, VariableSemantics};
+    use crate::reflect::semantics::{ReflectSemantics, SemanticMap, UniformSemantic, VariableSemantics};
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
     use spirv_cross::glsl::{CompilerOptions, Version};

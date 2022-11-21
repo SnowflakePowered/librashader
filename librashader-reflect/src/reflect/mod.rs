@@ -4,6 +4,7 @@ use crate::reflect::semantics::{
 };
 use rustc_hash::FxHashMap;
 use std::str::FromStr;
+use semantics::ReflectSemantics;
 
 pub mod cross;
 
@@ -20,120 +21,6 @@ pub trait ReflectShader {
         pass_number: usize,
         semantics: &ReflectSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError>;
-}
-
-pub trait TextureSemanticMap<T> {
-    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>>;
-}
-
-pub trait VariableSemanticMap<T> {
-    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics, ()>>;
-}
-
-impl VariableSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_variable_semantic(&self, name: &str) -> Option<SemanticMap<VariableSemantics, ()>> {
-        match self.get(name) {
-            // existing uniforms in the semantic map have priority
-            None => match name {
-                "MVP" => Some(SemanticMap {
-                    semantics: VariableSemantics::MVP,
-                    index: (),
-                }),
-                "OutputSize" => Some(SemanticMap {
-                    semantics: VariableSemantics::Output,
-                    index: (),
-                }),
-                "FinalViewportSize" => Some(SemanticMap {
-                    semantics: VariableSemantics::FinalViewport,
-                    index: (),
-                }),
-                "FrameCount" => Some(SemanticMap {
-                    semantics: VariableSemantics::FrameCount,
-                    index: (),
-                }),
-                "FrameDirection" => Some(SemanticMap {
-                    semantics: VariableSemantics::FrameDirection,
-                    index: (),
-                }),
-                _ => None,
-            },
-            Some(UniformSemantic::Variable(variable)) => Some(*variable),
-            Some(UniformSemantic::Texture(_)) => None,
-        }
-    }
-}
-
-impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, UniformSemantic> {
-    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>> {
-        match self.get(name) {
-            None => {
-                if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
-                    .iter()
-                    .find(|f| name.starts_with(f.size_uniform_name()))
-                {
-                    if semantics.is_array() {
-                        let index = &name[semantics.size_uniform_name().len()..];
-                        let Ok(index) = usize::from_str(index) else {
-                            return None;
-                        };
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index,
-                        });
-                    } else if name == semantics.size_uniform_name() {
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index: 0,
-                        });
-                    }
-                }
-                None
-            }
-            Some(UniformSemantic::Variable(_)) => None,
-            Some(UniformSemantic::Texture(texture)) => Some(*texture),
-        }
-    }
-}
-
-impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<TextureSemantics>> {
-    fn get_texture_semantic(&self, name: &str) -> Option<SemanticMap<TextureSemantics>> {
-        match self.get(name) {
-            None => {
-                if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
-                    .iter()
-                    .find(|f| name.starts_with(f.texture_name()))
-                {
-                    if semantics.is_array() {
-                        let index = &name[semantics.texture_name().len()..];
-                        let Ok(index) = usize::from_str(index) else {return None};
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index,
-                        });
-                    } else if name == semantics.texture_name() {
-                        return Some(SemanticMap {
-                            semantics: *semantics,
-                            index: 0,
-                        });
-                    }
-                }
-                None
-            }
-            Some(texture) => Some(*texture),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum UniformSemantic {
-    Variable(SemanticMap<VariableSemantics, ()>),
-    Texture(SemanticMap<TextureSemantics>),
-}
-
-#[derive(Debug, Clone)]
-pub struct ReflectSemantics {
-    pub uniform_semantics: FxHashMap<String, UniformSemantic>,
-    pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
 }
 
 #[derive(Debug, Default)]

@@ -1,14 +1,14 @@
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::targets::{FromCompilation, HLSL};
-use librashader_reflect::back::CompileShader;
+use librashader_reflect::back::targets::HLSL;
+use librashader_reflect::back::{CompileShader, FromCompilation};
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
 use librashader_reflect::front::shaderc::GlslangCompilation;
 
-use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, VariableSemantics};
-use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
+use librashader_reflect::reflect::semantics::{ReflectSemantics, SemanticMap, TextureSemantics, UniformSemantic, VariableSemantics};
+use librashader_reflect::reflect::ReflectShader;
 
 pub fn load_pass_semantics(
     uniform_semantics: &mut FxHashMap<String, UniformSemantic>,
