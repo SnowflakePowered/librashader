@@ -260,6 +260,7 @@ where
         if descriptor_set != 0 {
             return Err(blame.error(SemanticsErrorKind::InvalidDescriptorSet(descriptor_set)));
         }
+
         let size = ast.get_declared_struct_size(ubo.base_type_id)?;
         Ok(UboData {
             descriptor_set,

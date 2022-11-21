@@ -139,7 +139,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                         Value::FrameCountMod(_, value) => Some(*value),
                         _ => None,
                     })
-                    .unwrap_or(1),
+                    .unwrap_or(0),
                 srgb_framebuffer: shader_values
                     .iter()
                     .find_map(|f| match f {

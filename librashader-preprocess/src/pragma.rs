@@ -6,6 +6,7 @@ use nom::number::complete::float;
 use nom::sequence::delimited;
 use nom::IResult;
 use std::str::FromStr;
+use nom::character::complete::multispace1;
 
 #[derive(Debug)]
 pub(crate) struct ShaderMeta {
@@ -15,18 +16,25 @@ pub(crate) struct ShaderMeta {
 }
 
 fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessError> {
-    fn parse_parameter_string_inner(input: &str) -> IResult<&str, ShaderParameter> {
+    fn parse_parameter_string_name(input: &str) -> IResult<&str, (&str, &str)> {
         let (input, _) = tag("#pragma parameter ")(input)?;
-        let (input, name) = take_while(|c| c != ' ')(input)?;
-        let (input, _) = tag(" ")(input)?;
+        let (input, name) = take_while(|c| c != ' ' && c != '\t')(input)?;
+        let (input, _) = multispace1(input)?;
         let (input, description) = delimited(tag("\""), is_not("\""), tag("\""))(input)?;
-        let (input, _) = tag(" ")(input)?;
+        let (input, _) = multispace1(input)?;
+        Ok((
+            input,
+            (name, description)
+        ))
+    }
+
+    fn parse_parameter_string_inner<'a, 'b>(name: &'a str, description: &'a str, input: &'b str) -> IResult<&'b str, ShaderParameter> {
         let (input, initial) = float(input)?;
-        let (input, _) = tag(" ")(input)?;
+        let (input, _) = multispace1(input)?;
         let (input, minimum) = float(input)?;
-        let (input, _) = tag(" ")(input)?;
+        let (input, _) = multispace1(input)?;
         let (input, maximum) = float(input)?;
-        let (input, _) = tag(" ")(input)?;
+        let (input, _) = multispace1(input)?;
         let (input, step) = float(input)?;
         Ok((
             input,
@@ -41,11 +49,26 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         ))
     }
 
-    if let Ok((_, parameter)) = parse_parameter_string_inner(input) {
-        Ok(parameter)
+
+    let Ok((params, (name, description))) = parse_parameter_string_name(input) else {
+        return Err(PreprocessError::PragmaParseError(input.to_string()));
+    };
+
+    // some shaders do some really funky things with their pragmas so we need to be lenient and ignore
+    // that it can be set at all.
+    if let Ok((_, param)) = parse_parameter_string_inner(name, description, params) {
+        Ok(param)
     } else {
-        Err(PreprocessError::PragmaParseError(input.to_string()))
+        Ok(ShaderParameter {
+            id: name.to_string(),
+            description: description.to_string(),
+            initial: 0f32,
+            minimum: 0f32,
+            maximum: 0f32,
+            step: 0f32,
+        })
     }
+
 }
 
 pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, PreprocessError> {

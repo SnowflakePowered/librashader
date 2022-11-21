@@ -93,8 +93,11 @@ impl FilterPass {
         Self::build_uniform(location, buffer, value, gl::Uniform1f)
     }
 
-    fn bind_texture(binding: &TextureImage, texture: &Texture) {
+    fn bind_texture(binding: &TextureImage, texture: &Texture, semantic: TextureSemantics) {
         unsafe {
+            if texture.image.handle == 0 {
+                eprintln!("[WARNING] trying to bind {semantic:?} texture 0 to slot {} ", binding.binding)
+            }
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
@@ -220,7 +223,7 @@ impl FilterPass {
             gl::EnableVertexAttribArray(0);
             gl::EnableVertexAttribArray(1);
 
-            gl::BindBuffer(gl::ARRAY_BUFFER, parent.quad_vbo);
+            gl::BindBuffer(gl::ARRAY_BUFFER, parent.draw_quad.vbo);
 
             /// the provided pointers are of OpenGL provenance with respect to the buffer bound to quad_vbo,
             /// and not a known provenance to the Rust abstract machine, therefore we give it invalid pointers.
@@ -344,8 +347,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            eprintln!("setting original binding to {}", binding.binding);
-            FilterPass::bind_texture(binding, original);
+            FilterPass::bind_texture(binding, original, TextureSemantics::Original);
         }
 
         // bind OriginalSize
@@ -372,7 +374,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(binding, source);
+            FilterPass::bind_texture(binding, source, TextureSemantics::Source);
         }
 
         // bind SourceSize
@@ -391,14 +393,60 @@ impl FilterPass {
             );
         }
 
-        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
+
+        if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
+            FilterPass::bind_texture(binding, original, TextureSemantics::OriginalHistory);
+        }
+        if let Some((location, offset)) = self
+            .variable_bindings
+            .get(&TextureSemantics::OriginalHistory.semantics(0).into())
+        {
+            let (buffer, offset) = match offset {
+                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
+                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
+            };
+            FilterPass::build_vec4(
+                location.location(),
+                &mut buffer[offset..][..16],
+                original.image.size,
+            );
+        }
+
+        for (index, output) in parent.history_textures.iter().enumerate() {
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
+            {
+                FilterPass::bind_texture(binding, output, TextureSemantics::OriginalHistory);
+            }
+
+            if let Some((location, offset)) = self
+                .variable_bindings
+                .get(&TextureSemantics::OriginalHistory.semantics(index + 1).into())
+            {
+                let (buffer, offset) = match offset {
+                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
+                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
+                };
+                FilterPass::build_vec4(
+                    location.location(),
+                    &mut buffer[offset..][..16],
+                    output.image.size,
+                );
+            }
+        }
+
+        // PassOutput
+        for (index, output) in parent.output_textures.iter().enumerate() {
             if let Some(binding) = self
                 .reflection
                 .meta
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                FilterPass::bind_texture(binding, output);
+                FilterPass::bind_texture(binding, output, TextureSemantics::PassOutput);
             }
 
             if let Some((location, offset)) = self
@@ -417,20 +465,32 @@ impl FilterPass {
             }
         }
 
-        // // todo: history
-        //
-        // // if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
-        // //     FilterPass::set_texture(binding, original);
-        // // }
-        // // if let Some(variable) = self.reflection.meta.texture_size_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
-        // //     let location = self.locations.get(&variable.id).expect("variable did not have location mapped").location();
-        // //     let (buffer, offset) = match variable.offset {
-        // //         MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, offset),
-        // //         MemberOffset::PushConstant(offset) => (&mut self.push_buffer, offset)
-        // //     };
-        // //     FilterPass::build_vec4(location, &mut buffer[offset..][..4], original.image.size);
-        // // }
-        //
+        // PassFeedback
+        for (index, feedback) in parent.feedback_textures.iter().enumerate() {
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::PassFeedback.semantics(index))
+            {
+                FilterPass::bind_texture(binding, feedback, TextureSemantics::PassFeedback);
+            }
+
+            if let Some((location, offset)) = self
+                .variable_bindings
+                .get(&TextureSemantics::PassFeedback.semantics(index).into())
+            {
+                let (buffer, offset) = match offset {
+                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
+                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
+                };
+                FilterPass::build_vec4(
+                    location.location(),
+                    &mut buffer[offset..][..16],
+                    feedback.image.size,
+                );
+            }
+        }
 
         // bind float parameters
         for (id, (location, offset)) in
@@ -475,7 +535,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::User.semantics(*index))
             {
-                FilterPass::bind_texture(binding, lut);
+                FilterPass::bind_texture(binding, lut, TextureSemantics::User);
             }
 
             if let Some((location, offset)) = self
@@ -493,7 +553,5 @@ impl FilterPass {
                 );
             }
         }
-
-        // // todo history
     }
 }

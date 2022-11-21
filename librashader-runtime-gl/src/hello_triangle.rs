@@ -10,8 +10,8 @@ use crate::filter_chain::FilterChain;
 use crate::framebuffer::Framebuffer;
 use crate::util::{GlImage, Size, Viewport};
 
-const WIDTH: u32 = 900;
-const HEIGHT: u32 = 700;
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
 const TITLE: &str = "Hello From OpenGL World!";
 
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
@@ -102,7 +102,7 @@ extern "system" fn debug_callback(
 ) {
     unsafe {
         let message = CStr::from_ptr(message);
-        eprintln!("{message:?}");
+        println!("[gl] {message:?}");
     }
 }
 
@@ -414,7 +414,9 @@ pub fn do_loop(
         }
 
         let fullscreen_fbo = [
-            -1.0f32, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,
+            -1.0f32, -1.0, 0.0, 1.0,
+            -1.0, 0.0, -1.0, 1.0, 0.0,
+            -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,
             1.0, 1.0, 0.0,
         ];
 
@@ -459,16 +461,20 @@ void main()
         gl::GenVertexArrays(1, &mut quad_vao);
     }
 
-    let fb = Framebuffer::new_from_raw(
+    let (fb_width, fb_height) = window.get_framebuffer_size();
+    let (vp_width, vp_height) = window.get_size();
+
+    let output = Framebuffer::new_from_raw(
         output_texture,
         output_framebuffer_handle,
         gl::RGBA8,
         Size {
-            width: WIDTH,
-            height: HEIGHT,
+            width: vp_width as u32,
+            height: vp_height as u32,
         },
         1,
     );
+
 
     while !window.should_close() {
         glfw.poll_events();
@@ -479,7 +485,7 @@ void main()
         unsafe {
             // render to fb
             gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
-            gl::Viewport(0, 0, WIDTH as GLsizei, HEIGHT as GLsizei);
+            gl::Viewport(0, 0, vp_width, vp_height);
 
             // clear color
             clear_color(Color(0.3, 0.4, 0.6, 1.0));
@@ -500,24 +506,28 @@ void main()
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
 
+        let viewport = Viewport {
+            x: 0,
+            y: 0,
+            output: &output,
+            mvp: None,
+        };
+
+        let rendered = GlImage {
+            handle: rendered_texture,
+            format: gl::RGBA8,
+            size: Size {
+                width: fb_width as u32,
+                height: fb_height as u32,
+            },
+            padded_size: Default::default(),
+        };
+
         unsafe {
             filter.frame(
                 framecount,
-                &Viewport {
-                    x: 0,
-                    y: 0,
-                    output: &fb,
-                    mvp: None,
-                },
-                GlImage {
-                    handle: rendered_texture,
-                    format: gl::RGBA8,
-                    size: Size {
-                        width: WIDTH,
-                        height: HEIGHT,
-                    },
-                    padded_size: Default::default(),
-                },
+                &viewport,
+                &rendered,
                 false,
             )
         }
@@ -560,6 +570,9 @@ fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     match event {
         Event::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true);
+        }
+        Event::Size(width, height) => {
+            window.set_size(width, height)
         }
         _ => {}
     }

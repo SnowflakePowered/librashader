@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::Framebuffer;
@@ -6,8 +7,8 @@ use crate::util;
 use crate::util::{GlImage, InlineRingBuffer, Size, Texture, Viewport};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader::image::Image;
-use librashader::{FilterMode, ShaderSource};
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader::{FilterMode, ShaderSource, WrapMode};
+use librashader_presets::{ScaleType, ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
 use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};
 use librashader_reflect::back::CompileShader;
@@ -19,11 +20,27 @@ use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::error::Error;
 use std::path::Path;
+use crate::quad_render::DrawQuad;
 
-static QUAD_VBO_DATA: &[f32; 16] = &[
-    0.0f32, 0.0f32, 0.0f32, 0.0f32, 1.0f32, 0.0f32, 1.0f32, 0.0f32, 0.0f32, 1.0f32, 0.0f32, 1.0f32,
-    1.0f32, 1.0f32, 1.0f32, 1.0f32,
-];
+pub struct FilterChain {
+    passes: Box<[FilterPass]>,
+    common: FilterCommon,
+    filter_vao: GLuint,
+    output_framebuffers: Box<[Framebuffer]>,
+    feedback_framebuffers: Box<[Framebuffer]>,
+    history_framebuffers: VecDeque<Framebuffer>,
+}
+
+pub struct FilterCommon {
+    semantics: ReflectSemantics,
+    pub(crate) preset: ShaderPreset,
+    pub(crate) luts: FxHashMap<usize, Texture>,
+    pub output_textures: Box<[Texture]>,
+    pub feedback_textures: Box<[Texture]>,
+    pub history_textures: Box<[Texture]>,
+    pub(crate) draw_quad: DrawQuad,
+}
+
 
 impl FilterChain {
     fn load_pass_semantics(
@@ -101,24 +118,6 @@ impl FilterChain {
             }
         }
     }
-}
-
-pub struct FilterChain {
-    passes: Box<[FilterPass]>,
-    common: FilterCommon,
-    quad_vao: GLuint,
-    output_framebuffers: Box<[Framebuffer]>,
-}
-
-pub struct FilterCommon {
-    semantics: ReflectSemantics,
-    pub(crate) preset: ShaderPreset,
-    pub original_history: Box<[Framebuffer]>,
-    pub history: Vec<Texture>,
-    pub feedback: Vec<Texture>,
-    pub(crate) luts: FxHashMap<usize, Texture>,
-    pub output_textures: Box<[Texture]>,
-    pub(crate) quad_vbo: GLuint,
 }
 
 type ShaderPassMeta<'a> = (
@@ -330,7 +329,6 @@ impl FilterChain {
                         .vertex
                         .get_decoration(res.id, Decoration::Location)?;
                     let loc_name = format!("LIBRA_ATTRIBUTE_{loc}\0");
-                    eprintln!("{loc_name}");
                     gl::BindAttribLocation(program, loc, loc_name.as_str().as_ptr().cast())
                 }
                 gl::LinkProgram(program);
@@ -443,7 +441,7 @@ impl FilterChain {
                 );
             }
 
-            // eprintln!("{:#?}", semantics);
+            // eprintln!("{:#?}", reflection.meta.texture_meta);
             // eprintln!("{:#?}", reflection.meta);
             // eprintln!("{:#?}", locations);
             // eprintln!("{:#?}", reflection.push_constant);
@@ -469,7 +467,7 @@ impl FilterChain {
         Ok(filters.into_boxed_slice())
     }
 
-    pub fn init_history(filters: &[FilterPass]) -> Box<[Framebuffer]> {
+    pub fn init_history(filters: &[FilterPass], filter: FilterMode, wrap_mode: WrapMode) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -493,56 +491,27 @@ impl FilterChain {
             required_images = std::cmp::max(required_images, texture_size_count);
         }
 
-        // not ussing frame history;
-        if required_images < 2 {
-            eprintln!("not using frame history");
-            return Vec::new().into_boxed_slice();
+        // not using frame history;
+        if required_images <= 1 {
+            println!("[history] not using frame history");
+            return (VecDeque::new(), Box::new([]))
         }
 
         // history0 is aliased with the original
-        required_images -= 1;
 
-        let mut framebuffers = Vec::new();
+        eprintln!("[history] using frame history with {required_images} images");
+        let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || Framebuffer::new(1));
-        framebuffers.into_boxed_slice()
-    }
 
-    pub fn init_feedback(filters: &[FilterPass]) -> Box<[Framebuffer]> {
-        let mut required_images = 0;
+        let mut history_textures = Vec::new();
+        history_textures.resize_with(required_images, || Texture {
+            image: Default::default(),
+            filter,
+            mip_filter: filter,
+            wrap_mode
+        });
 
-        for pass in filters {
-            // If a shader uses history size, but not history, we still need to keep the texture.
-            let texture_count = pass
-                .reflection
-                .meta
-                .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-            let texture_size_count = pass
-                .reflection
-                .meta
-                .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-
-            required_images = std::cmp::max(required_images, texture_count);
-            required_images = std::cmp::max(required_images, texture_size_count);
-        }
-
-        // not ussing frame history;
-        if required_images < 2 {
-            eprintln!("not using frame history");
-            return Vec::new().into_boxed_slice();
-        }
-
-        // history0 is aliased with the original
-        required_images -= 1;
-
-        let mut framebuffers = Vec::new();
-        framebuffers.resize_with(required_images, || Framebuffer::new(1));
-        framebuffers.into_boxed_slice()
+        (framebuffers, history_textures.into_boxed_slice())
     }
 
     pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
@@ -553,49 +522,50 @@ impl FilterChain {
         // initialize passes
         let filters = FilterChain::init_passes(passes, &semantics)?;
 
+        let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
+        let default_wrap = filters.first().map(|f| f.config.wrap_mode).unwrap_or_default();
+
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), Texture::default);
 
+
+        // initialize feedback framebuffers
+        let mut feedback_framebuffers = Vec::new();
+        feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        let mut feedback_textures = Vec::new();
+        feedback_textures.resize_with(filters.len(), Texture::default);
+
         // load luts
         let luts = FilterChain::load_luts(&preset.textures)?;
 
-        let original_history = FilterChain::init_history(&filters);
+        let (history_framebuffers, history_textures) =
+            FilterChain::init_history(&filters, default_filter, default_wrap);
 
         // create VBO objects
-        let mut quad_vbo = 0;
-        unsafe {
-            gl::GenBuffers(1, &mut quad_vbo);
-            gl::BindBuffer(gl::ARRAY_BUFFER, quad_vbo);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                std::mem::size_of_val(QUAD_VBO_DATA) as GLsizeiptr,
-                QUAD_VBO_DATA.as_ptr().cast(),
-                gl::STATIC_DRAW,
-            );
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        }
+        let draw_quad = DrawQuad::new();
 
-        let mut quad_vao = 0;
+        let mut filter_vao = 0;
         unsafe {
-            gl::GenVertexArrays(1, &mut quad_vao);
+            gl::GenVertexArrays(1, &mut filter_vao);
         }
 
         Ok(FilterChain {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
-            quad_vao,
+            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
+            history_framebuffers,
+            filter_vao,
             common: FilterCommon {
                 semantics,
                 preset,
-                original_history,
-                history: vec![],
-                feedback: vec![],
                 luts,
                 output_textures: output_textures.into_boxed_slice(),
-                quad_vbo,
+                feedback_textures: feedback_textures.into_boxed_slice(),
+                history_textures,
+                draw_quad,
             },
         })
     }
@@ -605,35 +575,58 @@ impl FilterChain {
         self.output_framebuffers[index].as_texture(config.filter, config.wrap_mode)
     }
 
-    pub fn frame(&mut self, count: usize, vp: &Viewport, input: GlImage, _clear: bool) {
+    pub fn push_history(&mut self, input: &GlImage) {
+        if let Some(mut back) = self.history_framebuffers.pop_back() {
+
+            if back.size != input.size
+                || (input.format != 0 && input.format != back.format) {
+                eprintln!("[history] resizing");
+                back.init(input.size, input.format);
+            }
+
+            if back.is_initialized() {
+                back.copy_from(&input);
+            }
+
+            self.history_framebuffers.push_front(back)
+        }
+    }
+
+    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, clear: bool) {
+        if clear {
+            for framebuffer in &self.history_framebuffers {
+                framebuffer.clear()
+            }
+        }
+
+
         if self.passes.is_empty() {
             return;
         }
 
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::BindVertexArray(self.quad_vao);
+            gl::BindVertexArray(self.filter_vao);
         }
 
-        // todo: copy framebuffer
-        // shader_gl3: 2067
-        let filter = self
-            .common
-            .preset
-            .shaders
-            .first()
-            .map(|f| f.filter)
-            .unwrap_or_default();
-        let wrap_mode = self
-            .common
-            .preset
-            .shaders
-            .first()
-            .map(|f| f.wrap_mode)
-            .unwrap_or_default();
+        let filter = self.passes[0].config.filter;
+        let wrap_mode = self.passes[0].config.wrap_mode;
 
+        // update history
+        for (texture, fbo) in self.common.history_textures.iter_mut().zip(self.history_framebuffers.iter()) {
+            texture.image = fbo.as_texture(filter, wrap_mode).image;
+        }
+
+        for ((texture, fbo), pass) in self.common.feedback_textures.iter_mut()
+            .zip(self.feedback_framebuffers.iter())
+            .zip(self.passes.iter())
+        {
+            texture.image = fbo.as_texture(pass.config.filter, pass.config.wrap_mode).image;
+        }
+
+        // shader_gl3: 2067
         let original = Texture {
-            image: input,
+            image: *input,
             filter,
             mip_filter: filter,
             wrap_mode,
@@ -650,7 +643,7 @@ impl FilterChain {
                 let _framebuffer_size = target.scale(
                     pass.config.scaling.clone(),
                     pass.get_format(),
-                    vp,
+                    viewport,
                     &original,
                     &source,
                 );
@@ -660,9 +653,13 @@ impl FilterChain {
             pass.draw(
                 index,
                 &self.common,
-                (count % pass.config.frame_count_mod as usize) as u32,
+                if pass.config.frame_count_mod > 0 {
+                    count % pass.config.frame_count_mod as usize
+                } else {
+                    count
+                } as u32,
                 1,
-                vp,
+                viewport,
                 &original,
                 &source,
                 RenderTarget::new(target, None),
@@ -681,19 +678,29 @@ impl FilterChain {
             pass.draw(
                 passes_len - 1,
                 &self.common,
-                (count % pass.config.frame_count_mod as usize) as u32,
+                if pass.config.frame_count_mod > 0 {
+                    count % pass.config.frame_count_mod as usize
+                } else {
+                    count
+                } as u32,
                 1,
-                vp,
+                viewport,
                 &original,
                 &source,
-                RenderTarget::new(vp.output, vp.mvp),
+                RenderTarget::new(viewport.output, viewport.mvp),
             );
         }
 
+        // swap feedback framebuffers with output
+        for (output, feedback) in self.output_framebuffers.iter_mut().zip(self.feedback_framebuffers.iter_mut()) {
+            std::mem::swap(output, feedback);
+        }
+
+        self.push_history(&input);
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindVertexArray(0);
         }
-        // todo: deal with the mess that is frame history
     }
+
 }

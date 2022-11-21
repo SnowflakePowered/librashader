@@ -1,5 +1,5 @@
 use crate::framebuffer::Framebuffer;
-use crate::util::Viewport;
+use crate::util::{Texture, Viewport};
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32] = &[

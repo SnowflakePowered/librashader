@@ -63,10 +63,13 @@ pub enum TextureSemantics {
 }
 
 impl TextureSemantics {
-    pub const TEXTURE_SEMANTICS: [TextureSemantics; 6] = [
-        TextureSemantics::Original,
+    pub(crate) const TEXTURE_SEMANTICS: [TextureSemantics; 6] = [
         TextureSemantics::Source,
+        // originalhistory needs to come first, otherwise
+        // the name lookup implementation will prioritize Original
+        // when reflecting semantics.
         TextureSemantics::OriginalHistory,
+        TextureSemantics::Original,
         TextureSemantics::PassOutput,
         TextureSemantics::PassFeedback,
         TextureSemantics::User,

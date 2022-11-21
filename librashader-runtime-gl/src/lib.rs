@@ -8,6 +8,7 @@ mod framebuffer;
 mod hello_triangle;
 mod render_target;
 mod util;
+mod quad_render;
 
 #[cfg(test)]
 mod tests {
@@ -17,7 +18,7 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        let mut filter = FilterChain::load("../test/slang-shaders/crt/crt-geom.slangp").unwrap();
+        let mut filter = FilterChain::load("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp").unwrap();
 
         // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 

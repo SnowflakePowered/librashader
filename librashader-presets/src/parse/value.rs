@@ -6,6 +6,8 @@ use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
 
 use nom::IResult;
+use num_traits::cast::ToPrimitive;
+
 
 use crate::parse::token::do_lex;
 use std::fs::File;
@@ -66,14 +68,28 @@ impl Value {
 
 fn from_int(input: Span) -> Result<i32, ParsePresetError> {
     i32::from_str(input.trim()).map_err(|_| {
-        eprintln!("{input}");
         ParsePresetError::ParserError {
             offset: input.location_offset(),
             row: input.location_line(),
             col: input.get_column(),
             kind: ParseErrorKind::Int,
         }
+    }).or_else(|e| {
+        let result = f32::from_str(input.trim())
+            .map_err(|_| e)?;
+        let result = result.trunc().to_i32()
+            .ok_or(ParsePresetError::ParserError {
+                offset: input.location_offset(),
+                row: input.location_line(),
+                col: input.get_column(),
+                kind: ParseErrorKind::Int,
+            })?;
+
+        eprintln!("falling back to float trunc {result}");
+        Ok(result)
     })
+
+
 }
 
 fn from_ul(input: Span) -> Result<u32, ParsePresetError> {

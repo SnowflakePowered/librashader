@@ -1,3 +1,4 @@
+use std::ops::Index;
 use crate::error::ShaderReflectError;
 use crate::reflect::semantics::{
     SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
@@ -97,7 +98,9 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
             None => {
                 if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
                     .iter()
-                    .find(|f| name.starts_with(f.texture_name()))
+                    .find(|f| {
+                        name.starts_with(f.texture_name())
+                    })
                 {
                     if semantics.is_array() {
                         let index = &name[semantics.texture_name().len()..];

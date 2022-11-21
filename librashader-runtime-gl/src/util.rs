@@ -92,53 +92,6 @@ where
     }
 }
 
-
-pub struct AllocRingBuffer<T> {
-    items: Box<[T]>,
-    index: usize
-}
-
-impl<T> AllocRingBuffer<T>
-    where
-        T: Default,
-{
-    pub fn new(len: usize) -> Self {
-        let mut items = Vec::new();
-        items.resize_with(len, T::default);
-
-        Self {
-            items: items.into_boxed_slice(),
-            index: 0,
-        }
-    }
-
-    pub fn items(&self) -> &[T] {
-        &self.items
-    }
-
-    pub fn items_mut(&mut self) -> &mut [T] {
-        &mut self.items
-    }
-}
-
-impl <T> RingBuffer<T> for AllocRingBuffer<T> {
-    fn current(&self) -> &T {
-        &self.items[self.index]
-    }
-
-    fn current_mut(&mut self) -> &mut T {
-        &mut self.items[self.index]
-    }
-
-    fn next(&mut self) {
-        self.index += 1;
-        if self.index >= self.items.len() {
-            self.index = 0
-        }
-    }
-}
-
-
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
     gl::ShaderSource(

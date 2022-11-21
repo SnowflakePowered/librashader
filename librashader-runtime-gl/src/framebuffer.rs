@@ -1,6 +1,6 @@
 use crate::util;
 use crate::util::{GlImage, Size, Texture, Viewport};
-use gl::types::{GLenum, GLsizei, GLuint};
+use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader::{FilterMode, ShaderFormat, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
 
@@ -131,7 +131,68 @@ impl Framebuffer {
         size
     }
 
-    fn init(&mut self, mut size: Size, format: impl Into<GLenum>) {
+    pub(crate) fn is_initialized(&self) -> bool {
+        self.init
+    }
+
+    pub fn clear(&self) {
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+            gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
+            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+    }
+
+    pub fn copy_from(&mut self, image: &GlImage) {
+        if image.size != self.size || image.format != self.format {
+            self.init(image.size, image.format);
+        }
+
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+
+            gl::FramebufferTexture2D(gl::READ_FRAMEBUFFER,
+                                     gl::COLOR_ATTACHMENT0,
+                                     gl::TEXTURE_2D,
+                                     image.handle, 0);
+
+            gl::FramebufferTexture2D(gl::DRAW_FRAMEBUFFER,
+                                     gl::COLOR_ATTACHMENT1,
+                                     gl::TEXTURE_2D,
+                                     self.image, 0);
+            gl::DrawBuffer(gl::COLOR_ATTACHMENT1);
+            gl::BlitFramebuffer(0, 0, self.size.width as GLint, self.size.height as GLint,
+                                0, 0, self.size.width as GLint, self.size.height as GLint,
+                                gl::COLOR_BUFFER_BIT, gl::NEAREST);
+
+            // cleanup after ourselves.
+            gl::FramebufferTexture2D(gl::READ_FRAMEBUFFER,
+                                     gl::COLOR_ATTACHMENT0,
+                                     gl::TEXTURE_2D,
+                                     0, 0);
+
+            gl::FramebufferTexture2D(gl::DRAW_FRAMEBUFFER,
+                                     gl::COLOR_ATTACHMENT1,
+                                     gl::TEXTURE_2D,
+                                     0, 0);
+
+            // set this back to color_attachment 0
+            gl::FramebufferTexture2D(
+                gl::FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT0,
+                gl::TEXTURE_2D,
+                self.image,
+                0,
+            );
+
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+    }
+    // todo: fix panic
+    pub(crate) fn init(&mut self, mut size: Size, format: impl Into<GLenum>) {
+        self.init = false;
         self.format = format.into();
         self.size = size;
 
