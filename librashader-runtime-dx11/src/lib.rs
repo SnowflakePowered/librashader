@@ -23,7 +23,7 @@ pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSema
         return;
     }
 
-    let index = config.id as u32;
+    let index = config.id as usize;
 
     // PassOutput
     texture_semantics.insert(alias.clone(), SemanticMap {
@@ -79,7 +79,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     for (index, texture) in preset.textures.iter().enumerate() {
         texture_semantics.insert(texture.name.clone(), SemanticMap {
             semantics: TextureSemantics::User,
-            index: index as u32
+            index
         });
     }
 
@@ -92,7 +92,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let mut compiled = Vec::new();
 
     for (index, (_, _, reflect)) in passes.iter_mut().enumerate() {
-        let reflection = reflect.reflect(index as u32, &semantics)
+        let reflection = reflect.reflect(index, &semantics)
             .unwrap();
 
         let hlsl = reflect.compile(None)
