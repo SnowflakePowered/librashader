@@ -22,6 +22,7 @@ use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
+use librashader_reflect::front::shaderc::GlslangCompilation;
 
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
@@ -207,7 +208,7 @@ impl FilterChain {
                 eprintln!("[gl] loading {}", &shader.name.display());
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
-                let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)?;
+                let spirv = GlslangCompilation::compile(&source)?;
                 let reflect = GLSL::from_compilation(spirv)?;
 
                 for parameter in source.parameters.iter() {

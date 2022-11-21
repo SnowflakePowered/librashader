@@ -10,6 +10,7 @@ pub struct GlslangGlslContext {
     pub sampler_bindings: Vec<u32>,
     pub compiler: CompiledAst<spirv_cross::glsl::Target>,
 }
+
 impl FromCompilation<GlslangCompilation> for GLSL {
     type Target = GLSL;
     type Options = GlVersion;

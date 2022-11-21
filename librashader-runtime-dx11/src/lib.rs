@@ -5,6 +5,7 @@ use librashader_reflect::back::CompileShader;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
+use librashader_reflect::front::shaderc::GlslangCompilation;
 
 use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, VariableSemantics};
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
@@ -65,7 +66,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
         .iter()
         .map(|shader| {
             let source = ShaderSource::load(&shader.name).unwrap();
-            let spirv = librashader_reflect::front::shaderc::compile_spirv(&source).unwrap();
+            let spirv = GlslangCompilation::compile(&source).unwrap();
             let reflect = HLSL::from_compilation(spirv).unwrap();
             (shader, source, reflect)
         })

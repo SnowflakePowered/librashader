@@ -7,6 +7,23 @@ pub struct GlslangCompilation {
     pub(crate) fragment: CompilationArtifact,
 }
 
+impl GlslangCompilation {
+
+    /// Tries to compile SPIR-V from the provided shader source.
+    pub fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
+        compile_spirv(source)
+    }
+}
+
+impl TryFrom<&ShaderSource> for GlslangCompilation {
+    type Error = ShaderCompileError;
+
+    /// Tries to compile SPIR-V from the provided shader source.
+    fn try_from(source: &ShaderSource) -> Result<Self, Self::Error> {
+        GlslangCompilation::compile(source)
+    }
+}
+
 fn get_shaderc_options() -> Result<CompileOptions<'static>, ShaderCompileError> {
     let mut options = CompileOptions::new().ok_or(ShaderCompileError::ShaderCInitError)?;
     options.set_include_callback(|_, _, _, _| {
@@ -99,7 +116,7 @@ fn get_shaderc_options() -> Result<CompileOptions<'static>, ShaderCompileError> 
     Ok(options)
 }
 
-pub fn compile_spirv(source: &ShaderSource) -> Result<GlslangCompilation, ShaderCompileError> {
+fn compile_spirv(source: &ShaderSource) -> Result<GlslangCompilation, ShaderCompileError> {
     let compiler = shaderc::Compiler::new().ok_or(ShaderCompileError::ShaderCInitError)?;
     let name = source.name.as_deref().unwrap_or("shader.slang");
     let options = get_shaderc_options()?;
