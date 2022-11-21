@@ -252,9 +252,6 @@ impl FilterPass {
             gl::Disable(gl::FRAMEBUFFER_SRGB);
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
-
-        // todo: draw image onto fbo
-        // shader_gl3 1579
     }
 
     // framecount should be pre-modded
@@ -514,6 +511,7 @@ impl FilterPass {
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
             };
 
+            // todo: cache parameters.
             // presets override params
             let default = self
                 .source

@@ -20,3 +20,5 @@ impl Image {
         })
     }
 }
+
+pub use image::ImageError;

@@ -5,6 +5,8 @@ use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{InlineRingBuffer, Texture};
+use crate::error::{FilterChainError, Result};
+
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader_common::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
@@ -32,7 +34,7 @@ pub struct FilterChain {
 }
 
 pub struct FilterCommon {
-    semantics: ReflectSemantics,
+    // semantics: ReflectSemantics,
     pub(crate) preset: ShaderPreset,
     pub(crate) luts: FxHashMap<usize, Texture>,
     pub output_textures: Box<[Texture]>,
@@ -129,7 +131,7 @@ type ShaderPassMeta<'a> = (
 
 impl FilterChain {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(preset: ShaderPreset) -> Result<FilterChain, Box<dyn Error>> {
+    pub fn load_from_preset(preset: ShaderPreset) -> Result<FilterChain> {
         let (passes, semantics) = FilterChain::load_preset(&preset)?;
 
         // initialize passes
@@ -174,7 +176,8 @@ impl FilterChain {
             history_framebuffers,
             filter_vao,
             common: FilterCommon {
-                semantics,
+                // we don't need the reflect semantics once all locations have been bound per pass.
+                // semantics,
                 preset,
                 luts,
                 output_textures: output_textures.into_boxed_slice(),
@@ -186,7 +189,7 @@ impl FilterChain {
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
+    pub fn load_from_path(path: impl AsRef<Path>) -> Result<FilterChain> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(preset)
@@ -194,7 +197,7 @@ impl FilterChain {
 
     fn load_preset(
         preset: &ShaderPreset,
-    ) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics), Box<dyn Error>> {
+    ) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
@@ -218,10 +221,10 @@ impl FilterChain {
                         }),
                     );
                 }
-                Ok::<_, Box<dyn Error>>((shader, source, reflect))
+                Ok::<_, FilterChainError>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>, _>>()?;
+            .collect::<Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
 
         for details in &passes {
             FilterChain::load_pass_semantics(
@@ -258,7 +261,7 @@ impl FilterChain {
         Ok((passes, semantics))
     }
 
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>, Box<dyn Error>> {
+    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
         let mut luts = FxHashMap::default();
 
         for (index, texture) in textures.iter().enumerate() {
@@ -363,7 +366,7 @@ impl FilterChain {
     fn init_passes(
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
-    ) -> Result<Box<[FilterPass]>, Box<dyn Error>> {
+    ) -> Result<Box<[FilterPass]>> {
         let mut filters = Vec::new();
 
         // initialize passes
@@ -578,20 +581,22 @@ impl FilterChain {
         (framebuffers, history_textures.into_boxed_slice())
     }
 
-    fn push_history(&mut self, input: &GlImage) {
+    fn push_history(&mut self, input: &GlImage) -> Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 eprintln!("[history] resizing");
-                back.init(input.size, input.format);
+                back.init(input.size, input.format)?;
             }
 
-            back.copy_from(input);
+            back.copy_from(input)?;
 
             self.history_framebuffers.push_front(back)
         }
+
+        Ok(())
     }
 
-    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, clear: bool) {
+    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, clear: bool) -> Result<()> {
         if clear {
             for framebuffer in &self.history_framebuffers {
                 framebuffer.clear()
@@ -599,7 +604,7 @@ impl FilterChain {
         }
 
         if self.passes.is_empty() {
-            return;
+            return Ok(());
         }
 
         unsafe {
@@ -650,7 +655,7 @@ impl FilterChain {
                 viewport,
                 &original,
                 &source,
-            );
+            )?;
 
             self.feedback_framebuffers[index].scale(
                 pass.config.scaling.clone(),
@@ -658,7 +663,7 @@ impl FilterChain {
                 viewport,
                 &original,
                 &source,
-            );
+            )?;
         }
 
         let passes_len = self.passes.len();
@@ -716,10 +721,12 @@ impl FilterChain {
             std::mem::swap(output, feedback);
         }
 
-        self.push_history(input);
+        self.push_history(input)?;
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindVertexArray(0);
         }
+
+        Ok(())
     }
 }

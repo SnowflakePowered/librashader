@@ -517,7 +517,8 @@ void main()
             padded_size: Default::default(),
         };
 
-        unsafe { filter.frame(framecount, &viewport, &rendered, false) }
+        filter.frame(framecount, &viewport, &rendered, false)
+            .unwrap();
 
         unsafe {
             // texture is done now.

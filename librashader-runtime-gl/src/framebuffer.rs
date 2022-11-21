@@ -3,6 +3,8 @@ use crate::util::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{FilterMode, ShaderFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
+use crate::error::FilterChainError;
+use crate::error::Result;
 
 #[derive(Debug)]
 pub struct Framebuffer {
@@ -77,9 +79,9 @@ impl Framebuffer {
         viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
-    ) -> Size<u32> {
+    ) -> Result<Size<u32>> {
         if self.is_raw {
-            return self.size;
+            return Ok(self.size);
         }
 
         let mut width = 0f32;
@@ -130,9 +132,9 @@ impl Framebuffer {
                 } else {
                     format
                 },
-            );
+            )?;
         }
-        size
+        Ok(size)
     }
 
     pub(crate) fn clear(&self) {
@@ -145,9 +147,9 @@ impl Framebuffer {
         }
     }
 
-    pub(crate) fn copy_from(&mut self, image: &GlImage) {
+    pub(crate) fn copy_from(&mut self, image: &GlImage) -> Result<()>{
         if image.size != self.size || image.format != self.format {
-            self.init(image.size, image.format);
+            self.init(image.size, image.format)?;
         }
 
         unsafe {
@@ -210,12 +212,13 @@ impl Framebuffer {
 
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
+
+        Ok(())
     }
 
-    // todo: fix panic
-    pub(crate) fn init(&mut self, mut size: Size<u32>, format: impl Into<GLenum>) {
+    pub(crate) fn init(&mut self, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
         if self.is_raw {
-            return;
+            return Ok(());
         }
         self.format = format.into();
         self.size = size;
@@ -310,13 +313,15 @@ impl Framebuffer {
                         // self.init =
                         //     gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
-                    _ => panic!("failed to complete: {status:x}"),
+                    _ => return Err(FilterChainError::FramebufferInit(status))
                 }
             }
 
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindTexture(gl::TEXTURE_2D, 0);
         }
+
+        Ok(())
     }
 }
 
