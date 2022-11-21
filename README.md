@@ -1,6 +1,8 @@
 # librashader
 
-![image](https://user-images.githubusercontent.com/1000503/202840226-68e9d01f-aa0b-4bfa-9bc6-a1363f701b85.png)
+![image](https://user-images.githubusercontent.com/1000503/202991618-e3e38e05-f0de-429d-a3ee-4cd0b077f88f.png)
+
+<small>*crt-royale-fake-bloom*</small>
 
 A preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 
