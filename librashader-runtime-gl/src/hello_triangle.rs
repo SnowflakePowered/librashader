@@ -5,9 +5,10 @@ use std::sync::mpsc::Receiver;
 use glfw::{Context, Glfw, Window, WindowEvent};
 
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
+use librashader::Size;
 
 use crate::filter_chain::FilterChain;
-use crate::framebuffer::{Framebuffer, GlImage, Size, Viewport};
+use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -467,10 +468,7 @@ void main()
         output_texture,
         output_framebuffer_handle,
         gl::RGBA8,
-        Size {
-            width: vp_width as u32,
-            height: vp_height as u32,
-        },
+        Size::new(vp_width as u32, vp_height as u32),
         1,
     );
 

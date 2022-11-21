@@ -13,7 +13,6 @@ mod quad_render;
 pub use filter_chain::FilterChain;
 pub use framebuffer::Viewport;
 pub use framebuffer::GlImage;
-pub use framebuffer::Size;
 pub use framebuffer::Framebuffer;
 
 #[cfg(test)]

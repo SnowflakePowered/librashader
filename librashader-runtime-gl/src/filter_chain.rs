@@ -1,13 +1,13 @@
 use std::collections::VecDeque;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::{Framebuffer, GlImage, Size, Viewport};
+use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{InlineRingBuffer, Texture};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader::image::Image;
-use librashader::{FilterMode, ShaderSource, WrapMode};
+use librashader::{FilterMode, ShaderSource, Size, WrapMode};
 use librashader_presets::{ScaleType, ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
 use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};

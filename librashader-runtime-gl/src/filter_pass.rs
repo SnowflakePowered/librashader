@@ -3,7 +3,7 @@ use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
-use librashader::{ShaderFormat, ShaderSource};
+use librashader::{ShaderFormat, ShaderSource, Size};
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, TextureImage, TextureSemantics, VariableSemantics,
@@ -12,7 +12,7 @@ use rustc_hash::FxHashMap;
 
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
-use crate::framebuffer::{Size, Viewport};
+use crate::framebuffer::Viewport;
 use crate::render_target::RenderTarget;
 use crate::util::{InlineRingBuffer, RingBuffer, Texture};
 
@@ -35,7 +35,7 @@ impl FilterPass {
         buffer.copy_from_slice(mvp);
     }
 
-    fn build_vec4(location: UniformLocation<GLint>, buffer: &mut [u8], size: Size) {
+    fn build_vec4(location: UniformLocation<GLint>, buffer: &mut [u8], size: Size<u32>) {
         let vec4 = [
             size.width as f32,
             size.height as f32,
@@ -264,7 +264,7 @@ impl FilterPass {
         mvp: &[f32],
         frame_count: u32,
         frame_direction: i32,
-        fb_size: Size,
+        fb_size: Size<u32>,
         viewport: &Viewport,
         original: &Texture,
         source: &Texture,

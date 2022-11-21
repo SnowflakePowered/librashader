@@ -1,14 +1,14 @@
 use crate::util;
 use crate::util::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
-use librashader::{FilterMode, ShaderFormat, WrapMode};
+use librashader::{FilterMode, ShaderFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
 
 #[derive(Debug)]
 pub struct Framebuffer {
     pub image: GLuint,
     pub handle: GLuint,
-    pub size: Size,
+    pub size: Size<u32>,
     pub format: GLenum,
     pub max_levels: u32,
     pub levels: u32,
@@ -42,7 +42,7 @@ impl Framebuffer {
         texture: GLuint,
         handle: GLuint,
         format: GLenum,
-        size: Size,
+        size: Size<u32>,
         miplevels: u32,
     ) -> Framebuffer {
         Framebuffer {
@@ -77,7 +77,7 @@ impl Framebuffer {
         viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
-    ) -> Size {
+    ) -> Size<u32> {
         if self.is_raw {
             return self.size;
         }
@@ -192,7 +192,7 @@ impl Framebuffer {
     }
 
     // todo: fix panic
-    pub(crate) fn init(&mut self, mut size: Size, format: impl Into<GLenum>) {
+    pub(crate) fn init(&mut self, mut size: Size<u32>, format: impl Into<GLenum>) {
         if self.is_raw {
             return;
         }
@@ -320,16 +320,10 @@ pub struct Viewport<'a> {
     pub mvp: Option<&'a [f32]>,
 }
 
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Size {
-    pub width: u32,
-    pub height: u32,
-}
-
 #[derive(Default, Debug, Copy, Clone)]
 pub struct GlImage {
     pub handle: GLuint,
     pub format: GLenum,
-    pub size: Size,
-    pub padded_size: Size,
+    pub size: Size<u32>,
+    pub padded_size: Size<u32>,
 }
