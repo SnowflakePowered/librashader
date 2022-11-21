@@ -634,21 +634,29 @@ impl FilterChain {
 
         let mut source = original;
 
+        // rescale render buffers to ensure all bindings are valid.
+        for (index, pass) in self.passes.iter_mut().enumerate() {
+            self.output_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                viewport,
+                &original,
+                &source,
+            );
+
+            self.feedback_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                viewport,
+                &original,
+                &source,
+            );
+        }
+
         let passes_len = self.passes.len();
         let (pass, last) = self.passes.split_at_mut(passes_len - 1);
 
         for (index, pass) in pass.iter_mut().enumerate() {
-            {
-                let target = &mut self.output_framebuffers[index];
-                let _framebuffer_size = target.scale(
-                    pass.config.scaling.clone(),
-                    pass.get_format(),
-                    viewport,
-                    &original,
-                    &source,
-                );
-            }
-
             let target = &self.output_framebuffers[index];
             pass.draw(
                 index,
@@ -675,6 +683,7 @@ impl FilterChain {
         for pass in last {
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
+
             pass.draw(
                 passes_len - 1,
                 &self.common,
@@ -689,6 +698,7 @@ impl FilterChain {
                 &source,
                 RenderTarget::new(viewport.output, viewport.mvp),
             );
+
         }
 
         // swap feedback framebuffers with output

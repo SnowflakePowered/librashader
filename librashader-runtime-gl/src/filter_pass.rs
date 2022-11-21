@@ -93,11 +93,8 @@ impl FilterPass {
         Self::build_uniform(location, buffer, value, gl::Uniform1f)
     }
 
-    fn bind_texture(binding: &TextureImage, texture: &Texture, semantic: TextureSemantics) {
+    fn bind_texture(binding: &TextureImage, texture: &Texture) {
         unsafe {
-            if texture.image.handle == 0 {
-                eprintln!("[WARNING] trying to bind {semantic:?} texture 0 to slot {} ", binding.binding)
-            }
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
@@ -347,7 +344,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            FilterPass::bind_texture(binding, original, TextureSemantics::Original);
+            FilterPass::bind_texture(binding, original);
         }
 
         // bind OriginalSize
@@ -374,7 +371,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(binding, source, TextureSemantics::Source);
+            FilterPass::bind_texture(binding, source);
         }
 
         // bind SourceSize
@@ -395,7 +392,7 @@ impl FilterPass {
 
 
         if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
-            FilterPass::bind_texture(binding, original, TextureSemantics::OriginalHistory);
+            FilterPass::bind_texture(binding, original);
         }
         if let Some((location, offset)) = self
             .variable_bindings
@@ -419,7 +416,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
             {
-                FilterPass::bind_texture(binding, output, TextureSemantics::OriginalHistory);
+                FilterPass::bind_texture(binding, output);
             }
 
             if let Some((location, offset)) = self
@@ -446,7 +443,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                FilterPass::bind_texture(binding, output, TextureSemantics::PassOutput);
+                FilterPass::bind_texture(binding, output);
             }
 
             if let Some((location, offset)) = self
@@ -473,7 +470,10 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassFeedback.semantics(index))
             {
-                FilterPass::bind_texture(binding, feedback, TextureSemantics::PassFeedback);
+                if feedback.image.handle == 0 {
+                    eprintln!("[WARNING] trying to bind PassFeedback: {index} which has texture 0 to slot {} in pass {pass_index}", binding.binding)
+                }
+                FilterPass::bind_texture(binding, feedback);
             }
 
             if let Some((location, offset)) = self
@@ -535,7 +535,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::User.semantics(*index))
             {
-                FilterPass::bind_texture(binding, lut, TextureSemantics::User);
+                FilterPass::bind_texture(binding, lut);
             }
 
             if let Some((location, offset)) = self

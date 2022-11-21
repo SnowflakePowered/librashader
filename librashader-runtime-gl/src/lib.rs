@@ -18,7 +18,7 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        let mut filter = FilterChain::load("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp").unwrap();
+        let mut filter = FilterChain::load("../test/slang-shaders/crt/crt-royale-fake-bloom.slangp").unwrap();
 
         // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 

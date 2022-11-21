@@ -10,8 +10,8 @@ use crate::filter_chain::FilterChain;
 use crate::framebuffer::Framebuffer;
 use crate::util::{GlImage, Size, Viewport};
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 900;
+const HEIGHT: u32 = 700;
 const TITLE: &str = "Hello From OpenGL World!";
 
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
@@ -113,7 +113,7 @@ pub fn setup() -> (Glfw, Window, Receiver<(f64, WindowEvent)>, GLuint, GLuint) {
         glfw::OpenGlProfileHint::Core,
     ));
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-    glfw.window_hint(glfw::WindowHint::Resizable(false));
+    glfw.window_hint(glfw::WindowHint::Resizable(true));
     glfw.window_hint(glfw::WindowHint::OpenGlDebugContext(true));
 
     let (mut window, events) = glfw
