@@ -9,7 +9,7 @@ mod hello_triangle;
 mod quad_render;
 mod render_target;
 mod util;
-mod error;
+pub mod error;
 
 pub use filter_chain::FilterChain;
 pub use framebuffer::Framebuffer;

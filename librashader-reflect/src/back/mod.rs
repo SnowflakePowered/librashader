@@ -45,10 +45,12 @@ pub trait FromCompilation<T> {
     type Options;
     type Context;
 
+    type Output: CompileShader<Self::Target, Context = Self::Context, Options=Self::Options> + ReflectShader;
+
     fn from_compilation(
         compile: T,
     ) -> Result<
-        CompilerBackend<impl CompileShader<Self::Target, Context = Self::Context> + ReflectShader>,
+        CompilerBackend<Self::Output>,
         ShaderReflectError,
     >;
 }

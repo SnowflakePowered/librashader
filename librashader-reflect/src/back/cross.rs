@@ -15,14 +15,12 @@ impl FromCompilation<GlslangCompilation> for GLSL {
     type Target = GLSL;
     type Options = GlVersion;
     type Context = GlslangGlslContext;
+    type Output = impl CompileShader<Self::Target, Options = GlVersion, Context = GlslangGlslContext> + ReflectShader;
 
     fn from_compilation(
         compile: GlslangCompilation,
     ) -> Result<
-        CompilerBackend<
-            impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-                + ReflectShader,
-        >,
+        CompilerBackend<Self::Output>,
         ShaderReflectError,
     > {
         Ok(CompilerBackend {
@@ -35,14 +33,12 @@ impl FromCompilation<GlslangCompilation> for HLSL {
     type Target = HLSL;
     type Options = Option<()>;
     type Context = ();
+    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context> + ReflectShader;
 
     fn from_compilation(
         compile: GlslangCompilation,
     ) -> Result<
-        CompilerBackend<
-            impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-                + ReflectShader,
-        >,
+        CompilerBackend<Self::Output>,
         ShaderReflectError,
     > {
         Ok(CompilerBackend {

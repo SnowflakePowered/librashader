@@ -1,5 +1,5 @@
 use gl::types::GLenum;
-use librashader_common::image;
+use librashader_common::image::ImageError;
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
@@ -20,7 +20,7 @@ pub enum FilterChainError {
     #[error("shader reflect error")]
     ShaderReflectError(#[from] ShaderReflectError),
     #[error("lut loading error")]
-    LutLoadError(#[from] image::ImageError)
+    LutLoadError(#[from] ImageError)
 }
 
 pub type Result<T> = std::result::Result<T, FilterChainError>;

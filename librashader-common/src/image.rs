@@ -7,7 +7,7 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn load(path: impl AsRef<Path>) -> Result<Self, image::ImageError> {
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, ImageError> {
         let image = image::open(path.as_ref())?.flipv().to_rgba8();
 
         let height = image.height();
@@ -21,4 +21,4 @@ impl Image {
     }
 }
 
-pub use image::ImageError;
+pub use image::ImageError as ImageError;
