@@ -8,7 +8,8 @@ pub struct Image {
 
 impl Image {
     pub fn load(path: impl AsRef<Path>) -> Result<Self, image::ImageError>{
-        let image = image::open(path.as_ref())?.to_rgba8();
+        let image = image::open(path.as_ref())?.flipv().to_rgba8();
+
         let height = image.height();
         let width = image.width();
         
