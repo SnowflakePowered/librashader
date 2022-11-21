@@ -3,12 +3,13 @@ use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
-use librashader::{ShaderFormat, ShaderSource, Size};
+use librashader_common::{ShaderFormat, Size};
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, TextureImage, TextureSemantics, VariableSemantics,
 };
 use rustc_hash::FxHashMap;
+use librashader_preprocess::ShaderSource;
 
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;

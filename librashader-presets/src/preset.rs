@@ -2,7 +2,7 @@ use crate::error::ParsePresetError;
 use std::ops::Mul;
 use std::path::PathBuf;
 use std::str::FromStr;
-use librashader::{FilterMode, WrapMode};
+use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Debug, Clone)]
 pub struct ShaderPassConfig {

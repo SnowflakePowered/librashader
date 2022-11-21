@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
 use rustc_hash::FxHashMap;
-use librashader::ShaderSource;
+use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::{CompileShader};
 use librashader_reflect::back::targets::{FromCompilation, HLSL};
@@ -91,7 +91,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
     let mut reflections = Vec::new();
     let mut compiled = Vec::new();
 
-    for (index, (_, _, reflect)) in passes.iter_mut().enumerate() {
+    for (index, (_, _, mut reflect)) in passes.into_iter().enumerate() {
         let reflection = reflect.reflect(index, &semantics)
             .unwrap();
 

@@ -1,4 +1,4 @@
-use librashader::ShaderParameter;
+use crate::ShaderParameter;
 use std::convert::Infallible;
 use std::path::PathBuf;
 use thiserror::Error;

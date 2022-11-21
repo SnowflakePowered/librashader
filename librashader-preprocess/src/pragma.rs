@@ -1,5 +1,5 @@
-use crate::PreprocessError;
-use librashader::{ShaderFormat, ShaderParameter};
+use crate::{PreprocessError, ShaderParameter};
+use librashader_common::ShaderFormat;
 use nom::bytes::complete::{is_not, tag, take_until, take_while};
 use nom::combinator::map_res;
 use nom::number::complete::float;
@@ -120,7 +120,7 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
 #[cfg(test)]
 mod test {
     use crate::pragma::parse_parameter_string;
-    use librashader::ShaderParameter;
+    use crate::ShaderParameter;
 
     #[test]
     fn parses_parameter_pragma() {

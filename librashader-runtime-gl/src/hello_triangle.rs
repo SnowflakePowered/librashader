@@ -5,7 +5,7 @@ use std::sync::mpsc::Receiver;
 use glfw::{Context, Glfw, Window, WindowEvent};
 
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
-use librashader::Size;
+use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
 use crate::framebuffer::{Framebuffer, GlImage, Viewport};

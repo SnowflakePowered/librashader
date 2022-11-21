@@ -5,25 +5,6 @@ pub mod image;
 use std::convert::Infallible;
 use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ShaderSource {
-    pub vertex: String,
-    pub fragment: String,
-    pub name: Option<String>,
-    pub parameters: Vec<ShaderParameter>,
-    pub format: ShaderFormat,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ShaderParameter {
-    pub id: String,
-    pub description: String,
-    pub initial: f32,
-    pub minimum: f32,
-    pub maximum: f32,
-    pub step: f32,
-}
-
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ShaderFormat {

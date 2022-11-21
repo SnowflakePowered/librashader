@@ -1,6 +1,6 @@
 use crate::framebuffer::{Framebuffer, GlImage};
 use gl::types::{GLenum, GLuint};
-use librashader::{FilterMode, WrapMode};
+use librashader_common::{FilterMode, WrapMode};
 
 pub fn calc_miplevel(width: u32, height: u32) -> u32 {
     let mut size = std::cmp::max(width, height);

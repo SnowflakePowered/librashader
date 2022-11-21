@@ -5,8 +5,33 @@ mod stage;
 
 use crate::include::read_source;
 pub use error::*;
-use librashader::ShaderSource;
+use librashader_common::ShaderFormat;
 use std::path::Path;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShaderSource {
+    pub vertex: String,
+    pub fragment: String,
+    pub name: Option<String>,
+    pub parameters: Vec<ShaderParameter>,
+    pub format: ShaderFormat,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShaderParameter {
+    pub id: String,
+    pub description: String,
+    pub initial: f32,
+    pub minimum: f32,
+    pub maximum: f32,
+    pub step: f32,
+}
+
+impl ShaderSource {
+    pub fn load(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
+        load_shader_source(path)
+    }
+}
 
 pub(crate) trait SourceOutput {
     fn push_line(&mut self, str: &str);
@@ -23,7 +48,7 @@ impl SourceOutput for String {
     }
 }
 
-pub fn load_shader_source(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
+pub(crate) fn load_shader_source(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
     let source = read_source(path)?;
     let meta = pragma::parse_pragma_meta(&source)?;
     let text = stage::process_stages(&source)?;
@@ -70,3 +95,4 @@ mod test {
         eprintln!("{params:?}")
     }
 }
+

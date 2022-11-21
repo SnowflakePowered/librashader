@@ -611,7 +611,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
 
 [[package]]
-name = "librashader"
+name = "librashader-common"
 version = "0.1.0"
 dependencies = [
  "gl",
@@ -622,7 +622,7 @@ dependencies = [
 name = "librashader-preprocess"
 version = "0.1.0"
 dependencies = [
- "librashader",
+ "librashader-common",
  "nom",
  "thiserror",
 ]
@@ -631,9 +631,10 @@ dependencies = [
 name = "librashader-presets"
 version = "0.1.0"
 dependencies = [
- "librashader",
+ "librashader-common",
  "nom",
  "nom_locate",
+ "num-traits",
  "thiserror",
 ]
 
@@ -642,7 +643,8 @@ name = "librashader-reflect"
 version = "0.1.0"
 dependencies = [
  "bitflags",
- "librashader",
+ "librashader-common",
+ "librashader-preprocess",
  "naga",
  "rspirv",
  "rspirv-reflect",
@@ -656,7 +658,7 @@ dependencies = [
 name = "librashader-runtime-dx11"
 version = "0.1.0"
 dependencies = [
- "librashader",
+ "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
@@ -671,7 +673,7 @@ dependencies = [
  "bytemuck",
  "gl",
  "glfw",
- "librashader",
+ "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-"librashader" = { path = "../librashader" }
+"librashader-common" = { path = "../librashader-common" }
 "librashader-presets" = { path = "../librashader-presets" }
 "librashader-preprocess" = { path = "../librashader-preprocess" }
 "librashader-reflect" = { path = "../librashader-reflect" }

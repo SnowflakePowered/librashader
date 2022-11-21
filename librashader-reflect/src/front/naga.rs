@@ -1,5 +1,5 @@
 use crate::error::ShaderCompileError;
-use librashader::ShaderSource;
+use librashader_preprocess::ShaderSource;
 use naga::front::glsl::{Options, Parser};
 use naga::{Module, ShaderStage};
 

@@ -14,7 +14,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use librashader::{FilterMode, WrapMode};
+use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Debug)]
 pub enum Value {

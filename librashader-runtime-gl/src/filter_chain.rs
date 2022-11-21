@@ -6,8 +6,8 @@ use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{InlineRingBuffer, Texture};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
-use librashader::image::Image;
-use librashader::{FilterMode, ShaderSource, Size, WrapMode};
+use librashader_common::image::Image;
+use librashader_common::{FilterMode, Size, WrapMode};
 use librashader_presets::{ScaleType, ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
 use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};
@@ -20,6 +20,7 @@ use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::error::Error;
 use std::path::Path;
+use librashader_preprocess::ShaderSource;
 use crate::quad_render::DrawQuad;
 
 pub struct FilterChain {
@@ -126,14 +127,13 @@ type ShaderPassMeta<'a> = (
     CompilerBackend<
         impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext>
             + ReflectShader
-            + Sized,
     >,
 );
 
 impl FilterChain {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(preset: ShaderPreset) -> Result<FilterChain, Box<dyn Error>> {
-        let (passes, semantics) = FilterChain::load_preset(&preset);
+        let (passes, semantics) = FilterChain::load_preset(&preset)?;
 
         // initialize passes
         let filters = FilterChain::init_passes(passes, &semantics)?;
@@ -193,21 +193,21 @@ impl FilterChain {
         Self::load_from_preset(preset)
     }
 
-    fn load_preset(preset: &ShaderPreset) -> (Vec<ShaderPassMeta>, ReflectSemantics) {
+    fn load_preset(preset: &ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics), Box<dyn Error>> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
 
-        let passes: Vec<(&ShaderPassConfig, ShaderSource, _)> = preset
+        let passes = preset
             .shaders
             .iter()
             .map(|shader| {
                 eprintln!("[gl] loading {}", &shader.name.display());
                 let source: ShaderSource =
-                    librashader_preprocess::load_shader_source(&shader.name).unwrap();
+                    ShaderSource::load(&shader.name)?;
 
-                let spirv = librashader_reflect::front::shaderc::compile_spirv(&source).unwrap();
-                let reflect = GLSL::from_compilation(spirv).unwrap();
+                let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)?;
+                let reflect = GLSL::from_compilation(spirv)?;
 
                 for parameter in source.parameters.iter() {
                     uniform_semantics.insert(
@@ -218,12 +218,12 @@ impl FilterChain {
                         }),
                     );
                 }
-
-                (shader, source, reflect)
+                Ok::<_, Box<dyn Error>>((shader, source, reflect))
             })
-            .collect();
-
-        // todo: this can probably be extracted out.
+            .into_iter()
+            .collect::<Result<Vec<(&ShaderPassConfig,
+                                   ShaderSource,
+                                   CompilerBackend<_>)>, _>>()?;
 
         for details in &passes {
             FilterChain::load_pass_semantics(
@@ -257,7 +257,7 @@ impl FilterChain {
             non_uniform_semantics: texture_semantics,
         };
 
-        (passes, semantics)
+        Ok((passes, semantics))
     }
 
     fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>, Box<dyn Error>> {
