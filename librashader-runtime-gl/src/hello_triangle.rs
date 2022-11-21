@@ -414,9 +414,7 @@ pub fn do_loop(
         }
 
         let fullscreen_fbo = [
-            -1.0f32, -1.0, 0.0, 1.0,
-            -1.0, 0.0, -1.0, 1.0, 0.0,
-            -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,
+            -1.0f32, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,
             1.0, 1.0, 0.0,
         ];
 
@@ -472,7 +470,6 @@ void main()
         1,
     );
 
-
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -520,14 +517,7 @@ void main()
             padded_size: Default::default(),
         };
 
-        unsafe {
-            filter.frame(
-                framecount,
-                &viewport,
-                &rendered,
-                false,
-            )
-        }
+        unsafe { filter.frame(framecount, &viewport, &rendered, false) }
 
         unsafe {
             // texture is done now.
@@ -568,9 +558,7 @@ fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
         Event::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true);
         }
-        Event::Size(width, height) => {
-            window.set_size(width, height)
-        }
+        Event::Size(width, height) => window.set_size(width, height),
         _ => {}
     }
 }

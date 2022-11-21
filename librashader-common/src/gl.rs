@@ -33,7 +33,7 @@ impl From<ShaderFormat> for gl::types::GLenum {
             ShaderFormat::R32G32Sfloat => gl::RG32F,
             ShaderFormat::R32G32B32A32Uint => gl::RGBA32UI,
             ShaderFormat::R32G32B32A32Sint => gl::RGBA32I,
-            ShaderFormat::R32G32B32A32Sfloat => gl::RGBA32F
+            ShaderFormat::R32G32B32A32Sfloat => gl::RGBA32F,
         }
     }
 }
@@ -44,7 +44,7 @@ impl From<WrapMode> for gl::types::GLenum {
             WrapMode::ClampToBorder => gl::CLAMP_TO_BORDER,
             WrapMode::ClampToEdge => gl::CLAMP_TO_EDGE,
             WrapMode::Repeat => gl::REPEAT,
-            WrapMode::MirroredRepeat => gl::MIRRORED_REPEAT
+            WrapMode::MirroredRepeat => gl::MIRRORED_REPEAT,
         }
     }
 }
@@ -53,7 +53,7 @@ impl From<FilterMode> for gl::types::GLenum {
     fn from(value: FilterMode) -> Self {
         match value {
             FilterMode::Linear => gl::LINEAR,
-            _ => gl::NEAREST
+            _ => gl::NEAREST,
         }
     }
 }
@@ -64,7 +64,7 @@ impl FilterMode {
             (FilterMode::Linear, FilterMode::Linear) => gl::LINEAR_MIPMAP_LINEAR,
             (FilterMode::Linear, FilterMode::Nearest) => gl::LINEAR_MIPMAP_NEAREST,
             (FilterMode::Nearest, FilterMode::Linear) => gl::NEAREST_MIPMAP_LINEAR,
-            _ => gl::NEAREST_MIPMAP_NEAREST
+            _ => gl::NEAREST_MIPMAP_NEAREST,
         }
     }
 }

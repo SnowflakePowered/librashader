@@ -3,6 +3,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ShaderCompileError {
+    #[cfg(feature = "unstable-rust-pipeline")]
     #[error("shader")]
     NagaCompileError(Vec<naga::front::glsl::Error>),
 
@@ -33,12 +34,14 @@ pub enum SemanticsErrorKind {
 
 #[derive(Error, Debug)]
 pub enum ShaderReflectError {
+    #[cfg(feature = "unstable-rust-pipeline")]
     #[error("shader")]
     NagaCompileError(#[from] naga::front::spv::Error),
-    #[error("spirv")]
-    SpirvCrossError(#[from] spirv_cross::ErrorCode),
+    #[cfg(feature = "unstable-rust-pipeline")]
     #[error("rspirv")]
     RspirvParseError(#[from] rspirv::binary::ParseState),
+    #[error("spirv")]
+    SpirvCrossError(#[from] spirv_cross::ErrorCode),
     #[error("error when verifying vertex semantics")]
     VertexSemanticError(SemanticsErrorKind),
     #[error("error when verifying texture semantics")]
@@ -63,6 +66,7 @@ pub enum ShaderReflectError {
     BindingInUse(u32),
 }
 
+#[cfg(feature = "unstable-rust-pipeline")]
 impl From<Vec<naga::front::glsl::Error>> for ShaderCompileError {
     fn from(err: Vec<naga::front::glsl::Error>) -> Self {
         ShaderCompileError::NagaCompileError(err)

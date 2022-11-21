@@ -32,7 +32,10 @@ pub trait FromCompilation<T> {
 
     fn from_compilation(
         compile: T,
-    ) -> Result<CompilerBackend<impl CompileShader<Self::Target, Context=Self::Context> + ReflectShader>, ShaderReflectError>;
+    ) -> Result<
+        CompilerBackend<impl CompileShader<Self::Target, Context = Self::Context> + ReflectShader>,
+        ShaderReflectError,
+    >;
 }
 
 pub trait CompileShader<T: OutputTarget> {

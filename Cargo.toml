@@ -6,5 +6,4 @@ members = [
     "librashader-reflect",
     "librashader-runtime-dx11",
     "librashader-runtime-gl",
-    "naga"
 ]

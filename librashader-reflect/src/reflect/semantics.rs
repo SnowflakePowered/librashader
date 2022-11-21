@@ -11,7 +11,7 @@ pub enum UniformType {
     Size,
     Unsigned,
     Signed,
-    Float
+    Float,
 }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
@@ -35,7 +35,7 @@ impl VariableSemantics {
     pub const fn semantics(self) -> SemanticMap<VariableSemantics, ()> {
         SemanticMap {
             semantics: self,
-            index: ()
+            index: (),
         }
     }
 
@@ -46,7 +46,7 @@ impl VariableSemantics {
             VariableSemantics::FinalViewport => UniformType::Size,
             VariableSemantics::FrameCount => UniformType::Unsigned,
             VariableSemantics::FrameDirection => UniformType::Signed,
-            VariableSemantics::FloatParameter => UniformType::Float
+            VariableSemantics::FloatParameter => UniformType::Float,
         }
     }
 }
@@ -104,7 +104,7 @@ impl TextureSemantics {
     pub const fn semantics(self, index: usize) -> SemanticMap<TextureSemantics> {
         SemanticMap {
             semantics: self,
-            index
+            index,
         }
     }
 }
@@ -118,7 +118,7 @@ pub trait ValidateTypeSemantics<T> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct SemanticMap<T, I=usize> {
+pub struct SemanticMap<T, I = usize> {
     pub semantics: T,
     pub index: I,
 }

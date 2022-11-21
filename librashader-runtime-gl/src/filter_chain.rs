@@ -1,15 +1,16 @@
-use std::collections::VecDeque;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::{Framebuffer, GlImage, Viewport};
+use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{InlineRingBuffer, Texture};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader_common::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
-use librashader_presets::{ScaleType, ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
+use librashader_preprocess::ShaderSource;
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
 use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};
 use librashader_reflect::back::CompileShader;
 use librashader_reflect::reflect::semantics::{
@@ -18,10 +19,9 @@ use librashader_reflect::reflect::semantics::{
 use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
+use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
-use librashader_preprocess::ShaderSource;
-use crate::quad_render::DrawQuad;
 
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
@@ -41,7 +41,6 @@ pub struct FilterCommon {
     pub history_textures: Box<[Texture]>,
     pub(crate) draw_quad: DrawQuad,
 }
-
 
 impl FilterChain {
     fn load_pass_semantics(
@@ -125,8 +124,7 @@ type ShaderPassMeta<'a> = (
     &'a ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
-        impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext>
-            + ReflectShader
+        impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext> + ReflectShader,
     >,
 );
 
@@ -139,14 +137,16 @@ impl FilterChain {
         let filters = FilterChain::init_passes(passes, &semantics)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
-        let default_wrap = filters.first().map(|f| f.config.wrap_mode).unwrap_or_default();
+        let default_wrap = filters
+            .first()
+            .map(|f| f.config.wrap_mode)
+            .unwrap_or_default();
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), Texture::default);
-
 
         // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
@@ -193,7 +193,9 @@ impl FilterChain {
         Self::load_from_preset(preset)
     }
 
-    fn load_preset(preset: &ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics), Box<dyn Error>> {
+    fn load_preset(
+        preset: &ShaderPreset,
+    ) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics), Box<dyn Error>> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
@@ -203,8 +205,7 @@ impl FilterChain {
             .iter()
             .map(|shader| {
                 eprintln!("[gl] loading {}", &shader.name.display());
-                let source: ShaderSource =
-                    ShaderSource::load(&shader.name)?;
+                let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
                 let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)?;
                 let reflect = GLSL::from_compilation(spirv)?;
@@ -221,9 +222,7 @@ impl FilterChain {
                 Ok::<_, Box<dyn Error>>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<Result<Vec<(&ShaderPassConfig,
-                                   ShaderSource,
-                                   CompilerBackend<_>)>, _>>()?;
+            .collect::<Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>, _>>()?;
 
         for details in &passes {
             FilterChain::load_pass_semantics(
@@ -529,7 +528,11 @@ impl FilterChain {
         Ok(filters.into_boxed_slice())
     }
 
-    fn init_history(filters: &[FilterPass], filter: FilterMode, wrap_mode: WrapMode) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
+    fn init_history(
+        filters: &[FilterPass],
+        filter: FilterMode,
+        wrap_mode: WrapMode,
+    ) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -556,7 +559,7 @@ impl FilterChain {
         // not using frame history;
         if required_images <= 1 {
             println!("[history] not using frame history");
-            return (VecDeque::new(), Box::new([]))
+            return (VecDeque::new(), Box::new([]));
         }
 
         // history0 is aliased with the original
@@ -570,7 +573,7 @@ impl FilterChain {
             image: Default::default(),
             filter,
             mip_filter: filter,
-            wrap_mode
+            wrap_mode,
         });
 
         (framebuffers, history_textures.into_boxed_slice())
@@ -578,14 +581,12 @@ impl FilterChain {
 
     fn push_history(&mut self, input: &GlImage) {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
-
-            if back.size != input.size
-                || (input.format != 0 && input.format != back.format) {
+            if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 eprintln!("[history] resizing");
                 back.init(input.size, input.format);
             }
 
-            back.copy_from(&input);
+            back.copy_from(input);
 
             self.history_framebuffers.push_front(back)
         }
@@ -597,7 +598,6 @@ impl FilterChain {
                 framebuffer.clear()
             }
         }
-
 
         if self.passes.is_empty() {
             return;
@@ -612,15 +612,25 @@ impl FilterChain {
         let wrap_mode = self.passes[0].config.wrap_mode;
 
         // update history
-        for (texture, fbo) in self.common.history_textures.iter_mut().zip(self.history_framebuffers.iter()) {
+        for (texture, fbo) in self
+            .common
+            .history_textures
+            .iter_mut()
+            .zip(self.history_framebuffers.iter())
+        {
             texture.image = fbo.as_texture(filter, wrap_mode).image;
         }
 
-        for ((texture, fbo), pass) in self.common.feedback_textures.iter_mut()
+        for ((texture, fbo), pass) in self
+            .common
+            .feedback_textures
+            .iter_mut()
             .zip(self.feedback_framebuffers.iter())
             .zip(self.passes.iter())
         {
-            texture.image = fbo.as_texture(pass.config.filter, pass.config.wrap_mode).image;
+            texture.image = fbo
+                .as_texture(pass.config.filter, pass.config.wrap_mode)
+                .image;
         }
 
         // shader_gl3: 2067
@@ -675,7 +685,6 @@ impl FilterChain {
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
             self.common.output_textures[index] = target;
             source = target;
-
         }
 
         assert_eq!(last.len(), 1);
@@ -697,19 +706,21 @@ impl FilterChain {
                 &source,
                 RenderTarget::new(viewport.output, viewport.mvp),
             );
-
         }
 
         // swap feedback framebuffers with output
-        for (output, feedback) in self.output_framebuffers.iter_mut().zip(self.feedback_framebuffers.iter_mut()) {
+        for (output, feedback) in self
+            .output_framebuffers
+            .iter_mut()
+            .zip(self.feedback_framebuffers.iter_mut())
+        {
             std::mem::swap(output, feedback);
         }
 
-        self.push_history(&input);
+        self.push_history(input);
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindVertexArray(0);
         }
     }
-
 }

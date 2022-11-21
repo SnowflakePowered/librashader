@@ -34,7 +34,7 @@ impl Framebuffer {
             max_levels,
             levels: 0,
             handle: framebuffer,
-            is_raw: false
+            is_raw: false,
         }
     }
 
@@ -52,7 +52,7 @@ impl Framebuffer {
             max_levels: miplevels,
             levels: miplevels,
             handle,
-            is_raw: true
+            is_raw: true,
         }
     }
 
@@ -153,30 +153,51 @@ impl Framebuffer {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
 
-            gl::FramebufferTexture2D(gl::READ_FRAMEBUFFER,
-                                     gl::COLOR_ATTACHMENT0,
-                                     gl::TEXTURE_2D,
-                                     image.handle, 0);
+            gl::FramebufferTexture2D(
+                gl::READ_FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT0,
+                gl::TEXTURE_2D,
+                image.handle,
+                0,
+            );
 
-            gl::FramebufferTexture2D(gl::DRAW_FRAMEBUFFER,
-                                     gl::COLOR_ATTACHMENT1,
-                                     gl::TEXTURE_2D,
-                                     self.image, 0);
+            gl::FramebufferTexture2D(
+                gl::DRAW_FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT1,
+                gl::TEXTURE_2D,
+                self.image,
+                0,
+            );
             gl::DrawBuffer(gl::COLOR_ATTACHMENT1);
-            gl::BlitFramebuffer(0, 0, self.size.width as GLint, self.size.height as GLint,
-                                0, 0, self.size.width as GLint, self.size.height as GLint,
-                                gl::COLOR_BUFFER_BIT, gl::NEAREST);
+            gl::BlitFramebuffer(
+                0,
+                0,
+                self.size.width as GLint,
+                self.size.height as GLint,
+                0,
+                0,
+                self.size.width as GLint,
+                self.size.height as GLint,
+                gl::COLOR_BUFFER_BIT,
+                gl::NEAREST,
+            );
 
             // cleanup after ourselves.
-            gl::FramebufferTexture2D(gl::READ_FRAMEBUFFER,
-                                     gl::COLOR_ATTACHMENT0,
-                                     gl::TEXTURE_2D,
-                                     0, 0);
+            gl::FramebufferTexture2D(
+                gl::READ_FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT0,
+                gl::TEXTURE_2D,
+                0,
+                0,
+            );
 
-            gl::FramebufferTexture2D(gl::DRAW_FRAMEBUFFER,
-                                     gl::COLOR_ATTACHMENT1,
-                                     gl::TEXTURE_2D,
-                                     0, 0);
+            gl::FramebufferTexture2D(
+                gl::DRAW_FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT1,
+                gl::TEXTURE_2D,
+                0,
+                0,
+            );
 
             // set this back to color_attachment 0
             gl::FramebufferTexture2D(

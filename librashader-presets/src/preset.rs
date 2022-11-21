@@ -1,8 +1,8 @@
 use crate::error::ParsePresetError;
+use librashader_common::{FilterMode, WrapMode};
 use std::ops::Mul;
 use std::path::PathBuf;
 use std::str::FromStr;
-use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Debug, Clone)]
 pub struct ShaderPassConfig {
@@ -54,7 +54,7 @@ impl Mul<ScaleFactor> for f32 {
     fn mul(self, rhs: ScaleFactor) -> Self::Output {
         match rhs {
             ScaleFactor::Float(f) => f * self,
-            ScaleFactor::Absolute(f) => f as f32 * self
+            ScaleFactor::Absolute(f) => f as f32 * self,
         }
     }
 }
@@ -65,7 +65,7 @@ impl Mul<ScaleFactor> for u32 {
     fn mul(self, rhs: ScaleFactor) -> Self::Output {
         match rhs {
             ScaleFactor::Float(f) => f * self as f32,
-            ScaleFactor::Absolute(f) => (f as u32 * self) as f32
+            ScaleFactor::Absolute(f) => (f as u32 * self) as f32,
         }
     }
 }

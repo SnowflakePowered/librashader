@@ -1,19 +1,19 @@
-use std::collections::HashMap;
-use std::error::Error;
-use std::path::Path;
-use rustc_hash::FxHashMap;
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::{CompileShader};
 use librashader_reflect::back::targets::{FromCompilation, HLSL};
-use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::cross::{CrossReflect};
-use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
+use librashader_reflect::back::CompileShader;
+use rustc_hash::FxHashMap;
+use std::error::Error;
+use std::path::Path;
+
 use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, VariableSemantics};
+use librashader_reflect::reflect::{ReflectSemantics, ReflectShader, UniformSemantic};
 
-
-pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSemantic>, texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
-                           config: &ShaderPassConfig) {
+pub fn load_pass_semantics(
+    uniform_semantics: &mut FxHashMap<String, UniformSemantic>,
+    texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
+    config: &ShaderPassConfig,
+) {
     let Some(alias) = &config.alias else {
         return;
     };
@@ -26,77 +26,94 @@ pub fn load_pass_semantics(uniform_semantics: &mut FxHashMap<String, UniformSema
     let index = config.id as usize;
 
     // PassOutput
-    texture_semantics.insert(alias.clone(), SemanticMap {
-        semantics: TextureSemantics::PassOutput,
-        index
-    });
-    uniform_semantics.insert(format!("{alias}Size"), UniformSemantic::Texture(SemanticMap {
-        semantics: TextureSemantics::PassOutput,
-        index
-    }));
+    texture_semantics.insert(
+        alias.clone(),
+        SemanticMap {
+            semantics: TextureSemantics::PassOutput,
+            index,
+        },
+    );
+    uniform_semantics.insert(
+        format!("{alias}Size"),
+        UniformSemantic::Texture(SemanticMap {
+            semantics: TextureSemantics::PassOutput,
+            index,
+        }),
+    );
 
     // PassFeedback
-    texture_semantics.insert(format!("{alias}Feedback"), SemanticMap {
-        semantics: TextureSemantics::PassFeedback,
-        index
-    });
-    uniform_semantics.insert(format!("{alias}FeedbackSize"), UniformSemantic::Texture(SemanticMap {
-        semantics: TextureSemantics::PassFeedback,
-        index
-    }));
-
+    texture_semantics.insert(
+        format!("{alias}Feedback"),
+        SemanticMap {
+            semantics: TextureSemantics::PassFeedback,
+            index,
+        },
+    );
+    uniform_semantics.insert(
+        format!("{alias}FeedbackSize"),
+        UniformSemantic::Texture(SemanticMap {
+            semantics: TextureSemantics::PassFeedback,
+            index,
+        }),
+    );
 }
 
-pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
+pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
     let preset = librashader_presets::ShaderPreset::try_parse(path)?;
-    let mut passes: Vec<(&ShaderPassConfig, ShaderSource, _)> = preset.shaders.iter()
+    let passes: Vec<(&ShaderPassConfig, ShaderSource, _)> = preset
+        .shaders
+        .iter()
         .map(|shader| {
-            let source = librashader_preprocess::load_shader_source(&shader.name)
-                .unwrap();
-            let spirv = librashader_reflect::front::shaderc::compile_spirv(&source)
-                .unwrap();
-            let mut reflect = HLSL::from_compilation(spirv).unwrap();
+            let source = ShaderSource::load(&shader.name).unwrap();
+            let spirv = librashader_reflect::front::shaderc::compile_spirv(&source).unwrap();
+            let reflect = HLSL::from_compilation(spirv).unwrap();
             (shader, source, reflect)
-        }).collect();
+        })
+        .collect();
 
     // todo: this can probably be extracted out.
     let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-    let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> = Default::default();
+    let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
+        Default::default();
 
     for details in &passes {
         load_pass_semantics(&mut uniform_semantics, &mut texture_semantics, details.0)
     }
 
     // add float params
-    for (index, parameter) in preset.parameters.iter().enumerate() {
-        uniform_semantics.insert(parameter.name.clone(), UniformSemantic::Variable(SemanticMap {
-            semantics: VariableSemantics::FloatParameter,
-            index: ()
-        }));
+    for (_index, parameter) in preset.parameters.iter().enumerate() {
+        uniform_semantics.insert(
+            parameter.name.clone(),
+            UniformSemantic::Variable(SemanticMap {
+                semantics: VariableSemantics::FloatParameter,
+                index: (),
+            }),
+        );
     }
 
     // add lut params
     for (index, texture) in preset.textures.iter().enumerate() {
-        texture_semantics.insert(texture.name.clone(), SemanticMap {
-            semantics: TextureSemantics::User,
-            index
-        });
+        texture_semantics.insert(
+            texture.name.clone(),
+            SemanticMap {
+                semantics: TextureSemantics::User,
+                index,
+            },
+        );
     }
 
     let semantics = ReflectSemantics {
         uniform_semantics,
-        non_uniform_semantics: texture_semantics
+        non_uniform_semantics: texture_semantics,
     };
 
     let mut reflections = Vec::new();
     let mut compiled = Vec::new();
 
     for (index, (_, _, mut reflect)) in passes.into_iter().enumerate() {
-        let reflection = reflect.reflect(index, &semantics)
-            .unwrap();
+        let reflection = reflect.reflect(index, &semantics).unwrap();
 
-        let hlsl = reflect.compile(None)
-            .unwrap();
+        let hlsl = reflect.compile(None).unwrap();
 
         eprintln!("{:#}", hlsl.vertex);
 
@@ -104,12 +121,9 @@ pub fn load(path: impl AsRef<Path>) -> Result<(), Box<dyn Error>>{
 
         compiled.push(hlsl);
         reflections.push(reflection);
-
     }
 
-
     eprintln!("{:#?}", reflections);
-
 
     // //todo: add the semantics for other shit (slang_process:68)
     // eprintln!("{:?}", preset);
@@ -128,8 +142,6 @@ mod tests {
 
     #[test]
     fn load_preset() {
-
-        load("../test/basic.slangp")
-            .unwrap();
+        load("../test/basic.slangp").unwrap();
     }
 }

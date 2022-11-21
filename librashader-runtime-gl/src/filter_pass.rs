@@ -4,12 +4,12 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
 use librashader_common::{ShaderFormat, Size};
+use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, TextureImage, TextureSemantics, VariableSemantics,
 };
 use rustc_hash::FxHashMap;
-use librashader_preprocess::ShaderSource;
 
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
@@ -392,8 +392,12 @@ impl FilterPass {
             );
         }
 
-
-        if let Some(binding) = self.reflection.meta.texture_meta.get(&TextureSemantics::OriginalHistory.semantics(0)) {
+        if let Some(binding) = self
+            .reflection
+            .meta
+            .texture_meta
+            .get(&TextureSemantics::OriginalHistory.semantics(0))
+        {
             FilterPass::bind_texture(binding, original);
         }
         if let Some((location, offset)) = self
@@ -421,10 +425,11 @@ impl FilterPass {
                 FilterPass::bind_texture(binding, output);
             }
 
-            if let Some((location, offset)) = self
-                .variable_bindings
-                .get(&TextureSemantics::OriginalHistory.semantics(index + 1).into())
-            {
+            if let Some((location, offset)) = self.variable_bindings.get(
+                &TextureSemantics::OriginalHistory
+                    .semantics(index + 1)
+                    .into(),
+            ) {
                 let (buffer, offset) = match offset {
                     MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
                     MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),

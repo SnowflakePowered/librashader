@@ -6,14 +6,14 @@ mod filter_chain;
 mod filter_pass;
 mod framebuffer;
 mod hello_triangle;
+mod quad_render;
 mod render_target;
 mod util;
-mod quad_render;
 
 pub use filter_chain::FilterChain;
-pub use framebuffer::Viewport;
-pub use framebuffer::GlImage;
 pub use framebuffer::Framebuffer;
+pub use framebuffer::GlImage;
+pub use framebuffer::Viewport;
 
 #[cfg(test)]
 mod tests {
@@ -23,7 +23,9 @@ mod tests {
     #[test]
     fn triangle() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
-        let mut filter = FilterChain::load_from_path("../test/slang-shaders/crt/crt-royale-fake-bloom.slangp").unwrap();
+        let mut filter =
+            FilterChain::load_from_path("../test/slang-shaders/crt/crt-royale-fake-bloom.slangp")
+                .unwrap();
 
         // FilterChain::load("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
 

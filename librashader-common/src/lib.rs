@@ -73,7 +73,6 @@ impl FromStr for WrapMode {
     }
 }
 
-
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
 pub enum WrapMode {
@@ -135,11 +134,8 @@ pub struct Size<T> {
     pub height: T,
 }
 
-impl <T> Size<T> {
+impl<T> Size<T> {
     pub fn new(width: T, height: T) -> Self {
-        Size {
-            width,
-            height
-        }
+        Size { width, height }
     }
 }

@@ -5,7 +5,7 @@ use std::path::Path;
 use std::str::Lines;
 
 #[cfg(feature = "line_directives")]
-const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &'static str =
+const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &str =
     "#extension GL_GOOGLE_cpp_style_line_directive : require";
 
 fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {

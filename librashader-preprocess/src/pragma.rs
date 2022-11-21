@@ -1,12 +1,12 @@
 use crate::{PreprocessError, ShaderParameter};
 use librashader_common::ShaderFormat;
-use nom::bytes::complete::{is_not, tag, take_until, take_while};
-use nom::combinator::map_res;
+use nom::bytes::complete::{is_not, tag, take_while};
+
+use nom::character::complete::multispace1;
 use nom::number::complete::float;
 use nom::sequence::delimited;
 use nom::IResult;
 use std::str::FromStr;
-use nom::character::complete::multispace1;
 
 #[derive(Debug)]
 pub(crate) struct ShaderMeta {
@@ -22,13 +22,14 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         let (input, _) = multispace1(input)?;
         let (input, description) = delimited(tag("\""), is_not("\""), tag("\""))(input)?;
         let (input, _) = multispace1(input)?;
-        Ok((
-            input,
-            (name, description)
-        ))
+        Ok((input, (name, description)))
     }
 
-    fn parse_parameter_string_inner<'a, 'b>(name: &'a str, description: &'a str, input: &'b str) -> IResult<&'b str, ShaderParameter> {
+    fn parse_parameter_string_inner<'a, 'b>(
+        name: &'a str,
+        description: &'a str,
+        input: &'b str,
+    ) -> IResult<&'b str, ShaderParameter> {
         let (input, initial) = float(input)?;
         let (input, _) = multispace1(input)?;
         let (input, minimum) = float(input)?;
@@ -49,7 +50,6 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         ))
     }
 
-
     let Ok((params, (name, description))) = parse_parameter_string_name(input) else {
         return Err(PreprocessError::PragmaParseError(input.to_string()));
     };
@@ -68,7 +68,6 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
             step: 0f32,
         })
     }
-
 }
 
 pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, PreprocessError> {
@@ -94,7 +93,7 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
             }
 
             let format_string = line["#pragma format ".len()..].trim();
-            format = ShaderFormat::from_str(&format_string)?;
+            format = ShaderFormat::from_str(format_string)?;
 
             if format == ShaderFormat::Unknown {
                 return Err(PreprocessError::UnknownShaderFormat);

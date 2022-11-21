@@ -1,4 +1,4 @@
-use crate::framebuffer::{Framebuffer, GlImage};
+use crate::framebuffer::GlImage;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, WrapMode};
 

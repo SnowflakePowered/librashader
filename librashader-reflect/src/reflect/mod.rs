@@ -1,4 +1,3 @@
-use std::ops::Index;
 use crate::error::ShaderReflectError;
 use crate::reflect::semantics::{
     SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
@@ -7,9 +6,13 @@ use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
 pub mod cross;
-mod naga;
-mod rspirv;
+
 pub mod semantics;
+
+#[cfg(feature = "unstable-rust-pipeline")]
+mod naga;
+#[cfg(feature = "unstable-rust-pipeline")]
+mod rspirv;
 
 pub trait ReflectShader {
     fn reflect(
@@ -98,9 +101,7 @@ impl TextureSemanticMap<UniformSemantic> for FxHashMap<String, SemanticMap<Textu
             None => {
                 if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
                     .iter()
-                    .find(|f| {
-                        name.starts_with(f.texture_name())
-                    })
+                    .find(|f| name.starts_with(f.texture_name()))
                 {
                     if semantics.is_array() {
                         let index = &name[semantics.texture_name().len()..];

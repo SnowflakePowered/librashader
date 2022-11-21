@@ -8,13 +8,12 @@ use nom::combinator::{eof, map_res};
 use nom::IResult;
 use num_traits::cast::ToPrimitive;
 
-
 use crate::parse::token::do_lex;
+use librashader_common::{FilterMode, WrapMode};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Debug)]
 pub enum Value {
@@ -67,29 +66,28 @@ impl Value {
 }
 
 fn from_int(input: Span) -> Result<i32, ParsePresetError> {
-    i32::from_str(input.trim()).map_err(|_| {
-        ParsePresetError::ParserError {
+    i32::from_str(input.trim())
+        .map_err(|_| ParsePresetError::ParserError {
             offset: input.location_offset(),
             row: input.location_line(),
             col: input.get_column(),
             kind: ParseErrorKind::Int,
-        }
-    }).or_else(|e| {
-        let result = f32::from_str(input.trim())
-            .map_err(|_| e)?;
-        let result = result.trunc().to_i32()
-            .ok_or(ParsePresetError::ParserError {
-                offset: input.location_offset(),
-                row: input.location_line(),
-                col: input.get_column(),
-                kind: ParseErrorKind::Int,
-            })?;
+        })
+        .or_else(|e| {
+            let result = f32::from_str(input.trim()).map_err(|_| e)?;
+            let result = result
+                .trunc()
+                .to_i32()
+                .ok_or(ParsePresetError::ParserError {
+                    offset: input.location_offset(),
+                    row: input.location_line(),
+                    col: input.get_column(),
+                    kind: ParseErrorKind::Int,
+                })?;
 
-        eprintln!("falling back to float trunc {result}");
-        Ok(result)
-    })
-
-
+            eprintln!("falling back to float trunc {result}");
+            Ok(result)
+        })
 }
 
 fn from_ul(input: Span) -> Result<u32, ParsePresetError> {
@@ -494,7 +492,7 @@ mod test {
     pub fn parse_basic() {
         let root =
             PathBuf::from("../test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
-        let basic = parse_preset(&root);
+        let basic = parse_preset(root);
         eprintln!("{:?}", basic);
         assert!(basic.is_ok());
     }

@@ -124,9 +124,10 @@ pub fn compile_spirv(source: &ShaderSource) -> Result<GlslangCompilation, Shader
 #[cfg(test)]
 mod test {
     use crate::front::shaderc::compile_spirv;
+    use librashader_preprocess::ShaderSource;
     #[test]
     pub fn compile_shader() {
-        let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang").unwrap();
         let _spirv = compile_spirv(&result).unwrap();
     }
 }

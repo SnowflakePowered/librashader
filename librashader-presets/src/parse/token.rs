@@ -92,10 +92,10 @@ fn parse_reference(input: Span) -> IResult<Span, Token> {
 fn parse_key_value(input: Span) -> IResult<Span, Token> {
     let (input, (key, _)) = take_up_to(parse_assignment)(input)?;
     let (input, (_, value)) = map_res(not_line_ending, optional_quotes)(input)?;
-    let (_, value) = take_until::<_, _, nom::error::Error<Span>>("//")(value)
-        .unwrap_or((input, value));
-    let (_, value) = take_until::<_, _, nom::error::Error<Span>>("#")(value)
-        .unwrap_or((input, value));
+    let (_, value) =
+        take_until::<_, _, nom::error::Error<Span>>("//")(value).unwrap_or((input, value));
+    let (_, value) =
+        take_until::<_, _, nom::error::Error<Span>>("#")(value).unwrap_or((input, value));
     let (_, (_, value)) = map_res(not_line_ending, optional_quotes)(value)?;
 
     Ok((input, Token { key, value }))
@@ -167,12 +167,12 @@ mod test {
     }
 
     // todo: fix
-    const TEST2: &'static str = r#"
+    const TEST2: &str = r#"
 // Color Correction with Dogway's awesome Grade shader
 // Grade is after Afterglow so that brightening the black level does not break the afterglow
 shader9 = ../../shaders/dogway/hsm-grade.slang
     "#;
-    const TEST: &'static str = r#"
+    const TEST: &str = r#"
 #reference "../../alt"
 shaders = 54
 

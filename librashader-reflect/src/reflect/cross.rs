@@ -13,9 +13,9 @@ use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{glsl, hlsl, ErrorCode};
 
+use crate::back::cross::GlslangGlslContext;
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
-use crate::back::cross::GlslangGlslContext;
 
 pub struct CrossReflect<T>
 where
@@ -27,11 +27,11 @@ where
 
 pub struct CompiledAst<T>
 where
-T: spirv_cross::spirv::Target {
+    T: spirv_cross::spirv::Target,
+{
     pub vertex: Ast<T>,
     pub fragment: Ast<T>,
 }
-
 
 pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
 pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
@@ -408,7 +408,7 @@ where
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                                 SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
                             },
-                            id: name
+                            id: name,
                         },
                     );
                 }
@@ -739,7 +739,7 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         }
 
         // todo: options
-        let flatten = false;
+        let _flatten = false;
 
         if vertex_resources.uniform_buffers.len() > 1 {
             return Err(ShaderCompileError::SpirvCrossCompileError(
@@ -814,8 +814,8 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
                 sampler_bindings: texture_fixups,
                 compiler: CompiledAst {
                     vertex: self.vertex,
-                    fragment: self.fragment
-                }
+                    fragment: self.fragment,
+                },
             },
         })
     }
@@ -851,15 +851,16 @@ mod test {
 
     use crate::back::CompileShader;
     use crate::reflect::semantics::{SemanticMap, VariableSemantics};
+    use librashader_preprocess::ShaderSource;
+    use spirv_cross::glsl;
     use spirv_cross::glsl::{CompilerOptions, Version};
-    use spirv_cross::{glsl, hlsl};
 
     #[test]
     pub fn test_into() {
-        let result = librashader_preprocess::load_shader_source("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang").unwrap();
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
 
-        for (index, param) in result.parameters.iter().enumerate() {
+        for (_index, param) in result.parameters.iter().enumerate() {
             uniform_semantics.insert(
                 param.id.clone(),
                 UniformSemantic::Variable(SemanticMap {
@@ -870,7 +871,7 @@ mod test {
         }
         let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
         let mut reflect = CrossReflect::<glsl::Target>::try_from(spirv).unwrap();
-        let shader_reflection = reflect
+        let _shader_reflection = reflect
             .reflect(
                 0,
                 &ReflectSemantics {
@@ -882,7 +883,7 @@ mod test {
         let mut opts = CompilerOptions::default();
         opts.version = Version::V4_60;
         opts.enable_420_pack_extension = false;
-        let compiled = reflect.compile(&opts, &shader_reflection).unwrap();
+        let compiled = reflect.compile(Version::V3_30).unwrap();
         // eprintln!("{shader_reflection:#?}");
         eprintln!("{:#}", compiled.fragment)
         // let mut loader = rspirv::dr::Loader::new();

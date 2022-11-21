@@ -1,6 +1,5 @@
 use gl::types::{GLsizeiptr, GLuint};
 
-
 #[rustfmt::skip]
 static QUAD_VBO_DATA: &[f32; 16] = &[
     0.0f32, 0.0f32, 0.0f32, 0.0f32,
@@ -10,7 +9,7 @@ static QUAD_VBO_DATA: &[f32; 16] = &[
 ];
 
 pub struct DrawQuad {
-    pub vbo: GLuint
+    pub vbo: GLuint,
 }
 
 impl DrawQuad {
@@ -28,8 +27,6 @@ impl DrawQuad {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
 
-        DrawQuad {
-            vbo
-        }
+        DrawQuad { vbo }
     }
 }

@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-naga = { version = "0.10.0", path = "../naga", features = ["glsl-in", "spv-in", "spv-out", "glsl-out", "wgsl-out"] }
 shaderc = { version = "0.8.0" }
 spirv_cross = { version = "0.23.1", features = [ "glsl", "hlsl" ] }
 
@@ -14,11 +13,16 @@ spirv_cross = { version = "0.23.1", features = [ "glsl", "hlsl" ] }
 thiserror = "1.0.37"
 bitflags = "1.3.2"
 rustc-hash = "1.1.0"
-rspirv = "0.11.0+1.5.4"
-
-rspirv-reflect = { git = "https://github.com/Traverse-Research/rspirv-reflect" }
 
 librashader-common = { path = "../librashader-common" }
 librashader-preprocess = { path = "../librashader-preprocess" }
+
+naga = { version = "0.10.0", features = ["glsl-in", "spv-in", "spv-out", "glsl-out", "wgsl-out"], optional = true }
+rspirv = { version = "0.11.0+1.5.4", optional = true }
+rspirv-reflect = { git = "https://github.com/Traverse-Research/rspirv-reflect", optional = true }
+
+[features]
+default = []
+unstable-rust-pipeline = [ "naga", "rspirv", "rspirv-reflect" ]
 
 [dev-dependencies]
