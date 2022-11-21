@@ -224,9 +224,9 @@ impl FilterPass {
 
             gl::BindBuffer(gl::ARRAY_BUFFER, parent.draw_quad.vbo);
 
-            /// the provided pointers are of OpenGL provenance with respect to the buffer bound to quad_vbo,
-            /// and not a known provenance to the Rust abstract machine, therefore we give it invalid pointers.
-            /// that are inexpressible in Rust
+            // the provided pointers are of OpenGL provenance with respect to the buffer bound to quad_vbo,
+            // and not a known provenance to the Rust abstract machine, therefore we give it invalid pointers.
+            // that are inexpressible in Rust
             gl::VertexAttribPointer(
                 0,
                 2,

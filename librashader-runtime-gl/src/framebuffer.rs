@@ -84,8 +84,8 @@ impl Framebuffer {
             return Ok(self.size);
         }
 
-        let mut width = 0f32;
-        let mut height = 0f32;
+        let width;
+        let height;
 
         match scaling.x {
             Scaling {

@@ -3,7 +3,6 @@ use crate::reflect::semantics::{
     SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
 };
 use rustc_hash::FxHashMap;
-use std::str::FromStr;
 use semantics::ReflectSemantics;
 
 pub mod cross;

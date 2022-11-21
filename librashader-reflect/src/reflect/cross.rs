@@ -850,6 +850,7 @@ mod test {
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
     use spirv_cross::glsl::{CompilerOptions, Version};
+    use crate::front::shaderc::GlslangCompilation;
 
     #[test]
     pub fn test_into() {
@@ -865,7 +866,7 @@ mod test {
                 }),
             );
         }
-        let spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
+        let spirv = GlslangCompilation::compile(&result).unwrap();
         let mut reflect = CrossReflect::<glsl::Target>::try_from(spirv).unwrap();
         let _shader_reflection = reflect
             .reflect(

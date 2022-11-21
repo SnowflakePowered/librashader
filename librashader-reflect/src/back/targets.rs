@@ -1,8 +1,3 @@
-use crate::back::{CompileShader, ShaderCompilerOutput};
-use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::reflect::{ReflectShader, ShaderReflection};
-use crate::reflect::semantics::ReflectSemantics;
-
 pub trait OutputTarget {
     type Output;
 }
@@ -26,7 +21,8 @@ mod test {
     use crate::back::FromCompilation;
     use crate::back::targets::GLSL;
     use crate::front::shaderc::GlslangCompilation;
-    pub fn huh(value: GlslangCompilation) {
+    #[allow(dead_code)]
+    pub fn test_compile(value: GlslangCompilation) {
         let _x = GLSL::from_compilation(value).unwrap();
     }
 }

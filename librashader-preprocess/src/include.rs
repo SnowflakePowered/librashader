@@ -43,10 +43,6 @@ pub fn read_source(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
     Ok(output)
 }
 
-fn mark_line(line_no: usize, comment: &str, output: &mut String) {
-    output.push_line(&format!("#line {} \"{}\"", line_no, comment))
-}
-
 fn preprocess(
     lines: Lines,
     file_name: impl AsRef<Path>,

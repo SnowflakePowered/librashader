@@ -19,7 +19,6 @@ use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
-use std::error::Error;
 use std::path::Path;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
