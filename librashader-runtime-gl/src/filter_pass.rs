@@ -12,8 +12,9 @@ use rustc_hash::FxHashMap;
 
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
+use crate::framebuffer::{Size, Viewport};
 use crate::render_target::RenderTarget;
-use crate::util::{InlineRingBuffer, RingBuffer, Size, Texture, Viewport};
+use crate::util::{InlineRingBuffer, RingBuffer, Texture};
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,

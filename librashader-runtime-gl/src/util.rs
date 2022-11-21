@@ -1,4 +1,4 @@
-use crate::framebuffer::Framebuffer;
+use crate::framebuffer::{Framebuffer, GlImage};
 use gl::types::{GLenum, GLuint};
 use librashader::{FilterMode, WrapMode};
 
@@ -19,28 +19,6 @@ pub struct Texture {
     pub filter: FilterMode,
     pub mip_filter: FilterMode,
     pub wrap_mode: WrapMode,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Viewport<'a> {
-    pub x: i32,
-    pub y: i32,
-    pub output: &'a Framebuffer,
-    pub mvp: Option<&'a [f32]>,
-}
-
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Size {
-    pub width: u32,
-    pub height: u32,
-}
-
-#[derive(Default, Debug, Copy, Clone)]
-pub struct GlImage {
-    pub handle: GLuint,
-    pub format: GLenum,
-    pub size: Size,
-    pub padded_size: Size,
 }
 
 pub trait RingBuffer<T> {

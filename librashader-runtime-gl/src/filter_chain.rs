@@ -1,15 +1,15 @@
 use std::collections::VecDeque;
 use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::Framebuffer;
+use crate::framebuffer::{Framebuffer, GlImage, Size, Viewport};
 use crate::render_target::RenderTarget;
 use crate::util;
-use crate::util::{GlImage, InlineRingBuffer, Size, Texture, Viewport};
+use crate::util::{InlineRingBuffer, Texture};
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader::image::Image;
 use librashader::{FilterMode, ShaderSource, WrapMode};
 use librashader_presets::{ScaleType, ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
+use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
 use librashader_reflect::back::targets::{CompilerBackend, FromCompilation, GLSL};
 use librashader_reflect::back::CompileShader;
 use librashader_reflect::reflect::semantics::{
@@ -131,6 +131,68 @@ type ShaderPassMeta<'a> = (
 );
 
 impl FilterChain {
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    pub fn load_from_preset(preset: ShaderPreset) -> Result<FilterChain, Box<dyn Error>> {
+        let (passes, semantics) = FilterChain::load_preset(&preset);
+
+        // initialize passes
+        let filters = FilterChain::init_passes(passes, &semantics)?;
+
+        let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
+        let default_wrap = filters.first().map(|f| f.config.wrap_mode).unwrap_or_default();
+
+        // initialize output framebuffers
+        let mut output_framebuffers = Vec::new();
+        output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        let mut output_textures = Vec::new();
+        output_textures.resize_with(filters.len(), Texture::default);
+
+
+        // initialize feedback framebuffers
+        let mut feedback_framebuffers = Vec::new();
+        feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        let mut feedback_textures = Vec::new();
+        feedback_textures.resize_with(filters.len(), Texture::default);
+
+        // load luts
+        let luts = FilterChain::load_luts(&preset.textures)?;
+
+        let (history_framebuffers, history_textures) =
+            FilterChain::init_history(&filters, default_filter, default_wrap);
+
+        // create VBO objects
+        let draw_quad = DrawQuad::new();
+
+        let mut filter_vao = 0;
+        unsafe {
+            gl::GenVertexArrays(1, &mut filter_vao);
+        }
+
+        Ok(FilterChain {
+            passes: filters,
+            output_framebuffers: output_framebuffers.into_boxed_slice(),
+            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
+            history_framebuffers,
+            filter_vao,
+            common: FilterCommon {
+                semantics,
+                preset,
+                luts,
+                output_textures: output_textures.into_boxed_slice(),
+                feedback_textures: feedback_textures.into_boxed_slice(),
+                history_textures,
+                draw_quad,
+            },
+        })
+    }
+
+    /// Load the shader preset at the given path into a filter chain.
+    pub fn load_from_path(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
+        // load passes from preset
+        let preset = ShaderPreset::try_parse(path)?;
+        Self::load_from_preset(preset)
+    }
+
     fn load_preset(preset: &ShaderPreset) -> (Vec<ShaderPassMeta>, ReflectSemantics) {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
@@ -300,7 +362,7 @@ impl FilterChain {
         Ok(luts)
     }
 
-    pub fn init_passes(
+    fn init_passes(
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
     ) -> Result<Box<[FilterPass]>, Box<dyn Error>> {
@@ -467,7 +529,7 @@ impl FilterChain {
         Ok(filters.into_boxed_slice())
     }
 
-    pub fn init_history(filters: &[FilterPass], filter: FilterMode, wrap_mode: WrapMode) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
+    fn init_history(filters: &[FilterPass], filter: FilterMode, wrap_mode: WrapMode) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -514,68 +576,7 @@ impl FilterChain {
         (framebuffers, history_textures.into_boxed_slice())
     }
 
-    pub fn load(path: impl AsRef<Path>) -> Result<FilterChain, Box<dyn Error>> {
-        // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
-        let (passes, semantics) = FilterChain::load_preset(&preset);
-
-        // initialize passes
-        let filters = FilterChain::init_passes(passes, &semantics)?;
-
-        let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
-        let default_wrap = filters.first().map(|f| f.config.wrap_mode).unwrap_or_default();
-
-        // initialize output framebuffers
-        let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
-        let mut output_textures = Vec::new();
-        output_textures.resize_with(filters.len(), Texture::default);
-
-
-        // initialize feedback framebuffers
-        let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
-        let mut feedback_textures = Vec::new();
-        feedback_textures.resize_with(filters.len(), Texture::default);
-
-        // load luts
-        let luts = FilterChain::load_luts(&preset.textures)?;
-
-        let (history_framebuffers, history_textures) =
-            FilterChain::init_history(&filters, default_filter, default_wrap);
-
-        // create VBO objects
-        let draw_quad = DrawQuad::new();
-
-        let mut filter_vao = 0;
-        unsafe {
-            gl::GenVertexArrays(1, &mut filter_vao);
-        }
-
-        Ok(FilterChain {
-            passes: filters,
-            output_framebuffers: output_framebuffers.into_boxed_slice(),
-            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
-            history_framebuffers,
-            filter_vao,
-            common: FilterCommon {
-                semantics,
-                preset,
-                luts,
-                output_textures: output_textures.into_boxed_slice(),
-                feedback_textures: feedback_textures.into_boxed_slice(),
-                history_textures,
-                draw_quad,
-            },
-        })
-    }
-
-    pub(crate) fn get_output_texture(&self, index: usize) -> Texture {
-        let config = &self.passes[index].config;
-        self.output_framebuffers[index].as_texture(config.filter, config.wrap_mode)
-    }
-
-    pub fn push_history(&mut self, input: &GlImage) {
+    fn push_history(&mut self, input: &GlImage) {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
 
             if back.size != input.size
@@ -584,9 +585,7 @@ impl FilterChain {
                 back.init(input.size, input.format);
             }
 
-            if back.is_initialized() {
-                back.copy_from(&input);
-            }
+            back.copy_from(&input);
 
             self.history_framebuffers.push_front(back)
         }

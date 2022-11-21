@@ -1,5 +1,5 @@
 use crate::util;
-use crate::util::{GlImage, Size, Texture, Viewport};
+use crate::util::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader::{FilterMode, ShaderFormat, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
@@ -7,12 +7,12 @@ use librashader_presets::{Scale2D, ScaleType, Scaling};
 #[derive(Debug)]
 pub struct Framebuffer {
     pub image: GLuint,
+    pub handle: GLuint,
     pub size: Size,
     pub format: GLenum,
     pub max_levels: u32,
     pub levels: u32,
-    pub handle: GLuint,
-    pub init: bool,
+    is_raw: bool,
 }
 
 impl Framebuffer {
@@ -34,7 +34,7 @@ impl Framebuffer {
             max_levels,
             levels: 0,
             handle: framebuffer,
-            init: false,
+            is_raw: false
         }
     }
 
@@ -52,11 +52,11 @@ impl Framebuffer {
             max_levels: miplevels,
             levels: miplevels,
             handle,
-            init: true,
+            is_raw: true
         }
     }
 
-    pub fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
+    pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
         Texture {
             image: GlImage {
                 handle: self.image,
@@ -70,7 +70,7 @@ impl Framebuffer {
         }
     }
 
-    pub fn scale(
+    pub(crate) fn scale(
         &mut self,
         scaling: Scale2D,
         format: ShaderFormat,
@@ -78,6 +78,10 @@ impl Framebuffer {
         _original: &Texture,
         source: &Texture,
     ) -> Size {
+        if self.is_raw {
+            return self.size;
+        }
+
         let mut width = 0f32;
         let mut height = 0f32;
 
@@ -131,11 +135,7 @@ impl Framebuffer {
         size
     }
 
-    pub(crate) fn is_initialized(&self) -> bool {
-        self.init
-    }
-
-    pub fn clear(&self) {
+    pub(crate) fn clear(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
@@ -145,7 +145,7 @@ impl Framebuffer {
         }
     }
 
-    pub fn copy_from(&mut self, image: &GlImage) {
+    pub(crate) fn copy_from(&mut self, image: &GlImage) {
         if image.size != self.size || image.format != self.format {
             self.init(image.size, image.format);
         }
@@ -190,9 +190,12 @@ impl Framebuffer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
     }
+
     // todo: fix panic
     pub(crate) fn init(&mut self, mut size: Size, format: impl Into<GLenum>) {
-        self.init = false;
+        if self.is_raw {
+            return;
+        }
         self.format = format.into();
         self.size = size;
 
@@ -283,13 +286,11 @@ impl Framebuffer {
                             self.image,
                             0,
                         );
-                        self.init =
-                            gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
+                        // self.init =
+                        //     gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
                     _ => panic!("failed to complete: {status:x}"),
                 }
-            } else {
-                self.init = true;
             }
 
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -309,4 +310,26 @@ impl Drop for Framebuffer {
             }
         }
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Viewport<'a> {
+    pub x: i32,
+    pub y: i32,
+    pub output: &'a Framebuffer,
+    pub mvp: Option<&'a [f32]>,
+}
+
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Size {
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Default, Debug, Copy, Clone)]
+pub struct GlImage {
+    pub handle: GLuint,
+    pub format: GLenum,
+    pub size: Size,
+    pub padded_size: Size,
 }
