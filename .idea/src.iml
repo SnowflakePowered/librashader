@@ -12,6 +12,7 @@
       <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-dx11/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-gl/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-compiler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/librashader-common/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

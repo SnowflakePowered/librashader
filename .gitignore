@@ -2,3 +2,5 @@
 /target/debug/
 /target/
 /target
+*.rdc
+*.cap

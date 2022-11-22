@@ -5,7 +5,6 @@ mod binding;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
-mod hello_triangle;
 mod quad_render;
 mod render_target;
 mod util;
@@ -17,15 +16,18 @@ pub use framebuffer::GlImage;
 pub use framebuffer::Viewport;
 
 #[cfg(test)]
+mod hello_triangle;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::filter_chain::FilterChain;
 
     #[test]
-    fn triangle() {
+    fn triangle_gl() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
         let mut filter =
-            FilterChain::load_from_path("../test/slang-shaders/crt/crt-royale.slangp")
+            FilterChain::load_from_path("../test/slang-shaders/vhs/VHSPro.slangp")
                 .unwrap();
         hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }

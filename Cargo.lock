@@ -9,6 +9,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "auto_ops"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7460f7dd8e100147b82a63afca1a20eb6c231ee36b90ba7272e14951cb58af59"
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -244,6 +250,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gfx-maths"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14d29863ada049ecbeb0f1359d0bc4e38a95e86dc594b71f43807cdc80791c4f"
+dependencies = [
+ "auto_ops",
+]
+
+[[package]]
 name = "gif"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -394,6 +409,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
 
 [[package]]
+name = "librashader"
+version = "0.1.0"
+dependencies = [
+ "librashader-common",
+ "librashader-preprocess",
+ "librashader-presets",
+ "librashader-reflect",
+ "librashader-runtime-dx11",
+ "librashader-runtime-gl",
+]
+
+[[package]]
 name = "librashader-common"
 version = "0.1.0"
 dependencies = [
@@ -441,6 +468,7 @@ dependencies = [
 name = "librashader-runtime-dx11"
 version = "0.1.0"
 dependencies = [
+ "gfx-maths",
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
@@ -462,6 +490,7 @@ dependencies = [
  "librashader-reflect",
  "rustc-hash",
  "spirv_cross",
+ "thiserror",
 ]
 
 [[package]]

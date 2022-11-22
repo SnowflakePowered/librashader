@@ -12,7 +12,7 @@ use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
-const TITLE: &str = "Hello From OpenGL World!";
+const TITLE: &str = "librashader OpenGL";
 
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
     let vertex_shader = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };
@@ -459,18 +459,20 @@ void main()
         gl::GenVertexArrays(1, &mut quad_vao);
     }
 
-    let (fb_width, fb_height) = window.get_framebuffer_size();
-    let (vp_width, vp_height) = window.get_size();
 
-    let output = Framebuffer::new_from_raw(
-        output_texture,
-        output_framebuffer_handle,
-        gl::RGBA8,
-        Size::new(vp_width as u32, vp_height as u32),
-        1,
-    );
 
     while !window.should_close() {
+        let (vp_width, vp_height) = window.get_size();
+        let (fb_width, fb_height) = window.get_framebuffer_size();
+
+        let output = Framebuffer::new_from_raw(
+            output_texture,
+            output_framebuffer_handle,
+            gl::RGBA8,
+            Size::new(vp_width as u32, vp_height as u32),
+            1,
+        );
+
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             glfw_handle_event(&mut window, event);
@@ -519,19 +521,19 @@ void main()
 
         filter.frame(framecount, &viewport, &rendered, false)
             .unwrap();
-
-        unsafe {
-            // texture is done now.
-            // draw quad to screen
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::UseProgram(quad_programid);
-
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, output_texture);
-
-            gl::BindVertexArray(quad_vao);
-            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-        }
+        //
+        // unsafe {
+        //     // texture is done now.
+        //     // draw quad to screen
+        //     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        //     gl::UseProgram(quad_programid);
+        //
+        //     gl::ActiveTexture(gl::TEXTURE0);
+        //     gl::BindTexture(gl::TEXTURE_2D, output_texture);
+        //
+        //     gl::BindVertexArray(quad_vao);
+        //     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+        // }
 
         framecount += 1;
         window.swap_buffers();

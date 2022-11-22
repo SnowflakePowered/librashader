@@ -13,6 +13,8 @@ librashader-reflect = { path = "../librashader-reflect" }
 spirv_cross = "0.23.1"
 rustc-hash = "1.1.0"
 gl = "0.14.0"
-glfw = "0.47.0"
 bytemuck = "1.12.3"
 thiserror = "1.0.37"
+
+[dev-dependencies]
+glfw = "0.47.0"

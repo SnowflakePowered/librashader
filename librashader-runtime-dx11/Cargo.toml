@@ -11,6 +11,7 @@ edition = "2021"
 "librashader-preprocess" = { path = "../librashader-preprocess" }
 "librashader-reflect" = { path = "../librashader-reflect" }
 rustc-hash = "1.1.0"
+gfx-maths = "0.2.8"
 
 [dependencies.windows]
 version = "0.43.0"
@@ -19,4 +20,13 @@ features = [
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Direct3D_Fxc",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_UI_WindowsAndMessaging",
 ]
+
+[dev-dependencies]
