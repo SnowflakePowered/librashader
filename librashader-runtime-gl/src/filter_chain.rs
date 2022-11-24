@@ -381,14 +381,16 @@ impl FilterChain {
                 gl::AttachShader(program, vertex);
                 gl::AttachShader(program, fragment);
 
-                for res in &vertex_resources.stage_inputs {
+                for res in vertex_resources.stage_inputs {
                     let loc = glsl
                         .context
                         .compiler
                         .vertex
                         .get_decoration(res.id, Decoration::Location)?;
-                    let loc_name = format!("LIBRA_ATTRIBUTE_{loc}\0");
-                    gl::BindAttribLocation(program, loc, loc_name.as_str().as_ptr().cast())
+                    let mut name = res.name;
+                    name.push('\0');
+
+                    gl::BindAttribLocation(program, loc, name.as_str().as_ptr().cast())
                 }
                 gl::LinkProgram(program);
                 gl::DeleteShader(vertex);

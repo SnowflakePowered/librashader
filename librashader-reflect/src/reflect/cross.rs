@@ -702,21 +702,18 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         let fragment_resources = self.fragment.get_shader_resources()?;
 
         for res in &vertex_resources.stage_inputs {
-            let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
-            self.vertex
-                .set_name(res.id, &format!("LIBRA_ATTRIBUTE_{location}"))?;
             self.vertex.unset_decoration(res.id, Decoration::Location)?;
         }
         for res in &vertex_resources.stage_outputs {
-            let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
-            self.vertex
-                .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
+            // let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
+            // self.vertex
+            //     .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
             self.vertex.unset_decoration(res.id, Decoration::Location)?;
         }
         for res in &fragment_resources.stage_inputs {
-            let location = self.fragment.get_decoration(res.id, Decoration::Location)?;
-            self.fragment
-                .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
+            // let location = self.fragment.get_decoration(res.id, Decoration::Location)?;
+            // self.fragment
+            //     .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
             self.fragment
                 .unset_decoration(res.id, Decoration::Location)?;
         }
