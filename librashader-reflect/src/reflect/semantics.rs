@@ -175,7 +175,7 @@ pub struct TextureSizeMeta {
 }
 
 #[derive(Debug)]
-pub struct TextureImage {
+pub struct TextureBinding {
     pub binding: u32,
 }
 
@@ -323,4 +323,24 @@ pub enum UniformSemantic {
 pub struct ReflectSemantics {
     pub uniform_semantics: FxHashMap<String, UniformSemantic>,
     pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
+}
+
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+pub enum UniformBinding {
+    Parameter(String),
+    SemanticVariable(VariableSemantics),
+    TextureSize(SemanticMap<TextureSemantics>),
+}
+
+impl From<VariableSemantics> for UniformBinding {
+    fn from(value: VariableSemantics) -> Self {
+        UniformBinding::SemanticVariable(value)
+    }
+}
+
+impl From<SemanticMap<TextureSemantics>> for UniformBinding {
+    fn from(value: SemanticMap<TextureSemantics>) -> Self {
+        UniformBinding::TextureSize(value)
+    }
 }

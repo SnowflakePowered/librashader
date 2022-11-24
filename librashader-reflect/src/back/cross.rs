@@ -29,10 +29,15 @@ impl FromCompilation<GlslangCompilation> for GLSL {
     }
 }
 
+pub struct GlslangHlslContext {
+    pub compiler: CompiledAst<spirv_cross::hlsl::Target>,
+}
+
+
 impl FromCompilation<GlslangCompilation> for HLSL {
     type Target = HLSL;
     type Options = Option<()>;
-    type Context = ();
+    type Context = GlslangHlslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context> + ReflectShader;
 
     fn from_compilation(

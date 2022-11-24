@@ -2,8 +2,7 @@ use std::path::Path;
 
 pub struct Image {
     pub bytes: Vec<u8>,
-    pub height: u32,
-    pub width: u32,
+    pub size: Size<u32>
 }
 
 impl Image {
@@ -15,10 +14,13 @@ impl Image {
 
         Ok(Image {
             bytes: image.to_vec(),
-            height,
-            width,
+            size: Size {
+                height,
+                width,
+            }
         })
     }
 }
 
 pub use image::ImageError as ImageError;
+use crate::Size;

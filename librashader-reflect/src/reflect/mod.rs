@@ -1,6 +1,6 @@
 use crate::error::ShaderReflectError;
 use crate::reflect::semantics::{
-    SemanticMap, TextureImage, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
+    SemanticMap, TextureBinding, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
 };
 use rustc_hash::FxHashMap;
 use semantics::ReflectSemantics;
@@ -26,7 +26,7 @@ pub trait ReflectShader {
 pub struct ReflectMeta {
     pub parameter_meta: FxHashMap<String, VariableMeta>,
     pub variable_meta: FxHashMap<VariableSemantics, VariableMeta>,
-    pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureImage>,
+    pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureBinding>,
     pub texture_size_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureSizeMeta>,
 }
 

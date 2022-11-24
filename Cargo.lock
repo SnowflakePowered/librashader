@@ -426,6 +426,7 @@ version = "0.1.0"
 dependencies = [
  "gl",
  "image",
+ "num-traits",
 ]
 
 [[package]]
@@ -468,6 +469,7 @@ dependencies = [
 name = "librashader-runtime-dx11"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "gfx-maths",
  "librashader-common",
  "librashader-preprocess",

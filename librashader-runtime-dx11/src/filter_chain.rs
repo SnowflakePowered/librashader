@@ -1,19 +1,25 @@
 use std::error::Error;
 use std::path::Path;
 use rustc_hash::FxHashMap;
+use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_SHADER_RESOURCE, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, ID3D11Device, ID3D11DeviceContext};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
+use librashader_common::image::Image;
+use librashader_common::Size;
 use librashader_preprocess::ShaderSource;
-use librashader_presets::{ShaderPassConfig, ShaderPreset};
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
+use librashader_reflect::back::cross::GlslangHlslContext;
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{ReflectSemantics, SemanticMap, TextureSemantics, UniformSemantic, VariableSemantics};
+use crate::util::Texture;
 
 type ShaderPassMeta<'a> = (
     &'a ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
-        impl CompileShader<HLSL, Options = Option<()>, Context = ()> + ReflectShader,
+        impl CompileShader<HLSL, Options = Option<()>, Context = GlslangHlslContext> + ReflectShader,
     >,
 );
 
@@ -22,6 +28,12 @@ struct FilterChain {
 
 }
 
+pub struct FilterCommon {
+    pub(crate) device_context: ID3D11DeviceContext,
+    pub(crate) preset: ShaderPreset,
+}
+
+// todo: d3d11.c 2097
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 impl FilterChain {
@@ -100,7 +112,7 @@ impl FilterChain {
         // feedback_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
-        // let luts = FilterChain::load_luts(&preset.textures)?;
+        let luts = FilterChain::load_luts(&preset.textures)?;
 
         // let (history_framebuffers, history_textures) =
         //     FilterChain::init_history(&filters, default_filter, default_wrap);
@@ -123,6 +135,31 @@ impl FilterChain {
             //     draw_quad,
             // },
         })
+    }
+
+    fn load_luts(device: &ID3D11Device, textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
+        let mut luts = FxHashMap::default();
+
+        for (index, texture) in textures.iter().enumerate() {
+            let image = Image::load(&texture.path)?;
+            let desc = D3D11_TEXTURE2D_DESC {
+                Width: image.width,
+                Height: image.height,
+                Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                MiscFlags: if texture.mipmap {
+                    D3D11_RESOURCE_MISC_GENERATE_MIPS
+                } else {
+                    0
+                },
+                ..Default::default()
+            };
+
+            let mut texture = Texture::new(device, image.size, desc);
+            // todo: update texture d3d11_common: 150
+            luts.insert(index, texture);
+
+        }
+        Ok(luts)
     }
 
     /// Load the shader preset at the given path into a filter chain.

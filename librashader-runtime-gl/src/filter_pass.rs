@@ -6,12 +6,10 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::{ShaderFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, TextureImage, TextureSemantics, VariableSemantics,
-};
+use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
 use rustc_hash::FxHashMap;
 
-use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
+use crate::binding::{UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
 use crate::render_target::RenderTarget;
@@ -25,7 +23,7 @@ pub struct FilterPass {
     pub ubo_ring: Option<InlineRingBuffer<GLuint, 16>>,
     pub uniform_buffer: Box<[u8]>,
     pub push_buffer: Box<[u8]>,
-    pub variable_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
+    pub uniform_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
@@ -36,13 +34,8 @@ impl FilterPass {
         buffer.copy_from_slice(mvp);
     }
 
-    fn build_vec4(location: UniformLocation<GLint>, buffer: &mut [u8], size: Size<u32>) {
-        let vec4 = [
-            size.width as f32,
-            size.height as f32,
-            1.0 / size.width as f32,
-            1.0 / size.height as f32,
-        ];
+    fn build_vec4(location: UniformLocation<GLint>, buffer: &mut [u8], size: impl Into<[f32; 4]>) {
+        let vec4 = size.into();
         if location.fragment >= 0 || location.vertex >= 0 {
             unsafe {
                 if location.vertex >= 0 {
@@ -95,7 +88,7 @@ impl FilterPass {
         Self::build_uniform(location, buffer, value, gl::Uniform1f)
     }
 
-    fn bind_texture(binding: &TextureImage, texture: &Texture) {
+    fn bind_texture(binding: &TextureBinding, texture: &Texture) {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
@@ -269,7 +262,7 @@ impl FilterPass {
     ) {
         // Bind MVP
         if let Some((_location, offset)) =
-            self.variable_bindings.get(&VariableSemantics::MVP.into())
+            self.uniform_bindings.get(&VariableSemantics::MVP.into())
         {
             let mvp_size = mvp.len() * std::mem::size_of::<f32>();
             let (buffer, offset) = match offset {
@@ -281,7 +274,7 @@ impl FilterPass {
 
         // bind OutputSize
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&VariableSemantics::Output.into())
         {
             let (buffer, offset) = match offset {
@@ -294,7 +287,7 @@ impl FilterPass {
 
         // bind FinalViewportSize
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&VariableSemantics::FinalViewport.into())
         {
             let (buffer, offset) = match offset {
@@ -310,7 +303,7 @@ impl FilterPass {
 
         // bind FrameCount
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&VariableSemantics::FrameCount.into())
         {
             let (buffer, offset) = match offset {
@@ -322,7 +315,7 @@ impl FilterPass {
 
         // bind FrameDirection
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&VariableSemantics::FrameDirection.into())
         {
             let (buffer, offset) = match offset {
@@ -348,7 +341,7 @@ impl FilterPass {
 
         // bind OriginalSize
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&TextureSemantics::Original.semantics(0).into())
         {
             let (buffer, offset) = match offset {
@@ -375,7 +368,7 @@ impl FilterPass {
 
         // bind SourceSize
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&TextureSemantics::Source.semantics(0).into())
         {
             let (buffer, offset) = match offset {
@@ -398,7 +391,7 @@ impl FilterPass {
             FilterPass::bind_texture(binding, original);
         }
         if let Some((location, offset)) = self
-            .variable_bindings
+            .uniform_bindings
             .get(&TextureSemantics::OriginalHistory.semantics(0).into())
         {
             let (buffer, offset) = match offset {
@@ -422,7 +415,7 @@ impl FilterPass {
                 FilterPass::bind_texture(binding, output);
             }
 
-            if let Some((location, offset)) = self.variable_bindings.get(
+            if let Some((location, offset)) = self.uniform_bindings.get(
                 &TextureSemantics::OriginalHistory
                     .semantics(index + 1)
                     .into(),
@@ -451,7 +444,7 @@ impl FilterPass {
             }
 
             if let Some((location, offset)) = self
-                .variable_bindings
+                .uniform_bindings
                 .get(&TextureSemantics::PassOutput.semantics(index).into())
             {
                 let (buffer, offset) = match offset {
@@ -481,7 +474,7 @@ impl FilterPass {
             }
 
             if let Some((location, offset)) = self
-                .variable_bindings
+                .uniform_bindings
                 .get(&TextureSemantics::PassFeedback.semantics(index).into())
             {
                 let (buffer, offset) = match offset {
@@ -498,7 +491,7 @@ impl FilterPass {
 
         // bind float parameters
         for (id, (location, offset)) in
-            self.variable_bindings
+            self.uniform_bindings
                 .iter()
                 .filter_map(|(binding, value)| match binding {
                     UniformBinding::Parameter(id) => Some((id, value)),
@@ -544,7 +537,7 @@ impl FilterPass {
             }
 
             if let Some((location, offset)) = self
-                .variable_bindings
+                .uniform_bindings
                 .get(&TextureSemantics::User.semantics(*index).into())
             {
                 let (buffer, offset) = match offset {

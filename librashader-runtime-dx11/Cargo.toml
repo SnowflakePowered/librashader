@@ -12,6 +12,7 @@ edition = "2021"
 "librashader-reflect" = { path = "../librashader-reflect" }
 rustc-hash = "1.1.0"
 gfx-maths = "0.2.8"
+bytemuck = "1.12.3"
 
 [dependencies.windows]
 version = "0.43.0"

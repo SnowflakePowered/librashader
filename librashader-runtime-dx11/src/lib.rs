@@ -17,6 +17,8 @@ use librashader_reflect::reflect::ReflectShader;
 
 #[cfg(test)]
 mod hello_triangle;
+mod filter_pass;
+mod util;
 
 #[cfg(test)]
 mod tests {

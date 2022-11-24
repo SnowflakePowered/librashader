@@ -1,9 +1,15 @@
 #[cfg(feature = "opengl")]
 pub mod gl;
+#[cfg(feature = "dxgi")]
+pub mod dx;
+
 pub mod image;
+pub mod runtime;
+
 
 use std::convert::Infallible;
 use std::str::FromStr;
+use num_traits::AsPrimitive;
 
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
@@ -137,5 +143,18 @@ pub struct Size<T> {
 impl<T> Size<T> {
     pub fn new(width: T, height: T) -> Self {
         Size { width, height }
+    }
+}
+
+impl<T> From<Size<T>> for [f32; 4]
+where T: Copy + AsPrimitive<f32>
+{
+    fn from(value: Size<T>) -> Self {
+        [
+            value.width.as_(),
+            value.height.as_(),
+            1.0 / value.width.as_(),
+            1.0 / value.height.as_(),
+        ]
     }
 }

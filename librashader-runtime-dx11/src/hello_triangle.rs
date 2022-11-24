@@ -392,6 +392,10 @@ mod d3d11_hello_triangle {
 
             unsafe {
                 self.context.DrawIndexed(3, 0, 0);
+            }
+
+
+            unsafe {
                 resources.swapchain.Present(0, 0).ok()?;
             }
             Ok(())

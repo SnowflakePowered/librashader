@@ -22,23 +22,30 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 | DirectX 9  | ❌          |                           |
 | Metal      | ❌          |                           |
 
+## Usage
+
+🚧 *`librashader_ld` is WIP* 🚧
+
+librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class, fully supported.
+
+The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
+loads the librashader (`librashader.so` or `rashader.dll`) implementation in the search path.
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
 the reflection library, and the runtimes, are all licensed under the Mozilla Public License version 2.0.
 
 The librashader C API, i.e. its headers and definitions, *not its implementation in `librashader_capi`*,
-are unique to librashader and are more permissively licensed, and may allow you to use librashader in your permissively 
+are more permissively licensed, and may allow you to use librashader in your permissively 
 licensed or proprietary project.
 
-While the code for `librashader_capi` (`librashader.so` and `rashader.dll`) is still under MPL-2.0, 
-you may use librashader in proprietary works by linking against the MIT licensed `librashader_ld`, 
-which implements the librashader C API, and thunks its calls to any `librashader.so` or `rashader.dll` 
-library found in the load path, *provided that `librashader.so` or `rashader.dll` are distributed under the restrictions
-of MPLv2*. 
+To facilitate easier use of librashader in projects incompatible with MPL-2.0, `librashader_ld`
+implements a loader which thunks its calls to any `librashader.so` or `rashader.dll`
+library found in the load path. A non-MPL-2.0 compatible project may link against
+`librashader_ld` to use the librashader runtime, *provided that `librashader.so` or `rashader.dll` 
+are distributed under the restrictions of MPLv2*.
 
-Note that if your project is not compatible with MPLv2, you **can not distribute `librashader.so` or `rashader.dll`**
-alongside your project, **only `librashader-ld.so` or `rashader-ld.dll`**, which will do nothing without a librashader
-implementation in the load path. The end user must obtain the implementation of librashader themselves.
+Note that this means that if your project is not compatible with MPL-2.0, you **can not distribute `librashader.so` or `rashader.dll`**
+alongside your project. The end user must obtain the implementation of librashader themselves.
 
-You may, at your discretion, choose to distribute `librashader` under the terms of MPL-2.0 instead of GPLv3. 
+At your discretion, you may instead choose to distribute `librashader` under the terms of GPLv3 rather than MPL-2.0

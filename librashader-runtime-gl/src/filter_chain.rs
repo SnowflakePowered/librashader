@@ -1,4 +1,4 @@
-use crate::binding::{UniformBinding, UniformLocation, VariableLocation};
+use crate::binding::{UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 use crate::quad_render::DrawQuad;
@@ -14,7 +14,7 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
 use librashader_reflect::back::targets::GLSL;
-use librashader_reflect::reflect::semantics::{MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformMeta, UniformSemantic, VariableSemantics};
+use librashader_reflect::reflect::semantics::{MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformMeta, UniformSemantic, VariableSemantics};
 use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
@@ -472,9 +472,9 @@ impl FilterChain {
             .into_boxed_slice();
 
             // todo: reflect indexed parameters
-            let mut variable_bindings = FxHashMap::default();
+            let mut uniform_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
-                variable_bindings.insert(
+                uniform_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
                     (
                         FilterChain::reflect_uniform_location(program, param),
@@ -484,7 +484,7 @@ impl FilterChain {
             }
 
             for (semantics, param) in &reflection.meta.variable_meta {
-                variable_bindings.insert(
+                uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
                     (
                         FilterChain::reflect_uniform_location(program, param),
@@ -494,7 +494,7 @@ impl FilterChain {
             }
 
             for (semantics, param) in &reflection.meta.texture_size_meta {
-                variable_bindings.insert(
+                uniform_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
                     (
                         FilterChain::reflect_uniform_location(program, param),
@@ -520,7 +520,7 @@ impl FilterChain {
                 ubo_ring,
                 uniform_buffer,
                 push_buffer,
-                variable_bindings,
+                uniform_bindings,
                 source,
                 config: config.clone(),
             });

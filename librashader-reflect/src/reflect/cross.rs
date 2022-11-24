@@ -1,6 +1,6 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureImage, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics};
+use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics};
 use crate::reflect::{
     ReflectMeta, ReflectShader,
 };
@@ -9,7 +9,7 @@ use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{ErrorCode, glsl, hlsl};
 
-use crate::back::cross::GlslangGlslContext;
+use crate::back::cross::{GlslangGlslContext, GlslangHlslContext};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 
@@ -492,7 +492,7 @@ where
 
         meta.texture_meta.insert(
             semantic,
-            TextureImage {
+            TextureBinding {
                 binding: texture.binding,
             },
         );
@@ -819,12 +819,12 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
 
 impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
     type Options = Option<()>;
-    type Context = ();
+    type Context = GlslangHlslContext;
 
     fn compile(
         mut self,
         _options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<String>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<String, GlslangHlslContext>, ShaderCompileError> {
         let mut options = hlsl::CompilerOptions::default();
         options.shader_model = ShaderModel::V5_0;
 
@@ -834,7 +834,12 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
         Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: (),
+            context: GlslangHlslContext {
+                compiler: CompiledAst {
+                    vertex: self.vertex,
+                    fragment: self.fragment
+                }
+            },
         })
     }
 }

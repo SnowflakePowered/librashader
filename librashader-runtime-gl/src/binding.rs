@@ -46,22 +46,3 @@ pub enum MemberLocation {
 
 #[derive(Debug, Copy, Clone)]
 pub struct TextureUnit<T>(T);
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub enum UniformBinding {
-    Parameter(String),
-    SemanticVariable(VariableSemantics),
-    TextureSize(SemanticMap<TextureSemantics>),
-}
-
-impl From<VariableSemantics> for UniformBinding {
-    fn from(value: VariableSemantics) -> Self {
-        UniformBinding::SemanticVariable(value)
-    }
-}
-
-impl From<SemanticMap<TextureSemantics>> for UniformBinding {
-    fn from(value: SemanticMap<TextureSemantics>) -> Self {
-        UniformBinding::TextureSize(value)
-    }
-}
