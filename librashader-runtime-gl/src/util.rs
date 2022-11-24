@@ -1,9 +1,9 @@
 use crate::framebuffer::GlImage;
 use gl::types::{GLenum, GLuint};
-use librashader_common::{FilterMode, WrapMode};
+use librashader_common::{FilterMode, Size, WrapMode};
 
-pub fn calc_miplevel(width: u32, height: u32) -> u32 {
-    let mut size = std::cmp::max(width, height);
+pub fn calc_miplevel(size: Size<u32>) -> u32 {
+    let mut size = std::cmp::max(size.width, size.height);
     let mut levels = 0;
     while size != 0 {
         levels += 1;

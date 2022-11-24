@@ -266,7 +266,7 @@ impl FilterChain {
         for (index, texture) in textures.iter().enumerate() {
             let image = Image::load(&texture.path)?;
             let levels = if texture.mipmap {
-                util::calc_miplevel(image.width, image.height)
+                util::calc_miplevel(image.size)
             } else {
                 1u32
             };
@@ -279,8 +279,8 @@ impl FilterChain {
                     gl::TEXTURE_2D,
                     levels as GLsizei,
                     gl::RGBA8,
-                    image.width as GLsizei,
-                    image.height as GLsizei,
+                    image.size.width as GLsizei,
+                    image.size.height as GLsizei,
                 );
 
                 gl::PixelStorei(gl::UNPACK_ROW_LENGTH, 0);
@@ -291,8 +291,8 @@ impl FilterChain {
                     0,
                     0,
                     0,
-                    image.width as GLsizei,
-                    image.height as GLsizei,
+                    image.size.width as GLsizei,
+                    image.size.height as GLsizei,
                     gl::RGBA,
                     gl::UNSIGNED_BYTE,
                     image.bytes.as_ptr().cast(),
@@ -347,10 +347,7 @@ impl FilterChain {
                     image: GlImage {
                         handle,
                         format: gl::RGBA8,
-                        size: Size {
-                            width: image.width,
-                            height: image.height,
-                        },
+                        size: image.size,
                         padded_size: Size::default(),
                     },
                     filter: texture.filter_mode,

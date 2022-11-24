@@ -248,7 +248,7 @@ impl Framebuffer {
                 size.height = 1;
             }
 
-            self.levels = util::calc_miplevel(size.width, size.height);
+            self.levels = util::calc_miplevel(size);
             if self.levels > self.max_levels {
                 self.levels = self.max_levels;
             }
@@ -288,7 +288,7 @@ impl Framebuffer {
                         gl::GenTextures(1, &mut self.image);
                         gl::BindTexture(1, self.image);
 
-                        self.levels = util::calc_miplevel(size.width, size.height);
+                        self.levels = util::calc_miplevel(size);
                         if self.levels > self.max_levels {
                             self.levels = self.max_levels;
                         }
