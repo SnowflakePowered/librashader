@@ -7,7 +7,7 @@ use crate::reflect::ReflectShader;
 
 pub type GlVersion = spirv_cross::glsl::Version;
 pub struct GlslangGlslContext {
-    pub sampler_bindings: Vec<u32>,
+    pub sampler_bindings: Vec<(String, u32)>,
     pub compiler: CompiledAst<spirv_cross::glsl::Target>,
 }
 

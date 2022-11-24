@@ -792,15 +792,15 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         }
 
         let mut texture_fixups = Vec::new();
-        for res in &fragment_resources.sampled_images {
+        for res in fragment_resources.sampled_images {
             let binding = self.fragment.get_decoration(res.id, Decoration::Binding)?;
-            self.fragment
-                .set_name(res.id, &format!("LIBRA_TEXTURE_{binding}"))?;
             self.fragment
                 .unset_decoration(res.id, Decoration::DescriptorSet)?;
             self.fragment
                 .unset_decoration(res.id, Decoration::Binding)?;
-            texture_fixups.push(binding);
+            let mut name = res.name;
+            name.push('\0');
+            texture_fixups.push((name, binding));
         }
 
         Ok(ShaderCompilerOutput {

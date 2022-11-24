@@ -402,10 +402,9 @@ impl FilterChain {
 
                 gl::UseProgram(program);
 
-                for binding in &glsl.context.sampler_bindings {
-                    let loc_name = format!("LIBRA_TEXTURE_{}\0", *binding);
+                for (name, binding) in &glsl.context.sampler_bindings {
                     let location =
-                        gl::GetUniformLocation(program, loc_name.as_str().as_ptr().cast());
+                        gl::GetUniformLocation(program, name.as_str().as_ptr().cast());
                     if location >= 0 {
                         // eprintln!("setting sampler {location} to sample from {binding}");
                         gl::Uniform1i(location, *binding as GLint);
