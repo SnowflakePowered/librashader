@@ -1,6 +1,7 @@
 use crate::framebuffer::GlImage;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, Size, WrapMode};
+use librashader_reflect::back::cross::GlVersion;
 
 pub fn calc_miplevel(size: Size<u32>) -> u32 {
     let mut size = std::cmp::max(size.width, size.height);
@@ -86,4 +87,35 @@ pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
         panic!("failed to compile")
     }
     shader
+}
+
+pub fn gl_get_version() -> GlVersion {
+    let mut maj_ver = 0;
+    let mut min_ver = 0;
+    unsafe {
+        gl::GetIntegerv(gl::MAJOR_VERSION, &mut maj_ver);
+        gl::GetIntegerv(gl::MINOR_VERSION, &mut min_ver);
+    }
+
+    match maj_ver {
+        3 => match min_ver {
+            3 => GlVersion::V3_30,
+            2 => GlVersion::V1_50,
+            1 => GlVersion::V1_40,
+            0 => GlVersion::V1_30,
+            _ => GlVersion::V1_50,
+        }
+        4 => match min_ver {
+            6 => GlVersion::V4_60,
+            5 => GlVersion::V4_50,
+            4 => GlVersion::V4_40,
+            3 => GlVersion::V4_30,
+            2 => GlVersion::V4_20,
+            1 => GlVersion::V4_10,
+            0 => GlVersion::V4_00,
+            _ => GlVersion::V1_50
+        }
+        _ => GlVersion::V1_50
+    }
+
 }

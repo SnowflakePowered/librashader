@@ -4,7 +4,7 @@ use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::util;
-use crate::util::{InlineRingBuffer, Texture};
+use crate::util::{gl_get_version, InlineRingBuffer, Texture};
 use crate::error::{FilterChainError, Result};
 
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
@@ -368,7 +368,7 @@ impl FilterChain {
         // initialize passes
         for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
-            let glsl = reflect.compile(GlVersion::V4_60)?;
+            let glsl = reflect.compile(gl_get_version())?;
 
             let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
 
