@@ -1,3 +1,4 @@
+use std::iter::Filter;
 use gl::types::{GLenum, GLint, GLuint};
 use rustc_hash::FxHashMap;
 use librashader_common::{FilterMode, WrapMode};
@@ -32,6 +33,7 @@ impl SamplerSet {
                 gl::TEXTURE_MAG_FILTER,
                 GLenum::from(filter) as GLint,
             );
+
             gl::SamplerParameteri(
                 sampler,
                 gl::TEXTURE_MIN_FILTER,
@@ -47,18 +49,24 @@ impl SamplerSet {
         for wrap_mode in wrap_modes {
             unsafe {
                 let mut linear_linear = 0;
-                let mut nearest_nearest = 0;
                 let mut linear_nearest = 0;
+
+                let mut nearest_nearest = 0;
                 let mut nearest_linear = 0;
                 gl::GenSamplers(1, &mut linear_linear);
                 gl::GenSamplers(1, &mut linear_nearest);
                 gl::GenSamplers(1, &mut nearest_linear);
                 gl::GenSamplers(1, &mut nearest_nearest);
 
-                SamplerSet::make_sampler(linear_linear, *wrap_mode, FilterMode::Linear, FilterMode::Linear);
-                SamplerSet::make_sampler(linear_nearest, *wrap_mode, FilterMode::Linear, FilterMode::Linear);
-                SamplerSet::make_sampler(nearest_linear, *wrap_mode, FilterMode::Nearest, FilterMode::Linear);
-                SamplerSet::make_sampler(nearest_linear, *wrap_mode, FilterMode::Nearest, FilterMode::Nearest);
+                SamplerSet::make_sampler(linear_linear, *wrap_mode,
+                                         FilterMode::Linear, FilterMode::Linear);
+                SamplerSet::make_sampler(linear_nearest, *wrap_mode,
+                                         FilterMode::Linear, FilterMode::Nearest);
+                SamplerSet::make_sampler(nearest_linear, *wrap_mode,
+                                         FilterMode::Nearest, FilterMode::Linear);
+                SamplerSet::make_sampler(nearest_nearest, *wrap_mode,
+                                         FilterMode::Nearest, FilterMode::Nearest);
+
 
                 samplers.insert((*wrap_mode, FilterMode::Linear, FilterMode::Linear), linear_linear);
                 samplers.insert((*wrap_mode, FilterMode::Linear, FilterMode::Nearest), linear_nearest);

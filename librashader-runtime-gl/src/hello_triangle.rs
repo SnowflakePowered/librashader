@@ -12,7 +12,7 @@ use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
-const TITLE: &str = "Hello From OpenGL World!";
+const TITLE: &str = "librashader OpenGL";
 
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
     let vertex_shader = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };

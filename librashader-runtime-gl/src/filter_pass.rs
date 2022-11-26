@@ -95,7 +95,7 @@ impl FilterPass {
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
 
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
-            gl::BindSampler(gl::TEXTURE0 + binding.binding,
+            gl::BindSampler(binding.binding,
                             samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
             // gl::TexParameteri(
             //     gl::TEXTURE_2D,
