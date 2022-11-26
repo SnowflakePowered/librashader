@@ -113,7 +113,8 @@ impl OwnedTexture {
                 SysMemSlicePitch: 0
             }))?;
 
-            // todo: do format conversion (leverage image crate..? is this necessary tbh)...
+            // todo: do format conversion (leverage image crate..?
+            // is this necessary with CopySubresourceRegion)...
 
             context.CopySubresourceRegion(&handle, 0, 0, 0, 0,
             &staging, 0, Some(&D3D11_BOX {

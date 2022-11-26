@@ -1,7 +1,7 @@
 #[cfg(feature = "opengl")]
 pub mod gl;
-#[cfg(feature = "dxgi")]
-pub mod dx;
+#[cfg(feature = "d3d11")]
+pub mod d3d11;
 
 pub mod image;
 pub mod runtime;
@@ -12,7 +12,7 @@ use std::str::FromStr;
 use num_traits::AsPrimitive;
 
 #[repr(u32)]
-#[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ShaderFormat {
     #[default]
     Unknown = 0,
@@ -57,7 +57,7 @@ pub enum ShaderFormat {
 }
 
 #[repr(i32)]
-#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
 pub enum FilterMode {
     #[default]
     Linear = 0,
@@ -80,7 +80,7 @@ impl FromStr for WrapMode {
 }
 
 #[repr(i32)]
-#[derive(Copy, Clone, Default, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
 pub enum WrapMode {
     #[default]
     ClampToBorder = 0,

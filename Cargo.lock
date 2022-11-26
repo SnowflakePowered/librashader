@@ -427,6 +427,7 @@ dependencies = [
  "gl",
  "image",
  "num-traits",
+ "windows",
 ]
 
 [[package]]

@@ -22,6 +22,7 @@ mod filter_pass;
 mod hello_triangle;
 mod texture;
 mod util;
+mod samplers;
 
 #[cfg(test)]
 mod tests {
