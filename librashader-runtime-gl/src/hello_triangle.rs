@@ -523,7 +523,6 @@ void main()
         unsafe {
             // texture is done now.
             // draw quad to screen
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::UseProgram(quad_programid);
 
             gl::ActiveTexture(gl::TEXTURE0);

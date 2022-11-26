@@ -190,7 +190,6 @@ impl FilterPass {
         // todo: final pass?
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
             gl::Clear(gl::COLOR_BUFFER_BIT);

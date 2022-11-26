@@ -593,6 +593,9 @@ impl FilterChain {
         Ok(())
     }
 
+    /// Process a frame with the input image.
+    ///
+    /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
     pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, clear: bool) -> Result<()> {
         if clear {
             for framebuffer in &self.history_framebuffers {
@@ -605,7 +608,8 @@ impl FilterChain {
         }
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            // do not need to rebind FBO 0 here since first `draw` will
+            // bind automatically.
             gl::BindVertexArray(self.filter_vao);
         }
 
@@ -719,8 +723,9 @@ impl FilterChain {
         }
 
         self.push_history(input)?;
+
+        // pass.draw should return framebuffer bound to 0.
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BindVertexArray(0);
         }
 
