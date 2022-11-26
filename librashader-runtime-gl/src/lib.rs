@@ -10,6 +10,8 @@ mod render_target;
 mod util;
 pub mod error;
 
+mod samplers;
+
 pub use filter_chain::FilterChain;
 pub use framebuffer::Framebuffer;
 pub use framebuffer::GlImage;

@@ -22,6 +22,7 @@ use std::collections::VecDeque;
 use std::path::Path;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
+use crate::samplers::SamplerSet;
 
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
@@ -36,6 +37,7 @@ pub struct FilterCommon {
     // semantics: ReflectSemantics,
     pub(crate) preset: ShaderPreset,
     pub(crate) luts: FxHashMap<usize, Texture>,
+    pub(crate) samplers: SamplerSet,
     pub output_textures: Box<[Texture]>,
     pub feedback_textures: Box<[Texture]>,
     pub history_textures: Box<[Texture]>,
@@ -142,6 +144,8 @@ impl FilterChain {
             .map(|f| f.config.wrap_mode)
             .unwrap_or_default();
 
+        let samplers = SamplerSet::new();
+
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
@@ -155,7 +159,7 @@ impl FilterChain {
         feedback_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
-        let luts = FilterChain::load_luts(&preset.textures)?;
+        let luts = FilterChain::load_luts(&samplers, &preset.textures)?;
 
         let (history_framebuffers, history_textures) =
             FilterChain::init_history(&filters, default_filter, default_wrap);
@@ -179,6 +183,7 @@ impl FilterChain {
                 // semantics,
                 preset,
                 luts,
+                samplers,
                 output_textures: output_textures.into_boxed_slice(),
                 feedback_textures: feedback_textures.into_boxed_slice(),
                 history_textures,
@@ -260,7 +265,7 @@ impl FilterChain {
         Ok((passes, semantics))
     }
 
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
+    fn load_luts(samplers: &SamplerSet, textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
         let mut luts = FxHashMap::default();
 
         for (index, texture) in textures.iter().enumerate() {
@@ -299,7 +304,7 @@ impl FilterChain {
                 );
 
                 let mipmap = levels > 1;
-                let linear = texture.filter_mode == FilterMode::Linear;
+                // let linear = texture.filter_mode == FilterMode::Linear;
 
                 // set mipmaps and wrapping
 
@@ -307,36 +312,36 @@ impl FilterChain {
                     gl::GenerateMipmap(gl::TEXTURE_2D);
                 }
 
-                gl::TexParameteri(
-                    gl::TEXTURE_2D,
-                    gl::TEXTURE_WRAP_S,
-                    GLenum::from(texture.wrap_mode) as GLint,
-                );
-                gl::TexParameteri(
-                    gl::TEXTURE_2D,
-                    gl::TEXTURE_WRAP_T,
-                    GLenum::from(texture.wrap_mode) as GLint,
-                );
-
-                if !linear {
-                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-                } else {
-                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
-                    if mipmap {
-                        gl::TexParameteri(
-                            gl::TEXTURE_2D,
-                            gl::TEXTURE_MIN_FILTER,
-                            gl::LINEAR_MIPMAP_LINEAR as GLint,
-                        );
-                    } else {
-                        gl::TexParameteri(
-                            gl::TEXTURE_2D,
-                            gl::TEXTURE_MIN_FILTER,
-                            gl::LINEAR as GLint,
-                        );
-                    }
-                }
+                // gl::TexParameteri(
+                //     gl::TEXTURE_2D,
+                //     gl::TEXTURE_WRAP_S,
+                //     GLenum::from(texture.wrap_mode) as GLint,
+                // );
+                // gl::TexParameteri(
+                //     gl::TEXTURE_2D,
+                //     gl::TEXTURE_WRAP_T,
+                //     GLenum::from(texture.wrap_mode) as GLint,
+                // );
+                //
+                // if !linear {
+                //     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+                //     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+                // } else {
+                //     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+                //     if mipmap {
+                //         gl::TexParameteri(
+                //             gl::TEXTURE_2D,
+                //             gl::TEXTURE_MIN_FILTER,
+                //             gl::LINEAR_MIPMAP_LINEAR as GLint,
+                //         );
+                //     } else {
+                //         gl::TexParameteri(
+                //             gl::TEXTURE_2D,
+                //             gl::TEXTURE_MIN_FILTER,
+                //             gl::LINEAR as GLint,
+                //         );
+                //     }
+                // }
 
                 gl::BindTexture(gl::TEXTURE_2D, 0);
             }

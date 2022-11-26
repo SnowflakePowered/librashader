@@ -13,6 +13,7 @@ use crate::binding::{UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
 use crate::render_target::RenderTarget;
+use crate::samplers::SamplerSet;
 use crate::util::{InlineRingBuffer, RingBuffer, Texture};
 
 pub struct FilterPass {
@@ -88,32 +89,34 @@ impl FilterPass {
         Self::build_uniform(location, buffer, value, gl::Uniform1f)
     }
 
-    fn bind_texture(binding: &TextureBinding, texture: &Texture) {
+    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
-            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
 
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MAG_FILTER,
-                GLenum::from(texture.filter) as GLint,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MIN_FILTER,
-                texture.filter.gl_mip(texture.mip_filter) as GLint,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_S,
-                GLenum::from(texture.wrap_mode) as GLint,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_T,
-                GLenum::from(texture.wrap_mode) as GLint,
-            );
+            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
+            gl::BindSampler(gl::TEXTURE0 + binding.binding,
+                            samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
+            // gl::TexParameteri(
+            //     gl::TEXTURE_2D,
+            //     gl::TEXTURE_MAG_FILTER,
+            //     GLenum::from(texture.filter) as GLint,
+            // );
+            // gl::TexParameteri(
+            //     gl::TEXTURE_2D,
+            //     gl::TEXTURE_MIN_FILTER,
+            //     texture.filter.gl_mip(texture.mip_filter) as GLint,
+            // );
+            // gl::TexParameteri(
+            //     gl::TEXTURE_2D,
+            //     gl::TEXTURE_WRAP_S,
+            //     GLenum::from(texture.wrap_mode) as GLint,
+            // );
+            // gl::TexParameteri(
+            //     gl::TEXTURE_2D,
+            //     gl::TEXTURE_WRAP_T,
+            //     GLenum::from(texture.wrap_mode) as GLint,
+            // );
         }
     }
 
@@ -335,7 +338,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            FilterPass::bind_texture(binding, original);
+            FilterPass::bind_texture(&parent.samplers, binding, original);
         }
 
         // bind OriginalSize
@@ -362,7 +365,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(binding, source);
+            FilterPass::bind_texture(&parent.samplers, binding, source);
         }
 
         // bind SourceSize
@@ -387,7 +390,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::OriginalHistory.semantics(0))
         {
-            FilterPass::bind_texture(binding, original);
+            FilterPass::bind_texture(&parent.samplers, binding, original);
         }
         if let Some((location, offset)) = self
             .uniform_bindings
@@ -411,7 +414,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
             {
-                FilterPass::bind_texture(binding, output);
+                FilterPass::bind_texture(&parent.samplers, binding, output);
             }
 
             if let Some((location, offset)) = self.uniform_bindings.get(
@@ -439,7 +442,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                FilterPass::bind_texture(binding, output);
+                FilterPass::bind_texture(&parent.samplers, binding, output);
             }
 
             if let Some((location, offset)) = self
@@ -469,7 +472,7 @@ impl FilterPass {
                 if feedback.image.handle == 0 {
                     eprintln!("[WARNING] trying to bind PassFeedback: {index} which has texture 0 to slot {} in pass {pass_index}", binding.binding)
                 }
-                FilterPass::bind_texture(binding, feedback);
+                FilterPass::bind_texture(&parent.samplers, binding, feedback);
             }
 
             if let Some((location, offset)) = self
@@ -532,7 +535,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::User.semantics(*index))
             {
-                FilterPass::bind_texture(binding, lut);
+                FilterPass::bind_texture(&parent.samplers, binding, lut);
             }
 
             if let Some((location, offset)) = self
