@@ -1,64 +1,105 @@
-use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, ID3D11Device, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11Texture2D};
-use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use librashader_common::{FilterMode, Size, WrapMode};
 
-#[derive(Debug, Clone)]
-pub struct Texture {
-    pub handle: ID3D11Texture2D,
-    pub staging: ID3D11Texture2D,
-    pub srv: ID3D11ShaderResourceView,
-    pub sampler: ID3D11SamplerState,
-    pub desc: D3D11_TEXTURE2D_DESC,
-    pub size: Size<u32>
-    // pub image: GlImage,
-    // pub filter: FilterMode,
-    // pub mip_filter: FilterMode,
-    // pub wrap_mode: WrapMode,
-}
+use windows::Win32::Graphics::Direct3D11::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use std::error::Error;
 
-impl Texture {
-    pub fn new(device: &ID3D11Device, size: Size<u32>, desc: D3D11_TEXTURE2D_DESC) -> Texture {
-        let mut desc = D3D11_TEXTURE2D_DESC {
-            Width: size.width,
-            Height: size.height,
-            MipLevels: 1,
-            ArraySize: 1,
-            SampleDesc: DXGI_SAMPLE_DESC {
-                Count: 1,
-                Quality: 0
-            },
-            CPUAccessFlags: if desc.Usage == D3D11_USAGE_DYNAMIC {
-                D3D11_CPU_ACCESS_WRITE
-            } else {
-                0
-            },
-            ..desc
-        };
-        desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+/// wtf retroarch?
+const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
 
-        // determine number of mipmaps required
-        if desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS {
-            let mut width = desc.Width >> 5;
-            let mut height = desc.Height >> 5;
-            desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-
-            while width != 0 && height != 0 {
-                width  >>= 1;
-                height >>= 1;
-                desc.MipLevels += 1;
-            }
-        }
-
-        // determine if format is supported.
-        let mut format_support = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
-        if desc.BindFlags |= D3D11_BIND_RENDER_TARGET {
-            format_support |= D3D11_FORMAT_SUPPORT_RENDER_TARGET;
-        }
-
-        // todo: actually check format support
-
-        // d3d11_common: 83
-        todo!();
-
+const fn d3d11_format_fallback_list(format: DXGI_FORMAT) -> Option<&'static [DXGI_FORMAT]> {
+    match format {
+        DXGI_FORMAT_R32G32B32A32_FLOAT => Some(&[
+            DXGI_FORMAT_R32G32B32A32_FLOAT,
+            DXGI_FORMAT_R16G16B16A16_FLOAT,
+            DXGI_FORMAT_R32G32B32_FLOAT,
+            DXGI_FORMAT_R11G11B10_FLOAT,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_R16G16B16A16_FLOAT => Some(&[
+            DXGI_FORMAT_R16G16B16A16_FLOAT,
+            DXGI_FORMAT_R32G32B32A32_FLOAT,
+            DXGI_FORMAT_R32G32B32_FLOAT,
+            DXGI_FORMAT_R11G11B10_FLOAT,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_R8G8B8A8_UNORM => Some(&[
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_B8G8R8X8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_R8G8B8A8_UNORM_SRGB => Some(&[
+            DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_B8G8R8X8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_B8G8R8A8_UNORM => Some(&[
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_B8G8R8X8_UNORM => Some(&[
+            DXGI_FORMAT_B8G8R8X8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_B5G6R5_UNORM => Some(&[
+            DXGI_FORMAT_B5G6R5_UNORM,
+            DXGI_FORMAT_B8G8R8X8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_EX_A4R4G4B4_UNORM | DXGI_FORMAT_B4G4R4A4_UNORM => Some(&[
+            DXGI_FORMAT_B4G4R4A4_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_A8_UNORM => Some(&[
+            DXGI_FORMAT_A8_UNORM,
+            DXGI_FORMAT_R8_UNORM,
+            DXGI_FORMAT_R8G8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        DXGI_FORMAT_R8_UNORM => Some(&[
+            DXGI_FORMAT_R8_UNORM,
+            DXGI_FORMAT_A8_UNORM,
+            DXGI_FORMAT_R8G8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_UNKNOWN,
+        ]),
+        _ => None,
     }
 }
+
+pub fn d3d11_get_closest_format(
+    device: &ID3D11Device,
+    format: DXGI_FORMAT,
+    format_support_mask: i32,
+) -> DXGI_FORMAT {
+    let default_list = [format, DXGI_FORMAT_UNKNOWN];
+    let format_support_list = d3d11_format_fallback_list(format)
+        .unwrap_or(&default_list);
+    let format_support_mask = format_support_mask as u32;
+
+    for supported in format_support_list {
+        unsafe {
+            if let Ok(supported_format) = device.CheckFormatSupport(*supported)
+                && (supported_format & format_support_mask) == format_support_mask {
+                return *supported;
+            }
+        }
+    }
+    return DXGI_FORMAT_UNKNOWN;
+}
+
+// todo: d3d11.c 2097
+pub type Result<T> = std::result::Result<T, Box<dyn Error>>;

@@ -147,7 +147,8 @@ impl Framebuffer {
         }
     }
 
-    pub(crate) fn copy_from(&mut self, image: &GlImage) -> Result<()>{
+    pub(crate) fn copy_from(&mut self, image: &GlImage) -> Result<()> {
+        // todo: may want to use a shader and draw a quad to be faster.
         if image.size != self.size || image.format != self.format {
             self.init(image.size, image.format)?;
         }

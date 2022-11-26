@@ -2,7 +2,8 @@ use std::path::Path;
 
 pub struct Image {
     pub bytes: Vec<u8>,
-    pub size: Size<u32>
+    pub size: Size<u32>,
+    pub pitch: usize,
 }
 
 impl Image {
@@ -11,9 +12,13 @@ impl Image {
 
         let height = image.height();
         let width = image.width();
+        let pitch = image.sample_layout().height_stride.max(
+            image.sample_layout().width_stride
+        );
 
         Ok(Image {
-            bytes: image.to_vec(),
+            bytes: image.into_raw(),
+            pitch,
             size: Size {
                 height,
                 width,
