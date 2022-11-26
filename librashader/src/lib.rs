@@ -45,13 +45,8 @@ pub mod targets {
         pub mod runtime {
 
             /// Shader runtime for DirectX 11.
-            pub mod dx11 {
-                pub use librashader_runtime_dx11::*;
-            }
-
-            /// Shader runtime for DirectX 12.
-            pub mod dx12 {
-                pub use librashader_runtime_dx11::*;
+            pub mod d3d11 {
+                pub use librashader_runtime_d3d11::*;
             }
         }
     }

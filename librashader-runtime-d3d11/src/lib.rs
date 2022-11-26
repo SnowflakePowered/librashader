@@ -30,7 +30,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn triangle_dx11() {
+    fn triangle_d3d11() {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new().unwrap();
         let device = sample.device.clone();
         let chain = filter_chain::FilterChain::load_from_path(&device, "../test/slang-shaders/crt/crt-royale.slangp").unwrap();

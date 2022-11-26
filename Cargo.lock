@@ -416,7 +416,7 @@ dependencies = [
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
- "librashader-runtime-dx11",
+ "librashader-runtime-d3d11",
  "librashader-runtime-gl",
 ]
 
@@ -467,7 +467,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "librashader-runtime-dx11"
+name = "librashader-runtime-d3d11"
 version = "0.1.0"
 dependencies = [
  "bytemuck",

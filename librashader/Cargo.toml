@@ -9,7 +9,7 @@ librashader-common = { path = "../librashader-common" }
 librashader-presets = { path = "../librashader-presets" }
 librashader-preprocess = { path = "../librashader-preprocess" }
 librashader-reflect = { path = "../librashader-reflect" }
-librashader-runtime-dx11  = { path = "../librashader-runtime-dx11" }
+librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11" }
 librashader-runtime-gl = { path = "../librashader-runtime-gl" }
 
 

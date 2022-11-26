@@ -13,14 +13,14 @@ librashader supports OpenGL 3, Vulkan, DirectX 11, and DirectX 12. Support is WI
 of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
 
 | **API**    | **Status** | **`librashader` feature** |
-|------------|------------|---------------------------|
-| OpenGL 3   | ✔          | `gl`                      |
-| Vulkan     | 🚧         | `vk`                      |
-| DirectX 11 | 🚧         | `dx11`                    |
-| DirectX 12 | 🚧         | `dx12`                    |
-| OpenGL 2   | ❌          |                           |
-| DirectX 9  | ❌          |                           |
-| Metal      | ❌          |                           |
+|------------|------------|--------------------------|
+| OpenGL 3+  | ✔          | `gl`                     |
+| Vulkan     | 🚧         | `vk`                     |
+| Direct3D11 | 🚧         | `d3d11`                  |
+| Direct3D12 | 🚧         | `d3d12`                  |
+| OpenGL 2   | ❌          |                          |
+| DirectX 9  | ❌          |                          |
+| Metal      | ❌          |                          |
 
 ## Usage
 

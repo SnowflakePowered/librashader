@@ -5,6 +5,6 @@ members = [
     "librashader-presets",
     "librashader-preprocess",
     "librashader-reflect",
-    "librashader-runtime-dx11",
+    "librashader-runtime-d3d11",
     "librashader-runtime-gl",
 ]
