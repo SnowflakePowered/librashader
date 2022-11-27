@@ -142,12 +142,15 @@ impl BindingStage {
 #[derive(Debug)]
 pub struct UboReflection {
     pub binding: u32,
+    /// Get this size of this UBO buffer.
+    /// The size returned by reflection is always aligned to a 16 byte boundary.
     pub size: u32,
     pub stage_mask: BindingStage,
 }
 
 #[derive(Debug)]
 pub struct PushReflection {
+    /// The size returned by reflection is always aligned to a 16 byte boundary.
     pub size: u32,
     pub stage_mask: BindingStage,
 }

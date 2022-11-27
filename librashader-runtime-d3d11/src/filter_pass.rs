@@ -12,15 +12,30 @@ use librashader_reflect::reflect::semantics::{
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 use std::error::Error;
+use windows::core::ConstBuffer;
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::{ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD, ID3D11InputLayout};
 
-pub struct ConstantBuffer {
+pub struct ConstantBufferBinding {
     pub binding: u32,
     pub size: u32,
     pub stage_mask: BindingStage,
     pub buffer: ID3D11Buffer,
+}
+
+pub struct ConstantBuffer {
+    pub binding: Option<ConstantBufferBinding>,
     pub storage: Box<[u8]>,
+}
+
+impl ConstantBuffer {
+    pub fn new(binding: Option<ConstantBufferBinding>) -> Self {
+        let storage = vec![0u8; binding.as_ref().map(|c| c.size as usize).unwrap_or(0)].into_boxed_slice();
+        Self {
+            binding,
+            storage
+        }
+    }
 }
 
 // slang_process.cpp 141
@@ -33,8 +48,8 @@ pub struct FilterPass {
 
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
 
-    pub uniform_buffer: Option<ConstantBuffer>,
-    pub push_buffer: Option<ConstantBuffer>,
+    pub uniform_buffer: ConstantBuffer,
+    pub push_buffer: ConstantBuffer,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }

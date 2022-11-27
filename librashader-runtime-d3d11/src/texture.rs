@@ -70,14 +70,9 @@ impl OwnedTexture {
             format_support |= D3D11_FORMAT_SUPPORT_RENDER_TARGET.0;
         }
 
-        eprintln!("s {:?}, p {:?}, l {:?}", source.size, source.pitch, source.bytes.len());
-        eprintln!("{:#?}", desc);
+        // eprintln!("s {:?}, p {:?}, l {:?}", source.size, source.pitch, source.bytes.len());
+        // eprintln!("{:#?}", desc);
 
-        // let data = Some(&D3D11_SUBRESOURCE_DATA {
-        //     pSysMem: source.bytes.as_ptr().cast(),
-        //     SysMemPitch: source.pitch as u32,
-        //     SysMemSlicePitch: 0
-        // });
         unsafe {
             let handle = device.CreateTexture2D(&desc, None).unwrap();
 

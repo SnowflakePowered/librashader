@@ -17,7 +17,7 @@ use windows::core::PCSTR;
 use windows::s;
 use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
-use crate::filter_pass::{ConstantBuffer, FilterPass};
+use crate::filter_pass::{ConstantBuffer, ConstantBufferBinding, FilterPass};
 use crate::samplers::SamplerSet;
 use crate::util;
 use crate::util::d3d11_compile_bound_shader;
@@ -40,6 +40,7 @@ struct D3D11VertexLayout {
 
 pub struct FilterChain {
     pub common: FilterCommon,
+    pub passes: Vec<FilterPass>,
 }
 
 pub struct Direct3D11 {
@@ -104,7 +105,7 @@ impl FilterChain {
     }
 
     fn create_constant_buffer(device: &ID3D11Device, size: u32) -> util::Result<ID3D11Buffer> {
-
+        eprintln!("{size}");
         unsafe {
            let buffer = device.CreateBuffer(&D3D11_BUFFER_DESC {
                 ByteWidth: size,
@@ -123,7 +124,7 @@ impl FilterChain {
         device: &ID3D11Device,
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
-    ) -> util::Result<()>
+    ) -> util::Result<Vec<FilterPass>>
     {
         // let mut filters = Vec::new();
         let mut filters = Vec::new();
@@ -172,28 +173,24 @@ impl FilterChain {
 
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
-                let size = (ubo.size + 0xf) & !0xf;
-                let buffer = FilterChain::create_constant_buffer(device, size)?;
-                Some(ConstantBuffer {
+                let buffer = FilterChain::create_constant_buffer(device, ubo.size)?;
+                Some(ConstantBufferBinding {
                     binding: ubo.binding,
                     size: ubo.size,
                     stage_mask: ubo.stage_mask,
                     buffer,
-                    storage: vec![0u8; size as usize].into_boxed_slice(),
                 })
             } else {
                 None
             };
 
             let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
-                let size = (push.size + 0xf) & !0xf;
-                let buffer = FilterChain::create_constant_buffer(device, size)?;
-                Some(ConstantBuffer {
+                let buffer = FilterChain::create_constant_buffer(device, push.size)?;
+                Some(ConstantBufferBinding {
                     binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
                     size: push.size,
                     stage_mask: push.stage_mask,
                     buffer,
-                    storage: vec![0u8; size as usize].into_boxed_slice(),
                 })
             } else {
                 None
@@ -228,14 +225,14 @@ impl FilterChain {
                 vertex_layout: vertex_ia,
                 pixel_shader: ps,
                 uniform_bindings,
-                uniform_buffer: ubo_cbuffer,
-                push_buffer: push_cbuffer,
+                uniform_buffer: ConstantBuffer::new(ubo_cbuffer),
+                push_buffer: ConstantBuffer::new(push_cbuffer),
                 source,
                 config: config.clone(),
             })
 
         }
-        Ok(())
+        Ok(filters)
     }
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(device: &ID3D11Device, preset: ShaderPreset) -> util::Result<FilterChain> {
@@ -244,7 +241,7 @@ impl FilterChain {
         let samplers = SamplerSet::new(device)?;
 
         // initialize passes
-        let filters = FilterChain::init_passes(device, passes, &semantics)?;
+        let filters = FilterChain::init_passes(device, passes, &semantics).unwrap();
 
         // let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         // let default_wrap = filters
@@ -271,7 +268,7 @@ impl FilterChain {
         //     FilterChain::init_history(&filters, default_filter, default_wrap);
 
         Ok(FilterChain {
-            // passes: filters,
+            passes: filters,
             // output_framebuffers: output_framebuffers.into_boxed_slice(),
             // feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             // history_framebuffers,
@@ -285,7 +282,6 @@ impl FilterChain {
                 // we don't need the reflect semantics once all locations have been bound per pass.
                 // semantics,
                 preset,
-                // luts,
                 // output_textures: output_textures.into_boxed_slice(),
                 // feedback_textures: feedback_textures.into_boxed_slice(),
                 // history_textures,

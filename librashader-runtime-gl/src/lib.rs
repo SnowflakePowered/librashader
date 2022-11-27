@@ -29,7 +29,7 @@ mod tests {
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
         let mut filter =
-            FilterChain::load_from_path("../test/slang-shaders/vhs/VHSPro.slangp")
+            FilterChain::load_from_path("../test/slang-shaders/crt/crt-royale.slangp")
                 .unwrap();
         hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }
