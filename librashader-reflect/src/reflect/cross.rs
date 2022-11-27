@@ -1,9 +1,7 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
 use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics};
-use crate::reflect::{
-    ReflectMeta, ReflectShader,
-};
+use crate::reflect::{align_uniform_size, ReflectMeta, ReflectShader};
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
@@ -447,7 +445,7 @@ where
                 let size = std::cmp::max(vertex_ubo.size, fragment_ubo.size);
                 Ok(Some(UboReflection {
                     binding: vertex_ubo.binding,
-                    size,
+                    size: align_uniform_size(size),
                     stage_mask: BindingStage::VERTEX | BindingStage::FRAGMENT,
                 }))
             }
@@ -456,7 +454,7 @@ where
                     Self::get_ubo_data(&self.vertex, vertex_ubo, SemanticErrorBlame::Vertex)?;
                 Ok(Some(UboReflection {
                     binding: vertex_ubo.binding,
-                    size: vertex_ubo.size,
+                    size: align_uniform_size(vertex_ubo.size),
                     stage_mask: BindingStage::VERTEX,
                 }))
             }
@@ -465,7 +463,7 @@ where
                     Self::get_ubo_data(&self.fragment, fragment_ubo, SemanticErrorBlame::Fragment)?;
                 Ok(Some(UboReflection {
                     binding: fragment_ubo.binding,
-                    size: fragment_ubo.size,
+                    size:  align_uniform_size(fragment_ubo.size),
                     stage_mask: BindingStage::FRAGMENT,
                 }))
             }
@@ -556,7 +554,7 @@ where
                 let size = std::cmp::max(vertex_size, fragment_size);
 
                 Ok(Some(PushReflection {
-                    size,
+                    size: align_uniform_size(size),
                     stage_mask: BindingStage::VERTEX | BindingStage::FRAGMENT,
                 }))
             }
@@ -564,7 +562,7 @@ where
                 let vertex_size =
                     Self::get_push_size(&self.vertex, vertex_push, SemanticErrorBlame::Vertex)?;
                 Ok(Some(PushReflection {
-                    size: vertex_size,
+                    size: align_uniform_size(vertex_size),
                     stage_mask: BindingStage::VERTEX,
                 }))
             }
@@ -575,7 +573,7 @@ where
                     SemanticErrorBlame::Fragment,
                 )?;
                 Ok(Some(PushReflection {
-                    size: fragment_size,
+                    size: align_uniform_size(fragment_size),
                     stage_mask: BindingStage::FRAGMENT,
                 }))
             }

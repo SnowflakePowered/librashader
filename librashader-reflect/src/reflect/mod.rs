@@ -31,3 +31,9 @@ pub struct ReflectMeta {
 }
 
 pub use semantics::ShaderReflection;
+
+#[inline(always)]
+/// Give a size aligned to 16 byte boundary
+const fn align_uniform_size(size: u32) -> u32 {
+    (size + 0xf) & !0xf
+}
