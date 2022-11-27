@@ -4,7 +4,7 @@ use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::util;
-use crate::util::{gl_get_version, InlineRingBuffer, Texture};
+use crate::util::{gl_get_version, InlineRingBuffer};
 use crate::error::{FilterChainError, Result};
 
 use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
@@ -23,6 +23,7 @@ use std::path::Path;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use crate::samplers::SamplerSet;
+use crate::texture::Texture;
 
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
@@ -658,7 +659,7 @@ impl FilterChain {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(target, None),
+                RenderTarget::new(target, None, 0, 0),
             );
 
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
@@ -683,7 +684,7 @@ impl FilterChain {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(viewport.output, viewport.mvp),
+                RenderTarget::new(viewport.output, viewport.mvp, viewport.x, viewport.y),
             );
         }
 

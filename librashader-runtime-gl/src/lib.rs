@@ -19,6 +19,7 @@ pub use framebuffer::Viewport;
 
 #[cfg(test)]
 mod hello_triangle;
+mod texture;
 
 #[cfg(test)]
 mod tests {

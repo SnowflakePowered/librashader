@@ -1,5 +1,5 @@
 use crate::util;
-use crate::util::Texture;
+use crate::texture::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{FilterMode, ShaderFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};

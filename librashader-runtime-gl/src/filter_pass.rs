@@ -14,7 +14,8 @@ use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
-use crate::util::{InlineRingBuffer, RingBuffer, Texture};
+use crate::texture::Texture;
+use crate::util::{InlineRingBuffer, RingBuffer};
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,
@@ -97,26 +98,6 @@ impl FilterPass {
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
             gl::BindSampler(binding.binding,
                             samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
-            // gl::TexParameteri(
-            //     gl::TEXTURE_2D,
-            //     gl::TEXTURE_MAG_FILTER,
-            //     GLenum::from(texture.filter) as GLint,
-            // );
-            // gl::TexParameteri(
-            //     gl::TEXTURE_2D,
-            //     gl::TEXTURE_MIN_FILTER,
-            //     texture.filter.gl_mip(texture.mip_filter) as GLint,
-            // );
-            // gl::TexParameteri(
-            //     gl::TEXTURE_2D,
-            //     gl::TEXTURE_WRAP_S,
-            //     GLenum::from(texture.wrap_mode) as GLint,
-            // );
-            // gl::TexParameteri(
-            //     gl::TEXTURE_2D,
-            //     gl::TEXTURE_WRAP_T,
-            //     GLenum::from(texture.wrap_mode) as GLint,
-            // );
         }
     }
 
@@ -190,16 +171,14 @@ impl FilterPass {
             }
         }
 
-        // todo: final pass?
-
         unsafe {
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
             gl::Clear(gl::COLOR_BUFFER_BIT);
             //
             gl::Viewport(
-                0,
-                0,
+                output.x,
+                output.y,
                 framebuffer.size.width as GLsizei,
                 framebuffer.size.height as GLsizei,
             );

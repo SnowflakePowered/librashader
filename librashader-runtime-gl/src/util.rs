@@ -14,14 +14,6 @@ pub fn calc_miplevel(size: Size<u32>) -> u32 {
     levels
 }
 
-#[derive(Default, Debug, Copy, Clone)]
-pub struct Texture {
-    pub image: GlImage,
-    pub filter: FilterMode,
-    pub mip_filter: FilterMode,
-    pub wrap_mode: WrapMode,
-}
-
 pub trait RingBuffer<T> {
     fn current(&self) -> &T;
     fn current_mut(&mut self) -> &mut T;
