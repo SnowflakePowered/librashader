@@ -7,6 +7,10 @@ pub struct SamplerSet {
 }
 
 impl SamplerSet {
+    pub fn get(&self, wrap: WrapMode, filter: FilterMode) -> &ID3D11SamplerState {
+        self.samplers.get(&(wrap, filter))
+            .unwrap()
+    }
     pub fn new(device: &ID3D11Device) -> Result<SamplerSet> {
         let mut samplers = FxHashMap::default();
         let wrap_modes =

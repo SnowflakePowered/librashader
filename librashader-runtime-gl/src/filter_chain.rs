@@ -312,37 +312,6 @@ impl FilterChain {
                     gl::GenerateMipmap(gl::TEXTURE_2D);
                 }
 
-                // gl::TexParameteri(
-                //     gl::TEXTURE_2D,
-                //     gl::TEXTURE_WRAP_S,
-                //     GLenum::from(texture.wrap_mode) as GLint,
-                // );
-                // gl::TexParameteri(
-                //     gl::TEXTURE_2D,
-                //     gl::TEXTURE_WRAP_T,
-                //     GLenum::from(texture.wrap_mode) as GLint,
-                // );
-                //
-                // if !linear {
-                //     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-                //     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-                // } else {
-                //     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
-                //     if mipmap {
-                //         gl::TexParameteri(
-                //             gl::TEXTURE_2D,
-                //             gl::TEXTURE_MIN_FILTER,
-                //             gl::LINEAR_MIPMAP_LINEAR as GLint,
-                //         );
-                //     } else {
-                //         gl::TexParameteri(
-                //             gl::TEXTURE_2D,
-                //             gl::TEXTURE_MIN_FILTER,
-                //             gl::LINEAR as GLint,
-                //         );
-                //     }
-                // }
-
                 gl::BindTexture(gl::TEXTURE_2D, 0);
             }
 

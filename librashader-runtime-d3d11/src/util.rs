@@ -3,6 +3,10 @@ use librashader_common::{FilterMode, Size, WrapMode};
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use std::error::Error;
+use std::slice;
+use windows::core::PCSTR;
+use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION};
+use windows::Win32::Graphics::Direct3D::ID3DBlob;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -99,6 +103,64 @@ pub fn d3d11_get_closest_format(
         }
     }
     return DXGI_FORMAT_UNKNOWN;
+}
+
+pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> Result<ID3DBlob> {
+    unsafe {
+        let mut blob = None;
+        D3DCompile(
+            source.as_ptr().cast(),
+            source.len(),
+            None,
+            None,
+            None,
+            PCSTR(entry.as_ptr()),
+            PCSTR(version.as_ptr()),
+            if cfg!(debug_assertions) {
+                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+            } else {
+                0
+            },
+            0,
+            &mut blob,
+            None,
+        )?;
+
+        Ok(blob.unwrap())
+    }
+}
+
+pub type ShaderFactory<'a, L, T>
+= unsafe fn (&'a ID3D11Device, &[u8], linkage: L) -> windows::core::Result<T>;
+
+pub fn d3d11_compile_bound_shader<'a, T, L>(device: &'a ID3D11Device, blob: &ID3DBlob, linkage: L, factory: ShaderFactory<'a, L, T>)
+                                            -> Result<T>
+where L: Into<windows::core::InParam<'a, ID3D11ClassLinkage>>,{
+    unsafe {
+        // SAFETY: slice as valid for as long as vs_blob is alive.
+        let dxil = slice::from_raw_parts(
+            blob.GetBufferPointer().cast::<u8>(),
+            blob.GetBufferSize(),
+        );
+
+        let compiled = factory(device, dxil, linkage)?;
+        Ok(compiled)
+    }
+}
+
+
+pub fn d3d11_create_input_layout(device: &ID3D11Device, desc: &[D3D11_INPUT_ELEMENT_DESC], blob: &ID3DBlob) -> Result<ID3D11InputLayout> {
+    unsafe {
+        // SAFETY: slice as valid for as long as vs_blob is alive.
+        let dxil = slice::from_raw_parts(
+            blob.GetBufferPointer().cast::<u8>(),
+            blob.GetBufferSize(),
+        );
+
+        let compiled =
+            device.CreateInputLayout(desc, dxil)?;
+        Ok(compiled)
+    }
 }
 
 // todo: d3d11.c 2097

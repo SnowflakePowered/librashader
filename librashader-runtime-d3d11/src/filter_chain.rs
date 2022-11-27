@@ -7,16 +7,20 @@ use librashader_reflect::back::cross::GlslangHlslContext;
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{
-    ReflectSemantics, SemanticMap, TextureSemantics, UniformSemantic, VariableSemantics,
-};
+use librashader_reflect::reflect::semantics::{ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformSemantic, VariableSemantics};
 use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
-use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_SHADER_RESOURCE, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, ID3D11Device, ID3D11DeviceContext};
-use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
+use bytemuck::offset_of;
+use windows::core::PCSTR;
+use windows::s;
+use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
+use crate::filter_pass::{ConstantBuffer, FilterPass};
+use crate::samplers::SamplerSet;
 use crate::util;
+use crate::util::d3d11_compile_bound_shader;
 
 type ShaderPassMeta<'a> = (
     &'a ShaderPassConfig,
@@ -26,18 +30,27 @@ type ShaderPassMeta<'a> = (
     >,
 );
 
+#[repr(C)]
+#[derive(Default)]
+struct D3D11VertexLayout {
+    position: [f32; 2],
+    texcoord: [f32; 2],
+    color: [f32; 4],
+}
+
 pub struct FilterChain {
-    pub luts: FxHashMap<usize, OwnedTexture>,
+    pub common: FilterCommon,
 }
 
 pub struct Direct3D11 {
-    pub(crate) device_context: ID3D11DeviceContext,
     pub(crate) device: ID3D11Device,
 }
 
 pub struct FilterCommon {
     pub(crate) d3d11: Direct3D11,
     pub(crate) preset: ShaderPreset,
+    pub(crate) luts: FxHashMap<usize, OwnedTexture>,
+    pub samplers: SamplerSet,
 }
 
 impl FilterChain {
@@ -90,12 +103,148 @@ impl FilterChain {
         );
     }
 
+    fn create_constant_buffer(device: &ID3D11Device, size: u32) -> util::Result<ID3D11Buffer> {
+
+        unsafe {
+           let buffer = device.CreateBuffer(&D3D11_BUFFER_DESC {
+                ByteWidth: size,
+                Usage: D3D11_USAGE_DYNAMIC,
+                BindFlags: D3D11_BIND_CONSTANT_BUFFER,
+                CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
+                MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
+                StructureByteStride: 0,
+            }, None)?;
+
+            Ok(buffer)
+        }
+    }
+
+    fn init_passes(
+        device: &ID3D11Device,
+        passes: Vec<ShaderPassMeta>,
+        semantics: &ReflectSemantics,
+    ) -> util::Result<()>
+    {
+        // let mut filters = Vec::new();
+        let mut filters = Vec::new();
+
+        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+            let reflection = reflect.reflect(index, semantics)?;
+            let hlsl = reflect.compile(None)?;
+
+            let vertex_dxil = util::d3d_compile_shader(
+                hlsl.vertex.as_bytes(),
+                b"main\0",
+                b"vs_5_0\0"
+            )?;
+            let vs = d3d11_compile_bound_shader(device, &vertex_dxil, None,
+                                                ID3D11Device::CreateVertexShader)?;
+
+            let ia_desc = [
+                D3D11_INPUT_ELEMENT_DESC {
+                    SemanticName: PCSTR(b"TEXCOORD\0".as_ptr()),
+                    SemanticIndex: 0,
+                    Format: DXGI_FORMAT_R32G32_FLOAT,
+                    InputSlot: 0,
+                    AlignedByteOffset: offset_of!(D3D11VertexLayout, position) as u32,
+                    InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
+                    InstanceDataStepRate: 0,
+                },
+                D3D11_INPUT_ELEMENT_DESC {
+                    SemanticName: PCSTR(b"TEXCOORD\0".as_ptr()),
+                    SemanticIndex: 1,
+                    Format: DXGI_FORMAT_R32G32_FLOAT,
+                    InputSlot: 0,
+                    AlignedByteOffset: offset_of!(D3D11VertexLayout, texcoord) as u32,
+                    InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
+                    InstanceDataStepRate: 0,
+                }
+            ];
+            let vertex_ia = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxil)?;
+
+            let fragment_dxil = util::d3d_compile_shader(
+                hlsl.fragment.as_bytes(),
+                b"main\0",
+                b"ps_5_0\0"
+            )?;
+            let ps = d3d11_compile_bound_shader(device, &fragment_dxil, None,
+                                                ID3D11Device::CreatePixelShader)?;
+
+
+            let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
+                let size = (ubo.size + 0xf) & !0xf;
+                let buffer = FilterChain::create_constant_buffer(device, size)?;
+                Some(ConstantBuffer {
+                    binding: ubo.binding,
+                    size: ubo.size,
+                    stage_mask: ubo.stage_mask,
+                    buffer,
+                    storage: vec![0u8; size as usize].into_boxed_slice(),
+                })
+            } else {
+                None
+            };
+
+            let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
+                let size = (push.size + 0xf) & !0xf;
+                let buffer = FilterChain::create_constant_buffer(device, size)?;
+                Some(ConstantBuffer {
+                    binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
+                    size: push.size,
+                    stage_mask: push.stage_mask,
+                    buffer,
+                    storage: vec![0u8; size as usize].into_boxed_slice(),
+                })
+            } else {
+                None
+            };
+
+            let mut uniform_bindings = FxHashMap::default();
+            for param in reflection.meta.parameter_meta.values() {
+                uniform_bindings.insert(
+                    UniformBinding::Parameter(param.id.clone()),
+                    param.offset,
+                );
+            }
+
+            for (semantics, param) in &reflection.meta.variable_meta {
+                uniform_bindings.insert(
+                    UniformBinding::SemanticVariable(*semantics),
+                    param.offset
+                );
+            }
+
+            for (semantics, param) in &reflection.meta.texture_size_meta {
+                uniform_bindings.insert(
+                    UniformBinding::TextureSize(*semantics),
+                    param.offset
+                );
+            }
+
+            filters.push(FilterPass {
+                reflection,
+                compiled: hlsl,
+                vertex_shader: vs,
+                vertex_layout: vertex_ia,
+                pixel_shader: ps,
+                uniform_bindings,
+                uniform_buffer: ubo_cbuffer,
+                push_buffer: push_cbuffer,
+                source,
+                config: config.clone(),
+            })
+
+        }
+        Ok(())
+    }
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(device: &ID3D11Device, preset: ShaderPreset) -> util::Result<FilterChain> {
         let (passes, semantics) = FilterChain::load_preset(&preset)?;
 
+        let samplers = SamplerSet::new(device)?;
+
         // initialize passes
-        // let filters = FilterChain::init_passes(passes, &semantics)?;
+        let filters = FilterChain::init_passes(device, passes, &semantics)?;
 
         // let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         // let default_wrap = filters
@@ -122,22 +271,26 @@ impl FilterChain {
         //     FilterChain::init_history(&filters, default_filter, default_wrap);
 
         Ok(FilterChain {
-            luts
             // passes: filters,
             // output_framebuffers: output_framebuffers.into_boxed_slice(),
             // feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             // history_framebuffers,
             // filter_vao,
-            // common: FilterCommon {
-            //     // we don't need the reflect semantics once all locations have been bound per pass.
-            //     // semantics,
-            //     preset,
-            //     luts,
-            //     output_textures: output_textures.into_boxed_slice(),
-            //     feedback_textures: feedback_textures.into_boxed_slice(),
-            //     history_textures,
-            //     draw_quad,
-            // },
+            common: FilterCommon {
+                d3d11: Direct3D11 {
+                    device: device.clone(),
+                },
+                luts,
+                samplers,
+                // we don't need the reflect semantics once all locations have been bound per pass.
+                // semantics,
+                preset,
+                // luts,
+                // output_textures: output_textures.into_boxed_slice(),
+                // feedback_textures: feedback_textures.into_boxed_slice(),
+                // history_textures,
+                // draw_quad,
+            },
         })
     }
 

@@ -62,7 +62,6 @@ pub enum FilterMode {
     #[default]
     Linear = 0,
     Nearest,
-    Unspecified,
 }
 
 impl FromStr for WrapMode {

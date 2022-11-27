@@ -11,6 +11,7 @@ pub struct SamplerSet {
 
 impl SamplerSet {
     pub fn get(&self, wrap: WrapMode, filter: FilterMode, mip: FilterMode) -> GLuint {
+
         // eprintln!("{wrap}, {filter}, {mip}");
         *self.samplers.get(&(wrap, filter, mip))
             .unwrap()

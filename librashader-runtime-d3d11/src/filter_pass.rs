@@ -13,15 +13,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
-use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView,
-    ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
-};
-
-pub struct DxShader<T> {
-    pub blob: ID3DBlob,
-    pub compiled: T,
-}
+use windows::Win32::Graphics::Direct3D11::{ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD, ID3D11InputLayout};
 
 pub struct ConstantBuffer {
     pub binding: u32,
@@ -35,13 +27,14 @@ pub struct ConstantBuffer {
 pub struct FilterPass {
     pub reflection: ShaderReflection,
     pub compiled: ShaderCompilerOutput<String, GlslangHlslContext>,
-    pub vertex_shader: DxShader<ID3D11VertexShader>,
-    pub pixel_shader: DxShader<ID3D11PixelShader>,
+    pub vertex_shader: ID3D11VertexShader,
+    pub vertex_layout: ID3D11InputLayout,
+    pub pixel_shader: ID3D11PixelShader,
 
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
 
-    pub uniform_buffer: ConstantBuffer,
-    pub push_buffer: ConstantBuffer,
+    pub uniform_buffer: Option<ConstantBuffer>,
+    pub push_buffer: Option<ConstantBuffer>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
