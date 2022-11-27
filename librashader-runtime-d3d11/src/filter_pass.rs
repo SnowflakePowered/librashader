@@ -1,20 +1,19 @@
 use crate::filter_chain::FilterCommon;
-use crate::texture::{ExternalTexture, OwnedTexture};
+use crate::texture::{Texture, OwnedTexture};
 use librashader_common::Size;
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::cross::GlslangHlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{
-    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniformSemantic,
-    VariableSemantics,
-};
+use librashader_reflect::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniformSemantic, VariableSemantics};
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use windows::core::ConstBuffer;
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::{ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD, ID3D11InputLayout};
+use crate::render_target::RenderTarget;
+use crate::samplers::SamplerSet;
 
 pub struct ConstantBufferBinding {
     pub binding: u32,
@@ -77,14 +76,14 @@ impl FilterPass {
     }
 
     fn bind_texture(
+        samplers: &SamplerSet,
         texture_binding: &mut [Option<ID3D11ShaderResourceView>; 16],
         sampler_binding: &mut [Option<ID3D11SamplerState>; 16],
         binding: &TextureBinding,
-        texture: &ExternalTexture,
+        texture: &Texture,
     ) {
-        texture_binding[binding.binding as usize] = Some(texture.srv.clone());
-        // todo: make samplers for all wrapmode/filtermode combos.
-        // sampler_binding[binding.binding as usize] = Some(texture.sampler.clone());
+        texture_binding[binding.binding as usize] = Some(texture.handle.clone());
+        sampler_binding[binding.binding as usize] = Some(samplers.get(texture.wrap_mode, texture.filter).clone());
     }
 
     // framecount should be pre-modded
@@ -96,10 +95,10 @@ impl FilterPass {
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,
-        // viewport: &Viewport,
-        original: &ExternalTexture,
-        source: &ExternalTexture,
-    ) {
+        viewport_size: Size<u32>,
+        original: &Texture,
+        source: &Texture,
+    ) -> ([Option<ID3D11ShaderResourceView>; 16], [Option<ID3D11SamplerState>; 16]){
         let mut textures: [Option<ID3D11ShaderResourceView>; 16] = std::array::from_fn(|_| None);
         let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
 
@@ -124,19 +123,19 @@ impl FilterPass {
         }
 
         // bind FinalViewportSize
-        // if let Some(offset) = self
-        //     .uniform_bindings
-        //     .get(&VariableSemantics::FinalViewport.into())
-        // {
-        //     let (buffer, offset) = match offset {
-        //         MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-        //         MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-        //     };
-        //     FilterPass::build_vec4(
-        //         &mut buffer[offset..][..16],
-        //         viewport.output.size,
-        //     )
-        // }
+        if let Some(offset) = self
+            .uniform_bindings
+            .get(&VariableSemantics::FinalViewport.into())
+        {
+            let (buffer, offset) = match offset {
+                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
+                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
+            };
+            FilterPass::build_vec4(
+                &mut buffer[offset..][..16],
+                viewport_size,
+            )
+        }
 
         // bind FrameCount
         if let Some(offset) = self
@@ -169,7 +168,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            FilterPass::bind_texture(&mut textures, &mut samplers, binding, original);
+            FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, original);
         }
         //
         // bind OriginalSize
@@ -192,7 +191,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(&mut textures, &mut samplers, binding, source);
+            FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, source);
         }
 
         // bind SourceSize
@@ -213,7 +212,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::OriginalHistory.semantics(0))
         {
-            FilterPass::bind_texture(&mut textures, &mut samplers, binding, original);
+            FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, original);
         }
 
         if let Some(offset) = self
@@ -346,31 +345,32 @@ impl FilterPass {
         }
 
         // bind luts
-        // for (index, lut) in &parent.luts {
-        //     if let Some(binding) = self
-        //         .reflection
-        //         .meta
-        //         .texture_meta
-        //         .get(&TextureSemantics::User.semantics(*index))
-        //     {
-        //         FilterPass::bind_texture(binding, lut);
-        //     }
-        //
-        //     if let Some((location, offset)) = self
-        //         .uniform_bindings
-        //         .get(&TextureSemantics::User.semantics(*index).into())
-        //     {
-        //         let (buffer, offset) = match offset {
-        //             MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-        //             MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-        //         };
-        //         FilterPass::build_vec4(
-        //             location.location(),
-        //             &mut buffer[offset..][..16],
-        //             lut.image.size,
-        //         );
-        //     }
-        // }
+        for (index, lut) in &parent.luts {
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::User.semantics(*index))
+            {
+                FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, &lut.image);
+            }
+
+            if let Some(offset) = self
+                .uniform_bindings
+                .get(&TextureSemantics::User.semantics(*index).into())
+            {
+                let (buffer, offset) = match offset {
+                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
+                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
+                };
+                FilterPass::build_vec4(
+                    &mut buffer[offset..][..16],
+                    lut.image.size,
+                );
+            }
+        }
+
+        (textures, samplers)
     }
 
     pub fn draw(
@@ -379,7 +379,81 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
+        viewport: &Size<u32>,
+        original: &Texture,
+        source: &Texture,
+        output: RenderTarget,
     ) -> std::result::Result<(), Box<dyn Error>> {
+        let device = &parent.d3d11.device;
+        let context = &parent.d3d11.device_context;
+        unsafe {
+            context.IASetInputLayout(&self.vertex_layout);
+            context.VSSetShader(&self.vertex_shader, None);
+            context.PSSetShader(&self.pixel_shader, None);
+        }
+
+        let (textures, samplers) = self.build_semantics(pass_index, parent, output.mvp, frame_count, frame_direction,
+                             output.output.size, *viewport, original, source);
+
+
+
+        if let Some(ubo) = &self.uniform_buffer.binding {
+            // upload uniforms
+            unsafe {
+                let map = context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
+                std::ptr::copy_nonoverlapping(self.uniform_buffer.storage.as_ptr(), map.pData.cast(), ubo.size as usize);
+                context.Unmap(&ubo.buffer, 0);
+            }
+
+            if ubo.stage_mask.contains(BindingStage::VERTEX) {
+                unsafe {
+                    context.VSSetConstantBuffers(ubo.binding, Some(&[Some(ubo.buffer.clone())]))
+                }
+            }
+            if ubo.stage_mask.contains(BindingStage::FRAGMENT) {
+                unsafe {
+                    context.PSSetConstantBuffers(ubo.binding, Some(&[Some(ubo.buffer.clone())]))
+                }
+            }
+        }
+
+        if let Some(push) = &self.push_buffer.binding {
+            // upload push constants
+            unsafe {
+                let map = context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
+                std::ptr::copy_nonoverlapping(self.push_buffer.storage.as_ptr(), map.pData.cast(), push.size as usize);
+                context.Unmap(&push.buffer, 0);
+            }
+
+            if push.stage_mask.contains(BindingStage::VERTEX) {
+                unsafe {
+                    context.VSSetConstantBuffers(push.binding, Some(&[Some(push.buffer.clone())]))
+                }
+            }
+            if push.stage_mask.contains(BindingStage::FRAGMENT) {
+                unsafe {
+                    context.PSSetConstantBuffers(push.binding, Some(&[Some(push.buffer.clone())]))
+                }
+            }
+        }
+
+        unsafe {
+            // reset RTVs
+            context.OMSetRenderTargets(None, None);
+        }
+
+        unsafe {
+            context.PSSetShaderResources(0, Some(&textures));
+            context.PSSetSamplers(0, Some(&samplers));
+
+            context.OMSetRenderTargets(Some(&[Some(output.output.rtv.clone())]), None);
+            context.RSSetViewports(Some(&[output.output.viewport.clone()]))
+        }
+
+        unsafe {
+            // must be under primitive topology trianglestrip with quad
+            context.Draw(4, 0);
+        }
         Ok(())
     }
 }

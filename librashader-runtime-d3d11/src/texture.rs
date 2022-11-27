@@ -1,4 +1,4 @@
-use librashader_common::Size;
+use librashader_common::{FilterMode, Size, WrapMode};
 use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_FLAG, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_SRV, D3D11_BIND_FLAG, D3D11_RESOURCE_MISC_FLAG, D3D11_USAGE_STAGING, ID3D11DeviceContext, D3D11_SUBRESOURCE_DATA, D3D11_MAP_WRITE, D3D11_BOX};
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
@@ -7,25 +7,25 @@ use crate::util::d3d11_get_closest_format;
 use crate::util::Result;
 
 #[derive(Debug, Clone)]
-pub struct ExternalTexture {
-    pub srv: ID3D11ShaderResourceView,
+pub struct Texture {
+    pub handle: ID3D11ShaderResourceView,
     pub size: Size<u32>, // pub image: GlImage,
+    pub filter: FilterMode,
+    pub wrap_mode: WrapMode,
+    // pub mip_filter: FilterMode,
+    // pub wrap_mode: WrapMode,
 }
 
 #[derive(Debug, Clone)]
 pub struct OwnedTexture {
     pub handle: ID3D11Texture2D,
     // pub staging: ID3D11Texture2D,
-    pub srv: ID3D11ShaderResourceView,
     pub desc: D3D11_TEXTURE2D_DESC,
-    pub size: Size<u32>, // pub image: GlImage,
-                         // pub filter: FilterMode,
-                         // pub mip_filter: FilterMode,
-                         // pub wrap_mode: WrapMode,
+    pub image: Texture,
 }
 
 impl OwnedTexture {
-    pub fn new(device: &ID3D11Device, source: &Image, desc: D3D11_TEXTURE2D_DESC) -> Result<OwnedTexture> {
+    pub fn new(device: &ID3D11Device, source: &Image, desc: D3D11_TEXTURE2D_DESC, filter: FilterMode, wrap_mode: WrapMode) -> Result<OwnedTexture> {
         let mut desc = D3D11_TEXTURE2D_DESC {
             Width: source.size.width,
             Height: source.size.height,
@@ -133,9 +133,13 @@ impl OwnedTexture {
             Ok(OwnedTexture {
                 handle,
                 // staging,
-                srv,
                 desc,
-                size: source.size,
+                image: Texture {
+                    handle: srv,
+                    size: source.size,
+                    filter,
+                    wrap_mode
+                }
             })
         }
     }

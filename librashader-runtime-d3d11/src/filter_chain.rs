@@ -45,6 +45,7 @@ pub struct FilterChain {
 
 pub struct Direct3D11 {
     pub(crate) device: ID3D11Device,
+    pub(crate) device_context: ID3D11DeviceContext,
 }
 
 pub struct FilterCommon {
@@ -267,6 +268,13 @@ impl FilterChain {
         // let (history_framebuffers, history_textures) =
         //     FilterChain::init_history(&filters, default_filter, default_wrap);
 
+        let mut device_context = None;
+
+        unsafe {
+            device.GetImmediateContext(&mut device_context);
+        }
+
+        // todo: make vbo: d3d11.c 1376
         Ok(FilterChain {
             passes: filters,
             // output_framebuffers: output_framebuffers.into_boxed_slice(),
@@ -276,6 +284,7 @@ impl FilterChain {
             common: FilterCommon {
                 d3d11: Direct3D11 {
                     device: device.clone(),
+                    device_context: device_context.unwrap()
                 },
                 luts,
                 samplers,
@@ -311,8 +320,8 @@ impl FilterChain {
                 ..Default::default()
             };
 
-            let mut texture = OwnedTexture::new(device, &image, desc)?;
-            // todo: update texture d3d11_common: 150
+            let mut texture = OwnedTexture::new(device, &image, desc,
+                                                texture.filter_mode, texture.wrap_mode)?;
             luts.insert(index, texture);
         }
         Ok(luts)

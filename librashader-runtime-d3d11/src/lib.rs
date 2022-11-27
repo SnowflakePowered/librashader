@@ -23,6 +23,8 @@ mod hello_triangle;
 mod texture;
 mod util;
 mod samplers;
+mod render_target;
+mod framebuffer;
 
 #[cfg(test)]
 mod tests {
