@@ -1,10 +1,10 @@
 # librashader
 
-![image](https://user-images.githubusercontent.com/1000503/202991618-e3e38e05-f0de-429d-a3ee-4cd0b077f88f.png)
+![crt-royale](https://user-images.githubusercontent.com/1000503/202991618-e3e38e05-f0de-429d-a3ee-4cd0b077f88f.png)
 
 <small>*crt-royale-fake-bloom*</small>
 
-A preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
+librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 
 Heavily WIP.
 
@@ -12,15 +12,15 @@ Heavily WIP.
 librashader supports OpenGL 3, Vulkan, DirectX 11, and DirectX 12. Support is WIP for all runtimes except OpenGL 3. Older versions
 of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
 
-| **API**    | **Status** | **`librashader` feature** |
-|------------|------------|--------------------------|
-| OpenGL 3+  | ✔          | `gl`                     |
-| Vulkan     | 🚧         | `vk`                     |
-| Direct3D11 | 🚧         | `d3d11`                  |
-| Direct3D12 | 🚧         | `d3d12`                  |
-| OpenGL 2   | ❌          |                          |
-| DirectX 9  | ❌          |                          |
-| Metal      | ❌          |                          |
+| **API**     | **Status** | **`librashader` feature** |
+|-------------|------------|---------------------------|
+| OpenGL 3.3+ | ✔          | `gl`                      |
+| Vulkan      | 🚧         | `vk`                      |
+| Direct3D11  | 🚧         | `d3d11`                   |
+| Direct3D12  | 🚧         | `d3d12`                   |
+| OpenGL 2    | ❌          |                           |
+| DirectX 9   | ❌          |                           |
+| Metal       | ❌          |                           |
 
 ## Usage
 
@@ -30,6 +30,31 @@ librashader provides both a Rust API under the `librashader` crate, and a C API.
 
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
 loads the librashader (`librashader.so` or `rashader.dll`) implementation in the search path.
+
+## Compatibility
+
+librashader implements the entire RetroArch shader pipeline and is highly compatible with existing shaders,
+but there are some deliberate differences in design choices that may potentially cause incompatiblities with certain
+shaders.
+
+Please report an issue if you run into a shader that works in RetroArch, but not under librashader.
+
+* Variables can only be bound in *either* the UBO or push constant block.
+  * RetroArch allows a variable to be present in both a push constant block and a UBO block at the same time. To make the 
+    implementation a little cleaner, librashader only allows a variable to be in *either* a push constant block or a UBO
+    block. As far as I have tested, there are no shaders in [libretro/slang-shaders](https://github.com/libretro/slang-shaders)
+    that bind the same variable in both the push constant and the UBO block.
+* Filter chains do not terminate at the backbuffer.
+  * Unlike RetroArch, librashader does not have full knowledge of the entire rendering state and is designed to be pluggable
+    at any point in your render pipeline. Instead, filter chains terminate at a caller-provided output surface and viewport. 
+    It is the caller's responsibility to blit the surface back to the backbuffer.
+* Runtime-specific differences
+  * OpenGL
+    * Copying of in-flight framebuffer contents is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.
+    * Sampler objects are used rather than `glTexParameter`.
+    * Sampler inputs and outputs are not renamed. This is useful for debugging shaders in RenderDoc.
+  * Direct3D 11
+    * The staging buffer is not kept around when loading static textures (LUTs).
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
