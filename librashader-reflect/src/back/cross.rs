@@ -2,13 +2,13 @@ use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompilerBackend, CompileShader, FromCompilation};
 use crate::error::ShaderReflectError;
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::cross::{CompiledAst, GlslReflect, HlslReflect};
+use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect};
 use crate::reflect::ReflectShader;
 
 pub type GlVersion = spirv_cross::glsl::Version;
 pub struct GlslangGlslContext {
     pub sampler_bindings: Vec<(String, u32)>,
-    pub compiler: CompiledAst<spirv_cross::glsl::Target>,
+    pub compiler: CompiledProgram<spirv_cross::glsl::Target>,
 }
 
 impl FromCompilation<GlslangCompilation> for GLSL {
@@ -30,7 +30,7 @@ impl FromCompilation<GlslangCompilation> for GLSL {
 }
 
 pub struct GlslangHlslContext {
-    pub compiler: CompiledAst<spirv_cross::hlsl::Target>,
+    pub compiler: CompiledProgram<spirv_cross::hlsl::Target>,
 }
 
 

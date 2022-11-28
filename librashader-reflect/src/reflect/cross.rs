@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
 use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics};
@@ -11,6 +12,7 @@ use crate::back::cross::{GlslangGlslContext, GlslangHlslContext};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 
+
 pub struct CrossReflect<T>
 where
     T: spirv_cross::spirv::Target,
@@ -19,12 +21,25 @@ where
     fragment: Ast<T>,
 }
 
-pub struct CompiledAst<T>
+///! The output of the SPIR-V AST after compilation.
+///!
+///! This output is immutable and can not be recompiled later.
+pub struct CompiledAst<T: spirv_cross::spirv::Target>(Ast<T>);
+impl<T: spirv_cross::spirv::Target> Deref for CompiledAst<T> {
+    type Target = Ast<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+///! The compiled SPIR-V program after compilation.
+pub struct CompiledProgram<T>
 where
     T: spirv_cross::spirv::Target,
 {
-    pub vertex: Ast<T>,
-    pub fragment: Ast<T>,
+    pub vertex: CompiledAst<T>,
+    pub fragment: CompiledAst<T>,
 }
 
 pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
@@ -803,9 +818,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
             fragment: self.fragment.compile()?,
             context: GlslangGlslContext {
                 sampler_bindings: texture_fixups,
-                compiler: CompiledAst {
-                    vertex: self.vertex,
-                    fragment: self.fragment,
+                compiler: CompiledProgram {
+                    vertex: CompiledAst(self.vertex),
+                    fragment: CompiledAst(self.fragment),
                 },
             },
         })
@@ -830,9 +845,9 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
             context: GlslangHlslContext {
-                compiler: CompiledAst {
-                    vertex: self.vertex,
-                    fragment: self.fragment
+                compiler: CompiledProgram {
+                    vertex: CompiledAst(self.vertex),
+                    fragment: CompiledAst(self.fragment)
                 }
             },
         })
