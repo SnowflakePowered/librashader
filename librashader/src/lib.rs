@@ -1,4 +1,6 @@
-
+//! Re-exports for usage of librashader in consuming libraries.
+//!
+//! Runtime implementations should depend directly on constituent crates.
 pub mod presets {
     pub use librashader_presets::*;
 }

@@ -54,6 +54,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * Sampler objects are used rather than `glTexParameter`.
     * Sampler inputs and outputs are not renamed. This is useful for debugging shaders in RenderDoc.
     * UBO and Push Constant Buffer sizes are padded to 16-byte boundaries.
+    * 
   * Direct3D 11
     * The staging buffer is not kept around when loading static textures (LUTs).
     * HDR10 support is not part of the shader runtime and is not supported.

@@ -1,6 +1,7 @@
 use crate::reflect::semantics::MemberOffset;
 use thiserror::Error;
 
+#[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum ShaderCompileError {
     #[cfg(feature = "unstable-rust-pipeline")]
@@ -32,6 +33,7 @@ pub enum SemanticsErrorKind {
     InvalidTypeForSemantic(String),
 }
 
+#[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum ShaderReflectError {
     #[cfg(feature = "unstable-rust-pipeline")]

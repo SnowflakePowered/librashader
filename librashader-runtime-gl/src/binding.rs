@@ -1,5 +1,5 @@
 use gl::types::GLint;
-use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset};
+use librashader_reflect::reflect::semantics::BindingStage;
 
 #[derive(Debug)]
 pub enum VariableLocation {
@@ -22,14 +22,6 @@ pub struct UniformLocation<T> {
 }
 
 impl UniformLocation<GLint> {
-    // pub fn is_fragment_valid(&self) -> bool {
-    //     self.fragment >= 0
-    // }
-    //
-    // pub fn is_vertex_valid(&self) -> bool {
-    //     self.vertex >= 0
-    // }
-
     pub fn is_valid(&self, stage: BindingStage) -> bool {
         let mut validity = false;
         if stage.contains(BindingStage::FRAGMENT) {
