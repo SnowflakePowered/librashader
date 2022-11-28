@@ -11,6 +11,7 @@ librashader-preprocess = { path = "../librashader-preprocess" }
 librashader-reflect = { path = "../librashader-reflect" }
 librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11" }
 librashader-runtime-gl = { path = "../librashader-runtime-gl" }
+librashader-runtime-gl46 = { path = "../librashader-runtime-gl46" }
 
 
 [features]

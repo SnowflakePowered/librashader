@@ -21,9 +21,7 @@ impl Framebuffer {
     pub fn new(max_levels: u32) -> Framebuffer {
         let mut framebuffer = 0;
         unsafe {
-            gl::GenFramebuffers(1, &mut framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::CreateFramebuffers(1, &mut framebuffer);
         }
 
         Framebuffer {
@@ -139,11 +137,9 @@ impl Framebuffer {
 
     pub(crate) fn clear(&self) {
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
-            gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
-            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::ClearNamedFramebufferfv(self.handle,
+                                        gl::COLOR, 0,
+                                        [0.0f32, 0.0, 0.0, 0.0].as_ptr().cast());
         }
     }
 
@@ -154,64 +150,15 @@ impl Framebuffer {
         }
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+            // gl::NamedFramebufferDrawBuffer(self.handle, gl::COLOR_ATTACHMENT1);
+            gl::NamedFramebufferReadBuffer(image.handle, gl::COLOR_ATTACHMENT0);
+            gl::NamedFramebufferDrawBuffer(self.handle, gl::COLOR_ATTACHMENT1);
 
-            gl::FramebufferTexture2D(
-                gl::READ_FRAMEBUFFER,
-                gl::COLOR_ATTACHMENT0,
-                gl::TEXTURE_2D,
-                image.handle,
-                0,
-            );
+            gl::BlitNamedFramebuffer(image.handle, self.handle,
+            0, 0, image.size.width as GLint, image.size.height as GLint,
+            0, 0, self.size.width as GLint, self.size.height as GLint,
+                                     gl::COLOR_BUFFER_BIT, gl::NEAREST);
 
-            gl::FramebufferTexture2D(
-                gl::DRAW_FRAMEBUFFER,
-                gl::COLOR_ATTACHMENT1,
-                gl::TEXTURE_2D,
-                self.image,
-                0,
-            );
-            gl::DrawBuffer(gl::COLOR_ATTACHMENT1);
-            gl::BlitFramebuffer(
-                0,
-                0,
-                self.size.width as GLint,
-                self.size.height as GLint,
-                0,
-                0,
-                self.size.width as GLint,
-                self.size.height as GLint,
-                gl::COLOR_BUFFER_BIT,
-                gl::NEAREST,
-            );
-
-            // cleanup after ourselves.
-            gl::FramebufferTexture2D(
-                gl::READ_FRAMEBUFFER,
-                gl::COLOR_ATTACHMENT0,
-                gl::TEXTURE_2D,
-                0,
-                0,
-            );
-
-            gl::FramebufferTexture2D(
-                gl::DRAW_FRAMEBUFFER,
-                gl::COLOR_ATTACHMENT1,
-                gl::TEXTURE_2D,
-                0,
-                0,
-            );
-
-            // set this back to color_attachment 0
-            gl::FramebufferTexture2D(
-                gl::FRAMEBUFFER,
-                gl::COLOR_ATTACHMENT0,
-                gl::TEXTURE_2D,
-                self.image,
-                0,
-            );
-
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
 
         Ok(())
@@ -225,22 +172,18 @@ impl Framebuffer {
         self.size = size;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
-
             // reset the framebuffer image
             if self.image != 0 {
-                gl::FramebufferTexture2D(
-                    gl::FRAMEBUFFER,
+                gl::NamedFramebufferTexture(
+                    self.handle,
                     gl::COLOR_ATTACHMENT0,
-                    gl::TEXTURE_2D,
                     0,
                     0,
                 );
                 gl::DeleteTextures(1, &self.image);
             }
 
-            gl::GenTextures(1, &mut self.image);
-            gl::BindTexture(gl::TEXTURE_2D, self.image);
+            gl::CreateTextures(gl::TEXTURE_2D,1, &mut self.image);
 
             if size.width == 0 {
                 size.width = 1;
@@ -257,18 +200,17 @@ impl Framebuffer {
                 self.levels = 1;
             }
 
-            gl::TexStorage2D(
-                gl::TEXTURE_2D,
+            gl::TextureStorage2D(
+                self.image,
                 self.levels as GLsizei,
                 self.format,
                 size.width as GLsizei,
                 size.height as GLsizei,
             );
 
-            gl::FramebufferTexture2D(
-                gl::FRAMEBUFFER,
+            gl::NamedFramebufferTexture(
+                self.handle,
                 gl::COLOR_ATTACHMENT0,
-                gl::TEXTURE_2D,
                 self.image,
                 0,
             );
@@ -279,16 +221,14 @@ impl Framebuffer {
                     gl::FRAMEBUFFER_UNSUPPORTED => {
                         eprintln!("unsupported fbo");
 
-                        gl::FramebufferTexture2D(
-                            gl::FRAMEBUFFER,
+                        gl::NamedFramebufferTexture(
+                            self.handle,
                             gl::COLOR_ATTACHMENT0,
-                            gl::TEXTURE_2D,
                             0,
                             0,
                         );
                         gl::DeleteTextures(1, &self.image);
-                        gl::GenTextures(1, &mut self.image);
-                        gl::BindTexture(1, self.image);
+                        gl::CreateTextures(gl::TEXTURE_2D, 1, &mut self.image);
 
                         self.levels = util::calc_miplevel(size);
                         if self.levels > self.max_levels {
@@ -298,17 +238,16 @@ impl Framebuffer {
                             self.levels = 1;
                         }
 
-                        gl::TexStorage2D(
-                            gl::TEXTURE_2D,
+                        gl::TextureStorage2D(
+                            self.image,
                             self.levels as GLsizei,
                             ShaderFormat::R8G8B8A8Unorm.into(),
                             size.width as GLsizei,
                             size.height as GLsizei,
                         );
-                        gl::FramebufferTexture2D(
-                            gl::FRAMEBUFFER,
+                        gl::NamedFramebufferTexture(
+                            self.handle,
                             gl::COLOR_ATTACHMENT0,
-                            gl::TEXTURE_2D,
                             self.image,
                             0,
                         );
@@ -318,9 +257,6 @@ impl Framebuffer {
                     _ => return Err(FilterChainError::FramebufferInit(status))
                 }
             }
-
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::BindTexture(gl::TEXTURE_2D, 0);
         }
 
         Ok(())

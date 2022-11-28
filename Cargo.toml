@@ -7,4 +7,5 @@ members = [
     "librashader-reflect",
     "librashader-runtime-d3d11",
     "librashader-runtime-gl",
+    "librashader-runtime-gl46",
 ]

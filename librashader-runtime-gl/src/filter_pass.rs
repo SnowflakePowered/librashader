@@ -183,6 +183,7 @@ impl FilterPass {
         }
 
         unsafe {
+            // can't use framebuffer.clear because it will unbind.
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
             gl::Clear(gl::COLOR_BUFFER_BIT);

@@ -104,9 +104,7 @@ impl FilterPass {
     fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
-            gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
-
-            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
+            gl::BindTextureUnit(binding.binding, texture.image.handle);
             gl::BindSampler(binding.binding,
                             samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
         }
@@ -137,7 +135,7 @@ impl FilterPass {
         let framebuffer = output.framebuffer;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
+            // gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::UseProgram(self.program);
         }
 
@@ -162,14 +160,12 @@ impl FilterPass {
                 let buffer = ring.current();
 
                 unsafe {
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
-                    gl::BufferSubData(
-                        gl::UNIFORM_BUFFER,
+                    gl::NamedBufferSubData(
+                        *buffer,
                         0,
                         size as GLsizeiptr,
                         self.uniform_buffer.as_ptr().cast(),
                     );
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
 
                     if self.ubo_location.vertex != gl::INVALID_INDEX {
                         gl::BindBufferBase(gl::UNIFORM_BUFFER, self.ubo_location.vertex, *buffer);
@@ -183,10 +179,9 @@ impl FilterPass {
         }
 
         unsafe {
-            gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
-            gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-            //
+            // can use because DSA
+            framebuffer.clear();
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::Viewport(
                 output.x,
                 output.y,
@@ -204,36 +199,7 @@ impl FilterPass {
             gl::Disable(gl::BLEND);
             gl::Disable(gl::DEPTH_TEST);
 
-            gl::EnableVertexAttribArray(0);
-            gl::EnableVertexAttribArray(1);
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, parent.draw_quad.vbo);
-
-            // the provided pointers are of OpenGL provenance with respect to the buffer bound to quad_vbo,
-            // and not a known provenance to the Rust abstract machine, therefore we give it invalid pointers.
-            // that are inexpressible in Rust
-            gl::VertexAttribPointer(
-                0,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as GLsizei,
-                std::ptr::invalid(0),
-            );
-            gl::VertexAttribPointer(
-                1,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as GLsizei,
-                std::ptr::invalid(2 * std::mem::size_of::<f32>()),
-            );
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::DisableVertexAttribArray(0);
-            gl::DisableVertexAttribArray(1);
-
             gl::Disable(gl::FRAMEBUFFER_SRGB);
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
@@ -483,12 +449,12 @@ impl FilterPass {
 
         // bind float parameters
         for (id, (location, offset)) in
-            self.uniform_bindings
-                .iter()
-                .filter_map(|(binding, value)| match binding {
-                    UniformBinding::Parameter(id) => Some((id, value)),
-                    _ => None,
-                })
+        self.uniform_bindings
+            .iter()
+            .filter_map(|(binding, value)| match binding {
+                UniformBinding::Parameter(id) => Some((id, value)),
+                _ => None,
+            })
         {
             let id = id.as_str();
             let (buffer, offset) = match offset {

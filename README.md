@@ -9,12 +9,13 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 Heavily WIP.
 
 ## Supported Render APIs
-librashader supports OpenGL 3, Vulkan, DirectX 11, and DirectX 12. Support is WIP for all runtimes except OpenGL 3. Older versions
+librashader supports OpenGL 3, OpenGL 4.6, Vulkan, DirectX 11, and DirectX 12. Support is WIP for all runtimes except OpenGL 3. Older versions
 of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
 
 | **API**     | **Status** | **`librashader` feature** |
 |-------------|------------|---------------------------|
 | OpenGL 3.3+ | ✔          | `gl`                      |
+| OpenGL 4.6  | ✔          | `gl46`                    |
 | Vulkan      | 🚧         | `vk`                      |
 | Direct3D11  | 🚧         | `d3d11`                   |
 | Direct3D12  | 🚧         | `d3d12`                   |
@@ -54,10 +55,16 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * Sampler objects are used rather than `glTexParameter`.
     * Sampler inputs and outputs are not renamed. This is useful for debugging shaders in RenderDoc.
     * UBO and Push Constant Buffer sizes are padded to 16-byte boundaries.
-    * 
+  * OpenGL 4.6+
+    * All caveats from the OpenGL 3.3+ section should be considered.
+    * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
+    * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For recent GPUs, this may improve performance.
   * Direct3D 11
     * The staging buffer is not kept around when loading static textures (LUTs).
     * HDR10 support is not part of the shader runtime and is not supported.
+
+Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
+and are more a heads-up for integrating librashader into your project.
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 

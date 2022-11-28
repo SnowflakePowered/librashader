@@ -27,7 +27,7 @@ pub mod reflect {
 }
 
 pub mod targets {
-    /// Shader compiler targets and runtime for OpenGL.
+    /// Shader compiler targets and runtime for OpenGL 3.3+.
     pub mod gl {
         /// Shader compiler target for GLSL.
         pub use librashader_reflect::back::targets::GLSL;
@@ -35,6 +35,17 @@ pub mod targets {
         /// Shader runtime for OpenGL.
         pub mod runtime {
             pub use librashader_runtime_gl::*;
+        }
+    }
+
+    /// Shader compiler targets and runtime for OpenGL 4.6.
+    pub mod gl46 {
+        /// Shader compiler target for GLSL.
+        pub use librashader_reflect::back::targets::GLSL;
+
+        /// Shader runtime for OpenGL.
+        pub mod runtime {
+            pub use librashader_runtime_gl46::*;
         }
     }
 

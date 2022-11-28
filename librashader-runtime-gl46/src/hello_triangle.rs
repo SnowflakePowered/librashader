@@ -12,7 +12,7 @@ use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
-const TITLE: &str = "librashader OpenGL";
+const TITLE: &str = "librashader OpenGL 4.6";
 
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {
     let vertex_shader = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };
@@ -215,7 +215,7 @@ void main()
         gl::ObjectLabel(gl::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
 
         gl::VertexArrayVertexBuffer(vao, 0,
-                                    vbo, 0, (6 * std::mem::size_of::<f32>()) as GLint
+                                    vbo, 0, 6 * std::mem::size_of::<f32>() as GLint
         );
 
         gl::EnableVertexArrayAttrib(vao, 0); // this is "layout (location = 0)" in vertex shader
@@ -226,7 +226,7 @@ void main()
 
         gl::EnableVertexArrayAttrib(vao, 1);
         gl::VertexArrayAttribFormat(vao, 1, 3,
-                                    gl::FLOAT, gl::FALSE, (3 * std::mem::size_of::<f32>() as GLuint));
+                                    gl::FLOAT, gl::FALSE, 3 * std::mem::size_of::<f32>() as GLuint);
 
 
         gl::VertexArrayAttribBinding(vao, 0, 0);
@@ -461,12 +461,10 @@ void main()
 
         unsafe {
             // render to fb
+
+            gl::ClearNamedFramebufferfv(rendered_framebuffer, gl::COLOR, 0, [0.3f32, 0.4, 0.6, 1.0].as_ptr().cast());
             gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
             gl::Viewport(0, 0, vp_width, vp_height);
-
-            // clear color
-            clear_color(Color(0.3, 0.4, 0.6, 1.0));
-            gl::Clear(gl::COLOR_BUFFER_BIT);
 
             // do the drawing
             gl::UseProgram(triangle_program);

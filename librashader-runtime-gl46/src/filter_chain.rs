@@ -29,7 +29,7 @@ use crate::texture::Texture;
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
     common: FilterCommon,
-    filter_vao: GLuint,
+    pub(crate) draw_quad: DrawQuad,
     output_framebuffers: Box<[Framebuffer]>,
     feedback_framebuffers: Box<[Framebuffer]>,
     history_framebuffers: VecDeque<Framebuffer>,
@@ -43,7 +43,6 @@ pub struct FilterCommon {
     pub output_textures: Box<[Texture]>,
     pub feedback_textures: Box<[Texture]>,
     pub history_textures: Box<[Texture]>,
-    pub(crate) draw_quad: DrawQuad,
 }
 
 pub struct FilterMutable {
@@ -177,17 +176,12 @@ impl FilterChain {
         // create VBO objects
         let draw_quad = DrawQuad::new();
 
-        let mut filter_vao = 0;
-        unsafe {
-            gl::GenVertexArrays(1, &mut filter_vao);
-        }
-
         Ok(FilterChain {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             history_framebuffers,
-            filter_vao,
+            draw_quad,
             common: FilterCommon {
                 config: FilterMutable {
                     passes_enabled: preset.shader_count as usize,
@@ -199,7 +193,6 @@ impl FilterChain {
                 output_textures: output_textures.into_boxed_slice(),
                 feedback_textures: feedback_textures.into_boxed_slice(),
                 history_textures,
-                draw_quad,
             },
         })
     }
@@ -279,6 +272,15 @@ impl FilterChain {
 
     fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
         let mut luts = FxHashMap::default();
+        let pixel_unpack = unsafe {
+            let mut binding = 0;
+            gl::GetIntegerv(gl::PIXEL_UNPACK_BUFFER_BINDING, &mut binding);
+            binding
+        };
+
+        unsafe {
+            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
+        }
 
         for (index, texture) in textures.iter().enumerate() {
             let image = Image::load(&texture.path)?;
@@ -290,10 +292,10 @@ impl FilterChain {
 
             let mut handle = 0;
             unsafe {
-                gl::GenTextures(1, &mut handle);
-                gl::BindTexture(gl::TEXTURE_2D, handle);
-                gl::TexStorage2D(
-                    gl::TEXTURE_2D,
+                gl::CreateTextures(gl::TEXTURE_2D,1, &mut handle);
+
+                gl::TextureStorage2D(
+                    handle,
                     levels as GLsizei,
                     gl::RGBA8,
                     image.size.width as GLsizei,
@@ -302,12 +304,10 @@ impl FilterChain {
 
                 gl::PixelStorei(gl::UNPACK_ROW_LENGTH, 0);
                 gl::PixelStorei(gl::UNPACK_ALIGNMENT, 4);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
-                gl::TexSubImage2D(
-                    gl::TEXTURE_2D,
-                    0,
-                    0,
-                    0,
+
+                gl::TextureSubImage2D(
+                    handle,
+                    0, 0, 0,
                     image.size.width as GLsizei,
                     image.size.height as GLsizei,
                     gl::RGBA,
@@ -317,10 +317,8 @@ impl FilterChain {
 
                 let mipmap = levels > 1;
                 if mipmap {
-                    gl::GenerateMipmap(gl::TEXTURE_2D);
+                    gl::GenerateTextureMipmap(handle);
                 }
-
-                gl::BindTexture(gl::TEXTURE_2D, 0);
             }
 
             luts.insert(
@@ -338,6 +336,10 @@ impl FilterChain {
                 },
             );
         }
+
+        unsafe {
+            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pixel_unpack as GLuint);
+        };
         Ok(luts)
     }
 
@@ -416,17 +418,15 @@ impl FilterChain {
                 let size = ubo.size;
                 let mut ring: InlineRingBuffer<GLuint, 16> = InlineRingBuffer::new();
                 unsafe {
-                    gl::GenBuffers(16, ring.items_mut().as_mut_ptr());
+                    gl::CreateBuffers(16, ring.items_mut().as_mut_ptr());
                     for buffer in ring.items() {
-                        gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
-                        gl::BufferData(
-                            gl::UNIFORM_BUFFER,
+                        gl::NamedBufferData(
+                            *buffer,
                             size as GLsizeiptr,
                             std::ptr::null(),
                             gl::STREAM_DRAW,
                         );
                     }
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
                 }
                 Some(ring)
             } else {
@@ -593,11 +593,9 @@ impl FilterChain {
             return Ok(());
         }
 
-        unsafe {
-            // do not need to rebind FBO 0 here since first `draw` will
-            // bind automatically.
-            gl::BindVertexArray(self.filter_vao);
-        }
+        // do not need to rebind FBO 0 here since first `draw` will
+        // bind automatically.
+        self.draw_quad.bind_vao();
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -710,10 +708,9 @@ impl FilterChain {
 
         self.push_history(input)?;
 
-        // pass.draw should return framebuffer bound to 0.
-        unsafe {
-            gl::BindVertexArray(0);
-        }
+        // do not need to rebind FBO 0 here since first `draw` will
+        // bind automatically.
+        self.draw_quad.unbind_vao();
 
         Ok(())
     }
