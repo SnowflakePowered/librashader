@@ -1,4 +1,4 @@
-use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
+use gl::types::{GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
@@ -6,7 +6,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::{ShaderFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
+use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
 use rustc_hash::FxHashMap;
 
 use crate::binding::{UniformLocation, VariableLocation};
@@ -31,19 +31,30 @@ pub struct FilterPass {
 }
 
 impl FilterPass {
-    fn build_mvp(buffer: &mut [u8], mvp: &[f32]) {
-        let mvp = bytemuck::cast_slice(mvp);
-        buffer.copy_from_slice(mvp);
+    fn build_mat4(location: UniformLocation<GLint>, buffer: &mut [u8], mvp: &[f32; 16]) {
+        if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
+            unsafe {
+                if location.is_valid(BindingStage::VERTEX) {
+                    gl::UniformMatrix4fv(location.vertex, 1, gl::FALSE, mvp.as_ptr());
+                }
+                if location.is_valid(BindingStage::FRAGMENT) {
+                    gl::UniformMatrix4fv(location.fragment, 1, gl::FALSE, mvp.as_ptr());
+                }
+            }
+        } else {
+            let mvp = bytemuck::cast_slice(mvp);
+            buffer.copy_from_slice(mvp);
+        }
     }
 
     fn build_vec4(location: UniformLocation<GLint>, buffer: &mut [u8], size: impl Into<[f32; 4]>) {
         let vec4 = size.into();
-        if location.fragment >= 0 || location.vertex >= 0 {
+        if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
             unsafe {
-                if location.vertex >= 0 {
+                if location.is_valid(BindingStage::VERTEX) {
                     gl::Uniform4fv(location.vertex, 1, vec4.as_ptr());
                 }
-                if location.fragment >= 0 {
+                if location.is_valid(BindingStage::FRAGMENT) {
                     gl::Uniform4fv(location.fragment, 1, vec4.as_ptr());
                 }
             }
@@ -63,12 +74,12 @@ impl FilterPass {
         T: Copy,
         T: bytemuck::Pod,
     {
-        if location.fragment >= 0 || location.vertex >= 0 {
+        if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
             unsafe {
-                if location.vertex >= 0 {
+                if location.is_valid(BindingStage::VERTEX) {
                     glfn(location.vertex, value);
                 }
-                if location.fragment >= 0 {
+                if location.is_valid(BindingStage::FRAGMENT) {
                     glfn(location.fragment, value);
                 }
             }
@@ -163,7 +174,7 @@ impl FilterPass {
                     if self.ubo_location.vertex != gl::INVALID_INDEX {
                         gl::BindBufferBase(gl::UNIFORM_BUFFER, self.ubo_location.vertex, *buffer);
                     }
-                    if self.ubo_location.vertex != gl::INVALID_INDEX {
+                    if self.ubo_location.fragment != gl::INVALID_INDEX {
                         gl::BindBufferBase(gl::UNIFORM_BUFFER, self.ubo_location.fragment, *buffer);
                     }
                 }
@@ -233,7 +244,7 @@ impl FilterPass {
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
-        mvp: &[f32],
+        mvp: &[f32; 16],
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,
@@ -242,7 +253,7 @@ impl FilterPass {
         source: &Texture,
     ) {
         // Bind MVP
-        if let Some((_location, offset)) =
+        if let Some((location, offset)) =
             self.uniform_bindings.get(&VariableSemantics::MVP.into())
         {
             let mvp_size = mvp.len() * std::mem::size_of::<f32>();
@@ -250,7 +261,7 @@ impl FilterPass {
                 MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
             };
-            FilterPass::build_mvp(&mut buffer[offset..][..mvp_size], mvp)
+            FilterPass::build_mat4(location.location(), &mut buffer[offset..][..mvp_size], mvp)
         }
 
         // bind OutputSize

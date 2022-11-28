@@ -392,7 +392,7 @@ impl FilterChain {
 
         let semantics = ReflectSemantics {
             uniform_semantics,
-            non_uniform_semantics: texture_semantics,
+            texture_semantics: texture_semantics,
         };
 
         Ok((passes, semantics))

@@ -1,7 +1,7 @@
 use crate::framebuffer::{Framebuffer, Viewport};
 
 #[rustfmt::skip]
-static DEFAULT_MVP: &[f32] = &[
+static DEFAULT_MVP: &[f32; 16] = &[
     2f32, 0.0, 0.0, 0.0,
     0.0, 2.0, 0.0, 0.0,
     0.0, 0.0, 2.0, 0.0,
@@ -10,14 +10,14 @@ static DEFAULT_MVP: &[f32] = &[
 
 #[derive(Debug, Copy, Clone)]
 pub struct RenderTarget<'a> {
-    pub mvp: &'a [f32],
+    pub mvp: &'a [f32; 16],
     pub framebuffer: &'a Framebuffer,
     pub x: i32,
     pub y: i32
 }
 
 impl<'a> RenderTarget<'a> {
-    pub fn new(backbuffer: &'a Framebuffer, mvp: Option<&'a [f32]>, x: i32, y: i32) -> Self {
+    pub fn new(backbuffer: &'a Framebuffer, mvp: Option<&'a [f32; 16]>, x: i32, y: i32) -> Self {
         if let Some(mvp) = mvp {
             RenderTarget {
                 framebuffer: backbuffer,

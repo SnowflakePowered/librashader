@@ -1,8 +1,6 @@
-use std::iter::Filter;
 use gl::types::{GLenum, GLint, GLuint};
 use rustc_hash::FxHashMap;
 use librashader_common::{FilterMode, WrapMode};
-use crate::error::Result;
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.

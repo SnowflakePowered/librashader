@@ -344,7 +344,7 @@ pub struct Viewport<'a> {
     pub x: i32,
     pub y: i32,
     pub output: &'a Framebuffer,
-    pub mvp: Option<&'a [f32]>,
+    pub mvp: Option<&'a [f32; 16]>,
 }
 
 #[derive(Default, Debug, Copy, Clone)]

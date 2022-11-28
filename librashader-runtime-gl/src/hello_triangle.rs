@@ -517,7 +517,7 @@ void main()
             padded_size: Default::default(),
         };
 
-        filter.frame(framecount, &viewport, &rendered, false)
+        filter.frame(framecount, &viewport, &rendered, None)
             .unwrap();
 
         unsafe {

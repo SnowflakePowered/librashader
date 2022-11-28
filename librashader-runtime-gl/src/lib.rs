@@ -20,6 +20,7 @@ pub use framebuffer::Viewport;
 #[cfg(test)]
 mod hello_triangle;
 mod texture;
+mod options;
 
 #[cfg(test)]
 mod tests {
@@ -30,7 +31,7 @@ mod tests {
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
         let mut filter =
-            FilterChain::load_from_path("../test/slang-shaders/crt/crt-royale.slangp")
+            FilterChain::load_from_path("../test/slang-shaders/crt/crt-royale.slangp", None)
                 .unwrap();
         hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }

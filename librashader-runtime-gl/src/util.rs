@@ -1,6 +1,5 @@
-use crate::framebuffer::GlImage;
 use gl::types::{GLenum, GLuint};
-use librashader_common::{FilterMode, Size, WrapMode};
+use librashader_common::Size;
 use librashader_reflect::back::cross::GlVersion;
 
 pub fn calc_miplevel(size: Size<u32>) -> u32 {
@@ -110,4 +109,21 @@ pub fn gl_get_version() -> GlVersion {
         _ => GlVersion::V1_50
     }
 
+}
+
+pub fn gl_u16_to_version(version: u16) -> GlVersion {
+    match version {
+        300 => GlVersion::V1_30,
+        310 => GlVersion::V1_40,
+        320 => GlVersion::V1_50,
+        330 => GlVersion::V3_30,
+        400 => GlVersion::V4_00,
+        410 => GlVersion::V4_10,
+        420 => GlVersion::V4_20,
+        430 => GlVersion::V4_30,
+        440 => GlVersion::V4_40,
+        450 => GlVersion::V4_50,
+        460 => GlVersion::V4_60,
+        _ => GlVersion::V1_50
+    }
 }

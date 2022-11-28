@@ -4,10 +4,10 @@ use crate::framebuffer::{Framebuffer, GlImage, Viewport};
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::util;
-use crate::util::{gl_get_version, InlineRingBuffer};
+use crate::util::{gl_get_version, gl_u16_to_version, InlineRingBuffer};
 use crate::error::{FilterChainError, Result};
 
-use gl::types::{GLenum, GLint, GLsizei, GLsizeiptr, GLuint};
+use gl::types::{GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader_common::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
 use librashader_preprocess::ShaderSource;
@@ -22,6 +22,7 @@ use std::collections::VecDeque;
 use std::path::Path;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
+use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 
@@ -133,11 +134,14 @@ type ShaderPassMeta<'a> = (
 
 impl FilterChain {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(preset: ShaderPreset) -> Result<FilterChain> {
+    pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
         let (passes, semantics) = FilterChain::load_preset(&preset)?;
 
+        let version = options.map(|o| gl_u16_to_version(o.gl_version))
+            .unwrap_or_else(|| gl_get_version());
+
         // initialize passes
-        let filters = FilterChain::init_passes(passes, &semantics)?;
+        let filters = FilterChain::init_passes(version, passes, &semantics)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         let default_wrap = filters
@@ -160,7 +164,7 @@ impl FilterChain {
         feedback_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
-        let luts = FilterChain::load_luts(&samplers, &preset.textures)?;
+        let luts = FilterChain::load_luts(&preset.textures)?;
 
         let (history_framebuffers, history_textures) =
             FilterChain::init_history(&filters, default_filter, default_wrap);
@@ -194,10 +198,10 @@ impl FilterChain {
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(path: impl AsRef<Path>) -> Result<FilterChain> {
+    pub fn load_from_path(path: impl AsRef<Path>, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset)
+        Self::load_from_preset(preset, options)
     }
 
     fn load_preset(
@@ -260,13 +264,13 @@ impl FilterChain {
 
         let semantics = ReflectSemantics {
             uniform_semantics,
-            non_uniform_semantics: texture_semantics,
+            texture_semantics,
         };
 
         Ok((passes, semantics))
     }
 
-    fn load_luts(samplers: &SamplerSet, textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
+    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
         let mut luts = FxHashMap::default();
 
         for (index, texture) in textures.iter().enumerate() {
@@ -305,10 +309,6 @@ impl FilterChain {
                 );
 
                 let mipmap = levels > 1;
-                // let linear = texture.filter_mode == FilterMode::Linear;
-
-                // set mipmaps and wrapping
-
                 if mipmap {
                     gl::GenerateMipmap(gl::TEXTURE_2D);
                 }
@@ -335,6 +335,7 @@ impl FilterChain {
     }
 
     fn init_passes(
+        version: GlVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
     ) -> Result<Box<[FilterPass]>> {
@@ -343,7 +344,7 @@ impl FilterChain {
         // initialize passes
         for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
-            let glsl = reflect.compile(gl_get_version())?;
+            let glsl = reflect.compile(version)?;
 
             let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
 
@@ -444,7 +445,6 @@ impl FilterChain {
             ]
             .into_boxed_slice();
 
-            // todo: reflect indexed parameters
             let mut uniform_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
                 uniform_bindings.insert(
@@ -571,10 +571,12 @@ impl FilterChain {
     /// Process a frame with the input image.
     ///
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
-    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, clear: bool) -> Result<()> {
-        if clear {
-            for framebuffer in &self.history_framebuffers {
-                framebuffer.clear()
+    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, options: Option<&FrameOptions>) -> Result<()> {
+        if let Some(options) = options {
+            if options.clear_history {
+                for framebuffer in &self.history_framebuffers {
+                    framebuffer.clear()
+                }
             }
         }
 

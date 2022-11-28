@@ -1,8 +1,5 @@
 use gl::types::GLint;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, SemanticMap, TextureSemantics, VariableSemantics,
-};
-use std::hash::Hash;
+use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset};
 
 #[derive(Debug)]
 pub enum VariableLocation {
@@ -25,24 +22,22 @@ pub struct UniformLocation<T> {
 }
 
 impl UniformLocation<GLint> {
-    pub fn is_fragment_valid(&self) -> bool {
-        self.fragment >= 0
-    }
+    // pub fn is_fragment_valid(&self) -> bool {
+    //     self.fragment >= 0
+    // }
+    //
+    // pub fn is_vertex_valid(&self) -> bool {
+    //     self.vertex >= 0
+    // }
 
-    pub fn is_vertex_valid(&self) -> bool {
-        self.vertex >= 0
-    }
-
-    pub fn is_valid(&self) -> bool {
-        self.is_fragment_valid() || self.is_vertex_valid()
+    pub fn is_valid(&self, stage: BindingStage) -> bool {
+        let mut validity = false;
+        if stage.contains(BindingStage::FRAGMENT) {
+            validity = validity || self.fragment >= 0;
+        }
+        if stage.contains(BindingStage::VERTEX) {
+            validity = validity || self.vertex >= 0;
+        }
+        validity
     }
 }
-
-#[derive(Debug, Copy, Clone)]
-pub enum MemberLocation {
-    Offset(MemberOffset),
-    Uniform(UniformLocation<GLint>),
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct TextureUnit<T>(T);
