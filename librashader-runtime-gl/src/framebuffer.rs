@@ -171,6 +171,7 @@ impl Framebuffer {
                 self.image,
                 0,
             );
+            gl::ReadBuffer(gl::COLOR_ATTACHMENT0);
             gl::DrawBuffer(gl::COLOR_ATTACHMENT1);
             gl::BlitFramebuffer(
                 0,
@@ -264,6 +265,7 @@ impl Framebuffer {
                 size.width as GLsizei,
                 size.height as GLsizei,
             );
+
             gl::FramebufferTexture2D(
                 gl::FRAMEBUFFER,
                 gl::COLOR_ATTACHMENT0,
@@ -287,7 +289,7 @@ impl Framebuffer {
                         );
                         gl::DeleteTextures(1, &self.image);
                         gl::GenTextures(1, &mut self.image);
-                        gl::BindTexture(1, self.image);
+                        gl::BindTexture(gl::TEXTURE_2D, self.image);
 
                         self.levels = util::calc_miplevel(size);
                         if self.levels > self.max_levels {

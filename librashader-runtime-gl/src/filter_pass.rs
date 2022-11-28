@@ -204,36 +204,7 @@ impl FilterPass {
             gl::Disable(gl::BLEND);
             gl::Disable(gl::DEPTH_TEST);
 
-            gl::EnableVertexAttribArray(0);
-            gl::EnableVertexAttribArray(1);
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, parent.draw_quad.vbo);
-
-            // the provided pointers are of OpenGL provenance with respect to the buffer bound to quad_vbo,
-            // and not a known provenance to the Rust abstract machine, therefore we give it invalid pointers.
-            // that are inexpressible in Rust
-            gl::VertexAttribPointer(
-                0,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as GLsizei,
-                std::ptr::invalid(0),
-            );
-            gl::VertexAttribPointer(
-                1,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as GLsizei,
-                std::ptr::invalid(2 * std::mem::size_of::<f32>()),
-            );
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::DisableVertexAttribArray(0);
-            gl::DisableVertexAttribArray(1);
-
             gl::Disable(gl::FRAMEBUFFER_SRGB);
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }

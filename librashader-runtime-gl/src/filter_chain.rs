@@ -29,7 +29,7 @@ use crate::texture::Texture;
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
     common: FilterCommon,
-    filter_vao: GLuint,
+    pub(crate) draw_quad: DrawQuad,
     output_framebuffers: Box<[Framebuffer]>,
     feedback_framebuffers: Box<[Framebuffer]>,
     history_framebuffers: VecDeque<Framebuffer>,
@@ -43,7 +43,6 @@ pub struct FilterCommon {
     pub output_textures: Box<[Texture]>,
     pub feedback_textures: Box<[Texture]>,
     pub history_textures: Box<[Texture]>,
-    pub(crate) draw_quad: DrawQuad,
 }
 
 pub struct FilterMutable {
@@ -174,20 +173,15 @@ impl FilterChain {
         let (history_framebuffers, history_textures) =
             FilterChain::init_history(&filters, default_filter, default_wrap);
 
-        // create VBO objects
+        // create vertex objects
         let draw_quad = DrawQuad::new();
-
-        let mut filter_vao = 0;
-        unsafe {
-            gl::GenVertexArrays(1, &mut filter_vao);
-        }
 
         Ok(FilterChain {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             history_framebuffers,
-            filter_vao,
+            draw_quad,
             common: FilterCommon {
                 config: FilterMutable {
                     passes_enabled: preset.shader_count as usize,
@@ -199,7 +193,6 @@ impl FilterChain {
                 output_textures: output_textures.into_boxed_slice(),
                 feedback_textures: feedback_textures.into_boxed_slice(),
                 history_textures,
-                draw_quad,
             },
         })
     }
@@ -279,6 +272,11 @@ impl FilterChain {
 
     fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
         let mut luts = FxHashMap::default();
+        let pixel_unpack = unsafe {
+            let mut binding = 0;
+            gl::GetIntegerv(gl::PIXEL_UNPACK_BUFFER_BINDING, &mut binding);
+            binding
+        };
 
         for (index, texture) in textures.iter().enumerate() {
             let image = Image::load(&texture.path)?;
@@ -338,6 +336,10 @@ impl FilterChain {
                 },
             );
         }
+
+        unsafe {
+            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pixel_unpack as GLuint);
+        };
         Ok(luts)
     }
 
@@ -593,11 +595,9 @@ impl FilterChain {
             return Ok(());
         }
 
-        unsafe {
-            // do not need to rebind FBO 0 here since first `draw` will
-            // bind automatically.
-            gl::BindVertexArray(self.filter_vao);
-        }
+        // do not need to rebind FBO 0 here since first `draw` will
+        // bind automatically.
+        self.draw_quad.bind_vao();
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -710,10 +710,7 @@ impl FilterChain {
 
         self.push_history(input)?;
 
-        // pass.draw should return framebuffer bound to 0.
-        unsafe {
-            gl::BindVertexArray(0);
-        }
+        self.draw_quad.unbind_vao();
 
         Ok(())
     }
