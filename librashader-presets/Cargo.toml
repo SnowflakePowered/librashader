@@ -9,5 +9,8 @@ edition = "2021"
 thiserror = "1.0.37"
 nom = "7.1.1"
 nom_locate = "4.0.0"
-"librashader-common" = { path = "../librashader-common" }
+librashader-common = { path = "../librashader-common" }
 num-traits = "0.2"
+
+[features]
+parse_legacy_glsl = []

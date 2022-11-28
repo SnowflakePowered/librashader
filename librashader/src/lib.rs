@@ -67,3 +67,16 @@ pub use librashader_common::{
     WrapMode
 };
 
+pub mod util {
+    use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
+    use librashader_presets::ShaderPreset;
+
+    pub fn get_parameter_meta(preset: &ShaderPreset) -> Result<impl Iterator<Item = ShaderParameter>, PreprocessError> {
+        let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset.shaders.iter()
+            .map(|s| ShaderSource::load(&s.name).map(|s| s.parameters))
+            .into_iter()
+            .collect();
+        let iters = iters?;
+        Ok(iters.into_iter().flatten())
+    }
+}

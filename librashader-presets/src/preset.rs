@@ -113,10 +113,20 @@ pub struct ParameterConfig {
 
 #[derive(Debug, Clone)]
 pub struct ShaderPreset {
-    pub shader_count: i32,
+    /// Used in legacy GLSL shader semantics. If < 0, no feedback pass is used.
+    /// Otherwise, the FBO after pass #N is passed a texture to next frame
+    #[cfg(feature = "parse_legacy_glsl")]
     pub feedback_pass: i32,
+
+    /// The number of shaders enabled in the filter chain.
+    pub shader_count: i32,
     // Everything is in Vecs because the expect number of values is well below 64.
+    /// Preset information for each shader.
     pub shaders: Vec<ShaderPassConfig>,
+
+    /// Preset information for each texture.
     pub textures: Vec<TextureConfig>,
+
+    /// Preset information for each user parameter.
     pub parameters: Vec<ParameterConfig>,
 }

@@ -506,13 +506,11 @@ impl FilterPass {
                 .map(|f| f.initial)
                 .unwrap_or(0f32);
 
-            let value = parent
-                .preset
+            let value = *parent
+                .config
                 .parameters
-                .iter()
-                .find(|&p| p.name == id)
-                .map(|p| p.value)
-                .unwrap_or(default);
+                .get(id)
+                .unwrap_or(&default);
 
             FilterPass::build_float(location.location(), &mut buffer[offset..][..4], value)
         }

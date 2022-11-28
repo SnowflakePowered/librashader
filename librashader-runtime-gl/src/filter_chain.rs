@@ -37,13 +37,18 @@ pub struct FilterChain {
 
 pub struct FilterCommon {
     // semantics: ReflectSemantics,
-    pub(crate) preset: ShaderPreset,
+    pub(crate) config: FilterMutable,
     pub(crate) luts: FxHashMap<usize, Texture>,
     pub(crate) samplers: SamplerSet,
     pub output_textures: Box<[Texture]>,
     pub feedback_textures: Box<[Texture]>,
     pub history_textures: Box<[Texture]>,
     pub(crate) draw_quad: DrawQuad,
+}
+
+pub struct FilterMutable {
+    pub(crate) passes_enabled: usize,
+    pub(crate) parameters: FxHashMap<String, f32>
 }
 
 impl FilterChain {
@@ -124,8 +129,8 @@ impl FilterChain {
     }
 }
 
-type ShaderPassMeta<'a> = (
-    &'a ShaderPassConfig,
+type ShaderPassMeta = (
+    ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
         impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext> + ReflectShader,
@@ -135,7 +140,7 @@ type ShaderPassMeta<'a> = (
 impl FilterChain {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
-        let (passes, semantics) = FilterChain::load_preset(&preset)?;
+        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
 
         let version = options.map(|o| gl_u16_to_version(o.gl_version))
             .unwrap_or_else(|| gl_get_version());
@@ -184,9 +189,11 @@ impl FilterChain {
             history_framebuffers,
             filter_vao,
             common: FilterCommon {
-                // we don't need the reflect semantics once all locations have been bound per pass.
-                // semantics,
-                preset,
+                config: FilterMutable {
+                    passes_enabled: preset.shader_count as usize,
+                    parameters: preset.parameters.into_iter()
+                        .map(|param| (param.name, param.value)).collect(),
+                },
                 luts,
                 samplers,
                 output_textures: output_textures.into_boxed_slice(),
@@ -205,15 +212,15 @@ impl FilterChain {
     }
 
     fn load_preset(
-        preset: &ShaderPreset,
+        passes: Vec<ShaderPassConfig>,
+        textures: &[TextureConfig]
     ) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
 
-        let passes = preset
-            .shaders
-            .iter()
+        let passes = passes
+            .into_iter()
             .map(|shader| {
                 eprintln!("[gl] loading {}", &shader.name.display());
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
@@ -233,18 +240,18 @@ impl FilterChain {
                 Ok::<_, FilterChainError>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
+            .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
 
         for details in &passes {
             FilterChain::load_pass_semantics(
                 &mut uniform_semantics,
                 &mut texture_semantics,
-                details.0,
+                &details.0,
             )
         }
 
         // add lut params
-        for (index, texture) in preset.textures.iter().enumerate() {
+        for (index, texture) in textures.iter().enumerate() {
             texture_semantics.insert(
                 texture.name.clone(),
                 SemanticMap {
@@ -495,7 +502,7 @@ impl FilterChain {
                 push_buffer,
                 uniform_bindings,
                 source,
-                config: config.clone(),
+                config
             });
         }
 
@@ -572,6 +579,8 @@ impl FilterChain {
     ///
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
     pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, options: Option<&FrameOptions>) -> Result<()> {
+        // limit number of passes to those enabled.
+        let passes = &mut self.passes[0..self.common.config.passes_enabled];
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &self.history_framebuffers {
@@ -580,7 +589,7 @@ impl FilterChain {
             }
         }
 
-        if self.passes.is_empty() {
+        if passes.is_empty() {
             return Ok(());
         }
 
@@ -590,8 +599,8 @@ impl FilterChain {
             gl::BindVertexArray(self.filter_vao);
         }
 
-        let filter = self.passes[0].config.filter;
-        let wrap_mode = self.passes[0].config.wrap_mode;
+        let filter = passes[0].config.filter;
+        let wrap_mode = passes[0].config.wrap_mode;
 
         // update history
         for (texture, fbo) in self
@@ -608,7 +617,7 @@ impl FilterChain {
             .feedback_textures
             .iter_mut()
             .zip(self.feedback_framebuffers.iter())
-            .zip(self.passes.iter())
+            .zip(passes.iter())
         {
             texture.image = fbo
                 .as_texture(pass.config.filter, pass.config.wrap_mode)
@@ -626,7 +635,7 @@ impl FilterChain {
         let mut source = original;
 
         // rescale render buffers to ensure all bindings are valid.
-        for (index, pass) in self.passes.iter_mut().enumerate() {
+        for (index, pass) in passes.iter_mut().enumerate() {
             self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
@@ -644,8 +653,8 @@ impl FilterChain {
             )?;
         }
 
-        let passes_len = self.passes.len();
-        let (pass, last) = self.passes.split_at_mut(passes_len - 1);
+        let passes_len = passes.len();
+        let (pass, last) = passes.split_at_mut(passes_len - 1);
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];

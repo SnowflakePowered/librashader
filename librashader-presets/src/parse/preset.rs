@@ -48,6 +48,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
         })
         .unwrap_or(0);
 
+    #[cfg(feature = "parse_legacy_glsl")]
     let feedback_pass = remove_if(&mut values, |v| matches!(*v, Value::FeedbackPass(_)))
         .map(|value| {
             if let Value::FeedbackPass(pass) = value {
@@ -179,8 +180,9 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     }
 
     ShaderPreset {
-        shader_count,
+        #[cfg(feature = "parse_legacy_glsl")]
         feedback_pass,
+        shader_count,
         shaders,
         textures,
         parameters,
