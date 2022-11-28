@@ -325,7 +325,7 @@ pub enum UniformSemantic {
 #[derive(Debug, Clone)]
 pub struct ReflectSemantics {
     pub uniform_semantics: FxHashMap<String, UniformSemantic>,
-    pub non_uniform_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
+    pub texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
 }
 
 

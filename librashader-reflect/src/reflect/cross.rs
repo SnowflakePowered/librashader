@@ -477,7 +477,7 @@ where
         semantics: &ReflectSemantics,
         meta: &mut ReflectMeta,
     ) -> Result<(), ShaderReflectError> {
-        let Some(semantic) = semantics.non_uniform_semantics.get_texture_semantic(texture.name) else {
+        let Some(semantic) = semantics.texture_semantics.get_texture_semantic(texture.name) else {
             return Err(SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(texture.name.to_string())))
         };
 
@@ -873,7 +873,7 @@ mod test {
                 0,
                 &ReflectSemantics {
                     uniform_semantics,
-                    non_uniform_semantics: Default::default(),
+                    texture_semantics: Default::default(),
                 },
             )
             .unwrap();
