@@ -376,6 +376,12 @@ impl FilterPass {
             // must be under primitive topology trianglestrip with quad
             context.Draw(4, 0);
         }
+
+        unsafe {
+            // unbind resources.
+            context.PSSetShaderResources(0, Some(&[None; 16]));
+            context.OMSetRenderTargets(None, None);
+        }
         Ok(())
     }
 }
