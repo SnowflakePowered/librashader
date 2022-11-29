@@ -5,7 +5,7 @@ mod stage;
 
 use crate::include::read_source;
 pub use error::*;
-use librashader_common::ShaderFormat;
+use librashader_common::ImageFormat;
 use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,7 +14,7 @@ pub struct ShaderSource {
     pub fragment: String,
     pub name: Option<String>,
     pub parameters: Vec<ShaderParameter>,
-    pub format: ShaderFormat,
+    pub format: ImageFormat,
 }
 
 #[derive(Debug, Clone, PartialEq)]

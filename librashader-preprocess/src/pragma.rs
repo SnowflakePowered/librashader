@@ -1,5 +1,5 @@
 use crate::{PreprocessError, ShaderParameter};
-use librashader_common::ShaderFormat;
+use librashader_common::ImageFormat;
 use nom::bytes::complete::{is_not, tag, take_while};
 
 use nom::character::complete::multispace1;
@@ -10,7 +10,7 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub(crate) struct ShaderMeta {
-    pub(crate) format: ShaderFormat,
+    pub(crate) format: ImageFormat,
     pub(crate) parameters: Vec<ShaderParameter>,
     pub(crate) name: Option<String>,
 }
@@ -73,7 +73,7 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
 pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, PreprocessError> {
     let source = source.as_ref();
     let mut parameters: Vec<ShaderParameter> = Vec::new();
-    let mut format = ShaderFormat::default();
+    let mut format = ImageFormat::default();
     let mut name = None;
     for line in source.lines() {
         if line.starts_with("#pragma parameter ") {
@@ -88,14 +88,14 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
         }
 
         if line.starts_with("#pragma format ") {
-            if format != ShaderFormat::Unknown {
+            if format != ImageFormat::Unknown {
                 return Err(PreprocessError::DuplicatePragmaError(line.to_string()));
             }
 
             let format_string = line["#pragma format ".len()..].trim();
-            format = ShaderFormat::from_str(format_string)?;
+            format = ImageFormat::from_str(format_string)?;
 
-            if format == ShaderFormat::Unknown {
+            if format == ImageFormat::Unknown {
                 return Err(PreprocessError::UnknownShaderFormat);
             }
         }

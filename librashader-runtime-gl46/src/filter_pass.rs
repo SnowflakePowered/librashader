@@ -3,7 +3,7 @@ use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
-use librashader_common::{ShaderFormat, Size};
+use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
@@ -124,12 +124,12 @@ impl FilterPass {
 }
 
 impl FilterPass {
-    pub fn get_format(&self) -> ShaderFormat {
-        let mut fb_format = ShaderFormat::R8G8B8A8Unorm;
+    pub fn get_format(&self) -> ImageFormat {
+        let mut fb_format = ImageFormat::R8G8B8A8Unorm;
         if self.config.srgb_framebuffer {
-            fb_format = ShaderFormat::R8G8B8A8Srgb;
+            fb_format = ImageFormat::R8G8B8A8Srgb;
         } else if self.config.float_framebuffer {
-            fb_format = ShaderFormat::R16G16B16A16Sfloat;
+            fb_format = ImageFormat::R16G16B16A16Sfloat;
         }
         fb_format
     }

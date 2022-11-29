@@ -1,6 +1,6 @@
 use crate::filter_chain::FilterCommon;
 use crate::texture::{Texture, OwnedTexture};
-use librashader_common::Size;
+use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::cross::GlslangHlslContext;
@@ -41,25 +41,14 @@ pub struct FilterPass {
 }
 // slang_process.cpp 229
 impl FilterPass {
-    fn build_mvp(buffer: &mut [u8], mvp: &[f32]) {
-        let mvp = bytemuck::cast_slice(mvp);
-        buffer.copy_from_slice(mvp);
-    }
-
-    #[inline(always)]
-    fn build_uniform<T>(buffer: &mut [u8], value: T)
-    where
-        T: Copy,
-        T: bytemuck::Pod,
-    {
-        let buffer = bytemuck::cast_slice_mut(buffer);
-        buffer[0] = value;
-    }
-
-    fn build_vec4(buffer: &mut [u8], size: impl Into<[f32; 4]>) {
-        let vec4 = size.into();
-        let vec4 = bytemuck::cast_slice(&vec4);
-        buffer.copy_from_slice(vec4);
+    pub fn get_format(&self) -> ImageFormat {
+        let mut fb_format = ImageFormat::R8G8B8A8Unorm;
+        if self.config.srgb_framebuffer {
+            fb_format = ImageFormat::R8G8B8A8Srgb;
+        } else if self.config.float_framebuffer {
+            fb_format = ImageFormat::R16G16B16A16Sfloat;
+        }
+        fb_format
     }
 
     fn bind_texture(
@@ -204,30 +193,24 @@ impl FilterPass {
         // }
 
         // PassOutput
-        // for (index, output) in parent.output_textures.iter().enumerate() {
-        //     if let Some(binding) = self
-        //         .reflection
-        //         .meta
-        //         .texture_meta
-        //         .get(&TextureSemantics::PassOutput.semantics(index))
-        //     {
-        //         FilterPass::bind_texture(binding, output);
-        //     }
-        //
-        //     if let Some(offset) = self
-        //         .uniform_bindings
-        //         .get(&TextureSemantics::PassOutput.semantics(index).into())
-        //     {
-        //         let (buffer, offset) = match offset {
-        //             MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-        //             MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-        //         };
-        //         FilterPass::build_uniform(
-        //             &mut buffer[offset..][..16],
-        //             output.image.size,
-        //         );
-        //     }
-        // }
+        for (index, output) in parent.output_textures.iter().enumerate() {
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::PassOutput.semantics(index))
+            {
+                FilterPass::bind_texture(binding, output);
+            }
+
+            if let Some(offset) = self
+                .uniform_bindings
+                .get(&TextureSemantics::PassOutput.semantics(index).into())
+            {
+                self.uniform_storage.bind_vec4(*offset, output.image.size, None);
+
+            }
+        }
 
         // PassFeedback
         // for (index, feedback) in parent.feedback_textures.iter().enumerate() {

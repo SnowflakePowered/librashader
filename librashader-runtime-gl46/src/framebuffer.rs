@@ -1,7 +1,7 @@
 use crate::util;
 use crate::texture::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
-use librashader_common::{FilterMode, ShaderFormat, Size, WrapMode};
+use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
 use crate::error::FilterChainError;
 use crate::error::Result;
@@ -73,7 +73,7 @@ impl Framebuffer {
     pub(crate) fn scale(
         &mut self,
         scaling: Scale2D,
-        format: ShaderFormat,
+        format: ImageFormat,
         viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
@@ -125,8 +125,8 @@ impl Framebuffer {
 
             self.init(
                 size,
-                if format == ShaderFormat::Unknown {
-                    ShaderFormat::R8G8B8A8Unorm
+                if format == ImageFormat::Unknown {
+                    ImageFormat::R8G8B8A8Unorm
                 } else {
                     format
                 },
@@ -241,7 +241,7 @@ impl Framebuffer {
                         gl::TextureStorage2D(
                             self.image,
                             self.levels as GLsizei,
-                            ShaderFormat::R8G8B8A8Unorm.into(),
+                            ImageFormat::R8G8B8A8Unorm.into(),
                             size.width as GLsizei,
                             size.height as GLsizei,
                         );

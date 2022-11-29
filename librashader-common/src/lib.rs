@@ -13,7 +13,7 @@ use num_traits::AsPrimitive;
 
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum ShaderFormat {
+pub enum ImageFormat {
     #[default]
     Unknown = 0,
 
@@ -88,7 +88,7 @@ pub enum WrapMode {
     MirroredRepeat,
 }
 
-impl FromStr for ShaderFormat {
+impl FromStr for ImageFormat {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn triangle_d3d11() {
-        let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
+        let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
         // let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
 
         hello_triangle::main(sample).unwrap();

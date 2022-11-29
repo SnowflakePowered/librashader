@@ -1,6 +1,6 @@
 use crate::texture::{DxImageView, OwnedTexture, Texture};
 use librashader_common::image::Image;
-use librashader_common::Size;
+use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::GlslangHlslContext;
@@ -19,7 +19,7 @@ use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIN
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
 use librashader_runtime::uniforms::UniformStorage;
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
-use crate::framebuffer::OutputFramebuffer;
+use crate::framebuffer::{OutputFramebuffer, OwnedFramebuffer};
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
@@ -38,6 +38,7 @@ type ShaderPassMeta<'a> = (
 pub struct FilterChain {
     pub common: FilterCommon,
     pub passes: Vec<FilterPass>,
+    pub output_framebuffers: Box<[OwnedFramebuffer]>,
 }
 
 pub struct Direct3D11 {
@@ -185,15 +186,16 @@ impl FilterChain {
         // initialize passes
         let filters = FilterChain::init_passes(device, passes, &semantics).unwrap();
 
-        // let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
-        // let default_wrap = filters
-        //     .first()
-        //     .map(|f| f.config.wrap_mode)
-        //     .unwrap_or_default();
+        let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
+        let default_wrap = filters
+            .first()
+            .map(|f| f.config.wrap_mode)
+            .unwrap_or_default();
 
-        // // initialize output framebuffers
-        // let mut output_framebuffers = Vec::new();
-        // output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        // initialize output framebuffers
+        let mut output_framebuffers = Vec::new();
+        output_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, Size::new(1, 1),
+                                                                                ImageFormat::R8G8B8A8Unorm).unwrap());
         // let mut output_textures = Vec::new();
         // output_textures.resize_with(filters.len(), Texture::default);
         //
@@ -220,7 +222,7 @@ impl FilterChain {
         // todo: make vbo: d3d11.c 1376
         Ok(FilterChain {
             passes: filters,
-            // output_framebuffers: output_framebuffers.into_boxed_slice(),
+            output_framebuffers: output_framebuffers.into_boxed_slice(),
             // feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             // history_framebuffers,
             // filter_vao,
@@ -346,13 +348,34 @@ impl FilterChain {
 
         let mut source = original.clone();
 
+        // rescale render buffers to ensure all bindings are valid.
+        for (index, pass) in passes.iter_mut().enumerate() {
+            self.output_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                viewport,
+                &original,
+                &source,
+            )?;
+        }
+
+
 
         for (index, pass) in passes.iter_mut().enumerate() {
+            let target = &self.output_framebuffers[index];
+            let size =  target.size;
+
             pass.draw(index, &self.common, if pass.config.frame_count_mod > 0 {
                 count % pass.config.frame_count_mod as usize
             } else {
                 count
-            } as u32, 1, viewport, &original, &source, RenderTarget::new(output.clone(), None))?;
+            } as u32, 1, viewport, &original, &source, RenderTarget::new(target.as_output_framebuffer().unwrap(), None))?;
+
+            source = Texture {
+                view: DxImageView { handle: target.create_shader_resource_view().unwrap(), size },
+                filter,
+                wrap_mode,
+            };
         }
 
         Ok(())

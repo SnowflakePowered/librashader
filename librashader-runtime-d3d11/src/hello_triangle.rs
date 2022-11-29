@@ -694,7 +694,7 @@ pub mod d3d11_hello_triangle {
         let dxgi_factory_flags = if cfg!(debug_assertions) {
             DXGI_CREATE_FACTORY_DEBUG
         } else {
-            0
+            DXGI_CREATE_FACTORY_DEBUG
         };
 
         let dxgi_factory: IDXGIFactory4 = unsafe { CreateDXGIFactory2(dxgi_factory_flags) }?;
@@ -709,7 +709,7 @@ pub mod d3d11_hello_triangle {
                 None,
                 D3D_DRIVER_TYPE_HARDWARE,
                 HINSTANCE::default(),
-                D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG,
+                D3D11_CREATE_DEVICE_DEBUG,
                 Some(&feature_levels),
                 D3D11_SDK_VERSION,
                 Some(&mut out_device),

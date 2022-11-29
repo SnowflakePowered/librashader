@@ -73,7 +73,7 @@ pub mod targets {
 
 pub use librashader_common::{
     FilterMode,
-    ShaderFormat,
+    ImageFormat,
     Size,
     WrapMode
 };
