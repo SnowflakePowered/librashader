@@ -17,7 +17,8 @@ use windows::core::PCSTR;
 use windows::s;
 use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
-use crate::filter_pass::{ConstantBuffer, ConstantBufferBinding, FilterPass};
+use librashader_runtime::uniforms::UniformStorage;
+use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OutputFramebuffer;
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
@@ -126,6 +127,17 @@ impl FilterChain {
                 None
             };
 
+            let uniform_storage = UniformStorage::new(reflection
+                                                         .ubo
+                                                         .as_ref()
+                                                         .map(|ubo| ubo.size as usize)
+                                                         .unwrap_or(0),
+                                                     reflection
+                                                         .push_constant
+                                                         .as_ref()
+                                                         .map(|push| push.size as usize)
+                                                         .unwrap_or(0));
+
             let mut uniform_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
                 uniform_bindings.insert(
@@ -155,8 +167,9 @@ impl FilterChain {
                 vertex_layout: vao,
                 pixel_shader: ps,
                 uniform_bindings,
-                uniform_buffer: ConstantBuffer::new(ubo_cbuffer),
-                push_buffer: ConstantBuffer::new(push_cbuffer),
+                uniform_storage,
+                uniform_buffer: ubo_cbuffer,
+                push_buffer: push_cbuffer,
                 source,
                 config: config.clone(),
             })

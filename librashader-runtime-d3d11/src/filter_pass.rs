@@ -12,6 +12,7 @@ use std::error::Error;
 use windows::core::ConstBuffer;
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::{ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD, ID3D11InputLayout};
+use librashader_runtime::uniforms::UniformStorage;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 
@@ -20,21 +21,6 @@ pub struct ConstantBufferBinding {
     pub size: u32,
     pub stage_mask: BindingStage,
     pub buffer: ID3D11Buffer,
-}
-
-pub struct ConstantBuffer {
-    pub binding: Option<ConstantBufferBinding>,
-    pub storage: Box<[u8]>,
-}
-
-impl ConstantBuffer {
-    pub fn new(binding: Option<ConstantBufferBinding>) -> Self {
-        let storage = vec![0u8; binding.as_ref().map(|c| c.size as usize).unwrap_or(0)].into_boxed_slice();
-        Self {
-            binding,
-            storage
-        }
-    }
 }
 
 // slang_process.cpp 141
@@ -47,8 +33,9 @@ pub struct FilterPass {
 
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
 
-    pub uniform_buffer: ConstantBuffer,
-    pub push_buffer: ConstantBuffer,
+    pub uniform_storage: UniformStorage,
+    pub uniform_buffer: Option<ConstantBufferBinding>,
+    pub push_buffer: Option<ConstantBufferBinding>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
@@ -104,22 +91,12 @@ impl FilterPass {
 
         // Bind MVP
         if let Some(offset) = self.uniform_bindings.get(&VariableSemantics::MVP.into()) {
-            let mvp_size = mvp.len() * std::mem::size_of::<f32>();
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_mvp(&mut buffer[offset..][..mvp_size], mvp)
+            self.uniform_storage.bind_mat4(*offset, mvp, None);
         }
 
         // bind OutputSize
         if let Some(offset) = self.uniform_bindings.get(&VariableSemantics::Output.into()) {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-
-            FilterPass::build_vec4(&mut buffer[offset..][..16], fb_size)
+            self.uniform_storage.bind_vec4(*offset, fb_size, None);
         }
 
         // bind FinalViewportSize
@@ -127,14 +104,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FinalViewport.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_vec4(
-                &mut buffer[offset..][..16],
-                viewport_size,
-            )
+            self.uniform_storage.bind_vec4(*offset, viewport_size, None);
         }
 
         // bind FrameCount
@@ -142,11 +112,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FrameCount.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_uniform(&mut buffer[offset..][..4], frame_count)
+            self.uniform_storage.bind_scalar(*offset, frame_count, None);
         }
 
         // bind FrameDirection
@@ -154,11 +120,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FrameDirection.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_uniform(&mut buffer[offset..][..4], frame_direction)
+            self.uniform_storage.bind_scalar(*offset, frame_direction, None);
         }
 
         // bind Original sampler
@@ -176,11 +138,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::Original.semantics(0).into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_vec4(&mut buffer[offset..][..16], original.view.size);
+            self.uniform_storage.bind_vec4(*offset, original.view.size, None);
         }
 
         // bind Source sampler
@@ -199,11 +157,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::Source.semantics(0).into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_vec4(&mut buffer[offset..][..16], source.view.size);
+            self.uniform_storage.bind_vec4(*offset, source.view.size, None);
         }
 
         if let Some(binding) = self
@@ -219,11 +173,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::OriginalHistory.semantics(0).into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
-            FilterPass::build_vec4(&mut buffer[offset..][..16], original.view.size);
+            self.uniform_storage.bind_vec4(*offset, original.view.size, None);
         }
 
         // for (index, output) in parent.history_textures.iter().enumerate() {
@@ -318,10 +268,6 @@ impl FilterPass {
                 })
         {
             let id = id.as_str();
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-            };
 
             // todo: cache parameters.
             // presets override params
@@ -341,7 +287,7 @@ impl FilterPass {
                 .map(|p| p.value)
                 .unwrap_or(default);
 
-            FilterPass::build_uniform(&mut buffer[offset..][..4], value)
+            self.uniform_storage.bind_scalar(*offset, value, None);
         }
 
         // bind luts
@@ -359,14 +305,7 @@ impl FilterPass {
                 .uniform_bindings
                 .get(&TextureSemantics::User.semantics(*index).into())
             {
-                let (buffer, offset) = match offset {
-                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-                };
-                FilterPass::build_vec4(
-                    &mut buffer[offset..][..16],
-                    lut.image.view.size,
-                );
+                self.uniform_storage.bind_vec4(*offset, lut.image.view.size, None);
             }
         }
 
@@ -397,11 +336,11 @@ impl FilterPass {
 
 
 
-        if let Some(ubo) = &self.uniform_buffer.binding {
+        if let Some(ubo) = &self.uniform_buffer {
             // upload uniforms
             unsafe {
                 let map = context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
-                std::ptr::copy_nonoverlapping(self.uniform_buffer.storage.as_ptr(), map.pData.cast(), ubo.size as usize);
+                std::ptr::copy_nonoverlapping(self.uniform_storage.ubo.as_ptr(), map.pData.cast(), ubo.size as usize);
                 context.Unmap(&ubo.buffer, 0);
             }
 
@@ -417,11 +356,11 @@ impl FilterPass {
             }
         }
 
-        if let Some(push) = &self.push_buffer.binding {
+        if let Some(push) = &self.push_buffer {
             // upload push constants
             unsafe {
                 let map = context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
-                std::ptr::copy_nonoverlapping(self.push_buffer.storage.as_ptr(), map.pData.cast(), push.size as usize);
+                std::ptr::copy_nonoverlapping(self.uniform_storage.push.as_ptr(), map.pData.cast(), push.size as usize);
                 context.Unmap(&push.buffer, 0);
             }
 

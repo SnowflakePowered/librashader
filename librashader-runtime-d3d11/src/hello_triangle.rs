@@ -474,7 +474,8 @@ pub mod d3d11_hello_triangle {
                     width: tex2d_desc.Width,
                     height: tex2d_desc.Height,
                 } }, OutputFramebuffer {
-                    rtv,
+                    rtv: resources.rtv.clone(),
+                    // rtv,
                     size:  Size {
                         width: tex2d_desc.Width,
                         height: tex2d_desc.Height,
@@ -488,6 +489,8 @@ pub mod d3d11_hello_triangle {
                         MaxDepth: 1.0,
                     },
                 }).unwrap();
+
+                // self.context.CopyResource(&resources.backbuffer, &backup);
             }
 
             unsafe {
