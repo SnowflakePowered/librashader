@@ -1,6 +1,6 @@
 use gl::types::GLint;
 use librashader_reflect::reflect::semantics::BindingStage;
-use librashader_reflect::reflect::uniforms::{BindUniform, UniformBuffer, UniformScalar};
+use librashader_reflect::reflect::uniforms::{BindUniform, UniformStorage, UniformScalar};
 
 #[derive(Debug)]
 pub enum VariableLocation {
@@ -35,7 +35,7 @@ impl UniformLocation<GLint> {
     }
 }
 
-pub(crate) type BufferStorage = UniformBuffer<GlUniformBinder, UniformLocation<GLint>>;
+pub(crate) type BufferStorage = UniformStorage<GlUniformBinder, UniformLocation<GLint>>;
 
 
 pub trait GlUniformScalar: UniformScalar {

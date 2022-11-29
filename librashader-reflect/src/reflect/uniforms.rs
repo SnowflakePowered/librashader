@@ -17,20 +17,20 @@ pub trait BindUniform<C, T> {
     fn bind_uniform(value: T, ctx: C) -> Option<()>;
 }
 
-pub struct UniformBuffer<H=NoUniformBinder, C = Option<()>> {
+pub struct UniformStorage<H=NoUniformBinder, C = Option<()>> {
     pub ubo: Box<[u8]>,
     pub push: Box<[u8]>,
     _h: PhantomData<H>,
     _c: PhantomData<C>
 }
 
-impl <H, C> UniformBuffer<H, C>
+impl <H, C> UniformStorage<H, C>
 where H: BindUniform<C, f32>, H: BindUniform<C, u32>, H: BindUniform<C, i32>,
 H: for <'a> BindUniform<C, &'a [f32; 4]>,
 H: for <'a> BindUniform<C, &'a [f32; 16]>
 {
     pub fn new(ubo_size: usize, push_size: usize) -> Self {
-        UniformBuffer {
+        UniformStorage {
             ubo: vec![0u8; ubo_size].into_boxed_slice(),
             push: vec![0u8; push_size].into_boxed_slice(),
             _h: Default::default(),
@@ -63,15 +63,12 @@ H: for <'a> BindUniform<C, &'a [f32; 16]>
         }
     }
 
-
     pub fn bind_mat4(&mut self, offset: MemberOffset, value: &[f32; 16], ctx: C) {
         let (buffer, offset) = match offset {
             MemberOffset::Ubo(offset) => (&mut self.ubo, offset),
             MemberOffset::PushConstant(offset) => (&mut self.push, offset),
         };
-        let size = value.len() * std::mem::size_of::<f32>();
-
-        Self::write_mat4_inner(&mut buffer[offset..][..size], value, ctx);
+        Self::write_mat4_inner(&mut buffer[offset..][..16 * std::mem::size_of::<f32>()], value, ctx);
     }
 
     pub fn bind_vec4(&mut self, offset: MemberOffset, value: impl Into<[f32; 4]>, ctx: C) {
@@ -80,7 +77,7 @@ H: for <'a> BindUniform<C, &'a [f32; 16]>
             MemberOffset::PushConstant(offset) => (&mut self.push, offset),
         };
 
-        Self::write_vec4_inner(&mut buffer[offset..][..16], value, ctx);
+        Self::write_vec4_inner(&mut buffer[offset..][..4 * std::mem::size_of::<f32>()], value, ctx);
     }
 
     pub fn bind_scalar<T: UniformScalar>(&mut self, offset: MemberOffset, value: T, ctx: C)
@@ -91,6 +88,6 @@ H: for <'a> BindUniform<C, &'a [f32; 16]>
             MemberOffset::PushConstant(offset) => (&mut self.push, offset),
         };
 
-        Self::write_scalar_inner(&mut buffer[offset..][..4], value, ctx)
+        Self::write_scalar_inner(&mut buffer[offset..][..std::mem::size_of::<T>()], value, ctx)
     }
 }

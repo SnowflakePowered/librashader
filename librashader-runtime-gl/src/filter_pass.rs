@@ -8,7 +8,7 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
 use rustc_hash::FxHashMap;
-use librashader_reflect::reflect::uniforms::UniformBuffer;
+use librashader_reflect::reflect::uniforms::UniformStorage;
 
 use crate::binding::{BufferStorage, GlUniformBinder, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;

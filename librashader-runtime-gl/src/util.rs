@@ -2,7 +2,7 @@ use gl::types::{GLenum, GLint, GLuint};
 use librashader_common::Size;
 use librashader_reflect::back::cross::GlVersion;
 use librashader_reflect::reflect::semantics::BindingStage;
-use librashader_reflect::reflect::uniforms::{BindUniform, UniformBuffer, UniformScalar};
+use librashader_reflect::reflect::uniforms::{BindUniform, UniformStorage, UniformScalar};
 use crate::binding::UniformLocation;
 
 pub fn calc_miplevel(size: Size<u32>) -> u32 {
