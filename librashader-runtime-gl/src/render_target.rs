@@ -1,4 +1,5 @@
 use crate::framebuffer::{Framebuffer, Viewport};
+use crate::hal::OpenGlAbstraction;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[
@@ -9,15 +10,15 @@ static DEFAULT_MVP: &[f32; 16] = &[
 ];
 
 #[derive(Debug, Copy, Clone)]
-pub struct RenderTarget<'a> {
+pub struct RenderTarget<'a, T: OpenGlAbstraction> {
     pub mvp: &'a [f32; 16],
-    pub framebuffer: &'a Framebuffer,
+    pub framebuffer: &'a Framebuffer<T>,
     pub x: i32,
     pub y: i32
 }
 
-impl<'a> RenderTarget<'a> {
-    pub fn new(backbuffer: &'a Framebuffer, mvp: Option<&'a [f32; 16]>, x: i32, y: i32) -> Self {
+impl<'a, T: OpenGlAbstraction> RenderTarget<'a, T> {
+    pub fn new(backbuffer: &'a Framebuffer<T>, mvp: Option<&'a [f32; 16]>, x: i32, y: i32) -> Self {
         if let Some(mvp) = mvp {
             RenderTarget {
                 framebuffer: backbuffer,
@@ -36,8 +37,8 @@ impl<'a> RenderTarget<'a> {
     }
 }
 
-impl<'a> From<&Viewport<'a>> for RenderTarget<'a> {
-    fn from(value: &Viewport<'a>) -> Self {
+impl<'a, T: OpenGlAbstraction> From<&Viewport<'a, T>> for RenderTarget<'a, T> {
+    fn from(value: &Viewport<'a, T>) -> Self {
         RenderTarget::new(value.output, value.mvp, value.x, value.y)
     }
 }

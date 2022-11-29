@@ -9,6 +9,7 @@ use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
 use crate::framebuffer::{Framebuffer, GlImage, Viewport};
+use crate::hal::OpenGlAbstraction;
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -259,13 +260,13 @@ void main()
     (glfw, window, events, shader_program, vao)
 }
 
-pub fn do_loop(
+pub fn do_loop<T: OpenGlAbstraction>(
     mut glfw: Glfw,
     mut window: Window,
     events: Receiver<(f64, WindowEvent)>,
     triangle_program: GLuint,
     triangle_vao: GLuint,
-    filter: &mut FilterChain,
+    filter: &mut FilterChain<T>,
 ) {
     let mut framecount = 0;
     let mut rendered_framebuffer = 0;

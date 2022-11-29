@@ -19,6 +19,7 @@ use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
+use std::marker::PhantomData;
 use std::path::Path;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
@@ -26,14 +27,15 @@ use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::binding::BufferStorage;
+use crate::hal::OpenGlAbstraction;
 
-pub struct FilterChain {
-    passes: Box<[FilterPass]>,
+pub struct FilterChain<T: OpenGlAbstraction> {
+    passes: Box<[FilterPass<T>]>,
     common: FilterCommon,
     pub(crate) draw_quad: DrawQuad,
-    output_framebuffers: Box<[Framebuffer]>,
-    feedback_framebuffers: Box<[Framebuffer]>,
-    history_framebuffers: VecDeque<Framebuffer>,
+    output_framebuffers: Box<[Framebuffer<T>]>,
+    feedback_framebuffers: Box<[Framebuffer<T>]>,
+    history_framebuffers: VecDeque<Framebuffer<T>>,
 }
 
 pub struct FilterCommon {
@@ -101,6 +103,7 @@ impl FilterChain {
         );
     }
 
+impl<T: OpenGlAbstraction> FilterChain<T> {
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
         // todo: support both ubo and pushco
         // todo: fix this.
@@ -137,16 +140,16 @@ type ShaderPassMeta = (
     >,
 );
 
-impl FilterChain {
+impl<T: OpenGlAbstraction> FilterChain<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
-        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
+    pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<FilterChain<T>> {
+        let (passes, semantics) = Self::load_preset(preset.shaders, &preset.textures)?;
 
         let version = options.map(|o| gl_u16_to_version(o.gl_version))
             .unwrap_or_else(|| gl_get_version());
 
         // initialize passes
-        let filters = FilterChain::init_passes(version, passes, &semantics)?;
+        let filters = Self::init_passes(version, passes, &semantics)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         let default_wrap = filters
@@ -169,10 +172,10 @@ impl FilterChain {
         feedback_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
-        let luts = FilterChain::load_luts(&preset.textures)?;
+        let luts = T::load_luts(&preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChain::init_history(&filters, default_filter, default_wrap);
+            Self::init_history(&filters, default_filter, default_wrap);
 
         // create vertex objects
         let draw_quad = DrawQuad::new();
@@ -199,7 +202,7 @@ impl FilterChain {
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(path: impl AsRef<Path>, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
+    pub fn load_from_path(path: impl AsRef<Path>, options: Option<&FilterChainOptions>) -> Result<FilterChain<T>> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(preset, options)
@@ -271,84 +274,11 @@ impl FilterChain {
         Ok((passes, semantics))
     }
 
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
-        let mut luts = FxHashMap::default();
-        let pixel_unpack = unsafe {
-            let mut binding = 0;
-            gl::GetIntegerv(gl::PIXEL_UNPACK_BUFFER_BINDING, &mut binding);
-            binding
-        };
-
-        for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path)?;
-            let levels = if texture.mipmap {
-                util::calc_miplevel(image.size)
-            } else {
-                1u32
-            };
-
-            let mut handle = 0;
-            unsafe {
-                gl::GenTextures(1, &mut handle);
-                gl::BindTexture(gl::TEXTURE_2D, handle);
-                gl::TexStorage2D(
-                    gl::TEXTURE_2D,
-                    levels as GLsizei,
-                    gl::RGBA8,
-                    image.size.width as GLsizei,
-                    image.size.height as GLsizei,
-                );
-
-                gl::PixelStorei(gl::UNPACK_ROW_LENGTH, 0);
-                gl::PixelStorei(gl::UNPACK_ALIGNMENT, 4);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
-                gl::TexSubImage2D(
-                    gl::TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    image.size.width as GLsizei,
-                    image.size.height as GLsizei,
-                    gl::RGBA,
-                    gl::UNSIGNED_BYTE,
-                    image.bytes.as_ptr().cast(),
-                );
-
-                let mipmap = levels > 1;
-                if mipmap {
-                    gl::GenerateMipmap(gl::TEXTURE_2D);
-                }
-
-                gl::BindTexture(gl::TEXTURE_2D, 0);
-            }
-
-            luts.insert(
-                index,
-                Texture {
-                    image: GlImage {
-                        handle,
-                        format: gl::RGBA8,
-                        size: image.size,
-                        padded_size: Size::default(),
-                    },
-                    filter: texture.filter_mode,
-                    mip_filter: texture.filter_mode,
-                    wrap_mode: texture.wrap_mode,
-                },
-            );
-        }
-
-        unsafe {
-            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pixel_unpack as GLuint);
-        };
-        Ok(luts)
-    }
-
     fn init_passes(
         version: GlVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
-    ) -> Result<Box<[FilterPass]>> {
+    ) -> Result<Box<[FilterPass<T>]>> {
         let mut filters = Vec::new();
 
         // initialize passes
@@ -454,7 +384,7 @@ impl FilterChain {
                 uniform_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
                     (
-                        FilterChain::reflect_uniform_location(program, param),
+                        Self::reflect_uniform_location(program, param),
                         param.offset,
                     ),
                 );
@@ -464,7 +394,7 @@ impl FilterChain {
                 uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
                     (
-                        FilterChain::reflect_uniform_location(program, param),
+                        Self::reflect_uniform_location(program, param),
                         param.offset,
                     ),
                 );
@@ -474,20 +404,11 @@ impl FilterChain {
                 uniform_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
                     (
-                        FilterChain::reflect_uniform_location(program, param),
+                        Self::reflect_uniform_location(program, param),
                         param.offset,
                     ),
                 );
             }
-
-            // eprintln!("{:#?}", reflection.meta.texture_meta);
-            // eprintln!("{:#?}", reflection.meta);
-            // eprintln!("{:#?}", locations);
-            // eprintln!("{:#?}", reflection.push_constant);
-            // eprintln!("====fragment====");
-            // eprintln!("{:#}", glsl.fragment);
-            // eprintln!("====vertex====");
-            // eprintln!("{:#}", glsl.vertex);
 
             filters.push(FilterPass {
                 reflection,
@@ -498,7 +419,8 @@ impl FilterChain {
                 uniform_storage,
                 uniform_bindings,
                 source,
-                config
+                config,
+                _a: Default::default(),
             });
         }
 
@@ -506,10 +428,10 @@ impl FilterChain {
     }
 
     fn init_history(
-        filters: &[FilterPass],
+        filters: &[FilterPass<T>],
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
+    ) -> (VecDeque<Framebuffer<T>>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -574,13 +496,13 @@ impl FilterChain {
     /// Process a frame with the input image.
     ///
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
-    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, options: Option<&FrameOptions>) -> Result<()> {
+    pub fn frame(&mut self, count: usize, viewport: &Viewport<T>, input: &GlImage, options: Option<&FrameOptions>) -> Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &self.history_framebuffers {
-                    framebuffer.clear()
+                    framebuffer.clear::<true>()
                 }
             }
         }

@@ -21,17 +21,19 @@ pub use framebuffer::Viewport;
 mod hello_triangle;
 mod texture;
 mod options;
+mod hal;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::filter_chain::FilterChain;
+    use crate::hal::{OpenGl3, OpenGl46};
 
     #[test]
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = hello_triangle::setup();
         let mut filter =
-            FilterChain::load_from_path("../test/slang-shaders/vhs/VHSPro.slangp", None)
+            FilterChain::<OpenGl46>::load_from_path("../test/slang-shaders/vhs/VHSPro.slangp", None)
                 .unwrap();
         hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }

@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use crate::util;
 use crate::texture::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
@@ -5,9 +6,10 @@ use librashader_common::{FilterMode, ShaderFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
 use crate::error::FilterChainError;
 use crate::error::Result;
+use crate::hal::OpenGlAbstraction;
 
 #[derive(Debug)]
-pub struct Framebuffer {
+pub struct Framebuffer<T: OpenGlAbstraction> {
     pub image: GLuint,
     pub handle: GLuint,
     pub size: Size<u32>,
@@ -15,16 +17,12 @@ pub struct Framebuffer {
     pub max_levels: u32,
     pub levels: u32,
     is_raw: bool,
+    _a: PhantomData<T>
 }
 
-impl Framebuffer {
-    pub fn new(max_levels: u32) -> Framebuffer {
-        let mut framebuffer = 0;
-        unsafe {
-            gl::GenFramebuffers(1, &mut framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        }
+impl<T: OpenGlAbstraction> Framebuffer<T> {
+    pub fn new(max_levels: u32) -> Framebuffer<T> {
+        let mut framebuffer = T::create_framebuffer();
 
         Framebuffer {
             image: 0,
@@ -37,6 +35,7 @@ impl Framebuffer {
             levels: 0,
             handle: framebuffer,
             is_raw: false,
+            _a: Default::default(),
         }
     }
 
@@ -46,7 +45,7 @@ impl Framebuffer {
         format: GLenum,
         size: Size<u32>,
         miplevels: u32,
-    ) -> Framebuffer {
+    ) -> Framebuffer<T> {
         Framebuffer {
             image: texture,
             size,
@@ -55,6 +54,7 @@ impl Framebuffer {
             levels: miplevels,
             handle,
             is_raw: true,
+            _a: Default::default(),
         }
     }
 
@@ -76,7 +76,7 @@ impl Framebuffer {
         &mut self,
         scaling: Scale2D,
         format: ShaderFormat,
-        viewport: &Viewport,
+        viewport: &Viewport<T>,
         _original: &Texture,
         source: &Texture,
     ) -> Result<Size<u32>> {
@@ -137,14 +137,8 @@ impl Framebuffer {
         Ok(size)
     }
 
-    pub(crate) fn clear(&self) {
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
-            gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
-            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        }
+    pub(crate) fn clear<const REBIND: bool>(&self) {
+        T::clear_framebuffer::<REBIND>(self.handle)
     }
 
     pub(crate) fn copy_from(&mut self, image: &GlImage) -> Result<()> {
@@ -328,7 +322,7 @@ impl Framebuffer {
     }
 }
 
-impl Drop for Framebuffer {
+impl<T: OpenGlAbstraction> Drop for Framebuffer<T> {
     fn drop(&mut self) {
         unsafe {
             if self.handle != 0 {
@@ -342,10 +336,10 @@ impl Drop for Framebuffer {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Viewport<'a> {
+pub struct Viewport<'a, T: OpenGlAbstraction> {
     pub x: i32,
     pub y: i32,
-    pub output: &'a Framebuffer,
+    pub output: &'a Framebuffer<T>,
     pub mvp: Option<&'a [f32; 16]>,
 }
 
