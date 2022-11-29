@@ -52,55 +52,6 @@ pub struct FilterMutable {
 }
 
 impl FilterChain {
-    fn load_pass_semantics(
-        uniform_semantics: &mut FxHashMap<String, UniformSemantic>,
-        texture_semantics: &mut FxHashMap<String, SemanticMap<TextureSemantics>>,
-        config: &ShaderPassConfig,
-    ) {
-        let Some(alias) = &config.alias else {
-            return;
-        };
-
-        // Ignore empty aliases
-        if alias.trim().is_empty() {
-            return;
-        }
-
-        let index = config.id as usize;
-
-        // PassOutput
-        texture_semantics.insert(
-            alias.clone(),
-            SemanticMap {
-                semantics: TextureSemantics::PassOutput,
-                index,
-            },
-        );
-        uniform_semantics.insert(
-            format!("{alias}Size"),
-            UniformSemantic::Texture(SemanticMap {
-                semantics: TextureSemantics::PassOutput,
-                index,
-            }),
-        );
-
-        // PassFeedback
-        texture_semantics.insert(
-            format!("{alias}Feedback"),
-            SemanticMap {
-                semantics: TextureSemantics::PassFeedback,
-                index,
-            },
-        );
-        uniform_semantics.insert(
-            format!("{alias}FeedbackSize"),
-            UniformSemantic::Texture(SemanticMap {
-                semantics: TextureSemantics::PassFeedback,
-                index,
-            }),
-        );
-    }
-
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
         // todo: support both ubo and pushco
         // todo: fix this.
@@ -237,31 +188,16 @@ impl FilterChain {
             .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
 
         for details in &passes {
-            FilterChain::load_pass_semantics(
+            librashader_runtime::semantics::insert_pass_semantics(
                 &mut uniform_semantics,
                 &mut texture_semantics,
                 &details.0,
             )
         }
 
-        // add lut params
-        for (index, texture) in textures.iter().enumerate() {
-            texture_semantics.insert(
-                texture.name.clone(),
-                SemanticMap {
-                    semantics: TextureSemantics::User,
-                    index,
-                },
-            );
-
-            uniform_semantics.insert(
-                format!("{}Size", texture.name),
-                UniformSemantic::Texture(SemanticMap {
-                    semantics: TextureSemantics::User,
-                    index,
-                }),
-            );
-        }
+        librashader_runtime::semantics::insert_lut_semantics(textures,
+                                                             &mut uniform_semantics,
+                                                             &mut texture_semantics);
 
         let semantics = ReflectSemantics {
             uniform_semantics,

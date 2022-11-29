@@ -456,7 +456,6 @@ name = "librashader-reflect"
 version = "0.1.0"
 dependencies = [
  "bitflags",
- "bytemuck",
  "librashader-common",
  "librashader-preprocess",
  "naga",
@@ -469,6 +468,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-runtime"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "librashader-preprocess",
+ "librashader-presets",
+ "librashader-reflect",
+ "rustc-hash",
+]
+
+[[package]]
 name = "librashader-runtime-d3d11"
 version = "0.1.0"
 dependencies = [
@@ -478,6 +488,7 @@ dependencies = [
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
+ "librashader-runtime",
  "rustc-hash",
  "windows",
 ]
@@ -493,6 +504,7 @@ dependencies = [
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
+ "librashader-runtime",
  "rustc-hash",
  "spirv_cross",
  "thiserror",
@@ -509,6 +521,7 @@ dependencies = [
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
+ "librashader-runtime",
  "rustc-hash",
  "spirv_cross",
  "thiserror",

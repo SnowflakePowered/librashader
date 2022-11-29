@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use gl::types::{GLint, GLsizei, GLsizeiptr, GLuint};
 use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
@@ -8,7 +9,7 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
 use rustc_hash::FxHashMap;
-use librashader_reflect::reflect::uniforms::UniformStorage;
+use librashader_runtime::uniforms::UniformStorage;
 
 use crate::binding::{BufferStorage, GlUniformBinder, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
@@ -42,7 +43,7 @@ impl FilterPass {
         viewport: &Viewport,
         original: &Texture,
         source: &Texture,
-        output: RenderTarget,
+        output: RenderTarget
     ) {
         let framebuffer = output.framebuffer;
 
@@ -203,7 +204,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            FilterPass::bind_texture(&parent.samplers, binding, original);
+            Self::bind_texture(&parent.samplers, binding, original);
         }
 
         // bind OriginalSize
@@ -223,7 +224,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(&parent.samplers, binding, source);
+            Self::bind_texture(&parent.samplers, binding, source);
         }
 
         // bind SourceSize
@@ -241,7 +242,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::OriginalHistory.semantics(0))
         {
-            FilterPass::bind_texture(&parent.samplers, binding, original);
+            Self::bind_texture(&parent.samplers, binding, original);
         }
         if let Some((location, offset)) = self
             .uniform_bindings
@@ -258,7 +259,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
             {
-                FilterPass::bind_texture(&parent.samplers, binding, output);
+                Self::bind_texture(&parent.samplers, binding, output);
             }
 
             if let Some((location, offset)) = self.uniform_bindings.get(
@@ -279,7 +280,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                FilterPass::bind_texture(&parent.samplers, binding, output);
+                Self::bind_texture(&parent.samplers, binding, output);
             }
 
             if let Some((location, offset)) = self
@@ -302,7 +303,7 @@ impl FilterPass {
                 if feedback.image.handle == 0 {
                     eprintln!("[WARNING] trying to bind PassFeedback: {index} which has texture 0 to slot {} in pass {pass_index}", binding.binding)
                 }
-                FilterPass::bind_texture(&parent.samplers, binding, feedback);
+                Self::bind_texture(&parent.samplers, binding, feedback);
             }
 
             if let Some((location, offset)) = self
@@ -351,7 +352,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::User.semantics(*index))
             {
-                FilterPass::bind_texture(&parent.samplers, binding, lut);
+                Self::bind_texture(&parent.samplers, binding, lut);
             }
 
             if let Some((location, offset)) = self

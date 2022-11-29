@@ -91,7 +91,7 @@ impl FilterPass {
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
-        mvp: &[f32],
+        mvp: &[f32; 16],
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,

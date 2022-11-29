@@ -1,6 +1,6 @@
 use gl::types::GLint;
 use librashader_reflect::reflect::semantics::BindingStage;
-use librashader_reflect::reflect::uniforms::{BindUniform, UniformStorage, UniformScalar};
+use librashader_runtime::uniforms::{BindUniform, UniformStorage, UniformScalar};
 
 #[derive(Debug)]
 pub enum VariableLocation {

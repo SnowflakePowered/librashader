@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use crate::reflect::semantics::MemberOffset;
+use librashader_reflect::reflect::semantics::MemberOffset;
 
 pub trait UniformScalar: Copy + bytemuck::Pod {}
 impl UniformScalar for f32 {}

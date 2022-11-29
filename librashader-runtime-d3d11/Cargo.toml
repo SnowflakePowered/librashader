@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-"librashader-common" = { path = "../librashader-common", features = ["d3d11"] }
-"librashader-presets" = { path = "../librashader-presets" }
-"librashader-preprocess" = { path = "../librashader-preprocess" }
-"librashader-reflect" = { path = "../librashader-reflect" }
+librashader-common = { path = "../librashader-common", features = ["d3d11"] }
+librashader-presets = { path = "../librashader-presets" }
+librashader-preprocess = { path = "../librashader-preprocess" }
+librashader-reflect = { path = "../librashader-reflect" }
+librashader-runtime = { path = "../librashader-runtime" }
+
 rustc-hash = "1.1.0"
 gfx-maths = "0.2.8"
 bytemuck = "1.12.3"
