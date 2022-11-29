@@ -1,6 +1,9 @@
-use gl::types::{GLenum, GLuint};
+use gl::types::{GLenum, GLint, GLuint};
 use librashader_common::Size;
 use librashader_reflect::back::cross::GlVersion;
+use librashader_reflect::reflect::semantics::BindingStage;
+use librashader_reflect::reflect::uniforms::{BindUniform, UniformBuffer, UniformScalar};
+use crate::binding::UniformLocation;
 
 pub fn calc_miplevel(size: Size<u32>) -> u32 {
     let mut size = std::cmp::max(size.width, size.height);

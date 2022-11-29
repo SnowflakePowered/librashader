@@ -13,6 +13,7 @@ pub mod semantics;
 mod naga;
 #[cfg(feature = "unstable-rust-pipeline")]
 mod rspirv;
+pub mod uniforms;
 
 pub trait ReflectShader {
     fn reflect(

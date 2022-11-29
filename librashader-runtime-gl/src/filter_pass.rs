@@ -8,8 +8,9 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
 use rustc_hash::FxHashMap;
+use librashader_reflect::reflect::uniforms::UniformBuffer;
 
-use crate::binding::{UniformLocation, VariableLocation};
+use crate::binding::{BufferStorage, GlUniformBinder, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
 use crate::render_target::RenderTarget;
@@ -17,111 +18,20 @@ use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::util::{InlineRingBuffer, RingBuffer};
 
+
 pub struct FilterPass {
     pub reflection: ShaderReflection,
     pub compiled: ShaderCompilerOutput<String, GlslangGlslContext>,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
     pub ubo_ring: Option<InlineRingBuffer<GLuint, 16>>,
-    pub uniform_buffer: Box<[u8]>,
-    pub push_buffer: Box<[u8]>,
+    pub(crate) uniform_storage: BufferStorage,
     pub uniform_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
 
 impl FilterPass {
-    fn build_mat4(location: UniformLocation<GLint>, buffer: &mut [u8], mvp: &[f32; 16]) {
-        if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
-            unsafe {
-                if location.is_valid(BindingStage::VERTEX) {
-                    gl::UniformMatrix4fv(location.vertex, 1, gl::FALSE, mvp.as_ptr());
-                }
-                if location.is_valid(BindingStage::FRAGMENT) {
-                    gl::UniformMatrix4fv(location.fragment, 1, gl::FALSE, mvp.as_ptr());
-                }
-            }
-        } else {
-            let mvp = bytemuck::cast_slice(mvp);
-            buffer.copy_from_slice(mvp);
-        }
-    }
-
-    fn build_vec4(location: UniformLocation<GLint>, buffer: &mut [u8], size: impl Into<[f32; 4]>) {
-        let vec4 = size.into();
-        if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
-            unsafe {
-                if location.is_valid(BindingStage::VERTEX) {
-                    gl::Uniform4fv(location.vertex, 1, vec4.as_ptr());
-                }
-                if location.is_valid(BindingStage::FRAGMENT) {
-                    gl::Uniform4fv(location.fragment, 1, vec4.as_ptr());
-                }
-            }
-        } else {
-            let vec4 = bytemuck::cast_slice(&vec4);
-            buffer.copy_from_slice(vec4);
-        }
-    }
-
-    #[inline(always)]
-    fn build_uniform<T>(
-        location: UniformLocation<GLint>,
-        buffer: &mut [u8],
-        value: T,
-        glfn: unsafe fn(GLint, T) -> (),
-    ) where
-        T: Copy,
-        T: bytemuck::Pod,
-    {
-        if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
-            unsafe {
-                if location.is_valid(BindingStage::VERTEX) {
-                    glfn(location.vertex, value);
-                }
-                if location.is_valid(BindingStage::FRAGMENT) {
-                    glfn(location.fragment, value);
-                }
-            }
-        } else {
-            let buffer = bytemuck::cast_slice_mut(buffer);
-            buffer[0] = value;
-        }
-    }
-
-    fn build_uint(location: UniformLocation<GLint>, buffer: &mut [u8], value: u32) {
-        Self::build_uniform(location, buffer, value, gl::Uniform1ui)
-    }
-
-    fn build_sint(location: UniformLocation<GLint>, buffer: &mut [u8], value: i32) {
-        Self::build_uniform(location, buffer, value, gl::Uniform1i)
-    }
-
-    fn build_float(location: UniformLocation<GLint>, buffer: &mut [u8], value: f32) {
-        Self::build_uniform(location, buffer, value, gl::Uniform1f)
-    }
-
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
-        unsafe {
-            // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
-            gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
-
-            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
-            gl::BindSampler(binding.binding,
-                            samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
-        }
-    }
-
-    pub fn get_format(&self) -> ShaderFormat {
-        let mut fb_format = ShaderFormat::R8G8B8A8Unorm;
-        if self.config.srgb_framebuffer {
-            fb_format = ShaderFormat::R8G8B8A8Srgb;
-        } else if self.config.float_framebuffer {
-            fb_format = ShaderFormat::R16G16B16A16Sfloat;
-        }
-        fb_format
-    }
-
     // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
     pub fn draw(
         &mut self,
@@ -152,7 +62,6 @@ impl FilterPass {
             original,
             source,
         );
-        // shader_gl3:1514
 
         if self.ubo_location.vertex != gl::INVALID_INDEX
             && self.ubo_location.fragment != gl::INVALID_INDEX
@@ -167,7 +76,7 @@ impl FilterPass {
                         gl::UNIFORM_BUFFER,
                         0,
                         size as GLsizeiptr,
-                        self.uniform_buffer.as_ptr().cast(),
+                        self.uniform_storage.ubo.as_ptr().cast(),
                     );
                     gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
 
@@ -211,6 +120,30 @@ impl FilterPass {
         }
     }
 
+    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
+        unsafe {
+            // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
+            gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
+
+            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
+            gl::BindSampler(binding.binding,
+                            samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
+        }
+    }
+}
+
+
+impl FilterPass {
+    pub fn get_format(&self) -> ShaderFormat {
+        let mut fb_format = ShaderFormat::R8G8B8A8Unorm;
+        if self.config.srgb_framebuffer {
+            fb_format = ShaderFormat::R8G8B8A8Srgb;
+        } else if self.config.float_framebuffer {
+            fb_format = ShaderFormat::R16G16B16A16Sfloat;
+        }
+        fb_format
+    }
+
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,
@@ -228,12 +161,7 @@ impl FilterPass {
         if let Some((location, offset)) =
             self.uniform_bindings.get(&VariableSemantics::MVP.into())
         {
-            let mvp_size = mvp.len() * std::mem::size_of::<f32>();
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_mat4(location.location(), &mut buffer[offset..][..mvp_size], mvp)
+            self.uniform_storage.bind_mat4(*offset, mvp, location.location());
         }
 
         // bind OutputSize
@@ -241,12 +169,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::Output.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-
-            FilterPass::build_vec4(location.location(), &mut buffer[offset..][..16], fb_size)
+            self.uniform_storage.bind_vec4(*offset, fb_size, location.location());
         }
 
         // bind FinalViewportSize
@@ -254,15 +177,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FinalViewport.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_vec4(
-                location.location(),
-                &mut buffer[offset..][..16],
-                viewport.output.size,
-            )
+            self.uniform_storage.bind_vec4(*offset,viewport.output.size, location.location());
         }
 
         // bind FrameCount
@@ -270,11 +185,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FrameCount.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_uint(location.location(), &mut buffer[offset..][..4], frame_count)
+            self.uniform_storage.bind_scalar(*offset, frame_count, location.location());
         }
 
         // bind FrameDirection
@@ -282,15 +193,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FrameDirection.into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_sint(
-                location.location(),
-                &mut buffer[offset..][..4],
-                frame_direction,
-            )
+            self.uniform_storage.bind_scalar(*offset, frame_direction, location.location());
         }
 
         // bind Original sampler
@@ -308,15 +211,8 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::Original.semantics(0).into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_vec4(
-                location.location(),
-                &mut buffer[offset..][..16],
-                original.image.size,
-            );
+            self.uniform_storage
+                .bind_vec4(*offset,original.image.size, location.location());
         }
 
         // bind Source sampler
@@ -335,15 +231,8 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::Source.semantics(0).into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_vec4(
-                location.location(),
-                &mut buffer[offset..][..16],
-                source.image.size,
-            );
+            self.uniform_storage.bind_vec4(*offset,
+                                           source.image.size, location.location());
         }
 
         if let Some(binding) = self
@@ -358,15 +247,8 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::OriginalHistory.semantics(0).into())
         {
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-            FilterPass::build_vec4(
-                location.location(),
-                &mut buffer[offset..][..16],
-                original.image.size,
-            );
+            self.uniform_storage
+                .bind_vec4(*offset,original.image.size, location.location());
         }
 
         for (index, output) in parent.history_textures.iter().enumerate() {
@@ -384,15 +266,8 @@ impl FilterPass {
                     .semantics(index + 1)
                     .into(),
             ) {
-                let (buffer, offset) = match offset {
-                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-                };
-                FilterPass::build_vec4(
-                    location.location(),
-                    &mut buffer[offset..][..16],
-                    output.image.size,
-                );
+                self.uniform_storage
+                    .bind_vec4(*offset,output.image.size, location.location());
             }
         }
 
@@ -411,15 +286,8 @@ impl FilterPass {
                 .uniform_bindings
                 .get(&TextureSemantics::PassOutput.semantics(index).into())
             {
-                let (buffer, offset) = match offset {
-                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-                };
-                FilterPass::build_vec4(
-                    location.location(),
-                    &mut buffer[offset..][..16],
-                    output.image.size,
-                );
+                self.uniform_storage
+                    .bind_vec4(*offset,output.image.size, location.location());
             }
         }
 
@@ -441,15 +309,8 @@ impl FilterPass {
                 .uniform_bindings
                 .get(&TextureSemantics::PassFeedback.semantics(index).into())
             {
-                let (buffer, offset) = match offset {
-                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-                };
-                FilterPass::build_vec4(
-                    location.location(),
-                    &mut buffer[offset..][..16],
-                    feedback.image.size,
-                );
+                self.uniform_storage
+                    .bind_vec4(*offset,feedback.image.size, location.location());
             }
         }
 
@@ -463,12 +324,6 @@ impl FilterPass {
                 })
         {
             let id = id.as_str();
-            let (buffer, offset) = match offset {
-                MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-            };
-
-            // todo: cache parameters.
             // presets override params
             let default = self
                 .source
@@ -484,7 +339,8 @@ impl FilterPass {
                 .get(id)
                 .unwrap_or(&default);
 
-            FilterPass::build_float(location.location(), &mut buffer[offset..][..4], value)
+            self.uniform_storage
+                .bind_scalar(*offset, value, location.location());
         }
 
         // bind luts
@@ -502,15 +358,8 @@ impl FilterPass {
                 .uniform_bindings
                 .get(&TextureSemantics::User.semantics(*index).into())
             {
-                let (buffer, offset) = match offset {
-                    MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-                    MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-                };
-                FilterPass::build_vec4(
-                    location.location(),
-                    &mut buffer[offset..][..16],
-                    lut.image.size,
-                );
+                self.uniform_storage
+                    .bind_vec4(*offset, lut.image.size, location.location());
             }
         }
     }

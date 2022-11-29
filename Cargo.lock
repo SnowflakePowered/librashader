@@ -456,6 +456,7 @@ name = "librashader-reflect"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "bytemuck",
  "librashader-common",
  "librashader-preprocess",
  "naga",

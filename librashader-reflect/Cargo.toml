@@ -21,6 +21,9 @@ naga = { version = "0.10.0", features = ["glsl-in", "spv-in", "spv-out", "glsl-o
 rspirv = { version = "0.11.0+1.5.4", optional = true }
 rspirv-reflect = { git = "https://github.com/Traverse-Research/rspirv-reflect", optional = true }
 
+
+bytemuck = "1.12.3"
+
 [features]
 default = []
 unstable-rust-pipeline = [ "naga", "rspirv", "rspirv-reflect" ]

@@ -25,6 +25,7 @@ use librashader_reflect::front::shaderc::GlslangCompilation;
 use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
+use crate::binding::BufferStorage;
 
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
@@ -435,24 +436,18 @@ impl FilterChain {
                 None
             };
 
-            let uniform_buffer = vec![
-                0;
-                reflection
-                    .ubo
-                    .as_ref()
-                    .map(|ubo| ubo.size as usize)
-                    .unwrap_or(0)
-            ]
-            .into_boxed_slice();
-            let push_buffer = vec![
-                0;
-                reflection
-                    .push_constant
-                    .as_ref()
-                    .map(|push| push.size as usize)
-                    .unwrap_or(0)
-            ]
-            .into_boxed_slice();
+            let uniform_storage = BufferStorage::new(reflection
+                                                         .ubo
+                                                         .as_ref()
+                                                         .map(|ubo| ubo.size as usize)
+                                                         .unwrap_or(0),
+                                                     reflection
+                                                         .push_constant
+                                                         .as_ref()
+                                                         .map(|push| push.size as usize)
+                                                         .unwrap_or(0)
+            );
+
 
             let mut uniform_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
@@ -500,8 +495,7 @@ impl FilterChain {
                 program,
                 ubo_location,
                 ubo_ring,
-                uniform_buffer,
-                push_buffer,
+                uniform_storage,
                 uniform_bindings,
                 source,
                 config
