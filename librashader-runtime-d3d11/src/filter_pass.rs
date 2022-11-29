@@ -82,7 +82,7 @@ impl FilterPass {
         binding: &TextureBinding,
         texture: &Texture,
     ) {
-        texture_binding[binding.binding as usize] = Some(texture.handle.clone());
+        texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
         sampler_binding[binding.binding as usize] = Some(samplers.get(texture.wrap_mode, texture.filter).clone());
     }
 
@@ -180,7 +180,7 @@ impl FilterPass {
                 MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
             };
-            FilterPass::build_vec4(&mut buffer[offset..][..16], original.size);
+            FilterPass::build_vec4(&mut buffer[offset..][..16], original.view.size);
         }
 
         // bind Source sampler
@@ -203,7 +203,7 @@ impl FilterPass {
                 MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
             };
-            FilterPass::build_vec4(&mut buffer[offset..][..16], source.size);
+            FilterPass::build_vec4(&mut buffer[offset..][..16], source.view.size);
         }
 
         if let Some(binding) = self
@@ -223,7 +223,7 @@ impl FilterPass {
                 MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
                 MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
             };
-            FilterPass::build_vec4(&mut buffer[offset..][..16], original.size);
+            FilterPass::build_vec4(&mut buffer[offset..][..16], original.view.size);
         }
 
         // for (index, output) in parent.history_textures.iter().enumerate() {
@@ -365,7 +365,7 @@ impl FilterPass {
                 };
                 FilterPass::build_vec4(
                     &mut buffer[offset..][..16],
-                    lut.image.size,
+                    lut.image.view.size,
                 );
             }
         }

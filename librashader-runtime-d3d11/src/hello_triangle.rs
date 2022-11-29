@@ -67,10 +67,6 @@ use gfx_maths::Mat4;
 use std::mem::transmute;
 
 pub trait DXSample {
-    fn new() -> Result<Self>
-    where
-        Self: Sized;
-
     fn bind_to_window(&mut self, hwnd: &HWND) -> Result<()>;
 
     fn update(&mut self) {}
@@ -228,10 +224,15 @@ struct TriangleUniforms {
 }
 
 pub mod d3d11_hello_triangle {
+    use std::path::Path;
     use super::*;
     use gfx_maths::{Quaternion, Vec3};
     use std::slice;
     use std::time::Instant;
+    use librashader_common::Size;
+    use crate::filter_chain::FilterChain;
+    use crate::framebuffer::OutputFramebuffer;
+    use crate::texture::DxImageView;
 
     const FRAME_COUNT: u32 = 2;
 
@@ -240,6 +241,7 @@ pub mod d3d11_hello_triangle {
         pub device: ID3D11Device,
         pub context: ID3D11DeviceContext,
         pub resources: Option<Resources>,
+        pub filter: FilterChain,
     }
 
     pub struct Resources {
@@ -259,18 +261,24 @@ pub mod d3d11_hello_triangle {
         pub backbuffer: ID3D11Texture2D,
         pub rtv: ID3D11RenderTargetView,
         pub viewport: D3D11_VIEWPORT,
+        pub shader_output: Option<ID3D11Texture2D>
     }
-    impl DXSample for Sample {
-        fn new() -> Result<Self> {
-            let (dxgi_factory, device, context) = create_device()?;
 
+    impl Sample {
+        pub(crate) fn new(filter: impl AsRef<Path>) -> Result<Self> {
+            let (dxgi_factory, device, context) = create_device()?;
+            let filter = FilterChain::load_from_path(&device, filter).unwrap();
             Ok(Sample {
+                filter,
                 dxgi_factory,
                 device,
                 context,
                 resources: None,
             })
         }
+    }
+    impl DXSample for Sample {
+
 
         fn bind_to_window(&mut self, hwnd: &HWND) -> Result<()> {
             let swapchain = create_swapchain(&self.dxgi_factory, &self.device, *hwnd)?;
@@ -308,6 +316,7 @@ pub mod d3d11_hello_triangle {
                 self.context.RSSetState(&raster_state);
             }
 
+
             self.resources = Some(Resources {
                 swapchain,
                 rtv,
@@ -332,6 +341,7 @@ pub mod d3d11_hello_triangle {
                     MinDepth: D3D11_MIN_DEPTH,
                     MaxDepth: D3D11_MAX_DEPTH,
                 },
+                shader_output: None,
             });
 
             Ok(())
@@ -420,6 +430,64 @@ pub mod d3d11_hello_triangle {
 
             unsafe {
                 self.context.DrawIndexed(3, 0, 0);
+            }
+
+            unsafe {
+                let mut tex2d_desc = Default::default();
+                resources.backbuffer.GetDesc(&mut tex2d_desc);
+                let backup = self.device.CreateTexture2D(&D3D11_TEXTURE2D_DESC {
+                    BindFlags: D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
+                    CPUAccessFlags: D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE,
+                    ..tex2d_desc
+                }, None)?;
+
+                self.context.CopyResource(&backup, &resources.backbuffer);
+
+                let srv = self.device.CreateShaderResourceView(&backup, Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
+                    Format: tex2d_desc.Format,
+                    ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
+                    Anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+                        Texture2D: D3D11_TEX2D_SRV {
+                            MostDetailedMip: 0,
+                            MipLevels: u32::MAX,
+                        }
+                    },
+                }))?;
+
+                let shader_out = self.device.CreateTexture2D(&tex2d_desc, None)?;
+
+                let rtv = self.device.CreateRenderTargetView(&shader_out, Some(&D3D11_RENDER_TARGET_VIEW_DESC {
+                    Format: tex2d_desc.Format,
+                    ViewDimension: D3D11_RTV_DIMENSION_TEXTURE2D,
+                    Anonymous: D3D11_RENDER_TARGET_VIEW_DESC_0 {
+                        Texture2D: D3D11_TEX2D_RTV {
+                            MipSlice: 0,
+                        }
+                    }
+                }))?;
+                
+                //
+                self.filter.frame(1, &Size {
+                    width: tex2d_desc.Width,
+                    height: tex2d_desc.Height,
+                }, DxImageView { handle: srv, size: Size {
+                    width: tex2d_desc.Width,
+                    height: tex2d_desc.Height,
+                } }, OutputFramebuffer {
+                    rtv,
+                    size:  Size {
+                        width: tex2d_desc.Width,
+                        height: tex2d_desc.Height,
+                    },
+                    viewport: D3D11_VIEWPORT {
+                        TopLeftX: 0.0,
+                        TopLeftY: 0.0,
+                        Width: tex2d_desc.Width as f32,
+                        Height:  tex2d_desc.Height as f32,
+                        MinDepth: 0.0,
+                        MaxDepth: 1.0,
+                    },
+                }).unwrap();
             }
 
             unsafe {

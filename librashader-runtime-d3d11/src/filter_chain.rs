@@ -1,4 +1,4 @@
-use crate::texture::OwnedTexture;
+use crate::texture::{DxImageView, OwnedTexture, Texture};
 use librashader_common::image::Image;
 use librashader_common::Size;
 use librashader_preprocess::ShaderSource;
@@ -15,13 +15,17 @@ use std::path::Path;
 use bytemuck::offset_of;
 use windows::core::PCSTR;
 use windows::s;
-use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext};
+use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
 use crate::filter_pass::{ConstantBuffer, ConstantBufferBinding, FilterPass};
+use crate::framebuffer::OutputFramebuffer;
+use crate::quad_render::DrawQuad;
+use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util;
 use crate::util::d3d11_compile_bound_shader;
 
+// todo: get rid of preset
 type ShaderPassMeta<'a> = (
     &'a ShaderPassConfig,
     ShaderSource,
@@ -29,14 +33,6 @@ type ShaderPassMeta<'a> = (
         impl CompileShader<HLSL, Options = Option<()>, Context = GlslangHlslContext> + ReflectShader,
     >,
 );
-
-#[repr(C)]
-#[derive(Default)]
-struct D3D11VertexLayout {
-    position: [f32; 2],
-    texcoord: [f32; 2],
-    color: [f32; 4],
-}
 
 pub struct FilterChain {
     pub common: FilterCommon,
@@ -53,6 +49,7 @@ pub struct FilterCommon {
     pub(crate) preset: ShaderPreset,
     pub(crate) luts: FxHashMap<usize, OwnedTexture>,
     pub samplers: SamplerSet,
+    pub(crate) draw_quad: DrawQuad,
 }
 
 impl FilterChain {
@@ -108,7 +105,7 @@ impl FilterChain {
     fn create_constant_buffer(device: &ID3D11Device, size: u32) -> util::Result<ID3D11Buffer> {
         eprintln!("{size}");
         unsafe {
-           let buffer = device.CreateBuffer(&D3D11_BUFFER_DESC {
+            let buffer = device.CreateBuffer(&D3D11_BUFFER_DESC {
                 ByteWidth: size,
                 Usage: D3D11_USAGE_DYNAMIC,
                 BindFlags: D3D11_BIND_CONSTANT_BUFFER,
@@ -142,27 +139,8 @@ impl FilterChain {
             let vs = d3d11_compile_bound_shader(device, &vertex_dxil, None,
                                                 ID3D11Device::CreateVertexShader)?;
 
-            let ia_desc = [
-                D3D11_INPUT_ELEMENT_DESC {
-                    SemanticName: PCSTR(b"TEXCOORD\0".as_ptr()),
-                    SemanticIndex: 0,
-                    Format: DXGI_FORMAT_R32G32_FLOAT,
-                    InputSlot: 0,
-                    AlignedByteOffset: offset_of!(D3D11VertexLayout, position) as u32,
-                    InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
-                    InstanceDataStepRate: 0,
-                },
-                D3D11_INPUT_ELEMENT_DESC {
-                    SemanticName: PCSTR(b"TEXCOORD\0".as_ptr()),
-                    SemanticIndex: 1,
-                    Format: DXGI_FORMAT_R32G32_FLOAT,
-                    InputSlot: 0,
-                    AlignedByteOffset: offset_of!(D3D11VertexLayout, texcoord) as u32,
-                    InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
-                    InstanceDataStepRate: 0,
-                }
-            ];
-            let vertex_ia = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxil)?;
+            let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
+            let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxil)?;
 
             let fragment_dxil = util::d3d_compile_shader(
                 hlsl.fragment.as_bytes(),
@@ -223,7 +201,7 @@ impl FilterChain {
                 reflection,
                 compiled: hlsl,
                 vertex_shader: vs,
-                vertex_layout: vertex_ia,
+                vertex_layout: vao,
                 pixel_shader: ps,
                 uniform_bindings,
                 uniform_buffer: ConstantBuffer::new(ubo_cbuffer),
@@ -231,7 +209,6 @@ impl FilterChain {
                 source,
                 config: config.clone(),
             })
-
         }
         Ok(filters)
     }
@@ -273,6 +250,8 @@ impl FilterChain {
         unsafe {
             device.GetImmediateContext(&mut device_context);
         }
+        let device_context = device_context.unwrap();
+        let draw_quad = DrawQuad::new(device, &device_context)?;
 
         // todo: make vbo: d3d11.c 1376
         Ok(FilterChain {
@@ -284,7 +263,7 @@ impl FilterChain {
             common: FilterCommon {
                 d3d11: Direct3D11 {
                     device: device.clone(),
-                    device_context: device_context.unwrap()
+                    device_context
                 },
                 luts,
                 samplers,
@@ -294,7 +273,7 @@ impl FilterChain {
                 // output_textures: output_textures.into_boxed_slice(),
                 // feedback_textures: feedback_textures.into_boxed_slice(),
                 // history_textures,
-                // draw_quad,
+                draw_quad,
             },
         })
     }
@@ -396,5 +375,39 @@ impl FilterChain {
         };
 
         Ok((passes, semantics))
+    }
+
+    pub fn frame(&mut self, count: usize, viewport: &Size<u32>, input: DxImageView, output: OutputFramebuffer) -> util::Result<()> {
+
+        let passes = &mut self.passes;
+
+        if passes.is_empty() {
+            return Ok(());
+        }
+
+        let filter = passes[0].config.filter;
+        let wrap_mode = passes[0].config.wrap_mode;
+
+        self.common.draw_quad.bind_vertices();
+
+        let original = Texture {
+            view: input,
+            filter,
+            wrap_mode,
+        };
+
+        let mut source = original.clone();
+
+
+        for (index, pass) in passes.iter_mut().enumerate() {
+            pass.draw(index, &self.common, if pass.config.frame_count_mod > 0 {
+                count % pass.config.frame_count_mod as usize
+            } else {
+                count
+            } as u32, 1, viewport, &original, &source, RenderTarget::new(output.clone(), None))?;
+        }
+
+        Ok(())
+
     }
 }

@@ -25,6 +25,7 @@ mod util;
 mod samplers;
 mod render_target;
 mod framebuffer;
+mod quad_render;
 
 #[cfg(test)]
 mod tests {
@@ -33,10 +34,8 @@ mod tests {
 
     #[test]
     fn triangle_d3d11() {
-        let sample = hello_triangle::d3d11_hello_triangle::Sample::new().unwrap();
-        let device = sample.device.clone();
-        let chain = filter_chain::FilterChain::load_from_path(&device, "../test/slang-shaders/crt/crt-royale.slangp").unwrap();
-        std::mem::forget(chain);
+        let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
+
         hello_triangle::main(sample).unwrap();
 
     }

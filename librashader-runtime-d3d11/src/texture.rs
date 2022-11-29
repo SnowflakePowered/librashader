@@ -7,9 +7,13 @@ use crate::util::d3d11_get_closest_format;
 use crate::util::Result;
 
 #[derive(Debug, Clone)]
-pub struct Texture {
+pub struct DxImageView {
     pub handle: ID3D11ShaderResourceView,
     pub size: Size<u32>, // pub image: GlImage,
+}
+#[derive(Debug, Clone)]
+pub struct Texture {
+    pub view: DxImageView,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
     // pub mip_filter: FilterMode,
@@ -135,8 +139,10 @@ impl OwnedTexture {
                 // staging,
                 desc,
                 image: Texture {
-                    handle: srv,
-                    size: source.size,
+                    view: DxImageView {
+                        handle: srv,
+                        size: source.size,
+                    },
                     filter,
                     wrap_mode
                 }
