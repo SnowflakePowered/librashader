@@ -201,6 +201,10 @@ impl FilterChain {
         }
         let device_context = device_context.unwrap();
 
+        let device_context =
+            unsafe {
+                device.CreateDeferredContext(0)?
+            };
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
@@ -518,6 +522,15 @@ impl FilterChain {
         }
 
         self.push_history(&input)?;
+
+        unsafe {
+            let list = self.common.d3d11.device_context.FinishCommandList(false)?;
+            let mut imm = None;
+            self.common.d3d11.device.GetImmediateContext(&mut imm);
+            let imm = imm.unwrap();
+            imm.ExecuteCommandList(&list, true);
+        }
+
         Ok(())
     }
 }
