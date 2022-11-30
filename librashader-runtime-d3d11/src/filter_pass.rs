@@ -202,32 +202,34 @@ impl FilterPass {
                 .bind_vec4(*offset, original.view.size, None);
         }
 
-        // for (index, output) in parent.history_textures.iter().enumerate() {
-        //     // if let Some(binding) = self
-        //     //     .reflection
-        //     //     .meta
-        //     //     .texture_meta
-        //     //     .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
-        //     // {
-        //     //     FilterPass::bind_texture(binding, output);
-        //     // }
-        //
-        //     if let Some((location, offset)) = self.uniform_bindings.get(
-        //         &TextureSemantics::OriginalHistory
-        //             .semantics(index + 1)
-        //             .into(),
-        //     ) {
-        //         let (buffer, offset) = match offset {
-        //             MemberOffset::Ubo(offset) => (&mut self.uniform_buffer.storage, *offset),
-        //             MemberOffset::PushConstant(offset) => (&mut self.push_buffer.storage, *offset),
-        //         };
-        //         FilterPass::build_vec4(
-        //             location.location(),
-        //             &mut buffer[offset..][..16],
-        //             output.image.size,
-        //         );
-        //     }
-        // }
+        for (index, output) in parent.history_textures.iter().enumerate() {
+            let Some(output) = output else {
+                continue;
+            };
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
+            {
+                FilterPass::bind_texture(
+                    &parent.samplers,
+                    &mut textures,
+                    &mut samplers,
+                    binding,
+                    output,
+                );
+            }
+
+            if let Some(offset) = self.uniform_bindings.get(
+                &TextureSemantics::OriginalHistory
+                    .semantics(index + 1)
+                    .into(),
+            ) {
+                self.uniform_storage
+                    .bind_vec4(*offset, output.view.size, None);
+            }
+        }
 
         // PassOutput
         for (index, output) in parent.output_textures.iter().enumerate() {
