@@ -4,7 +4,7 @@ use librashader_common::image::Image;
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
 use crate::gl::LoadLut;
-use crate::{GlImage, util};
+use crate::framebuffer::{GLImage, Viewport};
 use crate::texture::Texture;
 use crate::error::Result;
 
@@ -64,7 +64,7 @@ impl LoadLut for Gl46LutLoad {
             luts.insert(
                 index,
                 Texture {
-                    image: GlImage {
+                    image: GLImage {
                         handle,
                         format: gl::RGBA8,
                         size: image.size,

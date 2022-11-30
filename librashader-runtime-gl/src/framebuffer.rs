@@ -6,18 +6,17 @@ use librashader_presets::{Scale2D, ScaleType, Scaling};
 use crate::error::FilterChainError;
 use crate::error::Result;
 use crate::gl::Framebuffer;
-use crate::gl::gl3::Gl3Framebuffer;
 
 #[derive(Debug, Copy, Clone)]
-pub struct Viewport<'a> {
+pub struct Viewport<'a, T: Framebuffer + ?Sized> {
     pub x: i32,
     pub y: i32,
-    pub output: &'a Gl3Framebuffer,
+    pub output: &'a T,
     pub mvp: Option<&'a [f32; 16]>,
 }
 
 #[derive(Default, Debug, Copy, Clone)]
-pub struct GlImage {
+pub struct GLImage {
     pub handle: GLuint,
     pub format: GLenum,
     pub size: Size<u32>,

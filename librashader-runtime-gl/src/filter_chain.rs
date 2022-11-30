@@ -1,8 +1,6 @@
 use crate::binding::{UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::{GlImage, Viewport};
-use crate::gl::gl3::Gl3Framebuffer;
-use crate::gl::gl3::{Gl3DrawQuad, Gl3LutLoad, Gl3UboRing};
+use crate::framebuffer::{GLImage, Viewport};
 use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{gl_get_version, gl_u16_to_version, InlineRingBuffer};
@@ -27,15 +25,15 @@ use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::binding::BufferStorage;
-use crate::gl::{DrawQuad, Framebuffer, LoadLut, UboRing};
+use crate::gl::{DrawQuad, Framebuffer, GLInterface, LoadLut, UboRing};
 
-pub struct FilterChain {
-    passes: Box<[FilterPass]>,
+pub struct FilterChain<T: GLInterface> {
+    passes: Box<[FilterPass<T>]>,
     common: FilterCommon,
-    pub(crate) draw_quad: Gl3DrawQuad,
-    output_framebuffers: Box<[Gl3Framebuffer]>,
-    feedback_framebuffers: Box<[Gl3Framebuffer]>,
-    history_framebuffers: VecDeque<Gl3Framebuffer>,
+    pub(crate) draw_quad: T::DrawQuad,
+    output_framebuffers: Box<[T::Framebuffer]>,
+    feedback_framebuffers: Box<[T::Framebuffer]>,
+    history_framebuffers: VecDeque<T::Framebuffer>,
 }
 
 pub struct FilterCommon {
@@ -53,7 +51,7 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>
 }
 
-impl FilterChain {
+impl <T: GLInterface> FilterChain<T> {
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
         // todo: support both ubo and pushco
         // todo: fix this.
@@ -90,16 +88,16 @@ type ShaderPassMeta = (
     >,
 );
 
-impl FilterChain {
+impl <T: GLInterface> FilterChain<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
-        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
+    pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<Self> {
+        let (passes, semantics) = Self::load_preset(preset.shaders, &preset.textures)?;
 
         let version = options.map(|o| gl_u16_to_version(o.gl_version))
             .unwrap_or_else(|| gl_get_version());
 
         // initialize passes
-        let filters = FilterChain::init_passes(version, passes, &semantics)?;
+        let filters = Self::init_passes(version, passes, &semantics)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         let default_wrap = filters
@@ -111,24 +109,24 @@ impl FilterChain {
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || Gl3Framebuffer::new(1));
+        output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), Texture::default);
 
         // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || Gl3Framebuffer::new(1));
+        feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
-        let luts = Gl3LutLoad::load_luts(&preset.textures)?;
+        let luts = T::LoadLut::load_luts(&preset.textures)?;
 
         let (history_framebuffers, history_textures) =
             FilterChain::init_history(&filters, default_filter, default_wrap);
 
         // create vertex objects
-        let draw_quad = Gl3DrawQuad::new();
+        let draw_quad = T::DrawQuad::new();
 
         Ok(FilterChain {
             passes: filters,
@@ -152,7 +150,7 @@ impl FilterChain {
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(path: impl AsRef<Path>, options: Option<&FilterChainOptions>) -> Result<FilterChain> {
+    pub fn load_from_path(path: impl AsRef<Path>, options: Option<&FilterChainOptions>) -> Result<Self> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(preset, options)
@@ -213,7 +211,7 @@ impl FilterChain {
         version: GlVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
-    ) -> Result<Box<[FilterPass]>> {
+    ) -> Result<Box<[FilterPass<T>]>> {
         let mut filters = Vec::new();
 
         // initialize passes
@@ -281,7 +279,7 @@ impl FilterChain {
             };
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let ring = Gl3UboRing::new(ubo.size);
+                let ring = UboRing::new(ubo.size);
                 Some(ring)
             } else {
                 None
@@ -305,7 +303,7 @@ impl FilterChain {
                 uniform_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
                     (
-                        FilterChain::reflect_uniform_location(program, param),
+                        Self::reflect_uniform_location(program, param),
                         param.offset,
                     ),
                 );
@@ -315,7 +313,7 @@ impl FilterChain {
                 uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
                     (
-                        FilterChain::reflect_uniform_location(program, param),
+                        Self::reflect_uniform_location(program, param),
                         param.offset,
                     ),
                 );
@@ -325,7 +323,7 @@ impl FilterChain {
                 uniform_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
                     (
-                        FilterChain::reflect_uniform_location(program, param),
+                        Self::reflect_uniform_location(program, param),
                         param.offset,
                     ),
                 );
@@ -357,10 +355,10 @@ impl FilterChain {
     }
 
     fn init_history(
-        filters: &[FilterPass],
+        filters: &[FilterPass<T>],
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> (VecDeque<Gl3Framebuffer>, Box<[Texture]>) {
+    ) -> (VecDeque<T::Framebuffer>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -394,7 +392,7 @@ impl FilterChain {
 
         eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
-        framebuffers.resize_with(required_images, || Gl3Framebuffer::new(1));
+        framebuffers.resize_with(required_images, || Framebuffer::new(1));
 
         let mut history_textures = Vec::new();
         history_textures.resize_with(required_images, || Texture {
@@ -407,9 +405,9 @@ impl FilterChain {
         (framebuffers, history_textures.into_boxed_slice())
     }
 
-    fn push_history(&mut self, input: &GlImage) -> Result<()> {
+    fn push_history(&mut self, input: &GLImage) -> Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
-            if back.size != input.size || (input.format != 0 && input.format != back.format) {
+            if back.size() != input.size || (input.format != 0 && input.format != back.format()) {
                 eprintln!("[history] resizing");
                 back.init(input.size, input.format)?;
             }
@@ -425,7 +423,7 @@ impl FilterChain {
     /// Process a frame with the input image.
     ///
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
-    pub fn frame(&mut self, count: usize, viewport: &Viewport, input: &GlImage, options: Option<&FrameOptions>) -> Result<()> {
+    pub fn frame(&mut self, count: usize, viewport: &Viewport<T::Framebuffer>, input: &GLImage, options: Option<&FrameOptions>) -> Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
         if let Some(options) = options {

@@ -1,24 +1,39 @@
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use crate::{GlImage, Viewport};
+use crate::framebuffer::{GLImage, Viewport};
 use crate::error::{FilterChainError, Result};
 use crate::gl::Framebuffer;
 use crate::texture::Texture;
 
 #[derive(Debug)]
 pub struct Gl3Framebuffer {
-    pub image: GLuint,
-    pub handle: GLuint,
-    pub size: Size<u32>,
-    pub format: GLenum,
-    pub max_levels: u32,
-    pub mip_levels: u32,
+    image: GLuint,
+    handle: GLuint,
+    size: Size<u32>,
+    format: GLenum,
+    max_levels: u32,
+    mip_levels: u32,
     is_raw: bool,
 }
 
-
 impl Framebuffer for Gl3Framebuffer {
+    fn handle(&self) -> GLuint {
+        self.handle
+    }
+
+    fn size(&self) -> Size<u32> {
+        self.size
+    }
+
+    fn image(&self) -> GLuint {
+        self.image
+    }
+
+    fn format(&self) -> GLenum {
+        self.format
+    }
+
     fn new(max_levels: u32) -> Gl3Framebuffer {
         let mut framebuffer = 0;
         unsafe {
@@ -59,7 +74,7 @@ impl Framebuffer for Gl3Framebuffer {
     }
     fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
         Texture {
-            image: GlImage {
+            image: GLImage {
                 handle: self.image,
                 format: self.format,
                 size: self.size,
@@ -74,7 +89,7 @@ impl Framebuffer for Gl3Framebuffer {
         &mut self,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport,
+        viewport: &Viewport<Self>,
         _original: &Texture,
         source: &Texture,
     ) -> Result<Size<u32>> {
@@ -111,7 +126,7 @@ impl Framebuffer for Gl3Framebuffer {
             }
         }
     }
-    fn copy_from(&mut self, image: &GlImage) -> Result<()> {
+    fn copy_from(&mut self, image: &GLImage) -> Result<()> {
         // todo: may want to use a shader and draw a quad to be faster.
         if image.size != self.size || image.format != self.format {
             self.init(image.size, image.format)?;

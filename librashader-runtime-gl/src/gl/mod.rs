@@ -1,5 +1,5 @@
 pub(crate) mod gl3;
-mod gl46;
+pub(crate) mod gl46;
 
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use rustc_hash::FxHashMap;
@@ -10,7 +10,7 @@ use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use crate::binding::UniformLocation;
 use crate::texture::Texture;
 use crate::error::{FilterChainError, Result};
-use crate::{GlImage, Viewport};
+use crate::framebuffer::{GLImage, Viewport};
 use crate::samplers::SamplerSet;
 
 pub trait LoadLut {
@@ -42,15 +42,27 @@ pub trait Framebuffer {
         &mut self,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport,
+        viewport: &Viewport<Self>,
         _original: &Texture,
         source: &Texture,
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(&self);
-    fn copy_from(&mut self, image: &GlImage) -> Result<()>;
+    fn copy_from(&mut self, image: &GLImage) -> Result<()>;
     fn init(&mut self, size: Size<u32>, format: impl Into<GLenum>) -> Result<()>;
+    fn handle(&self) -> GLuint;
+    fn image(&self) -> GLuint;
+    fn size(&self) -> Size<u32>;
+    fn format(&self) -> GLenum;
 }
 
 pub trait BindTexture {
     fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture);
+}
+
+pub trait GLInterface {
+    type Framebuffer: Framebuffer;
+    type UboRing: UboRing<16>;
+    type DrawQuad: DrawQuad;
+    type LoadLut: LoadLut;
+    type BindTexture: BindTexture;
 }

@@ -8,9 +8,9 @@ use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
-use crate::framebuffer::{GlImage, Viewport};
-use crate::gl::Framebuffer;
-use crate::gl::gl3::Gl3Framebuffer;
+use crate::framebuffer::{GLImage, Viewport};
+use crate::gl::{Framebuffer, GLInterface};
+use crate::gl::gl3::CompatibilityGL;
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -267,7 +267,7 @@ pub fn do_loop(
     events: Receiver<(f64, WindowEvent)>,
     triangle_program: GLuint,
     triangle_vao: GLuint,
-    filter: &mut FilterChain,
+    filter: &mut FilterChain<CompatibilityGL>,
 ) {
     let mut framecount = 0;
     let mut rendered_framebuffer = 0;
@@ -464,7 +464,7 @@ void main()
     let (fb_width, fb_height) = window.get_framebuffer_size();
     let (vp_width, vp_height) = window.get_size();
 
-    let output = Gl3Framebuffer::new_from_raw(
+    let output = <CompatibilityGL as GLInterface>::Framebuffer::new_from_raw(
         output_texture,
         output_framebuffer_handle,
         gl::RGBA8,
@@ -509,7 +509,7 @@ void main()
             mvp: None,
         };
 
-        let rendered = GlImage {
+        let rendered = GLImage {
             handle: rendered_texture,
             format: gl::RGBA8,
             size: Size {

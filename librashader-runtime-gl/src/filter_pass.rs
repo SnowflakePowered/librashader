@@ -14,27 +14,26 @@ use librashader_runtime::uniforms::UniformStorage;
 use crate::binding::{BufferStorage, GlUniformBinder, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
-use crate::gl::gl3::{Gl3BindTexture, Gl3UboRing};
-use crate::gl::{BindTexture, Framebuffer, UboRing};
+use crate::gl::{BindTexture, Framebuffer, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::util::{InlineRingBuffer, RingBuffer};
 
 
-pub struct FilterPass {
+pub struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
     pub compiled: ShaderCompilerOutput<String, GlslangGlslContext>,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
-    pub ubo_ring: Option<Gl3UboRing<16>>,
+    pub ubo_ring: Option<T::UboRing>,
     pub(crate) uniform_storage: BufferStorage,
     pub uniform_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
 
-impl FilterPass {
+impl<T:GLInterface> FilterPass<T> {
     // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
     pub(crate) fn draw(
         &mut self,
@@ -42,15 +41,15 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport,
+        viewport: &Viewport<T::Framebuffer>,
         original: &Texture,
         source: &Texture,
-        output: RenderTarget
+        output: RenderTarget<T::Framebuffer>
     ) {
         let framebuffer = output.framebuffer;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle());
             gl::UseProgram(self.program);
         }
 
@@ -60,7 +59,7 @@ impl FilterPass {
             output.mvp,
             frame_count,
             frame_direction,
-            framebuffer.size,
+            framebuffer.size(),
             viewport,
             original,
             source,
@@ -78,14 +77,15 @@ impl FilterPass {
             // can't use framebuffer.clear because it will unbind.
             framebuffer.clear::<false>();
 
+            let framebuffer_size = framebuffer.size();
             gl::Viewport(
                 output.x,
                 output.y,
-                framebuffer.size.width as GLsizei,
-                framebuffer.size.height as GLsizei,
+                framebuffer_size.width as GLsizei,
+                framebuffer_size.height as GLsizei,
             );
 
-            if framebuffer.format == gl::SRGB8_ALPHA8 {
+            if framebuffer.format() == gl::SRGB8_ALPHA8 {
                 gl::Enable(gl::FRAMEBUFFER_SRGB);
             } else {
                 gl::Disable(gl::FRAMEBUFFER_SRGB);
@@ -100,14 +100,10 @@ impl FilterPass {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
     }
-
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
-        Gl3BindTexture::bind_texture(samplers, binding, texture)
-    }
 }
 
 
-impl FilterPass {
+impl <T: GLInterface> FilterPass<T> {
     pub fn get_format(&self) -> ImageFormat {
         let mut fb_format = ImageFormat::R8G8B8A8Unorm;
         if self.config.srgb_framebuffer {
@@ -127,7 +123,7 @@ impl FilterPass {
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,
-        viewport: &Viewport,
+        viewport: &Viewport<T::Framebuffer>,
         original: &Texture,
         source: &Texture,
     ) {
@@ -151,7 +147,7 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FinalViewport.into())
         {
-            self.uniform_storage.bind_vec4(*offset,viewport.output.size, location.location());
+            self.uniform_storage.bind_vec4(*offset,viewport.output.size(), location.location());
         }
 
         // bind FrameCount
@@ -177,7 +173,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            Self::bind_texture(&parent.samplers, binding, original);
+            T::BindTexture::bind_texture(&parent.samplers, binding, original);
         }
 
         // bind OriginalSize
@@ -197,7 +193,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            Self::bind_texture(&parent.samplers, binding, source);
+            T::BindTexture::bind_texture(&parent.samplers, binding, source);
         }
 
         // bind SourceSize
@@ -215,7 +211,7 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::OriginalHistory.semantics(0))
         {
-            Self::bind_texture(&parent.samplers, binding, original);
+            T::BindTexture::bind_texture(&parent.samplers, binding, original);
         }
         if let Some((location, offset)) = self
             .uniform_bindings
@@ -235,7 +231,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
             {
-                Self::bind_texture(&parent.samplers, binding, output);
+                T::BindTexture::bind_texture(&parent.samplers, binding, output);
             }
 
             if let Some((location, offset)) = self.uniform_bindings.get(
@@ -259,7 +255,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                Self::bind_texture(&parent.samplers, binding, output);
+                T::BindTexture::bind_texture(&parent.samplers, binding, output);
             }
 
             if let Some((location, offset)) = self
@@ -282,10 +278,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassFeedback.semantics(index))
             {
-                if feedback.image.handle == 0 {
-                    eprintln!("[WARNING] trying to bind PassFeedback: {index} which has texture 0 to slot {} in pass {pass_index}", binding.binding)
-                }
-                Self::bind_texture(&parent.samplers, binding, feedback);
+                T::BindTexture::bind_texture(&parent.samplers, binding, feedback);
             }
 
             if let Some((location, offset)) = self
@@ -334,7 +327,7 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::User.semantics(*index))
             {
-                Self::bind_texture(&parent.samplers, binding, lut);
+                T::BindTexture::bind_texture(&parent.samplers, binding, lut);
             }
 
             if let Some((location, offset)) = self
