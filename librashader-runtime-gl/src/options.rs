@@ -8,4 +8,5 @@ pub struct FrameOptions {
 #[derive(Debug, Clone)]
 pub struct FilterChainOptions {
     pub gl_version: u16,
+    pub use_dsa: bool
 }

@@ -1,3 +1,4 @@
+mod framebuffer;
 pub(crate) mod gl3;
 pub(crate) mod gl46;
 
@@ -6,6 +7,7 @@ use crate::error::Result;
 use crate::framebuffer::{GLImage, Viewport};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
+pub use framebuffer::Framebuffer;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, TextureConfig};
@@ -33,31 +35,26 @@ pub trait UboRing<const SIZE: usize> {
     );
 }
 
-pub trait Framebuffer {
-    fn new(max_levels: u32) -> Self;
+pub trait FramebufferInterface {
+    fn new(max_levels: u32) -> Framebuffer;
     fn new_from_raw(
         texture: GLuint,
         handle: GLuint,
         format: GLenum,
         size: Size<u32>,
         miplevels: u32,
-    ) -> Self;
-    fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture;
+    ) -> Framebuffer;
     fn scale(
-        &mut self,
+        fb: &mut Framebuffer,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport<Self>,
+        viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
     ) -> Result<Size<u32>>;
-    fn clear<const REBIND: bool>(&self);
-    fn copy_from(&mut self, image: &GLImage) -> Result<()>;
-    fn init(&mut self, size: Size<u32>, format: impl Into<GLenum>) -> Result<()>;
-    fn handle(&self) -> GLuint;
-    fn image(&self) -> GLuint;
-    fn size(&self) -> Size<u32>;
-    fn format(&self) -> GLenum;
+    fn clear<const REBIND: bool>(fb: &Framebuffer);
+    fn copy_from(fb: &mut Framebuffer, image: &GLImage) -> Result<()>;
+    fn init(fb: &mut Framebuffer, size: Size<u32>, format: impl Into<GLenum>) -> Result<()>;
 }
 
 pub trait BindTexture {
@@ -65,7 +62,7 @@ pub trait BindTexture {
 }
 
 pub trait GLInterface {
-    type Framebuffer: Framebuffer;
+    type FramebufferInterface: FramebufferInterface;
     type UboRing: UboRing<16>;
     type DrawQuad: DrawQuad;
     type LoadLut: LoadLut;

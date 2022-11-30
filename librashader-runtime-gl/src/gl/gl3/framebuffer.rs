@@ -1,40 +1,17 @@
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::{GLImage, Viewport};
-use crate::gl::Framebuffer;
+use crate::gl::framebuffer::Framebuffer;
+use crate::gl::FramebufferInterface;
 use crate::texture::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 
 #[derive(Debug)]
-pub struct Gl3Framebuffer {
-    image: GLuint,
-    handle: GLuint,
-    size: Size<u32>,
-    format: GLenum,
-    max_levels: u32,
-    mip_levels: u32,
-    is_raw: bool,
-}
+pub struct Gl3Framebuffer;
 
-impl Framebuffer for Gl3Framebuffer {
-    fn handle(&self) -> GLuint {
-        self.handle
-    }
-
-    fn size(&self) -> Size<u32> {
-        self.size
-    }
-
-    fn image(&self) -> GLuint {
-        self.image
-    }
-
-    fn format(&self) -> GLenum {
-        self.format
-    }
-
-    fn new(max_levels: u32) -> Gl3Framebuffer {
+impl FramebufferInterface for Gl3Framebuffer {
+    fn new(max_levels: u32) -> Framebuffer {
         let mut framebuffer = 0;
         unsafe {
             gl::GenFramebuffers(1, &mut framebuffer);
@@ -42,7 +19,7 @@ impl Framebuffer for Gl3Framebuffer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
 
-        Gl3Framebuffer {
+        Framebuffer {
             image: 0,
             size: Size {
                 width: 1,
@@ -61,8 +38,8 @@ impl Framebuffer for Gl3Framebuffer {
         format: GLenum,
         size: Size<u32>,
         miplevels: u32,
-    ) -> Gl3Framebuffer {
-        Gl3Framebuffer {
+    ) -> Framebuffer {
+        Framebuffer {
             image: texture,
             size,
             format,
@@ -72,38 +49,27 @@ impl Framebuffer for Gl3Framebuffer {
             is_raw: true,
         }
     }
-    fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
-        Texture {
-            image: GLImage {
-                handle: self.image,
-                format: self.format,
-                size: self.size,
-                padded_size: Default::default(),
-            },
-            filter,
-            mip_filter: filter,
-            wrap_mode,
-        }
-    }
+
     fn scale(
-        &mut self,
+        fb: &mut Framebuffer,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport<Self>,
+        viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
     ) -> Result<Size<u32>> {
-        if self.is_raw {
-            return Ok(self.size);
+        if fb.is_raw {
+            return Ok(fb.size);
         }
 
         let size =
             librashader_runtime::scaling::scale(scaling, source.image.size, viewport.output.size);
 
-        if self.size != size {
-            self.size = size;
+        if fb.size != size {
+            fb.size = size;
 
-            self.init(
+            Self::init(
+                fb,
                 size,
                 if format == ImageFormat::Unknown {
                     ImageFormat::R8G8B8A8Unorm
@@ -114,10 +80,10 @@ impl Framebuffer for Gl3Framebuffer {
         }
         Ok(size)
     }
-    fn clear<const REBIND: bool>(&self) {
+    fn clear<const REBIND: bool>(fb: &Framebuffer) {
         unsafe {
             if REBIND {
-                gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+                gl::BindFramebuffer(gl::FRAMEBUFFER, fb.handle);
             }
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
@@ -127,14 +93,15 @@ impl Framebuffer for Gl3Framebuffer {
             }
         }
     }
-    fn copy_from(&mut self, image: &GLImage) -> Result<()> {
+    fn copy_from(fb: &mut Framebuffer, image: &GLImage) -> Result<()> {
         // todo: may want to use a shader and draw a quad to be faster.
-        if image.size != self.size || image.format != self.format {
-            self.init(image.size, image.format)?;
+        if image.size != fb.size || image.format != fb.format {
+            Self::init(
+                fb,image.size, image.format)?;
         }
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.handle);
 
             gl::FramebufferTexture2D(
                 gl::READ_FRAMEBUFFER,
@@ -148,7 +115,7 @@ impl Framebuffer for Gl3Framebuffer {
                 gl::DRAW_FRAMEBUFFER,
                 gl::COLOR_ATTACHMENT1,
                 gl::TEXTURE_2D,
-                self.image,
+                fb.image,
                 0,
             );
             gl::ReadBuffer(gl::COLOR_ATTACHMENT0);
@@ -156,12 +123,12 @@ impl Framebuffer for Gl3Framebuffer {
             gl::BlitFramebuffer(
                 0,
                 0,
-                self.size.width as GLint,
-                self.size.height as GLint,
+                fb.size.width as GLint,
+                fb.size.height as GLint,
                 0,
                 0,
-                self.size.width as GLint,
-                self.size.height as GLint,
+                fb.size.width as GLint,
+                fb.size.height as GLint,
                 gl::COLOR_BUFFER_BIT,
                 gl::NEAREST,
             );
@@ -188,7 +155,7 @@ impl Framebuffer for Gl3Framebuffer {
                 gl::FRAMEBUFFER,
                 gl::COLOR_ATTACHMENT0,
                 gl::TEXTURE_2D,
-                self.image,
+                fb.image,
                 0,
             );
 
@@ -197,18 +164,18 @@ impl Framebuffer for Gl3Framebuffer {
 
         Ok(())
     }
-    fn init(&mut self, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
-        if self.is_raw {
+    fn init(fb: &mut Framebuffer, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
+        if fb.is_raw {
             return Ok(());
         }
-        self.format = format.into();
-        self.size = size;
+        fb.format = format.into();
+        fb.size = size;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.handle);
 
             // reset the framebuffer image
-            if self.image != 0 {
+            if fb.image != 0 {
                 gl::FramebufferTexture2D(
                     gl::FRAMEBUFFER,
                     gl::COLOR_ATTACHMENT0,
@@ -216,11 +183,11 @@ impl Framebuffer for Gl3Framebuffer {
                     0,
                     0,
                 );
-                gl::DeleteTextures(1, &self.image);
+                gl::DeleteTextures(1, &fb.image);
             }
 
-            gl::GenTextures(1, &mut self.image);
-            gl::BindTexture(gl::TEXTURE_2D, self.image);
+            gl::GenTextures(1, &mut fb.image);
+            gl::BindTexture(gl::TEXTURE_2D, fb.image);
 
             if size.width == 0 {
                 size.width = 1;
@@ -229,18 +196,18 @@ impl Framebuffer for Gl3Framebuffer {
                 size.height = 1;
             }
 
-            self.mip_levels = librashader_runtime::scaling::calc_miplevel(size);
-            if self.mip_levels > self.max_levels {
-                self.mip_levels = self.max_levels;
+            fb.mip_levels = librashader_runtime::scaling::calc_miplevel(size);
+            if fb.mip_levels > fb.max_levels {
+                fb.mip_levels = fb.max_levels;
             }
-            if self.mip_levels == 0 {
-                self.mip_levels = 1;
+            if fb.mip_levels == 0 {
+                fb.mip_levels = 1;
             }
 
             gl::TexStorage2D(
                 gl::TEXTURE_2D,
-                self.mip_levels as GLsizei,
-                self.format,
+                fb.mip_levels as GLsizei,
+                fb.format,
                 size.width as GLsizei,
                 size.height as GLsizei,
             );
@@ -249,7 +216,7 @@ impl Framebuffer for Gl3Framebuffer {
                 gl::FRAMEBUFFER,
                 gl::COLOR_ATTACHMENT0,
                 gl::TEXTURE_2D,
-                self.image,
+                fb.image,
                 0,
             );
 
@@ -266,21 +233,21 @@ impl Framebuffer for Gl3Framebuffer {
                             0,
                             0,
                         );
-                        gl::DeleteTextures(1, &self.image);
-                        gl::GenTextures(1, &mut self.image);
-                        gl::BindTexture(gl::TEXTURE_2D, self.image);
+                        gl::DeleteTextures(1, &fb.image);
+                        gl::GenTextures(1, &mut fb.image);
+                        gl::BindTexture(gl::TEXTURE_2D, fb.image);
 
-                        self.mip_levels = librashader_runtime::scaling::calc_miplevel(size);
-                        if self.mip_levels > self.max_levels {
-                            self.mip_levels = self.max_levels;
+                        fb.mip_levels = librashader_runtime::scaling::calc_miplevel(size);
+                        if fb.mip_levels > fb.max_levels {
+                            fb.mip_levels = fb.max_levels;
                         }
-                        if self.mip_levels == 0 {
-                            self.mip_levels = 1;
+                        if fb.mip_levels == 0 {
+                            fb.mip_levels = 1;
                         }
 
                         gl::TexStorage2D(
                             gl::TEXTURE_2D,
-                            self.mip_levels as GLsizei,
+                            fb.mip_levels as GLsizei,
                             ImageFormat::R8G8B8A8Unorm.into(),
                             size.width as GLsizei,
                             size.height as GLsizei,
@@ -289,10 +256,10 @@ impl Framebuffer for Gl3Framebuffer {
                             gl::FRAMEBUFFER,
                             gl::COLOR_ATTACHMENT0,
                             gl::TEXTURE_2D,
-                            self.image,
+                            fb.image,
                             0,
                         );
-                        // self.init =
+                        // fb.init =
                         //     gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
                     _ => return Err(FilterChainError::FramebufferInit(status)),
@@ -304,18 +271,5 @@ impl Framebuffer for Gl3Framebuffer {
         }
 
         Ok(())
-    }
-}
-
-impl Drop for Gl3Framebuffer {
-    fn drop(&mut self) {
-        unsafe {
-            if self.handle != 0 {
-                gl::DeleteFramebuffers(1, &self.handle);
-            }
-            if self.image != 0 {
-                gl::DeleteTextures(1, &self.image);
-            }
-        }
     }
 }

@@ -101,6 +101,7 @@ pub fn gl_get_version() -> GlVersion {
 
 pub fn gl_u16_to_version(version: u16) -> GlVersion {
     match version {
+        0 => gl_get_version(),
         300 => GlVersion::V1_30,
         310 => GlVersion::V1_40,
         320 => GlVersion::V1_50,

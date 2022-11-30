@@ -10,7 +10,7 @@ use librashader_common::Size;
 use crate::filter_chain::FilterChain;
 use crate::framebuffer::{GLImage, Viewport};
 use crate::gl::gl46::DirectStateAccessGL;
-use crate::gl::{Framebuffer, GLInterface};
+use crate::gl::{FramebufferInterface, GLInterface};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -258,7 +258,7 @@ pub fn do_loop(
     events: Receiver<(f64, WindowEvent)>,
     triangle_program: GLuint,
     triangle_vao: GLuint,
-    filter: &mut FilterChain<DirectStateAccessGL>,
+    filter: &mut FilterChain,
 ) {
     let mut framecount = 0;
     let mut rendered_framebuffer = 0;
@@ -455,7 +455,7 @@ void main()
     let (fb_width, fb_height) = window.get_framebuffer_size();
     let (vp_width, vp_height) = window.get_size();
 
-    let output = <DirectStateAccessGL as GLInterface>::Framebuffer::new_from_raw(
+    let output = <DirectStateAccessGL as GLInterface>::FramebufferInterface::new_from_raw(
         output_texture,
         output_framebuffer_handle,
         gl::RGBA8,

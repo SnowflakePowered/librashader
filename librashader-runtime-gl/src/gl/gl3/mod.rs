@@ -15,7 +15,7 @@ use ubo_ring::*;
 
 pub struct CompatibilityGL;
 impl GLInterface for CompatibilityGL {
-    type Framebuffer = Gl3Framebuffer;
+    type FramebufferInterface = Gl3Framebuffer;
     type UboRing = Gl3UboRing<16>;
     type DrawQuad = Gl3DrawQuad;
     type LoadLut = Gl3LutLoad;

@@ -16,7 +16,7 @@ use ubo_ring::*;
 
 pub struct DirectStateAccessGL;
 impl GLInterface for DirectStateAccessGL {
-    type Framebuffer = Gl46Framebuffer;
+    type FramebufferInterface = Gl46Framebuffer;
     type UboRing = Gl46UboRing<16>;
     type DrawQuad = Gl46DrawQuad;
     type LoadLut = Gl46LutLoad;

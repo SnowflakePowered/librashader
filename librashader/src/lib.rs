@@ -31,18 +31,7 @@ pub mod targets {
 
         /// Shader runtime for OpenGL.
         pub mod runtime {
-            pub use librashader_runtime_gl::error;
-            pub use librashader_runtime_gl::options::*;
-            pub use librashader_runtime_gl::FilterChain;
-            pub use librashader_runtime_gl::Viewport;
-
-            pub mod gl3 {
-                pub use librashader_runtime_gl::gl3::*;
-            }
-
-            pub mod gl46 {
-                pub use librashader_runtime_gl::gl46::*;
-            }
+            pub use librashader_runtime_gl::*;
         }
     }
 

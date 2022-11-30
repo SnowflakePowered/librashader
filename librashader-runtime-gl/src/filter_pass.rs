@@ -14,7 +14,7 @@ use rustc_hash::FxHashMap;
 use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
-use crate::gl::{BindTexture, Framebuffer, GLInterface, UboRing};
+use crate::gl::{BindTexture, FramebufferInterface, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
 
 use crate::texture::Texture;
@@ -39,15 +39,15 @@ impl<T: GLInterface> FilterPass<T> {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport<T::Framebuffer>,
+        viewport: &Viewport,
         original: &Texture,
         source: &Texture,
-        output: RenderTarget<T::Framebuffer>,
+        output: RenderTarget,
     ) {
         let framebuffer = output.framebuffer;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle());
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::UseProgram(self.program);
         }
 
@@ -57,7 +57,7 @@ impl<T: GLInterface> FilterPass<T> {
             output.mvp,
             frame_count,
             frame_direction,
-            framebuffer.size(),
+            framebuffer.size,
             viewport,
             original,
             source,
@@ -73,9 +73,9 @@ impl<T: GLInterface> FilterPass<T> {
 
         unsafe {
             // can't use framebuffer.clear because it will unbind.
-            framebuffer.clear::<false>();
+            framebuffer.clear::<T::FramebufferInterface, false>();
 
-            let framebuffer_size = framebuffer.size();
+            let framebuffer_size = framebuffer.size;
             gl::Viewport(
                 output.x,
                 output.y,
@@ -83,7 +83,7 @@ impl<T: GLInterface> FilterPass<T> {
                 framebuffer_size.height as GLsizei,
             );
 
-            if framebuffer.format() == gl::SRGB8_ALPHA8 {
+            if framebuffer.format == gl::SRGB8_ALPHA8 {
                 gl::Enable(gl::FRAMEBUFFER_SRGB);
             } else {
                 gl::Disable(gl::FRAMEBUFFER_SRGB);
@@ -120,7 +120,7 @@ impl<T: GLInterface> FilterPass<T> {
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,
-        viewport: &Viewport<T::Framebuffer>,
+        viewport: &Viewport,
         original: &Texture,
         source: &Texture,
     ) {
@@ -145,7 +145,7 @@ impl<T: GLInterface> FilterPass<T> {
             .get(&VariableSemantics::FinalViewport.into())
         {
             self.uniform_storage
-                .bind_vec4(*offset, viewport.output.size(), location.location());
+                .bind_vec4(*offset, viewport.output.size, location.location());
         }
 
         // bind FrameCount

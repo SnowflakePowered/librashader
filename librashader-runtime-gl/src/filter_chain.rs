@@ -9,7 +9,7 @@ use crate::util::{gl_get_version, gl_u16_to_version};
 use gl::types::{GLint, GLuint};
 
 use crate::binding::BufferStorage;
-use crate::gl::{DrawQuad, Framebuffer, GLInterface, LoadLut, UboRing};
+use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
 use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
@@ -30,20 +30,75 @@ use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
 use std::path::Path;
 
-pub struct FilterChain<T: GLInterface> {
+pub struct FilterChain {
+    filter: FilterChainInner
+}
+
+impl FilterChain {
+    pub fn load_from_preset(
+        preset: ShaderPreset,
+        options: Option<&FilterChainOptions>,
+    ) -> Result<Self> {
+        if let Some(options) = options && options.use_dsa {
+            return Ok(Self {
+                filter: FilterChainInner::DSA(FilterChainImpl::load_from_preset(preset, Some(options))?)
+            })
+        }
+        return Ok(Self {
+            filter: FilterChainInner::Compatibility(FilterChainImpl::load_from_preset(preset, options)?)
+        })
+    }
+
+    /// Load the shader preset at the given path into a filter chain.
+    pub fn load_from_path(
+        path: impl AsRef<Path>,
+        options: Option<&FilterChainOptions>,
+    ) -> Result<Self> {
+        // load passes from preset
+        let preset = ShaderPreset::try_parse(path)?;
+        Self::load_from_preset(preset, options)
+    }
+
+    /// Process a frame with the input image.
+    ///
+    /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
+    pub fn frame(
+        &mut self,
+        count: usize,
+        viewport: &Viewport,
+        input: &GLImage,
+        options: Option<&FrameOptions>,
+    ) -> Result<()> {
+        match &mut self.filter {
+            FilterChainInner::DSA(p) => {
+                p.frame(count, viewport, input, options)
+            }
+            FilterChainInner::Compatibility(p) => {
+                p.frame(count, viewport, input, options)
+            }
+        }
+    }
+}
+
+enum FilterChainInner {
+    DSA(FilterChainImpl<crate::gl::gl46::DirectStateAccessGL>),
+    Compatibility(FilterChainImpl<crate::gl::gl3::CompatibilityGL>)
+}
+
+struct FilterChainImpl<T: GLInterface> {
     passes: Box<[FilterPass<T>]>,
     common: FilterCommon,
     pub(crate) draw_quad: T::DrawQuad,
-    output_framebuffers: Box<[T::Framebuffer]>,
-    feedback_framebuffers: Box<[T::Framebuffer]>,
-    history_framebuffers: VecDeque<T::Framebuffer>,
+    output_framebuffers: Box<[Framebuffer]>,
+    feedback_framebuffers: Box<[Framebuffer]>,
+    history_framebuffers: VecDeque<Framebuffer>,
 }
 
-pub struct FilterCommon {
+pub(crate) struct FilterCommon {
     // semantics: ReflectSemantics,
-    pub(crate) config: FilterMutable,
-    pub(crate) luts: FxHashMap<usize, Texture>,
-    pub(crate) samplers: SamplerSet,
+    pub config: FilterMutable,
+    pub luts: FxHashMap<usize, Texture>,
+    pub samplers: SamplerSet,
     pub output_textures: Box<[Texture]>,
     pub feedback_textures: Box<[Texture]>,
     pub history_textures: Box<[Texture]>,
@@ -54,7 +109,7 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-impl<T: GLInterface> FilterChain<T> {
+impl<T: GLInterface> FilterChainImpl<T> {
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
         // todo: support both ubo and pushco
         // todo: fix this.
@@ -91,9 +146,9 @@ type ShaderPassMeta = (
     >,
 );
 
-impl<T: GLInterface> FilterChain<T> {
+impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(
+    pub(crate) fn load_from_preset(
         preset: ShaderPreset,
         options: Option<&FilterChainOptions>,
     ) -> Result<Self> {
@@ -116,13 +171,13 @@ impl<T: GLInterface> FilterChain<T> {
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        output_framebuffers.resize_with(filters.len(), || T::FramebufferInterface::new(1));
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), Texture::default);
 
         // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        feedback_framebuffers.resize_with(filters.len(), || T::FramebufferInterface::new(1));
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), Texture::default);
 
@@ -130,12 +185,12 @@ impl<T: GLInterface> FilterChain<T> {
         let luts = T::LoadLut::load_luts(&preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChain::init_history(&filters, default_filter, default_wrap);
+            FilterChainImpl::init_history(&filters, default_filter, default_wrap);
 
         // create vertex objects
         let draw_quad = T::DrawQuad::new();
 
-        Ok(FilterChain {
+        Ok(FilterChainImpl {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
@@ -157,16 +212,6 @@ impl<T: GLInterface> FilterChain<T> {
                 history_textures,
             },
         })
-    }
-
-    /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(
-        path: impl AsRef<Path>,
-        options: Option<&FilterChainOptions>,
-    ) -> Result<Self> {
-        // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset, options)
     }
 
     fn load_preset(
@@ -363,7 +408,7 @@ impl<T: GLInterface> FilterChain<T> {
         filters: &[FilterPass<T>],
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> (VecDeque<T::Framebuffer>, Box<[Texture]>) {
+    ) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -397,7 +442,7 @@ impl<T: GLInterface> FilterChain<T> {
 
         eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
-        framebuffers.resize_with(required_images, || Framebuffer::new(1));
+        framebuffers.resize_with(required_images, || T::FramebufferInterface::new(1));
 
         let mut history_textures = Vec::new();
         history_textures.resize_with(required_images, || Texture {
@@ -412,12 +457,12 @@ impl<T: GLInterface> FilterChain<T> {
 
     fn push_history(&mut self, input: &GLImage) -> Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
-            if back.size() != input.size || (input.format != 0 && input.format != back.format()) {
+            if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 eprintln!("[history] resizing");
-                back.init(input.size, input.format)?;
+                T::FramebufferInterface::init(&mut back, input.size, input.format)?;
             }
 
-            back.copy_from(input)?;
+            back.copy_from::<T::FramebufferInterface>(input)?;
 
             self.history_framebuffers.push_front(back)
         }
@@ -431,7 +476,7 @@ impl<T: GLInterface> FilterChain<T> {
     pub fn frame(
         &mut self,
         count: usize,
-        viewport: &Viewport<T::Framebuffer>,
+        viewport: &Viewport,
         input: &GLImage,
         options: Option<&FrameOptions>,
     ) -> Result<()> {
@@ -440,7 +485,7 @@ impl<T: GLInterface> FilterChain<T> {
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &self.history_framebuffers {
-                    framebuffer.clear::<true>()
+                    framebuffer.clear::<T::FramebufferInterface, true>()
                 }
             }
         }
@@ -490,7 +535,7 @@ impl<T: GLInterface> FilterChain<T> {
 
         // rescale render buffers to ensure all bindings are valid.
         for (index, pass) in passes.iter_mut().enumerate() {
-            self.output_framebuffers[index].scale(
+            self.output_framebuffers[index].scale::<T::FramebufferInterface>(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 viewport,
@@ -498,7 +543,7 @@ impl<T: GLInterface> FilterChain<T> {
                 &source,
             )?;
 
-            self.feedback_framebuffers[index].scale(
+            self.feedback_framebuffers[index].scale::<T::FramebufferInterface>(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 viewport,
