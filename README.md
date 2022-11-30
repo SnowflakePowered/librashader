@@ -17,7 +17,7 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 | OpenGL 3.3+ | ✔          | `gl`                      |
 | OpenGL 4.6  | ✔          | `gl46`                    |
 | Vulkan      | 🚧         | `vk`                      |
-| Direct3D11  | 🚧         | `d3d11`                   |
+| Direct3D11  | ✔         | `d3d11`                   |
 | Direct3D12  | 🚧         | `d3d12`                   |
 | OpenGL 2    | ❌          |                           |
 | DirectX 9   | ❌          |                           |
