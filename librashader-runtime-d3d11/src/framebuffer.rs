@@ -1,9 +1,9 @@
-use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0, D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, D3D11_VIEWPORT, ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView, ID3D11Texture2D};
+use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0, D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, D3D11_VIEWPORT, ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11Resource, ID3D11ShaderResourceView, ID3D11Texture2D};
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, ScaleType, Scaling};
-use crate::texture::Texture;
+use crate::texture::{DxImageView, Texture};
 use crate::util;
 use crate::util::d3d11_get_closest_format;
 
@@ -13,11 +13,12 @@ pub struct OwnedFramebuffer {
     pub size: Size<u32>,
     pub format: DXGI_FORMAT,
     device: ID3D11Device,
+    context: ID3D11DeviceContext,
     is_raw: bool
 }
 
 impl OwnedFramebuffer {
-    pub fn new(device: &ID3D11Device, size: Size<u32>, format: ImageFormat) -> util::Result<OwnedFramebuffer> {
+    pub fn new(device: &ID3D11Device, context: &ID3D11DeviceContext, size: Size<u32>, format: ImageFormat) -> util::Result<OwnedFramebuffer> {
         unsafe {
             let format = d3d11_get_closest_format(device, DXGI_FORMAT::from(format),
                                                   D3D11_FORMAT_SUPPORT_TEXTURE2D.0 | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE.0 | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0);
@@ -30,6 +31,7 @@ impl OwnedFramebuffer {
                 size,
                 format,
                 device: device.clone(),
+                context: context.clone(),
                 is_raw: false,
             })
         }
@@ -119,6 +121,22 @@ impl OwnedFramebuffer {
             size: self.size,
             viewport: default_viewport(self.size)
         })
+    }
+
+    pub fn copy_from(&self, image: &ID3D11Resource) -> util::Result<()> {
+        unsafe {
+
+            self.context.CopySubresourceRegion(&self.texture, 0, 0, 0, 0,
+                                               image, 0, Some(&D3D11_BOX {
+                left: 0,
+                top: 0,
+                front: 0,
+                right: self.size.width,
+                bottom: self.size.height,
+                back: 1,
+            }))
+        }
+        Ok(())
     }
 }
 #[derive(Debug, Clone)]

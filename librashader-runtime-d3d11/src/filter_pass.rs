@@ -1,3 +1,4 @@
+use std::array;
 use crate::filter_chain::FilterCommon;
 use crate::texture::{Texture, OwnedTexture};
 use librashader_common::{ImageFormat, Size};
@@ -12,6 +13,7 @@ use std::error::Error;
 use windows::core::ConstBuffer;
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::{ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD, ID3D11InputLayout};
+use windows::Win32::Graphics::Gdi::NULL_PEN;
 use librashader_runtime::uniforms::UniformStorage;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
@@ -39,6 +41,11 @@ pub struct FilterPass {
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
+
+// https://doc.rust-lang.org/nightly/core/array/fn.from_fn.html is not ~const :(
+const NULL_TEXTURES: &[Option<ID3D11ShaderResourceView>; 16] =
+    &[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None];
+
 // slang_process.cpp 229
 impl FilterPass {
     pub fn get_format(&self) -> ImageFormat {
@@ -215,33 +222,26 @@ impl FilterPass {
         }
 
         // PassFeedback
-        // for (index, feedback) in parent.feedback_textures.iter().enumerate() {
-        //     // if let Some(binding) = self
-        //     //     .reflection
-        //     //     .meta
-        //     //     .texture_meta
-        //     //     .get(&TextureSemantics::PassFeedback.semantics(index))
-        //     // {
-        //     //     if feedback.image.handle == 0 {
-        //     //         eprintln!("[WARNING] trying to bind PassFeedback: {index} which has texture 0 to slot {} in pass {pass_index}", binding.binding)
-        //     //     }
-        //     //     FilterPass::bind_texture(binding, feedback);
-        //     // }
-        //
-        //     if let Some(offset) = self
-        //         .uniform_bindings
-        //         .get(&TextureSemantics::PassFeedback.semantics(index).into())
-        //     {
-        //         let (buffer, offset) = match offset {
-        //             MemberOffset::Ubo(offset) => (&mut self.uniform_buffer, *offset),
-        //             MemberOffset::PushConstant(offset) => (&mut self.push_buffer, *offset),
-        //         };
-        //         FilterPass::build_uniform(
-        //             &mut buffer[offset..][..16],
-        //             feedback.image.size,
-        //         );
-        //     }
-        // }
+        for (index, feedback) in parent.feedback_textures.iter().enumerate() {
+            let Some(feedback) = feedback else {
+                continue;
+            };
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::PassFeedback.semantics(index))
+            {
+                FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, feedback);
+            }
+
+            if let Some(offset) = self
+                .uniform_bindings
+                .get(&TextureSemantics::PassFeedback.semantics(index).into())
+            {
+                self.uniform_storage.bind_vec4(*offset, feedback.view.size, None);
+            }
+        }
 
         // bind float parameters
         for (id, offset) in
@@ -381,7 +381,7 @@ impl FilterPass {
 
         unsafe {
             // unbind resources.
-            context.PSSetShaderResources(0, Some(&[None; 16]));
+            context.PSSetShaderResources(0, Some(NULL_TEXTURES));
             context.OMSetRenderTargets(None, None);
         }
         Ok(())

@@ -418,7 +418,6 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime-d3d11",
  "librashader-runtime-gl",
- "librashader-runtime-gl46",
 ]
 
 [[package]]
@@ -497,23 +496,6 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "gl",
- "glfw",
- "librashader-common",
- "librashader-preprocess",
- "librashader-presets",
- "librashader-reflect",
- "librashader-runtime",
- "rustc-hash",
- "spirv_cross",
- "thiserror",
-]
-
-[[package]]
-name = "librashader-runtime-gl46"
 version = "0.1.0"
 dependencies = [
  "bytemuck",

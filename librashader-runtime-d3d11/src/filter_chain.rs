@@ -1,6 +1,7 @@
+use std::collections::VecDeque;
 use crate::texture::{DxImageView, OwnedTexture, Texture};
 use librashader_common::image::Image;
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::GlslangHlslContext;
@@ -16,7 +17,7 @@ use bytemuck::offset_of;
 use windows::core::PCSTR;
 use windows::s;
 use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView};
-use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
 use librashader_runtime::uniforms::UniformStorage;
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::{OutputFramebuffer, OwnedFramebuffer};
@@ -39,6 +40,9 @@ pub struct FilterChain {
     pub common: FilterCommon,
     pub passes: Vec<FilterPass>,
     pub output_framebuffers: Box<[OwnedFramebuffer]>,
+    pub feedback_framebuffers: Box<[OwnedFramebuffer]>,
+    pub history_framebuffers: VecDeque<OwnedFramebuffer>,
+    pub(crate) draw_quad: DrawQuad,
 }
 
 pub struct Direct3D11 {
@@ -51,8 +55,9 @@ pub struct FilterCommon {
     pub(crate) preset: ShaderPreset,
     pub(crate) luts: FxHashMap<usize, OwnedTexture>,
     pub samplers: SamplerSet,
-    pub(crate) draw_quad: DrawQuad,
-    pub output_textures: Box<[Option<Texture>]>
+    pub output_textures: Box<[Option<Texture>]>,
+    pub feedback_textures: Box<[Option<Texture>]>,
+    pub history_textures: Box<[Option<Texture>]>,
 }
 
 impl FilterChain {
@@ -187,46 +192,42 @@ impl FilterChain {
         // initialize passes
         let filters = FilterChain::init_passes(device, passes, &semantics).unwrap();
 
-        let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
-        let default_wrap = filters
-            .first()
-            .map(|f| f.config.wrap_mode)
-            .unwrap_or_default();
+        let mut device_context = None;
+        unsafe {
+            device.GetImmediateContext(&mut device_context);
+        }
+        let device_context = device_context.unwrap();
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, Size::new(1, 1),
+        output_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, &device_context, Size::new(1, 1),
                                                                                 ImageFormat::R8G8B8A8Unorm).unwrap());
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), || None);
         //
         // // initialize feedback framebuffers
-        // let mut feedback_framebuffers = Vec::new();
-        // feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
-        // let mut feedback_textures = Vec::new();
-        // feedback_textures.resize_with(filters.len(), Texture::default);
+        let mut feedback_framebuffers = Vec::new();
+        feedback_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, &device_context, Size::new(1, 1),
+                                                                                ImageFormat::R8G8B8A8Unorm).unwrap());
+        let mut feedback_textures = Vec::new();
+        feedback_textures.resize_with(filters.len(), || None);
 
         // load luts
         let luts = FilterChain::load_luts(device, &preset.textures)?;
 
-        // let (history_framebuffers, history_textures) =
-        //     FilterChain::init_history(&filters, default_filter, default_wrap);
+        let (history_framebuffers, history_textures) =
+            FilterChain::init_history(device, &device_context, &filters);
 
-        let mut device_context = None;
 
-        unsafe {
-            device.GetImmediateContext(&mut device_context);
-        }
-        let device_context = device_context.unwrap();
         let draw_quad = DrawQuad::new(device, &device_context)?;
 
         // todo: make vbo: d3d11.c 1376
         Ok(FilterChain {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
-            // feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
-            // history_framebuffers,
-            // filter_vao,
+            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
+            history_framebuffers,
+            draw_quad,
             common: FilterCommon {
                 d3d11: Direct3D11 {
                     device: device.clone(),
@@ -238,12 +239,89 @@ impl FilterChain {
                 // semantics,
                 preset,
                 output_textures: output_textures.into_boxed_slice(),
-                // feedback_textures: feedback_textures.into_boxed_slice(),
-                // history_textures,
-                draw_quad,
+                feedback_textures: feedback_textures.into_boxed_slice(),
+                history_textures,
             },
         })
     }
+
+
+    fn init_history(
+        device: &ID3D11Device,
+        context: &ID3D11DeviceContext,
+        filters: &[FilterPass],
+    ) -> (VecDeque<OwnedFramebuffer>, Box<[Option<Texture>]>) {
+        let mut required_images = 0;
+
+        for pass in filters {
+            // If a shader uses history size, but not history, we still need to keep the texture.
+            let texture_count = pass
+                .reflection
+                .meta
+                .texture_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+            let texture_size_count = pass
+                .reflection
+                .meta
+                .texture_size_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+
+            required_images = std::cmp::max(required_images, texture_count);
+            required_images = std::cmp::max(required_images, texture_size_count);
+        }
+
+        // not using frame history;
+        if required_images <= 1 {
+            println!("[history] not using frame history");
+            return (VecDeque::new(), Box::new([]));
+        }
+
+        // history0 is aliased with the original
+
+        eprintln!("[history] using frame history with {required_images} images");
+        let mut framebuffers = VecDeque::with_capacity(required_images);
+        framebuffers.resize_with(required_images, || OwnedFramebuffer::new(device, &context, Size::new(1, 1),
+                                                                           ImageFormat::R8G8B8A8Unorm).unwrap());
+
+        let mut history_textures = Vec::new();
+        history_textures.resize_with(required_images, || None);
+
+        (framebuffers, history_textures.into_boxed_slice())
+    }
+
+    fn push_history(&mut self, input: &DxImageView) -> util::Result<()> {
+        if let Some(mut back) = self.history_framebuffers.pop_back() {
+            let resource = unsafe {
+                let mut resource = None;
+                input.handle.GetResource(&mut resource);
+
+                // todo: make panic-free
+                resource.unwrap()
+            };
+
+            let format = unsafe {
+                let mut desc = Default::default();
+                input.handle.GetDesc(&mut desc);
+                desc.Format
+            };
+
+            if back.size != input.size || (format != DXGI_FORMAT(0) && format != back.format) {
+                eprintln!("[history] resizing");
+                back.init(input.size, ImageFormat::from(format))?;
+            }
+
+            back.copy_from(&resource)?;
+
+            self.history_framebuffers.push_front(back)
+        }
+
+        Ok(())
+    }
+
 
     fn load_luts(
         device: &ID3D11Device,
@@ -339,10 +417,10 @@ impl FilterChain {
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
-        self.common.draw_quad.bind_vertices();
+        self.draw_quad.bind_vertices();
 
         let original = Texture {
-            view: input,
+            view: input.clone(),
             filter,
             wrap_mode,
         };
@@ -358,11 +436,21 @@ impl FilterChain {
                 &original,
                 &source,
             )?;
+
+            self.feedback_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                viewport,
+                &original,
+                &source,
+            )?;
         }
 
+        let passes_len = passes.len();
+        let (pass, last) = passes.split_at_mut(passes_len - 1);
 
 
-        for (index, pass) in passes.iter_mut().enumerate() {
+        for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             let size =  target.size;
 
@@ -380,6 +468,33 @@ impl FilterChain {
             self.common.output_textures[index] = Some(source.clone());
         }
 
+        assert_eq!(last.len(), 1);
+        for pass in last {
+            source.filter = pass.config.filter;
+            pass.draw(
+                passes_len - 1,
+                &self.common,
+                if pass.config.frame_count_mod > 0 {
+                    count % pass.config.frame_count_mod as usize
+                } else {
+                    count
+                } as u32,
+                1, viewport, &original, &source, RenderTarget::new(output, None))?;
+
+            // diverge so we don't need to clone output.
+            break;
+        }
+
+        // swap feedback framebuffers with output
+        for (output, feedback) in self
+            .output_framebuffers
+            .iter_mut()
+            .zip(self.feedback_framebuffers.iter_mut())
+        {
+            std::mem::swap(output, feedback);
+        }
+
+        self.push_history(&input)?;
         Ok(())
 
     }

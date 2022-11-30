@@ -261,7 +261,8 @@ pub mod d3d11_hello_triangle {
         pub backbuffer: ID3D11Texture2D,
         pub rtv: ID3D11RenderTargetView,
         pub viewport: D3D11_VIEWPORT,
-        pub shader_output: Option<ID3D11Texture2D>
+        pub shader_output: Option<ID3D11Texture2D>,
+        pub frame_count: usize,
     }
 
     impl Sample {
@@ -342,6 +343,7 @@ pub mod d3d11_hello_triangle {
                     MaxDepth: D3D11_MAX_DEPTH,
                 },
                 shader_output: None,
+                frame_count: 0usize
             });
 
             Ok(())
@@ -467,7 +469,7 @@ pub mod d3d11_hello_triangle {
                 }))?;
                 
                 //
-                self.filter.frame(1, &Size {
+                self.filter.frame(resources.frame_count, &Size {
                     width: tex2d_desc.Width,
                     height: tex2d_desc.Height,
                 }, DxImageView { handle: srv, size: Size {
@@ -480,14 +482,15 @@ pub mod d3d11_hello_triangle {
                         width: tex2d_desc.Width,
                         height: tex2d_desc.Height,
                     },
-                    viewport: D3D11_VIEWPORT {
-                        TopLeftX: 0.0,
-                        TopLeftY: 0.0,
-                        Width: tex2d_desc.Width as f32,
-                        Height:  tex2d_desc.Height as f32,
-                        MinDepth: 0.0,
-                        MaxDepth: 1.0,
-                    },
+                    viewport: resources.viewport
+                    // viewport: D3D11_VIEWPORT {
+                    //     TopLeftX: 0.0,
+                    //     TopLeftY: 0.0,
+                    //     Width: tex2d_desc.Width as f32,
+                    //     Height:  tex2d_desc.Height as f32,
+                    //     MinDepth: 0.0,
+                    //     MaxDepth: 1.0,
+                    // },
                 }).unwrap();
 
                 // self.context.CopyResource(&resources.backbuffer, &backup);
@@ -496,6 +499,7 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 resources.swapchain.Present(0, 0).ok()?;
             }
+            resources.frame_count += 1;
             Ok(())
         }
     }

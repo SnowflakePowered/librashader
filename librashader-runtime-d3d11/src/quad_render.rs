@@ -1,7 +1,7 @@
 use bytemuck::offset_of;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_VERTEX_BUFFER, D3D11_BUFFER_DESC, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_SUBRESOURCE_DATA, D3D11_USAGE_IMMUTABLE, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext};
-use windows::Win32::Graphics::Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+use windows::Win32::Graphics::Direct3D::{D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
 use crate::util;
 
@@ -79,8 +79,8 @@ impl DrawQuad {
             self.context.IASetVertexBuffers(0, 1, Some(&Some(self.buffer.clone())),
                                             Some(&self.stride), Some(&self.offset));
         }
-
     }
+
     pub fn get_spirv_cross_vbo_desc() -> [D3D11_INPUT_ELEMENT_DESC; 2] {
         [
             D3D11_INPUT_ELEMENT_DESC {
