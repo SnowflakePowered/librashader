@@ -8,7 +8,9 @@ use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
-use crate::framebuffer::{Framebuffer, GlImage, Viewport};
+use crate::framebuffer::{GlImage, Viewport};
+use crate::gl::Framebuffer;
+use crate::gl::gl3::Gl3Framebuffer;
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -462,7 +464,7 @@ void main()
     let (fb_width, fb_height) = window.get_framebuffer_size();
     let (vp_width, vp_height) = window.get_size();
 
-    let output = Framebuffer::new_from_raw(
+    let output = Gl3Framebuffer::new_from_raw(
         output_texture,
         output_framebuffer_handle,
         gl::RGBA8,

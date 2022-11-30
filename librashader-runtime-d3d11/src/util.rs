@@ -166,13 +166,3 @@ pub fn d3d11_create_input_layout(device: &ID3D11Device, desc: &[D3D11_INPUT_ELEM
 // todo: d3d11.c 2097
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-pub fn calc_miplevel(size: Size<u32>) -> u32 {
-    let mut size = std::cmp::max(size.width, size.height);
-    let mut levels = 0;
-    while size != 0 {
-        levels += 1;
-        size >>= 1;
-    }
-
-    levels
-}

@@ -1,4 +1,5 @@
 use gl::types::{GLsizei, GLsizeiptr, GLuint};
+use crate::gl::DrawQuad;
 
 #[rustfmt::skip]
 static QUAD_VBO_DATA: &[f32; 16] = &[
@@ -8,13 +9,13 @@ static QUAD_VBO_DATA: &[f32; 16] = &[
     1.0f32, 1.0f32, 1.0f32, 1.0f32,
 ];
 
-pub struct DrawQuad {
+pub struct Gl3DrawQuad {
     vbo: GLuint,
     vao: GLuint,
 }
 
-impl DrawQuad {
-    pub fn new() -> DrawQuad {
+impl DrawQuad for Gl3DrawQuad {
+    fn new() -> Gl3DrawQuad {
         let mut vbo = 0;
         let mut vao = 0;
 
@@ -31,11 +32,10 @@ impl DrawQuad {
             gl::GenVertexArrays(1, &mut vao);
         }
 
-
-        DrawQuad { vbo, vao }
+        Self { vbo, vao }
     }
 
-    pub fn bind_vao(&self) {
+    fn bind_vertices(&self) {
         unsafe {
             gl::BindVertexArray(self.vao);
             gl::EnableVertexAttribArray(0);
@@ -65,7 +65,7 @@ impl DrawQuad {
         }
     }
 
-    pub fn unbind_vao(&self) {
+    fn unbind_vertices(&self) {
         unsafe {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -74,3 +74,4 @@ impl DrawQuad {
         }
     }
 }
+

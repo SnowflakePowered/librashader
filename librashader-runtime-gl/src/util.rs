@@ -5,17 +5,6 @@ use librashader_reflect::reflect::semantics::BindingStage;
 use librashader_runtime::uniforms::{BindUniform, UniformStorage, UniformScalar};
 use crate::binding::UniformLocation;
 
-pub fn calc_miplevel(size: Size<u32>) -> u32 {
-    let mut size = std::cmp::max(size.width, size.height);
-    let mut levels = 0;
-    while size != 0 {
-        levels += 1;
-        size >>= 1;
-    }
-
-    levels
-}
-
 pub trait RingBuffer<T> {
     fn current(&self) -> &T;
     fn current_mut(&mut self) -> &mut T;

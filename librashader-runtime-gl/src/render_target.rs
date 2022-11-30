@@ -1,4 +1,6 @@
-use crate::framebuffer::{Framebuffer, Viewport};
+use crate::framebuffer::Viewport;
+use crate::gl::Framebuffer;
+use crate::gl::gl3::Gl3Framebuffer;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[
@@ -9,15 +11,15 @@ static DEFAULT_MVP: &[f32; 16] = &[
 ];
 
 #[derive(Debug, Copy, Clone)]
-pub struct RenderTarget<'a> {
+pub(crate) struct RenderTarget<'a> {
     pub mvp: &'a [f32; 16],
-    pub framebuffer: &'a Framebuffer,
+    pub framebuffer: &'a Gl3Framebuffer,
     pub x: i32,
     pub y: i32
 }
 
 impl<'a> RenderTarget<'a> {
-    pub fn new(backbuffer: &'a Framebuffer, mvp: Option<&'a [f32; 16]>, x: i32, y: i32) -> Self {
+    pub fn new(backbuffer: &'a Gl3Framebuffer, mvp: Option<&'a [f32; 16]>, x: i32, y: i32) -> Self {
         if let Some(mvp) = mvp {
             RenderTarget {
                 framebuffer: backbuffer,

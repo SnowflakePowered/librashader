@@ -1,7 +1,8 @@
 use crate::binding::{UniformLocation, VariableLocation};
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::{Framebuffer, GlImage, Viewport};
-use crate::quad_render::DrawQuad;
+use crate::framebuffer::{GlImage, Viewport};
+use crate::gl::gl3::Gl3Framebuffer;
+use crate::gl::gl3::{Gl3DrawQuad, Gl3LutLoad, Gl3UboRing};
 use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{gl_get_version, gl_u16_to_version, InlineRingBuffer};
@@ -26,14 +27,15 @@ use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::binding::BufferStorage;
+use crate::gl::{DrawQuad, Framebuffer, LoadLut, UboRing};
 
 pub struct FilterChain {
     passes: Box<[FilterPass]>,
     common: FilterCommon,
-    pub(crate) draw_quad: DrawQuad,
-    output_framebuffers: Box<[Framebuffer]>,
-    feedback_framebuffers: Box<[Framebuffer]>,
-    history_framebuffers: VecDeque<Framebuffer>,
+    pub(crate) draw_quad: Gl3DrawQuad,
+    output_framebuffers: Box<[Gl3Framebuffer]>,
+    feedback_framebuffers: Box<[Gl3Framebuffer]>,
+    history_framebuffers: VecDeque<Gl3Framebuffer>,
 }
 
 pub struct FilterCommon {
@@ -109,24 +111,24 @@ impl FilterChain {
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        output_framebuffers.resize_with(filters.len(), || Gl3Framebuffer::new(1));
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), Texture::default);
 
         // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || Framebuffer::new(1));
+        feedback_framebuffers.resize_with(filters.len(), || Gl3Framebuffer::new(1));
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), Texture::default);
 
         // load luts
-        let luts = FilterChain::load_luts(&preset.textures)?;
+        let luts = Gl3LutLoad::load_luts(&preset.textures)?;
 
         let (history_framebuffers, history_textures) =
             FilterChain::init_history(&filters, default_filter, default_wrap);
 
         // create vertex objects
-        let draw_quad = DrawQuad::new();
+        let draw_quad = Gl3DrawQuad::new();
 
         Ok(FilterChain {
             passes: filters,
@@ -207,79 +209,6 @@ impl FilterChain {
         Ok((passes, semantics))
     }
 
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
-        let mut luts = FxHashMap::default();
-        let pixel_unpack = unsafe {
-            let mut binding = 0;
-            gl::GetIntegerv(gl::PIXEL_UNPACK_BUFFER_BINDING, &mut binding);
-            binding
-        };
-
-        for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path)?;
-            let levels = if texture.mipmap {
-                util::calc_miplevel(image.size)
-            } else {
-                1u32
-            };
-
-            let mut handle = 0;
-            unsafe {
-                gl::GenTextures(1, &mut handle);
-                gl::BindTexture(gl::TEXTURE_2D, handle);
-                gl::TexStorage2D(
-                    gl::TEXTURE_2D,
-                    levels as GLsizei,
-                    gl::RGBA8,
-                    image.size.width as GLsizei,
-                    image.size.height as GLsizei,
-                );
-
-                gl::PixelStorei(gl::UNPACK_ROW_LENGTH, 0);
-                gl::PixelStorei(gl::UNPACK_ALIGNMENT, 4);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
-                gl::TexSubImage2D(
-                    gl::TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    image.size.width as GLsizei,
-                    image.size.height as GLsizei,
-                    gl::RGBA,
-                    gl::UNSIGNED_BYTE,
-                    image.bytes.as_ptr().cast(),
-                );
-
-                let mipmap = levels > 1;
-                if mipmap {
-                    gl::GenerateMipmap(gl::TEXTURE_2D);
-                }
-
-                gl::BindTexture(gl::TEXTURE_2D, 0);
-            }
-
-            luts.insert(
-                index,
-                Texture {
-                    image: GlImage {
-                        handle,
-                        format: gl::RGBA8,
-                        size: image.size,
-                        padded_size: Size::default(),
-                    },
-                    filter: texture.filter_mode,
-                    mip_filter: texture.filter_mode,
-                    wrap_mode: texture.wrap_mode,
-                },
-            );
-        }
-
-        unsafe {
-            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pixel_unpack as GLuint);
-        };
-        Ok(luts)
-    }
-
     fn init_passes(
         version: GlVersion,
         passes: Vec<ShaderPassMeta>,
@@ -352,21 +281,7 @@ impl FilterChain {
             };
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let size = ubo.size;
-                let mut ring: InlineRingBuffer<GLuint, 16> = InlineRingBuffer::new();
-                unsafe {
-                    gl::GenBuffers(16, ring.items_mut().as_mut_ptr());
-                    for buffer in ring.items() {
-                        gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
-                        gl::BufferData(
-                            gl::UNIFORM_BUFFER,
-                            size as GLsizeiptr,
-                            std::ptr::null(),
-                            gl::STREAM_DRAW,
-                        );
-                    }
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
-                }
+                let ring = Gl3UboRing::new(ubo.size);
                 Some(ring)
             } else {
                 None
@@ -445,7 +360,7 @@ impl FilterChain {
         filters: &[FilterPass],
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
+    ) -> (VecDeque<Gl3Framebuffer>, Box<[Texture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -479,7 +394,7 @@ impl FilterChain {
 
         eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
-        framebuffers.resize_with(required_images, || Framebuffer::new(1));
+        framebuffers.resize_with(required_images, || Gl3Framebuffer::new(1));
 
         let mut history_textures = Vec::new();
         history_textures.resize_with(required_images, || Texture {
@@ -516,7 +431,7 @@ impl FilterChain {
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &self.history_framebuffers {
-                    framebuffer.clear()
+                    framebuffer.clear::<true>()
                 }
             }
         }
@@ -527,7 +442,7 @@ impl FilterChain {
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
-        self.draw_quad.bind_vao();
+        self.draw_quad.bind_vertices();
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -641,7 +556,7 @@ impl FilterChain {
 
         self.push_history(input)?;
 
-        self.draw_quad.unbind_vao();
+        self.draw_quad.unbind_vertices();
 
         Ok(())
     }

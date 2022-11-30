@@ -47,43 +47,7 @@ impl OwnedFramebuffer {
             return Ok(self.size);
         }
 
-        let width;
-        let height;
-
-        match scaling.x {
-            Scaling {
-                scale_type: ScaleType::Input,
-                factor,
-            } => width = source.view.size.width * factor,
-            Scaling {
-                scale_type: ScaleType::Absolute,
-                factor,
-            } => width = factor.into(),
-            Scaling {
-                scale_type: ScaleType::Viewport,
-                factor,
-            } => width = viewport_size.width * factor,
-        };
-
-        match scaling.y {
-            Scaling {
-                scale_type: ScaleType::Input,
-                factor,
-            } => height = source.view.size.height * factor,
-            Scaling {
-                scale_type: ScaleType::Absolute,
-                factor,
-            } => height = factor.into(),
-            Scaling {
-                scale_type: ScaleType::Viewport,
-                factor,
-            } => height = viewport_size.height * factor,
-        };
-
-        let size = Size {
-            width: width.round() as u32,
-            height: height.round() as u32,
-        };
+        let size = librashader_runtime::scaling::scale(scaling, source.view.size, *viewport_size);
 
         if self.size != size {
             self.size = size;

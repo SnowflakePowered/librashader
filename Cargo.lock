@@ -472,9 +472,11 @@ name = "librashader-runtime"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
+ "num-traits",
  "rustc-hash",
 ]
 

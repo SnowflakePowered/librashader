@@ -17,6 +17,21 @@ pub trait BindUniform<C, T> {
     fn bind_uniform(value: T, ctx: C) -> Option<()>;
 }
 
+pub trait UniformStorageAccess {
+    fn ubo_pointer(&self) -> *const u8;
+    fn push_pointer(&self) -> *const u8;
+}
+
+impl <T, H> UniformStorageAccess for UniformStorage<T, H> {
+    fn ubo_pointer(&self) -> *const u8 {
+        self.ubo.as_ptr()
+    }
+
+    fn push_pointer(&self) -> *const u8 {
+        self.push.as_ptr()
+    }
+}
+
 pub struct UniformStorage<H=NoUniformBinder, C = Option<()>> {
     pub ubo: Box<[u8]>,
     pub push: Box<[u8]>,

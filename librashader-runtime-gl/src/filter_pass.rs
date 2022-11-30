@@ -14,6 +14,8 @@ use librashader_runtime::uniforms::UniformStorage;
 use crate::binding::{BufferStorage, GlUniformBinder, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
+use crate::gl::gl3::{Gl3BindTexture, Gl3UboRing};
+use crate::gl::{BindTexture, Framebuffer, UboRing};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
@@ -25,7 +27,7 @@ pub struct FilterPass {
     pub compiled: ShaderCompilerOutput<String, GlslangGlslContext>,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
-    pub ubo_ring: Option<InlineRingBuffer<GLuint, 16>>,
+    pub ubo_ring: Option<Gl3UboRing<16>>,
     pub(crate) uniform_storage: BufferStorage,
     pub uniform_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
     pub source: ShaderSource,
@@ -34,7 +36,7 @@ pub struct FilterPass {
 
 impl FilterPass {
     // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
-    pub fn draw(
+    pub(crate) fn draw(
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
@@ -68,36 +70,14 @@ impl FilterPass {
             && self.ubo_location.fragment != gl::INVALID_INDEX
         {
             if let (Some(ubo), Some(ring)) = (&self.reflection.ubo, &mut self.ubo_ring) {
-                let size = ubo.size;
-                let buffer = ring.current();
-
-                unsafe {
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, *buffer);
-                    gl::BufferSubData(
-                        gl::UNIFORM_BUFFER,
-                        0,
-                        size as GLsizeiptr,
-                        self.uniform_storage.ubo.as_ptr().cast(),
-                    );
-                    gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
-
-                    if self.ubo_location.vertex != gl::INVALID_INDEX {
-                        gl::BindBufferBase(gl::UNIFORM_BUFFER, self.ubo_location.vertex, *buffer);
-                    }
-                    if self.ubo_location.fragment != gl::INVALID_INDEX {
-                        gl::BindBufferBase(gl::UNIFORM_BUFFER, self.ubo_location.fragment, *buffer);
-                    }
-                }
-                ring.next()
+                ring.bind_for_frame(ubo, &self.ubo_location, &self.uniform_storage)
             }
         }
 
         unsafe {
             // can't use framebuffer.clear because it will unbind.
-            gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
-            gl::ClearColor(0.0f32, 0.0f32, 0.0f32, 0.0f32);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-            //
+            framebuffer.clear::<false>();
+
             gl::Viewport(
                 output.x,
                 output.y,
@@ -122,14 +102,7 @@ impl FilterPass {
     }
 
     fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
-        unsafe {
-            // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
-            gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
-
-            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
-            gl::BindSampler(binding.binding,
-                            samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
-        }
+        Gl3BindTexture::bind_texture(samplers, binding, texture)
     }
 }
 
