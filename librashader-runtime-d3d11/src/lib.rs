@@ -1,17 +1,18 @@
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
 
-mod filter_chain;
-
-mod filter_pass;
-mod framebuffer;
 #[cfg(test)]
 mod hello_triangle;
+
+mod filter_chain;
+mod filter_pass;
+mod framebuffer;
 mod quad_render;
 mod render_target;
 mod samplers;
 mod texture;
 mod util;
+pub mod error;
 
 #[cfg(test)]
 mod tests {

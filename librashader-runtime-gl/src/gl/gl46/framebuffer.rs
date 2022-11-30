@@ -89,6 +89,11 @@ impl FramebufferInterface for Gl46Framebuffer {
         }
     }
     fn copy_from(fb: &mut Framebuffer, image: &GLImage) -> Result<()> {
+        // todo: confirm this behaviour for unbound image.
+        if image.handle == 0 {
+            return Ok(())
+        }
+
         // todo: may want to use a shader and draw a quad to be faster.
         if image.size != fb.size || image.format != fb.format {
             Self::init(

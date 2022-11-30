@@ -1,4 +1,4 @@
-use crate::texture::{DxImageView, OwnedTexture, Texture};
+use crate::texture::{DxImageView, LutTexture, Texture};
 use librashader_common::image::Image;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
@@ -31,10 +31,16 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_R8G8B8A8_UNORM};
+use crate::error::FilterChainError;
+
+pub struct FilterMutable {
+    pub(crate) passes_enabled: usize,
+    pub(crate) parameters: FxHashMap<String, f32>,
+}
 
 // todo: get rid of preset
-type ShaderPassMeta<'a> = (
-    &'a ShaderPassConfig,
+type ShaderPassMeta = (
+    ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
         impl CompileShader<HLSL, Options = Option<()>, Context = GlslangHlslContext> + ReflectShader,
@@ -53,16 +59,17 @@ pub struct FilterChain {
 pub struct Direct3D11 {
     pub(crate) device: ID3D11Device,
     pub(crate) device_context: ID3D11DeviceContext,
+    pub context_is_deferred: bool
 }
 
 pub struct FilterCommon {
     pub(crate) d3d11: Direct3D11,
-    pub(crate) preset: ShaderPreset,
-    pub(crate) luts: FxHashMap<usize, OwnedTexture>,
+    pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub output_textures: Box<[Option<Texture>]>,
     pub feedback_textures: Box<[Option<Texture>]>,
     pub history_textures: Box<[Option<Texture>]>,
+    pub config: FilterMutable
 }
 
 impl FilterChain {
@@ -188,17 +195,18 @@ impl FilterChain {
         device: &ID3D11Device,
         preset: ShaderPreset,
     ) -> util::Result<FilterChain> {
-        let (passes, semantics) = FilterChain::load_preset(&preset)?;
+        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
 
         let samplers = SamplerSet::new(device)?;
 
         // initialize passes
-        let filters = FilterChain::init_passes(device, passes, &semantics).unwrap();
+        let filters = FilterChain::init_passes(device, passes, &semantics)?;
 
         let mut device_context = None;
         unsafe {
             device.GetImmediateContext(&mut device_context);
         }
+
         let device_context = device_context.unwrap();
 
         let device_context =
@@ -214,8 +222,12 @@ impl FilterChain {
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
             )
-            .unwrap()
         });
+
+        // resolve all results
+        let output_framebuffers = output_framebuffers
+            .into_iter().collect::<util::Result<Vec<OwnedFramebuffer>>>()?;
+
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), || None);
         //
@@ -228,16 +240,20 @@ impl FilterChain {
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
             )
-            .unwrap()
         });
+        // resolve all results
+        let feedback_framebuffers = feedback_framebuffers
+            .into_iter().collect::<util::Result<Vec<OwnedFramebuffer>>>()?;
+
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), || None);
 
         // load luts
-        let luts = FilterChain::load_luts(device, &preset.textures)?;
+        let luts = FilterChain::load_luts(device,
+                                          &device_context, &preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChain::init_history(device, &device_context, &filters);
+            FilterChain::init_history(device, &device_context, &filters)?;
 
         let draw_quad = DrawQuad::new(device, &device_context)?;
 
@@ -252,12 +268,18 @@ impl FilterChain {
                 d3d11: Direct3D11 {
                     device: device.clone(),
                     device_context,
+                    context_is_deferred: false
+                },
+                config: FilterMutable {
+                    passes_enabled: preset.shader_count as usize,
+                    parameters: preset
+                        .parameters
+                        .into_iter()
+                        .map(|param| (param.name, param.value))
+                        .collect(),
                 },
                 luts,
                 samplers,
-                // we don't need the reflect semantics once all locations have been bound per pass.
-                // semantics,
-                preset,
                 output_textures: output_textures.into_boxed_slice(),
                 feedback_textures: feedback_textures.into_boxed_slice(),
                 history_textures,
@@ -269,7 +291,7 @@ impl FilterChain {
         device: &ID3D11Device,
         context: &ID3D11DeviceContext,
         filters: &[FilterPass],
-    ) -> (VecDeque<OwnedFramebuffer>, Box<[Option<Texture>]>) {
+    ) -> util::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<Texture>]>)> {
         let mut required_images = 0;
 
         for pass in filters {
@@ -296,7 +318,7 @@ impl FilterChain {
         // not using frame history;
         if required_images <= 1 {
             println!("[history] not using frame history");
-            return (VecDeque::new(), Box::new([]));
+            return Ok((VecDeque::new(), Box::new([])));
         }
 
         // history0 is aliased with the original
@@ -305,13 +327,15 @@ impl FilterChain {
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
             OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)
-                .unwrap()
         });
+
+        let framebuffers = framebuffers
+            .into_iter().collect::<util::Result<VecDeque<OwnedFramebuffer>>>()?;
 
         let mut history_textures = Vec::new();
         history_textures.resize_with(required_images, || None);
 
-        (framebuffers, history_textures.into_boxed_slice())
+        Ok((framebuffers, history_textures.into_boxed_slice()))
     }
 
     fn push_history(&mut self, input: &DxImageView) -> util::Result<()> {
@@ -325,8 +349,9 @@ impl FilterChain {
 
     fn load_luts(
         device: &ID3D11Device,
+        context: &ID3D11DeviceContext,
         textures: &[TextureConfig],
-    ) -> util::Result<FxHashMap<usize, OwnedTexture>> {
+    ) -> util::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
 
         for (index, texture) in textures.iter().enumerate() {
@@ -345,7 +370,7 @@ impl FilterChain {
             };
 
             let texture =
-                OwnedTexture::new(device, &image, desc, texture.filter_mode, texture.wrap_mode)?;
+                LutTexture::new(device, context,&image, desc, texture.filter_mode, texture.wrap_mode)?;
             luts.insert(index, texture);
         }
         Ok(luts)
@@ -361,14 +386,15 @@ impl FilterChain {
         Self::load_from_preset(device, preset)
     }
 
-    fn load_preset(preset: &ShaderPreset) -> util::Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
+    fn load_preset( passes: Vec<ShaderPassConfig>,
+                     textures: &[TextureConfig],
+    ) -> util::Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
 
-        let passes = preset
-            .shaders
-            .iter()
+        let passes = passes
+            .into_iter()
             .map(|shader| {
                 eprintln!("[dx11] loading {}", &shader.name.display());
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
@@ -385,21 +411,21 @@ impl FilterChain {
                         }),
                     );
                 }
-                Ok::<_, Box<dyn Error>>((shader, source, reflect))
+                Ok::<_, FilterChainError>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<util::Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
+            .collect::<util::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
             )?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
                 &mut uniform_semantics,
                 &mut texture_semantics,
-                details.0,
+                &details.0,
             )
         }
         librashader_runtime::semantics::insert_lut_semantics(
-            &preset.textures,
+            &textures,
             &mut uniform_semantics,
             &mut texture_semantics,
         );
@@ -476,12 +502,12 @@ impl FilterChain {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(target.as_output_framebuffer().unwrap(), None),
+                RenderTarget::new(target.as_output_framebuffer()?, None),
             )?;
 
             source = Texture {
                 view: DxImageView {
-                    handle: target.create_shader_resource_view().unwrap(),
+                    handle: target.create_shader_resource_view()?,
                     size,
                 },
                 filter,

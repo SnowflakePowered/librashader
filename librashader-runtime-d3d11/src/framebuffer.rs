@@ -155,9 +155,10 @@ impl OwnedFramebuffer {
         let resource: ID3D11Texture2D = unsafe {
             let mut resource = None;
             image.handle.GetResource(&mut resource);
-
-            // todo: make panic-free
-            resource.unwrap().cast()?
+            let Some(resource) = resource else {
+                return Ok(())
+            };
+            resource.cast()?
         };
 
         let format = unsafe {

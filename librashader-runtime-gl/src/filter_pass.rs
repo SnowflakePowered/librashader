@@ -32,7 +32,6 @@ pub struct FilterPass<T: GLInterface> {
 }
 
 impl<T: GLInterface> FilterPass<T> {
-    // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
     pub(crate) fn draw(
         &mut self,
         pass_index: usize,

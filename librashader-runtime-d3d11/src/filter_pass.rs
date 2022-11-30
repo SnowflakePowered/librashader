@@ -20,6 +20,7 @@ use windows::Win32::Graphics::Direct3D11::{
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use librashader_runtime::uniforms::UniformStorage;
+use crate::util;
 
 pub struct ConstantBufferBinding {
     pub binding: u32,
@@ -310,13 +311,7 @@ impl FilterPass {
                 .map(|f| f.initial)
                 .unwrap_or(0f32);
 
-            let value = parent
-                .preset
-                .parameters
-                .iter()
-                .find(|&p| p.name == id)
-                .map(|p| p.value)
-                .unwrap_or(default);
+            let value = *parent.config.parameters.get(id).unwrap_or(&default);
 
             self.uniform_storage.bind_scalar(*offset, value, None);
         }
@@ -360,7 +355,7 @@ impl FilterPass {
         original: &Texture,
         source: &Texture,
         output: RenderTarget,
-    ) -> std::result::Result<(), Box<dyn Error>> {
+    ) -> util::Result<()> {
         let _device = &parent.d3d11.device;
         let context = &parent.d3d11.device_context;
         unsafe {

@@ -167,4 +167,4 @@ pub fn d3d11_create_input_layout(
 }
 
 // todo: d3d11.c 2097
-pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
+pub type Result<T> = std::result::Result<T, crate::error::FilterChainError>;

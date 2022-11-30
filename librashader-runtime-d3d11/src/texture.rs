@@ -1,48 +1,40 @@
 use librashader_common::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
-use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Device, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_FLAG,
-    D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CPU_ACCESS_FLAG,
-    D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE,
-    D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS,
-    D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA,
-    D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_USAGE_STAGING,
-};
+use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_FLAG, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CPU_ACCESS_FLAG, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_USAGE_STAGING, ID3D11DeviceContext};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+use crate::filter_chain::Direct3D11;
 
 use crate::util::Result;
 
 #[derive(Debug, Clone)]
 pub struct DxImageView {
     pub handle: ID3D11ShaderResourceView,
-    pub size: Size<u32>, // pub image: GlImage,
+    pub size: Size<u32>,
 }
 #[derive(Debug, Clone)]
 pub struct Texture {
     pub view: DxImageView,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
-    // pub mip_filter: FilterMode,
-    // pub wrap_mode: WrapMode,
 }
 
 #[derive(Debug, Clone)]
-pub struct OwnedTexture {
+pub struct LutTexture {
     pub handle: ID3D11Texture2D,
-    // pub staging: ID3D11Texture2D,
     pub desc: D3D11_TEXTURE2D_DESC,
     pub image: Texture,
 }
 
-impl OwnedTexture {
+impl LutTexture {
     pub fn new(
         device: &ID3D11Device,
+        context: &ID3D11DeviceContext,
         source: &Image,
         desc: D3D11_TEXTURE2D_DESC,
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> Result<OwnedTexture> {
+    ) -> Result<LutTexture> {
         let mut desc = D3D11_TEXTURE2D_DESC {
             Width: source.size.width,
             Height: source.size.height,
@@ -107,12 +99,6 @@ impl OwnedTexture {
                 }),
             )?;
 
-            let mut context = None;
-            device.GetImmediateContext(&mut context);
-
-            // todo: make this fallible
-            let context = context.unwrap();
-
             // need a staging texture to defer mipmap generation
             let staging = device.CreateTexture2D(
                 &D3D11_TEXTURE2D_DESC {
@@ -158,7 +144,7 @@ impl OwnedTexture {
             // let mut subresource = context.Map(staging, 0, D3D11_MAP_WRITE, 0)?;
             // staging.Upd
 
-            Ok(OwnedTexture {
+            Ok(LutTexture {
                 handle,
                 // staging,
                 desc,

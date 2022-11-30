@@ -491,6 +491,8 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "rustc-hash",
+ "spirv_cross",
+ "thiserror",
  "windows",
 ]
 
