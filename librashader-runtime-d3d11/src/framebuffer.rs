@@ -108,6 +108,7 @@ impl OwnedFramebuffer {
         let format = d3d11_get_closest_format(&self.device, DXGI_FORMAT::from(format),
                                               D3D11_FORMAT_SUPPORT_TEXTURE2D.0 |
                                                   D3D11_FORMAT_SUPPORT_SHADER_SAMPLE.0 | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0);
+
         let desc = default_desc(size, format);
         unsafe {
             let mut texture = self.device.CreateTexture2D(&desc, None)?;

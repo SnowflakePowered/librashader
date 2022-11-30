@@ -52,6 +52,7 @@ pub struct FilterCommon {
     pub(crate) luts: FxHashMap<usize, OwnedTexture>,
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
+    pub output_textures: Box<[Option<Texture>]>
 }
 
 impl FilterChain {
@@ -196,8 +197,8 @@ impl FilterChain {
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, Size::new(1, 1),
                                                                                 ImageFormat::R8G8B8A8Unorm).unwrap());
-        // let mut output_textures = Vec::new();
-        // output_textures.resize_with(filters.len(), Texture::default);
+        let mut output_textures = Vec::new();
+        output_textures.resize_with(filters.len(), || None);
         //
         // // initialize feedback framebuffers
         // let mut feedback_framebuffers = Vec::new();
@@ -236,7 +237,7 @@ impl FilterChain {
                 // we don't need the reflect semantics once all locations have been bound per pass.
                 // semantics,
                 preset,
-                // output_textures: output_textures.into_boxed_slice(),
+                output_textures: output_textures.into_boxed_slice(),
                 // feedback_textures: feedback_textures.into_boxed_slice(),
                 // history_textures,
                 draw_quad,
@@ -376,6 +377,7 @@ impl FilterChain {
                 filter,
                 wrap_mode,
             };
+            self.common.output_textures[index] = Some(source.clone());
         }
 
         Ok(())

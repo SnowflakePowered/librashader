@@ -194,21 +194,23 @@ impl FilterPass {
 
         // PassOutput
         for (index, output) in parent.output_textures.iter().enumerate() {
+            let Some(output) = output else {
+                continue;
+            };
             if let Some(binding) = self
                 .reflection
                 .meta
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                FilterPass::bind_texture(binding, output);
+                FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, output);
             }
 
             if let Some(offset) = self
                 .uniform_bindings
                 .get(&TextureSemantics::PassOutput.semantics(index).into())
             {
-                self.uniform_storage.bind_vec4(*offset, output.image.size, None);
-
+                self.uniform_storage.bind_vec4(*offset, output.view.size, None);
             }
         }
 
