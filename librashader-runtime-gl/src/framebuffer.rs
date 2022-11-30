@@ -13,7 +13,7 @@ pub struct Framebuffer {
     pub size: Size<u32>,
     pub format: GLenum,
     pub max_levels: u32,
-    pub levels: u32,
+    pub mip_levels: u32,
     is_raw: bool,
 }
 
@@ -34,7 +34,7 @@ impl Framebuffer {
             },
             format: 0,
             max_levels,
-            levels: 0,
+            mip_levels: 0,
             handle: framebuffer,
             is_raw: false,
         }
@@ -52,7 +52,7 @@ impl Framebuffer {
             size,
             format,
             max_levels: miplevels,
-            levels: miplevels,
+            mip_levels: miplevels,
             handle,
             is_raw: true,
         }
@@ -250,17 +250,17 @@ impl Framebuffer {
                 size.height = 1;
             }
 
-            self.levels = util::calc_miplevel(size);
-            if self.levels > self.max_levels {
-                self.levels = self.max_levels;
+            self.mip_levels = util::calc_miplevel(size);
+            if self.mip_levels > self.max_levels {
+                self.mip_levels = self.max_levels;
             }
-            if self.levels == 0 {
-                self.levels = 1;
+            if self.mip_levels == 0 {
+                self.mip_levels = 1;
             }
 
             gl::TexStorage2D(
                 gl::TEXTURE_2D,
-                self.levels as GLsizei,
+                self.mip_levels as GLsizei,
                 self.format,
                 size.width as GLsizei,
                 size.height as GLsizei,
@@ -291,17 +291,17 @@ impl Framebuffer {
                         gl::GenTextures(1, &mut self.image);
                         gl::BindTexture(gl::TEXTURE_2D, self.image);
 
-                        self.levels = util::calc_miplevel(size);
-                        if self.levels > self.max_levels {
-                            self.levels = self.max_levels;
+                        self.mip_levels = util::calc_miplevel(size);
+                        if self.mip_levels > self.max_levels {
+                            self.mip_levels = self.max_levels;
                         }
-                        if self.levels == 0 {
-                            self.levels = 1;
+                        if self.mip_levels == 0 {
+                            self.mip_levels = 1;
                         }
 
                         gl::TexStorage2D(
                             gl::TEXTURE_2D,
-                            self.levels as GLsizei,
+                            self.mip_levels as GLsizei,
                             ImageFormat::R8G8B8A8Unorm.into(),
                             size.width as GLsizei,
                             size.height as GLsizei,

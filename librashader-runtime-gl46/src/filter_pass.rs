@@ -242,6 +242,9 @@ impl FilterPass {
         }
 
         for (index, output) in parent.history_textures.iter().enumerate() {
+            if !output.is_bound() {
+                continue;
+            }
             if let Some(binding) = self
                 .reflection
                 .meta
@@ -263,6 +266,9 @@ impl FilterPass {
 
         // PassOutput
         for (index, output) in parent.output_textures.iter().enumerate() {
+            if !output.is_bound() {
+                continue;
+            }
             if let Some(binding) = self
                 .reflection
                 .meta
@@ -283,6 +289,9 @@ impl FilterPass {
 
         // PassFeedback
         for (index, feedback) in parent.feedback_textures.iter().enumerate() {
+            if !feedback.is_bound() {
+                continue;
+            }
             if let Some(binding) = self
                 .reflection
                 .meta
