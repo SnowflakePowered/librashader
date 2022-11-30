@@ -1,4 +1,5 @@
-use crate::texture::Texture;
+use windows::core::Interface;
+use crate::texture::{DxImageView, Texture};
 use crate::util;
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
@@ -41,7 +42,6 @@ impl OwnedFramebuffer {
                     | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE.0
                     | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
             );
-            eprintln!("{format:?}");
             let desc = default_desc(size, format);
             let texture = device.CreateTexture2D(&desc, None)?;
 
@@ -105,6 +105,7 @@ impl OwnedFramebuffer {
             drop(texture)
         }
         self.format = format;
+        self.size = size;
 
         Ok(())
     }
@@ -150,26 +151,27 @@ impl OwnedFramebuffer {
         })
     }
 
-    pub fn copy_from(&self, image: &ID3D11Resource) -> util::Result<()> {
-        unsafe {
-            self.context.CopySubresourceRegion(
-                &self.texture,
-                0,
-                0,
-                0,
-                0,
-                image,
-                0,
-                Some(&D3D11_BOX {
-                    left: 0,
-                    top: 0,
-                    front: 0,
-                    right: self.size.width,
-                    bottom: self.size.height,
-                    back: 1,
-                }),
-            )
+    pub fn copy_from(&mut self, image: &DxImageView) -> util::Result<()> {
+        let resource: ID3D11Texture2D = unsafe {
+            let mut resource = None;
+            image.handle.GetResource(&mut resource);
+
+            // todo: make panic-free
+            resource.unwrap().cast()?
+        };
+
+        let format = unsafe {
+            let mut desc = Default::default();
+            resource.GetDesc(&mut desc);
+            desc.Format
+        };
+
+        if self.size != image.size || format != self.format {
+            eprintln!("[history] resizing");
+            self.init(image.size, ImageFormat::from(format))?;
         }
+
+        self.texture = resource.clone();
         Ok(())
     }
 }

@@ -67,7 +67,6 @@ pub struct FilterCommon {
 
 impl FilterChain {
     fn create_constant_buffer(device: &ID3D11Device, size: u32) -> util::Result<ID3D11Buffer> {
-        eprintln!("{size}");
         unsafe {
             let buffer = device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
@@ -313,27 +312,7 @@ impl FilterChain {
 
     fn push_history(&mut self, input: &DxImageView) -> util::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
-            let resource = unsafe {
-                let mut resource = None;
-                input.handle.GetResource(&mut resource);
-
-                // todo: make panic-free
-                resource.unwrap()
-            };
-
-            let format = unsafe {
-                let mut desc = Default::default();
-                input.handle.GetDesc(&mut desc);
-                desc.Format
-            };
-
-            if back.size != input.size || (format != DXGI_FORMAT(0) && format != back.format) {
-                eprintln!("[history] resizing");
-                back.init(input.size, ImageFormat::from(format))?;
-            }
-
-            back.copy_from(&resource)?;
-
+            back.copy_from(&input)?;
             self.history_framebuffers.push_front(back)
         }
 
