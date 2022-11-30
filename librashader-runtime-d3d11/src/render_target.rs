@@ -1,6 +1,4 @@
-use windows::Win32::Graphics::Direct3D11::ID3D11RenderTargetView;
-use librashader_common::Size;
-use crate::framebuffer::{OutputFramebuffer};
+use crate::framebuffer::OutputFramebuffer;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[
@@ -13,7 +11,7 @@ static DEFAULT_MVP: &[f32; 16] = &[
 #[derive(Debug, Clone)]
 pub struct RenderTarget<'a> {
     pub mvp: &'a [f32; 16],
-    pub output: OutputFramebuffer
+    pub output: OutputFramebuffer,
 }
 
 impl<'a> RenderTarget<'a> {
@@ -31,4 +29,3 @@ impl<'a> RenderTarget<'a> {
         }
     }
 }
-

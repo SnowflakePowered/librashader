@@ -1,12 +1,12 @@
+use crate::error::Result;
+use crate::framebuffer::GLImage;
+use crate::gl::LoadLut;
+use crate::texture::Texture;
 use gl::types::{GLsizei, GLuint};
-use rustc_hash::FxHashMap;
 use librashader_common::image::Image;
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
-use crate::gl::LoadLut;
-use crate::framebuffer::{GLImage, Viewport};
-use crate::texture::Texture;
-use crate::error::Result;
+use rustc_hash::FxHashMap;
 
 pub struct Gl3LutLoad;
 impl LoadLut for Gl3LutLoad {

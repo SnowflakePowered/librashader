@@ -9,8 +9,8 @@ use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
 use crate::framebuffer::{GLImage, Viewport};
-use crate::gl::{Framebuffer, GLInterface};
 use crate::gl::gl46::DirectStateAccessGL;
+use crate::gl::{Framebuffer, GLInterface};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -216,20 +216,20 @@ void main()
         gl::CreateVertexArrays(1, &mut vao);
         gl::ObjectLabel(gl::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
 
-        gl::VertexArrayVertexBuffer(vao, 0,
-                                    vbo, 0, 6 * std::mem::size_of::<f32>() as GLint
-        );
+        gl::VertexArrayVertexBuffer(vao, 0, vbo, 0, 6 * std::mem::size_of::<f32>() as GLint);
 
         gl::EnableVertexArrayAttrib(vao, 0); // this is "layout (location = 0)" in vertex shader
-        gl::VertexArrayAttribFormat(vao, 0, 3,
-                                    gl::FLOAT, gl::FALSE, 0);
-
-
+        gl::VertexArrayAttribFormat(vao, 0, 3, gl::FLOAT, gl::FALSE, 0);
 
         gl::EnableVertexArrayAttrib(vao, 1);
-        gl::VertexArrayAttribFormat(vao, 1, 3,
-                                    gl::FLOAT, gl::FALSE, 3 * std::mem::size_of::<f32>() as GLuint);
-
+        gl::VertexArrayAttribFormat(
+            vao,
+            1,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            3 * std::mem::size_of::<f32>() as GLuint,
+        );
 
         gl::VertexArrayAttribBinding(vao, 0, 0);
         gl::VertexArrayAttribBinding(vao, 1, 0);
@@ -281,7 +281,7 @@ pub fn do_loop(
         );
 
         // make tetxure
-        gl::CreateTextures(gl::TEXTURE_2D,1, &mut rendered_texture);
+        gl::CreateTextures(gl::TEXTURE_2D, 1, &mut rendered_texture);
 
         gl::ObjectLabel(
             gl::TEXTURE,
@@ -299,8 +299,16 @@ pub fn do_loop(
             HEIGHT as GLsizei,
         );
 
-        gl::TextureParameteri(rendered_texture, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-        gl::TextureParameteri(rendered_texture, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+        gl::TextureParameteri(
+            rendered_texture,
+            gl::TEXTURE_MAG_FILTER,
+            gl::NEAREST as GLint,
+        );
+        gl::TextureParameteri(
+            rendered_texture,
+            gl::TEXTURE_MIN_FILTER,
+            gl::NEAREST as GLint,
+        );
         gl::TextureParameteri(
             rendered_texture,
             gl::TEXTURE_WRAP_S,
@@ -334,7 +342,7 @@ pub fn do_loop(
 
         gl::CreateBuffers(1, &mut quad_vbuf);
         gl::NamedBufferData(
-            quad_vbuf, // target
+            quad_vbuf,                                                                    // target
             (fullscreen_fbo.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
             fullscreen_fbo.as_ptr() as *const gl::types::GLvoid, // pointer to data
             gl::STATIC_DRAW,                                     // usage
@@ -353,7 +361,7 @@ pub fn do_loop(
         );
 
         // make tetxure
-        gl::CreateTextures(gl::TEXTURE_2D,1, &mut output_texture);
+        gl::CreateTextures(gl::TEXTURE_2D, 1, &mut output_texture);
 
         gl::ObjectLabel(
             gl::TEXTURE,
@@ -371,7 +379,7 @@ pub fn do_loop(
             HEIGHT as GLsizei,
         );
 
-        gl::TextureParameteri(output_texture,gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+        gl::TextureParameteri(output_texture, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
         gl::TextureParameteri(output_texture, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
         gl::TextureParameteri(
             output_texture,
@@ -464,7 +472,12 @@ void main()
         unsafe {
             // render to fb
 
-            gl::ClearNamedFramebufferfv(rendered_framebuffer, gl::COLOR, 0, [0.3f32, 0.4, 0.6, 1.0].as_ptr().cast());
+            gl::ClearNamedFramebufferfv(
+                rendered_framebuffer,
+                gl::COLOR,
+                0,
+                [0.3f32, 0.4, 0.6, 1.0].as_ptr().cast(),
+            );
             gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
             gl::Viewport(0, 0, vp_width, vp_height);
 
@@ -500,7 +513,8 @@ void main()
             padded_size: Default::default(),
         };
 
-        filter.frame(framecount, &viewport, &rendered, None)
+        filter
+            .frame(framecount, &viewport, &rendered, None)
             .unwrap();
 
         unsafe {
@@ -508,7 +522,7 @@ void main()
             // draw quad to screen
             gl::UseProgram(quad_programid);
 
-            gl::BindTextureUnit(0,  output_texture);
+            gl::BindTextureUnit(0, output_texture);
 
             gl::BindVertexArray(quad_vao);
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);

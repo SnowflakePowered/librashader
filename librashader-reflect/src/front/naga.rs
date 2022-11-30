@@ -19,6 +19,8 @@ pub fn compile_spirv(source: &ShaderSource) -> Result<NagaCompilation, ShaderCom
 #[cfg(test)]
 mod test {
     use crate::front::naga::compile_spirv;
+    use crate::front::shaderc::GlslangCompilation;
+    use librashader_preprocess::ShaderSource;
     use naga::back::glsl::{PipelineOptions, Version};
     use naga::back::spv::{Capability, WriterFlags};
     use naga::front::glsl::{Options, Parser};
@@ -26,8 +28,6 @@ mod test {
     use naga::valid::{Capabilities, ValidationFlags};
     use naga::{FastHashSet, ShaderStage};
     use rspirv::binary::Disassemble;
-    use librashader_preprocess::ShaderSource;
-    use crate::front::shaderc::GlslangCompilation;
 
     #[test]
     pub fn compile_naga_test() {
@@ -46,7 +46,7 @@ mod test {
 
     #[test]
     pub fn compile_shader() {
-        let result =  ShaderSource::load(
+        let result = ShaderSource::load(
             "../test/slang-shaders/blurs/shaders/royale/blur3x3-last-pass.slang",
         )
         .unwrap();
@@ -56,7 +56,7 @@ mod test {
 
     #[test]
     pub fn compile_shader_roundtrip() {
-        let result =  ShaderSource::load("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang").unwrap();
         let cross = GlslangCompilation::compile(&result).unwrap();
         let naga_fragment =
             naga::front::spv::parse_u8_slice(cross.fragment.as_binary_u8(), &SpvOptions::default())

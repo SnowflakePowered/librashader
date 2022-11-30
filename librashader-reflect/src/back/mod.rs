@@ -1,11 +1,11 @@
 pub mod cross;
 pub mod targets;
 
-use std::fmt::Debug;
 use crate::back::targets::OutputTarget;
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::reflect::{ReflectShader, ShaderReflection};
 use crate::reflect::semantics::ReflectSemantics;
+use crate::reflect::{ReflectShader, ShaderReflection};
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct ShaderCompilerOutput<T, Context = ()> {
@@ -45,14 +45,10 @@ pub trait FromCompilation<T> {
     type Options;
     type Context;
 
-    type Output: CompileShader<Self::Target, Context = Self::Context, Options=Self::Options> + ReflectShader;
+    type Output: CompileShader<Self::Target, Context = Self::Context, Options = Self::Options>
+        + ReflectShader;
 
-    fn from_compilation(
-        compile: T,
-    ) -> Result<
-        CompilerBackend<Self::Output>,
-        ShaderReflectError,
-    >;
+    fn from_compilation(compile: T) -> Result<CompilerBackend<Self::Output>, ShaderReflectError>;
 }
 
 pub struct CompilerBackend<T> {

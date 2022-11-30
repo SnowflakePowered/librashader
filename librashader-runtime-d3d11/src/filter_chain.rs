@@ -1,24 +1,22 @@
-use std::collections::VecDeque;
 use crate::texture::{DxImageView, OwnedTexture, Texture};
 use librashader_common::image::Image;
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::GlslangHlslContext;
 use librashader_reflect::back::targets::HLSL;
-use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
+use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformSemantic, VariableSemantics};
+use librashader_reflect::reflect::semantics::{
+    ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformSemantic,
+    VariableSemantics,
+};
 use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
+use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
-use bytemuck::offset_of;
-use windows::core::PCSTR;
-use windows::s;
-use windows::Win32::Graphics::Direct3D11::{D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BUFFER_DESC, D3D11_CPU_ACCESS_WRITE, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_SAMPLER_DESC, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC, ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView};
-use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC};
-use librashader_runtime::uniforms::UniformStorage;
+
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::{OutputFramebuffer, OwnedFramebuffer};
 use crate::quad_render::DrawQuad;
@@ -26,6 +24,13 @@ use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util;
 use crate::util::d3d11_compile_bound_shader;
+use librashader_runtime::uniforms::UniformStorage;
+use windows::Win32::Graphics::Direct3D11::{
+    ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
+    D3D11_CPU_ACCESS_WRITE, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS,
+    D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
+};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_R8G8B8A8_UNORM};
 
 // todo: get rid of preset
 type ShaderPassMeta<'a> = (
@@ -64,14 +69,17 @@ impl FilterChain {
     fn create_constant_buffer(device: &ID3D11Device, size: u32) -> util::Result<ID3D11Buffer> {
         eprintln!("{size}");
         unsafe {
-            let buffer = device.CreateBuffer(&D3D11_BUFFER_DESC {
-                ByteWidth: size,
-                Usage: D3D11_USAGE_DYNAMIC,
-                BindFlags: D3D11_BIND_CONSTANT_BUFFER,
-                CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
-                MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
-                StructureByteStride: 0,
-            }, None)?;
+            let buffer = device.CreateBuffer(
+                &D3D11_BUFFER_DESC {
+                    ByteWidth: size,
+                    Usage: D3D11_USAGE_DYNAMIC,
+                    BindFlags: D3D11_BIND_CONSTANT_BUFFER,
+                    CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
+                    MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
+                    StructureByteStride: 0,
+                },
+                None,
+            )?;
 
             Ok(buffer)
         }
@@ -81,8 +89,7 @@ impl FilterChain {
         device: &ID3D11Device,
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
-    ) -> util::Result<Vec<FilterPass>>
-    {
+    ) -> util::Result<Vec<FilterPass>> {
         // let mut filters = Vec::new();
         let mut filters = Vec::new();
 
@@ -90,25 +97,26 @@ impl FilterChain {
             let reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(None)?;
 
-            let vertex_dxil = util::d3d_compile_shader(
-                hlsl.vertex.as_bytes(),
-                b"main\0",
-                b"vs_5_0\0"
+            let vertex_dxil =
+                util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
+            let vs = d3d11_compile_bound_shader(
+                device,
+                &vertex_dxil,
+                None,
+                ID3D11Device::CreateVertexShader,
             )?;
-            let vs = d3d11_compile_bound_shader(device, &vertex_dxil, None,
-                                                ID3D11Device::CreateVertexShader)?;
 
             let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
             let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxil)?;
 
-            let fragment_dxil = util::d3d_compile_shader(
-                hlsl.fragment.as_bytes(),
-                b"main\0",
-                b"ps_5_0\0"
+            let fragment_dxil =
+                util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
+            let ps = d3d11_compile_bound_shader(
+                device,
+                &fragment_dxil,
+                None,
+                ID3D11Device::CreatePixelShader,
             )?;
-            let ps = d3d11_compile_bound_shader(device, &fragment_dxil, None,
-                                                ID3D11Device::CreatePixelShader)?;
-
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
                 let buffer = FilterChain::create_constant_buffer(device, ubo.size)?;
@@ -134,37 +142,30 @@ impl FilterChain {
                 None
             };
 
-            let uniform_storage = UniformStorage::new(reflection
-                                                         .ubo
-                                                         .as_ref()
-                                                         .map(|ubo| ubo.size as usize)
-                                                         .unwrap_or(0),
-                                                     reflection
-                                                         .push_constant
-                                                         .as_ref()
-                                                         .map(|push| push.size as usize)
-                                                         .unwrap_or(0));
+            let uniform_storage = UniformStorage::new(
+                reflection
+                    .ubo
+                    .as_ref()
+                    .map(|ubo| ubo.size as usize)
+                    .unwrap_or(0),
+                reflection
+                    .push_constant
+                    .as_ref()
+                    .map(|push| push.size as usize)
+                    .unwrap_or(0),
+            );
 
             let mut uniform_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
-                uniform_bindings.insert(
-                    UniformBinding::Parameter(param.id.clone()),
-                    param.offset,
-                );
+                uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
             }
 
             for (semantics, param) in &reflection.meta.variable_meta {
-                uniform_bindings.insert(
-                    UniformBinding::SemanticVariable(*semantics),
-                    param.offset
-                );
+                uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), param.offset);
             }
 
             for (semantics, param) in &reflection.meta.texture_size_meta {
-                uniform_bindings.insert(
-                    UniformBinding::TextureSize(*semantics),
-                    param.offset
-                );
+                uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
 
             filters.push(FilterPass {
@@ -184,7 +185,10 @@ impl FilterChain {
         Ok(filters)
     }
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(device: &ID3D11Device, preset: ShaderPreset) -> util::Result<FilterChain> {
+    pub fn load_from_preset(
+        device: &ID3D11Device,
+        preset: ShaderPreset,
+    ) -> util::Result<FilterChain> {
         let (passes, semantics) = FilterChain::load_preset(&preset)?;
 
         let samplers = SamplerSet::new(device)?;
@@ -200,15 +204,29 @@ impl FilterChain {
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, &device_context, Size::new(1, 1),
-                                                                                ImageFormat::R8G8B8A8Unorm).unwrap());
+        output_framebuffers.resize_with(filters.len(), || {
+            OwnedFramebuffer::new(
+                device,
+                &device_context,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+            )
+            .unwrap()
+        });
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), || None);
         //
         // // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || OwnedFramebuffer::new(device, &device_context, Size::new(1, 1),
-                                                                                ImageFormat::R8G8B8A8Unorm).unwrap());
+        feedback_framebuffers.resize_with(filters.len(), || {
+            OwnedFramebuffer::new(
+                device,
+                &device_context,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+            )
+            .unwrap()
+        });
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), || None);
 
@@ -217,7 +235,6 @@ impl FilterChain {
 
         let (history_framebuffers, history_textures) =
             FilterChain::init_history(device, &device_context, &filters);
-
 
         let draw_quad = DrawQuad::new(device, &device_context)?;
 
@@ -231,7 +248,7 @@ impl FilterChain {
             common: FilterCommon {
                 d3d11: Direct3D11 {
                     device: device.clone(),
-                    device_context
+                    device_context,
                 },
                 luts,
                 samplers,
@@ -244,7 +261,6 @@ impl FilterChain {
             },
         })
     }
-
 
     fn init_history(
         device: &ID3D11Device,
@@ -284,8 +300,10 @@ impl FilterChain {
 
         eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
-        framebuffers.resize_with(required_images, || OwnedFramebuffer::new(device, &context, Size::new(1, 1),
-                                                                           ImageFormat::R8G8B8A8Unorm).unwrap());
+        framebuffers.resize_with(required_images, || {
+            OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)
+                .unwrap()
+        });
 
         let mut history_textures = Vec::new();
         history_textures.resize_with(required_images, || None);
@@ -322,7 +340,6 @@ impl FilterChain {
         Ok(())
     }
 
-
     fn load_luts(
         device: &ID3D11Device,
         textures: &[TextureConfig],
@@ -344,15 +361,18 @@ impl FilterChain {
                 ..Default::default()
             };
 
-            let mut texture = OwnedTexture::new(device, &image, desc,
-                                                texture.filter_mode, texture.wrap_mode)?;
+            let texture =
+                OwnedTexture::new(device, &image, desc, texture.filter_mode, texture.wrap_mode)?;
             luts.insert(index, texture);
         }
         Ok(luts)
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(device: &ID3D11Device, path: impl AsRef<Path>) -> util::Result<FilterChain> {
+    pub fn load_from_path(
+        device: &ID3D11Device,
+        path: impl AsRef<Path>,
+    ) -> util::Result<FilterChain> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(device, preset)
@@ -385,7 +405,8 @@ impl FilterChain {
                 Ok::<_, Box<dyn Error>>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<util::Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
+            .collect::<util::Result<Vec<(&ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
+            )?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
@@ -394,9 +415,11 @@ impl FilterChain {
                 details.0,
             )
         }
-        librashader_runtime::semantics::insert_lut_semantics(&preset.textures,
-                                                             &mut uniform_semantics,
-                                                             &mut texture_semantics);
+        librashader_runtime::semantics::insert_lut_semantics(
+            &preset.textures,
+            &mut uniform_semantics,
+            &mut texture_semantics,
+        );
 
         let semantics = ReflectSemantics {
             uniform_semantics,
@@ -406,8 +429,13 @@ impl FilterChain {
         Ok((passes, semantics))
     }
 
-    pub fn frame(&mut self, count: usize, viewport: &Size<u32>, input: DxImageView, output: OutputFramebuffer) -> util::Result<()> {
-
+    pub fn frame(
+        &mut self,
+        count: usize,
+        viewport: &Size<u32>,
+        input: DxImageView,
+        output: OutputFramebuffer,
+    ) -> util::Result<()> {
         let passes = &mut self.passes;
 
         if passes.is_empty() {
@@ -449,19 +477,30 @@ impl FilterChain {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
-            let size =  target.size;
+            let size = target.size;
 
-            pass.draw(index, &self.common, if pass.config.frame_count_mod > 0 {
-                count % pass.config.frame_count_mod as usize
-            } else {
-                count
-            } as u32, 1, viewport, &original, &source, RenderTarget::new(target.as_output_framebuffer().unwrap(), None))?;
+            pass.draw(
+                index,
+                &self.common,
+                if pass.config.frame_count_mod > 0 {
+                    count % pass.config.frame_count_mod as usize
+                } else {
+                    count
+                } as u32,
+                1,
+                viewport,
+                &original,
+                &source,
+                RenderTarget::new(target.as_output_framebuffer().unwrap(), None),
+            )?;
 
             source = Texture {
-                view: DxImageView { handle: target.create_shader_resource_view().unwrap(), size },
+                view: DxImageView {
+                    handle: target.create_shader_resource_view().unwrap(),
+                    size,
+                },
                 filter,
                 wrap_mode,
             };
@@ -479,7 +518,12 @@ impl FilterChain {
                 } else {
                     count
                 } as u32,
-                1, viewport, &original, &source, RenderTarget::new(output, None))?;
+                1,
+                viewport,
+                &original,
+                &source,
+                RenderTarget::new(output, None),
+            )?;
 
             // diverge so we don't need to clone output.
             break;
@@ -496,6 +540,5 @@ impl FilterChain {
 
         self.push_history(&input)?;
         Ok(())
-
     }
 }

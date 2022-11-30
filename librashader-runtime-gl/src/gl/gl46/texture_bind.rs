@@ -1,7 +1,7 @@
-use librashader_reflect::reflect::semantics::TextureBinding;
 use crate::gl::BindTexture;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
+use librashader_reflect::reflect::semantics::TextureBinding;
 
 pub struct Gl46BindTexture;
 
@@ -10,8 +10,10 @@ impl BindTexture for Gl46BindTexture {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::BindTextureUnit(binding.binding, texture.image.handle);
-            gl::BindSampler(binding.binding,
-                            samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
+            gl::BindSampler(
+                binding.binding,
+                samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter),
+            );
         }
     }
 }

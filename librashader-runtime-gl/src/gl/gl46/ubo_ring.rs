@@ -1,16 +1,15 @@
-use gl::types::{GLsizei, GLsizeiptr, GLuint};
-use librashader_reflect::reflect::semantics::UboReflection;
-use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use crate::binding::UniformLocation;
 use crate::gl::UboRing;
 use crate::util::{InlineRingBuffer, RingBuffer};
+use gl::types::{GLsizei, GLsizeiptr, GLuint};
+use librashader_reflect::reflect::semantics::UboReflection;
+use librashader_runtime::uniforms::UniformStorageAccess;
 
 pub struct Gl46UboRing<const SIZE: usize> {
-    ring: InlineRingBuffer<GLuint, SIZE>
+    ring: InlineRingBuffer<GLuint, SIZE>,
 }
 
-
-impl <const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
+impl<const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
     fn new(buffer_size: u32) -> Self {
         let mut ring: InlineRingBuffer<GLuint, SIZE> = InlineRingBuffer::new();
         unsafe {
@@ -25,22 +24,20 @@ impl <const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
             }
         };
 
-        Gl46UboRing {
-            ring
-        }
+        Gl46UboRing { ring }
     }
 
-    fn bind_for_frame(&mut self, ubo: &UboReflection, ubo_location: &UniformLocation<GLuint>, storage: &impl UniformStorageAccess) {
+    fn bind_for_frame(
+        &mut self,
+        ubo: &UboReflection,
+        ubo_location: &UniformLocation<GLuint>,
+        storage: &impl UniformStorageAccess,
+    ) {
         let size = ubo.size;
         let buffer = self.ring.current();
 
         unsafe {
-            gl::NamedBufferSubData(
-                *buffer,
-                0,
-                size as GLsizeiptr,
-                storage.ubo_pointer().cast(),
-            );
+            gl::NamedBufferSubData(*buffer, 0, size as GLsizeiptr, storage.ubo_pointer().cast());
 
             if ubo_location.vertex != gl::INVALID_INDEX {
                 gl::BindBufferBase(gl::UNIFORM_BUFFER, ubo_location.vertex, *buffer);
@@ -52,5 +49,3 @@ impl <const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
         self.ring.next()
     }
 }
-
-

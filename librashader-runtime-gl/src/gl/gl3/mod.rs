@@ -1,17 +1,17 @@
-mod lut_load;
 mod draw_quad;
-mod ubo_ring;
 mod framebuffer;
-mod texture_bind;
 #[cfg(test)]
 pub mod hello_triangle;
+mod lut_load;
+mod texture_bind;
+mod ubo_ring;
 
-use lut_load::*;
-use draw_quad::*;
-use ubo_ring::*;
-use framebuffer::*;
-use texture_bind::*;
 use crate::gl::GLInterface;
+use draw_quad::*;
+use framebuffer::*;
+use lut_load::*;
+use texture_bind::*;
+use ubo_ring::*;
 
 pub struct CompatibilityGL;
 impl GLInterface for CompatibilityGL {

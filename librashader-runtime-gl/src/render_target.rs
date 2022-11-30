@@ -14,7 +14,7 @@ pub(crate) struct RenderTarget<'a, T: Framebuffer> {
     pub mvp: &'a [f32; 16],
     pub framebuffer: &'a T,
     pub x: i32,
-    pub y: i32
+    pub y: i32,
 }
 
 impl<'a, T: Framebuffer> RenderTarget<'a, T> {

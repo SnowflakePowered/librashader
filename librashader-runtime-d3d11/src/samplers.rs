@@ -1,20 +1,26 @@
-use rustc_hash::FxHashMap;
-use windows::Win32::Graphics::Direct3D11::{D3D11_COMPARISON_NEVER, D3D11_FLOAT32_MAX, D3D11_SAMPLER_DESC, D3D11_TEXTURE_ADDRESS_MODE, ID3D11Device, ID3D11SamplerState};
-use librashader_common::{FilterMode, WrapMode};
 use crate::util::Result;
+use librashader_common::{FilterMode, WrapMode};
+use rustc_hash::FxHashMap;
+use windows::Win32::Graphics::Direct3D11::{
+    ID3D11Device, ID3D11SamplerState, D3D11_COMPARISON_NEVER, D3D11_FLOAT32_MAX,
+    D3D11_SAMPLER_DESC, D3D11_TEXTURE_ADDRESS_MODE,
+};
 pub struct SamplerSet {
-    samplers: FxHashMap<(WrapMode, FilterMode), ID3D11SamplerState>
+    samplers: FxHashMap<(WrapMode, FilterMode), ID3D11SamplerState>,
 }
 
 impl SamplerSet {
     pub fn get(&self, wrap: WrapMode, filter: FilterMode) -> &ID3D11SamplerState {
-        self.samplers.get(&(wrap, filter))
-            .unwrap()
+        self.samplers.get(&(wrap, filter)).unwrap()
     }
     pub fn new(device: &ID3D11Device) -> Result<SamplerSet> {
         let mut samplers = FxHashMap::default();
-        let wrap_modes =
-            &[WrapMode::ClampToBorder, WrapMode::ClampToEdge, WrapMode::Repeat, WrapMode::MirroredRepeat];
+        let wrap_modes = &[
+            WrapMode::ClampToBorder,
+            WrapMode::ClampToEdge,
+            WrapMode::Repeat,
+            WrapMode::MirroredRepeat,
+        ];
         for wrap_mode in wrap_modes {
             unsafe {
                 let linear = device.CreateSamplerState(&D3D11_SAMPLER_DESC {
@@ -48,9 +54,6 @@ impl SamplerSet {
             }
         }
 
-        Ok(SamplerSet {
-            samplers
-        })
+        Ok(SamplerSet { samplers })
     }
 }
-

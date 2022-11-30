@@ -1,17 +1,21 @@
-use std::ops::Deref;
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics};
+use crate::reflect::semantics::{
+    BindingStage, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureBinding,
+    TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
+    ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics,
+    MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
+};
 use crate::reflect::{align_uniform_size, ReflectMeta, ReflectShader};
+use std::ops::Deref;
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
-use spirv_cross::{ErrorCode, glsl, hlsl};
+use spirv_cross::{glsl, hlsl, ErrorCode};
 
 use crate::back::cross::{GlslangGlslContext, GlslangHlslContext};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
-
 
 pub struct CrossReflect<T>
 where
@@ -478,7 +482,7 @@ where
                     Self::get_ubo_data(&self.fragment, fragment_ubo, SemanticErrorBlame::Fragment)?;
                 Ok(Some(UboReflection {
                     binding: fragment_ubo.binding,
-                    size:  align_uniform_size(fragment_ubo.size),
+                    size: align_uniform_size(fragment_ubo.size),
                     stage_mask: BindingStage::FRAGMENT,
                 }))
             }
@@ -847,8 +851,8 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
             context: GlslangHlslContext {
                 compiler: CompiledProgram {
                     vertex: CompiledAst(self.vertex),
-                    fragment: CompiledAst(self.fragment)
-                }
+                    fragment: CompiledAst(self.fragment),
+                },
             },
         })
     }
@@ -861,11 +865,13 @@ mod test {
     use rustc_hash::FxHashMap;
 
     use crate::back::CompileShader;
-    use crate::reflect::semantics::{ReflectSemantics, SemanticMap, UniformSemantic, VariableSemantics};
+    use crate::front::shaderc::GlslangCompilation;
+    use crate::reflect::semantics::{
+        ReflectSemantics, SemanticMap, UniformSemantic, VariableSemantics,
+    };
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
     use spirv_cross::glsl::{CompilerOptions, Version};
-    use crate::front::shaderc::GlslangCompilation;
 
     #[test]
     pub fn test_into() {

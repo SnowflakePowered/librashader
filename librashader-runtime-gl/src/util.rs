@@ -1,9 +1,6 @@
-use gl::types::{GLenum, GLint, GLuint};
-use librashader_common::Size;
+use gl::types::{GLenum, GLuint};
+
 use librashader_reflect::back::cross::GlVersion;
-use librashader_reflect::reflect::semantics::BindingStage;
-use librashader_runtime::uniforms::{BindUniform, UniformStorage, UniformScalar};
-use crate::binding::UniformLocation;
 
 pub trait RingBuffer<T> {
     fn current(&self) -> &T;
@@ -87,7 +84,7 @@ pub fn gl_get_version() -> GlVersion {
             1 => GlVersion::V1_40,
             0 => GlVersion::V1_30,
             _ => GlVersion::V1_50,
-        }
+        },
         4 => match min_ver {
             6 => GlVersion::V4_60,
             5 => GlVersion::V4_50,
@@ -96,11 +93,10 @@ pub fn gl_get_version() -> GlVersion {
             2 => GlVersion::V4_20,
             1 => GlVersion::V4_10,
             0 => GlVersion::V4_00,
-            _ => GlVersion::V1_50
-        }
-        _ => GlVersion::V1_50
+            _ => GlVersion::V1_50,
+        },
+        _ => GlVersion::V1_50,
     }
-
 }
 
 pub fn gl_u16_to_version(version: u16) -> GlVersion {
@@ -116,6 +112,6 @@ pub fn gl_u16_to_version(version: u16) -> GlVersion {
         440 => GlVersion::V4_40,
         450 => GlVersion::V4_50,
         460 => GlVersion::V4_60,
-        _ => GlVersion::V1_50
+        _ => GlVersion::V1_50,
     }
 }

@@ -1,10 +1,10 @@
+use crate::error::{FilterChainError, Result};
+use crate::framebuffer::{GLImage, Viewport};
+use crate::gl::Framebuffer;
+use crate::texture::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use crate::framebuffer::{GLImage, Viewport};
-use crate::error::{FilterChainError, Result};
-use crate::gl::Framebuffer;
-use crate::texture::Texture;
 
 #[derive(Debug)]
 pub struct Gl3Framebuffer {
@@ -97,7 +97,8 @@ impl Framebuffer for Gl3Framebuffer {
             return Ok(self.size);
         }
 
-        let size = librashader_runtime::scaling::scale(scaling, source.image.size, viewport.output.size);
+        let size =
+            librashader_runtime::scaling::scale(scaling, source.image.size, viewport.output.size);
 
         if self.size != size {
             self.size = size;
@@ -294,7 +295,7 @@ impl Framebuffer for Gl3Framebuffer {
                         // self.init =
                         //     gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
-                    _ => return Err(FilterChainError::FramebufferInit(status))
+                    _ => return Err(FilterChainError::FramebufferInit(status)),
                 }
             }
 

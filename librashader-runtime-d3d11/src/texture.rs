@@ -1,9 +1,16 @@
-use librashader_common::{FilterMode, Size, WrapMode};
-use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_FLAG, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_SRV, D3D11_BIND_FLAG, D3D11_RESOURCE_MISC_FLAG, D3D11_USAGE_STAGING, ID3D11DeviceContext, D3D11_SUBRESOURCE_DATA, D3D11_MAP_WRITE, D3D11_BOX};
-use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
-use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use librashader_common::image::Image;
-use crate::util::d3d11_get_closest_format;
+use librashader_common::{FilterMode, Size, WrapMode};
+use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
+use windows::Win32::Graphics::Direct3D11::{
+    ID3D11Device, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_FLAG,
+    D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CPU_ACCESS_FLAG,
+    D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE,
+    D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS,
+    D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA,
+    D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_USAGE_STAGING,
+};
+use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+
 use crate::util::Result;
 
 #[derive(Debug, Clone)]
@@ -29,7 +36,13 @@ pub struct OwnedTexture {
 }
 
 impl OwnedTexture {
-    pub fn new(device: &ID3D11Device, source: &Image, desc: D3D11_TEXTURE2D_DESC, filter: FilterMode, wrap_mode: WrapMode) -> Result<OwnedTexture> {
+    pub fn new(
+        device: &ID3D11Device,
+        source: &Image,
+        desc: D3D11_TEXTURE2D_DESC,
+        filter: FilterMode,
+        wrap_mode: WrapMode,
+    ) -> Result<OwnedTexture> {
         let mut desc = D3D11_TEXTURE2D_DESC {
             Width: source.size.width,
             Height: source.size.height,
@@ -80,17 +93,19 @@ impl OwnedTexture {
         unsafe {
             let handle = device.CreateTexture2D(&desc, None).unwrap();
 
-            let srv = device.CreateShaderResourceView(&handle, Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
-                Format: desc.Format,
-                ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
-                Anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
-                    Texture2D: D3D11_TEX2D_SRV {
-                        MostDetailedMip: 0,
-                        MipLevels: u32::MAX
-                    }
-                },
-            }))?;
-
+            let srv = device.CreateShaderResourceView(
+                &handle,
+                Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
+                    Format: desc.Format,
+                    ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
+                    Anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+                        Texture2D: D3D11_TEX2D_SRV {
+                            MostDetailedMip: 0,
+                            MipLevels: u32::MAX,
+                        },
+                    },
+                }),
+            )?;
 
             let mut context = None;
             device.GetImmediateContext(&mut context);
@@ -99,40 +114,49 @@ impl OwnedTexture {
             let context = context.unwrap();
 
             // need a staging texture to defer mipmap generation
-            let staging = device.CreateTexture2D(&D3D11_TEXTURE2D_DESC {
-                MipLevels: 1,
-                BindFlags: D3D11_BIND_FLAG(0),
-                MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
-                Usage: D3D11_USAGE_STAGING,
-                CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
-                ..desc
-            }, Some(&D3D11_SUBRESOURCE_DATA {
-                pSysMem: source.bytes.as_ptr().cast(),
-                SysMemPitch: source.pitch as u32,
-                SysMemSlicePitch: 0
-            }))?;
+            let staging = device.CreateTexture2D(
+                &D3D11_TEXTURE2D_DESC {
+                    MipLevels: 1,
+                    BindFlags: D3D11_BIND_FLAG(0),
+                    MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
+                    Usage: D3D11_USAGE_STAGING,
+                    CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
+                    ..desc
+                },
+                Some(&D3D11_SUBRESOURCE_DATA {
+                    pSysMem: source.bytes.as_ptr().cast(),
+                    SysMemPitch: source.pitch as u32,
+                    SysMemSlicePitch: 0,
+                }),
+            )?;
 
             // todo: do format conversion (leverage image crate..?
             // is this necessary with CopySubresourceRegion)...
 
-            context.CopySubresourceRegion(&handle, 0, 0, 0, 0,
-            &staging, 0, Some(&D3D11_BOX {
+            context.CopySubresourceRegion(
+                &handle,
+                0,
+                0,
+                0,
+                0,
+                &staging,
+                0,
+                Some(&D3D11_BOX {
                     left: 0,
                     top: 0,
                     front: 0,
                     right: source.size.width,
                     bottom: source.size.height,
                     back: 1,
-                }));
+                }),
+            );
 
             if (desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS).0 != 0 {
-               context.GenerateMips(&srv)
+                context.GenerateMips(&srv)
             }
 
             // let mut subresource = context.Map(staging, 0, D3D11_MAP_WRITE, 0)?;
             // staging.Upd
-
-
 
             Ok(OwnedTexture {
                 handle,
@@ -144,8 +168,8 @@ impl OwnedTexture {
                         size: source.size,
                     },
                     filter,
-                    wrap_mode
-                }
+                    wrap_mode,
+                },
             })
         }
     }

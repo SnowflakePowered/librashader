@@ -1,17 +1,17 @@
 pub(crate) mod gl3;
 pub(crate) mod gl46;
 
-use gl::types::{GLenum, GLint, GLsizei, GLuint};
-use rustc_hash::FxHashMap;
+use crate::binding::UniformLocation;
+use crate::error::Result;
+use crate::framebuffer::{GLImage, Viewport};
+use crate::samplers::SamplerSet;
+use crate::texture::Texture;
+use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::{Scale2D, TextureConfig};
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
-use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
-use crate::binding::UniformLocation;
-use crate::texture::Texture;
-use crate::error::{FilterChainError, Result};
-use crate::framebuffer::{GLImage, Viewport};
-use crate::samplers::SamplerSet;
+use librashader_runtime::uniforms::UniformStorageAccess;
+use rustc_hash::FxHashMap;
 
 pub trait LoadLut {
     fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>>;
@@ -25,7 +25,12 @@ pub trait DrawQuad {
 
 pub trait UboRing<const SIZE: usize> {
     fn new(buffer_size: u32) -> Self;
-    fn bind_for_frame(&mut self, ubo: &UboReflection, ubo_location: &UniformLocation<GLuint>, storage: &impl UniformStorageAccess);
+    fn bind_for_frame(
+        &mut self,
+        ubo: &UboReflection,
+        ubo_location: &UniformLocation<GLuint>,
+        storage: &impl UniformStorageAccess,
+    );
 }
 
 pub trait Framebuffer {

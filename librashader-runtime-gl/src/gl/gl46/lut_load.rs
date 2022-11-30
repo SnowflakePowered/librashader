@@ -1,12 +1,12 @@
+use crate::error::Result;
+use crate::framebuffer::GLImage;
+use crate::gl::LoadLut;
+use crate::texture::Texture;
 use gl::types::{GLsizei, GLuint};
-use rustc_hash::FxHashMap;
 use librashader_common::image::Image;
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
-use crate::gl::LoadLut;
-use crate::framebuffer::{GLImage, Viewport};
-use crate::texture::Texture;
-use crate::error::Result;
+use rustc_hash::FxHashMap;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
@@ -32,7 +32,7 @@ impl LoadLut for Gl46LutLoad {
 
             let mut handle = 0;
             unsafe {
-                gl::CreateTextures(gl::TEXTURE_2D,1, &mut handle);
+                gl::CreateTextures(gl::TEXTURE_2D, 1, &mut handle);
 
                 gl::TextureStorage2D(
                     handle,
@@ -47,7 +47,9 @@ impl LoadLut for Gl46LutLoad {
 
                 gl::TextureSubImage2D(
                     handle,
-                    0, 0, 0,
+                    0,
+                    0,
+                    0,
                     image.size.width as GLsizei,
                     image.size.height as GLsizei,
                     gl::RGBA,

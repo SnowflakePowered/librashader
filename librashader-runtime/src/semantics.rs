@@ -1,10 +1,9 @@
 use librashader_presets::{ShaderPassConfig, TextureConfig};
-use rustc_hash::FxHashMap;
 use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, UniformSemantic};
+use rustc_hash::FxHashMap;
 
 pub type UniformSemanticsMap = FxHashMap<String, UniformSemantic>;
 pub type TextureSemanticsMap = FxHashMap<String, SemanticMap<TextureSemantics>>;
-
 
 pub fn insert_pass_semantics(
     uniform_semantics: &mut UniformSemanticsMap,
@@ -55,9 +54,11 @@ pub fn insert_pass_semantics(
     );
 }
 
-pub fn insert_lut_semantics(textures: &[TextureConfig],
-                            uniform_semantics: &mut UniformSemanticsMap,
-                            texture_semantics: &mut TextureSemanticsMap) {
+pub fn insert_lut_semantics(
+    textures: &[TextureConfig],
+    uniform_semantics: &mut UniformSemanticsMap,
+    texture_semantics: &mut TextureSemanticsMap,
+) {
     for (index, texture) in textures.iter().enumerate() {
         texture_semantics.insert(
             texture.name.clone(),

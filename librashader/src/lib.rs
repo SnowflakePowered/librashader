@@ -13,17 +13,14 @@ pub mod reflect {
     pub use librashader_reflect::error::*;
 
     pub use librashader_reflect::reflect::{
-        ReflectMeta, ReflectShader, semantics, ShaderReflection
+        semantics, ReflectMeta, ReflectShader, ShaderReflection,
     };
 
-    pub use librashader_reflect::front::shaderc::GlslangCompilation;
     pub use librashader_reflect::back::{
-        CompileShader,
-        FromCompilation,
+        targets::OutputTarget, CompileShader, CompilerBackend, FromCompilation,
         ShaderCompilerOutput,
-        CompilerBackend,
-        targets::OutputTarget,
     };
+    pub use librashader_reflect::front::shaderc::GlslangCompilation;
 }
 
 pub mod targets {
@@ -32,11 +29,10 @@ pub mod targets {
         /// Shader compiler target for GLSL.
         pub use librashader_reflect::back::targets::GLSL;
 
-
         /// Shader runtime for OpenGL.
         pub mod runtime {
-            pub use librashader_runtime_gl::options::*;
             pub use librashader_runtime_gl::error;
+            pub use librashader_runtime_gl::options::*;
             pub use librashader_runtime_gl::FilterChain;
             pub use librashader_runtime_gl::Viewport;
 
@@ -72,19 +68,18 @@ pub mod targets {
     }
 }
 
-pub use librashader_common::{
-    FilterMode,
-    ImageFormat,
-    Size,
-    WrapMode
-};
+pub use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 
 pub mod util {
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
     use librashader_presets::ShaderPreset;
 
-    pub fn get_parameter_meta(preset: &ShaderPreset) -> Result<impl Iterator<Item = ShaderParameter>, PreprocessError> {
-        let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset.shaders.iter()
+    pub fn get_parameter_meta(
+        preset: &ShaderPreset,
+    ) -> Result<impl Iterator<Item = ShaderParameter>, PreprocessError> {
+        let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset
+            .shaders
+            .iter()
             .map(|s| ShaderSource::load(&s.name).map(|s| s.parameters))
             .into_iter()
             .collect();

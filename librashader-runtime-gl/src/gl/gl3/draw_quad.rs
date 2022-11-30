@@ -1,5 +1,5 @@
-use gl::types::{GLsizei, GLsizeiptr, GLuint};
 use crate::gl::DrawQuad;
+use gl::types::{GLsizei, GLsizeiptr, GLuint};
 
 #[rustfmt::skip]
 static QUAD_VBO_DATA: &[f32; 16] = &[
@@ -74,4 +74,3 @@ impl DrawQuad for Gl3DrawQuad {
         }
     }
 }
-

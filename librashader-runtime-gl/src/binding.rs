@@ -1,6 +1,6 @@
 use gl::types::GLint;
 use librashader_reflect::reflect::semantics::BindingStage;
-use librashader_runtime::uniforms::{BindUniform, UniformStorage, UniformScalar};
+use librashader_runtime::uniforms::{BindUniform, UniformScalar, UniformStorage};
 
 #[derive(Debug)]
 pub enum VariableLocation {
@@ -37,7 +37,6 @@ impl UniformLocation<GLint> {
 
 pub(crate) type BufferStorage = UniformStorage<GlUniformBinder, UniformLocation<GLint>>;
 
-
 pub trait GlUniformScalar: UniformScalar {
     const FACTORY: unsafe fn(GLint, Self) -> ();
 }
@@ -56,7 +55,8 @@ impl GlUniformScalar for u32 {
 
 pub(crate) struct GlUniformBinder;
 impl<T> BindUniform<UniformLocation<GLint>, T> for GlUniformBinder
-    where T: GlUniformScalar
+where
+    T: GlUniformScalar,
 {
     fn bind_uniform(value: T, location: UniformLocation<GLint>) -> Option<()> {
         if location.is_valid(BindingStage::VERTEX | BindingStage::FRAGMENT) {
@@ -105,7 +105,7 @@ impl BindUniform<UniformLocation<GLint>, &[f32; 16]> for GlUniformBinder {
                 }
             }
             Some(())
-        }else {
+        } else {
             None
         }
     }

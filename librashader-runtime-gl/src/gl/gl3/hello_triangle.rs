@@ -9,8 +9,8 @@ use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
 use crate::framebuffer::{GLImage, Viewport};
-use crate::gl::{Framebuffer, GLInterface};
 use crate::gl::gl3::CompatibilityGL;
+use crate::gl::{Framebuffer, GLInterface};
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -519,7 +519,8 @@ void main()
             padded_size: Default::default(),
         };
 
-        filter.frame(framecount, &viewport, &rendered, None)
+        filter
+            .frame(framecount, &viewport, &rendered, None)
             .unwrap();
 
         unsafe {

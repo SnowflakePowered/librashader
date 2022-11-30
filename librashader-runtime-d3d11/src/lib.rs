@@ -3,43 +3,31 @@
 
 mod filter_chain;
 
-use librashader_preprocess::ShaderSource;
-use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::targets::HLSL;
-use librashader_reflect::back::{CompileShader, FromCompilation};
-use librashader_reflect::front::shaderc::GlslangCompilation;
-use rustc_hash::FxHashMap;
-use std::error::Error;
-use std::path::Path;
-
-use librashader_reflect::reflect::semantics::{
-    ReflectSemantics, SemanticMap, TextureSemantics, UniformSemantic, VariableSemantics,
-};
-use librashader_reflect::reflect::ReflectShader;
-
 mod filter_pass;
+mod framebuffer;
 #[cfg(test)]
 mod hello_triangle;
+mod quad_render;
+mod render_target;
+mod samplers;
 mod texture;
 mod util;
-mod samplers;
-mod render_target;
-mod framebuffer;
-mod quad_render;
 
 #[cfg(test)]
 mod tests {
-    use crate::hello_triangle::DXSample;
+
     use super::*;
 
     #[test]
     fn triangle_d3d11() {
         // let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/slang-shaders/crt/crt-royale.slangp").unwrap();
-        let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp").unwrap();
+        let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+        )
+        .unwrap();
 
         // let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
 
         hello_triangle::main(sample).unwrap();
-
     }
 }

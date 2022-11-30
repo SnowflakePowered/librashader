@@ -1,11 +1,12 @@
-use std::ops::Mul;
 use librashader_common::Size;
 use librashader_presets::{Scale2D, ScaleFactor, ScaleType, Scaling};
 use num_traits::AsPrimitive;
+use std::ops::Mul;
 
 pub fn scale<T>(scaling: Scale2D, source: Size<T>, viewport: Size<T>) -> Size<T>
-where T: Mul<ScaleFactor, Output=f32> + Copy + 'static,
-      f32: AsPrimitive<T>,
+where
+    T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
+    f32: AsPrimitive<T>,
 {
     let width: f32;
     let height: f32;

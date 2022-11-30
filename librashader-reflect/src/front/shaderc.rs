@@ -8,7 +8,6 @@ pub struct GlslangCompilation {
 }
 
 impl GlslangCompilation {
-
     /// Tries to compile SPIR-V from the provided shader source.
     pub fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
         compile_spirv(source)

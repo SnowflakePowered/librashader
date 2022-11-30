@@ -1,15 +1,14 @@
-#[cfg(feature = "opengl")]
-pub mod gl;
 #[cfg(feature = "d3d11")]
 pub mod d3d11;
+#[cfg(feature = "opengl")]
+pub mod gl;
 
 pub mod image;
 pub mod runtime;
 
-
+use num_traits::AsPrimitive;
 use std::convert::Infallible;
 use std::str::FromStr;
-use num_traits::AsPrimitive;
 
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -146,7 +145,8 @@ impl<T> Size<T> {
 }
 
 impl<T> From<Size<T>> for [f32; 4]
-where T: Copy + AsPrimitive<f32>
+where
+    T: Copy + AsPrimitive<f32>,
 {
     fn from(value: Size<T>) -> Self {
         [

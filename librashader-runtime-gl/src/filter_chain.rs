@@ -1,31 +1,34 @@
 use crate::binding::{UniformLocation, VariableLocation};
+use crate::error::{FilterChainError, Result};
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::{GLImage, Viewport};
 use crate::render_target::RenderTarget;
 use crate::util;
-use crate::util::{gl_get_version, gl_u16_to_version, InlineRingBuffer};
-use crate::error::{FilterChainError, Result};
+use crate::util::{gl_get_version, gl_u16_to_version};
 
-use gl::types::{GLint, GLsizei, GLsizeiptr, GLuint};
-use librashader_common::image::Image;
-use librashader_common::{FilterMode, Size, WrapMode};
+use gl::types::{GLint, GLuint};
+
+use crate::binding::BufferStorage;
+use crate::gl::{DrawQuad, Framebuffer, GLInterface, LoadLut, UboRing};
+use crate::options::{FilterChainOptions, FrameOptions};
+use crate::samplers::SamplerSet;
+use crate::texture::Texture;
+use librashader_common::{FilterMode, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
+use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
 use librashader_reflect::back::targets::GLSL;
-use librashader_reflect::reflect::semantics::{MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformMeta, UniformSemantic, VariableSemantics};
+use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
+use librashader_reflect::front::shaderc::GlslangCompilation;
+use librashader_reflect::reflect::semantics::{
+    MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformMeta,
+    UniformSemantic, VariableSemantics,
+};
 use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
 use std::path::Path;
-use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
-use librashader_reflect::front::shaderc::GlslangCompilation;
-use crate::options::{FilterChainOptions, FrameOptions};
-use crate::samplers::SamplerSet;
-use crate::texture::Texture;
-use crate::binding::BufferStorage;
-use crate::gl::{DrawQuad, Framebuffer, GLInterface, LoadLut, UboRing};
 
 pub struct FilterChain<T: GLInterface> {
     passes: Box<[FilterPass<T>]>,
@@ -48,10 +51,10 @@ pub struct FilterCommon {
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>
+    pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-impl <T: GLInterface> FilterChain<T> {
+impl<T: GLInterface> FilterChain<T> {
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
         // todo: support both ubo and pushco
         // todo: fix this.
@@ -88,13 +91,17 @@ type ShaderPassMeta = (
     >,
 );
 
-impl <T: GLInterface> FilterChain<T> {
+impl<T: GLInterface> FilterChain<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(preset: ShaderPreset, options: Option<&FilterChainOptions>) -> Result<Self> {
+    pub fn load_from_preset(
+        preset: ShaderPreset,
+        options: Option<&FilterChainOptions>,
+    ) -> Result<Self> {
         let (passes, semantics) = Self::load_preset(preset.shaders, &preset.textures)?;
 
-        let version = options.map(|o| gl_u16_to_version(o.gl_version))
-            .unwrap_or_else(|| gl_get_version());
+        let version = options
+            .map(|o| gl_u16_to_version(o.gl_version))
+            .unwrap_or_else(gl_get_version);
 
         // initialize passes
         let filters = Self::init_passes(version, passes, &semantics)?;
@@ -137,8 +144,11 @@ impl <T: GLInterface> FilterChain<T> {
             common: FilterCommon {
                 config: FilterMutable {
                     passes_enabled: preset.shader_count as usize,
-                    parameters: preset.parameters.into_iter()
-                        .map(|param| (param.name, param.value)).collect(),
+                    parameters: preset
+                        .parameters
+                        .into_iter()
+                        .map(|param| (param.name, param.value))
+                        .collect(),
                 },
                 luts,
                 samplers,
@@ -150,7 +160,10 @@ impl <T: GLInterface> FilterChain<T> {
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(path: impl AsRef<Path>, options: Option<&FilterChainOptions>) -> Result<Self> {
+    pub fn load_from_path(
+        path: impl AsRef<Path>,
+        options: Option<&FilterChainOptions>,
+    ) -> Result<Self> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(preset, options)
@@ -158,7 +171,7 @@ impl <T: GLInterface> FilterChain<T> {
 
     fn load_preset(
         passes: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig]
+        textures: &[TextureConfig],
     ) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
@@ -195,9 +208,11 @@ impl <T: GLInterface> FilterChain<T> {
             )
         }
 
-        librashader_runtime::semantics::insert_lut_semantics(textures,
-                                                             &mut uniform_semantics,
-                                                             &mut texture_semantics);
+        librashader_runtime::semantics::insert_lut_semantics(
+            textures,
+            &mut uniform_semantics,
+            &mut texture_semantics,
+        );
 
         let semantics = ReflectSemantics {
             uniform_semantics,
@@ -254,8 +269,7 @@ impl <T: GLInterface> FilterChain<T> {
                 gl::UseProgram(program);
 
                 for (name, binding) in &glsl.context.sampler_bindings {
-                    let location =
-                        gl::GetUniformLocation(program, name.as_str().as_ptr().cast());
+                    let location = gl::GetUniformLocation(program, name.as_str().as_ptr().cast());
                     if location >= 0 {
                         // eprintln!("setting sampler {location} to sample from {binding}");
                         gl::Uniform1i(location, *binding as GLint);
@@ -285,47 +299,38 @@ impl <T: GLInterface> FilterChain<T> {
                 None
             };
 
-            let uniform_storage = BufferStorage::new(reflection
-                                                         .ubo
-                                                         .as_ref()
-                                                         .map(|ubo| ubo.size as usize)
-                                                         .unwrap_or(0),
-                                                     reflection
-                                                         .push_constant
-                                                         .as_ref()
-                                                         .map(|push| push.size as usize)
-                                                         .unwrap_or(0)
+            let uniform_storage = BufferStorage::new(
+                reflection
+                    .ubo
+                    .as_ref()
+                    .map(|ubo| ubo.size as usize)
+                    .unwrap_or(0),
+                reflection
+                    .push_constant
+                    .as_ref()
+                    .map(|push| push.size as usize)
+                    .unwrap_or(0),
             );
-
 
             let mut uniform_bindings = FxHashMap::default();
             for param in reflection.meta.parameter_meta.values() {
                 uniform_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
-                    (
-                        Self::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
+                    (Self::reflect_uniform_location(program, param), param.offset),
                 );
             }
 
             for (semantics, param) in &reflection.meta.variable_meta {
                 uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
-                    (
-                        Self::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
+                    (Self::reflect_uniform_location(program, param), param.offset),
                 );
             }
 
             for (semantics, param) in &reflection.meta.texture_size_meta {
                 uniform_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
-                    (
-                        Self::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
+                    (Self::reflect_uniform_location(program, param), param.offset),
                 );
             }
 
@@ -347,7 +352,7 @@ impl <T: GLInterface> FilterChain<T> {
                 uniform_storage,
                 uniform_bindings,
                 source,
-                config
+                config,
             });
         }
 
@@ -423,7 +428,13 @@ impl <T: GLInterface> FilterChain<T> {
     /// Process a frame with the input image.
     ///
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
-    pub fn frame(&mut self, count: usize, viewport: &Viewport<T::Framebuffer>, input: &GLImage, options: Option<&FrameOptions>) -> Result<()> {
+    pub fn frame(
+        &mut self,
+        count: usize,
+        viewport: &Viewport<T::Framebuffer>,
+        input: &GLImage,
+        options: Option<&FrameOptions>,
+    ) -> Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
         if let Some(options) = options {

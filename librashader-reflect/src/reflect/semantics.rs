@@ -328,7 +328,6 @@ pub struct ReflectSemantics {
     pub texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>>,
 }
 
-
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum UniformBinding {
     Parameter(String),

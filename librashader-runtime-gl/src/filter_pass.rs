@@ -1,5 +1,4 @@
-use std::marker::PhantomData;
-use gl::types::{GLint, GLsizei, GLsizeiptr, GLuint};
+use gl::types::{GLsizei, GLuint};
 use librashader_reflect::back::cross::GlslangGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
@@ -7,19 +6,18 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics};
+use librashader_reflect::reflect::semantics::{
+    MemberOffset, TextureSemantics, UniformBinding, VariableSemantics,
+};
 use rustc_hash::FxHashMap;
-use librashader_runtime::uniforms::UniformStorage;
 
-use crate::binding::{BufferStorage, GlUniformBinder, UniformLocation, VariableLocation};
+use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::Viewport;
 use crate::gl::{BindTexture, Framebuffer, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
-use crate::samplers::SamplerSet;
-use crate::texture::Texture;
-use crate::util::{InlineRingBuffer, RingBuffer};
 
+use crate::texture::Texture;
 
 pub struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
@@ -33,7 +31,7 @@ pub struct FilterPass<T: GLInterface> {
     pub config: ShaderPassConfig,
 }
 
-impl<T:GLInterface> FilterPass<T> {
+impl<T: GLInterface> FilterPass<T> {
     // todo: fix rendertargets (i.e. non-final pass is internal, final pass is user provided fbo)
     pub(crate) fn draw(
         &mut self,
@@ -44,7 +42,7 @@ impl<T:GLInterface> FilterPass<T> {
         viewport: &Viewport<T::Framebuffer>,
         original: &Texture,
         source: &Texture,
-        output: RenderTarget<T::Framebuffer>
+        output: RenderTarget<T::Framebuffer>,
     ) {
         let framebuffer = output.framebuffer;
 
@@ -102,8 +100,7 @@ impl<T:GLInterface> FilterPass<T> {
     }
 }
 
-
-impl <T: GLInterface> FilterPass<T> {
+impl<T: GLInterface> FilterPass<T> {
     pub fn get_format(&self) -> ImageFormat {
         let mut fb_format = ImageFormat::R8G8B8A8Unorm;
         if self.config.srgb_framebuffer {
@@ -117,7 +114,7 @@ impl <T: GLInterface> FilterPass<T> {
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,
-        pass_index: usize,
+        _pass_index: usize,
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
@@ -128,18 +125,18 @@ impl <T: GLInterface> FilterPass<T> {
         source: &Texture,
     ) {
         // Bind MVP
-        if let Some((location, offset)) =
-            self.uniform_bindings.get(&VariableSemantics::MVP.into())
+        if let Some((location, offset)) = self.uniform_bindings.get(&VariableSemantics::MVP.into())
         {
-            self.uniform_storage.bind_mat4(*offset, mvp, location.location());
+            self.uniform_storage
+                .bind_mat4(*offset, mvp, location.location());
         }
 
         // bind OutputSize
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&VariableSemantics::Output.into())
+        if let Some((location, offset)) =
+            self.uniform_bindings.get(&VariableSemantics::Output.into())
         {
-            self.uniform_storage.bind_vec4(*offset, fb_size, location.location());
+            self.uniform_storage
+                .bind_vec4(*offset, fb_size, location.location());
         }
 
         // bind FinalViewportSize
@@ -147,7 +144,8 @@ impl <T: GLInterface> FilterPass<T> {
             .uniform_bindings
             .get(&VariableSemantics::FinalViewport.into())
         {
-            self.uniform_storage.bind_vec4(*offset,viewport.output.size(), location.location());
+            self.uniform_storage
+                .bind_vec4(*offset, viewport.output.size(), location.location());
         }
 
         // bind FrameCount
@@ -155,7 +153,8 @@ impl <T: GLInterface> FilterPass<T> {
             .uniform_bindings
             .get(&VariableSemantics::FrameCount.into())
         {
-            self.uniform_storage.bind_scalar(*offset, frame_count, location.location());
+            self.uniform_storage
+                .bind_scalar(*offset, frame_count, location.location());
         }
 
         // bind FrameDirection
@@ -163,7 +162,8 @@ impl <T: GLInterface> FilterPass<T> {
             .uniform_bindings
             .get(&VariableSemantics::FrameDirection.into())
         {
-            self.uniform_storage.bind_scalar(*offset, frame_direction, location.location());
+            self.uniform_storage
+                .bind_scalar(*offset, frame_direction, location.location());
         }
 
         // bind Original sampler
@@ -182,7 +182,7 @@ impl <T: GLInterface> FilterPass<T> {
             .get(&TextureSemantics::Original.semantics(0).into())
         {
             self.uniform_storage
-                .bind_vec4(*offset,original.image.size, location.location());
+                .bind_vec4(*offset, original.image.size, location.location());
         }
 
         // bind Source sampler
@@ -201,8 +201,8 @@ impl <T: GLInterface> FilterPass<T> {
             .uniform_bindings
             .get(&TextureSemantics::Source.semantics(0).into())
         {
-            self.uniform_storage.bind_vec4(*offset,
-                                           source.image.size, location.location());
+            self.uniform_storage
+                .bind_vec4(*offset, source.image.size, location.location());
         }
 
         if let Some(binding) = self
@@ -218,7 +218,7 @@ impl <T: GLInterface> FilterPass<T> {
             .get(&TextureSemantics::OriginalHistory.semantics(0).into())
         {
             self.uniform_storage
-                .bind_vec4(*offset,original.image.size, location.location());
+                .bind_vec4(*offset, original.image.size, location.location());
         }
 
         for (index, output) in parent.history_textures.iter().enumerate() {
@@ -240,7 +240,7 @@ impl <T: GLInterface> FilterPass<T> {
                     .into(),
             ) {
                 self.uniform_storage
-                    .bind_vec4(*offset,output.image.size, location.location());
+                    .bind_vec4(*offset, output.image.size, location.location());
             }
         }
 
@@ -263,7 +263,7 @@ impl <T: GLInterface> FilterPass<T> {
                 .get(&TextureSemantics::PassOutput.semantics(index).into())
             {
                 self.uniform_storage
-                    .bind_vec4(*offset,output.image.size, location.location());
+                    .bind_vec4(*offset, output.image.size, location.location());
             }
         }
 
@@ -286,7 +286,7 @@ impl <T: GLInterface> FilterPass<T> {
                 .get(&TextureSemantics::PassFeedback.semantics(index).into())
             {
                 self.uniform_storage
-                    .bind_vec4(*offset,feedback.image.size, location.location());
+                    .bind_vec4(*offset, feedback.image.size, location.location());
             }
         }
 
@@ -309,11 +309,7 @@ impl <T: GLInterface> FilterPass<T> {
                 .map(|f| f.initial)
                 .unwrap_or(0f32);
 
-            let value = *parent
-                .config
-                .parameters
-                .get(id)
-                .unwrap_or(&default);
+            let value = *parent.config.parameters.get(id).unwrap_or(&default);
 
             self.uniform_storage
                 .bind_scalar(*offset, value, location.location());

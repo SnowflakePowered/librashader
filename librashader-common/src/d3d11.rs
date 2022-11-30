@@ -1,5 +1,5 @@
 use crate::{FilterMode, ImageFormat, WrapMode};
-use  windows::Win32::Graphics::Direct3D11;
+use windows::Win32::Graphics::Direct3D11;
 use windows::Win32::Graphics::Dxgi::Common as dxgi;
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
@@ -29,7 +29,7 @@ impl From<ImageFormat> for dxgi::DXGI_FORMAT {
             ImageFormat::R16G16B16A16Sint => dxgi::DXGI_FORMAT_R16G16B16A16_SINT,
             ImageFormat::R16G16B16A16Sfloat => dxgi::DXGI_FORMAT_R16G16B16A16_FLOAT,
             ImageFormat::R32Uint => dxgi::DXGI_FORMAT_R32_UINT,
-            ImageFormat::R32Sint =>dxgi::DXGI_FORMAT_R32_SINT,
+            ImageFormat::R32Sint => dxgi::DXGI_FORMAT_R32_SINT,
             ImageFormat::R32Sfloat => dxgi::DXGI_FORMAT_R32_FLOAT,
             ImageFormat::R32G32Uint => dxgi::DXGI_FORMAT_R32G32_UINT,
             ImageFormat::R32G32Sint => dxgi::DXGI_FORMAT_R32G32_SINT,
@@ -75,7 +75,7 @@ impl From<DXGI_FORMAT> for ImageFormat {
             dxgi::DXGI_FORMAT_R32G32B32A32_UINT => ImageFormat::R32G32B32A32Uint,
             dxgi::DXGI_FORMAT_R32G32B32A32_SINT => ImageFormat::R32G32B32A32Sint,
             dxgi::DXGI_FORMAT_R32G32B32A32_FLOAT => ImageFormat::R32G32B32A32Sfloat,
-            _ => ImageFormat::Unknown
+            _ => ImageFormat::Unknown,
         }
     }
 }
@@ -95,7 +95,7 @@ impl From<FilterMode> for Direct3D11::D3D11_FILTER {
     fn from(value: FilterMode) -> Self {
         match value {
             FilterMode::Linear => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-            _ => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_POINT
+            _ => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_POINT,
         }
     }
 }

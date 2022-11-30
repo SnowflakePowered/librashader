@@ -12,20 +12,18 @@ impl Image {
 
         let height = image.height();
         let width = image.width();
-        let pitch = image.sample_layout().height_stride.max(
-            image.sample_layout().width_stride
-        );
+        let pitch = image
+            .sample_layout()
+            .height_stride
+            .max(image.sample_layout().width_stride);
 
         Ok(Image {
             bytes: image.into_raw(),
             pitch,
-            size: Size {
-                height,
-                width,
-            }
+            size: Size { height, width },
         })
     }
 }
 
-pub use image::ImageError as ImageError;
 use crate::Size;
+pub use image::ImageError;

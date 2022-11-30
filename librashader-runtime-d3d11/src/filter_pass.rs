@@ -1,22 +1,25 @@
-use std::array;
 use crate::filter_chain::FilterCommon;
-use crate::texture::{Texture, OwnedTexture};
+use crate::texture::Texture;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::cross::GlslangHlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniformSemantic, VariableSemantics};
+use librashader_reflect::reflect::semantics::{
+    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics,
+};
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 use std::error::Error;
-use windows::core::ConstBuffer;
-use windows::Win32::Graphics::Direct3D::ID3DBlob;
-use windows::Win32::Graphics::Direct3D11::{ID3D11Buffer, ID3D11PixelShader, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD, ID3D11InputLayout};
-use windows::Win32::Graphics::Gdi::NULL_PEN;
-use librashader_runtime::uniforms::UniformStorage;
+
+use windows::Win32::Graphics::Direct3D11::{
+    ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
+    ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
+};
+
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
+use librashader_runtime::uniforms::UniformStorage;
 
 pub struct ConstantBufferBinding {
     pub binding: u32,
@@ -43,8 +46,9 @@ pub struct FilterPass {
 }
 
 // https://doc.rust-lang.org/nightly/core/array/fn.from_fn.html is not ~const :(
-const NULL_TEXTURES: &[Option<ID3D11ShaderResourceView>; 16] =
-    &[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None];
+const NULL_TEXTURES: &[Option<ID3D11ShaderResourceView>; 16] = &[
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+];
 
 // slang_process.cpp 229
 impl FilterPass {
@@ -66,13 +70,14 @@ impl FilterPass {
         texture: &Texture,
     ) {
         texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
-        sampler_binding[binding.binding as usize] = Some(samplers.get(texture.wrap_mode, texture.filter).clone());
+        sampler_binding[binding.binding as usize] =
+            Some(samplers.get(texture.wrap_mode, texture.filter).clone());
     }
 
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,
-        pass_index: usize,
+        _pass_index: usize,
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
@@ -81,7 +86,10 @@ impl FilterPass {
         viewport_size: Size<u32>,
         original: &Texture,
         source: &Texture,
-    ) -> ([Option<ID3D11ShaderResourceView>; 16], [Option<ID3D11SamplerState>; 16]){
+    ) -> (
+        [Option<ID3D11ShaderResourceView>; 16],
+        [Option<ID3D11SamplerState>; 16],
+    ) {
         let mut textures: [Option<ID3D11ShaderResourceView>; 16] = std::array::from_fn(|_| None);
         let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
 
@@ -116,7 +124,8 @@ impl FilterPass {
             .uniform_bindings
             .get(&VariableSemantics::FrameDirection.into())
         {
-            self.uniform_storage.bind_scalar(*offset, frame_direction, None);
+            self.uniform_storage
+                .bind_scalar(*offset, frame_direction, None);
         }
 
         // bind Original sampler
@@ -126,7 +135,13 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::Original.semantics(0))
         {
-            FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, original);
+            FilterPass::bind_texture(
+                &parent.samplers,
+                &mut textures,
+                &mut samplers,
+                binding,
+                original,
+            );
         }
         //
         // bind OriginalSize
@@ -134,7 +149,8 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::Original.semantics(0).into())
         {
-            self.uniform_storage.bind_vec4(*offset, original.view.size, None);
+            self.uniform_storage
+                .bind_vec4(*offset, original.view.size, None);
         }
 
         // bind Source sampler
@@ -145,7 +161,13 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0))
         {
             // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, source);
+            FilterPass::bind_texture(
+                &parent.samplers,
+                &mut textures,
+                &mut samplers,
+                binding,
+                source,
+            );
         }
 
         // bind SourceSize
@@ -153,7 +175,8 @@ impl FilterPass {
             .uniform_bindings
             .get(&TextureSemantics::Source.semantics(0).into())
         {
-            self.uniform_storage.bind_vec4(*offset, source.view.size, None);
+            self.uniform_storage
+                .bind_vec4(*offset, source.view.size, None);
         }
 
         if let Some(binding) = self
@@ -162,14 +185,21 @@ impl FilterPass {
             .texture_meta
             .get(&TextureSemantics::OriginalHistory.semantics(0))
         {
-            FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, original);
+            FilterPass::bind_texture(
+                &parent.samplers,
+                &mut textures,
+                &mut samplers,
+                binding,
+                original,
+            );
         }
 
         if let Some(offset) = self
             .uniform_bindings
             .get(&TextureSemantics::OriginalHistory.semantics(0).into())
         {
-            self.uniform_storage.bind_vec4(*offset, original.view.size, None);
+            self.uniform_storage
+                .bind_vec4(*offset, original.view.size, None);
         }
 
         // for (index, output) in parent.history_textures.iter().enumerate() {
@@ -210,14 +240,21 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassOutput.semantics(index))
             {
-                FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, output);
+                FilterPass::bind_texture(
+                    &parent.samplers,
+                    &mut textures,
+                    &mut samplers,
+                    binding,
+                    output,
+                );
             }
 
             if let Some(offset) = self
                 .uniform_bindings
                 .get(&TextureSemantics::PassOutput.semantics(index).into())
             {
-                self.uniform_storage.bind_vec4(*offset, output.view.size, None);
+                self.uniform_storage
+                    .bind_vec4(*offset, output.view.size, None);
             }
         }
 
@@ -232,14 +269,21 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::PassFeedback.semantics(index))
             {
-                FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, feedback);
+                FilterPass::bind_texture(
+                    &parent.samplers,
+                    &mut textures,
+                    &mut samplers,
+                    binding,
+                    feedback,
+                );
             }
 
             if let Some(offset) = self
                 .uniform_bindings
                 .get(&TextureSemantics::PassFeedback.semantics(index).into())
             {
-                self.uniform_storage.bind_vec4(*offset, feedback.view.size, None);
+                self.uniform_storage
+                    .bind_vec4(*offset, feedback.view.size, None);
             }
         }
 
@@ -283,14 +327,21 @@ impl FilterPass {
                 .texture_meta
                 .get(&TextureSemantics::User.semantics(*index))
             {
-                FilterPass::bind_texture(&parent.samplers, &mut textures, &mut samplers, binding, &lut.image);
+                FilterPass::bind_texture(
+                    &parent.samplers,
+                    &mut textures,
+                    &mut samplers,
+                    binding,
+                    &lut.image,
+                );
             }
 
             if let Some(offset) = self
                 .uniform_bindings
                 .get(&TextureSemantics::User.semantics(*index).into())
             {
-                self.uniform_storage.bind_vec4(*offset, lut.image.view.size, None);
+                self.uniform_storage
+                    .bind_vec4(*offset, lut.image.view.size, None);
             }
         }
 
@@ -308,7 +359,7 @@ impl FilterPass {
         source: &Texture,
         output: RenderTarget,
     ) -> std::result::Result<(), Box<dyn Error>> {
-        let device = &parent.d3d11.device;
+        let _device = &parent.d3d11.device;
         let context = &parent.d3d11.device_context;
         unsafe {
             context.IASetInputLayout(&self.vertex_layout);
@@ -316,16 +367,27 @@ impl FilterPass {
             context.PSSetShader(&self.pixel_shader, None);
         }
 
-        let (textures, samplers) = self.build_semantics(pass_index, parent, output.mvp, frame_count, frame_direction,
-                             output.output.size, *viewport, original, source);
-
-
+        let (textures, samplers) = self.build_semantics(
+            pass_index,
+            parent,
+            output.mvp,
+            frame_count,
+            frame_direction,
+            output.output.size,
+            *viewport,
+            original,
+            source,
+        );
 
         if let Some(ubo) = &self.uniform_buffer {
             // upload uniforms
             unsafe {
                 let map = context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
-                std::ptr::copy_nonoverlapping(self.uniform_storage.ubo.as_ptr(), map.pData.cast(), ubo.size as usize);
+                std::ptr::copy_nonoverlapping(
+                    self.uniform_storage.ubo.as_ptr(),
+                    map.pData.cast(),
+                    ubo.size as usize,
+                );
                 context.Unmap(&ubo.buffer, 0);
             }
 
@@ -345,7 +407,11 @@ impl FilterPass {
             // upload push constants
             unsafe {
                 let map = context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
-                std::ptr::copy_nonoverlapping(self.uniform_storage.push.as_ptr(), map.pData.cast(), push.size as usize);
+                std::ptr::copy_nonoverlapping(
+                    self.uniform_storage.push.as_ptr(),
+                    map.pData.cast(),
+                    push.size as usize,
+                );
                 context.Unmap(&push.buffer, 0);
             }
 
@@ -371,7 +437,7 @@ impl FilterPass {
             context.PSSetSamplers(0, Some(&samplers));
 
             context.OMSetRenderTargets(Some(&[Some(output.output.rtv.clone())]), None);
-            context.RSSetViewports(Some(&[output.output.viewport.clone()]))
+            context.RSSetViewports(Some(&[output.output.viewport]))
         }
 
         unsafe {

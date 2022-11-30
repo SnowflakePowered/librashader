@@ -1,5 +1,5 @@
-use librashader_common::{FilterMode, WrapMode};
 use crate::framebuffer::GLImage;
+use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Texture {
@@ -11,6 +11,6 @@ pub struct Texture {
 
 impl Texture {
     pub fn is_bound(&self) -> bool {
-        return self.image.handle != 0
+        self.image.handle != 0
     }
 }

@@ -1,7 +1,7 @@
-use librashader_reflect::reflect::semantics::TextureBinding;
 use crate::gl::BindTexture;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
+use librashader_reflect::reflect::semantics::TextureBinding;
 
 pub struct Gl3BindTexture;
 
@@ -12,8 +12,10 @@ impl BindTexture for Gl3BindTexture {
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
 
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
-            gl::BindSampler(binding.binding,
-                            samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter));
+            gl::BindSampler(
+                binding.binding,
+                samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter),
+            );
         }
     }
 }

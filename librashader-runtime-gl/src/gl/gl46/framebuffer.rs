@@ -1,10 +1,10 @@
+use crate::error::{FilterChainError, Result};
+use crate::framebuffer::{GLImage, Viewport};
+use crate::gl::Framebuffer;
+use crate::texture::Texture;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use crate::framebuffer::{GLImage, Viewport};
-use crate::error::{FilterChainError, Result};
-use crate::gl::Framebuffer;
-use crate::texture::Texture;
 
 #[derive(Debug)]
 pub struct Gl46Framebuffer {
@@ -16,7 +16,6 @@ pub struct Gl46Framebuffer {
     levels: u32,
     is_raw: bool,
 }
-
 
 impl Framebuffer for Gl46Framebuffer {
     fn handle(&self) -> GLuint {
@@ -96,7 +95,8 @@ impl Framebuffer for Gl46Framebuffer {
             return Ok(self.size);
         }
 
-        let size = librashader_runtime::scaling::scale(scaling, source.image.size, viewport.output.size);
+        let size =
+            librashader_runtime::scaling::scale(scaling, source.image.size, viewport.output.size);
 
         if self.size != size {
             self.size = size;
@@ -114,9 +114,12 @@ impl Framebuffer for Gl46Framebuffer {
     }
     fn clear<const REBIND: bool>(&self) {
         unsafe {
-            gl::ClearNamedFramebufferfv(self.handle,
-                                        gl::COLOR, 0,
-                                        [0.0f32, 0.0, 0.0, 0.0].as_ptr().cast());
+            gl::ClearNamedFramebufferfv(
+                self.handle,
+                gl::COLOR,
+                0,
+                [0.0f32, 0.0, 0.0, 0.0].as_ptr().cast(),
+            );
         }
     }
     fn copy_from(&mut self, image: &GLImage) -> Result<()> {
@@ -130,11 +133,20 @@ impl Framebuffer for Gl46Framebuffer {
             gl::NamedFramebufferReadBuffer(image.handle, gl::COLOR_ATTACHMENT0);
             gl::NamedFramebufferDrawBuffer(self.handle, gl::COLOR_ATTACHMENT1);
 
-            gl::BlitNamedFramebuffer(image.handle, self.handle,
-                                     0, 0, image.size.width as GLint, image.size.height as GLint,
-                                     0, 0, self.size.width as GLint, self.size.height as GLint,
-                                     gl::COLOR_BUFFER_BIT, gl::NEAREST);
-
+            gl::BlitNamedFramebuffer(
+                image.handle,
+                self.handle,
+                0,
+                0,
+                image.size.width as GLint,
+                image.size.height as GLint,
+                0,
+                0,
+                self.size.width as GLint,
+                self.size.height as GLint,
+                gl::COLOR_BUFFER_BIT,
+                gl::NEAREST,
+            );
         }
 
         Ok(())
@@ -149,16 +161,11 @@ impl Framebuffer for Gl46Framebuffer {
         unsafe {
             // reset the framebuffer image
             if self.image != 0 {
-                gl::NamedFramebufferTexture(
-                    self.handle,
-                    gl::COLOR_ATTACHMENT0,
-                    0,
-                    0,
-                );
+                gl::NamedFramebufferTexture(self.handle, gl::COLOR_ATTACHMENT0, 0, 0);
                 gl::DeleteTextures(1, &self.image);
             }
 
-            gl::CreateTextures(gl::TEXTURE_2D,1, &mut self.image);
+            gl::CreateTextures(gl::TEXTURE_2D, 1, &mut self.image);
 
             if size.width == 0 {
                 size.width = 1;
@@ -183,12 +190,7 @@ impl Framebuffer for Gl46Framebuffer {
                 size.height as GLsizei,
             );
 
-            gl::NamedFramebufferTexture(
-                self.handle,
-                gl::COLOR_ATTACHMENT0,
-                self.image,
-                0,
-            );
+            gl::NamedFramebufferTexture(self.handle, gl::COLOR_ATTACHMENT0, self.image, 0);
 
             let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
             if status != gl::FRAMEBUFFER_COMPLETE {
@@ -196,12 +198,7 @@ impl Framebuffer for Gl46Framebuffer {
                     gl::FRAMEBUFFER_UNSUPPORTED => {
                         eprintln!("unsupported fbo");
 
-                        gl::NamedFramebufferTexture(
-                            self.handle,
-                            gl::COLOR_ATTACHMENT0,
-                            0,
-                            0,
-                        );
+                        gl::NamedFramebufferTexture(self.handle, gl::COLOR_ATTACHMENT0, 0, 0);
                         gl::DeleteTextures(1, &self.image);
                         gl::CreateTextures(gl::TEXTURE_2D, 1, &mut self.image);
 
@@ -229,7 +226,7 @@ impl Framebuffer for Gl46Framebuffer {
                         // self.init =
                         //     gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
                     }
-                    _ => return Err(FilterChainError::FramebufferInit(status))
+                    _ => return Err(FilterChainError::FramebufferInit(status)),
                 }
             }
         }

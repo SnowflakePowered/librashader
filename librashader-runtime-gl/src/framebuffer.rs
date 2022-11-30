@@ -1,10 +1,6 @@
-use crate::util;
-use crate::texture::Texture;
-use gl::types::{GLenum, GLint, GLsizei, GLuint};
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
-use librashader_presets::{Scale2D, ScaleType, Scaling};
-use crate::error::FilterChainError;
-use crate::error::Result;
+use gl::types::{GLenum, GLuint};
+use librashader_common::Size;
+
 use crate::gl::Framebuffer;
 
 #[derive(Debug, Copy, Clone)]
