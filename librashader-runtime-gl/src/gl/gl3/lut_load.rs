@@ -3,7 +3,7 @@ use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
 use crate::texture::Texture;
 use gl::types::{GLsizei, GLuint};
-use librashader_common::image::{Image, UVDirection};
+use librashader_runtime::image::{Image, UVDirection};
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
 use rustc_hash::FxHashMap;

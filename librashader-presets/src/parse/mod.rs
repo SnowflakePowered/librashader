@@ -20,6 +20,7 @@ pub(crate) fn remove_if<T>(values: &mut Vec<T>, f: impl FnMut(&T) -> bool) -> Op
 }
 
 impl ShaderPreset {
+    /// Try to parse the shader preset at the given path.
     pub fn try_parse(path: impl AsRef<Path>) -> Result<ShaderPreset, ParsePresetError> {
         let values = parse_preset(path)?;
         Ok(resolve_values(values))

@@ -12,7 +12,7 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-shaderc = { version = "0.8.0" }
+shaderc = { version = "0.8.0", features = [] }
 spirv_cross = { version = "0.23.1", features = [ "glsl", "hlsl" ] }
 
 
@@ -30,5 +30,6 @@ rspirv-reflect = { git = "https://github.com/Traverse-Research/rspirv-reflect", 
 [features]
 default = []
 unstable-rust-pipeline = [ "naga", "rspirv", "rspirv-reflect" ]
+standalone = ["shaderc/build-from-source"]
 
 [dev-dependencies]

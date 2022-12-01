@@ -1,4 +1,4 @@
-use librashader_common::image::ImageError;
+use librashader_runtime::image::ImageError;
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};

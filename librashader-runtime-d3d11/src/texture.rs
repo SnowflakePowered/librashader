@@ -1,4 +1,4 @@
-use librashader_common::image::Image;
+use librashader_runtime::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{

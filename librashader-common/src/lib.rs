@@ -10,9 +10,6 @@ pub mod dxgi;
 #[cfg(feature = "d3d11")]
 pub mod d3d11;
 
-/// Image handing helpers.
-pub mod image;
-
 use num_traits::AsPrimitive;
 use std::convert::Infallible;
 use std::str::FromStr;

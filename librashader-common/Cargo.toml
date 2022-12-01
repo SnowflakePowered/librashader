@@ -19,7 +19,6 @@ dxgi = ["windows"]
 
 [dependencies]
 gl = { version = "0.14.0", optional = true }
-image = "0.24.5"
 num-traits = "0.2.15"
 
 [dependencies.windows]

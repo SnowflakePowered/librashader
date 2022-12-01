@@ -67,10 +67,10 @@ impl DrawQuad for Gl3DrawQuad {
 
     fn unbind_vertices(&self) {
         unsafe {
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::DisableVertexAttribArray(0);
             gl::DisableVertexAttribArray(1);
+            gl::BindVertexArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
     }
 }

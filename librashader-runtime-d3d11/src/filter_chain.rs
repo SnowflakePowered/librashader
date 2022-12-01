@@ -1,5 +1,5 @@
 use crate::texture::{DxImageView, LutTexture, Texture};
-use librashader_common::image::{Image, UVDirection};
+use librashader_runtime::image::{Image, UVDirection};
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};

@@ -426,7 +426,6 @@ name = "librashader-common"
 version = "0.1.0-alpha.1"
 dependencies = [
  "gl",
- "image",
  "num-traits",
  "windows",
 ]
@@ -472,6 +471,7 @@ name = "librashader-runtime"
 version = "0.1.0-alpha.1"
 dependencies = [
  "bytemuck",
+ "image",
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",

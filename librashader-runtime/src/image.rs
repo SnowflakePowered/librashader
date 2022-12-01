@@ -1,3 +1,6 @@
+use librashader_common::Size;
+pub use image::ImageError;
+
 use std::path::Path;
 
 pub struct Image {
@@ -6,16 +9,21 @@ pub struct Image {
     pub pitch: usize,
 }
 
+/// The direction of UV coordinates to load the image for.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum UVDirection {
+    /// Origin is at the top left (Direct3D, Vulkan)
     TopLeft,
+    /// Origin is at the bottom left (OpenGL)
     BottomLeft,
 }
+
 impl Image {
+    /// Load the image from the path as RGBA8.
     pub fn load(path: impl AsRef<Path>, direction: UVDirection) -> Result<Self, ImageError> {
         let mut image = image::open(path.as_ref())?;
 
-        if direction == BottomLeft {
+        if direction == UVDirection::BottomLeft {
             image = image.flipv();
         }
 
@@ -35,7 +43,3 @@ impl Image {
         })
     }
 }
-
-use crate::Size;
-pub use image::ImageError;
-use crate::image::UVDirection::BottomLeft;
