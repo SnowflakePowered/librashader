@@ -2,6 +2,7 @@ use crate::error::ShaderCompileError;
 use librashader_preprocess::ShaderSource;
 use shaderc::{CompilationArtifact, CompileOptions, Limit, ShaderKind};
 
+/// A reflectable shader compilation via glslang (shaderc).
 pub struct GlslangCompilation {
     pub(crate) vertex: CompilationArtifact,
     pub(crate) fragment: CompilationArtifact,

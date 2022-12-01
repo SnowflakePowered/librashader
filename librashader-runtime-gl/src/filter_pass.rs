@@ -1,5 +1,5 @@
 use gl::types::{GLsizei, GLuint};
-use librashader_reflect::back::cross::GlslangGlslContext;
+use librashader_reflect::back::cross::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
@@ -7,7 +7,7 @@ use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
-    MemberOffset, TextureSemantics, UniformBinding, VariableSemantics,
+    MemberOffset, TextureSemantics, UniformBinding, UniqueSemantics,
 };
 use rustc_hash::FxHashMap;
 
@@ -21,7 +21,7 @@ use crate::texture::Texture;
 
 pub struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
-    pub compiled: ShaderCompilerOutput<String, GlslangGlslContext>,
+    pub compiled: ShaderCompilerOutput<String, CrossGlslContext>,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
     pub ubo_ring: Option<T::UboRing>,
@@ -127,7 +127,7 @@ impl<T: GLInterface> FilterPass<T> {
         source: &Texture,
     ) {
         // Bind MVP
-        if let Some((location, offset)) = self.uniform_bindings.get(&VariableSemantics::MVP.into())
+        if let Some((location, offset)) = self.uniform_bindings.get(&UniqueSemantics::MVP.into())
         {
             self.uniform_storage
                 .bind_mat4(*offset, mvp, location.location());
@@ -135,7 +135,7 @@ impl<T: GLInterface> FilterPass<T> {
 
         // bind OutputSize
         if let Some((location, offset)) =
-            self.uniform_bindings.get(&VariableSemantics::Output.into())
+            self.uniform_bindings.get(&UniqueSemantics::Output.into())
         {
             self.uniform_storage
                 .bind_vec4(*offset, fb_size, location.location());
@@ -144,7 +144,7 @@ impl<T: GLInterface> FilterPass<T> {
         // bind FinalViewportSize
         if let Some((location, offset)) = self
             .uniform_bindings
-            .get(&VariableSemantics::FinalViewport.into())
+            .get(&UniqueSemantics::FinalViewport.into())
         {
             self.uniform_storage
                 .bind_vec4(*offset, viewport.output.size, location.location());
@@ -153,7 +153,7 @@ impl<T: GLInterface> FilterPass<T> {
         // bind FrameCount
         if let Some((location, offset)) = self
             .uniform_bindings
-            .get(&VariableSemantics::FrameCount.into())
+            .get(&UniqueSemantics::FrameCount.into())
         {
             self.uniform_storage
                 .bind_scalar(*offset, frame_count, location.location());
@@ -162,7 +162,7 @@ impl<T: GLInterface> FilterPass<T> {
         // bind FrameDirection
         if let Some((location, offset)) = self
             .uniform_bindings
-            .get(&VariableSemantics::FrameDirection.into())
+            .get(&UniqueSemantics::FrameDirection.into())
         {
             self.uniform_storage
                 .bind_scalar(*offset, frame_direction, location.location());

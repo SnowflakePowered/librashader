@@ -38,27 +38,23 @@ pub mod preprocess {
 pub mod reflect {
     /// Supported shader compiler targets.
     pub mod targets {
-        /// Shader compiler target for GLSL.
         pub use librashader_reflect::back::targets::GLSL;
-
-        /// Shader compiler target for HLSL.
         pub use librashader_reflect::back::targets::HLSL;
-
-        /// Shader compiler target for SPIR-V.
         pub use librashader_reflect::back::targets::SPIRV;
     }
 
     pub use librashader_reflect::error::*;
 
     pub use librashader_reflect::reflect::{
-        semantics, ReflectMeta, ReflectShader, ShaderReflection,
+        ReflectShader, semantics, ShaderReflection,
     };
 
     pub use librashader_reflect::back::{
-        targets::OutputTarget, CompileShader, CompilerBackend, FromCompilation,
-        ShaderCompilerOutput,
+        CompilerBackend, CompileShader, FromCompilation, ShaderCompilerOutput,
+        targets::OutputTarget,
     };
     pub use librashader_reflect::front::shaderc::GlslangCompilation;
+    pub use librashader_reflect::reflect::semantics::BindingMeta;
 }
 
 /// Shader runtimes to execute a filter chain on a GPU surface.

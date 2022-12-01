@@ -3,10 +3,10 @@ use crate::texture::Texture;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::cross::GlslangHlslContext;
+use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{
-    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, VariableSemantics,
+    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
 };
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
@@ -32,7 +32,7 @@ pub struct ConstantBufferBinding {
 // slang_process.cpp 141
 pub struct FilterPass {
     pub reflection: ShaderReflection,
-    pub compiled: ShaderCompilerOutput<String, GlslangHlslContext>,
+    pub compiled: ShaderCompilerOutput<String, CrossHlslContext>,
     pub vertex_shader: ID3D11VertexShader,
     pub vertex_layout: ID3D11InputLayout,
     pub pixel_shader: ID3D11PixelShader,
@@ -95,19 +95,19 @@ impl FilterPass {
         let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
 
         // Bind MVP
-        if let Some(offset) = self.uniform_bindings.get(&VariableSemantics::MVP.into()) {
+        if let Some(offset) = self.uniform_bindings.get(&UniqueSemantics::MVP.into()) {
             self.uniform_storage.bind_mat4(*offset, mvp, None);
         }
 
         // bind OutputSize
-        if let Some(offset) = self.uniform_bindings.get(&VariableSemantics::Output.into()) {
+        if let Some(offset) = self.uniform_bindings.get(&UniqueSemantics::Output.into()) {
             self.uniform_storage.bind_vec4(*offset, fb_size, None);
         }
 
         // bind FinalViewportSize
         if let Some(offset) = self
             .uniform_bindings
-            .get(&VariableSemantics::FinalViewport.into())
+            .get(&UniqueSemantics::FinalViewport.into())
         {
             self.uniform_storage.bind_vec4(*offset, viewport_size, None);
         }
@@ -115,7 +115,7 @@ impl FilterPass {
         // bind FrameCount
         if let Some(offset) = self
             .uniform_bindings
-            .get(&VariableSemantics::FrameCount.into())
+            .get(&UniqueSemantics::FrameCount.into())
         {
             self.uniform_storage.bind_scalar(*offset, frame_count, None);
         }
@@ -123,7 +123,7 @@ impl FilterPass {
         // bind FrameDirection
         if let Some(offset) = self
             .uniform_bindings
-            .get(&VariableSemantics::FrameDirection.into())
+            .get(&UniqueSemantics::FrameDirection.into())
         {
             self.uniform_storage
                 .bind_scalar(*offset, frame_direction, None);

@@ -3,13 +3,13 @@ use librashader_common::image::{Image, UVDirection};
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::GlslangHlslContext;
+use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
-    ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformSemantic,
-    VariableSemantics,
+    ShaderSemantics, Semantic, TextureSemantics, UniformBinding, UniformSemantic,
+    UniqueSemantics,
 };
 use librashader_reflect::reflect::ReflectShader;
 use rustc_hash::FxHashMap;
@@ -45,7 +45,7 @@ type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
-        impl CompileShader<HLSL, Options = Option<()>, Context = GlslangHlslContext> + ReflectShader,
+        impl CompileShader<HLSL, Options = Option<()>, Context =CrossHlslContext> + ReflectShader,
     >,
 );
 
@@ -218,7 +218,7 @@ impl FilterChain {
     fn init_passes(
         device: &ID3D11Device,
         passes: Vec<ShaderPassMeta>,
-        semantics: &ReflectSemantics,
+        semantics: &ShaderSemantics,
     ) -> error::Result<Vec<FilterPass>> {
         // let mut filters = Vec::new();
         let mut filters = Vec::new();
@@ -290,7 +290,7 @@ impl FilterChain {
                 uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
             }
 
-            for (semantics, param) in &reflection.meta.variable_meta {
+            for (semantics, param) in &reflection.meta.unique_meta {
                 uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), param.offset);
             }
 
@@ -414,9 +414,9 @@ impl FilterChain {
     fn load_preset(
         passes: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
-    ) -> error::Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
+    ) -> error::Result<(Vec<ShaderPassMeta>, ShaderSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-        let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
+        let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> =
             Default::default();
 
         let passes = passes
@@ -431,8 +431,8 @@ impl FilterChain {
                 for parameter in source.parameters.iter() {
                     uniform_semantics.insert(
                         parameter.id.clone(),
-                        UniformSemantic::Variable(SemanticMap {
-                            semantics: VariableSemantics::FloatParameter,
+                        UniformSemantic::Unique(Semantic {
+                            semantics: UniqueSemantics::FloatParameter,
                             index: (),
                         }),
                     );
@@ -456,7 +456,7 @@ impl FilterChain {
             &mut texture_semantics,
         );
 
-        let semantics = ReflectSemantics {
+        let semantics = ShaderSemantics {
             uniform_semantics,
             texture_semantics,
         };

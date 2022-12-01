@@ -1,9 +1,9 @@
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::reflect::semantics::{MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformMeta, UniformSemantic, VariableSemantics};
+use librashader_reflect::reflect::semantics::{MemberOffset, ShaderSemantics, Semantic, TextureSemantics, UniformBinding, UniformMeta, UniformSemantic, UniqueSemantics};
 use rustc_hash::FxHashMap;
 use librashader_preprocess::ShaderSource;
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
-use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
+use librashader_reflect::back::cross::{CrossGlslContext, GlslVersion};
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use spirv_cross::spirv::Decoration;
@@ -79,7 +79,7 @@ type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
-        impl CompileShader<GLSL, Options = GlVersion, Context = GlslangGlslContext> + ReflectShader,
+        impl CompileShader<GLSL, Options =GlslVersion, Context =CrossGlslContext> + ReflectShader,
     >,
 );
 
@@ -154,9 +154,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
     fn load_preset(
         passes: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
-    ) -> error::Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
+    ) -> error::Result<(Vec<ShaderPassMeta>, ShaderSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-        let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
+        let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> =
             Default::default();
 
         let passes = passes
@@ -171,8 +171,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 for parameter in source.parameters.iter() {
                     uniform_semantics.insert(
                         parameter.id.clone(),
-                        UniformSemantic::Variable(SemanticMap {
-                            semantics: VariableSemantics::FloatParameter,
+                        UniformSemantic::Unique(Semantic {
+                            semantics: UniqueSemantics::FloatParameter,
                             index: (),
                         }),
                     );
@@ -196,7 +196,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             &mut texture_semantics,
         );
 
-        let semantics = ReflectSemantics {
+        let semantics = ShaderSemantics {
             uniform_semantics,
             texture_semantics,
         };
@@ -205,9 +205,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
     }
 
     fn init_passes(
-        version: GlVersion,
+        version: GlslVersion,
         passes: Vec<ShaderPassMeta>,
-        semantics: &ReflectSemantics,
+        semantics: &ShaderSemantics,
     ) -> error::Result<Box<[FilterPass<T>]>> {
         let mut filters = Vec::new();
 
@@ -216,7 +216,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let reflection = reflect.reflect(index, semantics)?;
             let glsl = reflect.compile(version)?;
 
-            let vertex_resources = glsl.context.compiler.vertex.get_shader_resources()?;
+            let vertex_resources = glsl.context.artifact.vertex.get_shader_resources()?;
 
             // todo: split this out.
             let (program, ubo_location) = unsafe {
@@ -230,7 +230,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 for res in vertex_resources.stage_inputs {
                     let loc = glsl
                         .context
-                        .compiler
+                        .artifact
                         .vertex
                         .get_decoration(res.id, Decoration::Location)?;
                     let mut name = res.name;
@@ -302,7 +302,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 );
             }
 
-            for (semantics, param) in &reflection.meta.variable_meta {
+            for (semantics, param) in &reflection.meta.unique_meta {
                 uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
                     (Self::reflect_uniform_location(program, param), param.offset),

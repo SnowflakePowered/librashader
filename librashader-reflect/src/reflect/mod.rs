@@ -1,12 +1,14 @@
 use crate::error::ShaderReflectError;
 use crate::reflect::semantics::{
-    SemanticMap, TextureBinding, TextureSemantics, TextureSizeMeta, VariableMeta, VariableSemantics,
+    Semantic, TextureBinding, TextureSemantics, TextureSizeMeta, UniqueSemantics, VariableMeta,
 };
 use rustc_hash::FxHashMap;
-use semantics::ReflectSemantics;
+use semantics::ShaderSemantics;
 
+/// Reflection via spirv-cross.
 pub mod cross;
 
+/// Shader semantics and reflection information.
 pub mod semantics;
 
 #[cfg(feature = "unstable-rust-pipeline")]
@@ -14,20 +16,15 @@ mod naga;
 #[cfg(feature = "unstable-rust-pipeline")]
 mod rspirv;
 
+/// A trait for compilation outputs that can provide reflection information.
 pub trait ReflectShader {
+    /// Reflect the shader as the given pass within the shader preset, against the provided
+    /// semantic map.
     fn reflect(
         &mut self,
         pass_number: usize,
-        semantics: &ReflectSemantics,
+        semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError>;
-}
-
-#[derive(Debug, Default)]
-pub struct ReflectMeta {
-    pub parameter_meta: FxHashMap<String, VariableMeta>,
-    pub variable_meta: FxHashMap<VariableSemantics, VariableMeta>,
-    pub texture_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureBinding>,
-    pub texture_size_meta: FxHashMap<SemanticMap<TextureSemantics>, TextureSizeMeta>,
 }
 
 pub use semantics::ShaderReflection;

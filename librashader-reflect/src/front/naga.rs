@@ -3,6 +3,7 @@ use librashader_preprocess::ShaderSource;
 use naga::front::glsl::{Options, Parser};
 use naga::{Module, ShaderStage};
 
+/// A reflectable shader compilation via naga.
 #[derive(Debug)]
 pub struct NagaCompilation {
     pub(crate) vertex: Module,

@@ -5,17 +5,22 @@ use crate::front::shaderc::GlslangCompilation;
 use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect};
 use crate::reflect::ReflectShader;
 
-pub type GlVersion = spirv_cross::glsl::Version;
-pub struct GlslangGlslContext {
+/// The GLSL version to use.
+pub type GlslVersion = spirv_cross::glsl::Version;
+
+/// The context for a GLSL compilation via spirv-cross.
+pub struct CrossGlslContext {
+    /// A map of bindings of sampler names to binding locations.
     pub sampler_bindings: Vec<(String, u32)>,
-    pub compiler: CompiledProgram<spirv_cross::glsl::Target>,
+    /// The compiled program artifact after compilation.
+    pub artifact: CompiledProgram<spirv_cross::glsl::Target>,
 }
 
 impl FromCompilation<GlslangCompilation> for GLSL {
     type Target = GLSL;
-    type Options = GlVersion;
-    type Context = GlslangGlslContext;
-    type Output = impl CompileShader<Self::Target, Options = GlVersion, Context = GlslangGlslContext>
+    type Options = GlslVersion;
+    type Context = CrossGlslContext;
+    type Output = impl CompileShader<Self::Target, Options = GlslVersion, Context = CrossGlslContext>
         + ReflectShader;
 
     fn from_compilation(
@@ -27,14 +32,15 @@ impl FromCompilation<GlslangCompilation> for GLSL {
     }
 }
 
-pub struct GlslangHlslContext {
+/// The context for a HLSL compilation via spirv-cross.
+pub struct CrossHlslContext {
     pub compiler: CompiledProgram<spirv_cross::hlsl::Target>,
 }
 
 impl FromCompilation<GlslangCompilation> for HLSL {
     type Target = HLSL;
     type Options = Option<()>;
-    type Context = GlslangHlslContext;
+    type Context = CrossHlslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;
 

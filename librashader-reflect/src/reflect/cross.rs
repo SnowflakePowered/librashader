@@ -1,19 +1,14 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{
-    BindingStage, MemberOffset, PushReflection, ReflectSemantics, ShaderReflection, TextureBinding,
-    TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
-    ValidateTypeSemantics, VariableMeta, VariableSemanticMap, VariableSemantics,
-    MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
-};
-use crate::reflect::{align_uniform_size, ReflectMeta, ReflectShader};
+use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, BindingMeta, ShaderSemantics, ShaderReflection, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, UniqueSemantics, ValidateTypeSemantics, VariableMeta, UniqueSemanticMap};
+use crate::reflect::{align_uniform_size, ReflectShader};
 use std::ops::Deref;
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
-use spirv_cross::{glsl, hlsl, ErrorCode};
+use spirv_cross::{ErrorCode, glsl, hlsl};
 
-use crate::back::cross::{GlslangGlslContext, GlslangHlslContext};
+use crate::back::cross::{CrossGlslContext, CrossHlslContext};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 
@@ -49,7 +44,7 @@ where
 pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
 pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
 
-impl ValidateTypeSemantics<Type> for VariableSemantics {
+impl ValidateTypeSemantics<Type> for UniqueSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
         let (Type::Float { ref array, vecsize, columns } | Type::Int { ref array, vecsize, columns } | Type::UInt { ref array, vecsize, columns }) = *ty else {
             return None
@@ -60,16 +55,16 @@ impl ValidateTypeSemantics<Type> for VariableSemantics {
         }
 
         let valid = match self {
-            VariableSemantics::MVP => {
+            UniqueSemantics::MVP => {
                 matches!(ty, Type::Float { .. }) && vecsize == 4 && columns == 4
             }
-            VariableSemantics::FrameCount => {
+            UniqueSemantics::FrameCount => {
                 matches!(ty, Type::UInt { .. }) && vecsize == 1 && columns == 1
             }
-            VariableSemantics::FrameDirection => {
+            UniqueSemantics::FrameDirection => {
                 matches!(ty, Type::Int { .. }) && vecsize == 1 && columns == 1
             }
-            VariableSemantics::FloatParameter => {
+            UniqueSemantics::FloatParameter => {
                 matches!(ty, Type::Float { .. }) && vecsize == 1 && columns == 1
             }
             _ => matches!(ty, Type::Float { .. }) && vecsize == 4 && columns == 1,
@@ -299,8 +294,8 @@ where
         ast: &Ast<T>,
         resource: &Resource,
         pass_number: usize,
-        semantics: &ReflectSemantics,
-        meta: &mut ReflectMeta,
+        semantics: &ShaderSemantics,
+        meta: &mut BindingMeta,
         offset_type: impl Fn(usize) -> MemberOffset,
         blame: SemanticErrorBlame,
     ) -> Result<(), ShaderReflectError> {
@@ -319,13 +314,13 @@ where
                 _ => return Err(blame.error(SemanticsErrorKind::InvalidResourceType)),
             };
 
-            if let Some(parameter) = semantics.uniform_semantics.get_variable_semantic(&name) {
+            if let Some(parameter) = semantics.uniform_semantics.get_unique_semantic(&name) {
                 let Some(typeinfo) = parameter.semantics.validate_type(&range_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
                 };
 
                 match &parameter.semantics {
-                    VariableSemantics::FloatParameter => {
+                    UniqueSemantics::FloatParameter => {
                         let offset = offset_type(range.offset);
                         if let Some(meta) = meta.parameter_meta.get(&name) {
                             if offset != meta.offset {
@@ -335,10 +330,10 @@ where
                                     fragment: offset,
                                 });
                             }
-                            if meta.components != typeinfo.size {
-                                return Err(ShaderReflectError::MismatchedComponent {
+                            if meta.size != typeinfo.size {
+                                return Err(ShaderReflectError::MismatchedSize {
                                     semantic: name,
-                                    vertex: meta.components,
+                                    vertex: meta.size,
                                     fragment: typeinfo.size,
                                 });
                             }
@@ -348,14 +343,14 @@ where
                                 VariableMeta {
                                     id: name,
                                     offset,
-                                    components: typeinfo.size,
+                                    size: typeinfo.size,
                                 },
                             );
                         }
                     }
                     semantics => {
                         let offset = offset_type(range.offset);
-                        if let Some(meta) = meta.variable_meta.get(semantics) {
+                        if let Some(meta) = meta.unique_meta.get(semantics) {
                             if offset != meta.offset {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name,
@@ -363,20 +358,20 @@ where
                                     fragment: offset,
                                 });
                             }
-                            if meta.components != typeinfo.size * typeinfo.columns {
-                                return Err(ShaderReflectError::MismatchedComponent {
+                            if meta.size != typeinfo.size * typeinfo.columns {
+                                return Err(ShaderReflectError::MismatchedSize {
                                     semantic: name,
-                                    vertex: meta.components,
+                                    vertex: meta.size,
                                     fragment: typeinfo.size,
                                 });
                             }
                         } else {
-                            meta.variable_meta.insert(
+                            meta.unique_meta.insert(
                                 *semantics,
                                 VariableMeta {
                                     id: name,
                                     offset,
-                                    components: typeinfo.size * typeinfo.columns,
+                                    size: typeinfo.size * typeinfo.columns,
                                 },
                             );
                         }
@@ -493,8 +488,8 @@ where
         &self,
         texture: TextureData,
         pass_number: usize,
-        semantics: &ReflectSemantics,
-        meta: &mut ReflectMeta,
+        semantics: &ShaderSemantics,
+        meta: &mut BindingMeta,
     ) -> Result<(), ShaderReflectError> {
         let Some(semantic) = semantics.texture_semantics.get_texture_semantic(texture.name) else {
             return Err(SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(texture.name.to_string())))
@@ -609,7 +604,7 @@ where
     fn reflect(
         &mut self,
         pass_number: usize,
-        semantics: &ReflectSemantics,
+        semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
         let vertex_res = self.vertex.get_shader_resources()?;
         let fragment_res = self.fragment.get_shader_resources()?;
@@ -625,7 +620,7 @@ where
 
         let push_constant = self.reflect_push_constant_buffer(vertex_push, fragment_push)?;
 
-        let mut meta = ReflectMeta::default();
+        let mut meta = BindingMeta::default();
 
         if let Some(ubo) = vertex_ubo {
             Self::reflect_buffer_range_metas(
@@ -700,7 +695,7 @@ where
 
 impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
     type Options = glsl::Version;
-    type Context = GlslangGlslContext;
+    type Context = CrossGlslContext;
 
     fn compile(
         mut self,
@@ -820,9 +815,9 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
         Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: GlslangGlslContext {
+            context: CrossGlslContext {
                 sampler_bindings: texture_fixups,
-                compiler: CompiledProgram {
+                artifact: CompiledProgram {
                     vertex: CompiledAst(self.vertex),
                     fragment: CompiledAst(self.fragment),
                 },
@@ -833,12 +828,12 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
 
 impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
     type Options = Option<()>;
-    type Context = GlslangHlslContext;
+    type Context = CrossHlslContext;
 
     fn compile(
         mut self,
         _options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<String, GlslangHlslContext>, ShaderCompileError> {
+    ) -> Result<ShaderCompilerOutput<String, CrossHlslContext>, ShaderCompileError> {
         let mut options = hlsl::CompilerOptions::default();
         options.shader_model = ShaderModel::V5_0;
 
@@ -848,7 +843,7 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
         Ok(ShaderCompilerOutput {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
-            context: GlslangHlslContext {
+            context: CrossHlslContext {
                 compiler: CompiledProgram {
                     vertex: CompiledAst(self.vertex),
                     fragment: CompiledAst(self.fragment),
@@ -867,7 +862,7 @@ mod test {
     use crate::back::CompileShader;
     use crate::front::shaderc::GlslangCompilation;
     use crate::reflect::semantics::{
-        ReflectSemantics, SemanticMap, UniformSemantic, VariableSemantics,
+        ShaderSemantics, Semantic, UniformSemantic, UniqueSemantics,
     };
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
@@ -881,8 +876,8 @@ mod test {
         for (_index, param) in result.parameters.iter().enumerate() {
             uniform_semantics.insert(
                 param.id.clone(),
-                UniformSemantic::Variable(SemanticMap {
-                    semantics: VariableSemantics::FloatParameter,
+                UniformSemantic::Unique(Semantic {
+                    semantics: UniqueSemantics::FloatParameter,
                     index: (),
                 }),
             );
@@ -892,7 +887,7 @@ mod test {
         let _shader_reflection = reflect
             .reflect(
                 0,
-                &ReflectSemantics {
+                &ShaderSemantics {
                     uniform_semantics,
                     texture_semantics: Default::default(),
                 },

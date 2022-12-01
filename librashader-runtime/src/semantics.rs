@@ -1,12 +1,12 @@
 use librashader_presets::{ShaderPassConfig, TextureConfig};
-use librashader_reflect::reflect::semantics::{SemanticMap, TextureSemantics, UniformSemantic};
+use librashader_reflect::reflect::semantics::{Semantic, TextureSemantics, UniformSemantic};
 use rustc_hash::FxHashMap;
 
 /// A map for variable names and uniform semantics
 pub type UniformSemanticsMap = FxHashMap<String, UniformSemantic>;
 
 /// A map for sampler names and texture semantics.
-pub type TextureSemanticsMap = FxHashMap<String, SemanticMap<TextureSemantics>>;
+pub type TextureSemanticsMap = FxHashMap<String, Semantic<TextureSemantics>>;
 
 /// Insert the available semantics for the input pass config into the provided semantic maps.
 pub fn insert_pass_semantics(
@@ -28,14 +28,14 @@ pub fn insert_pass_semantics(
     // PassOutput
     texture_semantics.insert(
         alias.clone(),
-        SemanticMap {
+        Semantic {
             semantics: TextureSemantics::PassOutput,
             index,
         },
     );
     uniform_semantics.insert(
         format!("{alias}Size"),
-        UniformSemantic::Texture(SemanticMap {
+        UniformSemantic::Texture(Semantic {
             semantics: TextureSemantics::PassOutput,
             index,
         }),
@@ -44,14 +44,14 @@ pub fn insert_pass_semantics(
     // PassFeedback
     texture_semantics.insert(
         format!("{alias}Feedback"),
-        SemanticMap {
+        Semantic {
             semantics: TextureSemantics::PassFeedback,
             index,
         },
     );
     uniform_semantics.insert(
         format!("{alias}FeedbackSize"),
-        UniformSemantic::Texture(SemanticMap {
+        UniformSemantic::Texture(Semantic {
             semantics: TextureSemantics::PassFeedback,
             index,
         }),
@@ -67,7 +67,7 @@ pub fn insert_lut_semantics(
     for (index, texture) in textures.iter().enumerate() {
         texture_semantics.insert(
             texture.name.clone(),
-            SemanticMap {
+            Semantic {
                 semantics: TextureSemantics::User,
                 index,
             },
@@ -75,7 +75,7 @@ pub fn insert_lut_semantics(
 
         uniform_semantics.insert(
             format!("{}Size", texture.name),
-            UniformSemantic::Texture(SemanticMap {
+            UniformSemantic::Texture(Semantic {
                 semantics: TextureSemantics::User,
                 index,
             }),

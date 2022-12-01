@@ -1,10 +1,16 @@
+/// Marker trait for shader compiler targets.
 pub trait OutputTarget {
+    /// The output format for the target.
     type Output;
 }
 
+/// Shader compiler target for GLSL.
 pub struct GLSL;
+/// Shader compiler target for HLSL.
 pub struct HLSL;
+/// Shader compiler target for SPIR-V.
 pub struct SPIRV;
+/// Shader compiler target for MSL
 pub struct MSL;
 
 impl OutputTarget for GLSL {
