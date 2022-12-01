@@ -6,6 +6,9 @@ pub mod gl;
 pub mod image;
 pub mod runtime;
 
+#[cfg(feature = "dxgi")]
+pub mod dxgi;
+
 use num_traits::AsPrimitive;
 use std::convert::Infallible;
 use std::str::FromStr;

@@ -15,3 +15,4 @@ librashader-runtime-gl = { path = "../librashader-runtime-gl" }
 
 [features]
 gl = [ "librashader-common/opengl" ]
+d3d11 = [ "librashader-common/d3d11" ]

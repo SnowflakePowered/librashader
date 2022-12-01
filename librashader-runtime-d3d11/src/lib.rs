@@ -16,6 +16,10 @@ mod texture;
 mod util;
 mod viewport;
 
+pub use filter_chain::FilterChain;
+pub use viewport::Viewport;
+pub use texture::DxImageView;
+
 #[cfg(test)]
 mod tests {
 
