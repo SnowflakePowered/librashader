@@ -21,6 +21,7 @@ pub(crate) struct OwnedFramebuffer {
     pub texture: ID3D11Texture2D,
     pub size: Size<u32>,
     pub format: DXGI_FORMAT,
+    pub max_levels: u32,
     device: ID3D11Device,
     is_raw: bool,
 }
@@ -29,6 +30,7 @@ impl OwnedFramebuffer {
     pub fn new(
         device: &ID3D11Device,
         size: Size<u32>,
+        mip_levels: u32,
         format: ImageFormat,
     ) -> error::Result<OwnedFramebuffer> {
         unsafe {
@@ -39,7 +41,7 @@ impl OwnedFramebuffer {
                     | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE.0
                     | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
             );
-            let desc = default_desc(size, format);
+            let desc = default_desc(size, format, mip_levels);
             let texture = device.CreateTexture2D(&desc, None)?;
 
             Ok(OwnedFramebuffer {
@@ -47,10 +49,12 @@ impl OwnedFramebuffer {
                 size,
                 format,
                 device: device.clone(),
+                max_levels: mip_levels,
                 is_raw: false,
             })
         }
     }
+
 
     pub(crate) fn scale(
         &mut self,
@@ -58,7 +62,7 @@ impl OwnedFramebuffer {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         _original: &Texture,
-        source: &Texture,
+        source: &Texture
     ) -> error::Result<Size<u32>> {
         if self.is_raw {
             return Ok(self.size);
@@ -94,7 +98,7 @@ impl OwnedFramebuffer {
                 | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
         );
 
-        let desc = default_desc(size, format);
+        let desc = default_desc(size, format, self.max_levels);
         unsafe {
             let mut texture = self.device.CreateTexture2D(&desc, None)?;
             std::mem::swap(&mut self.texture, &mut texture);
@@ -179,11 +183,11 @@ pub(crate) struct OutputFramebuffer {
     pub viewport: D3D11_VIEWPORT,
 }
 
-fn default_desc(size: Size<u32>, format: DXGI_FORMAT) -> D3D11_TEXTURE2D_DESC {
+fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_TEXTURE2D_DESC {
     D3D11_TEXTURE2D_DESC {
         Width: size.width,
         Height: size.height,
-        MipLevels: 1,
+        MipLevels: mip_levels,
         ArraySize: 1,
         Format: format,
         SampleDesc: DXGI_SAMPLE_DESC {

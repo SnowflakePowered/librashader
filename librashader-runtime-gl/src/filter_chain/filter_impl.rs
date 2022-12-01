@@ -1,95 +1,31 @@
-use crate::binding::{UniformLocation, VariableLocation};
-use crate::error::{FilterChainError, Result};
-use crate::filter_pass::FilterPass;
-use crate::framebuffer::GLImage;
-use crate::render_target::RenderTarget;
-use crate::util;
-use crate::util::{gl_get_version, gl_u16_to_version};
-
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_reflect::reflect::semantics::{MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformMeta, UniformSemantic, VariableSemantics};
+use rustc_hash::FxHashMap;
+use librashader_preprocess::ShaderSource;
+use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
+use librashader_reflect::back::cross::{GlslangGlslContext, GlVersion};
+use librashader_reflect::back::targets::GLSL;
+use librashader_reflect::front::shaderc::GlslangCompilation;
+use spirv_cross::spirv::Decoration;
 use gl::types::{GLint, GLuint};
-
-use crate::binding::BufferStorage;
+use librashader_common::{FilterMode, WrapMode};
+use std::collections::VecDeque;
+use librashader_reflect::reflect::ReflectShader;
+use crate::{error, GLImage, util, Viewport};
+use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
+use crate::error::FilterChainError;
+use crate::filter_pass::FilterPass;
 use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
 use crate::options::{FilterChainOptions, FrameOptions};
+use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
-use crate::viewport::Viewport;
-use librashader_common::{FilterMode, WrapMode};
-use librashader_preprocess::ShaderSource;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::{GlVersion, GlslangGlslContext};
-use librashader_reflect::back::targets::GLSL;
-use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
-use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, ReflectSemantics, SemanticMap, TextureSemantics, UniformBinding, UniformMeta,
-    UniformSemantic, VariableSemantics,
-};
-use librashader_reflect::reflect::ReflectShader;
-use rustc_hash::FxHashMap;
-use spirv_cross::spirv::Decoration;
-use std::collections::VecDeque;
-use std::path::Path;
+use crate::util::{gl_get_version, gl_u16_to_version};
 
-pub struct FilterChain {
-    filter: FilterChainInner,
-}
-
-impl FilterChain {
-    pub fn load_from_preset(
-        preset: ShaderPreset,
-        options: Option<&FilterChainOptions>,
-    ) -> Result<Self> {
-        if let Some(options) = options && options.use_dsa {
-            return Ok(Self {
-                filter: FilterChainInner::DirectStateAccess(FilterChainImpl::load_from_preset(preset, Some(options))?)
-            })
-        }
-        Ok(Self {
-            filter: FilterChainInner::Compatibility(FilterChainImpl::load_from_preset(
-                preset, options,
-            )?),
-        })
-    }
-
-    /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(
-        path: impl AsRef<Path>,
-        options: Option<&FilterChainOptions>,
-    ) -> Result<Self> {
-        // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset, options)
-    }
-
-    /// Process a frame with the input image.
-    ///
-    /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
-    pub fn frame(
-        &mut self,
-        input: &GLImage,
-        viewport: &Viewport,
-        frame_count: usize,
-        options: Option<&FrameOptions>,
-    ) -> Result<()> {
-        match &mut self.filter {
-            FilterChainInner::DirectStateAccess(p) => {
-                p.frame(frame_count, viewport, input, options)
-            }
-            FilterChainInner::Compatibility(p) => p.frame(frame_count, viewport, input, options),
-        }
-    }
-}
-
-enum FilterChainInner {
-    DirectStateAccess(FilterChainImpl<crate::gl::gl46::DirectStateAccessGL>),
-    Compatibility(FilterChainImpl<crate::gl::gl3::CompatibilityGL>),
-}
-
-struct FilterChainImpl<T: GLInterface> {
+pub(crate) struct FilterChainImpl<T: GLInterface> {
+    pub(crate) common: FilterCommon,
     passes: Box<[FilterPass<T>]>,
-    common: FilterCommon,
-    pub(crate) draw_quad: T::DrawQuad,
+    draw_quad: T::DrawQuad,
     output_framebuffers: Box<[Framebuffer]>,
     feedback_framebuffers: Box<[Framebuffer]>,
     history_framebuffers: VecDeque<Framebuffer>,
@@ -152,7 +88,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     pub(crate) fn load_from_preset(
         preset: ShaderPreset,
         options: Option<&FilterChainOptions>,
-    ) -> Result<Self> {
+    ) -> error::Result<Self> {
         let (passes, semantics) = Self::load_preset(preset.shaders, &preset.textures)?;
 
         let version = options
@@ -218,7 +154,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     fn load_preset(
         passes: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
-    ) -> Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
+    ) -> error::Result<(Vec<ShaderPassMeta>, ReflectSemantics)> {
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, SemanticMap<TextureSemantics>> =
             Default::default();
@@ -244,7 +180,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 Ok::<_, FilterChainError>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
+            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
@@ -272,7 +208,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         version: GlVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ReflectSemantics,
-    ) -> Result<Box<[FilterPass<T>]>> {
+    ) -> error::Result<Box<[FilterPass<T>]>> {
         let mut filters = Vec::new();
 
         // initialize passes
@@ -456,7 +392,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         (framebuffers, history_textures.into_boxed_slice())
     }
 
-    fn push_history(&mut self, input: &GLImage) -> Result<()> {
+    fn push_history(&mut self, input: &GLImage) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 eprintln!("[history] resizing");
@@ -480,7 +416,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         viewport: &Viewport,
         input: &GLImage,
         options: Option<&FrameOptions>,
-    ) -> Result<()> {
+    ) -> error::Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
         if let Some(options) = options {
@@ -579,6 +515,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source = target;
         }
 
+        // try to hint the optimizer
         assert_eq!(last.len(), 1);
         for pass in last {
             source.filter = pass.config.filter;

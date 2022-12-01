@@ -13,7 +13,7 @@ use rustc_hash::FxHashMap;
 
 use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
-use crate::gl::{BindTexture, FramebufferInterface, GLInterface, UboRing};
+use crate::gl::{BindTexture, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
 use crate::viewport::Viewport;
 

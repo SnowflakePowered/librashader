@@ -96,7 +96,7 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
             format = ImageFormat::from_str(format_string)?;
 
             if format == ImageFormat::Unknown {
-                return Err(PreprocessError::UnknownShaderFormat);
+                return Err(PreprocessError::UnknownImageFormat);
             }
         }
 

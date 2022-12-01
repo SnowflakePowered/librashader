@@ -4,16 +4,26 @@ use std::ops::Mul;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+/// The configuration for a single shader pass.
 #[derive(Debug, Clone)]
 pub struct ShaderPassConfig {
+    /// The index of the shader pass relative to its parent preset.
     pub id: i32,
+    /// The path to the shader pass source file.
     pub name: PathBuf,
+    /// The alias of the shader pass if available.
     pub alias: Option<String>,
+    /// The filtering mode that this shader pass should expect.
     pub filter: FilterMode,
+    /// The texture addressing (wrap) mode that this shader pass expects.
     pub wrap_mode: WrapMode,
+    /// The number to which to wrap the frame count before passing it to the uniforms.
     pub frame_count_mod: u32,
+    /// Whether or not this shader pass expects an SRGB framebuffer output.
     pub srgb_framebuffer: bool,
+    /// Whether or not this shader pass expects an float framebuffer output.
     pub float_framebuffer: bool,
+    /// Whether or not to generate mipm
     pub mipmap_input: bool,
     pub scaling: Scale2D,
 }

@@ -1,4 +1,4 @@
-use crate::gl::{Framebuffer, FramebufferInterface};
+use crate::gl::Framebuffer;
 use crate::viewport::Viewport;
 
 #[rustfmt::skip]

@@ -6,9 +6,20 @@ pub struct Image {
     pub pitch: usize,
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum UVDirection {
+    TopLeft,
+    BottomLeft,
+}
 impl Image {
-    pub fn load(path: impl AsRef<Path>) -> Result<Self, ImageError> {
-        let image = image::open(path.as_ref())?.flipv().to_rgba8();
+    pub fn load(path: impl AsRef<Path>, direction: UVDirection) -> Result<Self, ImageError> {
+        let mut image = image::open(path.as_ref())?;
+
+        if direction == BottomLeft {
+            image = image.flipv();
+        }
+
+        let image = image.to_rgba8();
 
         let height = image.height();
         let width = image.width();
@@ -27,3 +38,4 @@ impl Image {
 
 use crate::Size;
 pub use image::ImageError;
+use crate::image::UVDirection::BottomLeft;

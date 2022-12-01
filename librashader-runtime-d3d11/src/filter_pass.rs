@@ -20,7 +20,7 @@ use crate::error;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::viewport::Viewport;
-use librashader_runtime::uniforms::UniformStorage;
+use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 
 pub struct ConstantBufferBinding {
     pub binding: u32,
@@ -379,7 +379,7 @@ impl FilterPass {
             unsafe {
                 let map = context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
                 std::ptr::copy_nonoverlapping(
-                    self.uniform_storage.ubo.as_ptr(),
+                    self.uniform_storage.ubo_pointer(),
                     map.pData.cast(),
                     ubo.size as usize,
                 );
@@ -403,7 +403,7 @@ impl FilterPass {
             unsafe {
                 let map = context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
                 std::ptr::copy_nonoverlapping(
-                    self.uniform_storage.push.as_ptr(),
+                    self.uniform_storage.push_pointer(),
                     map.pData.cast(),
                     push.size as usize,
                 );

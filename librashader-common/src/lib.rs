@@ -1,13 +1,17 @@
-#[cfg(feature = "d3d11")]
-pub mod d3d11;
+/// OpenGL common conversions.
 #[cfg(feature = "opengl")]
 pub mod gl;
 
-pub mod image;
-pub mod runtime;
-
+/// DXGI common conversions.
 #[cfg(feature = "dxgi")]
 pub mod dxgi;
+
+/// Direct3D 11 common conversions.
+#[cfg(feature = "d3d11")]
+pub mod d3d11;
+
+/// Image handing helpers.
+pub mod image;
 
 use num_traits::AsPrimitive;
 use std::convert::Infallible;
@@ -15,6 +19,7 @@ use std::str::FromStr;
 
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
+/// Supported image formats for textures.
 pub enum ImageFormat {
     #[default]
     Unknown = 0,
@@ -60,9 +65,13 @@ pub enum ImageFormat {
 
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
+/// The filtering mode for a texture sampler.
 pub enum FilterMode {
     #[default]
+    /// Linear filtering.
     Linear = 0,
+
+    /// Nearest-neighbour (point) filtering.
     Nearest,
 }
 
@@ -82,11 +91,16 @@ impl FromStr for WrapMode {
 
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
+/// The wrapping (address) mode for a texture sampler.
 pub enum WrapMode {
     #[default]
+    /// Clamp txture to border.
     ClampToBorder = 0,
+    /// Clamp texture to edge.
     ClampToEdge,
+    /// Repeat addressing mode.
     Repeat,
+    /// Mirrored repeat addressing mode.
     MirroredRepeat,
 }
 
@@ -135,6 +149,7 @@ impl FromStr for ImageFormat {
     }
 }
 
+/// A size with a width and height.
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Size<T> {
     pub width: T,
@@ -142,6 +157,7 @@ pub struct Size<T> {
 }
 
 impl<T> Size<T> {
+    /// Create a new `Size<T>` with the given width and height.
     pub fn new(width: T, height: T) -> Self {
         Size { width, height }
     }
@@ -151,6 +167,7 @@ impl<T> From<Size<T>> for [f32; 4]
 where
     T: Copy + AsPrimitive<f32>,
 {
+    /// Convert a `Size<T>` to a `vec4` uniform.
     fn from(value: Size<T>) -> Self {
         [
             value.width.as_(),

@@ -74,3 +74,17 @@ impl DrawQuad for Gl3DrawQuad {
         }
     }
 }
+
+impl Drop for Gl3DrawQuad {
+    fn drop(&mut self) {
+        unsafe {
+            if self.vbo != 0 {
+                gl::DeleteBuffers(1, &self.vbo);
+            }
+
+            if self.vao != 0 {
+                gl::DeleteVertexArrays(1, &self.vao)
+            }
+        }
+    }
+}

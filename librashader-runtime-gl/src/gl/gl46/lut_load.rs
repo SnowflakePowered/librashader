@@ -3,7 +3,7 @@ use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
 use crate::texture::Texture;
 use gl::types::{GLsizei, GLuint};
-use librashader_common::image::Image;
+use librashader_common::image::{Image, UVDirection};
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
 use rustc_hash::FxHashMap;
@@ -23,7 +23,7 @@ impl LoadLut for Gl46LutLoad {
         }
 
         for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path)?;
+            let image = Image::load(&texture.path, UVDirection::BottomLeft)?;
             let levels = if texture.mipmap {
                 librashader_runtime::scaling::calc_miplevel(image.size)
             } else {

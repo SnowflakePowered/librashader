@@ -15,6 +15,7 @@ mod samplers;
 mod texture;
 mod util;
 mod viewport;
+mod parameters;
 
 pub use filter_chain::FilterChain;
 pub use viewport::Viewport;
@@ -28,7 +29,7 @@ mod tests {
     #[test]
     fn triangle_d3d11() {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
-            "../test/slang-shaders/crt/crt-royale.slangp",
+            "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
             None,
         )
         .unwrap();

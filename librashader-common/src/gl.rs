@@ -59,6 +59,7 @@ impl From<FilterMode> for gl::types::GLenum {
 }
 
 impl FilterMode {
+    /// Get the mipmap filtering mode for the given combination.
     pub fn gl_mip(&self, mip: FilterMode) -> gl::types::GLenum {
         match (self, mip) {
             (FilterMode::Linear, FilterMode::Linear) => gl::LINEAR_MIPMAP_LINEAR,

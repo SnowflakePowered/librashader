@@ -3,7 +3,6 @@ use bitflags::bitflags;
 use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
-pub const BASE_SEMANTICS_COUNT: usize = 5;
 pub const MAX_BINDINGS_COUNT: u32 = 16;
 pub const MAX_PUSH_BUFFER_SIZE: u32 = 128;
 

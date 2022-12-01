@@ -1,5 +1,5 @@
 use crate::texture::{DxImageView, LutTexture, Texture};
-use librashader_common::image::Image;
+use librashader_common::image::{Image, UVDirection};
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -123,6 +123,7 @@ impl FilterChain {
             OwnedFramebuffer::new(
                 device,
                 Size::new(1, 1),
+                0,
                 ImageFormat::R8G8B8A8Unorm,
             )
         });
@@ -141,6 +142,7 @@ impl FilterChain {
             OwnedFramebuffer::new(
                 device,
                 Size::new(1, 1),
+                1,
                 ImageFormat::R8G8B8A8Unorm,
             )
         });
@@ -349,7 +351,7 @@ impl FilterChain {
         eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
-            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)
+            OwnedFramebuffer::new(device, Size::new(1, 1), 1, ImageFormat::R8G8B8A8Unorm)
         });
 
         let framebuffers = framebuffers
@@ -379,7 +381,7 @@ impl FilterChain {
         let mut luts = FxHashMap::default();
 
         for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path)?;
+            let image = Image::load(&texture.path, UVDirection::TopLeft)?;
             let desc = D3D11_TEXTURE2D_DESC {
                 Width: image.size.width,
                 Height: image.size.height,
@@ -459,6 +461,7 @@ impl FilterChain {
         Ok((passes, semantics))
     }
 
+    /// Process a frame with the input image.
     pub fn frame(
         &mut self,
         input: DxImageView,
@@ -544,6 +547,7 @@ impl FilterChain {
             self.common.output_textures[index] = Some(source.clone());
         }
 
+        // try to hint the optimizer
         assert_eq!(last.len(), 1);
         for pass in last {
             source.filter = pass.config.filter;
@@ -588,5 +592,16 @@ impl FilterChain {
         }
 
         Ok(())
+    }
+}
+
+impl librashader_runtime::filter_chain::FilterChain for FilterChain {
+    type Error = FilterChainError;
+    type Input<'a> = DxImageView;
+    type Viewport<'a> = Viewport<'a>;
+    type FrameOptions = FrameOptions;
+
+    fn frame<'a>(&mut self, input: Self::Input<'a>, viewport: &Self::Viewport<'a>, frame_count: usize, options: Option<&Self::FrameOptions>) -> Result<(), Self::Error> {
+        self.frame(input, viewport, frame_count, options)
     }
 }

@@ -31,7 +31,7 @@ mod tests {
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = gl::gl3::hello_triangle::setup();
         let mut filter = FilterChain::load_from_path(
-            "../test/slang-shaders/vhs/VHSPro.slangp",
+            "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
             Some(&FilterChainOptions {
                 gl_version: 0,
                 use_dsa: false,
