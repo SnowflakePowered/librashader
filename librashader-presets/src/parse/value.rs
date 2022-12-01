@@ -84,8 +84,6 @@ fn from_int(input: Span) -> Result<i32, ParsePresetError> {
                     col: input.get_column(),
                     kind: ParseErrorKind::Int,
                 })?;
-
-            eprintln!("falling back to float trunc {result}");
             Ok(result)
         })
 }

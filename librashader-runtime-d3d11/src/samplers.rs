@@ -1,4 +1,4 @@
-use crate::util::Result;
+use crate::error::Result;
 use librashader_common::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
 use windows::Win32::Graphics::Direct3D11::{

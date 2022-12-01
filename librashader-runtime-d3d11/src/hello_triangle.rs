@@ -225,13 +225,13 @@ pub mod d3d11_hello_triangle {
     use std::path::Path;
 
     use crate::filter_chain::FilterChain;
-    use crate::framebuffer::OutputFramebuffer;
+
+    use crate::options::FilterChainOptions;
     use crate::texture::DxImageView;
+    use crate::viewport::Viewport;
     use librashader_common::Size;
     use std::slice;
     use std::time::Instant;
-
-    const FRAME_COUNT: u32 = 2;
 
     pub struct Sample {
         pub dxgi_factory: IDXGIFactory4,
@@ -263,9 +263,12 @@ pub mod d3d11_hello_triangle {
     }
 
     impl Sample {
-        pub(crate) fn new(filter: impl AsRef<Path>) -> Result<Self> {
+        pub(crate) fn new(
+            filter: impl AsRef<Path>,
+            filter_options: Option<&FilterChainOptions>,
+        ) -> Result<Self> {
             let (dxgi_factory, device, context) = create_device()?;
-            let filter = FilterChain::load_from_path(&device, filter).unwrap();
+            let filter = FilterChain::load_from_path(&device, filter, filter_options).unwrap();
             Ok(Sample {
                 filter,
                 dxgi_factory,
@@ -469,14 +472,25 @@ pub mod d3d11_hello_triangle {
                     }),
                 )?;
 
-                //
+                // OutputFramebuffer {
+                //                             rtv: resources.rtv.clone(),
+                //                             // rtv,
+                //                             size: Size {
+                //                                 width: tex2d_desc.Width,
+                //                                 height: tex2d_desc.Height,
+                //                             },
+                //                             viewport: resources.viewport, // viewport: D3D11_VIEWPORT {
+                //                                                           //     TopLeftX: 0.0,
+                //                                                           //     TopLeftY: 0.0,
+                //                                                           //     Width: tex2d_desc.Width as f32,
+                //                                                           //     Height:  tex2d_desc.Height as f32,
+                //                                                           //     MinDepth: 0.0,
+                //                                                           //     MaxDepth: 1.0,
+                //                                                           // },
+                //                         },
+
                 self.filter
                     .frame(
-                        resources.frame_count,
-                        &Size {
-                            width: tex2d_desc.Width,
-                            height: tex2d_desc.Height,
-                        },
                         DxImageView {
                             handle: srv,
                             size: Size {
@@ -484,22 +498,18 @@ pub mod d3d11_hello_triangle {
                                 height: tex2d_desc.Height,
                             },
                         },
-                        OutputFramebuffer {
-                            rtv: resources.rtv.clone(),
-                            // rtv,
+                        &Viewport {
+                            x: resources.viewport.TopLeftX,
+                            y: resources.viewport.TopLeftY,
                             size: Size {
                                 width: tex2d_desc.Width,
                                 height: tex2d_desc.Height,
                             },
-                            viewport: resources.viewport, // viewport: D3D11_VIEWPORT {
-                                                          //     TopLeftX: 0.0,
-                                                          //     TopLeftY: 0.0,
-                                                          //     Width: tex2d_desc.Width as f32,
-                                                          //     Height:  tex2d_desc.Height as f32,
-                                                          //     MinDepth: 0.0,
-                                                          //     MaxDepth: 1.0,
-                                                          // },
+                            output: resources.rtv.clone(),
+                            mvp: None,
                         },
+                        resources.frame_count,
+                        None,
                     )
                     .unwrap();
 
@@ -705,13 +715,7 @@ pub mod d3d11_hello_triangle {
         }
     }
     fn create_device() -> Result<(IDXGIFactory4, ID3D11Device, ID3D11DeviceContext)> {
-        let dxgi_factory_flags = if cfg!(debug_assertions) {
-            DXGI_CREATE_FACTORY_DEBUG
-        } else {
-            DXGI_CREATE_FACTORY_DEBUG
-        };
-
-        let dxgi_factory: IDXGIFactory4 = unsafe { CreateDXGIFactory2(dxgi_factory_flags) }?;
+        let dxgi_factory: IDXGIFactory4 = unsafe { CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG) }?;
         let feature_levels = vec![D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_11_1];
 
         let mut out_device = None;

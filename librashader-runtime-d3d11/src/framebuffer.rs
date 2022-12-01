@@ -1,14 +1,13 @@
-use windows::core::Interface;
+use crate::error;
 use crate::texture::{DxImageView, Texture};
-use crate::util;
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
+use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11Resource,
-    ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET,
-    D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CPU_ACCESS_WRITE,
+    ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,
+    ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE,
     D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE,
     D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0,
     D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC,
@@ -18,22 +17,20 @@ use windows::Win32::Graphics::Direct3D11::{
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
 #[derive(Debug, Clone)]
-pub struct OwnedFramebuffer {
+pub(crate) struct OwnedFramebuffer {
     pub texture: ID3D11Texture2D,
     pub size: Size<u32>,
     pub format: DXGI_FORMAT,
     device: ID3D11Device,
-    context: ID3D11DeviceContext,
     is_raw: bool,
 }
 
 impl OwnedFramebuffer {
     pub fn new(
         device: &ID3D11Device,
-        context: &ID3D11DeviceContext,
         size: Size<u32>,
         format: ImageFormat,
-    ) -> util::Result<OwnedFramebuffer> {
+    ) -> error::Result<OwnedFramebuffer> {
         unsafe {
             let format = d3d11_get_closest_format(
                 device,
@@ -50,7 +47,6 @@ impl OwnedFramebuffer {
                 size,
                 format,
                 device: device.clone(),
-                context: context.clone(),
                 is_raw: false,
             })
         }
@@ -63,7 +59,7 @@ impl OwnedFramebuffer {
         viewport_size: &Size<u32>,
         _original: &Texture,
         source: &Texture,
-    ) -> util::Result<Size<u32>> {
+    ) -> error::Result<Size<u32>> {
         if self.is_raw {
             return Ok(self.size);
         }
@@ -85,7 +81,7 @@ impl OwnedFramebuffer {
         Ok(size)
     }
 
-    pub fn init(&mut self, size: Size<u32>, format: ImageFormat) -> util::Result<()> {
+    pub fn init(&mut self, size: Size<u32>, format: ImageFormat) -> error::Result<()> {
         if self.is_raw {
             return Ok(());
         }
@@ -110,7 +106,7 @@ impl OwnedFramebuffer {
         Ok(())
     }
 
-    pub fn create_shader_resource_view(&self) -> util::Result<ID3D11ShaderResourceView> {
+    pub fn create_shader_resource_view(&self) -> error::Result<ID3D11ShaderResourceView> {
         unsafe {
             Ok(self.device.CreateShaderResourceView(
                 &self.texture,
@@ -128,7 +124,7 @@ impl OwnedFramebuffer {
         }
     }
 
-    pub fn create_render_target_view(&self) -> util::Result<ID3D11RenderTargetView> {
+    pub fn create_render_target_view(&self) -> error::Result<ID3D11RenderTargetView> {
         unsafe {
             Ok(self.device.CreateRenderTargetView(
                 &self.texture,
@@ -143,7 +139,7 @@ impl OwnedFramebuffer {
         }
     }
 
-    pub fn as_output_framebuffer(&self) -> util::Result<OutputFramebuffer> {
+    pub fn as_output_framebuffer(&self) -> error::Result<OutputFramebuffer> {
         Ok(OutputFramebuffer {
             rtv: self.create_render_target_view()?,
             size: self.size,
@@ -151,7 +147,7 @@ impl OwnedFramebuffer {
         })
     }
 
-    pub fn copy_from(&mut self, image: &DxImageView) -> util::Result<()> {
+    pub fn copy_from(&mut self, image: &DxImageView) -> error::Result<()> {
         let resource: ID3D11Texture2D = unsafe {
             let mut resource = None;
             image.handle.GetResource(&mut resource);
@@ -172,12 +168,12 @@ impl OwnedFramebuffer {
             self.init(image.size, ImageFormat::from(format))?;
         }
 
-        self.texture = resource.clone();
+        self.texture = resource;
         Ok(())
     }
 }
 #[derive(Debug, Clone)]
-pub struct OutputFramebuffer {
+pub(crate) struct OutputFramebuffer {
     pub rtv: ID3D11RenderTargetView,
     pub size: Size<u32>,
     pub viewport: D3D11_VIEWPORT,

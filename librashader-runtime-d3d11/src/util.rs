@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::error;
 use std::slice;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::Fxc::{
@@ -104,7 +104,7 @@ pub fn d3d11_get_closest_format(
     DXGI_FORMAT_UNKNOWN
 }
 
-pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> Result<ID3DBlob> {
+pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
     unsafe {
         let mut blob = None;
         D3DCompile(
@@ -115,7 +115,7 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> Result
             None,
             PCSTR(entry.as_ptr()),
             PCSTR(version.as_ptr()),
-            if cfg!(debug_assertions) {
+            if cfg!(feature = "debug-shader") {
                 D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
             } else {
                 0
@@ -137,7 +137,7 @@ pub fn d3d11_compile_bound_shader<'a, T, L>(
     blob: &ID3DBlob,
     linkage: L,
     factory: ShaderFactory<'a, L, T>,
-) -> Result<T>
+) -> error::Result<T>
 where
     L: Into<windows::core::InParam<'a, ID3D11ClassLinkage>>,
 {
@@ -155,7 +155,7 @@ pub fn d3d11_create_input_layout(
     device: &ID3D11Device,
     desc: &[D3D11_INPUT_ELEMENT_DESC],
     blob: &ID3DBlob,
-) -> Result<ID3D11InputLayout> {
+) -> error::Result<ID3D11InputLayout> {
     unsafe {
         // SAFETY: slice as valid for as long as vs_blob is alive.
         let dxil =
@@ -165,6 +165,3 @@ pub fn d3d11_create_input_layout(
         Ok(compiled)
     }
 }
-
-// todo: d3d11.c 2097
-pub type Result<T> = std::result::Result<T, crate::error::FilterChainError>;

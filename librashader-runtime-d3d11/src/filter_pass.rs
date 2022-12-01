@@ -10,17 +10,17 @@ use librashader_reflect::reflect::semantics::{
 };
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
-use std::error::Error;
 
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
 };
 
+use crate::error;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
+use crate::viewport::Viewport;
 use librashader_runtime::uniforms::UniformStorage;
-use crate::util;
 
 pub struct ConstantBufferBinding {
     pub binding: u32,
@@ -301,8 +301,6 @@ impl FilterPass {
         {
             let id = id.as_str();
 
-            // todo: cache parameters.
-            // presets override params
             let default = self
                 .source
                 .parameters
@@ -345,19 +343,19 @@ impl FilterPass {
         (textures, samplers)
     }
 
-    pub fn draw(
+    pub(crate) fn draw(
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Size<u32>,
+        viewport: &Viewport,
         original: &Texture,
         source: &Texture,
         output: RenderTarget,
-    ) -> util::Result<()> {
+    ) -> error::Result<()> {
         let _device = &parent.d3d11.device;
-        let context = &parent.d3d11.device_context;
+        let context = &parent.d3d11.current_context;
         unsafe {
             context.IASetInputLayout(&self.vertex_layout);
             context.VSSetShader(&self.vertex_shader, None);
@@ -371,7 +369,7 @@ impl FilterPass {
             frame_count,
             frame_direction,
             output.output.size,
-            *viewport,
+            viewport.size,
             original,
             source,
         );

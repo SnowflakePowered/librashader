@@ -23,3 +23,5 @@ pub enum FilterChainError {
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
 }
+
+pub type Result<T> = std::result::Result<T, FilterChainError>;

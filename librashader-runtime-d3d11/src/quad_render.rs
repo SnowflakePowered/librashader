@@ -1,4 +1,4 @@
-use crate::util;
+use crate::error;
 use bytemuck::offset_of;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
@@ -50,7 +50,7 @@ pub(crate) struct DrawQuad {
 }
 
 impl DrawQuad {
-    pub fn new(device: &ID3D11Device, context: &ID3D11DeviceContext) -> util::Result<DrawQuad> {
+    pub fn new(device: &ID3D11Device, context: &ID3D11DeviceContext) -> error::Result<DrawQuad> {
         unsafe {
             let buffer = device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
