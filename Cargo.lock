@@ -410,7 +410,7 @@ checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
 
 [[package]]
 name = "librashader"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "librashader-common",
  "librashader-preprocess",
@@ -423,7 +423,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "gl",
  "image",
@@ -433,7 +433,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "librashader-common",
  "nom",
@@ -442,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "librashader-common",
  "nom",
@@ -453,7 +453,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "bitflags",
  "librashader-common",
@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "bytemuck",
  "librashader-common",
@@ -482,7 +482,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "bytemuck",
  "gfx-maths",
@@ -499,7 +499,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "bytemuck",
  "gl",

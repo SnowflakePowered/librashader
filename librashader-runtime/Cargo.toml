@@ -1,15 +1,21 @@
 [package]
 name = "librashader-runtime"
-version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MPL-2.0 OR GPL-3.0-only"
+version = "0.1.0-alpha.1"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
 
 [dependencies]
-librashader-common = { path = "../librashader-common" }
-librashader-presets = { path = "../librashader-presets" }
-librashader-preprocess = { path = "../librashader-preprocess" }
-librashader-reflect = { path = "../librashader-reflect" }
+librashader-common = { path = "../librashader-common", version = "0.1.0-alpha.1"  }
+librashader-presets = { path = "../librashader-presets", version = "0.1.0-alpha.1"  }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-alpha.1"  }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-alpha.1"  }
 bytemuck = "1.12.3"
 rustc-hash = "1.1.0"
 num-traits = "0.2.15"

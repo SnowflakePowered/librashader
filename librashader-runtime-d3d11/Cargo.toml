@@ -1,16 +1,22 @@
 [package]
 name = "librashader-runtime-d3d11"
-version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MPL-2.0 OR GPL-3.0-only"
+version = "0.1.0-alpha.1"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
 
 [dependencies]
-librashader-common = { path = "../librashader-common", features = ["d3d11"] }
-librashader-presets = { path = "../librashader-presets" }
-librashader-preprocess = { path = "../librashader-preprocess" }
-librashader-reflect = { path = "../librashader-reflect" }
-librashader-runtime = { path = "../librashader-runtime" }
+librashader-common = { path = "../librashader-common", features = ["d3d11"], version = "0.1.0-alpha.1"  }
+librashader-presets = { path = "../librashader-presets", version = "0.1.0-alpha.1"  }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-alpha.1" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-alpha.1"  }
+librashader-runtime = { path = "../librashader-runtime", version = "0.1.0-alpha.1"  }
 thiserror = "1.0.37"
 spirv_cross = "0.23.1"
 
