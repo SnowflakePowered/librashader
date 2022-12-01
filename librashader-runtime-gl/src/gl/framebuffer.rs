@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::Texture;
-use crate::Viewport;
+use crate::viewport::Viewport;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
@@ -34,7 +34,7 @@ impl Framebuffer {
     }
 
     pub fn clear<T: FramebufferInterface, const REBIND: bool>(&self) {
-        T::clear::<REBIND>(&self)
+        T::clear::<REBIND>(self)
     }
 
     pub fn scale<T: FramebufferInterface>(

@@ -1,5 +1,5 @@
-use crate::framebuffer::Viewport;
 use crate::gl::{Framebuffer, FramebufferInterface};
+use crate::viewport::Viewport;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[
@@ -39,6 +39,6 @@ impl<'a> RenderTarget<'a> {
 
 impl<'a> From<&Viewport<'a>> for RenderTarget<'a> {
     fn from(value: &Viewport<'a>) -> Self {
-        RenderTarget::new(value.output, value.mvp, value.x, value.y)
+        RenderTarget::new(value.output, value.mvp, value.x as i32, value.y as i32)
     }
 }

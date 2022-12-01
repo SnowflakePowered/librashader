@@ -4,12 +4,13 @@ pub(crate) mod gl46;
 
 use crate::binding::UniformLocation;
 use crate::error::Result;
-use crate::framebuffer::{GLImage, Viewport};
+use crate::framebuffer::GLImage;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
+use crate::viewport::Viewport;
 pub use framebuffer::Framebuffer;
 use gl::types::{GLenum, GLuint};
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, TextureConfig};
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_runtime::uniforms::UniformStorageAccess;

@@ -1,7 +1,7 @@
 use crate::binding::{UniformLocation, VariableLocation};
 use crate::error::{FilterChainError, Result};
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::{GLImage, Viewport};
+use crate::framebuffer::GLImage;
 use crate::render_target::RenderTarget;
 use crate::util;
 use crate::util::{gl_get_version, gl_u16_to_version};
@@ -13,6 +13,7 @@ use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLu
 use crate::options::{FilterChainOptions, FrameOptions};
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
+use crate::viewport::Viewport;
 use librashader_common::{FilterMode, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -31,7 +32,7 @@ use std::collections::VecDeque;
 use std::path::Path;
 
 pub struct FilterChain {
-    filter: FilterChainInner
+    filter: FilterChainInner,
 }
 
 impl FilterChain {
@@ -41,11 +42,13 @@ impl FilterChain {
     ) -> Result<Self> {
         if let Some(options) = options && options.use_dsa {
             return Ok(Self {
-                filter: FilterChainInner::DSA(FilterChainImpl::load_from_preset(preset, Some(options))?)
+                filter: FilterChainInner::DirectStateAccess(FilterChainImpl::load_from_preset(preset, Some(options))?)
             })
         }
-        return Ok(Self {
-            filter: FilterChainInner::Compatibility(FilterChainImpl::load_from_preset(preset, options)?)
+        Ok(Self {
+            filter: FilterChainInner::Compatibility(FilterChainImpl::load_from_preset(
+                preset, options,
+            )?),
         })
     }
 
@@ -64,25 +67,23 @@ impl FilterChain {
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
     pub fn frame(
         &mut self,
-        count: usize,
-        viewport: &Viewport,
         input: &GLImage,
+        viewport: &Viewport,
+        frame_count: usize,
         options: Option<&FrameOptions>,
     ) -> Result<()> {
         match &mut self.filter {
-            FilterChainInner::DSA(p) => {
-                p.frame(count, viewport, input, options)
+            FilterChainInner::DirectStateAccess(p) => {
+                p.frame(frame_count, viewport, input, options)
             }
-            FilterChainInner::Compatibility(p) => {
-                p.frame(count, viewport, input, options)
-            }
+            FilterChainInner::Compatibility(p) => p.frame(frame_count, viewport, input, options),
         }
     }
 }
 
 enum FilterChainInner {
-    DSA(FilterChainImpl<crate::gl::gl46::DirectStateAccessGL>),
-    Compatibility(FilterChainImpl<crate::gl::gl3::CompatibilityGL>)
+    DirectStateAccess(FilterChainImpl<crate::gl::gl46::DirectStateAccessGL>),
+    Compatibility(FilterChainImpl<crate::gl::gl3::CompatibilityGL>),
 }
 
 struct FilterChainImpl<T: GLInterface> {
@@ -595,7 +596,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(viewport.output, viewport.mvp, viewport.x, viewport.y),
+                viewport.into(),
             );
         }
 

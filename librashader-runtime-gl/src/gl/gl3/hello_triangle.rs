@@ -8,9 +8,10 @@ use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use librashader_common::Size;
 
 use crate::filter_chain::FilterChain;
-use crate::framebuffer::{GLImage, Viewport};
+use crate::framebuffer::GLImage;
 use crate::gl::gl3::CompatibilityGL;
 use crate::gl::{FramebufferInterface, GLInterface};
+use crate::viewport::Viewport;
 
 const WIDTH: u32 = 900;
 const HEIGHT: u32 = 700;
@@ -503,8 +504,8 @@ void main()
         }
 
         let viewport = Viewport {
-            x: 0,
-            y: 0,
+            x: 0f32,
+            y: 0f32,
             output: &output,
             mvp: None,
         };
@@ -520,7 +521,7 @@ void main()
         };
 
         filter
-            .frame(framecount, &viewport, &rendered, None)
+            .frame(&rendered, &viewport, framecount, None)
             .unwrap();
 
         unsafe {

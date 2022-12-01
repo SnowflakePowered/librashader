@@ -1,10 +1,11 @@
 use crate::error::{FilterChainError, Result};
-use crate::framebuffer::{GLImage, Viewport};
+use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::Framebuffer;
 use crate::gl::FramebufferInterface;
 use crate::texture::Texture;
+use crate::viewport::Viewport;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
 
 #[derive(Debug)]
@@ -96,8 +97,7 @@ impl FramebufferInterface for Gl3Framebuffer {
     fn copy_from(fb: &mut Framebuffer, image: &GLImage) -> Result<()> {
         // todo: may want to use a shader and draw a quad to be faster.
         if image.size != fb.size || image.format != fb.format {
-            Self::init(
-                fb,image.size, image.format)?;
+            Self::init(fb, image.size, image.format)?;
         }
 
         unsafe {

@@ -13,11 +13,13 @@ mod gl;
 mod samplers;
 mod texture;
 
-pub mod options;
 pub mod error;
+pub mod options;
+mod viewport;
+
 pub use filter_chain::FilterChain;
-pub use framebuffer::Viewport;
 pub use framebuffer::GLImage;
+pub use viewport::Viewport;
 
 #[cfg(test)]
 mod tests {
@@ -28,26 +30,30 @@ mod tests {
     #[test]
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = gl::gl3::hello_triangle::setup();
-        let mut filter =
-            FilterChain::load_from_path("../test/slang-shaders/vhs/VHSPro.slangp", Some(&FilterChainOptions {
+        let mut filter = FilterChain::load_from_path(
+            "../test/slang-shaders/vhs/VHSPro.slangp",
+            Some(&FilterChainOptions {
                 gl_version: 0,
                 use_dsa: false,
-            }))
-                // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
-                .unwrap();
+            }),
+        )
+        // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
+        .unwrap();
         gl::gl3::hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }
 
     #[test]
     fn triangle_gl46() {
         let (glfw, window, events, shader, vao) = gl::gl46::hello_triangle::setup();
-        let mut filter =
-            FilterChain::load_from_path("../test/slang-shaders/vhs/VHSPro.slangp", Some(&FilterChainOptions {
+        let mut filter = FilterChain::load_from_path(
+            "../test/slang-shaders/vhs/VHSPro.slangp",
+            Some(&FilterChainOptions {
                 gl_version: 0,
                 use_dsa: true,
-            }))
-                // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
-                .unwrap();
+            }),
+        )
+        // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
+        .unwrap();
         gl::gl46::hello_triangle::do_loop(glfw, window, events, shader, vao, &mut filter);
     }
 }

@@ -13,9 +13,9 @@ use rustc_hash::FxHashMap;
 
 use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
-use crate::framebuffer::Viewport;
 use crate::gl::{BindTexture, FramebufferInterface, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
+use crate::viewport::Viewport;
 
 use crate::texture::Texture;
 
@@ -71,7 +71,6 @@ impl<T: GLInterface> FilterPass<T> {
         }
 
         unsafe {
-            // can't use framebuffer.clear because it will unbind.
             framebuffer.clear::<T::FramebufferInterface, false>();
 
             let framebuffer_size = framebuffer.size;
