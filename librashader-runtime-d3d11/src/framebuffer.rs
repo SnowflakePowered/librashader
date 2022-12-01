@@ -164,27 +164,32 @@ impl OwnedFramebuffer {
             self.init(image.size, ImageFormat::from(format))?;
         }
 
-        // unsafe {
-        //     self.context.CopySubresourceRegion(
-        //         &self.texture,
-        //         0,
-        //         0,
-        //         0,
-        //         0,
-        //         &resource,
-        //         0,
-        //         Some(&D3D11_BOX {
-        //             left: 0,
-        //             top: 0,
-        //             front: 0,
-        //             right: self.size.width,
-        //             bottom: self.size.height,
-        //             back: 1,
-        //         }),
-        //     )
-        // }
-        //
+        // todo: improve mipmap generation?
+        // will need a staging texture + full so might not be worth it.
+
+        #[cfg(feature = "testing_full_gpu_copy")]
+        unsafe {
+            self.context.CopySubresourceRegion(
+                &self.texture,
+                0,
+                0,
+                0,
+                0,
+                &resource,
+                0,
+                Some(&D3D11_BOX {
+                    left: 0,
+                    top: 0,
+                    front: 0,
+                    right: self.size.width,
+                    bottom: self.size.height,
+                    back: 1,
+                }),
+            )
+        }
+
         self.texture = resource;
+
         Ok(())
     }
 }
