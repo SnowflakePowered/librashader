@@ -45,6 +45,10 @@ impl<T: GLInterface> FilterPass<T> {
     ) {
         let framebuffer = output.framebuffer;
 
+        if self.config.mipmap_input {
+            T::BindTexture::gen_mipmaps(source);
+        }
+
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
             gl::UseProgram(self.program);
@@ -112,7 +116,7 @@ impl<T: GLInterface> FilterPass<T> {
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,
-        _pass_index: usize,
+        pass_index: usize,
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
@@ -243,7 +247,7 @@ impl<T: GLInterface> FilterPass<T> {
         }
 
         // PassOutput
-        for (index, output) in parent.output_textures.iter().enumerate() {
+        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
             if !output.is_bound() {
                 continue;
             }

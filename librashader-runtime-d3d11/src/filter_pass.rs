@@ -78,7 +78,7 @@ impl FilterPass {
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,
-        _pass_index: usize,
+        pass_index: usize,
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
@@ -205,6 +205,7 @@ impl FilterPass {
 
         for (index, output) in parent.history_textures.iter().enumerate() {
             let Some(output) = output else {
+                eprintln!("no history");
                 continue;
             };
             if let Some(binding) = self
@@ -233,8 +234,10 @@ impl FilterPass {
         }
 
         // PassOutput
-        for (index, output) in parent.output_textures.iter().enumerate() {
+        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
             let Some(output) = output else {
+                eprintln!("no passoutput {index}");
+
                 continue;
             };
             if let Some(binding) = self
@@ -264,6 +267,7 @@ impl FilterPass {
         // PassFeedback
         for (index, feedback) in parent.feedback_textures.iter().enumerate() {
             let Some(feedback) = feedback else {
+                eprintln!("no passfeedback {index}");
                 continue;
             };
             if let Some(binding) = self
@@ -356,6 +360,12 @@ impl FilterPass {
     ) -> error::Result<()> {
         let _device = &parent.d3d11.device;
         let context = &parent.d3d11.current_context;
+
+        if self.config.mipmap_input {
+            unsafe {
+                context.GenerateMips(&source.view.handle);
+            }
+        }
         unsafe {
             context.IASetInputLayout(&self.vertex_layout);
             context.VSSetShader(&self.vertex_shader, None);

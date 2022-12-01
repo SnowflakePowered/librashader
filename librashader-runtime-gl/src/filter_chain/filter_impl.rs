@@ -535,16 +535,11 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 &source,
                 viewport.into(),
             );
+            self.common.output_textures[passes_len - 1] = viewport.output.as_texture(pass.config.filter, pass.config.wrap_mode);
         }
 
         // swap feedback framebuffers with output
-        for (output, feedback) in self
-            .output_framebuffers
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter_mut())
-        {
-            std::mem::swap(output, feedback);
-        }
+        std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);
 
         self.push_history(input)?;
 

@@ -11,6 +11,7 @@ use windows::Win32::Graphics::Direct3D11::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
 use crate::error::Result;
+use crate::framebuffer::OwnedFramebuffer;
 
 #[derive(Debug, Clone)]
 pub struct DxImageView {
@@ -18,14 +19,27 @@ pub struct DxImageView {
     pub size: Size<u32>,
 }
 #[derive(Debug, Clone)]
-pub struct Texture {
+pub(crate) struct Texture {
     pub view: DxImageView,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
 }
 
+impl Texture {
+    pub fn from_framebuffer(fbo: &OwnedFramebuffer, wrap_mode: WrapMode, filter: FilterMode) -> Result<Self> {
+        Ok(Texture {
+            view: DxImageView {
+                handle: fbo.create_shader_resource_view()?,
+                size: fbo.size,
+            },
+            filter,
+            wrap_mode
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct LutTexture {
+pub(crate) struct LutTexture {
     pub handle: ID3D11Texture2D,
     pub desc: D3D11_TEXTURE2D_DESC,
     pub image: Texture,

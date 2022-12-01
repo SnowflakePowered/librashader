@@ -60,6 +60,7 @@ pub trait FramebufferInterface {
 
 pub trait BindTexture {
     fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture);
+    fn gen_mipmaps(texture: &Texture);
 }
 
 pub trait GLInterface {

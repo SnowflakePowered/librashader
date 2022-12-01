@@ -118,7 +118,8 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             if cfg!(feature = "debug-shader") {
                 D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
             } else {
-                0
+                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+
             },
             0,
             &mut blob,

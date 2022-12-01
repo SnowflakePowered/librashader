@@ -23,7 +23,7 @@ pub use texture::DxImageView;
 
 #[cfg(test)]
 mod tests {
-
+    use crate::options::FilterChainOptions;
     use super::*;
 
     #[test]

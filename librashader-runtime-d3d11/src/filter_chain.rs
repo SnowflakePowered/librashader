@@ -65,7 +65,7 @@ pub(crate) struct Direct3D11 {
     pub context_is_deferred: bool,
 }
 
-pub struct FilterCommon {
+pub(crate) struct FilterCommon {
     pub(crate) d3d11: Direct3D11,
     pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
@@ -122,8 +122,8 @@ impl FilterChain {
         output_framebuffers.resize_with(filters.len(), || {
             OwnedFramebuffer::new(
                 device,
+                &current_context,
                 Size::new(1, 1),
-                0,
                 ImageFormat::R8G8B8A8Unorm,
             )
         });
@@ -141,8 +141,8 @@ impl FilterChain {
         feedback_framebuffers.resize_with(filters.len(), || {
             OwnedFramebuffer::new(
                 device,
+                &current_context,
                 Size::new(1, 1),
-                1,
                 ImageFormat::R8G8B8A8Unorm,
             )
         });
@@ -158,7 +158,9 @@ impl FilterChain {
         let luts = FilterChain::load_luts(device, &current_context, &preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChain::init_history(device, &filters)?;
+            FilterChain::init_history(device,
+                                      &current_context,
+                                      &filters)?;
 
         let draw_quad = DrawQuad::new(device, &current_context)?;
 
@@ -315,7 +317,8 @@ impl FilterChain {
 
     fn init_history(
         device: &ID3D11Device,
-        filters: &[FilterPass],
+        context: &ID3D11DeviceContext,
+        filters: &Vec<FilterPass>,
     ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<Texture>]>)> {
         let mut required_images = 0;
 
@@ -351,7 +354,7 @@ impl FilterChain {
         eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
-            OwnedFramebuffer::new(device, Size::new(1, 1), 1, ImageFormat::R8G8B8A8Unorm)
+            OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)
         });
 
         let framebuffers = framebuffers
@@ -487,6 +490,25 @@ impl FilterChain {
 
         self.draw_quad.bind_vertices();
 
+        for ((texture, fbo), pass) in self
+            .common
+            .feedback_textures
+            .iter_mut()
+            .zip(self.feedback_framebuffers.iter())
+            .zip(passes.iter())
+        {
+            *texture = Some(Texture::from_framebuffer(fbo, pass.config.wrap_mode, pass.config.filter)?);
+        }
+
+        for (texture, fbo) in self
+            .common
+            .history_textures
+            .iter_mut()
+            .zip(self.history_framebuffers.iter())
+        {
+            *texture = Some(Texture::from_framebuffer(fbo, wrap_mode, filter)?);
+        }
+
         let original = Texture {
             view: input.clone(),
             filter,
@@ -565,19 +587,11 @@ impl FilterChain {
                 &source,
                 viewport.into(),
             )?;
-
             // diverge so we don't need to clone output.
             break;
         }
 
-        // swap feedback framebuffers with output
-        for (output, feedback) in self
-            .output_framebuffers
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter_mut())
-        {
-            std::mem::swap(output, feedback);
-        }
+        std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);
 
         self.push_history(&input)?;
 

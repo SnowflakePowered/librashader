@@ -18,4 +18,12 @@ impl BindTexture for Gl3BindTexture {
             );
         }
     }
+
+    fn gen_mipmaps(texture: &Texture) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
 }
