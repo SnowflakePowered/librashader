@@ -571,7 +571,7 @@ impl FilterChain {
 
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
-        for pass in last {
+        if let Some(pass) = last.iter_mut().next() {
             source.filter = pass.config.filter;
             pass.draw(
                 passes_len - 1,
@@ -587,8 +587,6 @@ impl FilterChain {
                 &source,
                 viewport.into(),
             )?;
-            // diverge so we don't need to clone output.
-            break;
         }
 
         std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);

@@ -16,7 +16,7 @@ impl FilterChainParameters for FilterChain {
     }
 
     fn get_parameter(&self, parameter: &str) -> Option<f32> {
-        self.common.config.parameters.get::<str>(parameter.as_ref()).map(|f| *f)
+        self.common.config.parameters.get::<str>(parameter.as_ref()).copied()
     }
 
     fn set_parameter(&mut self, parameter: &str, new_value: f32) -> Option<f32> {

@@ -53,8 +53,8 @@ fn preprocess(
     let file_name = file_name.file_name().and_then(|f| f.to_str()).unwrap_or("");
 
     for (line_no, line) in lines.enumerate() {
-        if line.starts_with("#include ") {
-            let include_file = line["#include ".len()..].trim().trim_matches('"');
+        if let Some(include_file) = line.strip_prefix("#include ") {
+            let include_file = include_file.trim().trim_matches('"');
             if include_file.is_empty() {
                 return Err(PreprocessError::UnexpectedEol(line_no));
             }

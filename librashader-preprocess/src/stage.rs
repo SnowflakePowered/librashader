@@ -30,8 +30,8 @@ pub(crate) fn process_stages(source: &str) -> Result<ShaderOutput, PreprocessErr
     let mut output = ShaderOutput::default();
 
     for line in source.lines() {
-        if line.starts_with("#pragma stage ") {
-            let stage = line["#pragma stage ".len()..].trim();
+        if let Some(stage) = line.strip_prefix("#pragma stage ") {
+            let stage = stage.trim();
             active_stage = ActiveStage::from_str(stage)?;
             continue;
         }

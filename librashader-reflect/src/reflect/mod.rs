@@ -1,8 +1,4 @@
 use crate::error::ShaderReflectError;
-use crate::reflect::semantics::{
-    Semantic, TextureBinding, TextureSemantics, TextureSizeMeta, UniqueSemantics, VariableMeta,
-};
-use rustc_hash::FxHashMap;
 use semantics::ShaderSemantics;
 
 /// Reflection via spirv-cross.

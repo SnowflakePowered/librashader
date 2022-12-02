@@ -517,7 +517,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
-        for pass in last {
+        if let Some(pass) = last.iter_mut().next() {
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
 

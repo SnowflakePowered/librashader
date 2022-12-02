@@ -40,7 +40,10 @@ impl Texture {
 
 #[derive(Debug, Clone)]
 pub(crate) struct LutTexture {
+    // The handle to the Texture2D must be kept alive.
+    #[allow(dead_code)]
     pub handle: ID3D11Texture2D,
+    #[allow(dead_code)]
     pub desc: D3D11_TEXTURE2D_DESC,
     pub image: Texture,
 }

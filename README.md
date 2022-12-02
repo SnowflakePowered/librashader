@@ -32,6 +32,8 @@ librashader provides both a Rust API under the `librashader` crate, and a C API.
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
 loads the librashader (`librashader.so` or `rashader.dll`) implementation in the search path.
 
+Note that the Rust crate requires nightly Rust to build.
+
 ## Compatibility
 
 librashader implements the entire RetroArch shader pipeline and is highly compatible with existing shaders,

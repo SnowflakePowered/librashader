@@ -87,12 +87,12 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
             }
         }
 
-        if line.starts_with("#pragma format ") {
+        if let Some(format_string) = line.strip_prefix("#pragma format ") {
             if format != ImageFormat::Unknown {
                 return Err(PreprocessError::DuplicatePragmaError(line.to_string()));
             }
 
-            let format_string = line["#pragma format ".len()..].trim();
+            let format_string = format_string.trim();
             format = ImageFormat::from_str(format_string)?;
 
             if format == ImageFormat::Unknown {
