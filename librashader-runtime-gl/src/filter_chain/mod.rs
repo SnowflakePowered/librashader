@@ -5,7 +5,7 @@ use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
 use crate::{GLImage, Viewport};
 use crate::error::{Result, FilterChainError};
-use crate::options::{FilterChainOptions, FrameOptions};
+use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 
 mod filter_impl;
 mod inner;
@@ -13,14 +13,14 @@ mod parameters;
 
 pub(crate) use filter_impl::FilterCommon;
 
-pub struct FilterChain {
+pub struct FilterChainGL {
     pub(in crate::filter_chain) filter: FilterChainDispatch,
 }
 
-impl FilterChain {
+impl FilterChainGL {
     pub fn load_from_preset(
         preset: ShaderPreset,
-        options: Option<&FilterChainOptions>,
+        options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         if let Some(options) = options && options.use_dsa {
             return Ok(Self {
@@ -37,7 +37,7 @@ impl FilterChain {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
-        options: Option<&FilterChainOptions>,
+        options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
@@ -52,7 +52,7 @@ impl FilterChain {
         input: &GLImage,
         viewport: &Viewport,
         frame_count: usize,
-        options: Option<&FrameOptions>,
+        options: Option<&FrameOptionsGL>,
     ) -> Result<()> {
         match &mut self.filter {
             FilterChainDispatch::DirectStateAccess(p) => {
@@ -63,11 +63,11 @@ impl FilterChain {
     }
 }
 
-impl librashader_runtime::filter_chain::FilterChain for FilterChain {
+impl librashader_runtime::filter_chain::FilterChain for FilterChainGL {
     type Error = FilterChainError;
     type Input<'a> = &'a GLImage;
     type Viewport<'a> = Viewport<'a>;
-    type FrameOptions = FrameOptions;
+    type FrameOptions = FrameOptionsGL;
 
     fn frame<'a>(
         &mut self,

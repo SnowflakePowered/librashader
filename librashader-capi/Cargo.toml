@@ -1,0 +1,30 @@
+[package]
+name = "librashader-capi"
+edition = "2021"
+
+license = "MPL-2.0 OR GPL-3.0-only"
+version = "0.1.0-alpha.1"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
+
+[lib]
+crate-type = [ "cdylib", "staticlib", "lib" ]
+
+[features]
+#default = ["runtime-opengl"]
+#runtime-opengl = ["gl", "librashader/gl"]
+headers = ["safer-ffi/headers"]
+
+[dependencies]
+librashader = { path = "../librashader", version = "0.1.0-alpha.1", features = ["gl"] }
+thiserror = "1.0.37"
+paste = "1.0.9"
+gl = { version = "0.14.0" }
+safer-ffi = { version = "0.0.10", repository = "https://github.com/getditto/safer_ffi" }
+
+[build-dependencies]
+cbindgen = "0.24.3"

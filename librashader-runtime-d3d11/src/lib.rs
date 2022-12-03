@@ -17,7 +17,7 @@ mod util;
 mod viewport;
 mod parameters;
 
-pub use filter_chain::FilterChain;
+pub use filter_chain::FilterChainD3D11;
 pub use viewport::Viewport;
 pub use texture::DxImageView;
 

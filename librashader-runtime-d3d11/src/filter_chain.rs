@@ -20,7 +20,7 @@ use std::path::Path;
 use crate::error::FilterChainError;
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedFramebuffer;
-use crate::options::{FilterChainOptions, FrameOptions};
+use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
@@ -49,7 +49,7 @@ type ShaderPassMeta = (
     >,
 );
 
-pub struct FilterChain {
+pub struct FilterChainD3D11 {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Vec<FilterPass>,
     pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
@@ -75,13 +75,13 @@ pub(crate) struct FilterCommon {
     pub config: FilterMutable,
 }
 
-impl FilterChain {
+impl FilterChainD3D11 {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         device: &ID3D11Device,
         path: impl AsRef<Path>,
-        options: Option<&FilterChainOptions>,
-    ) -> error::Result<FilterChain> {
+        options: Option<&FilterChainOptionsD3D11>,
+    ) -> error::Result<FilterChainD3D11> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(device, preset, options)
@@ -91,16 +91,16 @@ impl FilterChain {
     pub fn load_from_preset(
         device: &ID3D11Device,
         preset: ShaderPreset,
-        options: Option<&FilterChainOptions>,
-    ) -> error::Result<FilterChain> {
-        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
+        options: Option<&FilterChainOptionsD3D11>,
+    ) -> error::Result<FilterChainD3D11> {
+        let (passes, semantics) = FilterChainD3D11::load_preset(preset.shaders, &preset.textures)?;
 
         let use_deferred_context = options.map(|f| f.use_deferred_context).unwrap_or(false);
 
         let samplers = SamplerSet::new(device)?;
 
         // initialize passes
-        let filters = FilterChain::init_passes(device, passes, &semantics)?;
+        let filters = FilterChainD3D11::init_passes(device, passes, &semantics)?;
 
         let mut immediate_context = None;
         unsafe {
@@ -155,17 +155,17 @@ impl FilterChain {
         feedback_textures.resize_with(filters.len(), || None);
 
         // load luts
-        let luts = FilterChain::load_luts(device, &current_context, &preset.textures)?;
+        let luts = FilterChainD3D11::load_luts(device, &current_context, &preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChain::init_history(device,
-                                      &current_context,
-                                      &filters)?;
+            FilterChainD3D11::init_history(device,
+                                           &current_context,
+                                           &filters)?;
 
         let draw_quad = DrawQuad::new(device, &current_context)?;
 
         // todo: make vbo: d3d11.c 1376
-        Ok(FilterChain {
+        Ok(FilterChainD3D11 {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
@@ -196,7 +196,7 @@ impl FilterChain {
     }
 }
 
-impl FilterChain {
+impl FilterChainD3D11 {
     fn create_constant_buffer(device: &ID3D11Device, size: u32) -> error::Result<ID3D11Buffer> {
         unsafe {
             let buffer = device.CreateBuffer(
@@ -249,7 +249,7 @@ impl FilterChain {
             )?;
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
-                let buffer = FilterChain::create_constant_buffer(device, ubo.size)?;
+                let buffer = FilterChainD3D11::create_constant_buffer(device, ubo.size)?;
                 Some(ConstantBufferBinding {
                     binding: ubo.binding,
                     size: ubo.size,
@@ -261,7 +261,7 @@ impl FilterChain {
             };
 
             let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
-                let buffer = FilterChain::create_constant_buffer(device, push.size)?;
+                let buffer = FilterChainD3D11::create_constant_buffer(device, push.size)?;
                 Some(ConstantBufferBinding {
                     binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
                     size: push.size,
@@ -470,7 +470,7 @@ impl FilterChain {
         input: DxImageView,
         viewport: &Viewport,
         frame_count: usize,
-        options: Option<&FrameOptions>,
+        options: Option<&FrameOptionsD3D11>,
     ) -> error::Result<()> {
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
         if let Some(options) = options {
@@ -607,11 +607,11 @@ impl FilterChain {
     }
 }
 
-impl librashader_runtime::filter_chain::FilterChain for FilterChain {
+impl librashader_runtime::filter_chain::FilterChain for FilterChainD3D11 {
     type Error = FilterChainError;
     type Input<'a> = DxImageView;
     type Viewport<'a> = Viewport<'a>;
-    type FrameOptions = FrameOptions;
+    type FrameOptions = FrameOptionsD3D11;
 
     fn frame<'a>(&mut self, input: Self::Input<'a>, viewport: &Self::Viewport<'a>, frame_count: usize, options: Option<&Self::FrameOptions>) -> Result<(), Self::Error> {
         self.frame(input, viewport, frame_count, options)

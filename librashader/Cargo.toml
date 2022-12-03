@@ -23,5 +23,10 @@ librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.1.0-
 
 
 [features]
-gl = [ "librashader-common/opengl" ]
-d3d11 = [ "librashader-common/d3d11" ]
+default = ["gl", "d3d11", "reflect", "preprocess", "presets" ]
+gl = [ "runtime", "librashader-common/opengl" ]
+d3d11 = [ "runtime", "librashader-common/d3d11" ]
+runtime = []
+reflect = []
+preprocess = []
+presets = []

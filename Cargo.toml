@@ -8,6 +8,7 @@ members = [
     "librashader-runtime",
     "librashader-runtime-d3d11",
     "librashader-runtime-gl",
+    "librashader-capi",
 ]
 
 [workspace.metadata.release]

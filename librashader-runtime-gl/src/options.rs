@@ -1,12 +1,12 @@
 #[repr(C)]
 #[derive(Debug, Clone)]
-pub struct FrameOptions {
+pub struct FrameOptionsGL {
     pub clear_history: bool,
 }
 
 #[repr(C)]
 #[derive(Debug, Clone)]
-pub struct FilterChainOptions {
+pub struct FilterChainOptionsGL {
     pub gl_version: u16,
     pub use_dsa: bool,
 }

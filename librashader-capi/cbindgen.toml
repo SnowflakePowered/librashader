@@ -1,0 +1,41 @@
+language = "C"
+cpp_compat = true
+include_guard = "__LIBRASHADER_H__"
+pragma_once = true
+usize_is_size_t = true
+
+[parse]
+parse_deps = true
+include = ["librashader",
+    "librashader-presets",
+    "librashader-preprocess",
+    "librashader-reflect",
+    "librashader-runtime-gl"
+]
+
+
+[struct]
+
+[enum]
+rename_variants = "ScreamingSnakeCase"
+prefix_with_name = true
+
+[export]
+include = [
+    "PFN_lbr_load_preset",
+    "PFN_lbr_preset_free",
+    "PFN_lbr_preset_set_param",
+    "PFN_lbr_preset_get_param",
+    "PFN_lbr_preset_print",
+    "PFN_lbr_preset_get_runtime_param_names",
+    "GLFilterChain"
+
+]
+
+#exclude = ["LibrashaderError"]
+#
+[export.rename]
+"LibrashaderError" = "_libra_error"
+"ShaderPreset" = "_shader_preset"
+"GLFilterChain" = "_filter_chain_gl"
+"GLFilterChainOptions" = "filter_chain_gl_opt_t"

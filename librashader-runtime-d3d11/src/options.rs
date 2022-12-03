@@ -1,11 +1,11 @@
 #[repr(C)]
 #[derive(Debug, Clone)]
-pub struct FrameOptions {
+pub struct FrameOptionsD3D11 {
     pub clear_history: bool,
 }
 
 #[repr(C)]
 #[derive(Debug, Clone)]
-pub struct FilterChainOptions {
+pub struct FilterChainOptionsD3D11 {
     pub use_deferred_context: bool,
 }

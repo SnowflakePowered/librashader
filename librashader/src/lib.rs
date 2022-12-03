@@ -3,6 +3,7 @@
 //! Runtime implementations should depend directly on constituent crates.
 
 
+#[cfg(feature = "presets")]
 /// Parsing and usage of shader presets.
 ///
 /// Shader presets contain shader and texture parameters, and the order in which to apply a set of shaders
@@ -10,7 +11,6 @@
 pub mod presets {
     pub use librashader_presets::*;
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
-    use librashader_presets::ShaderPreset;
     /// Get full parameter metadata from a shader preset.
     pub fn get_parameter_meta(
         preset: &ShaderPreset,
@@ -26,6 +26,7 @@ pub mod presets {
     }
 }
 
+#[cfg(feature = "preprocess")]
 /// Loading and preprocessing of 'slang' shader source files.
 ///
 /// Shader sources files must be loaded with imports resolved before being able to be compiled.
@@ -34,6 +35,7 @@ pub mod preprocess {
     pub use librashader_preprocess::*;
 }
 
+#[cfg(feature = "reflect")]
 /// Shader compilation and reflection.
 pub mod reflect {
     /// Supported shader compiler targets.
@@ -58,20 +60,24 @@ pub mod reflect {
 }
 
 /// Shader runtimes to execute a filter chain on a GPU surface.
+#[cfg(feature = "runtime")]
 pub mod runtime {
     pub use librashader_runtime::parameters::FilterChainParameters;
     pub use librashader_runtime::filter_chain::FilterChain;
 
+    #[cfg(feature = "gl")]
     /// Shader runtime for OpenGL 3.3+.
     pub mod gl {
         pub use librashader_runtime_gl::*;
     }
 
+    #[cfg(feature = "d3d11")]
     /// Shader runtime for Direct3D11
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::*;
     }
 
+    #[cfg(feature = "vk")]
     /// Shader compiler targets and runtime for Vulkan.
     pub mod vk {
 

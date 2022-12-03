@@ -2,7 +2,7 @@ use std::collections::hash_map::Iter;
 use librashader_runtime::parameters::FilterChainParameters;
 use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
-use crate::FilterChain;
+use crate::FilterChainGL;
 use crate::gl::GLInterface;
 
 impl AsRef<dyn FilterChainParameters + 'static> for FilterChainDispatch {
@@ -23,7 +23,7 @@ impl AsMut<dyn FilterChainParameters + 'static> for FilterChainDispatch {
     }
 }
 
-impl FilterChainParameters for FilterChain {
+impl FilterChainParameters for FilterChainGL {
     fn get_enabled_pass_count(&self) -> usize {
         self.filter.as_ref().get_enabled_pass_count()
     }
