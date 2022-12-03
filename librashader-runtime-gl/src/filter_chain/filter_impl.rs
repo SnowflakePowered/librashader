@@ -7,8 +7,8 @@ use librashader_reflect::back::cross::{CrossGlslContext, GlslVersion};
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use spirv_cross::spirv::Decoration;
-use gl::types::{GLint, GLuint};
-use librashader_common::{FilterMode, WrapMode};
+use gl::types::{GLenum, GLint, GLuint};
+use librashader_common::{FilterMode, Size, WrapMode};
 use std::collections::VecDeque;
 use librashader_reflect::reflect::ReflectShader;
 use crate::{error, GLImage, util, Viewport};
@@ -84,6 +84,13 @@ type ShaderPassMeta = (
 );
 
 impl<T: GLInterface> FilterChainImpl<T> {
+    pub(crate) fn create_framebuffer_raw(&self, texture: GLuint,
+                                    handle: GLuint,
+                                    format: GLenum,
+                                    size: Size<u32>,
+                                    miplevels: u32,) -> Framebuffer {
+        T::FramebufferInterface::new_from_raw(texture, handle, format, size, miplevels)
+    }
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub(crate) fn load_from_preset(
         preset: ShaderPreset,

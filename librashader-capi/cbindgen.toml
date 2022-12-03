@@ -28,7 +28,7 @@ include = [
     "PFN_lbr_preset_get_param",
     "PFN_lbr_preset_print",
     "PFN_lbr_preset_get_runtime_param_names",
-    "GLFilterChain"
+    "FilterChain"
 
 ]
 
@@ -37,5 +37,5 @@ include = [
 [export.rename]
 "LibrashaderError" = "_libra_error"
 "ShaderPreset" = "_shader_preset"
-"GLFilterChain" = "_filter_chain_gl"
-"GLFilterChainOptions" = "filter_chain_gl_opt_t"
+"FilterChainGL" = "_filter_chain_gl"
+"FilterChainOptionsGL" = "filter_chain_gl_opt_t"

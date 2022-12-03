@@ -1,9 +1,10 @@
 use std::path::Path;
+use gl::types::{GLenum, GLuint};
 
 use librashader_presets::ShaderPreset;
 use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
-use crate::{GLImage, Viewport};
+use crate::{Framebuffer, GLImage, Viewport};
 use crate::error::{Result, FilterChainError};
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 
@@ -12,12 +13,26 @@ mod inner;
 mod parameters;
 
 pub(crate) use filter_impl::FilterCommon;
+use librashader_common::Size;
 
 pub struct FilterChainGL {
     pub(in crate::filter_chain) filter: FilterChainDispatch,
 }
 
 impl FilterChainGL {
+    pub fn create_framebuffer_raw(&self, texture: GLuint,
+                                         handle: GLuint,
+                                         format: GLenum,
+                                         size: Size<u32>,
+                                         miplevels: u32,) -> Framebuffer {
+
+        match &self.filter {
+            FilterChainDispatch::DirectStateAccess(p) => {
+                p.create_framebuffer_raw(texture, handle, format, size, miplevels)
+            }
+            FilterChainDispatch::Compatibility(p) =>  p.create_framebuffer_raw(texture, handle, format, size, miplevels),
+        }
+    }
     pub fn load_from_preset(
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,

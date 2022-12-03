@@ -20,6 +20,7 @@ mod viewport;
 pub use filter_chain::FilterChainGL;
 pub use framebuffer::GLImage;
 pub use viewport::Viewport;
+pub use crate::gl::Framebuffer;
 
 #[cfg(test)]
 mod tests {

@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct FilterChain FilterChain;
+typedef struct _filter_chain_gl _filter_chain_gl;
 
 typedef struct _libra_error _libra_error;
 
@@ -27,12 +27,34 @@ typedef struct _shader_preset *libra_shader_preset_t;
 
 typedef const void *(*gl_loader_t)(const char*);
 
-typedef struct FilterChainOptions {
+typedef struct filter_chain_gl_opt_t {
   uint16_t gl_version;
   bool use_dsa;
-} FilterChainOptions;
+} filter_chain_gl_opt_t;
 
-typedef struct FilterChain *libra_gl_filter_chain_t;
+typedef struct _filter_chain_gl *libra_gl_filter_chain_t;
+
+typedef struct libra_source_image_gl_t {
+  uint32_t handle;
+  uint32_t format;
+  uint32_t width;
+  uint32_t height;
+} libra_source_image_gl_t;
+
+typedef struct libra_viewport_t {
+  float x;
+  float y;
+  uint32_t width;
+  uint32_t height;
+} libra_viewport_t;
+
+typedef struct libra_draw_framebuffer_gl_t {
+  uint32_t handle;
+  uint32_t texture;
+  uint32_t format;
+  uint32_t width;
+  uint32_t height;
+} libra_draw_framebuffer_gl_t;
 
 /**
  * Load a preset.
@@ -106,8 +128,15 @@ libra_error_t libra_gl_init_context(gl_loader_t loader);
  * - `out` may be either null or uninitialized, but must be aligned.
  */
 libra_error_t libra_gl_create_filter_chain(libra_shader_preset_t *preset,
-                                           const struct FilterChainOptions *options,
+                                           const struct filter_chain_gl_opt_t *options,
                                            libra_gl_filter_chain_t *out);
+
+libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
+                                          size_t frame_count,
+                                          struct libra_source_image_gl_t image,
+                                          struct libra_viewport_t viewport,
+                                          struct libra_draw_framebuffer_gl_t out,
+                                          const float *mvp);
 
 #ifdef __cplusplus
 } // extern "C"
