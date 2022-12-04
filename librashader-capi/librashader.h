@@ -109,7 +109,7 @@ libra_error_t libra_preset_get_runtime_param_names(libra_shader_preset_t *preset
  * Initialize the OpenGL Context for librashader.
  *
  * ## Safety
- * Attempting to create a filter chain before initializing the GL context is undefined behaviour.
+ * Attempting to create a filter chain will fail.
  *
  * Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
  * chain objects, and drawing with them causes immediate undefined behaviour.
@@ -127,7 +127,7 @@ libra_error_t libra_gl_init_context(gl_loader_t loader);
  * - `options` must be either null, or valid and aligned.
  * - `out` may be either null or uninitialized, but must be aligned.
  */
-libra_error_t libra_gl_create_filter_chain(libra_shader_preset_t *preset,
+libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
                                            const struct filter_chain_gl_opt_t *options,
                                            libra_gl_filter_chain_t *out);
 
@@ -137,6 +137,8 @@ libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
                                           struct libra_viewport_t viewport,
                                           struct libra_draw_framebuffer_gl_t out,
                                           const float *mvp);
+
+libra_error_t libra_gl_filter_chain_free(libra_gl_filter_chain_t *chain);
 
 #ifdef __cplusplus
 } // extern "C"

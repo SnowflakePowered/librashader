@@ -11,10 +11,15 @@ int main()
     std::cout << std::filesystem::current_path() << std::endl;
     libra_shader_preset_t preset;
     auto error = libra_load_preset("../../../slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp", &preset);
-
+    if (error != NULL) {
+        std::cout << "error happened\n";
+    }
     libra_preset_print(&preset);
     libra_gl_filter_chain_t chain;
-    libra_gl_create_filter_chain(&preset, NULL, &chain);
+    error = libra_gl_create_filter_chain(&preset, NULL, &chain);
+    if (error != NULL) {
+        std::cout << "error happened\n";
+    }
     return 0;
 }
 

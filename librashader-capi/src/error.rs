@@ -49,6 +49,24 @@ macro_rules! assert_some {
     }
 }
 
+macro_rules! assert_some_ptr {
+    ($value:ident) => {
+        if $value.is_none() {
+            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+        }
+
+        let $value = unsafe { $value.as_ref().unwrap().as_ref() };
+    };
+    (mut $value:ident) => {
+        if $value.is_none() {
+            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+        }
+
+        let $value = unsafe { $value.as_mut().unwrap().as_mut() };
+    }
+}
+
 pub(crate) use assert_non_null;
 pub(crate) use assert_some;
+pub(crate) use assert_some_ptr;
 use crate::ctypes::libra_error_t;

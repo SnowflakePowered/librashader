@@ -1,12 +1,11 @@
 use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;
 use crate::ctypes::{libra_error_t, libra_gl_filter_chain_t, libra_shader_preset_t, libra_viewport_t};
-use crate::error::{assert_non_null, assert_some, LibrashaderError};
+use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::ffi_body;
-use std::mem::ManuallyDrop;
-use std::panic::catch_unwind;
+use std::ptr::NonNull;
 use librashader::runtime::FilterChain;
-use librashader::runtime::gl::{Framebuffer, GLImage, Viewport};
+use librashader::runtime::gl::{GLImage, Viewport};
 
 pub use librashader::runtime::gl::options::FilterChainOptionsGL;
 use librashader::Size;
@@ -41,27 +40,28 @@ pub unsafe extern "C" fn libra_gl_init_context(loader: gl_loader_t) -> libra_err
 /// - `options` must be either null, or valid and aligned.
 /// - `out` may be either null or uninitialized, but must be aligned.
 #[no_mangle]
-pub unsafe extern "C" fn libra_gl_create_filter_chain(preset: *mut libra_shader_preset_t,
+pub unsafe extern "C" fn libra_gl_filter_chain_create(preset: *mut libra_shader_preset_t,
                                                       options: *const FilterChainOptionsGL,
                                                       out: *mut MaybeUninit<libra_gl_filter_chain_t>) -> libra_error_t {
     ffi_body!({
         assert_non_null!(preset);
-        let preset_ptr = unsafe {
-            &mut *preset
+       let preset = unsafe {
+            let preset_ptr = &mut *preset;
+            let preset = preset_ptr.take();
+            Box::from_raw(preset.unwrap().as_ptr())
         };
 
-        assert_some!(preset_ptr);
-        let preset = preset_ptr.take().unwrap();
         let options = if options.is_null() {
             None
         } else {
             Some(unsafe { &*options })
         };
 
+
         let chain = librashader::runtime::gl::FilterChainGL::load_from_preset(*preset, options)?;
 
         unsafe {
-            out.write(MaybeUninit::new(ManuallyDrop::new(Some(Box::new(chain)))))
+            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(chain)))))
         }
     })
 }
@@ -104,8 +104,7 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(chain: *mut libra_gl_filter
 
 ) -> libra_error_t {
     ffi_body!(mut |chain| {
-        assert_some!(chain);
-        let chain = chain.as_mut().unwrap();
+        assert_some_ptr!(mut chain);
 
         let image: GLImage = image.into();
         let viewport = Viewport {
@@ -119,3 +118,14 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(chain: *mut libra_gl_filter
 }
 
 
+#[no_mangle]
+pub unsafe extern "C" fn libra_gl_filter_chain_free(chain: *mut libra_gl_filter_chain_t) -> libra_error_t {
+    ffi_body!({
+        assert_non_null!(chain);
+        unsafe {
+            let chain_ptr = &mut *chain;
+            let chain = chain_ptr.take();
+            drop(Box::from_raw(chain.unwrap().as_ptr()))
+        };
+    })
+}
