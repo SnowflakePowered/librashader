@@ -1,3 +1,4 @@
+use std::panic::catch_unwind;
 use std::path::Path;
 use gl::types::{GLenum, GLuint};
 
@@ -37,16 +38,24 @@ impl FilterChainGL {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
-        if let Some(options) = options && options.use_dsa {
-            return Ok(Self {
-                filter: FilterChainDispatch::DirectStateAccess(FilterChainImpl::load_from_preset(preset, Some(options))?)
+        let result = catch_unwind(|| {
+            if let Some(options) = options && options.use_dsa {
+                return Ok(Self {
+                    filter: FilterChainDispatch::DirectStateAccess(FilterChainImpl::load_from_preset(preset, Some(options))?)
+                })
+            }
+            Ok(Self {
+                filter: FilterChainDispatch::Compatibility(FilterChainImpl::load_from_preset(
+                    preset, options,
+                )?),
             })
+        });
+        match result {
+            Err(_) => {
+                return Err(FilterChainError::GLLoadError)
+            }
+            Ok(res) => res
         }
-        Ok(Self {
-            filter: FilterChainDispatch::Compatibility(FilterChainImpl::load_from_preset(
-                preset, options,
-            )?),
-        })
     }
 
     /// Load the shader preset at the given path into a filter chain.

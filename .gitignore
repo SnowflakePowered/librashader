@@ -6,3 +6,6 @@
 *.cap
 /.vs/
 librashader_runtime_*.exe
+/test/capi-tests/librashader-capi-tests/.vs/
+/test/capi-tests/librashader-capi-tests/x64/
+/test/capi-tests/librashader-capi-tests/librashader-capi-tests/x64/

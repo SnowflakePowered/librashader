@@ -21,6 +21,8 @@ pub enum FilterChainError {
     ShaderReflectError(#[from] ShaderReflectError),
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
+    #[error("opengl was not initialized")]
+    GLLoadError
 }
 
 pub type Result<T> = std::result::Result<T, FilterChainError>;

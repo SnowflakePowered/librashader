@@ -4,6 +4,7 @@ use crate::ctypes::{libra_error_t, libra_gl_filter_chain_t, libra_shader_preset_
 use crate::error::{assert_non_null, assert_some, LibrashaderError};
 use crate::ffi::ffi_body;
 use std::mem::ManuallyDrop;
+use std::panic::catch_unwind;
 use librashader::runtime::FilterChain;
 use librashader::runtime::gl::{Framebuffer, GLImage, Viewport};
 
@@ -14,7 +15,7 @@ pub type gl_loader_t = unsafe extern "C" fn (*const c_char) -> *const c_void;
 /// Initialize the OpenGL Context for librashader.
 ///
 /// ## Safety
-/// Attempting to create a filter chain before initializing the GL context is undefined behaviour.
+/// Attempting to create a filter chain will fail.
 ///
 /// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
 /// chain objects, and drawing with them causes immediate undefined behaviour.
@@ -56,7 +57,9 @@ pub unsafe extern "C" fn libra_gl_create_filter_chain(preset: *mut libra_shader_
         } else {
             Some(unsafe { &*options })
         };
+
         let chain = librashader::runtime::gl::FilterChainGL::load_from_preset(*preset, options)?;
+
         unsafe {
             out.write(MaybeUninit::new(ManuallyDrop::new(Some(Box::new(chain)))))
         }
@@ -100,7 +103,6 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(chain: *mut libra_gl_filter
                                                      mvp: *const f32,
 
 ) -> libra_error_t {
-
     ffi_body!(mut |chain| {
         assert_some!(chain);
         let chain = chain.as_mut().unwrap();
