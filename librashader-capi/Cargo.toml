@@ -10,6 +10,7 @@ readme = "../README.md"
 categories = ["emulators", "compilers", "graphics"]
 keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
+publish = false
 
 [lib]
 crate-type = [ "cdylib", "staticlib", "lib" ]
