@@ -16,9 +16,15 @@ int main()
     }
     libra_preset_print(&preset);
     libra_gl_filter_chain_t chain;
-    error = libra_gl_create_filter_chain(&preset, NULL, &chain);
+
+    error = libra_gl_filter_chain_create(NULL, NULL, &chain);
     if (error != NULL) {
-        std::cout << "error happened\n";
+        libra_error_print(error);
+        char* error_str;
+        libra_error_write(error, &error_str);
+        printf("%s", error_str);
+        libra_error_free_string(&error_str);
+        printf("%s", error_str);
     }
     return 0;
 }

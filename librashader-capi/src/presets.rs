@@ -32,8 +32,15 @@ use std::ptr::NonNull;
 //     }
 // }
 
-/// Load a preset.
 pub type PFN_lbr_load_preset = unsafe extern "C" fn (*const c_char, *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t;
+
+/// Load a preset.
+///
+/// ## Safety
+///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
+///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
+/// ## Returns
+///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
 #[no_mangle]
 pub unsafe extern "C" fn libra_load_preset(filename: *const c_char, out: *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t {
     ffi_body!({
@@ -58,6 +65,9 @@ pub unsafe extern "C" fn libra_load_preset(filename: *const c_char, out: *mut Ma
 pub type PFN_lbr_preset_free = unsafe extern "C" fn (*mut libra_shader_preset_t) -> libra_error_t;
 
 /// Free the preset.
+///
+/// If `preset` is null, this function does nothing. The resulting value in `preset` then becomes
+/// null.
 #[no_mangle]
 pub unsafe extern "C" fn libra_preset_free(preset: *mut libra_shader_preset_t) -> libra_error_t {
     ffi_body!({
@@ -117,8 +127,8 @@ pub type PFN_lbr_preset_print = unsafe extern "C" fn (*mut libra_shader_preset_t
 #[no_mangle]
 pub unsafe extern "C" fn libra_preset_print(preset: *mut libra_shader_preset_t) -> libra_error_t {
     ffi_body!(|preset| {
-        assert_some!(preset);
-        println!("{:#?}", preset.as_ref().unwrap());
+        assert_some_ptr!(preset);
+        println!("{:#?}", preset);
     })
 }
 

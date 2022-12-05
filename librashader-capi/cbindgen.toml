@@ -3,7 +3,7 @@ cpp_compat = true
 include_guard = "__LIBRASHADER_H__"
 pragma_once = true
 usize_is_size_t = true
-
+documentation_style = "c++"
 [parse]
 parse_deps = true
 include = ["librashader",
@@ -22,13 +22,16 @@ prefix_with_name = true
 
 [export]
 include = [
+    # preset
     "PFN_lbr_load_preset",
     "PFN_lbr_preset_free",
     "PFN_lbr_preset_set_param",
     "PFN_lbr_preset_get_param",
     "PFN_lbr_preset_print",
     "PFN_lbr_preset_get_runtime_param_names",
-    "FilterChain"
+
+    # error
+    "PFN_lbr_error_code",
 
 ]
 
@@ -39,3 +42,4 @@ include = [
 "ShaderPreset" = "_shader_preset"
 "FilterChainGL" = "_filter_chain_gl"
 "FilterChainOptionsGL" = "filter_chain_gl_opt_t"
+"FrameOptionsGL" = "frame_gl_opt_t"

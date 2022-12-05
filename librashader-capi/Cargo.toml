@@ -17,14 +17,14 @@ crate-type = [ "cdylib", "staticlib", "lib" ]
 
 [features]
 #default = ["runtime-opengl"]
-#runtime-opengl = ["gl", "librashader/gl"]
+runtime-opengl = ["gl", "librashader/gl"]
 headers = ["safer-ffi/headers"]
 
 [dependencies]
-librashader = { path = "../librashader", version = "0.1.0-alpha.2", features = ["gl"] }
+librashader = { path = "../librashader", version = "0.1.0-alpha.2" }
 thiserror = "1.0.37"
 paste = "1.0.9"
-gl = { version = "0.14.0" }
+gl = { version = "0.14.0", optional = true }
 safer-ffi = { version = "0.0.10", repository = "https://github.com/getditto/safer_ffi" }
 
 [build-dependencies]

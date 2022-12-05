@@ -1,1 +1,2 @@
-pub mod gl;
+#[cfg(feature = "runtime-opengl")]
+mod gl;

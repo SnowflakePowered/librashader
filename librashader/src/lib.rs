@@ -1,7 +1,33 @@
-//! Re-exports for usage of librashader in consuming libraries.
+#![forbid(missing_docs)]
+//! RetroArch shader preset compiler and runtime.
 //!
-//! Runtime implementations should depend directly on constituent crates.
-
+//! librashader provides convenient and safe access to RetroArch ['slang' shaders](https://github.com/libretro/slang-shaders).
+//! The preset parser, shader preprocessor, and shader runtimes have all been reimplemented in Rust to provide easy access to
+//! the rich library of shaders.
+//!
+//! ## Usage
+//! The core objects in librashader are the [`ShaderPreset`](crate::presets::ShaderPreset) and the
+//! [`FilterChain`](crate::runtime::FilterChain), the implementation of which is runtime dependent.
+//!
+//! The basic workflow involves parsing a `ShaderPreset`, which can then be used to construct
+//! a `FilterChain`. All shaders will then be compiled, after which `FilterChain::frame` can be
+//! called with appropriate input and output parameters to draw a frame with the shader effect applied.
+//!
+//! ## Runtimes
+//! Currently available runtimes are OpenGL 3.3+ and 4.6 (with DSA), and Direct3D 11.
+//! Work on the Vulkan and Direct3D 12 runtimes are in progress.
+//!
+//! | **API**     | **Status** | **`librashader` feature** |
+//! |-------------|------------|---------------------------|
+//! | OpenGL 3.3+ | ✔         | `gl`                     |
+//! | OpenGL 4.6  | ✔         | `gl`                     |
+//! | Vulkan      | 🚧         | `vk`                     |
+//! | Direct3D 11  | ✔         | `d3d11`                  |
+//! | Direct3D 12  | 🚧         | `d3d12`                  |
+//! | OpenGL 2    | ❌         |                          |
+//! | DirectX 9   | ❌         |                          |
+//! | Metal       | ❌         |                          |
+//!
 
 #[cfg(feature = "presets")]
 /// Parsing and usage of shader presets.
@@ -67,6 +93,9 @@ pub mod runtime {
 
     #[cfg(feature = "gl")]
     /// Shader runtime for OpenGL 3.3+.
+    ///
+    /// Note that the OpenGL runtime requires `gl` to be
+    /// initialized with [`gl::load_with`](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
     pub mod gl {
         pub use librashader_runtime_gl::*;
     }
