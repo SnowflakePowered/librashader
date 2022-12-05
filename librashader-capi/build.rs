@@ -3,6 +3,11 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 
 pub fn main() {
+    // Do not update files on docsrs
+    if env::var("DOCS_RS").is_ok() {
+        return;
+    }
+
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let mut buf = BufWriter::new(Vec::new());
     cbindgen::generate(crate_dir)
