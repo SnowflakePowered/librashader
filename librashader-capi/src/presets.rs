@@ -1,3 +1,4 @@
+//! The librashader preset C API (`libra_preset_*`).
 use std::ffi::{c_char, CStr, CString};
 use std::mem::{MaybeUninit};
 use librashader::presets::ShaderPreset;
@@ -32,7 +33,7 @@ use std::ptr::NonNull;
 //     }
 // }
 
-pub type PFN_lbr_load_preset = unsafe extern "C" fn (*const c_char, *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t;
+pub type PFN_lbr_preset_create = unsafe extern "C" fn (*const c_char, *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t;
 
 /// Load a preset.
 ///
@@ -42,7 +43,7 @@ pub type PFN_lbr_load_preset = unsafe extern "C" fn (*const c_char, *mut MaybeUn
 /// ## Returns
 ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
 #[no_mangle]
-pub unsafe extern "C" fn libra_load_preset(filename: *const c_char, out: *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t {
+pub unsafe extern "C" fn libra_preset_create(filename: *const c_char, out: *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t {
     ffi_body!({
         assert_non_null!(filename);
         assert_non_null!(out);

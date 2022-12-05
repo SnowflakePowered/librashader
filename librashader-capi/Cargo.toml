@@ -16,8 +16,9 @@ publish = false
 crate-type = [ "cdylib", "staticlib", "lib" ]
 
 [features]
-#default = ["runtime-opengl"]
+default = ["runtime-opengl", "runtime-d3d11"]
 runtime-opengl = ["gl", "librashader/gl"]
+runtime-d3d11 = ["windows", "librashader/d3d11"]
 headers = ["safer-ffi/headers"]
 
 [dependencies]
@@ -26,6 +27,24 @@ thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
 safer-ffi = { version = "0.0.10", repository = "https://github.com/getditto/safer_ffi" }
+
+[dependencies.windows]
+version = "0.43.0"
+features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Direct3D_Fxc",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_UI_WindowsAndMessaging",
+]
+optional = true
+
 
 [build-dependencies]
 cbindgen = "0.24.3"

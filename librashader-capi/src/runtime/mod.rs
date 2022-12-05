@@ -1,2 +1,6 @@
+//! librashader runtime C APIs
 #[cfg(feature = "runtime-opengl")]
-mod gl;
+pub mod gl;
+
+#[cfg(feature = "runtime-d3d11")]
+pub mod d3d11;

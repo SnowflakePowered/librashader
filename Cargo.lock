@@ -558,6 +558,7 @@ dependencies = [
  "paste",
  "safer-ffi",
  "thiserror",
+ "windows",
 ]
 
 [[package]]

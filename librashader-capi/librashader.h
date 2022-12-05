@@ -86,8 +86,6 @@ typedef struct frame_gl_opt_t {
   int32_t frame_direction;
 } frame_gl_opt_t;
 
-typedef libra_error_t (*PFN_lbr_load_preset)(const char*, libra_shader_preset_t*);
-
 typedef libra_error_t (*PFN_lbr_preset_free)(libra_shader_preset_t*);
 
 typedef libra_error_t (*PFN_lbr_preset_set_param)(libra_shader_preset_t*, const char*, float);
@@ -109,8 +107,8 @@ extern "C" {
 ///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
 /// ## Returns
 ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
-libra_error_t libra_load_preset(const char *filename,
-                                libra_shader_preset_t *out);
+libra_error_t libra_preset_create(const char *filename,
+                                  libra_shader_preset_t *out);
 
 /// Free the preset.
 ///
