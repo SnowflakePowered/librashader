@@ -12,8 +12,7 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [lib]
-name = "rashader"
-crate-type = [ "cdylib", "staticlib", "lib" ]
+crate-type = [ "cdylib", "staticlib" ]
 
 [features]
 default = ["runtime-opengl", "runtime-d3d11"]
@@ -43,6 +42,5 @@ features = [
 ]
 optional = true
 
-
-[build-dependencies]
+[package.metadata.cargo-post.dependencies]
 cbindgen = "0.24.3"

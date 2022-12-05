@@ -15,9 +15,9 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 | **API**     | **Status** | **`librashader` feature** |
 |-------------|------------|---------------------------|
 | OpenGL 3.3+ | ✔          | `gl`                      |
-| OpenGL 4.6  | ✔          | `gl46`                    |
+| OpenGL 4.6  | ✔          | `gl`                      |
 | Vulkan      | 🚧         | `vk`                      |
-| Direct3D11  | ✔         | `d3d11`                   |
+| Direct3D11  | ✔          | `d3d11`                   |
 | Direct3D12  | 🚧         | `d3d12`                   |
 | OpenGL 2    | ❌          |                           |
 | DirectX 9   | ❌          |                           |
@@ -30,9 +30,25 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class, fully supported.
 
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
-loads the librashader (`librashader.so` or `rashader.dll`) implementation in the search path.
+loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path.
 
 Note that the Rust crate requires nightly Rust to build.
+
+### C ABI Compatibility
+Since the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
+is important to ensure that updates to librashader do not break existing consumers.
+
+Pre-1.0, nothing is guaranteed to be stable, but the following APIs are unlikely to change their ABI.
+
+* `libra_preset_*`
+* `libra_error_*`
+
+The following APIs, mostly runtime, are more likely to change their ABI.
+
+* `libra_gl_*`
+* `libra_vk_*`
+* `libra_d3d11_*`
+* `libra_d3d12_*`
 
 ## Compatibility
 
