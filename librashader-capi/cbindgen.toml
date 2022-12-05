@@ -4,13 +4,15 @@ include_guard = "__LIBRASHADER_H__"
 pragma_once = true
 usize_is_size_t = true
 documentation_style = "c++"
+header = "#ifdef _WIN32\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;\n#endif"
 [parse]
 parse_deps = true
 include = ["librashader",
     "librashader-presets",
     "librashader-preprocess",
     "librashader-reflect",
-    "librashader-runtime-gl"
+    "librashader-runtime-gl",
+    "librashader-runtime-d3d11"
 ]
 
 
@@ -43,3 +45,6 @@ include = [
 "FilterChainGL" = "_filter_chain_gl"
 "FilterChainOptionsGL" = "filter_chain_gl_opt_t"
 "FrameOptionsGL" = "frame_gl_opt_t"
+"FilterChainD3D11" = "_filter_chain_d3d11"
+"FilterChainOptionsD3D11" = "filter_chain_d3d11_opt_t"
+"FrameOptionsD3D11" = "frame_d3d11_opt_t"

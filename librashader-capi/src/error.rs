@@ -22,6 +22,9 @@ pub enum LibrashaderError {
     #[cfg(feature = "runtime-opengl")]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
+    #[cfg(feature = "runtime-d3d11")]
+    #[error("There was an error in the D3D11 filter chain.")]
+    D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
 
 }
 
@@ -151,7 +154,11 @@ impl LibrashaderError {
             LibrashaderError::InvalidPath(_) => LIBRA_ERRNO::INVALID_PATH,
             LibrashaderError::PresetError(_) => LIBRA_ERRNO::PRESET_ERROR,
             LibrashaderError::PreprocessError(_) => LIBRA_ERRNO::PREPROCESS_ERROR,
-            LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR
+            #[cfg(feature = "runtime-opengl")]
+            LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
+            #[cfg(feature = "runtime-d3d11")]
+            LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR
+
         }
     }
     pub(crate) const fn ok() -> libra_error_t {
@@ -171,6 +178,11 @@ macro_rules! assert_non_null {
     ($value:ident) => {
         if $value.is_null() {
             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+        }
+    };
+    (noexport $value:ident) => {
+        if $value.is_null() {
+            return Err($crate::error::LibrashaderError::InvalidParameter(stringify!($value)))
         }
     }
 }

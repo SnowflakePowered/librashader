@@ -19,14 +19,12 @@ crate-type = [ "cdylib", "staticlib", "lib" ]
 default = ["runtime-opengl", "runtime-d3d11"]
 runtime-opengl = ["gl", "librashader/gl"]
 runtime-d3d11 = ["windows", "librashader/d3d11"]
-headers = ["safer-ffi/headers"]
 
 [dependencies]
 librashader = { path = "../librashader", version = "0.1.0-alpha.2" }
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
-safer-ffi = { version = "0.0.10", repository = "https://github.com/getditto/safer_ffi" }
 
 [dependencies.windows]
 version = "0.43.0"
