@@ -2,6 +2,7 @@
 #[derive(Debug, Clone)]
 pub struct FrameOptionsGL {
     pub clear_history: bool,
+    pub frame_direction: i32,
 }
 
 #[repr(C)]

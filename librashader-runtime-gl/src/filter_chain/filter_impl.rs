@@ -437,6 +437,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if passes.is_empty() {
             return Ok(());
         }
+        let frame_direction = options.map(|f| f.frame_direction).unwrap_or(1);
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
@@ -509,8 +510,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 } else {
                     count
                 } as u32,
-                // todo: put this in options
-                1,
+                frame_direction,
                 viewport,
                 &original,
                 &source,
@@ -536,7 +536,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 } else {
                     count
                 } as u32,
-                1,
+                frame_direction,
                 viewport,
                 &original,
                 &source,

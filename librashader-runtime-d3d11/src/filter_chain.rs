@@ -485,6 +485,7 @@ impl FilterChainD3D11 {
             return Ok(());
         }
 
+        let frame_direction = options.map(|f| f.frame_direction).unwrap_or(1);
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
@@ -551,7 +552,7 @@ impl FilterChainD3D11 {
                 } else {
                     frame_count
                 } as u32,
-                1,
+                frame_direction,
                 viewport,
                 &original,
                 &source,
@@ -581,7 +582,7 @@ impl FilterChainD3D11 {
                 } else {
                     frame_count
                 } as u32,
-                1,
+                frame_direction,
                 viewport,
                 &original,
                 &source,
