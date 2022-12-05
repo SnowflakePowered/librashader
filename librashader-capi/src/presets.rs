@@ -1,13 +1,16 @@
 //! The librashader preset C API (`libra_preset_*`).
-use std::ffi::{c_char, CStr, CString};
-use std::mem::{MaybeUninit};
-use librashader::presets::ShaderPreset;
-use crate::ffi::ffi_body;
 use crate::ctypes::{libra_error_t, libra_shader_preset_t};
 use crate::error::{assert_non_null, assert_some, assert_some_ptr, LibrashaderError};
+use crate::ffi::ffi_body;
+use librashader::presets::ShaderPreset;
+use std::ffi::{c_char, CStr, CString};
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
-pub type PFN_lbr_preset_create = unsafe extern "C" fn (*const c_char, *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t;
+pub type PFN_lbr_preset_create = unsafe extern "C" fn(
+    filename: *const c_char,
+    out: *mut MaybeUninit<libra_shader_preset_t>,
+) -> libra_error_t;
 
 /// Load a preset.
 ///
@@ -17,14 +20,15 @@ pub type PFN_lbr_preset_create = unsafe extern "C" fn (*const c_char, *mut Maybe
 /// ## Returns
 ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
 #[no_mangle]
-pub unsafe extern "C" fn libra_preset_create(filename: *const c_char, out: *mut MaybeUninit<libra_shader_preset_t>) -> libra_error_t {
+pub unsafe extern "C" fn libra_preset_create(
+    filename: *const c_char,
+    out: *mut MaybeUninit<libra_shader_preset_t>,
+) -> libra_error_t {
     ffi_body!({
         assert_non_null!(filename);
         assert_non_null!(out);
 
-        let filename = unsafe {
-            CStr::from_ptr(filename)
-        };
+        let filename = unsafe { CStr::from_ptr(filename) };
 
         let filename = filename.to_str()?;
 
@@ -32,12 +36,15 @@ pub unsafe extern "C" fn libra_preset_create(filename: *const c_char, out: *mut 
         let preset = ShaderPreset::try_parse(filename)?;
 
         unsafe {
-            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(preset)))))
+            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                preset,
+            )))))
         }
     })
 }
 
-pub type PFN_lbr_preset_free = unsafe extern "C" fn (*mut libra_shader_preset_t) -> libra_error_t;
+pub type PFN_lbr_preset_free =
+    unsafe extern "C" fn(preset: *mut libra_shader_preset_t) -> libra_error_t;
 
 /// Free the preset.
 ///
@@ -58,15 +65,22 @@ pub unsafe extern "C" fn libra_preset_free(preset: *mut libra_shader_preset_t) -
     })
 }
 
-pub type PFN_lbr_preset_set_param = unsafe extern "C" fn (*mut libra_shader_preset_t, *const c_char, f32) -> libra_error_t;
+pub type PFN_lbr_preset_set_param = unsafe extern "C" fn(
+    preset: *mut libra_shader_preset_t,
+    name: *const c_char,
+    value: f32,
+) -> libra_error_t;
 /// Set the value of the parameter in the preset.
 ///
 /// ## Safety
 /// - `preset` must be null or a valid and aligned pointer to a shader preset.
 /// - `name` must be null or a valid and aligned pointer to a string.
 #[no_mangle]
-pub unsafe extern "C" fn libra_preset_set_param(preset: *mut libra_shader_preset_t,
-                                                name: *const c_char, value: f32) -> libra_error_t {
+pub unsafe extern "C" fn libra_preset_set_param(
+    preset: *mut libra_shader_preset_t,
+    name: *const c_char,
+    value: f32,
+) -> libra_error_t {
     ffi_body!(|name|; mut |preset| {
         let name = unsafe {
             CStr::from_ptr(name)
@@ -81,7 +95,11 @@ pub unsafe extern "C" fn libra_preset_set_param(preset: *mut libra_shader_preset
     })
 }
 
-pub type PFN_lbr_preset_get_param = unsafe extern "C" fn (*mut libra_shader_preset_t, *const c_char, *mut MaybeUninit<f32>) -> libra_error_t;
+pub type PFN_lbr_preset_get_param = unsafe extern "C" fn(
+    preset: *mut libra_shader_preset_t,
+    name: *const c_char,
+    value: *mut MaybeUninit<f32>,
+) -> libra_error_t;
 
 /// Get the value of the parameter as set in the preset.
 ///
@@ -90,12 +108,13 @@ pub type PFN_lbr_preset_get_param = unsafe extern "C" fn (*mut libra_shader_pres
 /// - `name` must be null or a valid and aligned pointer to a string.
 /// - `value` may be a pointer to a uninitialized `float`.
 #[no_mangle]
-pub unsafe extern "C" fn libra_preset_get_param(preset: *mut libra_shader_preset_t,
-                                                name: *const c_char, value: *mut MaybeUninit<f32>) -> libra_error_t {
-    ffi_body!(|name, preset | {
-        let name = unsafe {
-            CStr::from_ptr(name)
-        };
+pub unsafe extern "C" fn libra_preset_get_param(
+    preset: *mut libra_shader_preset_t,
+    name: *const c_char,
+    value: *mut MaybeUninit<f32>,
+) -> libra_error_t {
+    ffi_body!(|name, preset| {
+        let name = unsafe { CStr::from_ptr(name) };
 
         let name = name.to_str()?;
         assert_some_ptr!(preset);
@@ -103,14 +122,13 @@ pub unsafe extern "C" fn libra_preset_get_param(preset: *mut libra_shader_preset
         assert_non_null!(value);
 
         if let Some(param) = preset.parameters.iter().find(|c| c.name == name) {
-            unsafe {
-                value.write(MaybeUninit::new(param.value))
-            }
+            unsafe { value.write(MaybeUninit::new(param.value)) }
         }
     })
 }
 
-pub type PFN_lbr_preset_print = unsafe extern "C" fn (*mut libra_shader_preset_t) -> libra_error_t;
+pub type PFN_lbr_preset_print =
+    unsafe extern "C" fn(preset: *mut libra_shader_preset_t) -> libra_error_t;
 
 /// Pretty print the shader preset.
 ///
@@ -124,22 +142,28 @@ pub unsafe extern "C" fn libra_preset_print(preset: *mut libra_shader_preset_t) 
     })
 }
 
-
-pub type PFN_lbr_preset_get_runtime_param_names = unsafe extern "C" fn (*mut libra_shader_preset_t, *mut MaybeUninit<f32>) -> libra_error_t;
+pub type PFN_lbr_preset_get_runtime_param_names = unsafe extern "C" fn(
+    preset: *mut libra_shader_preset_t,
+    value: MaybeUninit<*mut *const c_char>,
+) -> libra_error_t;
 
 /// Get a list of runtime parameter names.
 ///
 /// The returned value can not currently be freed.
 /// This function should be considered in progress. Its use is discouraged.
 #[no_mangle]
-pub unsafe extern "C" fn libra_preset_get_runtime_param_names(preset: *mut libra_shader_preset_t, mut value: MaybeUninit<*mut *const c_char>) -> libra_error_t {
-    ffi_body!(|preset | {
+pub unsafe extern "C" fn libra_preset_get_runtime_param_names(
+    preset: *mut libra_shader_preset_t,
+    mut value: MaybeUninit<*mut *const c_char>,
+) -> libra_error_t {
+    ffi_body!(|preset| {
         assert_some_ptr!(preset);
 
         let iter = librashader::presets::get_parameter_meta(preset)?;
         let mut c_strings = Vec::new();
         for param in iter {
-            let c_string = CString::new(param.id).map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
+            let c_string = CString::new(param.id)
+                .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
             c_strings.push(c_string.into_raw().cast_const());
         }
 

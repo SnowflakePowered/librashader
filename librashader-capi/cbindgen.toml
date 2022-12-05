@@ -4,7 +4,7 @@ include_guard = "__LIBRASHADER_H__"
 pragma_once = true
 usize_is_size_t = true
 documentation_style = "c++"
-header = "#ifdef _WIN32\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;\n#endif"
+after_includes = "#ifdef _WIN32\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;\n#endif"
 [parse]
 parse_deps = true
 include = ["librashader",
@@ -33,7 +33,22 @@ include = [
     "PFN_lbr_preset_get_runtime_param_names",
 
     # error
-    "PFN_lbr_error_code",
+    "PFN_lbr_error_errno",
+    "PFN_lbr_error_print",
+    "PFN_lbr_error_free",
+    "PFN_lbr_error_write",
+    "PFN_lbr_error_free_string",
+
+    # gl
+    "PFN_lbr_gl_init_context",
+    "PFN_lbr_gl_filter_chain_create",
+    "PFN_lbr_gl_filter_chain_frame",
+    "PFN_lbr_gl_filter_chain_free",
+
+    # d3d11
+    "PFN_lbr_d3d11_filter_chain_create",
+    "PFN_lbr_d3d11_filter_chain_frame",
+    "PFN_lbr_d3d11_filter_chain_free"
 
 ]
 

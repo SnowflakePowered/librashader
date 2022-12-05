@@ -1,20 +1,23 @@
-use std::ffi::{c_char, c_void, CString};
-use std::mem::MaybeUninit;
-use crate::ctypes::{libra_error_t, libra_gl_filter_chain_t, libra_shader_preset_t, libra_viewport_t};
+use crate::ctypes::{
+    libra_error_t, libra_gl_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
+};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::ffi_body;
+use librashader::runtime::gl::{GLImage, Viewport};
+use librashader::runtime::FilterChain;
+use std::ffi::{c_char, c_void, CString};
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
-use librashader::runtime::FilterChain;
-use librashader::runtime::gl::{GLImage, Viewport};
 
 pub use librashader::runtime::gl::options::FilterChainOptionsGL;
 pub use librashader::runtime::gl::options::FrameOptionsGL;
 use librashader::Size;
 
 /// A GL function loader that librashader needs to be initialized with.
-pub type gl_loader_t = unsafe extern "C" fn (*const c_char) -> *const c_void;
+pub type gl_loader_t = unsafe extern "C" fn(*const c_char) -> *const c_void;
 
+pub type PFN_lbr_gl_init_context = unsafe extern "C" fn(loader: gl_loader_t) -> libra_error_t;
 /// Initialize the OpenGL Context for librashader.
 ///
 /// ## Safety
@@ -24,16 +27,19 @@ pub type gl_loader_t = unsafe extern "C" fn (*const c_char) -> *const c_void;
 /// chain objects, and drawing with them causes immediate undefined behaviour.
 #[no_mangle]
 pub unsafe extern "C" fn libra_gl_init_context(loader: gl_loader_t) -> libra_error_t {
-    gl::load_with(|s| {
-        unsafe {
-            let proc_name = CString::new(s).unwrap_unchecked();
-            loader(proc_name.as_ptr())
-        }
+    gl::load_with(|s| unsafe {
+        let proc_name = CString::new(s).unwrap_unchecked();
+        loader(proc_name.as_ptr())
     });
 
     LibrashaderError::ok()
 }
 
+pub type PFN_lbr_gl_filter_chain_create = unsafe extern "C" fn(
+    preset: *mut libra_shader_preset_t,
+    options: *const FilterChainOptionsGL,
+    out: *mut MaybeUninit<libra_gl_filter_chain_t>,
+) -> libra_error_t;
 /// Create the filter chain given the shader preset.
 ///
 /// The shader preset is immediately invalidated and must be recreated after
@@ -44,12 +50,14 @@ pub unsafe extern "C" fn libra_gl_init_context(loader: gl_loader_t) -> libra_err
 /// - `options` must be either null, or valid and aligned.
 /// - `out` must be aligned, but may be null, invalid, or uninitialized.
 #[no_mangle]
-pub unsafe extern "C" fn libra_gl_filter_chain_create(preset: *mut libra_shader_preset_t,
-                                                      options: *const FilterChainOptionsGL,
-                                                      out: *mut MaybeUninit<libra_gl_filter_chain_t>) -> libra_error_t {
+pub unsafe extern "C" fn libra_gl_filter_chain_create(
+    preset: *mut libra_shader_preset_t,
+    options: *const FilterChainOptionsGL,
+    out: *mut MaybeUninit<libra_gl_filter_chain_t>,
+) -> libra_error_t {
     ffi_body!({
         assert_non_null!(preset);
-       let preset = unsafe {
+        let preset = unsafe {
             let preset_ptr = &mut *preset;
             let preset = preset_ptr.take();
             Box::from_raw(preset.unwrap().as_ptr())
@@ -61,11 +69,12 @@ pub unsafe extern "C" fn libra_gl_filter_chain_create(preset: *mut libra_shader_
             Some(unsafe { &*options })
         };
 
-
         let chain = librashader::runtime::gl::FilterChainGL::load_from_preset(*preset, options)?;
 
         unsafe {
-            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(chain)))))
+            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                chain,
+            )))))
         }
     })
 }
@@ -80,7 +89,7 @@ pub struct libra_source_image_gl_t {
     /// The width of the source image.
     pub width: u32,
     /// The height of the source image.
-    pub height: u32
+    pub height: u32,
 }
 
 /// OpenGL parameters for the output framebuffer.
@@ -100,10 +109,20 @@ impl From<libra_source_image_gl_t> for GLImage {
             handle: value.handle,
             format: value.format,
             size: Size::new(value.width, value.height),
-            padded_size: Size::default()
+            padded_size: Size::default(),
         }
     }
 }
+
+pub type PFN_lbr_gl_filter_chain_frame = unsafe extern "C" fn(
+    chain: *mut libra_gl_filter_chain_t,
+    frame_count: usize,
+    image: libra_source_image_gl_t,
+    viewport: libra_viewport_t,
+    out: libra_draw_framebuffer_gl_t,
+    mvp: *const f32,
+    opt: *const FrameOptionsGL,
+) -> libra_error_t;
 
 /// Draw a frame with the given parameters for the given filter chain.
 ///
@@ -115,14 +134,14 @@ impl From<libra_source_image_gl_t> for GLImage {
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
 ///    struct.
 #[no_mangle]
-pub unsafe extern "C" fn libra_gl_filter_chain_frame(chain: *mut libra_gl_filter_chain_t,
-                                                     frame_count: usize,
-                                                     image: libra_source_image_gl_t,
-                                                     viewport: libra_viewport_t,
-                                                     out: libra_draw_framebuffer_gl_t,
-                                                     mvp: *const f32,
-                                                     opt: *const FrameOptionsGL,
-
+pub unsafe extern "C" fn libra_gl_filter_chain_frame(
+    chain: *mut libra_gl_filter_chain_t,
+    frame_count: usize,
+    image: libra_source_image_gl_t,
+    viewport: libra_viewport_t,
+    out: libra_draw_framebuffer_gl_t,
+    mvp: *const f32,
+    opt: *const FrameOptionsGL,
 ) -> libra_error_t {
     ffi_body!(mut |chain| {
         assert_some_ptr!(mut chain);
@@ -150,6 +169,9 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(chain: *mut libra_gl_filter
     })
 }
 
+pub type PFN_lbr_gl_filter_chain_free = unsafe extern "C" fn(
+    chain: *mut libra_gl_filter_chain_t,
+)-> libra_error_t;
 
 /// Free a GL filter chain.
 ///
@@ -157,7 +179,9 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(chain: *mut libra_gl_filter
 /// ## Safety
 /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
 #[no_mangle]
-pub unsafe extern "C" fn libra_gl_filter_chain_free(chain: *mut libra_gl_filter_chain_t) -> libra_error_t {
+pub unsafe extern "C" fn libra_gl_filter_chain_free(
+    chain: *mut libra_gl_filter_chain_t,
+) -> libra_error_t {
     ffi_body!({
         assert_non_null!(chain);
         unsafe {

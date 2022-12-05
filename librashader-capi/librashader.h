@@ -1,9 +1,3 @@
-#ifdef _WIN32
-#include <d3d11.h>
-#else
-typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;
-#endif
-
 #ifndef __LIBRASHADER_H__
 #define __LIBRASHADER_H__
 
@@ -14,6 +8,11 @@ typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#include <d3d11.h>
+#else
+typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;
+#endif
 
 /// Error codes for librashader error types.
 enum LIBRA_ERRNO
@@ -129,19 +128,82 @@ typedef struct frame_d3d11_opt_t {
   int32_t frame_direction;
 } frame_d3d11_opt_t;
 
-typedef libra_error_t (*PFN_lbr_preset_free)(libra_shader_preset_t*);
+typedef libra_error_t (*PFN_lbr_preset_free)(libra_shader_preset_t *preset);
 
-typedef libra_error_t (*PFN_lbr_preset_set_param)(libra_shader_preset_t*, const char*, float);
+typedef libra_error_t (*PFN_lbr_preset_set_param)(libra_shader_preset_t *preset, const char *name, float value);
 
-typedef libra_error_t (*PFN_lbr_preset_get_param)(libra_shader_preset_t*, const char*, float*);
+typedef libra_error_t (*PFN_lbr_preset_get_param)(libra_shader_preset_t *preset, const char *name, float *value);
 
-typedef libra_error_t (*PFN_lbr_preset_print)(libra_shader_preset_t*);
+typedef libra_error_t (*PFN_lbr_preset_print)(libra_shader_preset_t *preset);
 
-typedef libra_error_t (*PFN_lbr_preset_get_runtime_param_names)(libra_shader_preset_t*, float*);
+typedef libra_error_t (*PFN_lbr_preset_get_runtime_param_names)(libra_shader_preset_t *preset, const char **value);
+
+typedef LIBRA_ERRNO (*PFN_lbr_error_errno)(libra_error_t error);
+
+typedef int32_t (*PFN_lbr_error_print)(libra_error_t error);
+
+typedef int32_t (*PFN_lbr_error_free)(libra_error_t *error);
+
+typedef int32_t (*PFN_lbr_error_write)(libra_error_t error, char **out);
+
+typedef int32_t (*PFN_lbr_error_free_string)(char **out);
+
+typedef libra_error_t (*PFN_lbr_gl_init_context)(gl_loader_t loader);
+
+typedef libra_error_t (*PFN_lbr_gl_filter_chain_create)(libra_shader_preset_t *preset, const struct filter_chain_gl_opt_t *options, libra_gl_filter_chain_t *out);
+
+typedef libra_error_t (*PFN_lbr_gl_filter_chain_frame)(libra_gl_filter_chain_t *chain, size_t frame_count, struct libra_source_image_gl_t image, struct libra_viewport_t viewport, struct libra_draw_framebuffer_gl_t out, const float *mvp, const struct frame_gl_opt_t *opt);
+
+typedef libra_error_t (*PFN_lbr_gl_filter_chain_free)(libra_gl_filter_chain_t *chain);
+
+typedef libra_error_t (*PFN_lbr_d3d11_filter_chain_create)(libra_shader_preset_t *preset, const struct filter_chain_d3d11_opt_t *options, const ID3D11Device *device, libra_d3d11_filter_chain_t *out);
+
+typedef libra_error_t (*PFN_lbr_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t *chain, size_t frame_count, struct libra_source_image_d3d11_t image, struct libra_viewport_t viewport, const ID3D11RenderTargetView *out, const float *mvp, const struct frame_d3d11_opt_t *opt);
+
+typedef libra_error_t (*PFN_lbr_d3d11_filter_chain_free)(libra_d3d11_filter_chain_t *chain);
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
+
+/// Get the error code corresponding to this error object.
+///
+/// ## Safety
+///   - `error` must be valid and initialized.
+LIBRA_ERRNO libra_error_errno(libra_error_t error);
+
+/// Print the error message.
+///
+/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
+/// ## Safety
+///   - `error` must be a valid and initialized instance of `libra_error_t`.
+int32_t libra_error_print(libra_error_t error);
+
+/// Frees any internal state kept by the error.
+///
+/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
+/// The resulting error object becomes null.
+/// ## Safety
+///   - `error` must be null or a pointer to a valid and initialized instance of `libra_error_t`.
+int32_t libra_error_free(libra_error_t *error);
+
+/// Writes the error message into `out`
+///
+/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
+/// ## Safety
+///   - `error` must be a valid and initialized instance of `libra_error_t`.
+///   - `out` must be a non-null pointer. The resulting string must not be modified.
+int32_t libra_error_write(libra_error_t error,
+                          char **out);
+
+/// Frees an error string previously allocated by `libra_error_write`.
+///
+/// After freeing, the pointer will be set to null.
+/// ## Safety
+///   - If `libra_error_write` is not null, it must point to a string previously returned by `libra_error_write`.
+///     Attempting to free anything else, including strings or objects from other librashader functions, is immediate
+///     Undefined Behaviour.
+int32_t libra_error_free_string(char **out);
 
 /// Load a preset.
 ///
@@ -273,45 +335,6 @@ libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
 /// ## Safety
 /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
 libra_error_t libra_d3d11_filter_chain_free(libra_d3d11_filter_chain_t *chain);
-
-/// Get the error code corresponding to this error object.
-///
-/// ## Safety
-///   - `error` must be valid and initialized.
-LIBRA_ERRNO libra_error_errno(libra_error_t error);
-
-/// Print the error message.
-///
-/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
-/// ## Safety
-///   - `error` must be a valid and initialized instance of `libra_error_t`.
-int32_t libra_error_print(libra_error_t error);
-
-/// Frees any internal state kept by the error.
-///
-/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
-/// The resulting error object becomes null.
-/// ## Safety
-///   - `error` must be null or a pointer to a valid and initialized instance of `libra_error_t`.
-int32_t libra_error_free(libra_error_t *error);
-
-/// Writes the error message into `out`
-///
-/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
-/// ## Safety
-///   - `error` must be a valid and initialized instance of `libra_error_t`.
-///   - `out` must be a non-null pointer. The resulting string must not be modified.
-int32_t libra_error_write(libra_error_t error,
-                          char **out);
-
-/// Frees an error string previously allocated by `libra_error_write`.
-///
-/// After freeing, the pointer will be set to null.
-/// ## Safety
-///   - If `libra_error_write` is not null, it must point to a string previously returned by `libra_error_write`.
-///     Attempting to free anything else, including strings or objects from other librashader functions, is immediate
-///     Undefined Behaviour.
-int32_t libra_error_free_string(char **out);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1,4 +1,3 @@
-
 macro_rules! ffi_body {
     ($body:block) => {
         {
@@ -57,7 +56,6 @@ macro_rules! ffi_body {
         }
     }
 }
-
 
 macro_rules! extern_fn {
     ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) $body:block) => {

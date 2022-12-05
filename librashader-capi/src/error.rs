@@ -25,7 +25,6 @@ pub enum LibrashaderError {
     #[cfg(feature = "runtime-d3d11")]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
-
 }
 
 /// Error codes for librashader error types.
@@ -39,8 +38,7 @@ pub enum LIBRA_ERRNO {
     RUNTIME_ERROR = 5,
 }
 
-
-pub type PFN_lbr_error_errno = extern "C" fn (libra_error_t) -> LIBRA_ERRNO;
+pub type PFN_lbr_error_errno = extern "C" fn(error: libra_error_t) -> LIBRA_ERRNO;
 #[no_mangle]
 /// Get the error code corresponding to this error object.
 ///
@@ -51,12 +49,10 @@ pub extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO {
         return LIBRA_ERRNO::UNKNOWN_ERROR
     };
 
-    unsafe {
-        error.as_ref().get_code()
-    }
+    unsafe { error.as_ref().get_code() }
 }
 
-pub type PFN_lbr_error_print = extern "C" fn (libra_error_t) -> i32;
+pub type PFN_lbr_error_print = extern "C" fn(error: libra_error_t) -> i32;
 #[no_mangle]
 /// Print the error message.
 ///
@@ -74,7 +70,7 @@ pub extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
     return 0;
 }
 
-pub type PFN_lbr_error_free = extern "C" fn (*mut libra_error_t) -> i32;
+pub type PFN_lbr_error_free = extern "C" fn(error: *mut libra_error_t) -> i32;
 #[no_mangle]
 /// Frees any internal state kept by the error.
 ///
@@ -93,12 +89,12 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
         return 1;
     };
 
-    unsafe {
-        drop(Box::from_raw(error.as_ptr()))
-    }
+    unsafe { drop(Box::from_raw(error.as_ptr())) }
     return 0;
 }
 
+pub type PFN_lbr_error_write =
+    extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
 #[no_mangle]
 /// Writes the error message into `out`
 ///
@@ -106,7 +102,10 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
 /// ## Safety
 ///   - `error` must be a valid and initialized instance of `libra_error_t`.
 ///   - `out` must be a non-null pointer. The resulting string must not be modified.
-pub extern "C" fn libra_error_write(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32 {
+pub extern "C" fn libra_error_write(
+    error: libra_error_t,
+    out: *mut MaybeUninit<*mut c_char>,
+) -> i32 {
     let Some(error) = error else {
         return 1
     };
@@ -125,6 +124,7 @@ pub extern "C" fn libra_error_write(error: libra_error_t, out: *mut MaybeUninit<
     return 0;
 }
 
+pub type PFN_lbr_error_free_string = extern "C" fn(out: *mut *mut c_char) -> i32;
 #[no_mangle]
 /// Frees an error string previously allocated by `libra_error_write`.
 ///
@@ -157,8 +157,7 @@ impl LibrashaderError {
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-d3d11")]
-            LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR
-
+            LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
         }
     }
     pub(crate) const fn ok() -> libra_error_t {
@@ -177,41 +176,43 @@ impl LibrashaderError {
 macro_rules! assert_non_null {
     ($value:ident) => {
         if $value.is_null() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
     };
     (noexport $value:ident) => {
         if $value.is_null() {
-            return Err($crate::error::LibrashaderError::InvalidParameter(stringify!($value)))
+            return Err($crate::error::LibrashaderError::InvalidParameter(
+                stringify!($value),
+            ));
         }
-    }
+    };
 }
 macro_rules! assert_some {
     ($value:ident) => {
         if $value.is_none() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
-    }
+    };
 }
 
 macro_rules! assert_some_ptr {
     ($value:ident) => {
         if $value.is_none() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
 
         let $value = unsafe { $value.as_ref().unwrap().as_ref() };
     };
     (mut $value:ident) => {
         if $value.is_none() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export()
+            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
 
         let $value = unsafe { $value.as_mut().unwrap().as_mut() };
-    }
+    };
 }
 
+use crate::ctypes::libra_error_t;
 pub(crate) use assert_non_null;
 pub(crate) use assert_some;
 pub(crate) use assert_some_ptr;
-use crate::ctypes::libra_error_t;

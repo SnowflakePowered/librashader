@@ -40,8 +40,8 @@
 
 use std::os::raw::c_char;
 
+pub mod ctypes;
+pub mod error;
+mod ffi;
 pub mod presets;
 pub mod runtime;
-pub mod error;
-pub mod ctypes;
-mod ffi;
