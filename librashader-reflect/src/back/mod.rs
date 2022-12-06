@@ -1,5 +1,6 @@
 pub mod cross;
 pub mod targets;
+mod spirv;
 
 use crate::back::targets::OutputTarget;
 use crate::error::{ShaderCompileError, ShaderReflectError};

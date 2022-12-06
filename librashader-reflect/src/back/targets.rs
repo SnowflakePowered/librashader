@@ -9,7 +9,7 @@ pub struct GLSL;
 /// Shader compiler target for HLSL.
 pub struct HLSL;
 /// Shader compiler target for SPIR-V.
-pub struct SPIRV;
+pub struct SpirV;
 /// Shader compiler target for MSL
 pub struct MSL;
 
@@ -19,7 +19,7 @@ impl OutputTarget for GLSL {
 impl OutputTarget for HLSL {
     type Output = String;
 }
-impl OutputTarget for SPIRV {
+impl OutputTarget for SpirV {
     type Output = Vec<u32>;
 }
 

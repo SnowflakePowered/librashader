@@ -68,7 +68,7 @@ pub mod reflect {
     pub mod targets {
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
-        pub use librashader_reflect::back::targets::SPIRV;
+        pub use librashader_reflect::back::targets::SpirV;
     }
 
     pub use librashader_reflect::error::*;
