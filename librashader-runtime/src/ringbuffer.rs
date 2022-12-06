@@ -79,16 +79,6 @@ impl<T> BoxRingBuffer<T>
             index: 0,
         }
     }
-
-    /// Get a borrow to all the items in this ring buffer.
-    pub fn items(&self) -> &[T; SIZE] {
-        &self.items
-    }
-
-    /// Get a mutable borrow to all the items in this ring buffer.
-    pub fn items_mut(&mut self) -> &mut [T; SIZE] {
-        &mut self.items
-    }
 }
 
 
@@ -100,10 +90,12 @@ impl<T> BoxRingBuffer<T> {
         }
     }
 
+    /// Get a borrow to all the items in this ring buffer.
     pub fn items(&self) -> &[T] {
         &self.items
     }
 
+    /// Get a mutable borrow to all the items in this ring buffer.
     pub fn items_mut(&mut self) -> &mut [T] {
         &mut self.items
     }
@@ -126,7 +118,7 @@ impl<T> RingBuffer<T> for BoxRingBuffer<T> {
 
     fn next(&mut self) {
         self.index += 1;
-        if self.index >= SIZE {
+        if self.index >= self.items.len() {
             self.index = 0
         }
     }

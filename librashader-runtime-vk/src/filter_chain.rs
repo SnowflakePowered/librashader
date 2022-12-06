@@ -11,7 +11,7 @@ use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics};
 use librashader_runtime::uniforms::UniformStorage;
 use crate::error;
-use crate::filter_pass::FilterPass;
+use crate::filter_pass::{FilterPass, PipelineDescriptors};
 
 pub struct Vulkan {
     physical_device: vk::PhysicalDevice,
@@ -134,6 +134,7 @@ impl FilterChainVulkan {
     fn init_passes(
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
+        images: u32,
     ) -> error::Result<Box<[FilterPass]>> {
         let mut filters = Vec::new();
 
@@ -156,6 +157,7 @@ impl FilterChainVulkan {
             );
 
             let mut uniform_bindings = FxHashMap::default();
+
             for param in reflection.meta.parameter_meta.values() {
                 uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
             }
@@ -168,6 +170,10 @@ impl FilterChainVulkan {
                 uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
 
+            let mut pipeline = PipelineDescriptors::new(images);
+            pipeline.add_ubo_binding(reflection.ubo.as_ref());
+            pipeline.add_texture_bindings(reflection.meta.texture_meta.values());
+            // shader_vulkan 1927 (pipeline_layout)
             filters.push(FilterPass {
                 compiled: spirv_words,
                 uniform_storage,

@@ -1,4 +1,5 @@
 #![feature(type_alias_impl_trait)]
+#![feature(let_chains)]
 
 mod hello_triangle;
 mod filter_chain;

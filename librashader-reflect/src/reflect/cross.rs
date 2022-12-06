@@ -531,6 +531,7 @@ where
                 SemanticsErrorKind::InvalidBinding(binding),
             ));
         }
+
         Ok(TextureData {
             id: texture.id,
             name: &texture.name,
