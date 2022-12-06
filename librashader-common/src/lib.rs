@@ -2,6 +2,10 @@
 #[cfg(feature = "opengl")]
 pub mod gl;
 
+/// Vulkan common conversions.
+#[cfg(feature = "vulkan")]
+pub mod vk;
+
 /// DXGI common conversions.
 #[cfg(feature = "dxgi")]
 pub mod dxgi;

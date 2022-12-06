@@ -18,7 +18,9 @@
       <sourceFolder url="file://$MODULE_DIR$/librashader-capi/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-capi-exports/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/librashader-capi/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-vk/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/librashader-capi/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
