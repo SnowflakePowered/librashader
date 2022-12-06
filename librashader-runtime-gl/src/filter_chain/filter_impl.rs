@@ -12,7 +12,7 @@ use librashader_common::{FilterMode, Size, WrapMode};
 use std::collections::VecDeque;
 use librashader_reflect::reflect::ReflectShader;
 use crate::{error, GLImage, util, Viewport};
-use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
+use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
@@ -288,7 +288,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 None
             };
 
-            let uniform_storage = BufferStorage::new(
+            let uniform_storage = GlUniformStorage::new(
                 reflection
                     .ubo
                     .as_ref()

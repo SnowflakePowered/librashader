@@ -17,3 +17,6 @@ pub mod filter_chain;
 
 /// Image handling helpers.
 pub mod image;
+
+/// Ringbuffer helpers
+pub mod ringbuffer;

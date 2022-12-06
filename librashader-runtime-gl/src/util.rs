@@ -2,55 +2,6 @@ use gl::types::{GLenum, GLuint};
 
 use librashader_reflect::back::cross::GlslVersion;
 
-pub trait RingBuffer<T> {
-    fn current(&self) -> &T;
-    fn current_mut(&mut self) -> &mut T;
-    fn next(&mut self);
-}
-
-impl<T, const SIZE: usize> RingBuffer<T> for InlineRingBuffer<T, SIZE> {
-    fn current(&self) -> &T {
-        &self.items[self.index]
-    }
-
-    fn current_mut(&mut self) -> &mut T {
-        &mut self.items[self.index]
-    }
-
-    fn next(&mut self) {
-        self.index += 1;
-        if self.index >= SIZE {
-            self.index = 0
-        }
-    }
-}
-
-pub struct InlineRingBuffer<T, const SIZE: usize> {
-    items: [T; SIZE],
-    index: usize,
-}
-
-impl<T, const SIZE: usize> InlineRingBuffer<T, SIZE>
-where
-    T: Copy,
-    T: Default,
-{
-    pub fn new() -> Self {
-        Self {
-            items: [T::default(); SIZE],
-            index: 0,
-        }
-    }
-
-    pub fn items(&self) -> &[T; SIZE] {
-        &self.items
-    }
-
-    pub fn items_mut(&mut self) -> &mut [T; SIZE] {
-        &mut self.items
-    }
-}
-
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     let shader = gl::CreateShader(stage);
     gl::ShaderSource(

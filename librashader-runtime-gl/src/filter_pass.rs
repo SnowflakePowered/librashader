@@ -11,7 +11,7 @@ use librashader_reflect::reflect::semantics::{
 };
 use rustc_hash::FxHashMap;
 
-use crate::binding::{BufferStorage, UniformLocation, VariableLocation};
+use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::gl::{BindTexture, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
@@ -25,7 +25,7 @@ pub struct FilterPass<T: GLInterface> {
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
     pub ubo_ring: Option<T::UboRing>,
-    pub(crate) uniform_storage: BufferStorage,
+    pub(crate) uniform_storage: GlUniformStorage,
     pub uniform_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,

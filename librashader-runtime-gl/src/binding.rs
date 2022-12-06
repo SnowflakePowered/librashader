@@ -35,7 +35,7 @@ impl UniformLocation<GLint> {
     }
 }
 
-pub(crate) type BufferStorage = UniformStorage<GlUniformBinder, UniformLocation<GLint>>;
+pub(crate) type GlUniformStorage = UniformStorage<GlUniformBinder, UniformLocation<GLint>>;
 
 pub trait GlUniformScalar: UniformScalar {
     const FACTORY: unsafe fn(GLint, Self) -> ();

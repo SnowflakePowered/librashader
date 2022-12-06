@@ -1,8 +1,9 @@
 use crate::binding::UniformLocation;
 use crate::gl::UboRing;
-use crate::util::{InlineRingBuffer, RingBuffer};
+use librashader_runtime::ringbuffer::InlineRingBuffer;
 use gl::types::{GLsizei, GLsizeiptr, GLuint};
 use librashader_reflect::reflect::semantics::UboReflection;
+use librashader_runtime::ringbuffer::RingBuffer;
 use librashader_runtime::uniforms::UniformStorageAccess;
 
 pub struct Gl46UboRing<const SIZE: usize> {

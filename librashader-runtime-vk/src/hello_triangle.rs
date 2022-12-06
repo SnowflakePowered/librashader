@@ -369,7 +369,7 @@ pub(crate) fn main() {
             let clear_values = [
                 vk::ClearValue {
                     color: vk::ClearColorValue {
-                        float32: [0.0, 0.0, 0.0, 0.0],
+                        float32: [0.3, 0.3, 0.5, 0.0],
                     },
                 },
                 vk::ClearValue {

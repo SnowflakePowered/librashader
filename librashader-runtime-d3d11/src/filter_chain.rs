@@ -40,7 +40,6 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-// todo: get rid of preset
 type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
