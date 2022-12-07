@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::path::Path;
 use ash::vk;
+use ash::vk::{PFN_vkGetInstanceProcAddr, PrimitiveTopology, PushConstantRange, StaticFn};
 use rustc_hash::FxHashMap;
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -10,12 +11,14 @@ use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics};
 use librashader_runtime::uniforms::UniformStorage;
-use crate::error;
-use crate::filter_pass::{FilterPass, PipelineDescriptors};
+use crate::{error, util};
+use crate::filter_pass::{FilterPass, PipelineDescriptors, PipelineObjects};
+use crate::framebuffer::Framebuffer;
 
 pub struct Vulkan {
     physical_device: vk::PhysicalDevice,
-    device: vk::Device,
+    device: ash::Device,
+    instance: ash::Instance,
     queue: vk::Queue,
     command_pool: vk::CommandPool,
     pipelines: vk::PipelineCache,
@@ -34,8 +37,10 @@ type ShaderPassMeta = (
 pub struct VulkanInfo<'a> {
     physical_device: &'a vk::PhysicalDevice,
     device: &'a vk::Device,
+    instance: &'a vk::Instance,
     queue: &'a vk::Queue,
-    memory_properties: &'a vk::PhysicalDeviceMemoryProperties
+    memory_properties: &'a vk::PhysicalDeviceMemoryProperties,
+    get_instance_proc_addr: PFN_vkGetInstanceProcAddr
 }
 
 pub struct FilterChainVulkan {
@@ -76,6 +81,16 @@ impl FilterChainVulkan {
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
         let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
+
+        unsafe {
+            let instance = ash::Instance::load(&StaticFn {
+                get_instance_proc_addr: vulkan.get_instance_proc_addr,
+            }, vulkan.instance.clone());
+
+            let device = ash::Device::load(instance.fp_v1_0(), vulkan.device.clone());
+        }
+
+
         todo!();
     }
 
@@ -132,6 +147,7 @@ impl FilterChainVulkan {
     }
 
     fn init_passes(
+        device: &ash::Device,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         images: u32,
@@ -142,6 +158,9 @@ impl FilterChainVulkan {
         for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
             let spirv_words = reflect.compile(None)?;
+
+            // todo: make framebuffers:
+            // shader_vulkan: 2280
 
             let uniform_storage = UniformStorage::new(
                 reflection
@@ -170,10 +189,25 @@ impl FilterChainVulkan {
                 uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
 
-            let mut pipeline = PipelineDescriptors::new(images);
-            pipeline.add_ubo_binding(reflection.ubo.as_ref());
-            pipeline.add_texture_bindings(reflection.meta.texture_meta.values());
             // shader_vulkan 1927 (pipeline_layout)
+            let pipeline_objects = PipelineObjects::new(&reflection, images, device)?;
+
+            let ia = vk::PipelineInputAssemblyStateCreateInfo::builder()
+                .topology(PrimitiveTopology::TRIANGLE_STRIP);
+            let vao_attrs = [vk::VertexInputAttributeDescription {
+                location: 0,
+                binding: 0,
+                format: vk::Format::R32G32_SFLOAT,
+                offset: 0,
+            }, vk::VertexInputAttributeDescription {
+                location: 1,
+                binding: 0,
+                format: vk::Format::R32G32_SFLOAT,
+                offset: (2 * std::mem::size_of::<f32>()) as u32,
+            }];
+
+            // shader_vulkan: 2026
+
             filters.push(FilterPass {
                 compiled: spirv_words,
                 uniform_storage,

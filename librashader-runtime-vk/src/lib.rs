@@ -5,6 +5,8 @@ mod hello_triangle;
 mod filter_chain;
 mod filter_pass;
 mod error;
+mod util;
+mod framebuffer;
 
 #[cfg(test)]
 mod tests {
