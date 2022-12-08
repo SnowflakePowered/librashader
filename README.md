@@ -1,8 +1,8 @@
 # librashader
 
-![crt-royale](https://user-images.githubusercontent.com/1000503/202991618-e3e38e05-f0de-429d-a3ee-4cd0b077f88f.png)
+![gameboy-player-crt-royale](https://user-images.githubusercontent.com/1000503/206342591-cdcb090a-c485-44c3-936e-50226499aff6.png)
 
-<small>*crt-royale-fake-bloom*</small>
+<small>*gameboy-player-crt-royale*</small>
 
 librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 
