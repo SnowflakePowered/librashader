@@ -93,12 +93,12 @@ are more permissively licensed, and may allow you to use librashader in your per
 licensed or proprietary project.
 
 To facilitate easier use of librashader in projects incompatible with MPL-2.0, `librashader_ld`
-implements a loader which thunks its calls to any `librashader.so` or `rashader.dll`
+implements a loader which thunks its calls to any `librashader.so` or `librashader.dll`
 library found in the load path. A non-MPL-2.0 compatible project may link against
-`librashader_ld` to use the librashader runtime, *provided that `librashader.so` or `rashader.dll` 
+`librashader_ld` to use the librashader runtime, *provided that `librashader.so` or `librashader.dll` 
 are distributed under the restrictions of MPLv2*.
 
-Note that this means that if your project is not compatible with MPL-2.0, you **can not distribute `librashader.so` or `rashader.dll`**
+Note that this means that if your project is not compatible with MPL-2.0, you **can not distribute `librashader.so` or `librashader.dll`**
 alongside your project. The end user must obtain the implementation of librashader themselves.
 
 At your discretion, you may instead choose to distribute `librashader` under the terms of GPLv3 rather than MPL-2.0
