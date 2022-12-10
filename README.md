@@ -69,7 +69,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     It is the caller's responsibility to blit the surface back to the backbuffer.
 * Runtime-specific differences
   * OpenGL
-    * Copying of in-flight framebuffer contents is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.
+    * Copying of in-flight framebuffer contents to history is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.
     * Sampler objects are used rather than `glTexParameter`.
     * Sampler inputs and outputs are not renamed. This is useful for debugging shaders in RenderDoc.
     * UBO and Push Constant Buffer sizes are padded to 16-byte boundaries.
@@ -78,7 +78,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
     * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For recent GPUs, this may improve performance.
   * Direct3D 11
-    * The staging buffer is not kept around when loading static textures (LUTs).
+    * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
     * HDR10 support is not part of the shader runtime and is not supported.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,

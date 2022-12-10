@@ -5,7 +5,7 @@ use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
-use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0, D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_RESOURCE_MISC_GENERATE_MIPS, ID3D11DeviceContext};
+use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0, D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_RESOURCE_MISC_GENERATE_MIPS, ID3D11DeviceContext, D3D11_BOX};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
 #[derive(Debug, Clone)]
@@ -144,7 +144,7 @@ impl OwnedFramebuffer {
     }
 
     pub fn copy_from(&mut self, image: &DxImageView) -> error::Result<()> {
-        let resource: ID3D11Texture2D = unsafe {
+        let original_resource: ID3D11Texture2D = unsafe {
             let mut resource = None;
             image.handle.GetResource(&mut resource);
             let Some(resource) = resource else {
@@ -155,7 +155,7 @@ impl OwnedFramebuffer {
 
         let format = unsafe {
             let mut desc = Default::default();
-            resource.GetDesc(&mut desc);
+            original_resource.GetDesc(&mut desc);
             desc.Format
         };
 
@@ -166,8 +166,6 @@ impl OwnedFramebuffer {
 
         // todo: improve mipmap generation?
         // will need a staging texture + full so might not be worth it.
-
-        #[cfg(feature = "testing_full_gpu_copy")]
         unsafe {
             self.context.CopySubresourceRegion(
                 &self.texture,
@@ -175,7 +173,7 @@ impl OwnedFramebuffer {
                 0,
                 0,
                 0,
-                &resource,
+                &original_resource,
                 0,
                 Some(&D3D11_BOX {
                     left: 0,
@@ -188,8 +186,10 @@ impl OwnedFramebuffer {
             )
         }
 
-        self.texture = resource;
-
+        let srvs = self.create_shader_resource_view()?;
+        unsafe {
+            self.context.GenerateMips(&srvs);
+        }
         Ok(())
     }
 }
