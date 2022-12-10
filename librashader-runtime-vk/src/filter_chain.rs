@@ -1,8 +1,10 @@
 use std::error::Error;
+use std::ffi::CStr;
 use std::path::Path;
 use ash::vk;
-use ash::vk::{PFN_vkGetInstanceProcAddr, PrimitiveTopology, PushConstantRange, StaticFn};
+use ash::vk::{ColorComponentFlags, PFN_vkGetInstanceProcAddr, StaticFn};
 use rustc_hash::FxHashMap;
+use librashader_common::ImageFormat;
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
@@ -11,9 +13,10 @@ use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics};
 use librashader_runtime::uniforms::UniformStorage;
-use crate::{error, util};
-use crate::filter_pass::{FilterPass, PipelineDescriptors, PipelineObjects};
-use crate::framebuffer::Framebuffer;
+use crate::error;
+use crate::filter_pass::FilterPass;
+use crate::framebuffer::{Framebuffer, VulkanRenderPass};
+use crate::vulkan_state::{PipelineLayoutObjects, VulkanGraphicsPipeline};
 
 pub struct Vulkan {
     physical_device: vk::PhysicalDevice,
@@ -43,6 +46,17 @@ pub struct VulkanInfo<'a> {
     get_instance_proc_addr: PFN_vkGetInstanceProcAddr
 }
 
+impl From<VulkanInfo<'_>> for ash::Device {
+    fn from(vulkan: VulkanInfo) -> Self {
+        unsafe {
+            let instance = ash::Instance::load(&StaticFn {
+                get_instance_proc_addr: vulkan.get_instance_proc_addr,
+            }, vulkan.instance.clone());
+            ash::Device::load(instance.fp_v1_0(), vulkan.device.clone())
+        }
+    }
+}
+
 pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Vec<FilterPass>,
@@ -66,7 +80,7 @@ pub type FilterChainOptionsVulkan = ();
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        vulkan: VulkanInfo,
+        vulkan: impl Into<ash::Device>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -76,21 +90,16 @@ impl FilterChainVulkan {
     }
 
     pub fn load_from_preset(
-        vulkan: VulkanInfo,
+        vulkan: impl Into<ash::Device>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
         let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
+        let device = vulkan.into();
 
-        unsafe {
-            let instance = ash::Instance::load(&StaticFn {
-                get_instance_proc_addr: vulkan.get_instance_proc_addr,
-            }, vulkan.instance.clone());
-
-            let device = ash::Device::load(instance.fp_v1_0(), vulkan.device.clone());
-        }
-
-
+        // initialize passes
+        let filters = Self::init_passes(&device, passes, &semantics, 3)?;
+        eprintln!("filters initialized ok.");
         todo!();
     }
 
@@ -154,13 +163,15 @@ impl FilterChainVulkan {
     ) -> error::Result<Box<[FilterPass]>> {
         let mut filters = Vec::new();
 
+        let pipeline_cache = unsafe {
+            device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(),
+                                         None)?
+        };
+
         // initialize passes
-        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+        for (index, (config, mut source, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
             let spirv_words = reflect.compile(None)?;
-
-            // todo: make framebuffers:
-            // shader_vulkan: 2280
 
             let uniform_storage = UniformStorage::new(
                 reflection
@@ -189,34 +200,28 @@ impl FilterChainVulkan {
                 uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
 
-            // shader_vulkan 1927 (pipeline_layout)
-            let pipeline_objects = PipelineObjects::new(&reflection, images, device)?;
-
-            let ia = vk::PipelineInputAssemblyStateCreateInfo::builder()
-                .topology(PrimitiveTopology::TRIANGLE_STRIP);
-            let vao_attrs = [vk::VertexInputAttributeDescription {
-                location: 0,
-                binding: 0,
-                format: vk::Format::R32G32_SFLOAT,
-                offset: 0,
-            }, vk::VertexInputAttributeDescription {
-                location: 1,
-                binding: 0,
-                format: vk::Format::R32G32_SFLOAT,
-                offset: (2 * std::mem::size_of::<f32>()) as u32,
-            }];
+            // default to something sane
+            if source.format == ImageFormat::Unknown {
+                source.format = ImageFormat::R8G8B8A8Unorm
+            }
+            
+            let graphics_pipeline = VulkanGraphicsPipeline::new(device,
+                                                                &pipeline_cache,
+                                                                &spirv_words, &reflection, source.format, images)
+                .unwrap();
 
             // shader_vulkan: 2026
-
             filters.push(FilterPass {
                 compiled: spirv_words,
                 uniform_storage,
                 uniform_bindings,
                 source,
                 config,
+                graphics_pipeline
             });
         }
 
-        todo!();
+
+        Ok(filters.into_boxed_slice())
     }
 }

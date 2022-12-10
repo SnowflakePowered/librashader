@@ -8,7 +8,7 @@ use std::mem::align_of;
 use crate::offset_of;
 
 mod base;
-use base::*;
+pub use base::*;
 
 #[derive(Clone, Debug, Copy)]
 struct Vertex {
@@ -16,9 +16,8 @@ struct Vertex {
     color: [f32; 4],
 }
 
-pub(crate) fn main() {
+pub(crate) fn main(base: ExampleBase) {
     unsafe {
-        let base = ExampleBase::new(900, 600);
         let renderpass_attachments = [
             vk::AttachmentDescription {
                 format: base.surface_format.format,

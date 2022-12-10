@@ -8,10 +8,9 @@ use crate::util::find_vulkan_memory_type;
 pub struct Framebuffer {
     device: ash::Device,
     size: Size<u32>,
-    format: ImageFormat,
     max_levels: u32,
     mem_props: vk::PhysicalDeviceMemoryProperties,
-    render_pass: vk::RenderPass,
+    render_pass: VulkanRenderPass,
     framebuffer: Option<VulkanFramebuffer>
 }
 
@@ -73,11 +72,21 @@ impl Drop for VulkanFramebuffer {
     }
 }
 
-impl Framebuffer {
-    pub fn create_render_pass(device: &ash::Device, format: vk::Format) -> error::Result<vk::RenderPass> {
+pub struct VulkanRenderPass {
+    pub render_pass: vk::RenderPass,
+    format: ImageFormat
+}
+
+impl VulkanRenderPass {
+    pub fn create_render_pass(device: &ash::Device, mut format: ImageFormat) -> error::Result<Self> {
+        // default to reasonable choice if unknown
+        if format == ImageFormat::Unknown {
+            format = ImageFormat::R8G8B8A8Unorm;
+        }
+
         let attachment = vk::AttachmentDescription::builder()
             .flags(vk::AttachmentDescriptionFlags::empty())
-            .format(format)
+            .format(format.into())
             .samples(SampleCountFlags::TYPE_1)
             .load_op(AttachmentLoadOp::DONT_CARE)
             .store_op(AttachmentStoreOp::STORE)
@@ -104,18 +113,23 @@ impl Framebuffer {
             .build();
 
         unsafe {
-            Ok(device.create_render_pass(&renderpass_info, None)?)
+            let rp = device.create_render_pass(&renderpass_info, None)?;
+            Ok(Self {
+                render_pass: rp,
+                format
+            })
         }
     }
+}
 
-    pub fn new(device: &ash::Device, size: Size<u32>, format: ImageFormat, mip_levels: u32, mem_props: vk::PhysicalDeviceMemoryProperties) -> error::Result<Self> {
+impl Framebuffer {
+    pub fn new(device: &ash::Device, size: Size<u32>, render_pass: VulkanRenderPass, mip_levels: u32, mem_props: vk::PhysicalDeviceMemoryProperties) -> error::Result<Self> {
         let mut framebuffer = Framebuffer {
             device: device.clone(),
             size,
-            format,
             max_levels: mip_levels,
             mem_props,
-            render_pass: Framebuffer::create_render_pass(device, format.into())?,
+            render_pass,
             framebuffer: None
         };
 
@@ -128,7 +142,7 @@ impl Framebuffer {
     pub fn create_vulkan_image(&mut self) -> error::Result<VulkanFramebuffer> {
         let image_create_info = vk::ImageCreateInfo::builder()
             .image_type(ImageType::TYPE_2D)
-            .format(self.format.into())
+            .format(self.render_pass.format.into())
             .extent(Extent3D {
                 width: self.size.width,
                 height: self.size.height,
@@ -171,7 +185,7 @@ impl Framebuffer {
 
         let mut view_info = vk::ImageViewCreateInfo::builder()
             .view_type(ImageViewType::TYPE_2D)
-            .format(self.format.into())
+            .format(self.render_pass.format.into())
             .image(image.clone())
             .subresource_range(image_subresource)
             .components(swizzle_components)
@@ -188,7 +202,7 @@ impl Framebuffer {
 
         let framebuffer = unsafe {
             self.device.create_framebuffer(&vk::FramebufferCreateInfo::builder()
-                .render_pass(self.render_pass)
+                .render_pass(self.render_pass.render_pass)
                 .attachments(&[image_view])
                 .width(self.size.width)
                 .height(self.size.height)

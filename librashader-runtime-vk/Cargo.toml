@@ -17,7 +17,7 @@ description = "RetroArch shaders for all."
 librashader-common = { path = "../librashader-common", features = ["vulkan"], version = "0.1.0-alpha.4" }
 librashader-presets = { path = "../librashader-presets", version = "0.1.0-alpha.4" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-alpha.4" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-alpha.4", features = ["standalone"]   }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-alpha.4", features = []   }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.1.0-alpha.4" }
 spirv_cross = "0.23.1"
 rustc-hash = "1.1.0"
