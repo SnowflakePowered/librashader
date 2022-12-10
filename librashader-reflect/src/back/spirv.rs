@@ -24,7 +24,7 @@ impl FromCompilation<GlslangCompilation> for SpirV {
         compile: GlslangCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         let vertex = compile.vertex.as_binary().to_vec();
-        let fragment = compile.vertex.as_binary().to_vec();
+        let fragment = compile.fragment.as_binary().to_vec();
         let reflect = GlslReflect::try_from(compile)?;
         Ok(CompilerBackend {
             backend: WriteSpirV {
