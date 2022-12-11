@@ -8,6 +8,9 @@ mod error;
 mod util;
 mod framebuffer;
 mod vulkan_state;
+mod draw_quad;
+mod renderpass;
+mod vulkan_primitives;
 
 #[cfg(test)]
 mod tests {

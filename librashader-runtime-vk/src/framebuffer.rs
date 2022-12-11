@@ -1,9 +1,10 @@
 use ash::vk;
-use ash::vk::{AttachmentLoadOp, AttachmentStoreOp, DeviceSize, Extent2D, Extent3D, ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags, ImageViewType, PipelineBindPoint, SampleCountFlags, SharingMode};
-use glfw::Key::P;
-use librashader_common::{ImageFormat, Size};
+use ash::vk::{Extent3D, ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags, ImageViewType, SampleCountFlags, SharingMode};
+use librashader_common::Size;
 use crate::error;
+use crate::renderpass::VulkanRenderPass;
 use crate::util::find_vulkan_memory_type;
+use crate::vulkan_primitives::VulkanImageMemory;
 
 pub struct Framebuffer {
     device: ash::Device,
@@ -20,37 +21,7 @@ pub struct VulkanFramebuffer {
     pub image_view: vk::ImageView,
     pub fb_view: vk::ImageView,
     pub image: vk::Image,
-    pub memory: VulkanMemory,
-}
-
-pub struct VulkanMemory {
-    pub handle: vk::DeviceMemory,
-    device: ash::Device
-}
-
-impl VulkanMemory {
-    pub fn new(device: &ash::Device, alloc: &vk::MemoryAllocateInfo) -> error::Result<VulkanMemory> {
-        unsafe {
-            Ok(VulkanMemory {
-                handle: device.allocate_memory(alloc, None)?,
-                device: device.clone()
-            })
-        }
-    }
-
-    pub fn bind(&self, image: &vk::Image) -> error::Result<()>{
-        unsafe {
-            Ok(self.device.bind_image_memory(image.clone(), self.handle.clone(), 0)?)
-        }
-    }
-}
-
-impl Drop for VulkanMemory {
-    fn drop(&mut self) {
-        unsafe {
-            self.device.free_memory(self.handle, None);
-        }
-    }
+    pub memory: VulkanImageMemory,
 }
 
 impl Drop for VulkanFramebuffer {
@@ -68,56 +39,6 @@ impl Drop for VulkanFramebuffer {
             if self.image != vk::Image::null() {
                 self.device.destroy_image(self.image, None);
             }
-        }
-    }
-}
-
-pub struct VulkanRenderPass {
-    pub render_pass: vk::RenderPass,
-    format: ImageFormat
-}
-
-impl VulkanRenderPass {
-    pub fn create_render_pass(device: &ash::Device, mut format: ImageFormat) -> error::Result<Self> {
-        // default to reasonable choice if unknown
-        if format == ImageFormat::Unknown {
-            format = ImageFormat::R8G8B8A8Unorm;
-        }
-
-        let attachment = vk::AttachmentDescription::builder()
-            .flags(vk::AttachmentDescriptionFlags::empty())
-            .format(format.into())
-            .samples(SampleCountFlags::TYPE_1)
-            .load_op(AttachmentLoadOp::DONT_CARE)
-            .store_op(AttachmentStoreOp::STORE)
-            .stencil_load_op(AttachmentLoadOp::DONT_CARE)
-            .stencil_store_op(AttachmentStoreOp::DONT_CARE)
-            .initial_layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-            .final_layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-            .build();
-
-        let attachment_ref = vk::AttachmentReference::builder()
-            .attachment(0)
-            .layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-            .build();
-
-        let subpass = vk::SubpassDescription::builder()
-            .pipeline_bind_point(PipelineBindPoint::GRAPHICS)
-            .color_attachments(&[attachment_ref])
-            .build();
-
-        let renderpass_info = vk::RenderPassCreateInfo::builder()
-            .flags(vk::RenderPassCreateFlags::empty())
-            .attachments(&[attachment])
-            .subpasses(&[subpass])
-            .build();
-
-        unsafe {
-            let rp = device.create_render_pass(&renderpass_info, None)?;
-            Ok(Self {
-                render_pass: rp,
-                format
-            })
         }
     }
 }
@@ -166,7 +87,7 @@ impl Framebuffer {
             .build();
 
         // todo: optimize by reusing existing memory.
-        let memory = VulkanMemory::new(&self.device, &alloc_info)?;
+        let memory = VulkanImageMemory::new(&self.device, &alloc_info)?;
         memory.bind(&image)?;
 
         let image_subresource = vk::ImageSubresourceRange::builder()

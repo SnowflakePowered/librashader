@@ -5,7 +5,7 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use crate::{error, util};
-use crate::framebuffer::VulkanRenderPass;
+use crate::renderpass::VulkanRenderPass;
 
 pub struct PipelineDescriptors {
     pub replicas: u32,

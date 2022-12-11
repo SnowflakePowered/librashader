@@ -1,8 +1,7 @@
 use std::error::Error;
-use std::ffi::CStr;
 use std::path::Path;
 use ash::vk;
-use ash::vk::{ColorComponentFlags, PFN_vkGetInstanceProcAddr, StaticFn};
+use ash::vk::{PFN_vkGetInstanceProcAddr, StaticFn};
 use rustc_hash::FxHashMap;
 use librashader_common::ImageFormat;
 use librashader_preprocess::ShaderSource;
@@ -15,8 +14,7 @@ use librashader_reflect::reflect::semantics::{Semantic, ShaderSemantics, Texture
 use librashader_runtime::uniforms::UniformStorage;
 use crate::error;
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::{Framebuffer, VulkanRenderPass};
-use crate::vulkan_state::{PipelineLayoutObjects, VulkanGraphicsPipeline};
+use crate::vulkan_state::VulkanGraphicsPipeline;
 
 pub struct Vulkan {
     physical_device: vk::PhysicalDevice,
@@ -59,7 +57,7 @@ impl From<VulkanInfo<'_>> for ash::Device {
 
 pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
-    pub(crate) passes: Vec<FilterPass>,
+    pub(crate) passes: Box<[FilterPass]>,
     // pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
@@ -100,7 +98,10 @@ impl FilterChainVulkan {
         // initialize passes
         let filters = Self::init_passes(&device, passes, &semantics, 3)?;
         eprintln!("filters initialized ok.");
-        todo!();
+        Ok(FilterChainVulkan {
+            common: FilterCommon {},
+            passes: filters
+        })
     }
 
     fn load_preset(
@@ -207,9 +208,7 @@ impl FilterChainVulkan {
             
             let graphics_pipeline = VulkanGraphicsPipeline::new(device,
                                                                 &pipeline_cache,
-                                                                &spirv_words, &reflection, source.format, images)
-                .unwrap();
-
+                                                                &spirv_words, &reflection, source.format, images)?;
             // shader_vulkan: 2026
             filters.push(FilterPass {
                 compiled: spirv_words,
