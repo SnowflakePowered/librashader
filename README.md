@@ -9,7 +9,7 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 Heavily WIP.
 
 ## Supported Render APIs
-librashader supports OpenGL 3, OpenGL 4.6, Vulkan, DirectX 11, and DirectX 12. Support is WIP for all runtimes except OpenGL 3. Older versions
+librashader supports OpenGL 3, OpenGL 4.6, Vulkan, DirectX 11, and DirectX 12.  Older versions
 of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
 
 | **API**     | **Status** | **`librashader` feature** |
@@ -23,6 +23,7 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 | DirectX 9   | ❌          |                           |
 | Metal       | ❌          |                           |
 
+✔ = Render API is supported &mdash; 🚧 =  Support is in progress &mdash; ❌ Render API is not supported
 ## Usage
 
 🚧 *`librashader_ld` is WIP* 🚧
@@ -82,7 +83,12 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * HDR10 support is not part of the shader runtime and is not supported.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
-and are more a heads-up for integrating librashader into your project.
+and are more a heads-up for integrating librashader into your project. 
+
+Compatibility issues may arise with framebuffer copies for original history, but I have not found any yet; 
+if it does end up that this results in actual rendering differences I may change the implementation to be more in line
+with RetroArch's copy implementation. However, since the Vulkan runtime already uses `vkCmdCopyImage` it is likely that it will
+not cause issues.
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
