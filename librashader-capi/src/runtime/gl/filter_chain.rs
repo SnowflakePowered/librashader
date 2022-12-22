@@ -169,9 +169,8 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(
     })
 }
 
-pub type PFN_lbr_gl_filter_chain_free = unsafe extern "C" fn(
-    chain: *mut libra_gl_filter_chain_t,
-)-> libra_error_t;
+pub type PFN_lbr_gl_filter_chain_free =
+    unsafe extern "C" fn(chain: *mut libra_gl_filter_chain_t) -> libra_error_t;
 
 /// Free a GL filter chain.
 ///

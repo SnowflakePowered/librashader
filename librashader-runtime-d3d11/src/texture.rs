@@ -1,5 +1,5 @@
-use librashader_runtime::image::Image;
 use librashader_common::{FilterMode, Size, WrapMode};
+use librashader_runtime::image::Image;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11DeviceContext, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_FLAG,
@@ -26,14 +26,18 @@ pub(crate) struct Texture {
 }
 
 impl Texture {
-    pub fn from_framebuffer(fbo: &OwnedFramebuffer, wrap_mode: WrapMode, filter: FilterMode) -> Result<Self> {
+    pub fn from_framebuffer(
+        fbo: &OwnedFramebuffer,
+        wrap_mode: WrapMode,
+        filter: FilterMode,
+    ) -> Result<Self> {
         Ok(Texture {
             view: DxImageView {
                 handle: fbo.create_shader_resource_view()?,
                 size: fbo.size,
             },
             filter,
-            wrap_mode
+            wrap_mode,
         })
     }
 }

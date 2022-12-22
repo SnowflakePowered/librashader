@@ -62,7 +62,10 @@ impl FramebufferInterface for Gl46Framebuffer {
             return Ok(fb.size);
         }
 
-        let size = source.image.size.scale_viewport(scaling, viewport.output.size);
+        let size = source
+            .image
+            .size
+            .scale_viewport(scaling, viewport.output.size);
 
         if fb.size != size {
             fb.size = size;

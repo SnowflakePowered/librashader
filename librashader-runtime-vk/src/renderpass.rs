@@ -1,15 +1,20 @@
-use ash::vk;
-use ash::vk::{AttachmentLoadOp, AttachmentStoreOp, ImageLayout, PipelineBindPoint, SampleCountFlags};
-use librashader_common::ImageFormat;
 use crate::error;
+use ash::vk;
+use ash::vk::{
+    AttachmentLoadOp, AttachmentStoreOp, ImageLayout, PipelineBindPoint, SampleCountFlags,
+};
+use librashader_common::ImageFormat;
 
 pub struct VulkanRenderPass {
     pub render_pass: vk::RenderPass,
-    pub format: ImageFormat
+    pub format: ImageFormat,
 }
 
 impl VulkanRenderPass {
-    pub fn create_render_pass(device: &ash::Device, mut format: ImageFormat) -> error::Result<Self> {
+    pub fn create_render_pass(
+        device: &ash::Device,
+        mut format: ImageFormat,
+    ) -> error::Result<Self> {
         // default to reasonable choice if unknown
         if format == ImageFormat::Unknown {
             format = ImageFormat::R8G8B8A8Unorm;
@@ -47,7 +52,7 @@ impl VulkanRenderPass {
             let rp = device.create_render_pass(&renderpass_info, None)?;
             Ok(Self {
                 render_pass: rp,
-                format
+                format,
             })
         }
     }

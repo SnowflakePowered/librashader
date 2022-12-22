@@ -1,17 +1,3 @@
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::reflect::semantics::{MemberOffset, ShaderSemantics, Semantic, TextureSemantics, UniformBinding, UniformMeta, UniformSemantic, UniqueSemantics};
-use rustc_hash::FxHashMap;
-use librashader_preprocess::ShaderSource;
-use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
-use librashader_reflect::back::cross::{CrossGlslContext, GlslVersion};
-use librashader_reflect::back::targets::GLSL;
-use librashader_reflect::front::shaderc::GlslangCompilation;
-use spirv_cross::spirv::Decoration;
-use gl::types::{GLenum, GLint, GLuint};
-use librashader_common::{FilterMode, Size, WrapMode};
-use std::collections::VecDeque;
-use librashader_reflect::reflect::ReflectShader;
-use crate::{error, GLImage, util, Viewport};
 use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
@@ -21,6 +7,23 @@ use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::util::{gl_get_version, gl_u16_to_version};
+use crate::{error, util, GLImage, Viewport};
+use gl::types::{GLenum, GLint, GLuint};
+use librashader_common::{FilterMode, Size, WrapMode};
+use librashader_preprocess::ShaderSource;
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_reflect::back::cross::{CrossGlslContext, GlslVersion};
+use librashader_reflect::back::targets::GLSL;
+use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
+use librashader_reflect::front::shaderc::GlslangCompilation;
+use librashader_reflect::reflect::semantics::{
+    MemberOffset, Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
+    UniformSemantic, UniqueSemantics,
+};
+use librashader_reflect::reflect::ReflectShader;
+use rustc_hash::FxHashMap;
+use spirv_cross::spirv::Decoration;
+use std::collections::VecDeque;
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -79,16 +82,19 @@ type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
-        impl CompileShader<GLSL, Options =GlslVersion, Context =CrossGlslContext> + ReflectShader,
+        impl CompileShader<GLSL, Options = GlslVersion, Context = CrossGlslContext> + ReflectShader,
     >,
 );
 
 impl<T: GLInterface> FilterChainImpl<T> {
-    pub(crate) fn create_framebuffer_raw(&self, texture: GLuint,
-                                    handle: GLuint,
-                                    format: GLenum,
-                                    size: Size<u32>,
-                                    miplevels: u32,) -> Framebuffer {
+    pub(crate) fn create_framebuffer_raw(
+        &self,
+        texture: GLuint,
+        handle: GLuint,
+        format: GLenum,
+        size: Size<u32>,
+        miplevels: u32,
+    ) -> Framebuffer {
         T::FramebufferInterface::new_from_raw(texture, handle, format, size, miplevels)
     }
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
@@ -187,7 +193,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 Ok::<_, FilterChainError>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
+            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
+            )?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
@@ -542,11 +549,16 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 &source,
                 viewport.into(),
             );
-            self.common.output_textures[passes_len - 1] = viewport.output.as_texture(pass.config.filter, pass.config.wrap_mode);
+            self.common.output_textures[passes_len - 1] = viewport
+                .output
+                .as_texture(pass.config.filter, pass.config.wrap_mode);
         }
 
         // swap feedback framebuffers with output
-        std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);
+        std::mem::swap(
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+        );
 
         self.push_history(input)?;
 

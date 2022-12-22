@@ -1,5 +1,4 @@
 use crate::texture::{DxImageView, LutTexture, Texture};
-use librashader_runtime::image::{Image, UVDirection};
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -8,10 +7,10 @@ use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
-    ShaderSemantics, Semantic, TextureSemantics, UniformBinding, UniformSemantic,
-    UniqueSemantics,
+    Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics,
 };
 use librashader_reflect::reflect::ReflectShader;
+use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 
@@ -44,7 +43,7 @@ type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
     CompilerBackend<
-        impl CompileShader<HLSL, Options = Option<()>, Context =CrossHlslContext> + ReflectShader,
+        impl CompileShader<HLSL, Options = Option<()>, Context = CrossHlslContext> + ReflectShader,
     >,
 );
 
@@ -157,9 +156,7 @@ impl FilterChainD3D11 {
         let luts = FilterChainD3D11::load_luts(device, &current_context, &preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChainD3D11::init_history(device,
-                                           &current_context,
-                                           &filters)?;
+            FilterChainD3D11::init_history(device, &current_context, &filters)?;
 
         let draw_quad = DrawQuad::new(device, &current_context)?;
 
@@ -497,7 +494,11 @@ impl FilterChainD3D11 {
             .zip(self.feedback_framebuffers.iter())
             .zip(passes.iter())
         {
-            *texture = Some(Texture::from_framebuffer(fbo, pass.config.wrap_mode, pass.config.filter)?);
+            *texture = Some(Texture::from_framebuffer(
+                fbo,
+                pass.config.wrap_mode,
+                pass.config.filter,
+            )?);
         }
 
         for (texture, fbo) in self
@@ -589,7 +590,10 @@ impl FilterChainD3D11 {
             )?;
         }
 
-        std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);
+        std::mem::swap(
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+        );
 
         self.push_history(&input)?;
 
@@ -613,7 +617,13 @@ impl librashader_runtime::filter_chain::FilterChain for FilterChainD3D11 {
     type Viewport<'a> = Viewport<'a>;
     type FrameOptions = FrameOptionsD3D11;
 
-    fn frame<'a>(&mut self, input: Self::Input<'a>, viewport: &Self::Viewport<'a>, frame_count: usize, options: Option<&Self::FrameOptions>) -> Result<(), Self::Error> {
+    fn frame<'a>(
+        &mut self,
+        input: Self::Input<'a>,
+        viewport: &Self::Viewport<'a>,
+        frame_count: usize,
+        options: Option<&Self::FrameOptions>,
+    ) -> Result<(), Self::Error> {
         self.frame(input, viewport, frame_count, options)
     }
 }

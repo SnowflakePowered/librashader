@@ -69,9 +69,9 @@ pub struct BoxRingBuffer<T> {
 }
 
 impl<T> BoxRingBuffer<T>
-    where
-        T: Copy,
-        T: Default,
+where
+    T: Copy,
+    T: Default,
 {
     pub fn new(size: usize) -> Self {
         Self {
@@ -81,12 +81,11 @@ impl<T> BoxRingBuffer<T>
     }
 }
 
-
 impl<T> BoxRingBuffer<T> {
     pub fn from_vec(items: Vec<T>) -> Self {
         Self {
             items: items.into_boxed_slice(),
-            index: 0
+            index: 0,
         }
     }
 

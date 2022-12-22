@@ -1,6 +1,6 @@
+use crate::ImageFormat;
 use windows::Win32::Graphics::Dxgi::Common as dxgi;
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
-use crate::ImageFormat;
 
 impl From<ImageFormat> for dxgi::DXGI_FORMAT {
     fn from(format: ImageFormat) -> Self {

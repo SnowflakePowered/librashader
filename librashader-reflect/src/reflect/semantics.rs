@@ -201,7 +201,6 @@ pub enum MemberOffset {
     PushConstant(usize),
 }
 
-
 /// Reflection information about a non-texture related uniform variable.
 #[derive(Debug)]
 pub struct VariableMeta {

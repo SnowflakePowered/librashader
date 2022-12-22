@@ -63,7 +63,6 @@ where
     H: for<'a> BindUniform<C, &'a [f32; 4]>,
     H: for<'a> BindUniform<C, &'a [f32; 16]>,
 {
-
     /// Create a new `UniformStorage` with the given size for UBO and Push Constant Buffer sizes.
     pub fn new(ubo_size: usize, push_size: usize) -> Self {
         UniformStorage {

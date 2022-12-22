@@ -35,8 +35,8 @@
 /// Shader presets contain shader and texture parameters, and the order in which to apply a set of shaders
 /// in a filter chain.
 pub mod presets {
-    pub use librashader_presets::*;
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
+    pub use librashader_presets::*;
     /// Get full parameter metadata from a shader preset.
     pub fn get_parameter_meta(
         preset: &ShaderPreset,
@@ -66,20 +66,18 @@ pub mod preprocess {
 pub mod reflect {
     /// Supported shader compiler targets.
     pub mod targets {
+        pub use librashader_reflect::back::targets::SpirV;
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
-        pub use librashader_reflect::back::targets::SpirV;
     }
 
     pub use librashader_reflect::error::*;
 
-    pub use librashader_reflect::reflect::{
-        ReflectShader, semantics, ShaderReflection,
-    };
+    pub use librashader_reflect::reflect::{semantics, ReflectShader, ShaderReflection};
 
     pub use librashader_reflect::back::{
-        CompilerBackend, CompileShader, FromCompilation, ShaderCompilerOutput,
-        targets::OutputTarget,
+        targets::OutputTarget, CompileShader, CompilerBackend, FromCompilation,
+        ShaderCompilerOutput,
     };
     pub use librashader_reflect::front::shaderc::GlslangCompilation;
     pub use librashader_reflect::reflect::semantics::BindingMeta;
@@ -88,8 +86,8 @@ pub mod reflect {
 /// Shader runtimes to execute a filter chain on a GPU surface.
 #[cfg(feature = "runtime")]
 pub mod runtime {
-    pub use librashader_runtime::parameters::FilterChainParameters;
     pub use librashader_runtime::filter_chain::FilterChain;
+    pub use librashader_runtime::parameters::FilterChainParameters;
 
     #[cfg(feature = "gl")]
     /// Shader runtime for OpenGL 3.3+.
@@ -108,9 +106,7 @@ pub mod runtime {
 
     #[cfg(feature = "vk")]
     /// Shader compiler targets and runtime for Vulkan.
-    pub mod vk {
-
-    }
+    pub mod vk {}
 }
 
 pub use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};

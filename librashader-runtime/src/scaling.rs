@@ -1,23 +1,28 @@
+use crate::scaling;
 use librashader_common::Size;
 use librashader_presets::{Scale2D, ScaleFactor, ScaleType, Scaling};
 use num_traits::AsPrimitive;
 use std::ops::Mul;
-use crate::scaling;
 
 pub trait ViewportSize<T>
-    where
-        T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
-        f32: AsPrimitive<T>
+where
+    T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
+    f32: AsPrimitive<T>,
 {
     /// Produce a `Size<T>` scaled with the input scaling options.
     fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>) -> Size<T>;
 }
 
 impl<T> ViewportSize<T> for Size<T>
+where
+    T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
+    f32: AsPrimitive<T>,
+{
+    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>) -> Size<T>
     where
         T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
-        f32: AsPrimitive<T>{
-    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>) -> Size<T> where T: Mul<ScaleFactor, Output=f32> + Copy + 'static, f32: AsPrimitive<T> {
+        f32: AsPrimitive<T>,
+    {
         scaling::scale(scaling, self, viewport)
     }
 }

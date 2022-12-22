@@ -9,17 +9,17 @@ mod filter_chain;
 mod filter_pass;
 mod framebuffer;
 pub mod options;
+mod parameters;
 mod quad_render;
 mod render_target;
 mod samplers;
 mod texture;
 mod util;
 mod viewport;
-mod parameters;
 
 pub use filter_chain::FilterChainD3D11;
-pub use viewport::Viewport;
 pub use texture::DxImageView;
+pub use viewport::Viewport;
 
 #[cfg(test)]
 mod tests {

@@ -18,8 +18,6 @@ impl BindTexture for Gl46BindTexture {
     }
 
     fn gen_mipmaps(texture: &Texture) {
-        unsafe {
-            gl::GenerateTextureMipmap(texture.image.handle)
-        }
+        unsafe { gl::GenerateTextureMipmap(texture.image.handle) }
     }
 }

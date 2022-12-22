@@ -149,9 +149,8 @@ pub unsafe extern "C" fn libra_d3d11_filter_chain_frame(
     })
 }
 
-pub type PFN_lbr_d3d11_filter_chain_free = unsafe extern "C" fn(
-    chain: *mut libra_d3d11_filter_chain_t,
-) -> libra_error_t;
+pub type PFN_lbr_d3d11_filter_chain_free =
+    unsafe extern "C" fn(chain: *mut libra_d3d11_filter_chain_t) -> libra_error_t;
 /// Free a D3D11 filter chain.
 ///
 /// The resulting value in `chain` then becomes null.

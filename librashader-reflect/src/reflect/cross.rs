@@ -1,12 +1,17 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::semantics::{BindingStage, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffset, PushReflection, BindingMeta, ShaderSemantics, ShaderReflection, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, UniqueSemantics, ValidateTypeSemantics, VariableMeta, UniqueSemanticMap};
+use crate::reflect::semantics::{
+    BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics,
+    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
+    UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT,
+    MAX_PUSH_BUFFER_SIZE,
+};
 use crate::reflect::{align_uniform_size, ReflectShader};
 use std::ops::Deref;
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
-use spirv_cross::{ErrorCode, glsl, hlsl};
+use spirv_cross::{glsl, hlsl, ErrorCode};
 
 use crate::back::cross::{CrossGlslContext, CrossHlslContext};
 use crate::back::targets::{GLSL, HLSL};
@@ -862,9 +867,7 @@ mod test {
 
     use crate::back::CompileShader;
     use crate::front::shaderc::GlslangCompilation;
-    use crate::reflect::semantics::{
-        ShaderSemantics, Semantic, UniformSemantic, UniqueSemantics,
-    };
+    use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
     use spirv_cross::glsl::{CompilerOptions, Version};

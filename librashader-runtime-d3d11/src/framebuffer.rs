@@ -3,11 +3,19 @@ use crate::texture::{DxImageView, Texture};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
+use librashader_runtime::scaling::ViewportSize;
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
-use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0, D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_RESOURCE_MISC_GENERATE_MIPS, ID3D11DeviceContext, D3D11_BOX};
+use windows::Win32::Graphics::Direct3D11::{
+    ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView,
+    ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX,
+    D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE,
+    D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0,
+    D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_RTV_DIMENSION_TEXTURE2D,
+    D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV,
+    D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_VIEWPORT,
+};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
-use librashader_runtime::scaling::ViewportSize;
 
 #[derive(Debug, Clone)]
 pub(crate) struct OwnedFramebuffer {
@@ -48,14 +56,13 @@ impl OwnedFramebuffer {
         }
     }
 
-
     pub(crate) fn scale(
         &mut self,
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
         _original: &Texture,
-        source: &Texture
+        source: &Texture,
     ) -> error::Result<Size<u32>> {
         if self.is_raw {
             return Ok(self.size);
@@ -215,7 +222,7 @@ fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_
         Usage: D3D11_USAGE_DEFAULT,
         BindFlags: D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
         CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
-        MiscFlags: D3D11_RESOURCE_MISC_GENERATE_MIPS
+        MiscFlags: D3D11_RESOURCE_MISC_GENERATE_MIPS,
     }
 }
 pub const fn default_viewport(size: Size<u32>) -> D3D11_VIEWPORT {

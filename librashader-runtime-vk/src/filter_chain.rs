@@ -1,22 +1,24 @@
-use std::error::Error;
-use std::path::Path;
-use ash::{Device, vk};
-use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
-use rustc_hash::FxHashMap;
-use librashader_common::ImageFormat;
-use librashader_preprocess::ShaderSource;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::{CompilerBackend, CompileShader, FromCompilation};
-use librashader_reflect::back::targets::SpirV;
-use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::ReflectShader;
-use librashader_reflect::reflect::semantics::{Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics};
-use librashader_runtime::image::{Image, UVDirection};
-use librashader_runtime::uniforms::UniformStorage;
 use crate::error;
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
 use crate::vulkan_state::VulkanGraphicsPipeline;
+use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
+use ash::{vk, Device};
+use librashader_common::ImageFormat;
+use librashader_preprocess::ShaderSource;
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_reflect::back::targets::SpirV;
+use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
+use librashader_reflect::front::shaderc::GlslangCompilation;
+use librashader_reflect::reflect::semantics::{
+    Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics,
+};
+use librashader_reflect::reflect::ReflectShader;
+use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::uniforms::UniformStorage;
+use rustc_hash::FxHashMap;
+use std::error::Error;
+use std::path::Path;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -31,11 +33,8 @@ pub struct Vulkan {
 type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
-    CompilerBackend<
-        impl CompileShader<SpirV, Options = Option<()>, Context =()> + ReflectShader,
-    >,
+    CompilerBackend<impl CompileShader<SpirV, Options = Option<()>, Context = ()> + ReflectShader>,
 );
-
 
 #[derive(Clone)]
 pub struct VulkanInfo<'a> {
@@ -44,7 +43,7 @@ pub struct VulkanInfo<'a> {
     instance: &'a vk::Instance,
     queue: &'a vk::Queue,
     memory_properties: &'a vk::PhysicalDeviceMemoryProperties,
-    get_instance_proc_addr: PFN_vkGetInstanceProcAddr
+    get_instance_proc_addr: PFN_vkGetInstanceProcAddr,
 }
 
 impl TryFrom<VulkanInfo<'_>> for Vulkan {
@@ -52,21 +51,26 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
 
     fn try_from(vulkan: VulkanInfo) -> Result<Self, Box<dyn Error>> {
         unsafe {
-            let instance = ash::Instance::load(&StaticFn {
-                get_instance_proc_addr: vulkan.get_instance_proc_addr,
-            }, vulkan.instance.clone());
+            let instance = ash::Instance::load(
+                &StaticFn {
+                    get_instance_proc_addr: vulkan.get_instance_proc_addr,
+                },
+                vulkan.instance.clone(),
+            );
 
             let device = ash::Device::load(instance.fp_v1_0(), vulkan.device.clone());
 
             let pipeline_cache = unsafe {
-                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(),
-                                                    None)?
+                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?
             };
 
             let command_pool = unsafe {
-                device.create_command_pool(&vk::CommandPoolCreateInfo::builder()
-                    .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-                    .build(), None)?
+                device.create_command_pool(
+                    &vk::CommandPoolCreateInfo::builder()
+                        .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+                        .build(),
+                    None,
+                )?
             };
 
             Ok(Vulkan {
@@ -75,7 +79,7 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 queue: vulkan.queue.clone(),
                 command_pool,
                 pipeline_cache,
-                memory_properties: vulkan.memory_properties.clone()
+                memory_properties: vulkan.memory_properties.clone(),
             })
         }
     }
@@ -89,14 +93,16 @@ impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties)> for V
             let device = value.0;
 
             let pipeline_cache = unsafe {
-                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(),
-                                             None)?
+                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?
             };
 
             let command_pool = unsafe {
-                device.create_command_pool(&vk::CommandPoolCreateInfo::builder()
-                    .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-                    .build(), None)?
+                device.create_command_pool(
+                    &vk::CommandPoolCreateInfo::builder()
+                        .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+                        .build(),
+                    None,
+                )?
             };
 
             Ok(Vulkan {
@@ -104,7 +110,7 @@ impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties)> for V
                 queue: value.1,
                 command_pool,
                 pipeline_cache,
-                memory_properties: value.2
+                memory_properties: value.2,
             })
         }
     }
@@ -134,7 +140,7 @@ pub type FilterChainOptionsVulkan = ();
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        vulkan: impl TryInto<Vulkan, Error=Box<dyn Error>>,
+        vulkan: impl TryInto<Vulkan, Error = Box<dyn Error>>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -144,7 +150,7 @@ impl FilterChainVulkan {
     }
 
     pub fn load_from_preset(
-        vulkan: impl TryInto<Vulkan, Error=Box<dyn Error>>,
+        vulkan: impl TryInto<Vulkan, Error = Box<dyn Error>>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -158,9 +164,7 @@ impl FilterChainVulkan {
 
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
-            common: FilterCommon {
-                luts
-            },
+            common: FilterCommon { luts },
             passes: filters,
         })
     }
@@ -194,7 +198,8 @@ impl FilterChainVulkan {
                 Ok::<_, Box<dyn Error>>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
+            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
+            )?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
@@ -261,10 +266,15 @@ impl FilterChainVulkan {
             if source.format == ImageFormat::Unknown {
                 source.format = ImageFormat::R8G8B8A8Unorm
             }
-            
-            let graphics_pipeline = VulkanGraphicsPipeline::new(&vulkan.device,
-                                                                &vulkan.pipeline_cache,
-                                                                &spirv_words, &reflection, source.format, images)?;
+
+            let graphics_pipeline = VulkanGraphicsPipeline::new(
+                &vulkan.device,
+                &vulkan.pipeline_cache,
+                &spirv_words,
+                &reflection,
+                source.format,
+                images,
+            )?;
 
             // shader_vulkan: 2026
             filters.push(FilterPass {
@@ -273,10 +283,9 @@ impl FilterChainVulkan {
                 uniform_bindings,
                 source,
                 config,
-                graphics_pipeline
+                graphics_pipeline,
             });
         }
-
 
         Ok(filters.into_boxed_slice())
     }
@@ -288,28 +297,28 @@ impl FilterChainVulkan {
         let mut luts = FxHashMap::default();
         let command_buffer = unsafe {
             // panic safety: command buffer count = 1
-            vulkan.device.allocate_command_buffers(&vk::CommandBufferAllocateInfo::builder()
-                .command_pool(vulkan.command_pool)
-                .level(vk::CommandBufferLevel::PRIMARY)
-                .command_buffer_count(1)
-                .build())?[0]
+            vulkan.device.allocate_command_buffers(
+                &vk::CommandBufferAllocateInfo::builder()
+                    .command_pool(vulkan.command_pool)
+                    .level(vk::CommandBufferLevel::PRIMARY)
+                    .command_buffer_count(1)
+                    .build(),
+            )?[0]
         };
 
         unsafe {
-            vulkan.device.begin_command_buffer(command_buffer, &vk::CommandBufferBeginInfo::builder()
-                .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
-                .build())?
+            vulkan.device.begin_command_buffer(
+                command_buffer,
+                &vk::CommandBufferBeginInfo::builder()
+                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
+                    .build(),
+            )?
         }
 
         for (index, texture) in textures.iter().enumerate() {
             let image = Image::load(&texture.path, UVDirection::TopLeft)?;
 
-            let texture = LutTexture::new(
-                vulkan,
-                &command_buffer,
-                image,
-                texture,
-            )?;
+            let texture = LutTexture::new(vulkan, &command_buffer, image, texture)?;
             luts.insert(index, texture);
         }
 
@@ -317,14 +326,16 @@ impl FilterChainVulkan {
             vulkan.device.end_command_buffer(command_buffer)?;
 
             let buffers = [command_buffer];
-            let submits = [vk::SubmitInfo::builder()
-                .command_buffers(&buffers).build()];
+            let submits = [vk::SubmitInfo::builder().command_buffers(&buffers).build()];
 
-            vulkan.device.queue_submit(vulkan.queue, &submits, vk::Fence::null())?;
+            vulkan
+                .device
+                .queue_submit(vulkan.queue, &submits, vk::Fence::null())?;
             vulkan.device.queue_wait_idle(vulkan.queue)?;
-            vulkan.device.free_command_buffers(vulkan.command_pool, &buffers);
+            vulkan
+                .device
+                .free_command_buffers(vulkan.command_pool, &buffers);
         }
         Ok(luts)
     }
-
 }

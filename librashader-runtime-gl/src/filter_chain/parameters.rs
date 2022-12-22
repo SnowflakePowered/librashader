@@ -1,9 +1,9 @@
-use std::collections::hash_map::Iter;
-use librashader_runtime::parameters::FilterChainParameters;
 use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
-use crate::FilterChainGL;
 use crate::gl::GLInterface;
+use crate::FilterChainGL;
+use librashader_runtime::parameters::FilterChainParameters;
+use std::collections::hash_map::Iter;
 
 impl AsRef<dyn FilterChainParameters + 'static> for FilterChainDispatch {
     fn as_ref<'a>(&'a self) -> &'a (dyn FilterChainParameters + 'static) {
@@ -45,7 +45,7 @@ impl FilterChainParameters for FilterChainGL {
     }
 }
 
-impl <T: GLInterface> FilterChainParameters for FilterChainImpl<T> {
+impl<T: GLInterface> FilterChainParameters for FilterChainImpl<T> {
     fn get_enabled_pass_count(&self) -> usize {
         self.common.config.passes_enabled
     }
@@ -59,11 +59,20 @@ impl <T: GLInterface> FilterChainParameters for FilterChainImpl<T> {
     }
 
     fn get_parameter(&self, parameter: &str) -> Option<f32> {
-        self.common.config.parameters.get::<str>(parameter.as_ref()).copied()
+        self.common
+            .config
+            .parameters
+            .get::<str>(parameter.as_ref())
+            .copied()
     }
 
     fn set_parameter(&mut self, parameter: &str, new_value: f32) -> Option<f32> {
-        if let Some(value) = self.common.config.parameters.get_mut::<str>(parameter.as_ref()) {
+        if let Some(value) = self
+            .common
+            .config
+            .parameters
+            .get_mut::<str>(parameter.as_ref())
+        {
             let old = *value;
             *value = new_value;
             Some(old)

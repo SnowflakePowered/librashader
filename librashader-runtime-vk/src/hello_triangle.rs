@@ -1,3 +1,4 @@
+use crate::offset_of;
 use ash::util::*;
 use ash::vk;
 use std::default::Default;
@@ -5,7 +6,6 @@ use std::ffi::CStr;
 use std::io::Cursor;
 use std::mem;
 use std::mem::align_of;
-use crate::offset_of;
 
 mod base;
 pub use base::*;
@@ -99,7 +99,7 @@ pub(crate) fn main(base: ExampleBase) {
             &base.device_memory_properties,
             vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT,
         )
-            .expect("Unable to find suitable memorytype for the index buffer.");
+        .expect("Unable to find suitable memorytype for the index buffer.");
 
         let index_allocate_info = vk::MemoryAllocateInfo {
             allocation_size: index_buffer_memory_req.size,
@@ -151,7 +151,7 @@ pub(crate) fn main(base: ExampleBase) {
             &base.device_memory_properties,
             vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT,
         )
-            .expect("Unable to find suitable memorytype for the vertex buffer.");
+        .expect("Unable to find suitable memorytype for the vertex buffer.");
 
         let vertex_buffer_allocate_info = vk::MemoryAllocateInfo {
             allocation_size: vertex_input_buffer_memory_req.size,
@@ -163,7 +163,6 @@ pub(crate) fn main(base: ExampleBase) {
             .device
             .allocate_memory(&vertex_buffer_allocate_info, None)
             .unwrap();
-
 
         let vertices = [
             // green
@@ -202,8 +201,7 @@ pub(crate) fn main(base: ExampleBase) {
         base.device
             .bind_buffer_memory(vertex_input_buffer, vertex_input_buffer_memory, 0)
             .unwrap();
-        let mut vertex_spv_file =
-            Cursor::new(&include_bytes!("../shader/triangle/vert.spv")[..]);
+        let mut vertex_spv_file = Cursor::new(&include_bytes!("../shader/triangle/vert.spv")[..]);
         let mut frag_spv_file = Cursor::new(&include_bytes!("../shader/triangle/frag.spv")[..]);
 
         let vertex_code =

@@ -1,8 +1,8 @@
 use gl::types::GLenum;
-use librashader_runtime::image::ImageError;
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
+use librashader_runtime::image::ImageError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -22,7 +22,7 @@ pub enum FilterChainError {
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
     #[error("opengl was not initialized")]
-    GLLoadError
+    GLLoadError,
 }
 
 pub type Result<T> = std::result::Result<T, FilterChainError>;

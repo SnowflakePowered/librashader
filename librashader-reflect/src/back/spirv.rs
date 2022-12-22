@@ -1,24 +1,24 @@
-use crate::back::{CompilerBackend, CompileShader, FromCompilation, ShaderCompilerOutput};
 use crate::back::targets::SpirV;
+use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
-use crate::reflect::{ReflectShader, ShaderReflection};
-use crate::reflect::cross::{GlslReflect};
+use crate::reflect::cross::GlslReflect;
 use crate::reflect::semantics::ShaderSemantics;
+use crate::reflect::{ReflectShader, ShaderReflection};
 
 struct WriteSpirV {
     // rely on GLSL to provide out reflection but we don't actually need the AST.
     reflect: GlslReflect,
     vertex: Vec<u32>,
-    fragment: Vec<u32>
+    fragment: Vec<u32>,
 }
 
 impl FromCompilation<GlslangCompilation> for SpirV {
     type Target = SpirV;
     type Options = Option<()>;
     type Context = ();
-    type Output = impl CompileShader<Self::Target, Options = Option<()>, Context = ()>
-    + ReflectShader;
+    type Output =
+        impl CompileShader<Self::Target, Options = Option<()>, Context = ()> + ReflectShader;
 
     fn from_compilation(
         compile: GlslangCompilation,
@@ -37,7 +37,11 @@ impl FromCompilation<GlslangCompilation> for SpirV {
 }
 
 impl ReflectShader for WriteSpirV {
-    fn reflect(&mut self, pass_number: usize, semantics: &ShaderSemantics) -> Result<ShaderReflection, ShaderReflectError> {
+    fn reflect(
+        &mut self,
+        pass_number: usize,
+        semantics: &ShaderSemantics,
+    ) -> Result<ShaderReflection, ShaderReflectError> {
         self.reflect.reflect(pass_number, semantics)
     }
 }
@@ -46,7 +50,10 @@ impl CompileShader<SpirV> for WriteSpirV {
     type Options = Option<()>;
     type Context = ();
 
-    fn compile(self, _options: Self::Options) -> Result<ShaderCompilerOutput<Vec<u32>, Self::Context>, ShaderCompileError> {
+    fn compile(
+        self,
+        _options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<Vec<u32>, Self::Context>, ShaderCompileError> {
         Ok(ShaderCompilerOutput {
             vertex: self.vertex,
             fragment: self.fragment,

@@ -127,15 +127,13 @@ impl<T: GLInterface> FilterPass<T> {
         source: &Texture,
     ) {
         // Bind MVP
-        if let Some((location, offset)) = self.uniform_bindings.get(&UniqueSemantics::MVP.into())
-        {
+        if let Some((location, offset)) = self.uniform_bindings.get(&UniqueSemantics::MVP.into()) {
             self.uniform_storage
                 .bind_mat4(*offset, mvp, location.location());
         }
 
         // bind OutputSize
-        if let Some((location, offset)) =
-            self.uniform_bindings.get(&UniqueSemantics::Output.into())
+        if let Some((location, offset)) = self.uniform_bindings.get(&UniqueSemantics::Output.into())
         {
             self.uniform_storage
                 .bind_vec4(*offset, fb_size, location.location());

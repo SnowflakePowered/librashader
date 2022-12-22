@@ -21,13 +21,13 @@ use ash::vk::{
     KhrGetPhysicalDeviceProperties2Fn, KhrPortabilityEnumerationFn, KhrPortabilitySubsetFn,
 };
 
+use winit::event_loop::EventLoopBuilder;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     platform::run_return::EventLoopExtRunReturn,
     window::WindowBuilder,
 };
-use winit::event_loop::EventLoopBuilder;
 
 // Simple offset_of macro akin to C++ offsetof
 #[macro_export]
@@ -195,16 +195,16 @@ impl ExampleBase {
                 match event {
                     Event::WindowEvent {
                         event:
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                            WindowEvent::CloseRequested
+                            | WindowEvent::KeyboardInput {
+                                input:
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    },
                                 ..
                             },
-                            ..
-                        },
                         ..
                     } => *control_flow = ControlFlow::Exit,
                     Event::MainEventsCleared => f(),
@@ -215,9 +215,7 @@ impl ExampleBase {
 
     pub fn new(window_width: u32, window_height: u32) -> Self {
         unsafe {
-            let mut event_loop = EventLoopBuilder::new()
-                .with_any_thread(true)
-                .build();
+            let mut event_loop = EventLoopBuilder::new().with_any_thread(true).build();
             let window = WindowBuilder::new()
                 .with_title("Ash - Example")
                 .with_inner_size(winit::dpi::LogicalSize::new(
@@ -298,7 +296,7 @@ impl ExampleBase {
                 window.raw_window_handle(),
                 None,
             )
-                .unwrap();
+            .unwrap();
             let pdevices = instance
                 .enumerate_physical_devices()
                 .expect("Physical device error");
@@ -314,12 +312,12 @@ impl ExampleBase {
                             let supports_graphic_and_surface =
                                 info.queue_flags.contains(vk::QueueFlags::GRAPHICS)
                                     && surface_loader
-                                    .get_physical_device_surface_support(
-                                        *pdevice,
-                                        index as u32,
-                                        surface,
-                                    )
-                                    .unwrap();
+                                        .get_physical_device_surface_support(
+                                            *pdevice,
+                                            index as u32,
+                                            surface,
+                                        )
+                                        .unwrap();
                             if supports_graphic_and_surface {
                                 Some((*pdevice, index))
                             } else {
@@ -332,7 +330,7 @@ impl ExampleBase {
             let device_extension_names_raw = [
                 Swapchain::name().as_ptr(),
                 #[cfg(any(target_os = "macos", target_os = "ios"))]
-                    KhrPortabilitySubsetFn::name().as_ptr(),
+                KhrPortabilitySubsetFn::name().as_ptr(),
             ];
             let features = vk::PhysicalDeviceFeatures {
                 shader_clip_distance: 1,
@@ -471,7 +469,7 @@ impl ExampleBase {
                 &device_memory_properties,
                 vk::MemoryPropertyFlags::DEVICE_LOCAL,
             )
-                .expect("Unable to find suitable memory index for depth image.");
+            .expect("Unable to find suitable memory index for depth image.");
 
             let depth_image_allocate_info = vk::MemoryAllocateInfo::builder()
                 .allocation_size(depth_image_memory_req.size)

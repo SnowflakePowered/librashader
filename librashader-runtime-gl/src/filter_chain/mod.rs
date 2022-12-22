@@ -1,13 +1,13 @@
+use gl::types::{GLenum, GLuint};
 use std::panic::catch_unwind;
 use std::path::Path;
-use gl::types::{GLenum, GLuint};
 
-use librashader_presets::ShaderPreset;
+use crate::error::{FilterChainError, Result};
 use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
-use crate::{Framebuffer, GLImage, Viewport};
-use crate::error::{Result, FilterChainError};
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
+use crate::{Framebuffer, GLImage, Viewport};
+use librashader_presets::ShaderPreset;
 
 mod filter_impl;
 mod inner;
@@ -21,17 +21,21 @@ pub struct FilterChainGL {
 }
 
 impl FilterChainGL {
-    pub fn create_framebuffer_raw(&self, texture: GLuint,
-                                         handle: GLuint,
-                                         format: GLenum,
-                                         size: Size<u32>,
-                                         miplevels: u32,) -> Framebuffer {
-
+    pub fn create_framebuffer_raw(
+        &self,
+        texture: GLuint,
+        handle: GLuint,
+        format: GLenum,
+        size: Size<u32>,
+        miplevels: u32,
+    ) -> Framebuffer {
         match &self.filter {
             FilterChainDispatch::DirectStateAccess(p) => {
                 p.create_framebuffer_raw(texture, handle, format, size, miplevels)
             }
-            FilterChainDispatch::Compatibility(p) =>  p.create_framebuffer_raw(texture, handle, format, size, miplevels),
+            FilterChainDispatch::Compatibility(p) => {
+                p.create_framebuffer_raw(texture, handle, format, size, miplevels)
+            }
         }
     }
     pub fn load_from_preset(
@@ -51,10 +55,8 @@ impl FilterChainGL {
             })
         });
         match result {
-            Err(_) => {
-                return Err(FilterChainError::GLLoadError)
-            }
-            Ok(res) => res
+            Err(_) => return Err(FilterChainError::GLLoadError),
+            Ok(res) => res,
         }
     }
 
@@ -103,4 +105,3 @@ impl librashader_runtime::filter_chain::FilterChain for FilterChainGL {
         self.frame(input, viewport, frame_count, options)
     }
 }
-

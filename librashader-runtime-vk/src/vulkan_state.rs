@@ -1,16 +1,16 @@
-use std::ffi::CStr;
+use crate::renderpass::VulkanRenderPass;
+use crate::{error, util};
 use ash::vk;
 use librashader_common::ImageFormat;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
-use crate::{error, util};
-use crate::renderpass::VulkanRenderPass;
+use std::ffi::CStr;
 
 pub struct PipelineDescriptors {
     pub replicas: u32,
     pub layout_bindings: Vec<vk::DescriptorSetLayoutBinding>,
-    pub pool_sizes: Vec<vk::DescriptorPoolSize>
+    pub pool_sizes: Vec<vk::DescriptorPoolSize>,
 }
 
 impl PipelineDescriptors {
@@ -67,13 +67,17 @@ impl PipelineDescriptors {
         self.layout_bindings.as_ref()
     }
 
-    pub fn create_descriptor_set_layout(&self, device: &ash::Device) -> error::Result<vk::DescriptorSetLayout> {
+    pub fn create_descriptor_set_layout(
+        &self,
+        device: &ash::Device,
+    ) -> error::Result<vk::DescriptorSetLayout> {
         unsafe {
             let layout = device.create_descriptor_set_layout(
                 &vk::DescriptorSetLayoutCreateInfo::builder()
                     .bindings(self.bindings())
                     .build(),
-                None)?;
+                None,
+            )?;
             Ok(layout)
         }
     }
@@ -87,38 +91,43 @@ pub struct PipelineLayoutObjects {
 }
 
 impl PipelineLayoutObjects {
-    pub fn new(reflection: &ShaderReflection, replicas: u32, device: &ash::Device) -> error::Result<Self> {
+    pub fn new(
+        reflection: &ShaderReflection,
+        replicas: u32,
+        device: &ash::Device,
+    ) -> error::Result<Self> {
         let mut descriptors = PipelineDescriptors::new(replicas);
         descriptors.add_ubo_binding(reflection.ubo.as_ref());
         descriptors.add_texture_bindings(reflection.meta.texture_meta.values());
 
         let mut descriptor_set_layout = [descriptors.create_descriptor_set_layout(device)?];
 
-        let mut pipeline_create_info = vk::PipelineLayoutCreateInfo::builder()
-            .set_layouts(&descriptor_set_layout);
+        let mut pipeline_create_info =
+            vk::PipelineLayoutCreateInfo::builder().set_layouts(&descriptor_set_layout);
 
         let pipeline_create_info = if let Some(push_constant) = &reflection.push_constant {
             let mut stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
-            let push_constant_range = [
-                vk::PushConstantRange::builder()
-                    .stage_flags(stage_mask)
-                    .size(push_constant.size)
-                    .build()
-            ];
-            pipeline_create_info.push_constant_ranges(&push_constant_range).build()
+            let push_constant_range = [vk::PushConstantRange::builder()
+                .stage_flags(stage_mask)
+                .size(push_constant.size)
+                .build()];
+            pipeline_create_info
+                .push_constant_ranges(&push_constant_range)
+                .build()
         } else {
             pipeline_create_info.build()
         };
 
-        let layout = unsafe {
-            device.create_pipeline_layout(&pipeline_create_info, None)?
-        };
+        let layout = unsafe { device.create_pipeline_layout(&pipeline_create_info, None)? };
 
         let pool = unsafe {
-            device.create_descriptor_pool(&vk::DescriptorPoolCreateInfo::builder()
-                .max_sets(replicas)
-                .pool_sizes(&descriptors.pool_sizes)
-                .build(), None)?
+            device.create_descriptor_pool(
+                &vk::DescriptorPoolCreateInfo::builder()
+                    .max_sets(replicas)
+                    .pool_sizes(&descriptors.pool_sizes)
+                    .build(),
+                None,
+            )?
         };
 
         let mut descriptor_sets = Vec::new();
@@ -128,19 +137,18 @@ impl PipelineLayoutObjects {
             .build();
 
         for _ in 0..replicas {
-            unsafe {
-                descriptor_sets.push(device.allocate_descriptor_sets(&alloc_info)?)
-            }
+            unsafe { descriptor_sets.push(device.allocate_descriptor_sets(&alloc_info)?) }
         }
 
-        let descriptor_sets: Vec<vk::DescriptorSet> = descriptor_sets.into_iter().flatten().collect();
+        let descriptor_sets: Vec<vk::DescriptorSet> =
+            descriptor_sets.into_iter().flatten().collect();
 
         return Ok(PipelineLayoutObjects {
             layout,
             descriptor_set_layout,
             descriptor_sets,
             pool,
-        })
+        });
     }
 }
 
@@ -150,30 +158,38 @@ pub struct VulkanShaderModule {
 }
 
 impl VulkanShaderModule {
-    pub fn new(device: &ash::Device, info: &vk::ShaderModuleCreateInfo) -> error::Result<VulkanShaderModule> {
+    pub fn new(
+        device: &ash::Device,
+        info: &vk::ShaderModuleCreateInfo,
+    ) -> error::Result<VulkanShaderModule> {
         Ok(VulkanShaderModule {
             shader: unsafe { device.create_shader_module(info, None)? },
-            device: device.clone()
+            device: device.clone(),
         })
     }
 }
 
 impl Drop for VulkanShaderModule {
     fn drop(&mut self) {
-        unsafe {
-            self.device.destroy_shader_module(self.shader, None)
-        }
+        unsafe { self.device.destroy_shader_module(self.shader, None) }
     }
 }
 
 pub struct VulkanGraphicsPipeline {
     layout: PipelineLayoutObjects,
     render_pass: VulkanRenderPass,
-    pipeline: vk::Pipeline
+    pipeline: vk::Pipeline,
 }
 
 impl VulkanGraphicsPipeline {
-    pub fn new(device: &ash::Device, cache: &vk::PipelineCache, shader_assembly: &ShaderCompilerOutput<Vec<u32>>, reflection: &ShaderReflection, mut format: ImageFormat, replicas: u32) -> error::Result<VulkanGraphicsPipeline> {
+    pub fn new(
+        device: &ash::Device,
+        cache: &vk::PipelineCache,
+        shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
+        reflection: &ShaderReflection,
+        mut format: ImageFormat,
+        replicas: u32,
+    ) -> error::Result<VulkanGraphicsPipeline> {
         // default to something sane
         if format == ImageFormat::Unknown {
             format = ImageFormat::R8G8B8A8Unorm
@@ -186,17 +202,20 @@ impl VulkanGraphicsPipeline {
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP)
             .build();
 
-        let vao_state = [vk::VertexInputAttributeDescription {
-            location: 0,
-            binding: 0,
-            format: vk::Format::R32G32_SFLOAT,
-            offset: 0,
-        }, vk::VertexInputAttributeDescription {
-            location: 1,
-            binding: 0,
-            format: vk::Format::R32G32_SFLOAT,
-            offset: (2 * std::mem::size_of::<f32>()) as u32,
-        }];
+        let vao_state = [
+            vk::VertexInputAttributeDescription {
+                location: 0,
+                binding: 0,
+                format: vk::Format::R32G32_SFLOAT,
+                offset: 0,
+            },
+            vk::VertexInputAttributeDescription {
+                location: 1,
+                binding: 0,
+                format: vk::Format::R32G32_SFLOAT,
+                offset: (2 * std::mem::size_of::<f32>()) as u32,
+            },
+        ];
 
         let input_binding = vk::VertexInputBindingDescription::builder()
             .binding(0)
@@ -289,15 +308,16 @@ impl VulkanGraphicsPipeline {
 
         let pipeline = unsafe {
             // panic_safety: if this is successful this should return 1 pipelines.
-            device.create_graphics_pipelines(cache.clone(), &[pipeline_info], None)
-                .map_err(|e| e.1).unwrap()[0]
-
+            device
+                .create_graphics_pipelines(cache.clone(), &[pipeline_info], None)
+                .map_err(|e| e.1)
+                .unwrap()[0]
         };
 
         Ok(VulkanGraphicsPipeline {
             layout: pipeline_layout,
             render_pass,
-            pipeline
+            pipeline,
         })
     }
 }

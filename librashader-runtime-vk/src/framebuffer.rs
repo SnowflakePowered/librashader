@@ -1,11 +1,14 @@
-use ash::vk;
-use ash::vk::{Extent3D, ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags, ImageViewType, SampleCountFlags, SharingMode};
-use librashader_common::Size;
-use librashader_runtime::scaling::MipmapSize;
 use crate::error;
 use crate::renderpass::VulkanRenderPass;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
+use ash::vk;
+use ash::vk::{
+    Extent3D, ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags,
+    ImageViewType, SampleCountFlags, SharingMode,
+};
+use librashader_common::Size;
+use librashader_runtime::scaling::MipmapSize;
 
 pub struct Framebuffer {
     device: ash::Device,
@@ -13,7 +16,7 @@ pub struct Framebuffer {
     max_levels: u32,
     mem_props: vk::PhysicalDeviceMemoryProperties,
     render_pass: VulkanRenderPass,
-    framebuffer: Option<VulkanFramebuffer>
+    framebuffer: Option<VulkanFramebuffer>,
 }
 
 pub struct VulkanFramebuffer {
@@ -45,14 +48,20 @@ impl Drop for VulkanFramebuffer {
 }
 
 impl Framebuffer {
-    pub fn new(device: &ash::Device, size: Size<u32>, render_pass: VulkanRenderPass, mip_levels: u32, mem_props: vk::PhysicalDeviceMemoryProperties) -> error::Result<Self> {
+    pub fn new(
+        device: &ash::Device,
+        size: Size<u32>,
+        render_pass: VulkanRenderPass,
+        mip_levels: u32,
+        mem_props: vk::PhysicalDeviceMemoryProperties,
+    ) -> error::Result<Self> {
         let mut framebuffer = Framebuffer {
             device: device.clone(),
             size,
             max_levels: mip_levels,
             mem_props,
             render_pass,
-            framebuffer: None
+            framebuffer: None,
         };
 
         let vulkan_image = framebuffer.create_vulkan_image()?;
@@ -66,11 +75,19 @@ impl Framebuffer {
             .image_type(ImageType::TYPE_2D)
             .format(self.render_pass.format.into())
             .extent(self.size.into())
-            .mip_levels(std::cmp::min(self.max_levels, self.size.calculate_miplevels()))
+            .mip_levels(std::cmp::min(
+                self.max_levels,
+                self.size.calculate_miplevels(),
+            ))
             .array_layers(1)
             .samples(SampleCountFlags::TYPE_1)
             .tiling(ImageTiling::OPTIMAL)
-            .usage(ImageUsageFlags::SAMPLED | ImageUsageFlags::COLOR_ATTACHMENT | ImageUsageFlags::TRANSFER_DST | ImageUsageFlags::TRANSFER_SRC)
+            .usage(
+                ImageUsageFlags::SAMPLED
+                    | ImageUsageFlags::COLOR_ATTACHMENT
+                    | ImageUsageFlags::TRANSFER_DST
+                    | ImageUsageFlags::TRANSFER_SRC,
+            )
             .sharing_mode(SharingMode::EXCLUSIVE)
             .initial_layout(ImageLayout::UNDEFINED)
             .build();
@@ -80,7 +97,11 @@ impl Framebuffer {
 
         let alloc_info = vk::MemoryAllocateInfo::builder()
             .allocation_size(mem_reqs.size)
-            .memory_type_index(find_vulkan_memory_type(&self.mem_props, mem_reqs.memory_type_bits, vk::MemoryPropertyFlags::DEVICE_LOCAL))
+            .memory_type_index(find_vulkan_memory_type(
+                &self.mem_props,
+                mem_reqs.memory_type_bits,
+                vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            ))
             .build();
 
         // todo: optimize by reusing existing memory.
@@ -109,22 +130,22 @@ impl Framebuffer {
             .components(swizzle_components)
             .build();
 
-        let image_view = unsafe {
-            self.device.create_image_view(&view_info, None)?
-        };
+        let image_view = unsafe { self.device.create_image_view(&view_info, None)? };
 
         view_info.subresource_range.level_count = 1;
-        let fb_view = unsafe {
-            self.device.create_image_view(&view_info, None)?
-        };
+        let fb_view = unsafe { self.device.create_image_view(&view_info, None)? };
 
         let framebuffer = unsafe {
-            self.device.create_framebuffer(&vk::FramebufferCreateInfo::builder()
-                .render_pass(self.render_pass.render_pass)
-                .attachments(&[image_view])
-                .width(self.size.width)
-                .height(self.size.height)
-                .layers(1).build(), None)?
+            self.device.create_framebuffer(
+                &vk::FramebufferCreateInfo::builder()
+                    .render_pass(self.render_pass.render_pass)
+                    .attachments(&[image_view])
+                    .width(self.size.width)
+                    .height(self.size.height)
+                    .layers(1)
+                    .build(),
+                None,
+            )?
         };
 
         Ok(VulkanFramebuffer {
@@ -133,8 +154,7 @@ impl Framebuffer {
             memory,
             image_view,
             fb_view,
-            image
+            image,
         })
-
     }
 }

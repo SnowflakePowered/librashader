@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
-use librashader_common::Size;
 pub use image::ImageError;
+use librashader_common::Size;
+use std::marker::PhantomData;
 
 use std::path::Path;
 
@@ -8,7 +8,7 @@ pub struct Image<P: PixelFormat = RGBA8> {
     pub bytes: Vec<u8>,
     pub size: Size<u32>,
     pub pitch: usize,
-    _pd: PhantomData<P>
+    _pd: PhantomData<P>,
 }
 
 pub struct RGBA8;
@@ -20,9 +20,7 @@ pub trait PixelFormat {
 }
 
 impl PixelFormat for RGBA8 {
-    fn convert(_pixels: &mut Vec<u8>) {
-
-    }
+    fn convert(_pixels: &mut Vec<u8>) {}
 }
 
 impl PixelFormat for BGRA8 {

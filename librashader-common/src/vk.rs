@@ -1,5 +1,5 @@
-use ash::vk;
 use crate::{ImageFormat, Size};
+use ash::vk;
 
 impl From<ImageFormat> for vk::Format {
     fn from(format: ImageFormat) -> Self {
