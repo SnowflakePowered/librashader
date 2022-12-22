@@ -228,7 +228,7 @@ impl LutTexture {
                 },
                 vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 vk::AccessFlags::TRANSFER_WRITE,
-                vk::AccessFlags::TRANSFER_READ,
+                vk::AccessFlags::SHADER_READ,
                 vk::PipelineStageFlags::TRANSFER,
                 vk::PipelineStageFlags::FRAGMENT_SHADER,
                 vk::QUEUE_FAMILY_IGNORED,
