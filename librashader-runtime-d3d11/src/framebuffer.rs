@@ -7,6 +7,7 @@ use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE, D3D11_FORMAT_SUPPORT_RENDER_TARGET, D3D11_FORMAT_SUPPORT_SHADER_SAMPLE, D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0, D3D11_RTV_DIMENSION_TEXTURE2D, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV, D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_RESOURCE_MISC_GENERATE_MIPS, ID3D11DeviceContext, D3D11_BOX};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+use librashader_runtime::scaling::ViewportSize;
 
 #[derive(Debug, Clone)]
 pub(crate) struct OwnedFramebuffer {
@@ -60,7 +61,7 @@ impl OwnedFramebuffer {
             return Ok(self.size);
         }
 
-        let size = librashader_runtime::scaling::scale(scaling, source.view.size, *viewport_size);
+        let size = source.view.size.scale_viewport(scaling, *viewport_size);
 
         if self.size != size {
             self.size = size;

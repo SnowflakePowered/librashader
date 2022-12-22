@@ -256,7 +256,7 @@ impl ExampleBase {
                 .application_version(0)
                 .engine_name(app_name)
                 .engine_version(0)
-                .api_version(vk::make_api_version(0, 1, 0, 0));
+                .api_version(vk::make_api_version(0, 1, 3, 0));
 
             let create_flags = if cfg!(any(target_os = "macos", target_os = "ios")) {
                 vk::InstanceCreateFlags::ENUMERATE_PORTABILITY_KHR

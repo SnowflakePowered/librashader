@@ -7,6 +7,7 @@ use librashader_runtime::image::{Image, UVDirection};
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
 use rustc_hash::FxHashMap;
+use librashader_runtime::scaling::MipmapSize;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
@@ -23,9 +24,9 @@ impl LoadLut for Gl46LutLoad {
         }
 
         for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path, UVDirection::BottomLeft)?;
+            let image: Image = Image::load(&texture.path, UVDirection::BottomLeft)?;
             let levels = if texture.mipmap {
-                librashader_runtime::scaling::calc_miplevel(image.size)
+                image.size.calculate_miplevels()
             } else {
                 1u32
             };

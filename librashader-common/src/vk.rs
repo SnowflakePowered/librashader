@@ -1,5 +1,5 @@
 use ash::vk;
-use crate::ImageFormat;
+use crate::{ImageFormat, Size};
 
 impl From<ImageFormat> for vk::Format {
     fn from(format: ImageFormat) -> Self {
@@ -74,6 +74,16 @@ impl From<vk::Format> for ImageFormat {
             vk::Format::R32G32B32A32_SINT => ImageFormat::R32G32B32A32Sint,
             vk::Format::R32G32B32A32_SFLOAT => ImageFormat::R32G32B32A32Sfloat,
             _ => ImageFormat::Unknown,
+        }
+    }
+}
+
+impl From<Size<u32>> for vk::Extent3D {
+    fn from(value: Size<u32>) -> Self {
+        vk::Extent3D {
+            width: value.width,
+            height: value.height,
+            depth: 1,
         }
     }
 }

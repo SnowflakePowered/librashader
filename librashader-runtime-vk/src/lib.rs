@@ -11,6 +11,7 @@ mod vulkan_state;
 mod draw_quad;
 mod renderpass;
 mod vulkan_primitives;
+mod luts;
 
 #[cfg(test)]
 mod tests {
@@ -19,12 +20,19 @@ mod tests {
     #[test]
     fn triangle_vk() {
         let base = hello_triangle::ExampleBase::new(900, 600);
+        // let mut filter = FilterChainVulkan::load_from_path(
+        //     (base.device.clone(), base.present_queue.clone(), base.device_memory_properties.clone()),
+        //     "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
+        //     None
+        // )
+
         let mut filter = FilterChainVulkan::load_from_path(
-            base.device.clone(),
+            (base.device.clone(), base.present_queue.clone(), base.device_memory_properties.clone()),
             "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
             None
         )
-            // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
+
+        // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
             .unwrap();
         hello_triangle::main(base);
     }

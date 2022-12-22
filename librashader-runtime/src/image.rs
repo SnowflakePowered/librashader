@@ -1,12 +1,36 @@
+use std::marker::PhantomData;
 use librashader_common::Size;
 pub use image::ImageError;
 
 use std::path::Path;
 
-pub struct Image {
+pub struct Image<P: PixelFormat = RGBA8> {
     pub bytes: Vec<u8>,
     pub size: Size<u32>,
     pub pitch: usize,
+    _pd: PhantomData<P>
+}
+
+pub struct RGBA8;
+pub struct BGRA8;
+
+pub trait PixelFormat {
+    #[doc(hidden)]
+    fn convert(pixels: &mut Vec<u8>);
+}
+
+impl PixelFormat for RGBA8 {
+    fn convert(_pixels: &mut Vec<u8>) {
+
+    }
+}
+
+impl PixelFormat for BGRA8 {
+    fn convert(pixels: &mut Vec<u8>) {
+        for [r, _g, b, _a] in pixels.array_chunks_mut::<4>() {
+            std::mem::swap(b, r)
+        }
+    }
 }
 
 /// The direction of UV coordinates to load the image for.
@@ -18,7 +42,7 @@ pub enum UVDirection {
     BottomLeft,
 }
 
-impl Image {
+impl<P: PixelFormat> Image<P> {
     /// Load the image from the path as RGBA8.
     pub fn load(path: impl AsRef<Path>, direction: UVDirection) -> Result<Self, ImageError> {
         let mut image = image::open(path.as_ref())?;
@@ -36,10 +60,13 @@ impl Image {
             .height_stride
             .max(image.sample_layout().width_stride);
 
+        let mut bytes = image.into_raw();
+        P::convert(&mut bytes);
         Ok(Image {
-            bytes: image.into_raw(),
+            bytes,
             pitch,
             size: Size { height, width },
+            _pd: Default::default(),
         })
     }
 }

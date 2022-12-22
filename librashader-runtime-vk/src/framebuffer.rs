@@ -1,6 +1,7 @@
 use ash::vk;
 use ash::vk::{Extent3D, ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags, ImageViewType, SampleCountFlags, SharingMode};
 use librashader_common::Size;
+use librashader_runtime::scaling::MipmapSize;
 use crate::error;
 use crate::renderpass::VulkanRenderPass;
 use crate::util::find_vulkan_memory_type;
@@ -64,12 +65,8 @@ impl Framebuffer {
         let image_create_info = vk::ImageCreateInfo::builder()
             .image_type(ImageType::TYPE_2D)
             .format(self.render_pass.format.into())
-            .extent(Extent3D {
-                width: self.size.width,
-                height: self.size.height,
-                depth: 1
-            })
-            .mip_levels(std::cmp::min(self.max_levels, librashader_runtime::scaling::calc_miplevel(self.size)))
+            .extent(self.size.into())
+            .mip_levels(std::cmp::min(self.max_levels, self.size.calculate_miplevels()))
             .array_layers(1)
             .samples(SampleCountFlags::TYPE_1)
             .tiling(ImageTiling::OPTIMAL)

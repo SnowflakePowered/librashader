@@ -7,6 +7,7 @@ use crate::viewport::Viewport;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
+use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 
 #[derive(Debug)]
 pub struct Gl46Framebuffer;
@@ -61,8 +62,7 @@ impl FramebufferInterface for Gl46Framebuffer {
             return Ok(fb.size);
         }
 
-        let size =
-            librashader_runtime::scaling::scale(scaling, source.image.size, viewport.output.size);
+        let size = source.image.size.scale_viewport(scaling, viewport.output.size);
 
         if fb.size != size {
             fb.size = size;
@@ -146,7 +146,7 @@ impl FramebufferInterface for Gl46Framebuffer {
                 size.height = 1;
             }
 
-            fb.mip_levels = librashader_runtime::scaling::calc_miplevel(size);
+            fb.mip_levels = size.calculate_miplevels();
             if fb.mip_levels > fb.max_levels {
                 fb.mip_levels = fb.max_levels;
             }
@@ -174,7 +174,7 @@ impl FramebufferInterface for Gl46Framebuffer {
                         gl::DeleteTextures(1, &fb.image);
                         gl::CreateTextures(gl::TEXTURE_2D, 1, &mut fb.image);
 
-                        fb.mip_levels = librashader_runtime::scaling::calc_miplevel(size);
+                        fb.mip_levels = size.calculate_miplevels();
                         if fb.mip_levels > fb.max_levels {
                             fb.mip_levels = fb.max_levels;
                         }

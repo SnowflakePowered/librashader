@@ -1,3 +1,4 @@
+#![feature(array_chunks)]
 //! Helpers and shared logic for librashader runtime implementations.
 
 /// Scaling helpers.
