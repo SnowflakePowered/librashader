@@ -126,13 +126,18 @@ pub struct FilterChainVulkan {
     // pub(crate) draw_quad: DrawQuad,
 }
 
+pub struct FilterMutable {
+    pub(crate) passes_enabled: usize,
+    pub(crate) parameters: FxHashMap<String, f32>,
+}
+
 pub(crate) struct FilterCommon {
     pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     // pub output_textures: Box<[Option<Texture>]>,
     // pub feedback_textures: Box<[Option<Texture>]>,
     // pub history_textures: Box<[Option<Texture>]>,
-    // pub config: FilterMutable,
+    pub config: FilterMutable,
 }
 
 pub type FilterChainOptionsVulkan = ();
@@ -164,7 +169,17 @@ impl FilterChainVulkan {
         let samplers = SamplerSet::new(&device.device)?;
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
-            common: FilterCommon { luts, samplers },
+            common: FilterCommon { luts,
+                samplers,
+                config: FilterMutable {
+                    passes_enabled: preset.shader_count as usize,
+                    parameters: preset
+                        .parameters
+                        .into_iter()
+                        .map(|param| (param.name, param.value))
+                        .collect(),
+                },
+            },
             passes: filters,
         })
     }
@@ -278,6 +293,8 @@ impl FilterChainVulkan {
 
             // shader_vulkan: 2026
             filters.push(FilterPass {
+                device: vulkan.device.clone(),
+                reflection,
                 compiled: spirv_words,
                 uniform_storage,
                 uniform_bindings,

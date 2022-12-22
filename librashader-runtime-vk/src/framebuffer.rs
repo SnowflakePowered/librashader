@@ -1,31 +1,17 @@
 use crate::error;
 use crate::renderpass::VulkanRenderPass;
-use crate::util::find_vulkan_memory_type;
-use crate::vulkan_primitives::VulkanImageMemory;
 use ash::vk;
 use ash::vk::{
-    Extent3D, ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags,
-    ImageViewType, SampleCountFlags, SharingMode,
+    ImageAspectFlags,
+    ImageViewType,
 };
 use librashader_common::Size;
-use librashader_runtime::scaling::MipmapSize;
-
-pub struct Framebuffer {
-    device: ash::Device,
-    size: Size<u32>,
-    max_levels: u32,
-    mem_props: vk::PhysicalDeviceMemoryProperties,
-    render_pass: VulkanRenderPass,
-    framebuffer: Option<VulkanFramebuffer>,
-}
+use crate::filter_chain::Vulkan;
+use crate::texture::OwnedTexture;
 
 pub struct VulkanFramebuffer {
     pub device: ash::Device,
     pub framebuffer: vk::Framebuffer,
-    pub image_view: vk::ImageView,
-    pub fb_view: vk::ImageView,
-    pub image: vk::Image,
-    pub memory: VulkanImageMemory,
 }
 
 impl Drop for VulkanFramebuffer {
@@ -34,87 +20,72 @@ impl Drop for VulkanFramebuffer {
             if self.framebuffer != vk::Framebuffer::null() {
                 self.device.destroy_framebuffer(self.framebuffer, None);
             }
-            if self.image_view != vk::ImageView::null() {
-                self.device.destroy_image_view(self.image_view, None);
-            }
-            if self.fb_view != vk::ImageView::null() {
-                self.device.destroy_image_view(self.fb_view, None);
-            }
-            if self.image != vk::Image::null() {
-                self.device.destroy_image(self.image, None);
-            }
         }
     }
 }
 
-impl Framebuffer {
+pub struct OwnedFramebuffer {
+    pub size: Size<u32>,
+    pub image: OwnedTexture,
+    pub render_pass: VulkanRenderPass,
+    pub framebuffer: VulkanFramebuffer,
+    pub view: vk::ImageView,
+}
+
+impl OwnedFramebuffer {
     pub fn new(
-        device: &ash::Device,
+        vulkan: &Vulkan,
         size: Size<u32>,
         render_pass: VulkanRenderPass,
-        mip_levels: u32,
-        mem_props: vk::PhysicalDeviceMemoryProperties,
+        max_miplevels: u32,
     ) -> error::Result<Self> {
-        let mut framebuffer = Framebuffer {
-            device: device.clone(),
-            size,
-            max_levels: mip_levels,
-            mem_props,
-            render_pass,
-            framebuffer: None,
+        let image = OwnedTexture::new(vulkan, size, render_pass.format, max_miplevels)?;
+        let fb_view = image.create_texture_view()?;
+        let framebuffer = unsafe {
+            vulkan.device.create_framebuffer(
+                &vk::FramebufferCreateInfo::builder()
+                    .render_pass(render_pass.handle)
+                    .attachments(&[image.image_view])
+                    .width(image.size.width)
+                    .height(image.size.height)
+                    .layers(1)
+                    .build(),
+                None,
+            )?
         };
 
-        let vulkan_image = framebuffer.create_vulkan_image()?;
-        framebuffer.framebuffer = Some(vulkan_image);
-
-        Ok(framebuffer)
+        Ok(OwnedFramebuffer {
+            size,
+            image,
+            view: fb_view,
+            render_pass,
+            framebuffer: VulkanFramebuffer {
+                device: vulkan.device.clone(),
+                framebuffer,
+            },
+        })
     }
+}
 
-    pub fn create_vulkan_image(&mut self) -> error::Result<VulkanFramebuffer> {
-        let image_create_info = vk::ImageCreateInfo::builder()
-            .image_type(ImageType::TYPE_2D)
-            .format(self.render_pass.format.into())
-            .extent(self.size.into())
-            .mip_levels(std::cmp::min(
-                self.max_levels,
-                self.size.calculate_miplevels(),
-            ))
-            .array_layers(1)
-            .samples(SampleCountFlags::TYPE_1)
-            .tiling(ImageTiling::OPTIMAL)
-            .usage(
-                ImageUsageFlags::SAMPLED
-                    | ImageUsageFlags::COLOR_ATTACHMENT
-                    | ImageUsageFlags::TRANSFER_DST
-                    | ImageUsageFlags::TRANSFER_SRC,
-            )
-            .sharing_mode(SharingMode::EXCLUSIVE)
-            .initial_layout(ImageLayout::UNDEFINED)
-            .build();
+pub struct OutputFramebuffer<'a> {
+    device: ash::Device,
+    render_pass: &'a VulkanRenderPass,
+    pub handle: vk::Framebuffer,
+    pub size: Size<u32>,
+    pub image: vk::Image,
+    pub image_view: vk::ImageView,
+}
 
-        let image = unsafe { self.device.create_image(&image_create_info, None)? };
-        let mem_reqs = unsafe { self.device.get_image_memory_requirements(image.clone()) };
-
-        let alloc_info = vk::MemoryAllocateInfo::builder()
-            .allocation_size(mem_reqs.size)
-            .memory_type_index(find_vulkan_memory_type(
-                &self.mem_props,
-                mem_reqs.memory_type_bits,
-                vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            ))
-            .build();
-
-        // todo: optimize by reusing existing memory.
-        let memory = VulkanImageMemory::new(&self.device, &alloc_info)?;
-        memory.bind(&image)?;
-
+impl<'a> OutputFramebuffer<'a> {
+    pub fn new(vulkan: &Vulkan, render_pass: &'a VulkanRenderPass, image: vk::Image, size: Size<u32>) -> error::Result<OutputFramebuffer<'a>> {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
             .base_array_layer(0)
-            .level_count(image_create_info.mip_levels)
+            .level_count(1)
             .layer_count(1)
             .aspect_mask(ImageAspectFlags::COLOR)
             .build();
+
         let swizzle_components = vk::ComponentMapping::builder()
             .r(vk::ComponentSwizzle::R)
             .g(vk::ComponentSwizzle::G)
@@ -124,37 +95,47 @@ impl Framebuffer {
 
         let mut view_info = vk::ImageViewCreateInfo::builder()
             .view_type(ImageViewType::TYPE_2D)
-            .format(self.render_pass.format.into())
+            .format(render_pass.format.into())
             .image(image.clone())
             .subresource_range(image_subresource)
             .components(swizzle_components)
             .build();
 
-        let image_view = unsafe { self.device.create_image_view(&view_info, None)? };
-
-        view_info.subresource_range.level_count = 1;
-        let fb_view = unsafe { self.device.create_image_view(&view_info, None)? };
+        let image_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
 
         let framebuffer = unsafe {
-            self.device.create_framebuffer(
+            vulkan.device.create_framebuffer(
                 &vk::FramebufferCreateInfo::builder()
-                    .render_pass(self.render_pass.render_pass)
+                    .render_pass(render_pass.handle)
                     .attachments(&[image_view])
-                    .width(self.size.width)
-                    .height(self.size.height)
+                    .width(size.width)
+                    .height(size.height)
                     .layers(1)
                     .build(),
                 None,
             )?
         };
-
-        Ok(VulkanFramebuffer {
-            device: self.device.clone(),
-            framebuffer,
-            memory,
-            image_view,
-            fb_view,
+        
+        Ok(OutputFramebuffer {
+            device: vulkan.device.clone(),
             image,
+            image_view,
+            render_pass,
+            size,
+            handle: framebuffer,
         })
+    }
+
+    pub fn get_renderpass_begin_info(&self, area: vk::Rect2D, clear: Option<&[vk::ClearValue]>) -> vk::RenderPassBeginInfo {
+        let mut builder = vk::RenderPassBeginInfo::builder()
+            .render_pass(self.render_pass.handle)
+            .framebuffer(self.handle)
+            .render_area(area);
+
+        if let Some(clear) = clear {
+            builder = builder.clear_values(clear)
+        }
+
+        builder.build()
     }
 }

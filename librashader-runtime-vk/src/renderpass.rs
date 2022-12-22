@@ -6,7 +6,7 @@ use ash::vk::{
 use librashader_common::ImageFormat;
 
 pub struct VulkanRenderPass {
-    pub render_pass: vk::RenderPass,
+    pub handle: vk::RenderPass,
     pub format: ImageFormat,
 }
 
@@ -51,7 +51,7 @@ impl VulkanRenderPass {
         unsafe {
             let rp = device.create_render_pass(&renderpass_info, None)?;
             Ok(Self {
-                render_pass: rp,
+                handle: rp,
                 format,
             })
         }

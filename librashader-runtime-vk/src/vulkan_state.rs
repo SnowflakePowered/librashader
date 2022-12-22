@@ -302,7 +302,7 @@ impl VulkanGraphicsPipeline {
             .viewport_state(&viewport_state)
             .depth_stencil_state(&depth_stencil_state)
             .dynamic_state(&dynamic_state)
-            .render_pass(render_pass.render_pass.clone())
+            .render_pass(render_pass.handle.clone())
             .layout(pipeline_layout.layout)
             .build();
 

@@ -13,6 +13,7 @@ mod util;
 mod vulkan_primitives;
 mod vulkan_state;
 mod samplers;
+mod texture;
 
 #[cfg(test)]
 mod tests {
