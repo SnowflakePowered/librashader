@@ -8,9 +8,9 @@ pub struct SamplerSet {
 }
 
 impl SamplerSet {
-    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mip: FilterMode) -> GLuint {
+    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> GLuint {
         // eprintln!("{wrap}, {filter}, {mip}");
-        *self.samplers.get(&(wrap, filter, mip)).unwrap()
+        *self.samplers.get(&(wrap, filter, mipmap)).unwrap()
     }
 
     fn make_sampler(sampler: GLuint, wrap: WrapMode, filter: FilterMode, mip: FilterMode) {

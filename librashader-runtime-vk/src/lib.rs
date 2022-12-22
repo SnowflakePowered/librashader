@@ -12,6 +12,7 @@ mod renderpass;
 mod util;
 mod vulkan_primitives;
 mod vulkan_state;
+mod samplers;
 
 #[cfg(test)]
 mod tests {

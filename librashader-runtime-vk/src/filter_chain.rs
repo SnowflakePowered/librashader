@@ -19,6 +19,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
+use crate::samplers::SamplerSet;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -126,13 +127,12 @@ pub struct FilterChainVulkan {
 }
 
 pub(crate) struct FilterCommon {
-    // pub(crate) luts: FxHashMap<usize, LutTexture>,
-    // pub samplers: SamplerSet,
+    pub(crate) luts: FxHashMap<usize, LutTexture>,
+    pub samplers: SamplerSet,
     // pub output_textures: Box<[Option<Texture>]>,
     // pub feedback_textures: Box<[Option<Texture>]>,
     // pub history_textures: Box<[Option<Texture>]>,
     // pub config: FilterMutable,
-    luts: FxHashMap<usize, LutTexture>,
 }
 
 pub type FilterChainOptionsVulkan = ();
@@ -161,10 +161,10 @@ impl FilterChainVulkan {
         let filters = Self::init_passes(&device, passes, &semantics, 3)?;
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
-
+        let samplers = SamplerSet::new(&device.device)?;
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
-            common: FilterCommon { luts },
+            common: FilterCommon { luts, samplers },
             passes: filters,
         })
     }
