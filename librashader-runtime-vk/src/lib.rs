@@ -1,5 +1,6 @@
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
+#![feature(strict_provenance)]
 
 mod draw_quad;
 mod error;
@@ -14,6 +15,7 @@ mod vulkan_primitives;
 mod vulkan_state;
 mod samplers;
 mod texture;
+mod rendertarget;
 
 #[cfg(test)]
 mod tests {

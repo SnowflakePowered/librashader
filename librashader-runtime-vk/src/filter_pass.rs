@@ -9,6 +9,7 @@ use rustc_hash::FxHashMap;
 use librashader_common::Size;
 use librashader_reflect::reflect::ShaderReflection;
 use crate::filter_chain::FilterCommon;
+use crate::rendertarget::RenderTarget;
 use crate::texture::Texture;
 use crate::samplers::{SamplerSet, VulkanSampler};
 
@@ -52,6 +53,30 @@ impl FilterPass {
 
     }
 
+    pub(crate) fn draw(
+        &mut self,
+        pass_index: usize,
+        parent: &FilterCommon,
+        frame_count: u32,
+        frame_direction: i32,
+        descriptor: &vk::DescriptorSet,
+        viewport: &vk::Viewport,
+        original: &Texture,
+        source: &Texture,
+        output: &RenderTarget,
+    ) {
+        self.build_semantics(pass_index, parent, &output.mvp, frame_count, frame_direction, Size::new(100, 100),
+                             Size::new(100,100),descriptor, original, source);
+
+        if let Some(ubo) = &self.reflection.ubo {
+            // shader_vulkan: 2554 (ra uses uses one big buffer)
+        }
+    }
+
+    fn bind_ubo(device: &vk::Device, descriptor: &vk::DescriptorSet, binding: u32, buffer: &vk::Buffer, offset: vk::DeviceSize, range: vk::DeviceSize) {
+
+    }
+
     fn build_semantics(
         &mut self,
         pass_index: usize,
@@ -61,7 +86,7 @@ impl FilterPass {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
-        descriptor_set: vk::DescriptorSet,
+        descriptor_set: &vk::DescriptorSet,
         original: &Texture,
         source: &Texture,
     ) {

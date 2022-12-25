@@ -20,6 +20,7 @@ use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
 use crate::samplers::SamplerSet;
+use crate::texture::VulkanImage;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -145,7 +146,7 @@ pub type FilterChainOptionsVulkan = ();
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        vulkan: impl TryInto<Vulkan, Error = Box<dyn Error>>,
+        vulkan: impl TryInto<Vulkan, Error=Box<dyn Error>>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -155,7 +156,7 @@ impl FilterChainVulkan {
     }
 
     pub fn load_from_preset(
-        vulkan: impl TryInto<Vulkan, Error = Box<dyn Error>>,
+        vulkan: impl TryInto<Vulkan, Error=Box<dyn Error>>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -167,9 +168,12 @@ impl FilterChainVulkan {
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
+
+
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
-            common: FilterCommon { luts,
+            common: FilterCommon {
+                luts,
                 samplers,
                 config: FilterMutable {
                     passes_enabled: preset.shader_count as usize,
@@ -213,8 +217,7 @@ impl FilterChainVulkan {
                 Ok::<_, Box<dyn Error>>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
-            )?;
+            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
@@ -354,5 +357,21 @@ impl FilterChainVulkan {
                 .free_command_buffers(vulkan.command_pool, &buffers);
         }
         Ok(luts)
+    }
+
+    /// Process a frame with the input image.
+    ///
+    /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
+    pub fn frame(
+        &mut self,
+        count: usize,
+        viewport: &vk::Viewport,
+        input: &VulkanImage,
+        options: Option<()>,
+    ) -> error::Result<()> {
+        // limit number of passes to those enabled.
+        let passes = &mut self.passes[0..self.common.config.passes_enabled];
+
+
     }
 }

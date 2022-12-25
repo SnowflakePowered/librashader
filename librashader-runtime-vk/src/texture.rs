@@ -10,10 +10,8 @@ use crate::vulkan_primitives::VulkanImageMemory;
 pub struct OwnedTexture {
     pub device: ash::Device,
     pub image_view: vk::ImageView,
-    pub image: vk::Image,
-    pub format: vk::Format,
+    pub image: VulkanImage,
     pub memory: VulkanImageMemory,
-    pub size: Size<u32>,
     pub max_miplevels: u32,
 }
 
@@ -85,9 +83,11 @@ impl OwnedTexture {
         Ok(OwnedTexture {
             device: vulkan.device.clone(),
             image_view,
-            image,
-            size,
-            format: format.into(),
+            image: VulkanImage {
+                image,
+                size,
+                format: format.into()
+            },
             memory,
             max_miplevels,
         })
@@ -130,17 +130,21 @@ impl Drop for OwnedTexture {
                 self.device.destroy_image_view(self.image_view, None);
             }
             if self.image != vk::Image::null() {
-                self.device.destroy_image(self.image, None);
+                self.device.destroy_image(self.image.image, None);
             }
         }
     }
 }
 
-pub struct Texture {
+pub struct VulkanImage {
     pub size: Size<u32>,
-    pub image_view: vk::ImageView,
     pub image: vk::Image,
     pub format: vk::Format,
+}
+
+pub struct Texture {
+    pub image: VulkanImage,
+    pub image_view: vk::ImageView,
     pub wrap_mode: WrapMode,
     pub filter_mode: FilterMode,
     pub mip_filter: FilterMode,

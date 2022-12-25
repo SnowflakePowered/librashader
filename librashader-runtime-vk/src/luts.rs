@@ -94,7 +94,7 @@ impl LutTexture {
         )?;
         unsafe {
             let mut handle = staging.map()?;
-            handle.copy_from(&image.bytes)
+            handle.copy_from(0, &image.bytes)
         }
 
         unsafe {
