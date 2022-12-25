@@ -16,6 +16,7 @@ mod vulkan_state;
 mod samplers;
 mod texture;
 mod rendertarget;
+mod ubo_ring;
 
 #[cfg(test)]
 mod tests {

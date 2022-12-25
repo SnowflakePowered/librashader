@@ -21,6 +21,7 @@ use std::error::Error;
 use std::path::Path;
 use crate::samplers::SamplerSet;
 use crate::texture::VulkanImage;
+use crate::ubo_ring::VkUboRing;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -253,12 +254,12 @@ impl FilterChainVulkan {
             let reflection = reflect.reflect(index, semantics)?;
             let spirv_words = reflect.compile(None)?;
 
-            let uniform_storage = UniformStorage::new(
-                reflection
-                    .ubo
-                    .as_ref()
-                    .map(|ubo| ubo.size as usize)
-                    .unwrap_or(0),
+            let ubo_size = reflection
+                .ubo
+                .as_ref()
+                .map(|ubo| ubo.size as usize)
+                .unwrap_or(0);
+            let uniform_storage = UniformStorage::new(ubo_size,
                 reflection
                     .push_constant
                     .as_ref()
@@ -294,6 +295,7 @@ impl FilterChainVulkan {
                 images,
             )?;
 
+            let ubo_ring = VkUboRing::new(&vulkan.device, &vulkan.memory_properties, images as usize, ubo_size)?;
             // shader_vulkan: 2026
             filters.push(FilterPass {
                 device: vulkan.device.clone(),
@@ -304,6 +306,7 @@ impl FilterChainVulkan {
                 source,
                 config,
                 graphics_pipeline,
+                ubo_ring,
             });
         }
 

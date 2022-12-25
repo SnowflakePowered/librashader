@@ -12,6 +12,7 @@ use crate::filter_chain::FilterCommon;
 use crate::rendertarget::RenderTarget;
 use crate::texture::Texture;
 use crate::samplers::{SamplerSet, VulkanSampler};
+use crate::ubo_ring::VkUboRing;
 
 pub struct FilterPass {
     pub device: ash::Device,
@@ -22,6 +23,7 @@ pub struct FilterPass {
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
     pub graphics_pipeline: VulkanGraphicsPipeline,
+    pub ubo_ring: VkUboRing
 }
 
 
@@ -70,6 +72,7 @@ impl FilterPass {
 
         if let Some(ubo) = &self.reflection.ubo {
             // shader_vulkan: 2554 (ra uses uses one big buffer)
+            // itll be simpler for us if we just use a RingBuffer<vk::Buffer> tbh.
         }
     }
 
