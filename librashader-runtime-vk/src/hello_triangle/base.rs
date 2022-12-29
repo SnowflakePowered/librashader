@@ -181,13 +181,14 @@ pub struct ExampleBase {
 
     pub present_complete_semaphore: vk::Semaphore,
     pub rendering_complete_semaphore: vk::Semaphore,
+    pub postprocess_complete_semaphore: vk::Semaphore,
 
     pub draw_commands_reuse_fence: vk::Fence,
     pub setup_commands_reuse_fence: vk::Fence,
 }
 
 impl ExampleBase {
-    pub fn render_loop<F: Fn()>(&self, f: F) {
+    pub fn render_loop<F: FnMut()>(&self, mut f: F) {
         self.event_loop
             .borrow_mut()
             .run_return(|event, _, control_flow| {
@@ -554,7 +555,9 @@ impl ExampleBase {
             let rendering_complete_semaphore = device
                 .create_semaphore(&semaphore_create_info, None)
                 .unwrap();
-
+            let postprocess_complete_semaphore = device
+                .create_semaphore(&semaphore_create_info, None)
+                .unwrap();
             ExampleBase {
                 event_loop: RefCell::new(event_loop),
                 entry,
@@ -585,6 +588,7 @@ impl ExampleBase {
                 debug_call_back,
                 debug_utils_loader,
                 depth_image_memory,
+                postprocess_complete_semaphore
             }
         }
     }
@@ -598,6 +602,8 @@ impl Drop for ExampleBase {
                 .destroy_semaphore(self.present_complete_semaphore, None);
             self.device
                 .destroy_semaphore(self.rendering_complete_semaphore, None);
+            self.device
+                .destroy_semaphore(self.postprocess_complete_semaphore, None);
             self.device
                 .destroy_fence(self.draw_commands_reuse_fence, None);
             self.device

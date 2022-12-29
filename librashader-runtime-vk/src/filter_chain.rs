@@ -122,6 +122,7 @@ impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties)> for V
 pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Box<[FilterPass]>,
+    pub(crate) vulkan: Vulkan,
     // pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
@@ -186,6 +187,7 @@ impl FilterChainVulkan {
                 },
             },
             passes: filters,
+            vulkan: device
         })
     }
 
@@ -371,10 +373,27 @@ impl FilterChainVulkan {
         viewport: &vk::Viewport,
         input: &VulkanImage,
         options: Option<()>,
+        wait: vk::Semaphore,
+        signal: vk::Semaphore,
     ) -> error::Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
 
+        //
+        // for (index, pass) in passes.iter_mut().enumerate() {
+        //     pass.draw(index, &self.common, count as u32, 0, viewport, &Default::default(), &Texture {}, &Texture {})
+        // }
+
+        unsafe {
+            self.vulkan.device.queue_submit(self.vulkan.queue, &[vk::SubmitInfo::builder()
+                .wait_semaphores(&[wait])
+                .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS],)
+                .signal_semaphores(&[signal])
+                .command_buffers(&[])
+                .build()], vk::Fence::null())?
+        }
+
+        Ok(())
 
     }
 }

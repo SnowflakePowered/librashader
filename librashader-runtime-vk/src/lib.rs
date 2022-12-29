@@ -42,6 +42,6 @@ mod tests {
         )
         // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
         .unwrap();
-        hello_triangle::main(base);
+        hello_triangle::main(base, filter);
     }
 }

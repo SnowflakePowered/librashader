@@ -9,6 +9,8 @@ use std::mem::align_of;
 
 mod base;
 pub use base::*;
+use crate::filter_chain::FilterChainVulkan;
+use crate::texture::VulkanImage;
 
 #[derive(Clone, Debug, Copy)]
 struct Vertex {
@@ -16,7 +18,7 @@ struct Vertex {
     color: [f32; 4],
 }
 
-pub(crate) fn main(base: ExampleBase) {
+pub(crate) fn main(base: ExampleBase, mut filter_chain: FilterChainVulkan) {
     unsafe {
         let renderpass_attachments = [
             vk::AttachmentDescription {
@@ -429,8 +431,18 @@ pub(crate) fn main(base: ExampleBase) {
                     device.cmd_end_render_pass(draw_command_buffer);
                 },
             );
+
+
+            filter_chain.frame(0, &viewports[0], &VulkanImage {
+                size: Default::default(),
+                image: Default::default(),
+                format: Default::default(),
+            }, None, base.rendering_complete_semaphore, base.postprocess_complete_semaphore)
+                .unwrap();
+
             //let mut present_info_err = mem::zeroed();
-            let wait_semaphors = [base.rendering_complete_semaphore];
+            let wait_semaphors = [base.postprocess_complete_semaphore];
+
             let swapchains = [base.swapchain];
             let image_indices = [present_index];
             let present_info = vk::PresentInfoKHR::builder()

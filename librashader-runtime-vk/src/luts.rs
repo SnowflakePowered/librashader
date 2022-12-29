@@ -8,7 +8,7 @@ use librashader_common::{FilterMode, WrapMode};
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
-use crate::texture::Texture;
+use crate::texture::{Texture, VulkanImage};
 
 pub struct LutTexture {
     pub memory: VulkanImageMemory,
@@ -237,13 +237,15 @@ impl LutTexture {
             memory,
             staging,
             image: Texture {
-                size: image.size,
                 image_view: texture_view,
-                image: texture,
+                image: VulkanImage {
+                    size: image.size,
+                    image: texture,
+                    format: vk::Format::B8G8R8A8_UNORM
+                },
                 filter_mode: config.filter_mode,
                 wrap_mode: config.wrap_mode,
                 mip_filter: config.filter_mode,
-                format: vk::Format::B8G8R8A8_UNORM
             }
         })
     }

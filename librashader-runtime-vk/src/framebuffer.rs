@@ -46,8 +46,8 @@ impl OwnedFramebuffer {
                 &vk::FramebufferCreateInfo::builder()
                     .render_pass(render_pass.handle)
                     .attachments(&[image.image_view])
-                    .width(image.size.width)
-                    .height(image.size.height)
+                    .width(image.image.size.width)
+                    .height(image.image.size.height)
                     .layers(1)
                     .build(),
                 None,

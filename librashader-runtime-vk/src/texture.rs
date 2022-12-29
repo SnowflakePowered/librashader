@@ -112,8 +112,8 @@ impl OwnedTexture {
 
         let mut view_info = vk::ImageViewCreateInfo::builder()
             .view_type(ImageViewType::TYPE_2D)
-            .format(self.format)
-            .image(self.image.clone())
+            .format(self.image.format)
+            .image(self.image.image.clone())
             .subresource_range(image_subresource)
             .components(swizzle_components)
             .build();
@@ -129,7 +129,7 @@ impl Drop for OwnedTexture {
             if self.image_view != vk::ImageView::null() {
                 self.device.destroy_image_view(self.image_view, None);
             }
-            if self.image != vk::Image::null() {
+            if self.image.image != vk::Image::null() {
                 self.device.destroy_image(self.image.image, None);
             }
         }

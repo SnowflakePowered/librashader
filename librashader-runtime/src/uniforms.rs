@@ -23,18 +23,36 @@ pub trait UniformStorageAccess {
     /// of the implementing struct.
     fn ubo_pointer(&self) -> *const u8;
 
+    /// Get a pointer to the backing UBO storage. This pointer must be valid for the lifetime
+    /// of the implementing struct.
+    fn ubo_slice(&self) -> &[u8];
+
     /// Get a pointer to the backing Push Constant buffer storage.
     /// This pointer must be valid for the lifetime of the implementing struct.
     fn push_pointer(&self) -> *const u8;
+
+
+    /// Get a slice to the backing Push Constant buffer storage.
+    /// This pointer must be valid for the lifetime of the implementing struct.
+    fn push_slice(&self) -> &[u8];
 }
 
 impl<T, H> UniformStorageAccess for UniformStorage<T, H> {
+
     fn ubo_pointer(&self) -> *const u8 {
         self.ubo.as_ptr()
     }
 
+    fn ubo_slice(&self) -> &[u8] {
+        &self.ubo
+    }
+
     fn push_pointer(&self) -> *const u8 {
         self.push.as_ptr()
+    }
+
+    fn push_slice(&self) -> &[u8] {
+        &self.push
     }
 }
 

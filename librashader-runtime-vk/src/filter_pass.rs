@@ -8,6 +8,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use librashader_common::Size;
 use librashader_reflect::reflect::ShaderReflection;
+use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::rendertarget::RenderTarget;
 use crate::texture::Texture;
@@ -61,24 +62,30 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        descriptor: &vk::DescriptorSet,
         viewport: &vk::Viewport,
         original: &Texture,
         source: &Texture,
         output: &RenderTarget,
-    ) {
+    ) -> error::Result<()> {
+        let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[0];
+
         self.build_semantics(pass_index, parent, &output.mvp, frame_count, frame_direction, Size::new(100, 100),
-                             Size::new(100,100),descriptor, original, source);
+                             Size::new(100,100),&descriptor, original, source);
 
         if let Some(ubo) = &self.reflection.ubo {
+
             // shader_vulkan: 2554 (ra uses uses one big buffer)
             // itll be simpler for us if we just use a RingBuffer<vk::Buffer> tbh.
+            self.ubo_ring.bind_for_frame(descriptor, ubo.binding, &self.uniform_storage)?;
         }
+
+        Ok(())
     }
 
-    fn bind_ubo(device: &vk::Device, descriptor: &vk::DescriptorSet, binding: u32, buffer: &vk::Buffer, offset: vk::DeviceSize, range: vk::DeviceSize) {
-
-    }
+    //
+    // fn bind_ubo(device: &vk::Device, descriptor: &vk::DescriptorSet, binding: u32, buffer: &vk::Buffer, offset: vk::DeviceSize, range: vk::DeviceSize) {
+    //
+    // }
 
     fn build_semantics(
         &mut self,
@@ -137,7 +144,7 @@ impl FilterPass {
             FilterPass::bind_texture(
                 &self.device,
                 &parent.samplers,
-                descriptor_set,
+                *descriptor_set,
                 binding,
                 original,
             );
@@ -149,7 +156,7 @@ impl FilterPass {
             .get(&TextureSemantics::Original.semantics(0).into())
         {
             self.uniform_storage
-                .bind_vec4(*offset, original.size, None);
+                .bind_vec4(*offset, original.image.size, None);
         }
 
         // bind Source sampler
@@ -163,7 +170,7 @@ impl FilterPass {
             FilterPass::bind_texture(
                 &self.device,
                 &parent.samplers,
-                descriptor_set,
+                *descriptor_set,
                 binding,
                 source
             );
@@ -175,7 +182,7 @@ impl FilterPass {
             .get(&TextureSemantics::Source.semantics(0).into())
         {
             self.uniform_storage
-                .bind_vec4(*offset, source.size, None);
+                .bind_vec4(*offset, source.image.size, None);
         }
 
         if let Some(binding) = self
@@ -187,7 +194,7 @@ impl FilterPass {
             FilterPass::bind_texture(
                 &self.device,
                 &parent.samplers,
-                descriptor_set,
+                *descriptor_set,
                 binding,
                 original,
             );
@@ -198,7 +205,7 @@ impl FilterPass {
             .get(&TextureSemantics::OriginalHistory.semantics(0).into())
         {
             self.uniform_storage
-                .bind_vec4(*offset, original.size, None);
+                .bind_vec4(*offset, original.image.size, None);
         }
 
         // for (index, output) in parent.history_textures.iter().enumerate() {
@@ -327,7 +334,7 @@ impl FilterPass {
                 FilterPass::bind_texture(
                     &self.device,
                     &parent.samplers,
-                    descriptor_set,
+                    *descriptor_set,
                     binding,
                     &lut.image,
                 );
@@ -338,7 +345,7 @@ impl FilterPass {
                 .get(&TextureSemantics::User.semantics(*index).into())
             {
                 self.uniform_storage
-                    .bind_vec4(*offset, lut.image.size, None);
+                    .bind_vec4(*offset, lut.image.image.size, None);
             }
         }
 
