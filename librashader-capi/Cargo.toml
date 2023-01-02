@@ -24,6 +24,7 @@ librashader = { path = "../librashader", version = "0.1.0-alpha.4" }
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
+rustc-hash = "1.1.0"
 
 [dependencies.windows]
 version = "0.43.0"

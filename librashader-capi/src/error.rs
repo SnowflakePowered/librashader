@@ -19,6 +19,10 @@ pub enum LibrashaderError {
     PresetError(#[from] librashader::presets::ParsePresetError),
     #[error("There was an error preprocessing the shader source.")]
     PreprocessError(#[from] librashader::preprocess::PreprocessError),
+    #[error("There was an error compiling the shader source.")]
+    ShaderCompileError(#[from] librashader::reflect::ShaderCompileError),
+    #[error("There was an error reflecting the shader source.")]
+    ShaderReflectError(#[from] librashader::reflect::ShaderReflectError),
     #[cfg(feature = "runtime-opengl")]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
@@ -154,6 +158,8 @@ impl LibrashaderError {
             LibrashaderError::InvalidPath(_) => LIBRA_ERRNO::INVALID_PATH,
             LibrashaderError::PresetError(_) => LIBRA_ERRNO::PRESET_ERROR,
             LibrashaderError::PreprocessError(_) => LIBRA_ERRNO::PREPROCESS_ERROR,
+            LibrashaderError::ShaderCompileError(_)
+                | LibrashaderError::ShaderReflectError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-d3d11")]

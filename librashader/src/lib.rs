@@ -81,6 +81,11 @@ pub mod reflect {
     };
     pub use librashader_reflect::front::shaderc::GlslangCompilation;
     pub use librashader_reflect::reflect::semantics::BindingMeta;
+
+    /// Helpers to deal with image loading.
+    pub mod image {
+        pub use librashader_runtime::image::*;
+    }
 }
 
 /// Shader runtimes to execute a filter chain on a GPU surface.
@@ -107,6 +112,12 @@ pub mod runtime {
     #[cfg(feature = "vk")]
     /// Shader compiler targets and runtime for Vulkan.
     pub mod vk {}
+
+    #[doc(hidden)]
+    pub mod helper {
+        pub use librashader_runtime::semantics::insert_lut_semantics;
+        pub use librashader_runtime::semantics::insert_pass_semantics;
+    }
 }
 
 pub use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};

@@ -776,6 +776,7 @@ dependencies = [
  "gl",
  "librashader",
  "paste",
+ "rustc-hash",
  "thiserror",
  "windows",
 ]
