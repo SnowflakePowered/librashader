@@ -103,20 +103,6 @@ impl LutTexture {
         unsafe {
             let handle = device.CreateTexture2D(&desc, None).unwrap();
 
-            let srv = device.CreateShaderResourceView(
-                &handle,
-                Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
-                    Format: desc.Format,
-                    ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
-                    Anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
-                        Texture2D: D3D11_TEX2D_SRV {
-                            MostDetailedMip: 0,
-                            MipLevels: u32::MAX,
-                        },
-                    },
-                }),
-            )?;
-
             // need a staging texture to defer mipmap generation
             let staging = device.CreateTexture2D(
                 &D3D11_TEXTURE2D_DESC {
@@ -154,6 +140,20 @@ impl LutTexture {
                     back: 1,
                 }),
             );
+
+            let srv = device.CreateShaderResourceView(
+                &handle,
+                Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
+                    Format: desc.Format,
+                    ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
+                    Anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+                        Texture2D: D3D11_TEX2D_SRV {
+                            MostDetailedMip: 0,
+                            MipLevels: u32::MAX,
+                        },
+                    },
+                }),
+            )?;
 
             if (desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS).0 != 0 {
                 context.GenerateMips(&srv)
