@@ -32,7 +32,7 @@ mod tests {
             None,
         )
         .unwrap();
-        // let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
+        // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
         //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
         //     Some(&FilterChainOptions {
         //         use_deferred_context: true,
@@ -40,7 +40,7 @@ mod tests {
         // )
         // .unwrap();
 
-        // let sample = hello_triangle::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
+        // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
 
         hello_triangle::main(sample).unwrap();
     }
