@@ -2,12 +2,14 @@ pub mod vulkan_base;
 mod debug;
 mod physicaldevice;
 mod surface;
+mod swapchain;
 
 use winit::event::{Event, VirtualKeyCode, ElementState, KeyboardInput, WindowEvent};
 use winit::event_loop::{EventLoop, ControlFlow, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use crate::filter_chain::FilterChainVulkan;
+use crate::filter_chain::{FilterChainVulkan, Vulkan};
 use crate::hello_triangle::surface::VulkanSurface;
+use crate::hello_triangle::swapchain::VulkanSwapchain;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 
 // Constants
@@ -60,6 +62,7 @@ impl VulkanWindow {
 pub struct VulkanDraw {
     surface: VulkanSurface,
     base: VulkanBase,
+    pub swapchain: VulkanSwapchain,
 }
 
 pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
@@ -72,8 +75,12 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
     let surface = VulkanSurface::new(&vulkan, &window)
         .unwrap();
 
+    let swapchain = VulkanSwapchain::new(&vulkan, &surface, WINDOW_WIDTH, WINDOW_HEIGHT)
+        .unwrap();
+
     let vulkan = VulkanDraw {
         surface,
+        swapchain,
         base: vulkan
     };
 
