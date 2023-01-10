@@ -6,7 +6,7 @@ use crate::texture::Texture;
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk;
-use librashader_common::Size;
+use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::ShaderCompilerOutput;
@@ -55,6 +55,16 @@ impl FilterPass {
         unsafe {
             device.update_descriptor_sets(&write_desc, &[]);
         }
+    }
+
+    pub fn get_format(&self) -> ImageFormat {
+        let mut fb_format = ImageFormat::R8G8B8A8Unorm;
+        if self.config.srgb_framebuffer {
+            fb_format = ImageFormat::R8G8B8A8Srgb;
+        } else if self.config.float_framebuffer {
+            fb_format = ImageFormat::R16G16B16A16Sfloat;
+        }
+        fb_format
     }
 
     pub(crate) fn draw(

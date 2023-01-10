@@ -3,7 +3,7 @@ use crate::vulkan_primitives::VulkanBuffer;
 use ash::vk;
 
 #[rustfmt::skip]
-static VBO_OFFSCREEN: &[f32; 16] = &[
+pub(crate) static VBO_OFFSCREEN: &[f32; 16] = &[
     // Offscreen
     -1.0, -1.0, 0.0, 0.0,
     -1.0, 1.0, 0.0, 1.0,
@@ -12,7 +12,7 @@ static VBO_OFFSCREEN: &[f32; 16] = &[
 ];
 
 #[rustfmt::skip]
-static VBO_DEFAULT_FINAL: &[f32; 16] = &[
+pub(crate) static VBO_DEFAULT_FINAL: &[f32; 16] = &[
     // Final
     0.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 1.0,

@@ -1,13 +1,13 @@
-use crate::error;
+use crate::{error, util};
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
 use crate::samplers::SamplerSet;
-use crate::texture::VulkanImage;
+use crate::texture::{OwnedTexture, Texture, VulkanImage};
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
 use ash::{vk, Device};
-use librashader_common::ImageFormat;
+use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SpirV;
@@ -22,6 +22,9 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
+use crate::draw_quad::{VBO_DEFAULT_FINAL, VBO_OFFSCREEN};
+use crate::framebuffer::OutputFramebuffer;
+use crate::rendertarget::RenderTarget;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -124,7 +127,7 @@ pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Box<[FilterPass]>,
     pub(crate) vulkan: Vulkan,
-    // pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
+    pub(crate) output_framebuffers: Box<[OwnedTexture]>,
     // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
     // pub(crate) draw_quad: DrawQuad,
@@ -172,6 +175,18 @@ impl FilterChainVulkan {
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
 
+        let mut output_framebuffers = Vec::new();
+        output_framebuffers.resize_with(filters.len(), || {
+            OwnedTexture::new(
+                &device,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+                1
+            )
+        });
+
+        let output_framebuffers: error::Result<Vec<OwnedTexture>> = output_framebuffers.into_iter().collect();
+
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
             common: FilterCommon {
@@ -188,6 +203,7 @@ impl FilterChainVulkan {
             },
             passes: filters,
             vulkan: device,
+            output_framebuffers: output_framebuffers?.into_boxed_slice(),
         })
     }
 
@@ -379,16 +395,87 @@ impl FilterChainVulkan {
         count: usize,
         viewport: &vk::Viewport,
         input: &VulkanImage,
+        cmd: vk::CommandBuffer,
         options: Option<()>,
-        command_buffer: vk::CommandBuffer,
     ) -> error::Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
 
+        unsafe {
+            // todo: see if we can find a less conservative transition,
+            // but this ensures that the image is rendered at least
+            util::vulkan_image_layout_transition_levels(
+                &self.vulkan.device,
+                cmd,
+                input.image,
+                1,
+                vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::GENERAL,
+                vk::AccessFlags::empty(),
+                vk::AccessFlags::SHADER_READ | vk::AccessFlags::COLOR_ATTACHMENT_READ,
+                vk::PipelineStageFlags::BOTTOM_OF_PIPE,
+                vk::PipelineStageFlags::FRAGMENT_SHADER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED
+            );
+        }
+
+        let original_image_view = unsafe {
+            let create_info = vk::ImageViewCreateInfo::builder()
+                .image(input.image)
+                .format(input.format)
+                .view_type(vk::ImageViewType::TYPE_2D)
+                .subresource_range(vk::ImageSubresourceRange::builder()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .level_count(1)
+                    .layer_count(1)
+                    .build())
+                .components(vk::ComponentMapping::builder()
+                                .r(vk::ComponentSwizzle::R)
+                                .g(vk::ComponentSwizzle::G)
+                                .b(vk::ComponentSwizzle::B)
+                                .a(vk::ComponentSwizzle::A)
+                                .build())
+                .build();
+
+            self.vulkan.device.create_image_view(&create_info, None)?
+        };
+
+        let filter = passes[0].config.filter;
+        let wrap_mode = passes[0].config.wrap_mode;
+
+        let original = Texture {
+            image: input.clone(),
+            image_view: original_image_view,
+            wrap_mode,
+            filter_mode: filter,
+            mip_filter: filter,
+        };
+
+        let mut source = original.clone();
+
+        // rescale render buffers to ensure all bindings are valid.
+        for (index, pass) in passes.iter_mut().enumerate() {
+            self.output_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                &viewport.into(),
+                &original,
+                &source,
+            )?;
+        }
+
         //
-        // for (index, pass) in passes.iter_mut().enumerate() {
-        //     pass.draw(index, &self.common, count as u32, 0, viewport, &Default::default(), &Texture {}, &Texture {})
-        // }
+        for (index, pass) in passes.iter_mut().enumerate() {
+            let target = &self.output_framebuffers[index];
+            // todo: use proper mode
+            let out = RenderTarget {
+                mvp: VBO_DEFAULT_FINAL,
+                output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass, target.image.image, target.image.size)?,
+            };
+
+            pass.draw(cmd, index, &self.common, count as u32, 0, viewport, &original, &source, &out)?;
+        }
 
         // unsafe {
         //     self.vulkan.device.queue_submit(self.vulkan.queue, &[vk::SubmitInfo::builder()

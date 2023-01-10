@@ -22,6 +22,7 @@ use ash::vk::RenderingInfo;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
+use crate::texture::VulkanImage;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -172,6 +173,20 @@ impl VulkanWindow {
             let swapchain_image = vulkan.swapchain.swapchain_images[swapchain_index as usize];
 
             Self::record_command_buffer(vulkan, framebuffer, cmd);
+
+            filter.frame(0, &vk::Viewport {
+                x: 0.0,
+                y: 0.0,
+                width: vulkan.swapchain.extent.width as f32,
+                height: vulkan.swapchain.extent.height as f32,
+                min_depth: 0.0,
+                max_depth: 1.0,
+            }, &VulkanImage {
+                size: vulkan.swapchain.extent.into(),
+                image: framebuffer_image,
+                format: vulkan.swapchain.format.format,
+            }, cmd, None)
+                .unwrap();
 
             util::vulkan_image_layout_transition_levels(
                 &vulkan.base.device,
