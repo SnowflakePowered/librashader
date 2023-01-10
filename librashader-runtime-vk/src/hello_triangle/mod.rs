@@ -9,6 +9,7 @@ mod command;
 mod syncobjects;
 
 use ash::vk;
+use ash::vk::RenderingInfo;
 use winit::event::{Event, VirtualKeyCode, ElementState, KeyboardInput, WindowEvent};
 use winit::event_loop::{EventLoop, ControlFlow, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
@@ -20,6 +21,7 @@ use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::swapchain::VulkanSwapchain;
 use crate::hello_triangle::syncobjects::SyncObjects;
 use crate::hello_triangle::vulkan_base::VulkanBase;
+use crate::util;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -73,7 +75,7 @@ impl VulkanWindow {
         })
     }
 
-    unsafe fn record_command_buffer(vulkan: &VulkanDraw, swapchain_index: u32) -> vk::CommandBuffer {
+    unsafe fn record_command_buffer(vulkan: &VulkanDraw, framebuffer: vk::Framebuffer, cmd: vk::CommandBuffer) {
         let clear_values = [
             vk::ClearValue {
                 color: vk::ClearColorValue {
@@ -84,7 +86,7 @@ impl VulkanWindow {
 
         let render_pass_begin = vk::RenderPassBeginInfo::builder()
             .render_pass(vulkan.pipeline.renderpass)
-            .framebuffer(vulkan.framebuffers[swapchain_index as usize].framebuffer)
+            .framebuffer(framebuffer)
             .render_area(vk::Rect2D {
                 extent: vulkan.swapchain.extent,
                 ..Default::default()
@@ -93,7 +95,6 @@ impl VulkanWindow {
             .build();
 
 
-        let cmd = vulkan.command_pool.buffers[swapchain_index as usize];
         vulkan.base.device.reset_command_buffer(cmd, vk::CommandBufferResetFlags::empty())
             .expect("could not reset command buffer");
 
@@ -124,9 +125,9 @@ impl VulkanWindow {
         vulkan.base.device.cmd_draw(cmd, 3, 1, 0, 0);
         vulkan.base.device.cmd_end_render_pass(cmd);
 
-        vulkan.base.device.end_command_buffer(cmd).expect("failed to record commandbuffer");
 
-        cmd
+
+
     }
 
     fn draw_frame(vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
@@ -140,7 +141,77 @@ impl VulkanWindow {
             let (swapchain_index, _) = vulkan.swapchain.loader.acquire_next_image(vulkan.swapchain.swapchain, u64::MAX, vulkan.sync.image_available, vk::Fence::null())
                 .unwrap();
 
-            let cmd = Self::record_command_buffer(vulkan, swapchain_index);
+            let cmd = vulkan.render_command_pool.buffers[swapchain_index as usize];
+            let framebuffer = vulkan.render_framebuffers[swapchain_index as usize].framebuffer;
+            let framebuffer_image = vulkan.swapchain.render_images[swapchain_index as usize].0;
+            let swapchain_image = vulkan.swapchain.swapchain_images[swapchain_index as usize];
+
+            Self::record_command_buffer(vulkan, framebuffer, cmd);
+
+            util::vulkan_image_layout_transition_levels(&vulkan.base.device,
+                cmd,
+                framebuffer_image,
+                1,
+                                                        vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                                                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                                                        vk::AccessFlags::TRANSFER_READ,
+                    vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::QUEUE_FAMILY_IGNORED,
+                    vk::QUEUE_FAMILY_IGNORED
+                );
+
+            let blit_subresource =vk::ImageSubresourceLayers::builder()
+                .layer_count(1)
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .build();
+
+            let src_offsets = [
+                vk::Offset3D { x: 0, y: 0, z: 0 },
+                vk::Offset3D {
+                    x: vulkan.swapchain.extent.width as i32,
+                    y: vulkan.swapchain.extent.height as i32,
+                    z: 1,
+                },
+            ];
+
+            let dst_offsets = [
+                vk::Offset3D { x: 0, y: 0, z: 0 },
+                vk::Offset3D {
+                    x: vulkan.swapchain.extent.width as i32,
+                    y: vulkan.swapchain.extent.height as i32,
+                    z: 1,
+                },
+            ];
+            vulkan.base.device.cmd_blit_image(cmd, framebuffer_image, vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            swapchain_image,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &[vk::ImageBlit {
+                    src_subresource: blit_subresource,
+                    src_offsets,
+                    dst_subresource: blit_subresource,
+                    dst_offsets,
+                }],
+                                              vk::Filter::LINEAR
+            );
+
+            util::vulkan_image_layout_transition_levels(&vulkan.base.device,
+                                                        cmd,
+                                                        swapchain_image,
+                                                        1,
+                                                        vk::ImageLayout::UNDEFINED,
+                                                        vk::ImageLayout::PRESENT_SRC_KHR,
+                                                        vk::AccessFlags::empty(),
+                                                        vk::AccessFlags::TRANSFER_READ,
+                                                        vk::PipelineStageFlags::TRANSFER,
+                                                        vk::PipelineStageFlags::TRANSFER,
+                                                        vk::QUEUE_FAMILY_IGNORED,
+                                                        vk::QUEUE_FAMILY_IGNORED
+            );
+
+            vulkan.base.device.end_command_buffer(cmd).expect("failed to record commandbuffer");
+
 
             let submit_info = vk::SubmitInfo::builder()
                 .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])
@@ -186,8 +257,10 @@ pub struct VulkanDraw {
     base: VulkanBase,
     pub swapchain: VulkanSwapchain,
     pub pipeline: VulkanPipeline,
-    pub framebuffers: Vec<VulkanFramebuffer>,
-    pub command_pool: VulkanCommandPool,
+    pub swapchain_framebuffers: Vec<VulkanFramebuffer>,
+    pub swapchain_command_pool: VulkanCommandPool,
+    pub render_command_pool: VulkanCommandPool,
+    pub render_framebuffers: Vec<VulkanFramebuffer>,
     pub sync: SyncObjects,
 }
 
@@ -207,12 +280,19 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
     let pipeline = unsafe { VulkanPipeline::new(&vulkan, &swapchain) }
         .unwrap();
 
-    let mut framebuffers = vec![];
-    for image in &swapchain.image_views {
-        framebuffers.push(VulkanFramebuffer::new(&vulkan.device, image, &pipeline.renderpass, WINDOW_WIDTH, WINDOW_HEIGHT).unwrap())
+    let mut swapchain_framebuffers = vec![];
+    for image in &swapchain.swapchain_image_views {
+        swapchain_framebuffers.push(VulkanFramebuffer::new(&vulkan.device, image, &pipeline.renderpass, WINDOW_WIDTH, WINDOW_HEIGHT).unwrap())
     }
 
-    let command_pool = VulkanCommandPool::new(&vulkan, 3)
+    let mut render_framebuffers = vec![];
+    for image in &swapchain.render_image_views {
+        render_framebuffers.push(VulkanFramebuffer::new(&vulkan.device, image, &pipeline.renderpass, WINDOW_WIDTH, WINDOW_HEIGHT).unwrap())
+    }
+
+    let swapchain_command_pool = VulkanCommandPool::new(&vulkan, 3)
+        .unwrap();
+    let render_command_pool = VulkanCommandPool::new(&vulkan, 3)
         .unwrap();
 
     let sync = SyncObjects::new(&vulkan.device)
@@ -223,9 +303,11 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
         swapchain,
         base: vulkan,
         pipeline,
-        framebuffers,
-        command_pool,
-        sync
+        swapchain_framebuffers,
+        swapchain_command_pool,
+        sync,
+        render_command_pool,
+        render_framebuffers,
     };
 
     VulkanWindow::main_loop(event_loop, window, vulkan, filter_chain);

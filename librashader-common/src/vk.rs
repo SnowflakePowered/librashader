@@ -87,6 +87,42 @@ impl From<Size<u32>> for vk::Extent3D {
         }
     }
 }
+impl From<vk::Extent3D> for Size<u32> {
+    fn from(value: vk::Extent3D) -> Self {
+        Size {
+            width: value.width,
+            height: value.height,
+        }
+    }
+}
+
+impl From<vk::Extent2D> for Size<u32> {
+    fn from(value: vk::Extent2D) -> Self {
+        Size {
+            width: value.width,
+            height: value.height,
+        }
+    }
+}
+
+impl From<vk::Viewport> for Size<u32> {
+    fn from(value: vk::Viewport) -> Self {
+        Size {
+            width: value.width as u32,
+            height: value.height as u32,
+        }
+    }
+}
+
+impl From<&vk::Viewport> for Size<u32> {
+    fn from(value: &vk::Viewport) -> Self {
+        Size {
+            width: value.width as u32,
+            height: value.height as u32,
+        }
+    }
+}
+
 
 impl From<FilterMode> for vk::Filter {
     fn from(value: FilterMode) -> Self {

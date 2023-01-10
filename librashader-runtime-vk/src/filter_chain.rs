@@ -67,6 +67,7 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?
             };
 
+            // the queue is only used for lut loading.. we may want to select our own queue.
             let command_pool = unsafe {
                 device.create_command_pool(
                     &vk::CommandPoolCreateInfo::builder()
@@ -373,8 +374,7 @@ impl FilterChainVulkan {
         viewport: &vk::Viewport,
         input: &VulkanImage,
         options: Option<()>,
-        wait: vk::Semaphore,
-        signal: vk::Semaphore,
+        command_buffer: vk::CommandBuffer
     ) -> error::Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
@@ -384,14 +384,14 @@ impl FilterChainVulkan {
         //     pass.draw(index, &self.common, count as u32, 0, viewport, &Default::default(), &Texture {}, &Texture {})
         // }
 
-        unsafe {
-            self.vulkan.device.queue_submit(self.vulkan.queue, &[vk::SubmitInfo::builder()
-                .wait_semaphores(&[wait])
-                .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS],)
-                .signal_semaphores(&[signal])
-                .command_buffers(&[])
-                .build()], vk::Fence::null())?
-        }
+        // unsafe {
+        //     self.vulkan.device.queue_submit(self.vulkan.queue, &[vk::SubmitInfo::builder()
+        //         .wait_semaphores(&[wait])
+        //         .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS],)
+        //         .signal_semaphores(&[signal])
+        //         .command_buffers(&[])
+        //         .build()], vk::Fence::null())?
+        // }
 
         Ok(())
 

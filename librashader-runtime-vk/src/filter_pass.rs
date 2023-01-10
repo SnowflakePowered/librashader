@@ -58,6 +58,7 @@ impl FilterPass {
 
     pub(crate) fn draw(
         &mut self,
+        cmd: vk::CommandBuffer,
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
@@ -69,14 +70,13 @@ impl FilterPass {
     ) -> error::Result<()> {
         let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[0];
 
-        self.build_semantics(pass_index, parent, &output.mvp, frame_count, frame_direction, Size::new(100, 100),
-                             Size::new(100,100),&descriptor, original, source);
+        self.build_semantics(pass_index, parent, &output.mvp, frame_count, frame_direction, output.output.size,
+                             viewport.into(),&descriptor, original, source);
 
         if let Some(ubo) = &self.reflection.ubo {
-
             // shader_vulkan: 2554 (ra uses uses one big buffer)
             // itll be simpler for us if we just use a RingBuffer<vk::Buffer> tbh.
-            self.ubo_ring.bind_for_frame(descriptor, ubo.binding, &self.uniform_storage)?;
+            self.ubo_ring.bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
         }
 
         Ok(())

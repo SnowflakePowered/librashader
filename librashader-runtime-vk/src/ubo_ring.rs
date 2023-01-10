@@ -22,7 +22,7 @@ impl VkUboRing {
         })
     }
 
-    pub fn bind_for_frame(&mut self, descriptor_set: vk::DescriptorSet, binding: u32, storage: &impl UniformStorageAccess) -> error::Result<()>{
+    pub fn bind_to_descriptor_set(&mut self, descriptor_set: vk::DescriptorSet, binding: u32, storage: &impl UniformStorageAccess) -> error::Result<()>{
         let mut buffer = self.ring.current_mut();
         // todo: write directly to allocated buffer.
         unsafe {

@@ -67,75 +67,84 @@ impl OwnedFramebuffer {
     }
 }
 
-pub struct OutputFramebuffer<'a> {
-    device: ash::Device,
-    render_pass: &'a VulkanRenderPass,
-    pub handle: vk::Framebuffer,
+#[derive(Debug, Clone)]
+pub(crate) struct OutputFramebuffer {
+    pub framebuffer: vk::Framebuffer,
     pub size: Size<u32>,
-    pub image: vk::Image,
-    pub image_view: vk::ImageView,
+    pub viewport: vk::Viewport,
 }
 
-impl<'a> OutputFramebuffer<'a> {
-    pub fn new(vulkan: &Vulkan, render_pass: &'a VulkanRenderPass, image: vk::Image, size: Size<u32>) -> error::Result<OutputFramebuffer<'a>> {
-        let image_subresource = vk::ImageSubresourceRange::builder()
-            .base_mip_level(0)
-            .base_array_layer(0)
-            .level_count(1)
-            .layer_count(1)
-            .aspect_mask(ImageAspectFlags::COLOR)
-            .build();
 
-        let swizzle_components = vk::ComponentMapping::builder()
-            .r(vk::ComponentSwizzle::R)
-            .g(vk::ComponentSwizzle::G)
-            .b(vk::ComponentSwizzle::B)
-            .a(vk::ComponentSwizzle::A)
-            .build();
-
-        let mut view_info = vk::ImageViewCreateInfo::builder()
-            .view_type(ImageViewType::TYPE_2D)
-            .format(render_pass.format.into())
-            .image(image.clone())
-            .subresource_range(image_subresource)
-            .components(swizzle_components)
-            .build();
-
-        let image_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
-
-        let framebuffer = unsafe {
-            vulkan.device.create_framebuffer(
-                &vk::FramebufferCreateInfo::builder()
-                    .render_pass(render_pass.handle)
-                    .attachments(&[image_view])
-                    .width(size.width)
-                    .height(size.height)
-                    .layers(1)
-                    .build(),
-                None,
-            )?
-        };
-        
-        Ok(OutputFramebuffer {
-            device: vulkan.device.clone(),
-            image,
-            image_view,
-            render_pass,
-            size,
-            handle: framebuffer,
-        })
-    }
-
-    pub fn get_renderpass_begin_info(&self, area: vk::Rect2D, clear: Option<&[vk::ClearValue]>) -> vk::RenderPassBeginInfo {
-        let mut builder = vk::RenderPassBeginInfo::builder()
-            .render_pass(self.render_pass.handle)
-            .framebuffer(self.handle)
-            .render_area(area);
-
-        if let Some(clear) = clear {
-            builder = builder.clear_values(clear)
-        }
-
-        builder.build()
-    }
-}
+//
+// pub struct OutputFramebuffer<'a> {
+//     device: ash::Device,
+//     render_pass: &'a VulkanRenderPass,
+//     pub handle: vk::Framebuffer,
+//     pub size: Size<u32>,
+//     pub image: vk::Image,
+//     pub image_view: vk::ImageView,
+// }
+//
+// impl<'a> OutputFramebuffer<'a> {
+//     pub fn new(vulkan: &Vulkan, render_pass: &'a VulkanRenderPass, image: vk::Image, size: Size<u32>) -> error::Result<OutputFramebuffer<'a>> {
+//         let image_subresource = vk::ImageSubresourceRange::builder()
+//             .base_mip_level(0)
+//             .base_array_layer(0)
+//             .level_count(1)
+//             .layer_count(1)
+//             .aspect_mask(ImageAspectFlags::COLOR)
+//             .build();
+//
+//         let swizzle_components = vk::ComponentMapping::builder()
+//             .r(vk::ComponentSwizzle::R)
+//             .g(vk::ComponentSwizzle::G)
+//             .b(vk::ComponentSwizzle::B)
+//             .a(vk::ComponentSwizzle::A)
+//             .build();
+//
+//         let mut view_info = vk::ImageViewCreateInfo::builder()
+//             .view_type(ImageViewType::TYPE_2D)
+//             .format(render_pass.format.into())
+//             .image(image.clone())
+//             .subresource_range(image_subresource)
+//             .components(swizzle_components)
+//             .build();
+//
+//         let image_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
+//
+//         let framebuffer = unsafe {
+//             vulkan.device.create_framebuffer(
+//                 &vk::FramebufferCreateInfo::builder()
+//                     .render_pass(render_pass.handle)
+//                     .attachments(&[image_view])
+//                     .width(size.width)
+//                     .height(size.height)
+//                     .layers(1)
+//                     .build(),
+//                 None,
+//             )?
+//         };
+//
+//         Ok(OutputFramebuffer {
+//             device: vulkan.device.clone(),
+//             image,
+//             image_view,
+//             render_pass,
+//             size,
+//             handle: framebuffer,
+//         })
+//     }
+//
+//     pub fn get_renderpass_begin_info(&self, area: vk::Rect2D, clear: Option<&[vk::ClearValue]>) -> vk::RenderPassBeginInfo {
+//         let mut builder = vk::RenderPassBeginInfo::builder()
+//             .render_pass(self.render_pass.handle)
+//             .framebuffer(self.handle)
+//             .render_area(area);
+//
+//         if let Some(clear) = clear {
+//             builder = builder.clear_values(clear)
+//         }
+//
+//         builder.build()
+//     }
+// }

@@ -2,9 +2,6 @@ use crate::filter_chain::Vulkan;
 use crate::vulkan_primitives::{VulkanBuffer, VulkanImageMemory};
 use crate::{error, util};
 use ash::vk;
-use ash::vk::ImageSubresourceLayers;
-use glfw::Key::P;
-use librashader_common::{FilterMode, WrapMode};
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
@@ -53,7 +50,7 @@ impl LutTexture {
                 mem_reqs.memory_type_bits,
                 vk::MemoryPropertyFlags::DEVICE_LOCAL,
             );
-            crate::vulkan_primitives::VulkanImageMemory::new(
+            VulkanImageMemory::new(
                 &vulkan.device,
                 &vk::MemoryAllocateInfo::builder()
                     .memory_type_index(mem_type)
@@ -162,14 +159,14 @@ impl LutTexture {
                     z: 1,
                 },
             ];
-            let src_subresource = ImageSubresourceLayers::builder()
+            let src_subresource = vk::ImageSubresourceLayers::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .mip_level(level - 1)
                 .base_array_layer(0)
                 .layer_count(1)
                 .build();
 
-            let dst_subresource = ImageSubresourceLayers::builder()
+            let dst_subresource = vk::ImageSubresourceLayers::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .mip_level(level)
                 .base_array_layer(0)

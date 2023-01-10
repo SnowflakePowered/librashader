@@ -7,7 +7,6 @@ mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
-mod hello_triangle_old;
 mod luts;
 mod renderpass;
 mod util;

@@ -1,8 +1,8 @@
 use ash::vk;
-use crate::framebuffer::VulkanFramebuffer;
+use crate::framebuffer::{OutputFramebuffer,};
 
-pub struct RenderTarget {
-    pub mvp: [f32; 16],
-    pub image: vk::Image,
-    pub framebuffer: VulkanFramebuffer
+#[derive(Debug, Clone)]
+pub(crate) struct RenderTarget<'a> {
+    pub mvp: &'a [f32; 16],
+    pub output: OutputFramebuffer,
 }
