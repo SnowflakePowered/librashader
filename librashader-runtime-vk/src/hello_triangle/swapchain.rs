@@ -6,11 +6,11 @@ use crate::hello_triangle::vulkan_base::VulkanBase;
 pub struct VulkanSwapchain {
     pub swapchain: vk::SwapchainKHR,
     pub loader: ash::extensions::khr::Swapchain,
-    format: vk::SurfaceFormatKHR,
-    extent: vk::Extent2D,
+    pub format: vk::SurfaceFormatKHR,
+    pub extent: vk::Extent2D,
     mode: vk::PresentModeKHR,
     images: Vec<vk::Image>,
-    image_views: Vec<vk::ImageView>,
+    pub image_views: Vec<vk::ImageView>,
     device: ash::Device,
 }
 
