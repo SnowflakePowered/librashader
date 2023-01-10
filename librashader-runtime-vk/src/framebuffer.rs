@@ -1,13 +1,10 @@
 use crate::error;
-use crate::renderpass::VulkanRenderPass;
-use ash::vk;
-use ash::vk::{
-    ImageAspectFlags,
-    ImageViewType,
-};
-use librashader_common::Size;
 use crate::filter_chain::Vulkan;
+use crate::renderpass::VulkanRenderPass;
 use crate::texture::OwnedTexture;
+use ash::vk;
+use ash::vk::{ImageAspectFlags, ImageViewType};
+use librashader_common::Size;
 
 pub struct VulkanFramebuffer {
     pub device: ash::Device,
@@ -73,7 +70,6 @@ pub(crate) struct OutputFramebuffer {
     pub size: Size<u32>,
     pub viewport: vk::Viewport,
 }
-
 
 //
 // pub struct OutputFramebuffer<'a> {

@@ -1,16 +1,16 @@
 use crate::filter_chain::Vulkan;
+use crate::texture::{Texture, VulkanImage};
 use crate::vulkan_primitives::{VulkanBuffer, VulkanImageMemory};
 use crate::{error, util};
 use ash::vk;
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
-use crate::texture::{Texture, VulkanImage};
 
 pub struct LutTexture {
     pub memory: VulkanImageMemory,
     pub staging: VulkanBuffer,
-    pub image: Texture
+    pub image: Texture,
 }
 
 impl LutTexture {
@@ -238,12 +238,12 @@ impl LutTexture {
                 image: VulkanImage {
                     size: image.size,
                     image: texture,
-                    format: vk::Format::B8G8R8A8_UNORM
+                    format: vk::Format::B8G8R8A8_UNORM,
                 },
                 filter_mode: config.filter_mode,
                 wrap_mode: config.wrap_mode,
                 mip_filter: config.filter_mode,
-            }
+            },
         })
     }
 }

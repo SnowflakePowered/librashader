@@ -1,8 +1,8 @@
+use crate::error;
+use crate::vulkan_primitives::VulkanBuffer;
 use ash::vk;
 use librashader_runtime::ringbuffer::{BoxRingBuffer, InlineRingBuffer, RingBuffer};
 use librashader_runtime::uniforms::UniformStorageAccess;
-use crate::error;
-use crate::vulkan_primitives::VulkanBuffer;
 
 pub struct VkUboRing {
     ring: BoxRingBuffer<VulkanBuffer>,
@@ -10,19 +10,34 @@ pub struct VkUboRing {
 }
 
 impl VkUboRing {
-    pub fn new(device: &ash::Device, mem_props: &vk::PhysicalDeviceMemoryProperties, ring_size: usize, buffer_size: usize) -> error::Result<Self> {
+    pub fn new(
+        device: &ash::Device,
+        mem_props: &vk::PhysicalDeviceMemoryProperties,
+        ring_size: usize,
+        buffer_size: usize,
+    ) -> error::Result<Self> {
         let mut ring = Vec::new();
         for _ in 0..ring_size {
-            ring.push(VulkanBuffer::new(device, mem_props, vk::BufferUsageFlags::UNIFORM_BUFFER, buffer_size)?);
+            ring.push(VulkanBuffer::new(
+                device,
+                mem_props,
+                vk::BufferUsageFlags::UNIFORM_BUFFER,
+                buffer_size,
+            )?);
         }
 
         Ok(VkUboRing {
             ring: BoxRingBuffer::from_vec(ring),
-            device: device.clone()
+            device: device.clone(),
         })
     }
 
-    pub fn bind_to_descriptor_set(&mut self, descriptor_set: vk::DescriptorSet, binding: u32, storage: &impl UniformStorageAccess) -> error::Result<()>{
+    pub fn bind_to_descriptor_set(
+        &mut self,
+        descriptor_set: vk::DescriptorSet,
+        binding: u32,
+        storage: &impl UniformStorageAccess,
+    ) -> error::Result<()> {
         let mut buffer = self.ring.current_mut();
         // todo: write directly to allocated buffer.
         unsafe {

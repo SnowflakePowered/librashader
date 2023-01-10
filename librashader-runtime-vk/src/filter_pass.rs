@@ -1,19 +1,21 @@
-use ash::vk;
-use crate::vulkan_state::VulkanGraphicsPipeline;
-use librashader_preprocess::ShaderSource;
-use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics};
-use librashader_runtime::uniforms::UniformStorage;
-use rustc_hash::FxHashMap;
-use librashader_common::Size;
-use librashader_reflect::reflect::ShaderReflection;
 use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::rendertarget::RenderTarget;
-use crate::texture::Texture;
 use crate::samplers::{SamplerSet, VulkanSampler};
+use crate::texture::Texture;
 use crate::ubo_ring::VkUboRing;
+use crate::vulkan_state::VulkanGraphicsPipeline;
+use ash::vk;
+use librashader_common::Size;
+use librashader_preprocess::ShaderSource;
+use librashader_presets::ShaderPassConfig;
+use librashader_reflect::back::ShaderCompilerOutput;
+use librashader_reflect::reflect::semantics::{
+    MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+};
+use librashader_reflect::reflect::ShaderReflection;
+use librashader_runtime::uniforms::UniformStorage;
+use rustc_hash::FxHashMap;
 
 pub struct FilterPass {
     pub device: ash::Device,
@@ -24,18 +26,18 @@ pub struct FilterPass {
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
     pub graphics_pipeline: VulkanGraphicsPipeline,
-    pub ubo_ring: VkUboRing
+    pub ubo_ring: VkUboRing,
 }
 
-
 impl FilterPass {
-
     #[inline(always)]
-    fn bind_texture(device: &ash::Device,
-                    samplers: &SamplerSet,
-                    descriptor_set: vk::DescriptorSet,
-                    binding: &TextureBinding,
-                    texture: &Texture) {
+    fn bind_texture(
+        device: &ash::Device,
+        samplers: &SamplerSet,
+        descriptor_set: vk::DescriptorSet,
+        binding: &TextureBinding,
+        texture: &Texture,
+    ) {
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
         let image_info = [vk::DescriptorImageInfo::builder()
             .sampler(sampler.handle)
@@ -53,7 +55,6 @@ impl FilterPass {
         unsafe {
             device.update_descriptor_sets(&write_desc, &[]);
         }
-
     }
 
     pub(crate) fn draw(
@@ -70,13 +71,24 @@ impl FilterPass {
     ) -> error::Result<()> {
         let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[0];
 
-        self.build_semantics(pass_index, parent, &output.mvp, frame_count, frame_direction, output.output.size,
-                             viewport.into(),&descriptor, original, source);
+        self.build_semantics(
+            pass_index,
+            parent,
+            &output.mvp,
+            frame_count,
+            frame_direction,
+            output.output.size,
+            viewport.into(),
+            &descriptor,
+            original,
+            source,
+        );
 
         if let Some(ubo) = &self.reflection.ubo {
             // shader_vulkan: 2554 (ra uses uses one big buffer)
             // itll be simpler for us if we just use a RingBuffer<vk::Buffer> tbh.
-            self.ubo_ring.bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
+            self.ubo_ring
+                .bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
         }
 
         Ok(())
@@ -172,7 +184,7 @@ impl FilterPass {
                 &parent.samplers,
                 *descriptor_set,
                 binding,
-                source
+                source,
             );
         }
 
@@ -301,12 +313,12 @@ impl FilterPass {
 
         // bind float parameters
         for (id, offset) in
-        self.uniform_bindings
-            .iter()
-            .filter_map(|(binding, value)| match binding {
-                UniformBinding::Parameter(id) => Some((id, value)),
-                _ => None,
-            })
+            self.uniform_bindings
+                .iter()
+                .filter_map(|(binding, value)| match binding {
+                    UniformBinding::Parameter(id) => Some((id, value)),
+                    _ => None,
+                })
         {
             let id = id.as_str();
 

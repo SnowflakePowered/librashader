@@ -1,14 +1,13 @@
+use ash::vk;
 use std::borrow::Cow;
 use std::error::Error;
-use ash::vk;
 
-use std::ffi::{CStr, CString};
-use ash::prelude::VkResult;
 use crate::filter_chain::Vulkan;
 use crate::hello_triangle::debug::VulkanDebug;
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 use crate::hello_triangle::surface::VulkanSurface;
-
+use ash::prelude::VkResult;
+use std::ffi::{CStr, CString};
 
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
 
@@ -39,13 +38,11 @@ impl VulkanBase {
         let extensions = [
             ash::extensions::khr::Surface::name().as_ptr(),
             ash::extensions::khr::Win32Surface::name().as_ptr(),
-            ash::extensions::ext::DebugUtils::name().as_ptr()
+            ash::extensions::ext::DebugUtils::name().as_ptr(),
         ];
 
-        let layers =  unsafe {
-            [CStr::from_bytes_with_nul_unchecked(
-                b"VK_LAYER_KHRONOS_validation\0",
-            ).as_ptr()]
+        let layers = unsafe {
+            [CStr::from_bytes_with_nul_unchecked(b"VK_LAYER_KHRONOS_validation\0").as_ptr()]
         };
 
         let create_info = vk::InstanceCreateInfo::builder()
@@ -54,9 +51,7 @@ impl VulkanBase {
             .enabled_extension_names(&extensions)
             .build();
 
-        let instance = unsafe {
-            entry.create_instance(&create_info, None)?
-        };
+        let instance = unsafe { entry.create_instance(&create_info, None)? };
 
         let debug = VulkanDebug::new(&entry, &instance, Some(vulkan_debug_callback))?;
 
@@ -64,9 +59,7 @@ impl VulkanBase {
 
         let (device, queue) = VulkanBase::create_device(&instance, &physical_device)?;
 
-        let mem_props =  unsafe {
-            instance.get_physical_device_memory_properties(physical_device)
-        };
+        let mem_props = unsafe { instance.get_physical_device_memory_properties(physical_device) };
 
         Ok(VulkanBase {
             entry,
@@ -79,11 +72,12 @@ impl VulkanBase {
         })
     }
 
-    fn create_device(instance: &ash::Instance, physical_device: &vk::PhysicalDevice) -> VkResult<(ash::Device, vk::Queue)> {
+    fn create_device(
+        instance: &ash::Instance,
+        physical_device: &vk::PhysicalDevice,
+    ) -> VkResult<(ash::Device, vk::Queue)> {
         let debug = unsafe {
-            CStr::from_bytes_with_nul_unchecked(
-                b"VK_LAYER_KHRONOS_validation\0",
-            ).as_ptr()
+            CStr::from_bytes_with_nul_unchecked(b"VK_LAYER_KHRONOS_validation\0").as_ptr()
         };
 
         let indices = find_queue_family(&instance, *physical_device);
@@ -97,22 +91,18 @@ impl VulkanBase {
         let device_create_info = vk::DeviceCreateInfo::builder()
             .queue_create_infos(&[queue_info])
             .enabled_layer_names(&[debug])
-            .enabled_extension_names(&[
-                ash::extensions::khr::Swapchain::name().as_ptr()
-            ])
+            .enabled_extension_names(&[ash::extensions::khr::Swapchain::name().as_ptr()])
             .enabled_features(&physical_device_features)
             .build();
 
-        let device = unsafe {
-            instance.create_device(*physical_device, &device_create_info, None)?
-        };
+        let device =
+            unsafe { instance.create_device(*physical_device, &device_create_info, None)? };
 
         let queue = unsafe { device.get_device_queue(indices.graphics_family(), 0) };
 
         Ok((device, queue))
     }
 }
-
 
 unsafe extern "system" fn vulkan_debug_callback(
     message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
@@ -159,6 +149,10 @@ impl TryFrom<&VulkanBase> for Vulkan {
     type Error = Box<dyn Error>;
 
     fn try_from(value: &VulkanBase) -> Result<Self, Self::Error> {
-        Vulkan::try_from((value.device.clone(), value.graphics_queue.clone(), value.mem_props))
+        Vulkan::try_from((
+            value.device.clone(),
+            value.graphics_queue.clone(),
+            value.mem_props,
+        ))
     }
 }

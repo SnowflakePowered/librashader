@@ -1,6 +1,9 @@
 use crate::error;
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
+use crate::samplers::SamplerSet;
+use crate::texture::VulkanImage;
+use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
 use ash::{vk, Device};
@@ -19,9 +22,6 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
-use crate::samplers::SamplerSet;
-use crate::texture::VulkanImage;
-use crate::ubo_ring::VkUboRing;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -149,7 +149,7 @@ pub type FilterChainOptionsVulkan = ();
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        vulkan: impl TryInto<Vulkan, Error=Box<dyn Error>>,
+        vulkan: impl TryInto<Vulkan, Error = Box<dyn Error>>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -159,7 +159,7 @@ impl FilterChainVulkan {
     }
 
     pub fn load_from_preset(
-        vulkan: impl TryInto<Vulkan, Error=Box<dyn Error>>,
+        vulkan: impl TryInto<Vulkan, Error = Box<dyn Error>>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -171,7 +171,6 @@ impl FilterChainVulkan {
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
-
 
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
@@ -188,7 +187,7 @@ impl FilterChainVulkan {
                 },
             },
             passes: filters,
-            vulkan: device
+            vulkan: device,
         })
     }
 
@@ -221,7 +220,8 @@ impl FilterChainVulkan {
                 Ok::<_, Box<dyn Error>>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>()?;
+            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
+            )?;
 
         for details in &passes {
             librashader_runtime::semantics::insert_pass_semantics(
@@ -262,7 +262,8 @@ impl FilterChainVulkan {
                 .as_ref()
                 .map(|ubo| ubo.size as usize)
                 .unwrap_or(0);
-            let uniform_storage = UniformStorage::new(ubo_size,
+            let uniform_storage = UniformStorage::new(
+                ubo_size,
                 reflection
                     .push_constant
                     .as_ref()
@@ -298,7 +299,12 @@ impl FilterChainVulkan {
                 images,
             )?;
 
-            let ubo_ring = VkUboRing::new(&vulkan.device, &vulkan.memory_properties, images as usize, ubo_size)?;
+            let ubo_ring = VkUboRing::new(
+                &vulkan.device,
+                &vulkan.memory_properties,
+                images as usize,
+                ubo_size,
+            )?;
             // shader_vulkan: 2026
             filters.push(FilterPass {
                 device: vulkan.device.clone(),
@@ -374,7 +380,7 @@ impl FilterChainVulkan {
         viewport: &vk::Viewport,
         input: &VulkanImage,
         options: Option<()>,
-        command_buffer: vk::CommandBuffer
+        command_buffer: vk::CommandBuffer,
     ) -> error::Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
@@ -394,6 +400,5 @@ impl FilterChainVulkan {
         // }
 
         Ok(())
-
     }
 }

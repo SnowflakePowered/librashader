@@ -1,5 +1,5 @@
+use crate::framebuffer::OutputFramebuffer;
 use ash::vk;
-use crate::framebuffer::{OutputFramebuffer,};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RenderTarget<'a> {

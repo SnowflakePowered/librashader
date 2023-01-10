@@ -1,13 +1,18 @@
-use std::error::Error;
+use crate::error;
 use librashader::preprocess::ShaderSource;
 use librashader::presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader::reflect::{CompilerBackend, CompileShader, FromCompilation, GlslangCompilation, ReflectShader, ShaderCompilerOutput, ShaderReflection};
-use librashader::reflect::image::{Image, RGBA8, UVDirection};
-use librashader::reflect::semantics::{Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics};
+use librashader::reflect::image::{Image, UVDirection, RGBA8};
+use librashader::reflect::semantics::{
+    Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
+};
 use librashader::reflect::targets::SpirV;
+use librashader::reflect::{
+    CompileShader, CompilerBackend, FromCompilation, GlslangCompilation, ReflectShader,
+    ShaderCompilerOutput, ShaderReflection,
+};
 use librashader::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
-use crate::error;
+use std::error::Error;
 
 pub(crate) struct LookupTexture {
     wrap_mode: WrapMode,
@@ -16,22 +21,25 @@ pub(crate) struct LookupTexture {
     /// Whether or not to generate mipmaps for this texture.
     mipmap: bool,
     /// The image data of the texture
-    image: Image
+    image: Image,
 }
 
 pub(crate) struct PassReflection {
     reflection: ShaderReflection,
     config: ShaderPassConfig,
-    spirv: ShaderCompilerOutput<Vec<u32>>
+    spirv: ShaderCompilerOutput<Vec<u32>>,
 }
 pub(crate) struct FilterReflection {
     semantics: ShaderSemantics,
     passes: Vec<PassReflection>,
-    textures: Vec<LookupTexture>
+    textures: Vec<LookupTexture>,
 }
 
 impl FilterReflection {
-    pub fn load_from_preset(preset: ShaderPreset, direction: UVDirection) -> Result<FilterReflection, error::LibrashaderError>{
+    pub fn load_from_preset(
+        preset: ShaderPreset,
+        direction: UVDirection,
+    ) -> Result<FilterReflection, error::LibrashaderError> {
         let (passes, textures) = (preset.shaders, preset.textures);
         let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
         let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> =
@@ -59,7 +67,10 @@ impl FilterReflection {
                 Ok::<_, error::LibrashaderError>((shader, source, reflect))
             })
             .into_iter()
-            .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>, error::LibrashaderError>>()?;
+            .collect::<Result<
+                Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>,
+                error::LibrashaderError,
+            >>()?;
 
         for details in &passes {
             librashader::runtime::helper::insert_pass_semantics(
@@ -80,7 +91,6 @@ impl FilterReflection {
             texture_semantics,
         };
 
-
         let mut reflects = Vec::new();
 
         for (index, (config, _source, mut compiler)) in passes.into_iter().enumerate() {
@@ -89,21 +99,24 @@ impl FilterReflection {
             reflects.push(PassReflection {
                 reflection,
                 config,
-                spirv: words
+                spirv: words,
             })
-
         }
 
-        let textures = textures.into_iter().map(|texture| {
-            let lut = Image::<RGBA8>::load(&texture.path, direction)
-                .map_err(|e| error::LibrashaderError::UnknownError(Box::new(e)))?;
-            Ok(LookupTexture {
-                wrap_mode: texture.wrap_mode,
-                filter_mode: texture.filter_mode,
-                mipmap: texture.mipmap,
-                image: lut,
+        let textures = textures
+            .into_iter()
+            .map(|texture| {
+                let lut = Image::<RGBA8>::load(&texture.path, direction)
+                    .map_err(|e| error::LibrashaderError::UnknownError(Box::new(e)))?;
+                Ok(LookupTexture {
+                    wrap_mode: texture.wrap_mode,
+                    filter_mode: texture.filter_mode,
+                    mipmap: texture.mipmap,
+                    image: lut,
+                })
             })
-        }).into_iter().collect::<Result<Vec<LookupTexture>, error::LibrashaderError>>()?;
+            .into_iter()
+            .collect::<Result<Vec<LookupTexture>, error::LibrashaderError>>()?;
 
         Ok(FilterReflection {
             semantics,

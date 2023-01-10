@@ -1,5 +1,5 @@
-use std::ffi::CStr;
 use ash::vk;
+use std::ffi::CStr;
 
 pub struct QueueFamilyIndices {
     graphics_family: Option<u32>,
@@ -62,16 +62,12 @@ fn is_physical_device_suitable(
         device_name, device_properties.device_id, device_type
     );
 
-    println!(
-        "\tAPI Version: {}",
-        device_properties.api_version
-    );
+    println!("\tAPI Version: {}", device_properties.api_version);
 
     println!("\tSupport Queue Family: {}", device_queue_families.len());
     println!("\t\tQueue Count | Graphics, Compute, Transfer, Sparse Binding");
     for queue_family in device_queue_families.iter() {
-        let is_graphics_support = if queue_family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
-        {
+        let is_graphics_support = if queue_family.queue_flags.contains(vk::QueueFlags::GRAPHICS) {
             "support"
         } else {
             "unsupport"
@@ -81,8 +77,7 @@ fn is_physical_device_suitable(
         } else {
             "unsupport"
         };
-        let is_transfer_support = if queue_family.queue_flags.contains(vk::QueueFlags::TRANSFER)
-        {
+        let is_transfer_support = if queue_family.queue_flags.contains(vk::QueueFlags::TRANSFER) {
             "support"
         } else {
             "unsupport"

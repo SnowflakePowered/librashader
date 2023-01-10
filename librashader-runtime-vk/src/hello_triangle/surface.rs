@@ -1,18 +1,16 @@
+use crate::hello_triangle::vulkan_base::VulkanBase;
 use ash::prelude::VkResult;
 use ash::vk;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
-use crate::hello_triangle::vulkan_base::VulkanBase;
 
 pub struct VulkanSurface {
     surface_loader: ash::extensions::khr::Surface,
     pub surface: vk::SurfaceKHR,
-    pub present_queue: vk::Queue
+    pub present_queue: vk::Queue,
 }
 
 impl VulkanSurface {
-    pub fn new(base: &VulkanBase,
-               window: &winit::window::Window) -> VkResult<VulkanSurface>
-    {
+    pub fn new(base: &VulkanBase, window: &winit::window::Window) -> VkResult<VulkanSurface> {
         let surface = unsafe {
             ash_window::create_surface(
                 &base.entry,
@@ -26,7 +24,8 @@ impl VulkanSurface {
         let surface_loader = ash::extensions::khr::Surface::new(&base.entry, &base.instance);
 
         let present_queue = unsafe {
-            let queue_family = base.instance
+            let queue_family = base
+                .instance
                 .get_physical_device_queue_family_properties(base.physical_device)
                 .iter()
                 .enumerate()
@@ -34,12 +33,12 @@ impl VulkanSurface {
                     let supports_graphic_and_surface =
                         info.queue_flags.contains(vk::QueueFlags::GRAPHICS)
                             && surface_loader
-                            .get_physical_device_surface_support(
-                                base.physical_device,
-                                index as u32,
-                                surface,
-                            )
-                            .unwrap();
+                                .get_physical_device_surface_support(
+                                    base.physical_device,
+                                    index as u32,
+                                    surface,
+                                )
+                                .unwrap();
                     if supports_graphic_and_surface {
                         Some(index)
                     } else {
@@ -53,13 +52,15 @@ impl VulkanSurface {
         Ok(VulkanSurface {
             surface,
             surface_loader,
-            present_queue
+            present_queue,
         })
     }
 
     pub fn choose_format(&self, base: &VulkanBase) -> VkResult<vk::SurfaceFormatKHR> {
         unsafe {
-            let available_formats = self.surface_loader.get_physical_device_surface_formats(base.physical_device, self.surface)?;
+            let available_formats = self
+                .surface_loader
+                .get_physical_device_surface_formats(base.physical_device, self.surface)?;
             for available_format in available_formats.iter() {
                 if available_format.format == vk::Format::B8G8R8A8_SRGB
                     && available_format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
@@ -74,17 +75,26 @@ impl VulkanSurface {
 
     pub fn choose_present_mode(&self, base: &VulkanBase) -> VkResult<vk::PresentModeKHR> {
         unsafe {
-            let available_formats = self.surface_loader.get_physical_device_surface_present_modes(base.physical_device, self.surface)?;
+            let available_formats = self
+                .surface_loader
+                .get_physical_device_surface_present_modes(base.physical_device, self.surface)?;
 
-            Ok(if available_formats.contains(&vk::PresentModeKHR::MAILBOX) {
-                vk::PresentModeKHR::MAILBOX
-            } else {
-                vk::PresentModeKHR::FIFO
-            })
+            Ok(
+                if available_formats.contains(&vk::PresentModeKHR::MAILBOX) {
+                    vk::PresentModeKHR::MAILBOX
+                } else {
+                    vk::PresentModeKHR::FIFO
+                },
+            )
         }
     }
 
-    pub fn choose_swapchain_extent(&self, base: &VulkanBase, width: u32, height: u32) -> VkResult<vk::Extent2D> {
+    pub fn choose_swapchain_extent(
+        &self,
+        base: &VulkanBase,
+        width: u32,
+        height: u32,
+    ) -> VkResult<vk::Extent2D> {
         let capabilities = self.get_capabilities(base)?;
         if capabilities.current_extent.width != u32::MAX {
             Ok(capabilities.current_extent)
@@ -108,7 +118,8 @@ impl VulkanSurface {
 
     pub fn get_capabilities(&self, base: &VulkanBase) -> VkResult<vk::SurfaceCapabilitiesKHR> {
         unsafe {
-            self.surface_loader.get_physical_device_surface_capabilities(base.physical_device, self.surface)
+            self.surface_loader
+                .get_physical_device_surface_capabilities(base.physical_device, self.surface)
         }
     }
 }

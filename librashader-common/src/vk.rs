@@ -123,22 +123,20 @@ impl From<&vk::Viewport> for Size<u32> {
     }
 }
 
-
 impl From<FilterMode> for vk::Filter {
     fn from(value: FilterMode) -> Self {
         match value {
             FilterMode::Linear => vk::Filter::LINEAR,
-            FilterMode::Nearest => vk::Filter::NEAREST
+            FilterMode::Nearest => vk::Filter::NEAREST,
         }
     }
 }
-
 
 impl From<FilterMode> for vk::SamplerMipmapMode {
     fn from(value: FilterMode) -> Self {
         match value {
             FilterMode::Linear => vk::SamplerMipmapMode::LINEAR,
-            FilterMode::Nearest => vk::SamplerMipmapMode::NEAREST
+            FilterMode::Nearest => vk::SamplerMipmapMode::NEAREST,
         }
     }
 }
@@ -149,7 +147,7 @@ impl From<WrapMode> for vk::SamplerAddressMode {
             WrapMode::ClampToBorder => vk::SamplerAddressMode::CLAMP_TO_BORDER,
             WrapMode::ClampToEdge => vk::SamplerAddressMode::CLAMP_TO_EDGE,
             WrapMode::Repeat => vk::SamplerAddressMode::REPEAT,
-            WrapMode::MirroredRepeat => vk::SamplerAddressMode::MIRRORED_REPEAT
+            WrapMode::MirroredRepeat => vk::SamplerAddressMode::MIRRORED_REPEAT,
         }
     }
 }

@@ -50,10 +50,7 @@ impl VulkanRenderPass {
 
         unsafe {
             let rp = device.create_render_pass(&renderpass_info, None)?;
-            Ok(Self {
-                handle: rp,
-                format,
-            })
+            Ok(Self { handle: rp, format })
         }
     }
 }

@@ -1,10 +1,10 @@
-use ash::prelude::VkResult;
-use ash::vk;
-use ash::vk::Extent3D;
 use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
+use ash::prelude::VkResult;
+use ash::vk;
+use ash::vk::Extent3D;
 
 pub struct VulkanSwapchain {
     pub swapchain: vk::SwapchainKHR,
@@ -21,7 +21,12 @@ pub struct VulkanSwapchain {
 }
 
 impl VulkanSwapchain {
-    pub fn new(base: &VulkanBase, surface: &VulkanSurface, width: u32, height:u32 ) -> VkResult<VulkanSwapchain> {
+    pub fn new(
+        base: &VulkanBase,
+        surface: &VulkanSurface,
+        width: u32,
+        height: u32,
+    ) -> VkResult<VulkanSwapchain> {
         let format = surface.choose_format(base)?;
         let mode = surface.choose_present_mode(base)?;
         let extent = surface.choose_swapchain_extent(base, width, height)?;
@@ -56,12 +61,9 @@ impl VulkanSwapchain {
 
         let loader = ash::extensions::khr::Swapchain::new(&base.instance, &base.device);
 
-        let swapchain = unsafe {
-            loader.create_swapchain(&create_info, None)?
-        };
+        let swapchain = unsafe { loader.create_swapchain(&create_info, None)? };
 
         let swapchain_images = unsafe { loader.get_swapchain_images(swapchain)? };
-
 
         let mut render_images = vec![];
 
@@ -79,10 +81,7 @@ impl VulkanSwapchain {
                 .tiling(vk::ImageTiling::OPTIMAL)
                 .array_layers(1)
                 .mip_levels(1)
-                .usage(
-                    vk::ImageUsageFlags::SAMPLED
-                        | vk::ImageUsageFlags::COLOR_ATTACHMENT
-                )
+                .usage(vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::COLOR_ATTACHMENT)
                 .initial_layout(vk::ImageLayout::UNDEFINED);
 
             unsafe {
@@ -100,70 +99,68 @@ impl VulkanSwapchain {
                     .build();
 
                 // todo: optimize by reusing existing memory.
-                let memory = VulkanImageMemory::new(&base.device, &alloc_info)
-                    .unwrap();
-                memory.bind(&image)
-                    .unwrap();
+                let memory = VulkanImageMemory::new(&base.device, &alloc_info).unwrap();
+                memory.bind(&image).unwrap();
 
                 render_images.push((image, memory))
             }
         }
 
-        let image_views: VkResult<Vec<vk::ImageView>> = swapchain_images.iter().map(|image| {
-          let create_info = vk::ImageViewCreateInfo::builder()
-              .view_type(vk::ImageViewType::TYPE_2D)
-              .format(format.format)
-              .components(vk::ComponentMapping {
-                  r: vk::ComponentSwizzle::IDENTITY,
-                  g: vk::ComponentSwizzle::IDENTITY,
-                  b: vk::ComponentSwizzle::IDENTITY,
-                  a: vk::ComponentSwizzle::IDENTITY,
-              })
-              .subresource_range(vk::ImageSubresourceRange {
-                  aspect_mask: vk::ImageAspectFlags::COLOR,
-                  base_mip_level: 0,
-                  level_count: 1,
-                  base_array_layer: 0,
-                  layer_count: 1,
-              })
-              .image(*image)
-              .build();
+        let image_views: VkResult<Vec<vk::ImageView>> = swapchain_images
+            .iter()
+            .map(|image| {
+                let create_info = vk::ImageViewCreateInfo::builder()
+                    .view_type(vk::ImageViewType::TYPE_2D)
+                    .format(format.format)
+                    .components(vk::ComponentMapping {
+                        r: vk::ComponentSwizzle::IDENTITY,
+                        g: vk::ComponentSwizzle::IDENTITY,
+                        b: vk::ComponentSwizzle::IDENTITY,
+                        a: vk::ComponentSwizzle::IDENTITY,
+                    })
+                    .subresource_range(vk::ImageSubresourceRange {
+                        aspect_mask: vk::ImageAspectFlags::COLOR,
+                        base_mip_level: 0,
+                        level_count: 1,
+                        base_array_layer: 0,
+                        layer_count: 1,
+                    })
+                    .image(*image)
+                    .build();
 
+                let view = unsafe { base.device.create_image_view(&create_info, None)? };
 
-            let view = unsafe {
-                base.device.create_image_view(&create_info, None)?
-            };
+                Ok(view)
+            })
+            .collect();
 
-            Ok(view)
-        }).collect();
+        let render_image_views: VkResult<Vec<vk::ImageView>> = render_images
+            .iter()
+            .map(|(image, _)| {
+                let create_info = vk::ImageViewCreateInfo::builder()
+                    .view_type(vk::ImageViewType::TYPE_2D)
+                    .format(format.format)
+                    .components(vk::ComponentMapping {
+                        r: vk::ComponentSwizzle::IDENTITY,
+                        g: vk::ComponentSwizzle::IDENTITY,
+                        b: vk::ComponentSwizzle::IDENTITY,
+                        a: vk::ComponentSwizzle::IDENTITY,
+                    })
+                    .subresource_range(vk::ImageSubresourceRange {
+                        aspect_mask: vk::ImageAspectFlags::COLOR,
+                        base_mip_level: 0,
+                        level_count: 1,
+                        base_array_layer: 0,
+                        layer_count: 1,
+                    })
+                    .image(*image)
+                    .build();
 
-        let render_image_views: VkResult<Vec<vk::ImageView>> = render_images.iter().map(|(image, _)| {
-            let create_info = vk::ImageViewCreateInfo::builder()
-                .view_type(vk::ImageViewType::TYPE_2D)
-                .format(format.format)
-                .components(vk::ComponentMapping {
-                    r: vk::ComponentSwizzle::IDENTITY,
-                    g: vk::ComponentSwizzle::IDENTITY,
-                    b: vk::ComponentSwizzle::IDENTITY,
-                    a: vk::ComponentSwizzle::IDENTITY,
-                })
-                .subresource_range(vk::ImageSubresourceRange {
-                    aspect_mask: vk::ImageAspectFlags::COLOR,
-                    base_mip_level: 0,
-                    level_count: 1,
-                    base_array_layer: 0,
-                    layer_count: 1,
-                })
-                .image(*image)
-                .build();
+                let view = unsafe { base.device.create_image_view(&create_info, None)? };
 
-
-            let view = unsafe {
-                base.device.create_image_view(&create_info, None)?
-            };
-
-            Ok(view)
-        }).collect();
+                Ok(view)
+            })
+            .collect();
         Ok(VulkanSwapchain {
             swapchain,
             loader,
@@ -174,7 +171,7 @@ impl VulkanSwapchain {
             render_images,
             swapchain_image_views: image_views?,
             render_image_views: render_image_views?,
-            device: base.device.clone()
+            device: base.device.clone(),
         })
     }
 }

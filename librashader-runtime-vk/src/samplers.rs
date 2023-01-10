@@ -1,15 +1,20 @@
-use ash::vk;
-use rustc_hash::FxHashMap;
-use librashader_common::{FilterMode, WrapMode};
 use crate::error;
+use ash::vk;
+use librashader_common::{FilterMode, WrapMode};
+use rustc_hash::FxHashMap;
 
 pub struct VulkanSampler {
     pub handle: vk::Sampler,
-    device: ash::Device
+    device: ash::Device,
 }
 
 impl VulkanSampler {
-    pub fn new(device: &ash::Device, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> error::Result<VulkanSampler> {
+    pub fn new(
+        device: &ash::Device,
+        wrap: WrapMode,
+        filter: FilterMode,
+        mipmap: FilterMode,
+    ) -> error::Result<VulkanSampler> {
         let create_info = vk::SamplerCreateInfo::builder()
             .mip_lod_bias(0.0)
             .max_anisotropy(1.0)
@@ -26,13 +31,11 @@ impl VulkanSampler {
             .address_mode_w(wrap.into())
             .build();
 
-        let sampler = unsafe {
-            device.create_sampler(&create_info, None)?
-        };
+        let sampler = unsafe { device.create_sampler(&create_info, None)? };
 
         Ok(VulkanSampler {
             handle: sampler,
-            device: device.clone()
+            device: device.clone(),
         })
     }
 }
@@ -46,7 +49,6 @@ impl Drop for VulkanSampler {
         }
     }
 }
-
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
@@ -79,11 +81,11 @@ impl SamplerSet {
 
             samplers.insert(
                 (*wrap_mode, FilterMode::Nearest, FilterMode::Nearest),
-                VulkanSampler::new(device, *wrap_mode, FilterMode::Nearest, FilterMode::Nearest)?
+                VulkanSampler::new(device, *wrap_mode, FilterMode::Nearest, FilterMode::Nearest)?,
             );
             samplers.insert(
                 (*wrap_mode, FilterMode::Nearest, FilterMode::Linear),
-                VulkanSampler::new(device, *wrap_mode, FilterMode::Nearest, FilterMode::Linear)?
+                VulkanSampler::new(device, *wrap_mode, FilterMode::Nearest, FilterMode::Linear)?,
             );
         }
 

@@ -1,11 +1,14 @@
-use ash::vk;
-use ash::vk::{ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags, ImageViewType, SampleCountFlags, SharingMode};
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
-use librashader_runtime::scaling::MipmapSize;
 use crate::error;
 use crate::filter_chain::Vulkan;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
+use ash::vk;
+use ash::vk::{
+    ImageAspectFlags, ImageLayout, ImageTiling, ImageType, ImageUsageFlags, ImageViewType,
+    SampleCountFlags, SharingMode,
+};
+use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_runtime::scaling::MipmapSize;
 
 pub struct OwnedTexture {
     pub device: ash::Device,
@@ -16,16 +19,17 @@ pub struct OwnedTexture {
 }
 
 impl OwnedTexture {
-    pub fn new(vulkan: &Vulkan, size: Size<u32>, format: ImageFormat, max_miplevels: u32)
-        -> error::Result<OwnedTexture> {
+    pub fn new(
+        vulkan: &Vulkan,
+        size: Size<u32>,
+        format: ImageFormat,
+        max_miplevels: u32,
+    ) -> error::Result<OwnedTexture> {
         let image_create_info = vk::ImageCreateInfo::builder()
             .image_type(ImageType::TYPE_2D)
             .format(format.into())
             .extent(size.into())
-            .mip_levels(std::cmp::min(
-                max_miplevels,
-                size.calculate_miplevels(),
-            ))
+            .mip_levels(std::cmp::min(max_miplevels, size.calculate_miplevels()))
             .array_layers(1)
             .samples(SampleCountFlags::TYPE_1)
             .tiling(ImageTiling::OPTIMAL)
@@ -86,7 +90,7 @@ impl OwnedTexture {
             image: VulkanImage {
                 image,
                 size,
-                format: format.into()
+                format: format.into(),
             },
             memory,
             max_miplevels,
@@ -108,7 +112,6 @@ impl OwnedTexture {
             .b(vk::ComponentSwizzle::B)
             .a(vk::ComponentSwizzle::A)
             .build();
-
 
         let mut view_info = vk::ImageViewCreateInfo::builder()
             .view_type(ImageViewType::TYPE_2D)

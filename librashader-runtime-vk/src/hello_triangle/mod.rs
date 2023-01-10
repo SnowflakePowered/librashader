@@ -1,18 +1,13 @@
-pub mod vulkan_base;
+mod command;
 mod debug;
+mod framebuffer;
 mod physicaldevice;
+mod pipeline;
 mod surface;
 mod swapchain;
-mod pipeline;
-mod framebuffer;
-mod command;
 mod syncobjects;
+pub mod vulkan_base;
 
-use ash::vk;
-use ash::vk::RenderingInfo;
-use winit::event::{Event, VirtualKeyCode, ElementState, KeyboardInput, WindowEvent};
-use winit::event_loop::{EventLoop, ControlFlow, EventLoopBuilder};
-use winit::platform::windows::EventLoopBuilderExtWindows;
 use crate::filter_chain::{FilterChainVulkan, Vulkan};
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
@@ -22,6 +17,11 @@ use crate::hello_triangle::swapchain::VulkanSwapchain;
 use crate::hello_triangle::syncobjects::SyncObjects;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use crate::util;
+use ash::vk;
+use ash::vk::RenderingInfo;
+use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
+use winit::platform::windows::EventLoopBuilderExtWindows;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -40,49 +40,49 @@ impl VulkanWindow {
             .expect("Failed to create window.")
     }
 
-    pub fn main_loop(event_loop: EventLoop<()>, window: winit::window::Window, vulkan: VulkanDraw, mut filter_chain: FilterChainVulkan) {
-        event_loop.run(move |event, _, control_flow| {
-            match event {
-                | Event::WindowEvent { event, .. } => {
-                    match event {
-                        | WindowEvent::CloseRequested => {
+    pub fn main_loop(
+        event_loop: EventLoop<()>,
+        window: winit::window::Window,
+        vulkan: VulkanDraw,
+        mut filter_chain: FilterChainVulkan,
+    ) {
+        event_loop.run(move |event, _, control_flow| match event {
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                WindowEvent::KeyboardInput { input, .. } => match input {
+                    KeyboardInput {
+                        virtual_keycode,
+                        state,
+                        ..
+                    } => match (virtual_keycode, state) {
+                        (Some(VirtualKeyCode::Escape), ElementState::Pressed) => {
                             *control_flow = ControlFlow::Exit
-                        },
-                        | WindowEvent::KeyboardInput { input, .. } => {
-                            match input {
-                                | KeyboardInput { virtual_keycode, state, .. } => {
-                                    match (virtual_keycode, state) {
-                                        | (Some(VirtualKeyCode::Escape), ElementState::Pressed) => {
-                                            *control_flow = ControlFlow::Exit
-                                        },
-                                        | _ => {},
-                                    }
-                                },
-                            }
-                        },
-                        | _ => {},
-                    }
+                        }
+                        _ => {}
+                    },
                 },
-                | Event::MainEventsCleared => {
-                    window.request_redraw();
-                },
-                | Event::RedrawRequested(_window_id) => {
-                    VulkanWindow::draw_frame(&vulkan, &mut filter_chain);
-                },
-                _ => (),
+                _ => {}
+            },
+            Event::MainEventsCleared => {
+                window.request_redraw();
             }
-
+            Event::RedrawRequested(_window_id) => {
+                VulkanWindow::draw_frame(&vulkan, &mut filter_chain);
+            }
+            _ => (),
         })
     }
 
-    unsafe fn record_command_buffer(vulkan: &VulkanDraw, framebuffer: vk::Framebuffer, cmd: vk::CommandBuffer) {
-        let clear_values = [
-            vk::ClearValue {
-                color: vk::ClearColorValue {
-                    float32: [0.3, 0.3, 0.5, 0.0],
-                },
+    unsafe fn record_command_buffer(
+        vulkan: &VulkanDraw,
+        framebuffer: vk::Framebuffer,
+        cmd: vk::CommandBuffer,
+    ) {
+        let clear_values = [vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.3, 0.3, 0.5, 0.0],
             },
-        ];
+        }];
 
         let render_pass_begin = vk::RenderPassBeginInfo::builder()
             .render_pass(vulkan.pipeline.renderpass)
@@ -94,51 +94,76 @@ impl VulkanWindow {
             .clear_values(&clear_values)
             .build();
 
-
-        vulkan.base.device.reset_command_buffer(cmd, vk::CommandBufferResetFlags::empty())
+        vulkan
+            .base
+            .device
+            .reset_command_buffer(cmd, vk::CommandBufferResetFlags::empty())
             .expect("could not reset command buffer");
 
-        vulkan.base.device.begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())
+        vulkan
+            .base
+            .device
+            .begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())
             .expect("failed to begin command buffer");
 
-        vulkan.base.device
-            .cmd_begin_render_pass(cmd,
-                                   &render_pass_begin, vk::SubpassContents::INLINE);
+        vulkan.base.device.cmd_begin_render_pass(
+            cmd,
+            &render_pass_begin,
+            vk::SubpassContents::INLINE,
+        );
 
-        vulkan.base.device
-            .cmd_bind_pipeline(cmd, vk::PipelineBindPoint::GRAPHICS, vulkan.pipeline.graphic_pipeline);
+        vulkan.base.device.cmd_bind_pipeline(
+            cmd,
+            vk::PipelineBindPoint::GRAPHICS,
+            vulkan.pipeline.graphic_pipeline,
+        );
 
-        vulkan.base.device
-            .cmd_set_viewport(cmd, 0, &[vk::Viewport {
+        vulkan.base.device.cmd_set_viewport(
+            cmd,
+            0,
+            &[vk::Viewport {
                 max_depth: 1.0,
                 width: vulkan.swapchain.extent.width as f32,
                 height: vulkan.swapchain.extent.height as f32,
                 ..Default::default()
-            }]);
+            }],
+        );
 
-        vulkan.base.device
-            .cmd_set_scissor(cmd, 0, &[vk::Rect2D {
+        vulkan.base.device.cmd_set_scissor(
+            cmd,
+            0,
+            &[vk::Rect2D {
                 offset: Default::default(),
-                extent: vulkan.swapchain.extent
-            }]);
+                extent: vulkan.swapchain.extent,
+            }],
+        );
 
         vulkan.base.device.cmd_draw(cmd, 3, 1, 0, 0);
         vulkan.base.device.cmd_end_render_pass(cmd);
-
-
-
-
     }
 
     fn draw_frame(vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
         unsafe {
-            vulkan.base.device.wait_for_fences(&[vulkan.sync.in_flight], true, u64::MAX)
+            vulkan
+                .base
+                .device
+                .wait_for_fences(&[vulkan.sync.in_flight], true, u64::MAX)
                 .unwrap();
-            vulkan.base.device.reset_fences(&[vulkan.sync.in_flight])
+            vulkan
+                .base
+                .device
+                .reset_fences(&[vulkan.sync.in_flight])
                 .unwrap();
 
-
-            let (swapchain_index, _) = vulkan.swapchain.loader.acquire_next_image(vulkan.swapchain.swapchain, u64::MAX, vulkan.sync.image_available, vk::Fence::null())
+            let (swapchain_index, _) = vulkan
+                .swapchain
+                .loader
+                .acquire_next_image(
+                    vulkan.swapchain.swapchain,
+                    u64::MAX,
+                    vulkan.sync.image_available,
+                    vk::Fence::null(),
+                )
                 .unwrap();
 
             let cmd = vulkan.render_command_pool.buffers[swapchain_index as usize];
@@ -148,21 +173,22 @@ impl VulkanWindow {
 
             Self::record_command_buffer(vulkan, framebuffer, cmd);
 
-            util::vulkan_image_layout_transition_levels(&vulkan.base.device,
+            util::vulkan_image_layout_transition_levels(
+                &vulkan.base.device,
                 cmd,
                 framebuffer_image,
                 1,
-                                                        vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::UNDEFINED,
                 vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                                                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-                                                        vk::AccessFlags::TRANSFER_READ,
-                    vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
-                    vk::PipelineStageFlags::TRANSFER,
-                    vk::QUEUE_FAMILY_IGNORED,
-                    vk::QUEUE_FAMILY_IGNORED
-                );
+                vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                vk::AccessFlags::TRANSFER_READ,
+                vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
+            );
 
-            let blit_subresource =vk::ImageSubresourceLayers::builder()
+            let blit_subresource = vk::ImageSubresourceLayers::builder()
                 .layer_count(1)
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .build();
@@ -184,8 +210,11 @@ impl VulkanWindow {
                     z: 1,
                 },
             ];
-            vulkan.base.device.cmd_blit_image(cmd, framebuffer_image, vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-            swapchain_image,
+            vulkan.base.device.cmd_blit_image(
+                cmd,
+                framebuffer_image,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                swapchain_image,
                 vk::ImageLayout::TRANSFER_DST_OPTIMAL,
                 &[vk::ImageBlit {
                     src_subresource: blit_subresource,
@@ -193,25 +222,29 @@ impl VulkanWindow {
                     dst_subresource: blit_subresource,
                     dst_offsets,
                 }],
-                                              vk::Filter::LINEAR
+                vk::Filter::LINEAR,
             );
 
-            util::vulkan_image_layout_transition_levels(&vulkan.base.device,
-                                                        cmd,
-                                                        swapchain_image,
-                                                        1,
-                                                        vk::ImageLayout::UNDEFINED,
-                                                        vk::ImageLayout::PRESENT_SRC_KHR,
-                                                        vk::AccessFlags::empty(),
-                                                        vk::AccessFlags::TRANSFER_READ,
-                                                        vk::PipelineStageFlags::TRANSFER,
-                                                        vk::PipelineStageFlags::TRANSFER,
-                                                        vk::QUEUE_FAMILY_IGNORED,
-                                                        vk::QUEUE_FAMILY_IGNORED
+            util::vulkan_image_layout_transition_levels(
+                &vulkan.base.device,
+                cmd,
+                swapchain_image,
+                1,
+                vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::PRESENT_SRC_KHR,
+                vk::AccessFlags::empty(),
+                vk::AccessFlags::TRANSFER_READ,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
             );
 
-            vulkan.base.device.end_command_buffer(cmd).expect("failed to record commandbuffer");
-
+            vulkan
+                .base
+                .device
+                .end_command_buffer(cmd)
+                .expect("failed to record commandbuffer");
 
             let submit_info = vk::SubmitInfo::builder()
                 .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])
@@ -220,7 +253,14 @@ impl VulkanWindow {
                 .command_buffers(&[cmd])
                 .build();
 
-            vulkan.base.device.queue_submit(vulkan.base.graphics_queue, &[submit_info], vulkan.sync.in_flight)
+            vulkan
+                .base
+                .device
+                .queue_submit(
+                    vulkan.base.graphics_queue,
+                    &[submit_info],
+                    vulkan.sync.in_flight,
+                )
                 .expect("failed to submit queue");
 
             let present_info = vk::PresentInfoKHR::builder()
@@ -229,9 +269,11 @@ impl VulkanWindow {
                 .image_indices(&[swapchain_index])
                 .build();
 
-            vulkan.swapchain.loader.queue_present(vulkan.base.graphics_queue, &present_info)
+            vulkan
+                .swapchain
+                .loader
+                .queue_present(vulkan.base.graphics_queue, &present_info)
                 .unwrap();
-
         }
     }
 }
@@ -250,7 +292,6 @@ pub fn find_memorytype_index(
         })
         .map(|(index, _memory_type)| index as _)
 }
-
 
 pub struct VulkanDraw {
     surface: VulkanSurface,
@@ -271,32 +312,44 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
         .build();
 
     let window = VulkanWindow::init_window(&event_loop);
-    let surface = VulkanSurface::new(&vulkan, &window)
-        .unwrap();
+    let surface = VulkanSurface::new(&vulkan, &window).unwrap();
 
-    let swapchain = VulkanSwapchain::new(&vulkan, &surface, WINDOW_WIDTH, WINDOW_HEIGHT)
-        .unwrap();
+    let swapchain = VulkanSwapchain::new(&vulkan, &surface, WINDOW_WIDTH, WINDOW_HEIGHT).unwrap();
 
-    let pipeline = unsafe { VulkanPipeline::new(&vulkan, &swapchain) }
-        .unwrap();
+    let pipeline = unsafe { VulkanPipeline::new(&vulkan, &swapchain) }.unwrap();
 
     let mut swapchain_framebuffers = vec![];
     for image in &swapchain.swapchain_image_views {
-        swapchain_framebuffers.push(VulkanFramebuffer::new(&vulkan.device, image, &pipeline.renderpass, WINDOW_WIDTH, WINDOW_HEIGHT).unwrap())
+        swapchain_framebuffers.push(
+            VulkanFramebuffer::new(
+                &vulkan.device,
+                image,
+                &pipeline.renderpass,
+                WINDOW_WIDTH,
+                WINDOW_HEIGHT,
+            )
+            .unwrap(),
+        )
     }
 
     let mut render_framebuffers = vec![];
     for image in &swapchain.render_image_views {
-        render_framebuffers.push(VulkanFramebuffer::new(&vulkan.device, image, &pipeline.renderpass, WINDOW_WIDTH, WINDOW_HEIGHT).unwrap())
+        render_framebuffers.push(
+            VulkanFramebuffer::new(
+                &vulkan.device,
+                image,
+                &pipeline.renderpass,
+                WINDOW_WIDTH,
+                WINDOW_HEIGHT,
+            )
+            .unwrap(),
+        )
     }
 
-    let swapchain_command_pool = VulkanCommandPool::new(&vulkan, 3)
-        .unwrap();
-    let render_command_pool = VulkanCommandPool::new(&vulkan, 3)
-        .unwrap();
+    let swapchain_command_pool = VulkanCommandPool::new(&vulkan, 3).unwrap();
+    let render_command_pool = VulkanCommandPool::new(&vulkan, 3).unwrap();
 
-    let sync = SyncObjects::new(&vulkan.device)
-        .unwrap();
+    let sync = SyncObjects::new(&vulkan.device).unwrap();
 
     let vulkan = VulkanDraw {
         surface,

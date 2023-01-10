@@ -1,12 +1,12 @@
-use ash::prelude::VkResult;
-use ash::vk;
 use crate::hello_triangle::physicaldevice::find_queue_family;
 use crate::hello_triangle::vulkan_base::VulkanBase;
+use ash::prelude::VkResult;
+use ash::vk;
 
 pub struct VulkanCommandPool {
     pool: vk::CommandPool,
     device: ash::Device,
-    pub buffers: Vec<vk::CommandBuffer>
+    pub buffers: Vec<vk::CommandBuffer>,
 }
 
 impl VulkanCommandPool {
@@ -34,5 +34,4 @@ impl VulkanCommandPool {
             })
         }
     }
-
 }

@@ -124,8 +124,13 @@ impl Drop for VulkanBuffer {
 
 impl<'a> VulkanBufferMapHandle<'a> {
     pub unsafe fn copy_from(&mut self, offset: usize, src: &[u8]) {
-        std::ptr::copy_nonoverlapping(src.as_ptr(),
-                                      self.ptr.map_addr(|original| original.wrapping_add(offset)).cast(), src.len());
+        std::ptr::copy_nonoverlapping(
+            src.as_ptr(),
+            self.ptr
+                .map_addr(|original| original.wrapping_add(offset))
+                .cast(),
+            src.len(),
+        );
     }
 }
 

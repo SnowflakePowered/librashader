@@ -158,8 +158,9 @@ impl LibrashaderError {
             LibrashaderError::InvalidPath(_) => LIBRA_ERRNO::INVALID_PATH,
             LibrashaderError::PresetError(_) => LIBRA_ERRNO::PRESET_ERROR,
             LibrashaderError::PreprocessError(_) => LIBRA_ERRNO::PREPROCESS_ERROR,
-            LibrashaderError::ShaderCompileError(_)
-                | LibrashaderError::ShaderReflectError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
+            LibrashaderError::ShaderCompileError(_) | LibrashaderError::ShaderReflectError(_) => {
+                LIBRA_ERRNO::RUNTIME_ERROR
+            }
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-d3d11")]

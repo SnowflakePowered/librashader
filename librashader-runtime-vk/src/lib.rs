@@ -7,16 +7,16 @@ mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
+mod hello_triangle;
 mod luts;
 mod renderpass;
+mod rendertarget;
+mod samplers;
+mod texture;
+mod ubo_ring;
 mod util;
 mod vulkan_primitives;
 mod vulkan_state;
-mod samplers;
-mod texture;
-mod rendertarget;
-mod ubo_ring;
-mod hello_triangle;
 
 #[cfg(test)]
 mod tests {
@@ -26,15 +26,14 @@ mod tests {
 
     #[test]
     fn triangle_vk() {
-        let entry = unsafe {
-            ash::Entry::load().unwrap()
-        };
+        let entry = unsafe { ash::Entry::load().unwrap() };
         let base = VulkanBase::new(entry).unwrap();
         let mut filter = FilterChainVulkan::load_from_path(
             &base,
             "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
-            None
-        ).unwrap();
+            None,
+        )
+        .unwrap();
 
         crate::hello_triangle::main(base, filter)
 

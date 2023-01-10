@@ -5,11 +5,15 @@ use ash::vk::{DebugUtilsMessengerEXT, PFN_vkDebugUtilsMessengerCallbackEXT};
 
 pub struct VulkanDebug {
     loader: DebugUtils,
-    messenger: DebugUtilsMessengerEXT
+    messenger: DebugUtilsMessengerEXT,
 }
 
 impl VulkanDebug {
-    pub fn new(entry: &ash::Entry, instance: &ash::Instance, callback: PFN_vkDebugUtilsMessengerCallbackEXT) -> VkResult<VulkanDebug>{
+    pub fn new(
+        entry: &ash::Entry,
+        instance: &ash::Instance,
+        callback: PFN_vkDebugUtilsMessengerCallbackEXT,
+    ) -> VkResult<VulkanDebug> {
         let debug_info = vk::DebugUtilsMessengerCreateInfoEXT::builder()
             .message_severity(
                 vk::DebugUtilsMessageSeverityFlagsEXT::ERROR
@@ -26,12 +30,12 @@ impl VulkanDebug {
         let debug_utils_loader = DebugUtils::new(entry, instance);
 
         unsafe {
-            let debug_call_back = debug_utils_loader
-                .create_debug_utils_messenger(&debug_info, None)?;
+            let debug_call_back =
+                debug_utils_loader.create_debug_utils_messenger(&debug_info, None)?;
 
             Ok(VulkanDebug {
                 loader: debug_utils_loader,
-                messenger: debug_call_back
+                messenger: debug_call_back,
             })
         }
     }
@@ -40,7 +44,8 @@ impl VulkanDebug {
 impl Drop for VulkanDebug {
     fn drop(&mut self) {
         unsafe {
-            self.loader.destroy_debug_utils_messenger(self.messenger, None);
+            self.loader
+                .destroy_debug_utils_messenger(self.messenger, None);
         }
     }
 }

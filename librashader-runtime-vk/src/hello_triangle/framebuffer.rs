@@ -1,13 +1,19 @@
+use crate::hello_triangle::swapchain::VulkanSwapchain;
 use ash::prelude::VkResult;
 use ash::vk;
-use crate::hello_triangle::swapchain::VulkanSwapchain;
 
 pub struct VulkanFramebuffer {
     pub framebuffer: vk::Framebuffer,
 }
 
 impl VulkanFramebuffer {
-    pub fn new(device: &ash::Device, image_view: &vk::ImageView, render_pass: &vk::RenderPass, width: u32, height: u32) -> VkResult<VulkanFramebuffer> {
+    pub fn new(
+        device: &ash::Device,
+        image_view: &vk::ImageView,
+        render_pass: &vk::RenderPass,
+        width: u32,
+        height: u32,
+    ) -> VkResult<VulkanFramebuffer> {
         let attachments = &[*image_view];
         let framebuffer_info = vk::FramebufferCreateInfo::builder()
             .render_pass(*render_pass)
@@ -19,9 +25,7 @@ impl VulkanFramebuffer {
 
         unsafe {
             let framebuffer = device.create_framebuffer(&framebuffer_info, None)?;
-            Ok(VulkanFramebuffer {
-                framebuffer
-            })
+            Ok(VulkanFramebuffer { framebuffer })
         }
     }
 }

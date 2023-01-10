@@ -1,14 +1,14 @@
-use std::ffi::CStr;
-use std::io::Cursor;
-use std::mem::align_of;
-use ash::prelude::VkResult;
-use ash::util::{Align, read_spv};
-use ash::vk;
-use bytemuck::offset_of;
 use crate::hello_triangle::find_memorytype_index;
 use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::swapchain::VulkanSwapchain;
 use crate::hello_triangle::vulkan_base::VulkanBase;
+use ash::prelude::VkResult;
+use ash::util::{read_spv, Align};
+use ash::vk;
+use bytemuck::offset_of;
+use std::ffi::CStr;
+use std::io::Cursor;
+use std::mem::align_of;
 
 #[derive(Default, Clone, Debug, Copy)]
 struct Vertex {
@@ -38,7 +38,7 @@ impl VulkanPipeline {
             &base.mem_props,
             vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT,
         )
-            .expect("Unable to find suitable memorytype for the index buffer.");
+        .expect("Unable to find suitable memorytype for the index buffer.");
 
         let index_allocate_info = vk::MemoryAllocateInfo {
             allocation_size: index_buffer_memory_req.size,
@@ -90,7 +90,7 @@ impl VulkanPipeline {
             &base.mem_props,
             vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT,
         )
-            .expect("Unable to find suitable memorytype for the vertex buffer.");
+        .expect("Unable to find suitable memorytype for the vertex buffer.");
 
         let vertex_buffer_allocate_info = vk::MemoryAllocateInfo {
             allocation_size: vertex_input_buffer_memory_req.size,
@@ -141,9 +141,9 @@ impl VulkanPipeline {
             .bind_buffer_memory(vertex_input_buffer, vertex_input_buffer_memory, 0)
             .unwrap();
 
-
         // create pipeline
-        let mut vertex_spv_file = Cursor::new(&include_bytes!("../../shader/triangle_simple/vert.spv")[..]);
+        let mut vertex_spv_file =
+            Cursor::new(&include_bytes!("../../shader/triangle_simple/vert.spv")[..]);
         let vertex_code =
             read_spv(&mut vertex_spv_file).expect("Failed to read vertex shader spv file");
         let vertex_shader_info = ShaderModule::new(&base.device, vertex_code)?;
@@ -153,8 +153,8 @@ impl VulkanPipeline {
             .name(CStr::from_bytes_with_nul_unchecked(b"main\0"))
             .build();
 
-
-        let mut frag_spv_file = Cursor::new(&include_bytes!("../../shader/triangle_simple/frag.spv")[..]);
+        let mut frag_spv_file =
+            Cursor::new(&include_bytes!("../../shader/triangle_simple/frag.spv")[..]);
         let frag_code =
             read_spv(&mut frag_spv_file).expect("Failed to read fragment shader spv file");
         let frag_shader_info = ShaderModule::new(&base.device, frag_code)?;
@@ -193,7 +193,6 @@ impl VulkanPipeline {
             .device
             .create_pipeline_layout(&layout_create_info, None)
             .unwrap();
-
 
         let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder()
             .dynamic_states(&[vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR])
@@ -244,16 +243,14 @@ impl VulkanPipeline {
             .logic_op(vk::LogicOp::COPY)
             .attachments(&color_blend_attachment);
 
-        let renderpass_attachments = [
-            vk::AttachmentDescription {
-                format: swapchain.format.format,
-                samples: vk::SampleCountFlags::TYPE_1,
-                load_op: vk::AttachmentLoadOp::CLEAR,
-                store_op: vk::AttachmentStoreOp::STORE,
-                final_layout: vk::ImageLayout::PRESENT_SRC_KHR,
-                ..Default::default()
-            },
-        ];
+        let renderpass_attachments = [vk::AttachmentDescription {
+            format: swapchain.format.format,
+            samples: vk::SampleCountFlags::TYPE_1,
+            load_op: vk::AttachmentLoadOp::CLEAR,
+            store_op: vk::AttachmentStoreOp::STORE,
+            final_layout: vk::ImageLayout::PRESENT_SRC_KHR,
+            ..Default::default()
+        }];
         let color_attachment_refs = [vk::AttachmentReference {
             attachment: 0,
             layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
@@ -295,7 +292,6 @@ impl VulkanPipeline {
             .layout(pipeline_layout)
             .render_pass(renderpass);
 
-
         let graphics_pipelines = base
             .device
             .create_graphics_pipelines(
@@ -305,13 +301,12 @@ impl VulkanPipeline {
             )
             .expect("Unable to create graphics pipeline");
 
-
         let graphic_pipeline = graphics_pipelines[0];
 
         Ok(VulkanPipeline {
             graphic_pipeline,
             renderpass,
-            pipeline_layout
+            pipeline_layout,
         })
     }
 }
@@ -323,18 +318,13 @@ pub struct ShaderModule {
 
 impl ShaderModule {
     pub fn new(device: &ash::Device, spirv: Vec<u32>) -> VkResult<ShaderModule> {
-        let create_info = vk::ShaderModuleCreateInfo::builder()
-            .code(&spirv)
-            .build();
+        let create_info = vk::ShaderModuleCreateInfo::builder().code(&spirv).build();
 
-
-        let module = unsafe {
-            device.create_shader_module(&create_info, None)?
-        };
+        let module = unsafe { device.create_shader_module(&create_info, None)? };
 
         Ok(ShaderModule {
             module,
-            device: device.clone()
+            device: device.clone(),
         })
     }
 }
@@ -346,4 +336,3 @@ impl Drop for ShaderModule {
         }
     }
 }
-
