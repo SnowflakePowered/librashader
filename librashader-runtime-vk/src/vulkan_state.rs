@@ -178,7 +178,7 @@ impl Drop for VulkanShaderModule {
 pub struct VulkanGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     pub render_pass: VulkanRenderPass,
-    pipeline: vk::Pipeline,
+    pub pipeline: vk::Pipeline,
 }
 
 impl VulkanGraphicsPipeline {

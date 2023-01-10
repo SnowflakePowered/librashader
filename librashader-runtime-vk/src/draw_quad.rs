@@ -58,7 +58,7 @@ impl DrawQuad {
         })
     }
 
-    pub fn bind_vbo(&self, cmd: &vk::CommandBuffer, vbo: VboType) {
+    pub fn bind_vbo(&self, cmd: vk::CommandBuffer, vbo: VboType) {
         let offset = match vbo {
             VboType::Offscreen => 0,
             VboType::Final => std::mem::size_of::<[f32; 16]>(),
@@ -66,7 +66,7 @@ impl DrawQuad {
 
         unsafe {
             self.device.cmd_bind_vertex_buffers(
-                *cmd,
+                cmd,
                 0,
                 &[self.buffer.handle],
                 &[offset as vk::DeviceSize],

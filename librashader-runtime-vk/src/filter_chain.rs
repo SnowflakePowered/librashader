@@ -22,9 +22,9 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
-use crate::draw_quad::{VBO_DEFAULT_FINAL, VBO_OFFSCREEN};
+use crate::draw_quad::{DrawQuad, VBO_DEFAULT_FINAL, VBO_OFFSCREEN};
 use crate::framebuffer::OutputFramebuffer;
-use crate::rendertarget::RenderTarget;
+use crate::rendertarget::{DEFAULT_MVP, RenderTarget};
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -130,7 +130,6 @@ pub struct FilterChainVulkan {
     pub(crate) output_framebuffers: Box<[OwnedTexture]>,
     // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
-    // pub(crate) draw_quad: DrawQuad,
 }
 
 pub struct FilterMutable {
@@ -141,10 +140,13 @@ pub struct FilterMutable {
 pub(crate) struct FilterCommon {
     pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
+    pub(crate) draw_quad: DrawQuad,
+
     // pub output_textures: Box<[Option<Texture>]>,
     // pub feedback_textures: Box<[Option<Texture>]>,
     // pub history_textures: Box<[Option<Texture>]>,
     pub config: FilterMutable,
+    pub device: ash::Device,
 }
 
 pub type FilterChainOptionsVulkan = ();
@@ -200,6 +202,8 @@ impl FilterChainVulkan {
                         .map(|param| (param.name, param.value))
                         .collect(),
                 },
+                draw_quad: DrawQuad::new(&device.device, &device.memory_properties)?,
+                device: device.device.clone()
             },
             passes: filters,
             vulkan: device,
@@ -470,7 +474,7 @@ impl FilterChainVulkan {
             let target = &self.output_framebuffers[index];
             // todo: use proper mode
             let out = RenderTarget {
-                mvp: VBO_DEFAULT_FINAL,
+                mvp: DEFAULT_MVP,
                 output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass, target.image.image, target.image.size)?,
             };
 

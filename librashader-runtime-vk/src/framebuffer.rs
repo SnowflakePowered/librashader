@@ -1,4 +1,4 @@
-use crate::error;
+use crate::{error, util};
 use crate::filter_chain::Vulkan;
 use crate::renderpass::VulkanRenderPass;
 use crate::texture::OwnedTexture;
@@ -70,6 +70,7 @@ pub(crate) struct OutputFramebuffer {
     pub size: Size<u32>,
     device: ash::Device,
     image_view: vk::ImageView,
+    image: vk::Image,
 }
 
 //
@@ -125,9 +126,41 @@ impl OutputFramebuffer {
         Ok(OutputFramebuffer {
             device: vulkan.device.clone(),
             size,
+            image,
             framebuffer,
             image_view,
         })
+    }
+
+    pub fn begin_pass(&self, cmd: vk::CommandBuffer) {
+        unsafe {
+            util::vulkan_image_layout_transition_levels(&self.device, cmd, self.image,
+                                                        1,
+                                                        vk::ImageLayout::UNDEFINED,
+                                                        vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                                                        vk::AccessFlags::empty(),
+                                                        vk::AccessFlags::COLOR_ATTACHMENT_READ | vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+            vk::PipelineStageFlags::ALL_GRAPHICS,
+            vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+            vk::QUEUE_FAMILY_IGNORED,
+            vk::QUEUE_FAMILY_IGNORED)
+        }
+    }
+
+    pub fn end_pass(&self, cmd: vk::CommandBuffer) {
+        // todo: generate mips
+        unsafe {
+            util::vulkan_image_layout_transition_levels(&self.device, cmd, self.image,
+                                                        vk::REMAINING_MIP_LEVELS,
+                                                        vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                                                        vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                                                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                                                        vk::AccessFlags::SHADER_READ,
+                                                        vk::PipelineStageFlags::ALL_GRAPHICS,
+                                                        vk::PipelineStageFlags::FRAGMENT_SHADER,
+                                                        vk::QUEUE_FAMILY_IGNORED,
+                                                        vk::QUEUE_FAMILY_IGNORED)
+        }
     }
 
     // pub fn get_renderpass_begin_info(&self, area: vk::Rect2D, clear: Option<&[vk::ClearValue]>) -> vk::RenderPassBeginInfo {

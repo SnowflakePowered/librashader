@@ -1,4 +1,4 @@
-use crate::error;
+use crate::{error, util};
 use crate::filter_chain::FilterCommon;
 use crate::rendertarget::RenderTarget;
 use crate::samplers::{SamplerSet, VulkanSampler};
@@ -10,12 +10,11 @@ use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
-};
+use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics};
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::uniforms::UniformStorage;
+use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
+use crate::draw_quad::VboType;
 
 pub struct FilterPass {
     pub device: ash::Device,
@@ -101,6 +100,50 @@ impl FilterPass {
                 .bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
         }
 
+        output.output.begin_pass(cmd);
+
+        let render_pass_info = vk::RenderPassBeginInfo::builder()
+            .framebuffer(output.output.framebuffer)
+            .render_pass(self.graphics_pipeline.render_pass.handle)
+            .render_area(vk::Rect2D {
+                offset: Default::default(),
+                extent: output.output.size.into(),
+            }).build();
+
+        unsafe {
+            parent.device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
+            parent.device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::GRAPHICS, self.graphics_pipeline.pipeline);
+
+            // todo: allow frames in flight.
+            parent.device.cmd_bind_descriptor_sets(cmd, vk::PipelineBindPoint::GRAPHICS, self.graphics_pipeline.layout.layout, 0,
+                                                   &[self.graphics_pipeline.layout.descriptor_sets[0]], &[]);
+
+            if let Some(push) = &self.reflection.push_constant {
+                let mut stage_mask = vk::ShaderStageFlags::empty();
+                if push.stage_mask.contains(BindingStage::FRAGMENT) {
+                    stage_mask |= vk::ShaderStageFlags::FRAGMENT;
+                }
+                if push.stage_mask.contains(BindingStage::VERTEX) {
+                    stage_mask |= vk::ShaderStageFlags::VERTEX;
+                }
+
+                parent.device.cmd_push_constants(cmd, self.graphics_pipeline.layout.layout, stage_mask, 0, self.uniform_storage.push_slice());
+            }
+
+            parent.draw_quad.bind_vbo(cmd, VboType::Offscreen);
+
+            parent.device.cmd_set_scissor(cmd, 0, &[
+                vk::Rect2D {
+                    offset: Default::default(),
+                    extent: output.output.size.into()
+                }]);
+
+            parent.device.cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
+            parent.device.cmd_draw(cmd, 4, 1, 0, 0);
+            parent.device.cmd_end_render_pass(cmd);
+
+            output.output.end_pass(cmd);
+        }
         Ok(())
     }
 
