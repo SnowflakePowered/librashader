@@ -45,7 +45,7 @@ impl<T: GLInterface> FilterPass<T> {
     ) {
         let framebuffer = output.framebuffer;
 
-        if self.config.mipmap_input {
+        if self.config.mipmap_input && !parent.disable_mipmaps {
             T::BindTexture::gen_mipmaps(source);
         }
 

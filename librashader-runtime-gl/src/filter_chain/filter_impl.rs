@@ -42,6 +42,7 @@ pub(crate) struct FilterCommon {
     pub output_textures: Box<[Texture]>,
     pub feedback_textures: Box<[Texture]>,
     pub history_textures: Box<[Texture]>,
+    pub disable_mipmaps: bool,
 }
 
 pub struct FilterMutable {
@@ -155,6 +156,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                         .map(|param| (param.name, param.value))
                         .collect(),
                 },
+                disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
                 output_textures: output_textures.into_boxed_slice(),
@@ -259,7 +261,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 let mut status = 0;
                 gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
                 if status != 1 {
-                    panic!("failed to link program")
+                    return Err(FilterChainError::GLLinkError)
                 }
 
                 gl::UseProgram(program);

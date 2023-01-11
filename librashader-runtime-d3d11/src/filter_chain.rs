@@ -71,6 +71,7 @@ pub(crate) struct FilterCommon {
     pub feedback_textures: Box<[Option<Texture>]>,
     pub history_textures: Box<[Option<Texture>]>,
     pub config: FilterMutable,
+    pub disable_mipmaps: bool,
 }
 
 impl FilterChainD3D11 {
@@ -182,6 +183,7 @@ impl FilterChainD3D11 {
                         .map(|param| (param.name, param.value))
                         .collect(),
                 },
+                disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
                 output_textures: output_textures.into_boxed_slice(),

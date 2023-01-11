@@ -17,4 +17,8 @@ pub struct FilterChainOptionsD3D11 {
     /// The deferred context will be executed on the immediate context
     /// with `RenderContextState = true`.
     pub use_deferred_context: bool,
+
+    /// Whether or not to explicitly disable mipmap
+    /// generation regardless of shader preset settings.
+    pub force_no_mipmaps: bool,
 }

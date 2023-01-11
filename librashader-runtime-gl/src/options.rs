@@ -16,4 +16,6 @@ pub struct FilterChainOptionsGL {
     pub gl_version: u16,
     /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
     pub use_dsa: bool,
+    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
+    pub force_no_mipmaps: bool,
 }

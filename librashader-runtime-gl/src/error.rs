@@ -23,6 +23,8 @@ pub enum FilterChainError {
     LutLoadError(#[from] ImageError),
     #[error("opengl was not initialized")]
     GLLoadError,
+    #[error("opengl could not link program")]
+    GLLinkError,
 }
 
 pub type Result<T> = std::result::Result<T, FilterChainError>;

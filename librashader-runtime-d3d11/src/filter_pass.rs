@@ -362,7 +362,7 @@ impl FilterPass {
         let _device = &parent.d3d11.device;
         let context = &parent.d3d11.current_context;
 
-        if self.config.mipmap_input {
+        if self.config.mipmap_input && !parent.disable_mipmaps {
             unsafe {
                 context.GenerateMips(&source.view.handle);
             }
