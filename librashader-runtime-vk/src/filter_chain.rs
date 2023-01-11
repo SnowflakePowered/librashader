@@ -2,7 +2,7 @@ use crate::{error, util};
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
 use crate::samplers::SamplerSet;
-use crate::texture::{OwnedTexture, Texture, VulkanImage};
+use crate::texture::{OwnedTexture, InputTexture, VulkanImage};
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
@@ -24,7 +24,7 @@ use std::error::Error;
 use std::path::Path;
 use crate::draw_quad::{DrawQuad, VBO_DEFAULT_FINAL, VBO_OFFSCREEN};
 use crate::framebuffer::OutputFramebuffer;
-use crate::rendertarget::{DEFAULT_MVP, RenderTarget};
+use crate::render_target::{DEFAULT_MVP, RenderTarget};
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -142,11 +142,65 @@ pub(crate) struct FilterCommon {
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
 
-    // pub output_textures: Box<[Option<Texture>]>,
+    pub output_textures: Box<[Option<InputTexture>]>,
     // pub feedback_textures: Box<[Option<Texture>]>,
     // pub history_textures: Box<[Option<Texture>]>,
     pub config: FilterMutable,
     pub device: ash::Device,
+}
+
+#[must_use]
+pub struct FilterChainFrameIntermediates {
+    device: ash::Device,
+    framebuffers: Vec<vk::Framebuffer>,
+    image_views: Vec<vk::ImageView>
+}
+
+impl FilterChainFrameIntermediates {
+    pub(crate) fn new(device: &ash::Device) -> Self {
+        FilterChainFrameIntermediates {
+            device: device.clone(),
+            framebuffers: Vec::new(),
+            image_views: Vec::new(),
+        }
+    }
+
+    pub(crate) fn dispose_input(&mut self, input_texture_texture: InputTexture) {
+        self.image_views.push(input_texture_texture.image_view);
+    }
+
+    pub(crate) fn dispose_outputs(&mut self, output_framebuffer: OutputFramebuffer) {
+        self.framebuffers.push(output_framebuffer.framebuffer);
+        self.image_views.push(output_framebuffer.image_view);
+    }
+
+    pub(crate) fn dispose_framebuffer(&mut self, framebuffer: vk::Framebuffer) {
+        self.framebuffers.push(framebuffer)
+    }
+
+    pub(crate) fn dispose_image_views(&mut self, image_view: vk::ImageView) {
+        self.image_views.push(image_view)
+    }
+}
+
+impl Drop for FilterChainFrameIntermediates {
+    fn drop(&mut self) {
+        for framebuffer in &self.framebuffers {
+            if *framebuffer != vk::Framebuffer::null() {
+                unsafe {
+                    self.device.destroy_framebuffer(*framebuffer, None);
+                }
+            }
+        }
+
+        for image_view in &self.image_views {
+            if *image_view != vk::ImageView::null() {
+                unsafe {
+                    self.device.destroy_image_view(*image_view, None);
+                }
+            }
+        }
+    }
 }
 
 pub type FilterChainOptionsVulkan = ();
@@ -188,7 +242,8 @@ impl FilterChainVulkan {
         });
 
         let output_framebuffers: error::Result<Vec<OwnedTexture>> = output_framebuffers.into_iter().collect();
-
+        let mut output_textures = Vec::new();
+        output_textures.resize_with(filters.len(), || None);
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
             common: FilterCommon {
@@ -203,7 +258,8 @@ impl FilterChainVulkan {
                         .collect(),
                 },
                 draw_quad: DrawQuad::new(&device.device, &device.memory_properties)?,
-                device: device.device.clone()
+                device: device.device.clone(),
+                output_textures: output_textures.into_boxed_slice()
             },
             passes: filters,
             vulkan: device,
@@ -401,28 +457,11 @@ impl FilterChainVulkan {
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
         options: Option<()>,
-    ) -> error::Result<()> {
+    ) -> error::Result<FilterChainFrameIntermediates> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
 
-        unsafe {
-            // todo: see if we can find a less conservative transition,
-            // but this ensures that the image is rendered at least
-            util::vulkan_image_layout_transition_levels(
-                &self.vulkan.device,
-                cmd,
-                input.image,
-                1,
-                vk::ImageLayout::UNDEFINED,
-                vk::ImageLayout::GENERAL,
-                vk::AccessFlags::empty(),
-                vk::AccessFlags::SHADER_READ | vk::AccessFlags::COLOR_ATTACHMENT_READ,
-                vk::PipelineStageFlags::BOTTOM_OF_PIPE,
-                vk::PipelineStageFlags::FRAGMENT_SHADER,
-                vk::QUEUE_FAMILY_IGNORED,
-                vk::QUEUE_FAMILY_IGNORED
-            );
-        }
+        let mut intermediates = FilterChainFrameIntermediates::new(&self.vulkan.device);
 
         let original_image_view = unsafe {
             let create_info = vk::ImageViewCreateInfo::builder()
@@ -448,7 +487,7 @@ impl FilterChainVulkan {
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
-        let original = Texture {
+        let original = InputTexture {
             image: input.clone(),
             image_view: original_image_view,
             wrap_mode,
@@ -469,27 +508,30 @@ impl FilterChainVulkan {
             )?;
         }
 
-        //
+
         for (index, pass) in passes.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             // todo: use proper mode
+            // todo: the output framebuffers can only be dropped after command queue submission.
+
             let out = RenderTarget {
                 mvp: DEFAULT_MVP,
                 output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass, target.image.image, target.image.size)?,
             };
 
             pass.draw(cmd, index, &self.common, count as u32, 0, viewport, &original, &source, &out)?;
+            // for second to last pass, we want to transition to copy instead.
+            out.output.end_pass(cmd);
+
+            source = target.as_input(pass.config.filter, pass.config.wrap_mode)?;
+            let prev_frame_output = self.common.output_textures[index].replace(source.clone());
+            if let Some(prev_frame_output) = prev_frame_output {
+                intermediates.dispose_input(prev_frame_output);
+            }
+
+            intermediates.dispose_outputs(out.output);
         }
 
-        // unsafe {
-        //     self.vulkan.device.queue_submit(self.vulkan.queue, &[vk::SubmitInfo::builder()
-        //         .wait_semaphores(&[wait])
-        //         .wait_dst_stage_mask(&[vk::PipelineStageFlags::ALL_COMMANDS],)
-        //         .signal_semaphores(&[signal])
-        //         .command_buffers(&[])
-        //         .build()], vk::Fence::null())?
-        // }
-
-        Ok(())
+        Ok(intermediates)
     }
 }

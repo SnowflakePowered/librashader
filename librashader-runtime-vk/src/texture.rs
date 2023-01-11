@@ -1,4 +1,4 @@
-use crate::error;
+use crate::{error, util};
 use crate::filter_chain::Vulkan;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
@@ -115,8 +115,8 @@ impl OwnedTexture {
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
-        _original: &Texture,
-        source: &Texture,
+        _original: &InputTexture,
+        source: &InputTexture,
     ) -> error::Result<Size<u32>> {
 
 
@@ -135,7 +135,7 @@ impl OwnedTexture {
     }
 
 
-    pub fn create_texture_view(&self) -> error::Result<vk::ImageView> {
+    pub fn create_image_view(&self) -> error::Result<vk::ImageView> {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
             .base_array_layer(0)
@@ -162,6 +162,16 @@ impl OwnedTexture {
         let image_view = unsafe { self.device.create_image_view(&view_info, None)? };
         Ok(image_view)
     }
+
+    pub fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> error::Result<InputTexture> {
+        Ok(InputTexture {
+            image: self.image.clone(),
+            image_view: self.create_image_view()?,
+            wrap_mode,
+            filter_mode: filter,
+            mip_filter: filter,
+        })
+    }
 }
 
 impl Drop for OwnedTexture {
@@ -184,8 +194,9 @@ pub struct VulkanImage {
     pub format: vk::Format,
 }
 
+
 #[derive(Clone)]
-pub struct Texture {
+pub struct InputTexture {
     pub image: VulkanImage,
     pub image_view: vk::ImageView,
     pub wrap_mode: WrapMode,

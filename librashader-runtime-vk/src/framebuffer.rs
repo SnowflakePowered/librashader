@@ -68,8 +68,8 @@ impl Drop for VulkanFramebuffer {
 pub(crate) struct OutputFramebuffer {
     pub framebuffer: vk::Framebuffer,
     pub size: Size<u32>,
+    pub image_view: vk::ImageView,
     device: ash::Device,
-    image_view: vk::ImageView,
     image: vk::Image,
 }
 
@@ -180,12 +180,12 @@ impl OutputFramebuffer {
 impl Drop for OutputFramebuffer {
     fn drop(&mut self) {
         unsafe {
-            if self.framebuffer != vk::Framebuffer::null() {
-                self.device.destroy_framebuffer(self.framebuffer, None);
-            }
-            if self.image_view != vk::ImageView::null() {
-                self.device.destroy_image_view(self.image_view, None);
-            }
+            // if self.framebuffer != vk::Framebuffer::null() {
+            //     self.device.destroy_framebuffer(self.framebuffer, None);
+            // }
+            // if self.image_view != vk::ImageView::null() {
+            //     self.device.destroy_image_view(self.image_view, None);
+            // }
         }
     }
 }

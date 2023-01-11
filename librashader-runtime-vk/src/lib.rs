@@ -10,7 +10,7 @@ mod framebuffer;
 mod hello_triangle;
 mod luts;
 mod renderpass;
-mod rendertarget;
+mod render_target;
 mod samplers;
 mod texture;
 mod ubo_ring;

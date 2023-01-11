@@ -1,8 +1,8 @@
 use crate::{error, util};
 use crate::filter_chain::FilterCommon;
-use crate::rendertarget::RenderTarget;
+use crate::render_target::RenderTarget;
 use crate::samplers::{SamplerSet, VulkanSampler};
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk;
@@ -35,7 +35,7 @@ impl FilterPass {
         samplers: &SamplerSet,
         descriptor_set: vk::DescriptorSet,
         binding: &TextureBinding,
-        texture: &Texture,
+        texture: &InputTexture,
     ) {
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
         let image_info = [vk::DescriptorImageInfo::builder()
@@ -74,8 +74,8 @@ impl FilterPass {
         frame_count: u32,
         frame_direction: i32,
         viewport: &vk::Viewport,
-        original: &Texture,
-        source: &Texture,
+        original: &InputTexture,
+        source: &InputTexture,
         output: &RenderTarget,
     ) -> error::Result<()> {
         let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[0];
@@ -130,7 +130,7 @@ impl FilterPass {
                 parent.device.cmd_push_constants(cmd, self.graphics_pipeline.layout.layout, stage_mask, 0, self.uniform_storage.push_slice());
             }
 
-            parent.draw_quad.bind_vbo(cmd, VboType::Offscreen);
+            parent.draw_quad.bind_vbo(cmd, VboType::Final);
 
             parent.device.cmd_set_scissor(cmd, 0, &[
                 vk::Rect2D {
@@ -141,16 +141,9 @@ impl FilterPass {
             parent.device.cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
             parent.device.cmd_draw(cmd, 4, 1, 0, 0);
             parent.device.cmd_end_render_pass(cmd);
-
-            output.output.end_pass(cmd);
         }
         Ok(())
     }
-
-    //
-    // fn bind_ubo(device: &vk::Device, descriptor: &vk::DescriptorSet, binding: u32, buffer: &vk::Buffer, offset: vk::DeviceSize, range: vk::DeviceSize) {
-    //
-    // }
 
     fn build_semantics(
         &mut self,
@@ -162,8 +155,8 @@ impl FilterPass {
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
         descriptor_set: &vk::DescriptorSet,
-        original: &Texture,
-        source: &Texture,
+        original: &InputTexture,
+        source: &InputTexture,
     ) {
         if let Some(offset) = self.uniform_bindings.get(&UniqueSemantics::MVP.into()) {
             self.uniform_storage.bind_mat4(*offset, mvp, None);
@@ -304,35 +297,33 @@ impl FilterPass {
         // }
 
         // PassOutput
-        // for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
-        //     let Some(output) = output else {
-        //         eprintln!("no passoutput {index}");
-        //
-        //         continue;
-        //     };
-        //     if let Some(binding) = self
-        //         .reflection
-        //         .meta
-        //         .texture_meta
-        //         .get(&TextureSemantics::PassOutput.semantics(index))
-        //     {
-        //         FilterPass::bind_texture(
-        //             &self.device,
-        //             &parent.samplers,
-        //             descriptor_set,
-        //             binding,
-        //             output,
-        //         );
-        //     }
-        //
-        //     if let Some(offset) = self
-        //         .uniform_bindings
-        //         .get(&TextureSemantics::PassOutput.semantics(index).into())
-        //     {
-        //         self.uniform_storage
-        //             .bind_vec4(*offset, output.view.size, None);
-        //     }
-        // }
+        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
+            let Some(output) = output else {
+                continue;
+            };
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::PassOutput.semantics(index))
+            {
+                FilterPass::bind_texture(
+                    &self.device,
+                    &parent.samplers,
+                    *descriptor_set,
+                    binding,
+                    output,
+                );
+            }
+
+            if let Some(offset) = self
+                .uniform_bindings
+                .get(&TextureSemantics::PassOutput.semantics(index).into())
+            {
+                self.uniform_storage
+                    .bind_vec4(*offset, output.image.size, None);
+            }
+        }
 
         // // PassFeedback
         // for (index, feedback) in parent.feedback_textures.iter().enumerate() {

@@ -1,5 +1,5 @@
 use crate::filter_chain::Vulkan;
-use crate::texture::{Texture, VulkanImage};
+use crate::texture::{InputTexture, VulkanImage};
 use crate::vulkan_primitives::{VulkanBuffer, VulkanImageMemory};
 use crate::{error, util};
 use ash::vk;
@@ -10,7 +10,7 @@ use librashader_runtime::scaling::MipmapSize;
 pub struct LutTexture {
     pub memory: VulkanImageMemory,
     pub staging: VulkanBuffer,
-    pub image: Texture,
+    pub image: InputTexture,
 }
 
 impl LutTexture {
@@ -233,7 +233,7 @@ impl LutTexture {
         Ok(LutTexture {
             memory,
             staging,
-            image: Texture {
+            image: InputTexture {
                 image_view: texture_view,
                 image: VulkanImage {
                     size: image.size,
