@@ -22,7 +22,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
-use crate::draw_quad::{DrawQuad, VBO_DEFAULT_FINAL, VBO_OFFSCREEN};
+use crate::draw_quad::DrawQuad;
 use crate::framebuffer::OutputFramebuffer;
 use crate::render_target::{DEFAULT_MVP, RenderTarget};
 use crate::viewport::Viewport;
@@ -362,22 +362,11 @@ impl FilterChainVulkan {
                 uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
 
-            // default to something sane
-            if source.format == ImageFormat::Unknown {
-                source.format = ImageFormat::R8G8B8A8Unorm
-            }
-
-            // preset overrides shader
-            if let Some(format) = config.get_format_override() {
-                source.format = format;
-            }
-
             let graphics_pipeline = VulkanGraphicsPipeline::new(
                 &vulkan.device,
                 &vulkan.pipeline_cache,
                 &spirv_words,
                 &reflection,
-                source.format,
                 images,
             )?;
 
@@ -535,7 +524,8 @@ impl FilterChainVulkan {
                                                target.image.clone())?,
             };
 
-            pass.draw(cmd, index, &self.common, count as u32, 0, viewport, &original, &source, &out)?;
+            pass.draw(cmd, index, &self.common, count as u32, 0,
+                      viewport, &original, &source, &out)?;
             // for second to last pass, we want to transition to copy instead.
             out.output.end_pass(cmd);
 
@@ -560,7 +550,6 @@ impl FilterChainVulkan {
                 y: viewport.y,
                 mvp: viewport.mvp.unwrap_or(DEFAULT_MVP),
                 output: OutputFramebuffer::new(&self.vulkan,
-                                               /*&pass.graphics_pipeline.render_pass,*/
                                                viewport.output.clone())?,
             };
 

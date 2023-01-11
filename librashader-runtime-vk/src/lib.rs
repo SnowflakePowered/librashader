@@ -9,7 +9,6 @@ mod filter_pass;
 mod framebuffer;
 mod hello_triangle;
 mod luts;
-mod renderpass;
 mod render_target;
 mod samplers;
 mod texture;

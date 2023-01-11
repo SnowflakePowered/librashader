@@ -104,23 +104,6 @@ impl FilterPass {
 
         output.output.begin_pass(cmd);
 
-        // let render_pass_info = vk::RenderPassBeginInfo::builder()
-        //     .framebuffer(output.output.framebuffer)
-        //     .render_pass(self.graphics_pipeline.render_pass.handle)
-        //     .clear_values(&[vk::ClearValue {
-        //         color: vk::ClearColorValue {
-        //             float32: [0.0, 0.0, 0.0, 0.0]
-        //         }
-        //     }])
-        //     // always render into the full output, regardless of viewport settings.
-        //     .render_area(vk::Rect2D {
-        //         offset: vk::Offset2D {
-        //             x: 0,
-        //             y: 0,
-        //         },
-        //         extent: output.output.size.into(),
-        //     }).build();
-
         let attachments = [vk::RenderingAttachmentInfo::builder()
             .load_op(vk::AttachmentLoadOp::DONT_CARE)
             .store_op(vk::AttachmentStoreOp::STORE)
@@ -173,7 +156,6 @@ impl FilterPass {
 
             parent.device.cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
             parent.device.cmd_draw(cmd, 4, 1, 0, 0);
-            // parent.device.cmd_end_render_pass(cmd);
             parent.device.cmd_end_rendering(cmd);
         }
         Ok(())

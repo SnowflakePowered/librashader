@@ -1,4 +1,3 @@
-use crate::renderpass::VulkanRenderPass;
 use crate::{error, util};
 use ash::vk;
 use librashader_common::ImageFormat;
@@ -24,7 +23,7 @@ impl PipelineDescriptors {
 
     pub fn add_ubo_binding(&mut self, ubo_meta: Option<&UboReflection>) {
         if let Some(ubo_meta) = ubo_meta && !ubo_meta.stage_mask.is_empty() {
-            let mut ubo_mask = util::binding_stage_to_vulkan_stage(ubo_meta.stage_mask);
+            let ubo_mask = util::binding_stage_to_vulkan_stage(ubo_meta.stage_mask);
 
             self.layout_bindings.push(vk::DescriptorSetLayoutBinding {
                 binding: ubo_meta.binding,
@@ -42,7 +41,7 @@ impl PipelineDescriptors {
     }
 
     pub fn add_texture_bindings<'a>(&mut self, textures: impl Iterator<Item = &'a TextureBinding>) {
-        let mut texture_mask = vk::ShaderStageFlags::FRAGMENT;
+        let texture_mask = vk::ShaderStageFlags::FRAGMENT;
         for texture in textures {
             self.layout_bindings.push(vk::DescriptorSetLayoutBinding {
                 binding: texture.binding,
@@ -102,11 +101,11 @@ impl PipelineLayoutObjects {
 
         let mut descriptor_set_layout = [descriptors.create_descriptor_set_layout(device)?];
 
-        let mut pipeline_create_info =
+        let pipeline_create_info =
             vk::PipelineLayoutCreateInfo::builder().set_layouts(&descriptor_set_layout);
 
         let pipeline_create_info = if let Some(push_constant) = &reflection.push_constant {
-            let mut stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
+            let stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
             let push_constant_range = [vk::PushConstantRange::builder()
                 .stage_flags(stage_mask)
                 .size(push_constant.size)
@@ -186,14 +185,8 @@ impl VulkanGraphicsPipeline {
         cache: &vk::PipelineCache,
         shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
         reflection: &ShaderReflection,
-        mut format: ImageFormat,
         replicas: u32,
     ) -> error::Result<VulkanGraphicsPipeline> {
-        // default to something sane
-        if format == ImageFormat::Unknown {
-            format = ImageFormat::R8G8B8A8Unorm
-        }
-
         // shader_vulkan 1927 (init_pipeline_layout)
         let pipeline_layout = PipelineLayoutObjects::new(&reflection, replicas, device)?;
 
@@ -299,7 +292,6 @@ impl VulkanGraphicsPipeline {
             .viewport_state(&viewport_state)
             .depth_stencil_state(&depth_stencil_state)
             .dynamic_state(&dynamic_state)
-            // .render_pass(render_pass.handle.clone())
             .layout(pipeline_layout.layout)
             .build();
 
@@ -313,7 +305,6 @@ impl VulkanGraphicsPipeline {
 
         Ok(VulkanGraphicsPipeline {
             layout: pipeline_layout,
-            // render_pass,
             pipeline,
         })
     }
