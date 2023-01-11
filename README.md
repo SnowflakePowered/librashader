@@ -1,6 +1,6 @@
 # librashader
 
-![gameboy-player-crt-royale](https://user-images.githubusercontent.com/1000503/206342591-cdcb090a-c485-44c3-936e-50226499aff6.png)
+![gameboy-player-crt-royale](https://user-images.githubusercontent.com/1000503/211937119-078be1ea-cd1c-4fb2-91da-acc8703c70aa.png)
 
 <small>*gameboy-player-crt-royale*</small>
 
@@ -16,7 +16,7 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 |-------------|------------|---------------------------|
 | OpenGL 3.3+ | ✔          | `gl`                      |
 | OpenGL 4.6  | ✔          | `gl`                      |
-| Vulkan      | 🚧         | `vk`                      |
+| Vulkan 1.3+ | ✔         | `vk`                      |
 | Direct3D11  | ✔          | `d3d11`                   |
 | Direct3D12  | 🚧         | `d3d12`                   |
 | OpenGL 2    | ❌          |                           |
@@ -77,10 +77,13 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * OpenGL 4.6+
     * All caveats from the OpenGL 3.3+ section should be considered.
     * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
-    * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For recent GPUs, this may improve performance.
+    * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For GPUs released within the last 5 years, this may improve performance.
   * Direct3D 11
     * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
     * HDR10 support is not part of the shader runtime and is not supported.
+  * Vulkan 1.3+
+    * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html). This extension must be enabled at device creation to use librashader.
+    * UBOs use multiple discontiguous buffers. This may be improved in the future by switching to VMA rather than manually handling allocations.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project. 
