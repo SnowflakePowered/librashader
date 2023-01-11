@@ -1,5 +1,5 @@
 use crate::error::ParsePresetError;
-use librashader_common::{FilterMode, WrapMode};
+use librashader_common::{FilterMode, ImageFormat, WrapMode};
 use std::ops::Mul;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -27,6 +27,19 @@ pub struct ShaderPassConfig {
     pub mipmap_input: bool,
     /// Specifies the scaling of the output framebuffer for this shader pass.
     pub scaling: Scale2D,
+}
+
+impl ShaderPassConfig {
+    /// If the framebuffer expects a different format than what was defined in the
+    /// shader source, returns such format.
+    pub fn get_format_override(&self) -> Option<ImageFormat> {
+        if self.srgb_framebuffer {
+            return Some(ImageFormat::R8G8B8A8Srgb)
+        } else if self.float_framebuffer {
+            return Some(ImageFormat::R16G16B16A16Sfloat)
+        }
+        return None
+    }
 }
 
 #[repr(i32)]

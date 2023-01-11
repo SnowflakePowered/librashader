@@ -58,13 +58,14 @@ impl FilterPass {
     }
 
     pub fn get_format(&self) -> ImageFormat {
-        let mut fb_format = ImageFormat::R8G8B8A8Unorm;
-        if self.config.srgb_framebuffer {
-            fb_format = ImageFormat::R8G8B8A8Srgb;
-        } else if self.config.float_framebuffer {
-            fb_format = ImageFormat::R16G16B16A16Sfloat;
+        let mut fb_format = self.source.format;
+        if let Some(format) = self.config.get_format_override() {
+            format
+        } else if fb_format == ImageFormat::Unknown {
+            ImageFormat::R8G8B8A8Unorm
+        } else {
+            fb_format
         }
-        fb_format
     }
 
     pub(crate) fn draw(

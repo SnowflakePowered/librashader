@@ -1,7 +1,7 @@
 use crate::{error, util};
 use crate::filter_chain::Vulkan;
 use crate::renderpass::VulkanRenderPass;
-use crate::texture::OwnedTexture;
+use crate::texture::{OwnedTexture, VulkanImage};
 use ash::vk;
 use ash::vk::{ImageAspectFlags, ImageViewType};
 use librashader_common::Size;
@@ -16,7 +16,8 @@ pub(crate) struct OutputFramebuffer {
 }
 
 impl OutputFramebuffer {
-    pub fn new(vulkan: &Vulkan, render_pass: &VulkanRenderPass, image: vk::Image, size: Size<u32>) -> error::Result<OutputFramebuffer> {
+    pub fn new(vulkan: &Vulkan, render_pass: &VulkanRenderPass,
+               image: VulkanImage) -> error::Result<OutputFramebuffer> {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
             .base_array_layer(0)
@@ -34,21 +35,22 @@ impl OutputFramebuffer {
 
         let mut view_info = vk::ImageViewCreateInfo::builder()
             .view_type(ImageViewType::TYPE_2D)
-            .format(render_pass.format.into())
-            .image(image.clone())
+            .format(image.format)
+            .image(image.image.clone())
             .subresource_range(image_subresource)
             .components(swizzle_components)
             .build();
 
-        let image_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
+        let image_view = unsafe { vulkan.device.create_image_view(
+            &view_info, None)? };
 
         let framebuffer = unsafe {
             vulkan.device.create_framebuffer(
                 &vk::FramebufferCreateInfo::builder()
                     .render_pass(render_pass.handle)
                     .attachments(&[image_view])
-                    .width(size.width)
-                    .height(size.height)
+                    .width(image.size.width)
+                    .height(image.size.height)
                     .layers(1)
                     .build(),
                 None,
@@ -57,8 +59,8 @@ impl OutputFramebuffer {
 
         Ok(OutputFramebuffer {
             device: vulkan.device.clone(),
-            size,
-            image,
+            size: image.size,
+            image: image.image,
             framebuffer,
             image_view,
         })

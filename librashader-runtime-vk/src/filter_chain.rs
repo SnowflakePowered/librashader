@@ -367,6 +367,11 @@ impl FilterChainVulkan {
                 source.format = ImageFormat::R8G8B8A8Unorm
             }
 
+            // preset overrides shader
+            if let Some(format) = config.get_format_override() {
+                source.format = format;
+            }
+
             let graphics_pipeline = VulkanGraphicsPipeline::new(
                 &vulkan.device,
                 &vulkan.pipeline_cache,
@@ -463,6 +468,10 @@ impl FilterChainVulkan {
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
 
         let mut intermediates = FilterChainFrameIntermediates::new(&self.vulkan.device);
+        if passes.is_empty() {
+            return Ok(intermediates);
+        }
+
 
         let original_image_view = unsafe {
             let create_info = vk::ImageViewCreateInfo::builder()
@@ -510,7 +519,10 @@ impl FilterChainVulkan {
         }
 
 
-        for (index, pass) in passes.iter_mut().enumerate() {
+        let passes_len = passes.len();
+        let (pass, last) = passes.split_at_mut(passes_len - 1);
+
+        for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             // todo: use proper mode
             // todo: the output framebuffers can only be dropped after command queue submission.
@@ -519,7 +531,8 @@ impl FilterChainVulkan {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
-                output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass, target.image.image, target.image.size)?,
+                output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass,
+                                               target.image.clone())?,
             };
 
             pass.draw(cmd, index, &self.common, count as u32, 0, viewport, &original, &source, &out)?;
@@ -527,7 +540,8 @@ impl FilterChainVulkan {
             out.output.end_pass(cmd);
 
             source = target.as_input(pass.config.filter, pass.config.wrap_mode)?;
-            let prev_frame_output = self.common.output_textures[index].replace(source.clone());
+            let prev_frame_output = self.common
+                .output_textures[index].replace(source.clone());
             if let Some(prev_frame_output) = prev_frame_output {
                 intermediates.dispose_input(prev_frame_output);
             }
@@ -535,6 +549,28 @@ impl FilterChainVulkan {
             intermediates.dispose_outputs(out.output);
         }
 
+        // try to hint the optimizer
+        assert_eq!(last.len(), 1);
+        if let Some(pass) = last.iter_mut().next() {
+            source.filter_mode = pass.config.filter;
+            source.mip_filter = pass.config.filter;
+
+            let out = RenderTarget {
+                x: viewport.x,
+                y: viewport.y,
+                mvp: viewport.mvp.unwrap_or(DEFAULT_MVP),
+                output: OutputFramebuffer::new(&self.vulkan,
+                                               &pass.graphics_pipeline.render_pass,
+                                               viewport.output.clone())?,
+            };
+
+            pass.draw(cmd, passes_len - 1,
+                      &self.common,
+                      count as u32,
+                      0, viewport, &original, &source, &out)?;
+
+            intermediates.dispose_outputs(out.output);
+        }
         Ok(intermediates)
     }
 }

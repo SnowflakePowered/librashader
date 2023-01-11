@@ -223,67 +223,67 @@ impl VulkanWindow {
             }, cmd, None)
                 .unwrap();
 
-            eprintln!("{:x}", framebuffer_image.as_raw());
-            // todo: output image will remove need for ImageLayout::GENERAL
-            // todo: make `frame` render into swapchain image rather than blit.
+            // eprintln!("{:x}", framebuffer_image.as_raw());
+            // // todo: output image will remove need for ImageLayout::GENERAL
+            // // todo: make `frame` render into swapchain image rather than blit.
+            // util::vulkan_image_layout_transition_levels(
+            //     &vulkan.base.device,
+            //     cmd,
+            //     framebuffer_image,
+            //     1,
+            //     vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+            //     vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            //     vk::AccessFlags::SHADER_READ,
+            //     vk::AccessFlags::TRANSFER_READ,
+            //     vk::PipelineStageFlags::VERTEX_SHADER,
+            //     vk::PipelineStageFlags::TRANSFER,
+            //     vk::QUEUE_FAMILY_IGNORED,
+            //     vk::QUEUE_FAMILY_IGNORED,
+            // );
+            //
+            // let blit_subresource = vk::ImageSubresourceLayers::builder()
+            //     .layer_count(1)
+            //     .aspect_mask(vk::ImageAspectFlags::COLOR)
+            //     .build();
+            //
+            // let src_offsets = [
+            //     vk::Offset3D { x: 0, y: 0, z: 0 },
+            //     vk::Offset3D {
+            //         x: vulkan.swapchain.extent.width as i32,
+            //         y: vulkan.swapchain.extent.height as i32,
+            //         z: 1,
+            //     },
+            // ];
+            //
+            // let dst_offsets = [
+            //     vk::Offset3D { x: 0, y: 0, z: 0 },
+            //     vk::Offset3D {
+            //         x: vulkan.swapchain.extent.width as i32,
+            //         y: vulkan.swapchain.extent.height as i32,
+            //         z: 1,
+            //     },
+            // ];
+            // vulkan.base.device.cmd_blit_image(
+            //     cmd,
+            //     framebuffer_image,
+            //     vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+            //     swapchain_image,
+            //     vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+            //     &[vk::ImageBlit {
+            //         src_subresource: blit_subresource,
+            //         src_offsets,
+            //         dst_subresource: blit_subresource,
+            //         dst_offsets,
+            //     }],
+            //     vk::Filter::LINEAR,
+            // );
+
             util::vulkan_image_layout_transition_levels(
                 &vulkan.base.device,
                 cmd,
-                framebuffer_image,
-                1,
-                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                vk::AccessFlags::SHADER_READ,
-                vk::AccessFlags::TRANSFER_READ,
-                vk::PipelineStageFlags::VERTEX_SHADER,
-                vk::PipelineStageFlags::TRANSFER,
-                vk::QUEUE_FAMILY_IGNORED,
-                vk::QUEUE_FAMILY_IGNORED,
-            );
-
-            let blit_subresource = vk::ImageSubresourceLayers::builder()
-                .layer_count(1)
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .build();
-
-            let src_offsets = [
-                vk::Offset3D { x: 0, y: 0, z: 0 },
-                vk::Offset3D {
-                    x: vulkan.swapchain.extent.width as i32,
-                    y: vulkan.swapchain.extent.height as i32,
-                    z: 1,
-                },
-            ];
-
-            let dst_offsets = [
-                vk::Offset3D { x: 0, y: 0, z: 0 },
-                vk::Offset3D {
-                    x: vulkan.swapchain.extent.width as i32,
-                    y: vulkan.swapchain.extent.height as i32,
-                    z: 1,
-                },
-            ];
-            vulkan.base.device.cmd_blit_image(
-                cmd,
-                framebuffer_image,
-                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                swapchain_image,
-                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                &[vk::ImageBlit {
-                    src_subresource: blit_subresource,
-                    src_offsets,
-                    dst_subresource: blit_subresource,
-                    dst_offsets,
-                }],
-                vk::Filter::LINEAR,
-            );
-
-            util::vulkan_image_layout_transition_levels(
-                &vulkan.base.device,
-                cmd,
                 swapchain_image,
                 1,
-                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
                 vk::ImageLayout::PRESENT_SRC_KHR,
                 vk::AccessFlags::empty(),
                 vk::AccessFlags::TRANSFER_READ,
