@@ -15,6 +15,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use crate::draw_quad::VboType;
+use crate::viewport::Viewport;
 
 pub struct FilterPass {
     pub device: ash::Device,
@@ -73,7 +74,7 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &vk::Viewport,
+        viewport: &Viewport,
         original: &InputTexture,
         source: &InputTexture,
         output: &RenderTarget,
@@ -87,7 +88,7 @@ impl FilterPass {
             frame_count,
             frame_direction,
             output.output.size,
-            viewport.into(),
+            viewport.output.size,
             &descriptor,
             original,
             source,
@@ -110,8 +111,12 @@ impl FilterPass {
                     float32: [0.0, 0.0, 0.0, 0.0]
                 }
             }])
+            // always render into the full output, regardless of viewport settings.
             .render_area(vk::Rect2D {
-                offset: Default::default(),
+                offset: vk::Offset2D {
+                    x: 0,
+                    y: 0,
+                },
                 extent: output.output.size.into(),
             }).build();
 
@@ -139,7 +144,10 @@ impl FilterPass {
 
             parent.device.cmd_set_scissor(cmd, 0, &[
                 vk::Rect2D {
-                    offset: Default::default(),
+                    offset: vk::Offset2D {
+                        x: output.x as i32,
+                        y: output.y as i32,
+                    },
                     extent: output.output.size.into()
                 }]);
 

@@ -14,8 +14,9 @@ pub struct VulkanSwapchain {
     pub extent: vk::Extent2D,
     mode: vk::PresentModeKHR,
     pub swapchain_images: Vec<vk::Image>,
-    pub render_images: Vec<(vk::Image, VulkanImageMemory)>,
+    pub swapchain_image_views: Vec<vk::ImageView>,
 
+    pub render_images: Vec<(vk::Image, VulkanImageMemory)>,
     pub render_image_views: Vec<vk::ImageView>,
     device: ash::Device,
 }
@@ -56,7 +57,7 @@ impl VulkanSwapchain {
             .clipped(true)
             .image_array_layers(1)
             // todo: switch to IMAGE_USAGE_TRANSFER_DST
-            .image_usage(vk::ImageUsageFlags::TRANSFER_DST)
+            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
             .build();
 
         let loader = ash::extensions::khr::Swapchain::new(&base.instance, &base.device);
@@ -114,48 +115,48 @@ impl VulkanSwapchain {
             }
         }
 
-        // let image_views: VkResult<Vec<vk::ImageView>> = swapchain_images
-        //     .iter()
-        //     .map(|image| {
-        //         let create_info = vk::ImageViewCreateInfo::builder()
-        //             .view_type(vk::ImageViewType::TYPE_2D)
-        //             .format(format.format)
-        //             .components(vk::ComponentMapping {
-        //                 r: vk::ComponentSwizzle::IDENTITY,
-        //                 g: vk::ComponentSwizzle::IDENTITY,
-        //                 b: vk::ComponentSwizzle::IDENTITY,
-        //                 a: vk::ComponentSwizzle::IDENTITY,
-        //             })
-        //             .subresource_range(vk::ImageSubresourceRange {
-        //                 aspect_mask: vk::ImageAspectFlags::COLOR,
-        //                 base_mip_level: 0,
-        //                 level_count: 1,
-        //                 base_array_layer: 0,
-        //                 layer_count: 1,
-        //             })
-        //             .image(*image)
-        //             .build();
-        //
-        //         let view = unsafe { base.device.create_image_view(&create_info, None)? };
-        //         unsafe {
-        //             base.debug.loader.set_debug_utils_object_name(base.device.handle(),
-        //                                                           &vk::DebugUtilsObjectNameInfoEXT::builder()
-        //                                                               .object_handle(image.as_raw())
-        //                                                               .object_name(CStr::from_bytes_with_nul_unchecked(b"SwapchainImage\0"))
-        //                                                               .object_type(vk::ObjectType::IMAGE)
-        //                                                               .build())
-        //                 .expect("could not set object name");
-        //             base.debug.loader.set_debug_utils_object_name(base.device.handle(),
-        //                                                           &vk::DebugUtilsObjectNameInfoEXT::builder()
-        //                                                               .object_handle(view.as_raw())
-        //                                                               .object_name(CStr::from_bytes_with_nul_unchecked(b"SwapchainImageView\0"))
-        //                                                               .object_type(vk::ObjectType::IMAGE_VIEW)
-        //                                                               .build())
-        //                 .expect("could not set object name");
-        //         }
-        //         Ok(view)
-        //     })
-        //     .collect();
+        let swapchain_image_views: VkResult<Vec<vk::ImageView>> = swapchain_images
+            .iter()
+            .map(|image| {
+                let create_info = vk::ImageViewCreateInfo::builder()
+                    .view_type(vk::ImageViewType::TYPE_2D)
+                    .format(format.format)
+                    .components(vk::ComponentMapping {
+                        r: vk::ComponentSwizzle::IDENTITY,
+                        g: vk::ComponentSwizzle::IDENTITY,
+                        b: vk::ComponentSwizzle::IDENTITY,
+                        a: vk::ComponentSwizzle::IDENTITY,
+                    })
+                    .subresource_range(vk::ImageSubresourceRange {
+                        aspect_mask: vk::ImageAspectFlags::COLOR,
+                        base_mip_level: 0,
+                        level_count: 1,
+                        base_array_layer: 0,
+                        layer_count: 1,
+                    })
+                    .image(*image)
+                    .build();
+
+                let view = unsafe { base.device.create_image_view(&create_info, None)? };
+                unsafe {
+                    base.debug.loader.set_debug_utils_object_name(base.device.handle(),
+                                                                  &vk::DebugUtilsObjectNameInfoEXT::builder()
+                                                                      .object_handle(image.as_raw())
+                                                                      .object_name(CStr::from_bytes_with_nul_unchecked(b"SwapchainImage\0"))
+                                                                      .object_type(vk::ObjectType::IMAGE)
+                                                                      .build())
+                        .expect("could not set object name");
+                    base.debug.loader.set_debug_utils_object_name(base.device.handle(),
+                                                                  &vk::DebugUtilsObjectNameInfoEXT::builder()
+                                                                      .object_handle(view.as_raw())
+                                                                      .object_name(CStr::from_bytes_with_nul_unchecked(b"SwapchainImageView\0"))
+                                                                      .object_type(vk::ObjectType::IMAGE_VIEW)
+                                                                      .build())
+                        .expect("could not set object name");
+                }
+                Ok(view)
+            })
+            .collect();
 
         let render_image_views: VkResult<Vec<vk::ImageView>> = render_images
             .iter()
@@ -200,7 +201,7 @@ impl VulkanSwapchain {
             mode,
             swapchain_images,
             render_images,
-            // swapchain_image_views: image_views?,
+            swapchain_image_views: swapchain_image_views?,
             render_image_views: render_image_views?,
             device: base.device.clone(),
         })
@@ -213,7 +214,7 @@ impl Drop for VulkanSwapchain {
             for view in &self.render_image_views {
                 self.device.destroy_image_view(*view, None)
             }
-            for (view, memory) in &self.render_images {
+            for (view, _memory) in &self.render_images {
                 self.device.destroy_image(*view, None);
             }
             self.loader.destroy_swapchain(self.swapchain, None)

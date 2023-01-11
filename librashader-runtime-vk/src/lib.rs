@@ -17,6 +17,7 @@ mod ubo_ring;
 mod util;
 mod vulkan_primitives;
 mod vulkan_state;
+mod viewport;
 
 #[cfg(test)]
 mod tests {

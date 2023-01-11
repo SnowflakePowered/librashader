@@ -24,6 +24,7 @@ use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEve
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
 use crate::texture::VulkanImage;
+use crate::viewport::Viewport;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -206,13 +207,15 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED
             // );
 
-            let intermediates = filter.frame(0, &vk::Viewport {
+            let intermediates = filter.frame(0, &Viewport {
                 x: 0.0,
                 y: 0.0,
-                width: vulkan.swapchain.extent.width as f32,
-                height: vulkan.swapchain.extent.height as f32,
-                min_depth: 0.0,
-                max_depth: 1.0,
+                output: VulkanImage {
+                    size: vulkan.swapchain.extent.into(),
+                    image: swapchain_image,
+                    format: vulkan.swapchain.format.format,
+                },
+                mvp: None,
             }, &VulkanImage {
                 size: vulkan.swapchain.extent.into(),
                 image: framebuffer_image,
@@ -222,6 +225,7 @@ impl VulkanWindow {
 
             eprintln!("{:x}", framebuffer_image.as_raw());
             // todo: output image will remove need for ImageLayout::GENERAL
+            // todo: make `frame` render into swapchain image rather than blit.
             util::vulkan_image_layout_transition_levels(
                 &vulkan.base.device,
                 cmd,

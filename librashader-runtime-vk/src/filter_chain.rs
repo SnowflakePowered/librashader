@@ -25,6 +25,7 @@ use std::path::Path;
 use crate::draw_quad::{DrawQuad, VBO_DEFAULT_FINAL, VBO_OFFSCREEN};
 use crate::framebuffer::OutputFramebuffer;
 use crate::render_target::{DEFAULT_MVP, RenderTarget};
+use crate::viewport::Viewport;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -453,7 +454,7 @@ impl FilterChainVulkan {
     pub fn frame(
         &mut self,
         count: usize,
-        viewport: &vk::Viewport,
+        viewport: &Viewport,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
         options: Option<()>,
@@ -502,7 +503,7 @@ impl FilterChainVulkan {
             self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
-                &viewport.into(),
+                &viewport.output.size,
                 &original,
                 &source,
             )?;
@@ -515,6 +516,8 @@ impl FilterChainVulkan {
             // todo: the output framebuffers can only be dropped after command queue submission.
 
             let out = RenderTarget {
+                x: 0.0,
+                y: 0.0,
                 mvp: DEFAULT_MVP,
                 output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass, target.image.image, target.image.size)?,
             };
