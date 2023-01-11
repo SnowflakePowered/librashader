@@ -105,6 +105,11 @@ impl FilterPass {
         let render_pass_info = vk::RenderPassBeginInfo::builder()
             .framebuffer(output.output.framebuffer)
             .render_pass(self.graphics_pipeline.render_pass.handle)
+            .clear_values(&[vk::ClearValue {
+                color: vk::ClearColorValue {
+                    float32: [0.0, 0.0, 0.0, 0.0]
+                }
+            }])
             .render_area(vk::Rect2D {
                 offset: Default::default(),
                 extent: output.output.size.into(),

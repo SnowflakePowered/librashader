@@ -24,7 +24,7 @@ impl VulkanRenderPass {
             .flags(vk::AttachmentDescriptionFlags::empty())
             .format(format.into())
             .samples(SampleCountFlags::TYPE_1)
-            .load_op(AttachmentLoadOp::CLEAR)
+            .load_op(AttachmentLoadOp::DONT_CARE)
             .store_op(AttachmentStoreOp::STORE)
             .stencil_load_op(AttachmentLoadOp::DONT_CARE)
             .stencil_store_op(AttachmentStoreOp::DONT_CARE)

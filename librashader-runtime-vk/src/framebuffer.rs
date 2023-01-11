@@ -6,64 +6,6 @@ use ash::vk;
 use ash::vk::{ImageAspectFlags, ImageViewType};
 use librashader_common::Size;
 
-pub struct VulkanFramebuffer {
-    pub device: ash::Device,
-    pub framebuffer: vk::Framebuffer,
-}
-
-impl Drop for VulkanFramebuffer {
-    fn drop(&mut self) {
-        unsafe {
-            if self.framebuffer != vk::Framebuffer::null() {
-                self.device.destroy_framebuffer(self.framebuffer, None);
-            }
-        }
-    }
-}
-//
-// pub struct OwnedFramebuffer {
-//     pub size: Size<u32>,
-//     pub image: OwnedTexture,
-//     pub render_pass: VulkanRenderPass,
-//     pub framebuffer: VulkanFramebuffer,
-//     pub view: vk::ImageView,
-// }
-//
-// impl OwnedFramebuffer {
-//     pub fn new(
-//         vulkan: &Vulkan,
-//         size: Size<u32>,
-//         render_pass: VulkanRenderPass,
-//         max_miplevels: u32,
-//     ) -> error::Result<Self> {
-//         let image = OwnedTexture::new(vulkan, size, render_pass.format, max_miplevels)?;
-//         let fb_view = image.create_texture_view()?;
-//         let framebuffer = unsafe {
-//             vulkan.device.create_framebuffer(
-//                 &vk::FramebufferCreateInfo::builder()
-//                     .render_pass(render_pass.handle)
-//                     .attachments(&[image.image_view])
-//                     .width(image.image.size.width)
-//                     .height(image.image.size.height)
-//                     .layers(1)
-//                     .build(),
-//                 None,
-//             )?
-//         };
-//
-//         Ok(OwnedFramebuffer {
-//             size,
-//             image,
-//             view: fb_view,
-//             render_pass,
-//             framebuffer: VulkanFramebuffer {
-//                 device: vulkan.device.clone(),
-//                 framebuffer,
-//             },
-//         })
-//     }
-// }
-
 #[derive(Clone)]
 pub(crate) struct OutputFramebuffer {
     pub framebuffer: vk::Framebuffer,
@@ -73,16 +15,6 @@ pub(crate) struct OutputFramebuffer {
     image: vk::Image,
 }
 
-//
-// pub struct OutputFramebuffer<'a> {
-//     device: ash::Device,
-//     render_pass: &'a VulkanRenderPass,
-//     pub handle: vk::Framebuffer,
-//     pub size: Size<u32>,
-//     pub image: vk::Image,
-//     pub image_view: vk::ImageView,
-// }
-//
 impl OutputFramebuffer {
     pub fn new(vulkan: &Vulkan, render_pass: &VulkanRenderPass, image: vk::Image, size: Size<u32>) -> error::Result<OutputFramebuffer> {
         let image_subresource = vk::ImageSubresourceRange::builder()

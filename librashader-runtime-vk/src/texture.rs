@@ -36,6 +36,7 @@ impl OwnedTexture {
             .array_layers(1)
             .samples(SampleCountFlags::TYPE_1)
             .tiling(ImageTiling::OPTIMAL)
+            .flags(vk::ImageCreateFlags::MUTABLE_FORMAT)
             .usage(
                 ImageUsageFlags::SAMPLED
                     | ImageUsageFlags::COLOR_ATTACHMENT
@@ -129,7 +130,8 @@ impl OwnedTexture {
                 format
             }, self.max_miplevels)?;
 
-            std::mem::swap(self, &mut new)
+            let old = std::mem::replace(self, new);
+            drop(old)
         }
         Ok(size)
     }
