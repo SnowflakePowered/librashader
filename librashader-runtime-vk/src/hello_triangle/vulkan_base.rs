@@ -86,13 +86,26 @@ impl VulkanBase {
             .queue_priorities(&[1.0f32])
             .build();
 
-        let physical_device_features = vk::PhysicalDeviceFeatures::default();
+        // let physical_device_features = vk::PhysicalDeviceFeatures::default();
+
+        let mut physical_device_features = vk::PhysicalDeviceVulkan13Features::builder()
+            .dynamic_rendering(true)
+            .build();
+
+        // let mut physical_device_features =
+        //     vk::PhysicalDeviceFeatures2::builder().push_next(&mut physical_device_features)
+        //         .build();
+
 
         let device_create_info = vk::DeviceCreateInfo::builder()
             .queue_create_infos(&[queue_info])
             .enabled_layer_names(&[debug])
-            .enabled_extension_names(&[ash::extensions::khr::Swapchain::name().as_ptr()])
-            .enabled_features(&physical_device_features)
+            .enabled_extension_names(&[
+                ash::extensions::khr::Swapchain::name().as_ptr(),
+                ash::extensions::khr::DynamicRendering::name().as_ptr(),
+            ])
+            .push_next(&mut physical_device_features)
+            // .enabled_features(&physical_device_features)
             .build();
 
         let device =

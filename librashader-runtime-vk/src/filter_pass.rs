@@ -104,25 +104,44 @@ impl FilterPass {
 
         output.output.begin_pass(cmd);
 
-        let render_pass_info = vk::RenderPassBeginInfo::builder()
-            .framebuffer(output.output.framebuffer)
-            .render_pass(self.graphics_pipeline.render_pass.handle)
-            .clear_values(&[vk::ClearValue {
-                color: vk::ClearColorValue {
-                    float32: [0.0, 0.0, 0.0, 0.0]
-                }
-            }])
-            // always render into the full output, regardless of viewport settings.
+        // let render_pass_info = vk::RenderPassBeginInfo::builder()
+        //     .framebuffer(output.output.framebuffer)
+        //     .render_pass(self.graphics_pipeline.render_pass.handle)
+        //     .clear_values(&[vk::ClearValue {
+        //         color: vk::ClearColorValue {
+        //             float32: [0.0, 0.0, 0.0, 0.0]
+        //         }
+        //     }])
+        //     // always render into the full output, regardless of viewport settings.
+        //     .render_area(vk::Rect2D {
+        //         offset: vk::Offset2D {
+        //             x: 0,
+        //             y: 0,
+        //         },
+        //         extent: output.output.size.into(),
+        //     }).build();
+
+        let attachments = [vk::RenderingAttachmentInfo::builder()
+            .load_op(vk::AttachmentLoadOp::DONT_CARE)
+            .store_op(vk::AttachmentStoreOp::STORE)
+            .image_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+            .image_view(output.output.image_view)
+            .build()];
+
+        let rendering_info = vk::RenderingInfo::builder()
+            .layer_count(1)
             .render_area(vk::Rect2D {
                 offset: vk::Offset2D {
                     x: 0,
                     y: 0,
                 },
                 extent: output.output.size.into(),
-            }).build();
+            })
+            .color_attachments(&attachments);
 
         unsafe {
-            parent.device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
+            parent.device.cmd_begin_rendering(cmd, &rendering_info);
+            // parent.device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
             parent.device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::GRAPHICS, self.graphics_pipeline.pipeline);
 
             // todo: allow frames in flight.
@@ -154,7 +173,8 @@ impl FilterPass {
 
             parent.device.cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
             parent.device.cmd_draw(cmd, 4, 1, 0, 0);
-            parent.device.cmd_end_render_pass(cmd);
+            // parent.device.cmd_end_render_pass(cmd);
+            parent.device.cmd_end_rendering(cmd);
         }
         Ok(())
     }

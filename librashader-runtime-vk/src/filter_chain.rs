@@ -171,7 +171,7 @@ impl FilterChainFrameIntermediates {
     }
 
     pub(crate) fn dispose_outputs(&mut self, output_framebuffer: OutputFramebuffer) {
-        self.framebuffers.push(output_framebuffer.framebuffer);
+        // self.framebuffers.push(output_framebuffer.framebuffer);
         self.image_views.push(output_framebuffer.image_view);
     }
 
@@ -531,7 +531,7 @@ impl FilterChainVulkan {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
-                output: OutputFramebuffer::new(&self.vulkan, &pass.graphics_pipeline.render_pass,
+                output: OutputFramebuffer::new(&self.vulkan, /*&pass.graphics_pipeline.render_pass,*/
                                                target.image.clone())?,
             };
 
@@ -560,7 +560,7 @@ impl FilterChainVulkan {
                 y: viewport.y,
                 mvp: viewport.mvp.unwrap_or(DEFAULT_MVP),
                 output: OutputFramebuffer::new(&self.vulkan,
-                                               &pass.graphics_pipeline.render_pass,
+                                               /*&pass.graphics_pipeline.render_pass,*/
                                                viewport.output.clone())?,
             };
 

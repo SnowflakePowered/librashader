@@ -8,7 +8,6 @@ use librashader_common::Size;
 
 #[derive(Clone)]
 pub(crate) struct OutputFramebuffer {
-    pub framebuffer: vk::Framebuffer,
     pub size: Size<u32>,
     pub image_view: vk::ImageView,
     device: ash::Device,
@@ -16,7 +15,7 @@ pub(crate) struct OutputFramebuffer {
 }
 
 impl OutputFramebuffer {
-    pub fn new(vulkan: &Vulkan, render_pass: &VulkanRenderPass,
+    pub fn new(vulkan: &Vulkan,
                image: VulkanImage) -> error::Result<OutputFramebuffer> {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
@@ -44,24 +43,10 @@ impl OutputFramebuffer {
         let image_view = unsafe { vulkan.device.create_image_view(
             &view_info, None)? };
 
-        let framebuffer = unsafe {
-            vulkan.device.create_framebuffer(
-                &vk::FramebufferCreateInfo::builder()
-                    .render_pass(render_pass.handle)
-                    .attachments(&[image_view])
-                    .width(image.size.width)
-                    .height(image.size.height)
-                    .layers(1)
-                    .build(),
-                None,
-            )?
-        };
-
         Ok(OutputFramebuffer {
             device: vulkan.device.clone(),
             size: image.size,
             image: image.image,
-            framebuffer,
             image_view,
         })
     }

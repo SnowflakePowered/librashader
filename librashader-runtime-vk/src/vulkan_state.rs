@@ -177,7 +177,6 @@ impl Drop for VulkanShaderModule {
 
 pub struct VulkanGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
-    pub render_pass: VulkanRenderPass,
     pub pipeline: vk::Pipeline,
 }
 
@@ -290,8 +289,6 @@ impl VulkanGraphicsPipeline {
                 .build(),
         ];
 
-        let render_pass = VulkanRenderPass::create_render_pass(device, format).unwrap();
-
         let pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
             .stages(&shader_stages)
             .vertex_input_state(&pipeline_input_state)
@@ -302,7 +299,7 @@ impl VulkanGraphicsPipeline {
             .viewport_state(&viewport_state)
             .depth_stencil_state(&depth_stencil_state)
             .dynamic_state(&dynamic_state)
-            .render_pass(render_pass.handle.clone())
+            // .render_pass(render_pass.handle.clone())
             .layout(pipeline_layout.layout)
             .build();
 
@@ -316,7 +313,7 @@ impl VulkanGraphicsPipeline {
 
         Ok(VulkanGraphicsPipeline {
             layout: pipeline_layout,
-            render_pass,
+            // render_pass,
             pipeline,
         })
     }
