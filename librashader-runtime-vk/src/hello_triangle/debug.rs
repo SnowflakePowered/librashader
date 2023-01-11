@@ -4,7 +4,7 @@ use ash::vk;
 use ash::vk::{DebugUtilsMessengerEXT, PFN_vkDebugUtilsMessengerCallbackEXT};
 
 pub struct VulkanDebug {
-    loader: DebugUtils,
+    pub loader: DebugUtils,
     messenger: DebugUtilsMessengerEXT,
 }
 

@@ -1,10 +1,11 @@
+use std::ffi::CStr;
 use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
 use ash::prelude::VkResult;
 use ash::vk;
-use ash::vk::Extent3D;
+use ash::vk::{Extent3D, Handle};
 
 pub struct VulkanSwapchain {
     pub swapchain: vk::SwapchainKHR,
@@ -15,7 +16,6 @@ pub struct VulkanSwapchain {
     pub swapchain_images: Vec<vk::Image>,
     pub render_images: Vec<(vk::Image, VulkanImageMemory)>,
 
-    pub swapchain_image_views: Vec<vk::ImageView>,
     pub render_image_views: Vec<vk::ImageView>,
     device: ash::Device,
 }
@@ -67,6 +67,7 @@ impl VulkanSwapchain {
 
         let mut render_images = vec![];
 
+        // create render imaghes
         for _ in 0..swapchain_images.len() {
             let create_info = vk::ImageCreateInfo::builder()
                 .extent(Extent3D {
@@ -81,13 +82,20 @@ impl VulkanSwapchain {
                 .tiling(vk::ImageTiling::OPTIMAL)
                 .array_layers(1)
                 .mip_levels(1)
-                .usage(vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::COLOR_ATTACHMENT)
+                .usage(vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::COLOR_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_SRC)
                 .initial_layout(vk::ImageLayout::UNDEFINED);
 
             unsafe {
                 let image = base.device.create_image(&create_info, None)?;
-
                 let mem_reqs = unsafe { base.device.get_image_memory_requirements(image.clone()) };
+
+                base.debug.loader.set_debug_utils_object_name(base.device.handle(),
+                                                              &vk::DebugUtilsObjectNameInfoEXT::builder()
+                                                                  .object_handle(image.as_raw())
+                                                                  .object_name(CStr::from_bytes_with_nul_unchecked(b"RenderImage\0"))
+                                                                  .object_type(vk::ObjectType::IMAGE)
+                    .build())
+                    .expect("could not set object name");
 
                 let alloc_info = vk::MemoryAllocateInfo::builder()
                     .allocation_size(mem_reqs.size)
@@ -106,33 +114,48 @@ impl VulkanSwapchain {
             }
         }
 
-        let image_views: VkResult<Vec<vk::ImageView>> = swapchain_images
-            .iter()
-            .map(|image| {
-                let create_info = vk::ImageViewCreateInfo::builder()
-                    .view_type(vk::ImageViewType::TYPE_2D)
-                    .format(format.format)
-                    .components(vk::ComponentMapping {
-                        r: vk::ComponentSwizzle::IDENTITY,
-                        g: vk::ComponentSwizzle::IDENTITY,
-                        b: vk::ComponentSwizzle::IDENTITY,
-                        a: vk::ComponentSwizzle::IDENTITY,
-                    })
-                    .subresource_range(vk::ImageSubresourceRange {
-                        aspect_mask: vk::ImageAspectFlags::COLOR,
-                        base_mip_level: 0,
-                        level_count: 1,
-                        base_array_layer: 0,
-                        layer_count: 1,
-                    })
-                    .image(*image)
-                    .build();
-
-                let view = unsafe { base.device.create_image_view(&create_info, None)? };
-
-                Ok(view)
-            })
-            .collect();
+        // let image_views: VkResult<Vec<vk::ImageView>> = swapchain_images
+        //     .iter()
+        //     .map(|image| {
+        //         let create_info = vk::ImageViewCreateInfo::builder()
+        //             .view_type(vk::ImageViewType::TYPE_2D)
+        //             .format(format.format)
+        //             .components(vk::ComponentMapping {
+        //                 r: vk::ComponentSwizzle::IDENTITY,
+        //                 g: vk::ComponentSwizzle::IDENTITY,
+        //                 b: vk::ComponentSwizzle::IDENTITY,
+        //                 a: vk::ComponentSwizzle::IDENTITY,
+        //             })
+        //             .subresource_range(vk::ImageSubresourceRange {
+        //                 aspect_mask: vk::ImageAspectFlags::COLOR,
+        //                 base_mip_level: 0,
+        //                 level_count: 1,
+        //                 base_array_layer: 0,
+        //                 layer_count: 1,
+        //             })
+        //             .image(*image)
+        //             .build();
+        //
+        //         let view = unsafe { base.device.create_image_view(&create_info, None)? };
+        //         unsafe {
+        //             base.debug.loader.set_debug_utils_object_name(base.device.handle(),
+        //                                                           &vk::DebugUtilsObjectNameInfoEXT::builder()
+        //                                                               .object_handle(image.as_raw())
+        //                                                               .object_name(CStr::from_bytes_with_nul_unchecked(b"SwapchainImage\0"))
+        //                                                               .object_type(vk::ObjectType::IMAGE)
+        //                                                               .build())
+        //                 .expect("could not set object name");
+        //             base.debug.loader.set_debug_utils_object_name(base.device.handle(),
+        //                                                           &vk::DebugUtilsObjectNameInfoEXT::builder()
+        //                                                               .object_handle(view.as_raw())
+        //                                                               .object_name(CStr::from_bytes_with_nul_unchecked(b"SwapchainImageView\0"))
+        //                                                               .object_type(vk::ObjectType::IMAGE_VIEW)
+        //                                                               .build())
+        //                 .expect("could not set object name");
+        //         }
+        //         Ok(view)
+        //     })
+        //     .collect();
 
         let render_image_views: VkResult<Vec<vk::ImageView>> = render_images
             .iter()
@@ -157,7 +180,15 @@ impl VulkanSwapchain {
                     .build();
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
-
+                unsafe {
+                    base.debug.loader.set_debug_utils_object_name(base.device.handle(),
+                                                                  &vk::DebugUtilsObjectNameInfoEXT::builder()
+                                                                      .object_handle(view.as_raw())
+                                                                      .object_name(CStr::from_bytes_with_nul_unchecked(b"RenderImageView\0"))
+                                                                      .object_type(vk::ObjectType::IMAGE_VIEW)
+                                                                      .build())
+                        .expect("could not set object name");
+                }
                 Ok(view)
             })
             .collect();
@@ -169,7 +200,7 @@ impl VulkanSwapchain {
             mode,
             swapchain_images,
             render_images,
-            swapchain_image_views: image_views?,
+            // swapchain_image_views: image_views?,
             render_image_views: render_image_views?,
             device: base.device.clone(),
         })
@@ -179,8 +210,11 @@ impl VulkanSwapchain {
 impl Drop for VulkanSwapchain {
     fn drop(&mut self) {
         unsafe {
-            for view in &self.swapchain_image_views {
+            for view in &self.render_image_views {
                 self.device.destroy_image_view(*view, None)
+            }
+            for (view, memory) in &self.render_images {
+                self.device.destroy_image(*view, None);
             }
             self.loader.destroy_swapchain(self.swapchain, None)
         }

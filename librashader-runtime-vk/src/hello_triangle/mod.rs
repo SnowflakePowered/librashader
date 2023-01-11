@@ -8,6 +8,7 @@ mod swapchain;
 mod syncobjects;
 pub mod vulkan_base;
 
+use std::ffi::CString;
 use crate::filter_chain::{FilterChainVulkan, Vulkan};
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
@@ -18,7 +19,7 @@ use crate::hello_triangle::syncobjects::SyncObjects;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use crate::util;
 use ash::vk;
-use ash::vk::RenderingInfo;
+use ash::vk::{Handle, RenderingInfo};
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
@@ -95,18 +96,6 @@ impl VulkanWindow {
             .clear_values(&clear_values)
             .build();
 
-        vulkan
-            .base
-            .device
-            .reset_command_buffer(cmd, vk::CommandBufferResetFlags::empty())
-            .expect("could not reset command buffer");
-
-        vulkan
-            .base
-            .device
-            .begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())
-            .expect("failed to begin command buffer");
-
         vulkan.base.device.cmd_begin_render_pass(
             cmd,
             &render_pass_begin,
@@ -172,9 +161,52 @@ impl VulkanWindow {
             let framebuffer_image = vulkan.swapchain.render_images[swapchain_index as usize].0;
             let swapchain_image = vulkan.swapchain.swapchain_images[swapchain_index as usize];
 
+            vulkan
+                .base
+                .device
+                .reset_command_buffer(cmd, vk::CommandBufferResetFlags::empty())
+                .expect("could not reset command buffer");
+
+            vulkan
+                .base
+                .device
+                .begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())
+                .expect("failed to begin command buffer");
+
+
+            // util::vulkan_image_layout_transition_levels(
+            //     &vulkan.base.device,
+            //     cmd,
+            //     framebuffer_image,
+            //     1,
+            //     vk::ImageLayout::UNDEFINED,
+            //     vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            //     vk::AccessFlags::empty(),
+            //     vk::AccessFlags::SHADER_READ,
+            //     vk::PipelineStageFlags::ALL_GRAPHICS,
+            //     vk::PipelineStageFlags::VERTEX_SHADER,
+            //     vk::QUEUE_FAMILY_IGNORED,
+            //     vk::QUEUE_FAMILY_IGNORED
+            // );
+
             Self::record_command_buffer(vulkan, framebuffer, cmd);
 
-            filter.frame(0, &vk::Viewport {
+            // util::vulkan_image_layout_transition_levels(
+            //     &vulkan.base.device,
+            //     cmd,
+            //     framebuffer_image,
+            //     1,
+            //     vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            //     vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+            //     vk::AccessFlags::empty(),
+            //     vk::AccessFlags::SHADER_READ,
+            //     vk::PipelineStageFlags::ALL_GRAPHICS,
+            //     vk::PipelineStageFlags::VERTEX_SHADER,
+            //     vk::QUEUE_FAMILY_IGNORED,
+            //     vk::QUEUE_FAMILY_IGNORED
+            // );
+
+            let intermediates = filter.frame(0, &vk::Viewport {
                 x: 0.0,
                 y: 0.0,
                 width: vulkan.swapchain.extent.width as f32,
@@ -188,16 +220,18 @@ impl VulkanWindow {
             }, cmd, None)
                 .unwrap();
 
+            eprintln!("{:x}", framebuffer_image.as_raw());
+            // todo: output image will remove need for ImageLayout::GENERAL
             util::vulkan_image_layout_transition_levels(
                 &vulkan.base.device,
                 cmd,
                 framebuffer_image,
                 1,
-                vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                vk::AccessFlags::SHADER_READ,
                 vk::AccessFlags::TRANSFER_READ,
-                vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+                vk::PipelineStageFlags::VERTEX_SHADER,
                 vk::PipelineStageFlags::TRANSFER,
                 vk::QUEUE_FAMILY_IGNORED,
                 vk::QUEUE_FAMILY_IGNORED,
@@ -245,7 +279,7 @@ impl VulkanWindow {
                 cmd,
                 swapchain_image,
                 1,
-                vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
                 vk::ImageLayout::PRESENT_SRC_KHR,
                 vk::AccessFlags::empty(),
                 vk::AccessFlags::TRANSFER_READ,
@@ -289,6 +323,8 @@ impl VulkanWindow {
                 .loader
                 .queue_present(vulkan.base.graphics_queue, &present_info)
                 .unwrap();
+
+            drop(intermediates)
         }
     }
 }
@@ -313,7 +349,6 @@ pub struct VulkanDraw {
     base: VulkanBase,
     pub swapchain: VulkanSwapchain,
     pub pipeline: VulkanPipeline,
-    pub swapchain_framebuffers: Vec<VulkanFramebuffer>,
     pub swapchain_command_pool: VulkanCommandPool,
     pub render_command_pool: VulkanCommandPool,
     pub render_framebuffers: Vec<VulkanFramebuffer>,
@@ -333,22 +368,8 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
 
     let pipeline = unsafe { VulkanPipeline::new(&vulkan, &swapchain) }.unwrap();
 
-    let mut swapchain_framebuffers = vec![];
-    for image in &swapchain.swapchain_image_views {
-        swapchain_framebuffers.push(
-            VulkanFramebuffer::new(
-                &vulkan.device,
-                image,
-                &pipeline.renderpass,
-                WINDOW_WIDTH,
-                WINDOW_HEIGHT,
-            )
-            .unwrap(),
-        )
-    }
-
     let mut render_framebuffers = vec![];
-    for image in &swapchain.render_image_views {
+    for (index, image) in swapchain.render_image_views.iter().enumerate() {
         render_framebuffers.push(
             VulkanFramebuffer::new(
                 &vulkan.device,
@@ -371,7 +392,6 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
         swapchain,
         base: vulkan,
         pipeline,
-        swapchain_framebuffers,
         swapchain_command_pool,
         sync,
         render_command_pool,
