@@ -13,8 +13,8 @@ use crate::gl::gl3::CompatibilityGL;
 use crate::gl::{FramebufferInterface, GLInterface};
 use crate::viewport::Viewport;
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 800;
+const HEIGHT: u32 = 600;
 const TITLE: &str = "librashader OpenGL";
 
 pub fn compile_program(vertex: &str, fragment: &str) -> GLuint {

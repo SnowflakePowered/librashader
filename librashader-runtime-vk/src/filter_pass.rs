@@ -312,7 +312,7 @@ impl FilterPass {
         }
 
         // PassOutput
-        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
+        for (index, output) in parent.output_textures.iter().enumerate() {
             let Some(output) = output else {
                 continue;
             };

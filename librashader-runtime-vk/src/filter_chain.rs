@@ -3,7 +3,7 @@ use crate::{error, util};
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
 use crate::samplers::SamplerSet;
-use crate::texture::{OwnedImage, InputImage, VulkanImage};
+use crate::texture::{OwnedImage, InputImage, VulkanImage, OwnedImageLayout};
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
@@ -631,7 +631,8 @@ impl FilterChainVulkan {
                 &original,
                 &source,
                 // todo: need to check **next**
-                pass.config.mipmap_input
+                pass.config.mipmap_input,
+                None,
             )?;
 
             self.feedback_framebuffers[index].scale(
@@ -641,10 +642,15 @@ impl FilterChainVulkan {
                 &original,
                 &source,
                 // todo: need to check **next**
-                pass.config.mipmap_input
+                pass.config.mipmap_input,
+                None
             )?;
-        }
 
+            if self.common.feedback_textures[index].is_none() {
+                self.common.feedback_textures[index] =
+                    Some(source.clone());
+            }
+        }
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
@@ -673,7 +679,7 @@ impl FilterChainVulkan {
 
             source = target.as_input(pass.config.filter, pass.config.wrap_mode)?;
 
-            self.common.output_textures[index] = Some(source.clone());
+            let feedback = self.common.output_textures[index].replace(source.clone());
             intermediates.dispose_outputs(out.output);
         }
 
@@ -696,10 +702,6 @@ impl FilterChainVulkan {
                       count as u32,
                       0, viewport, &original, &source, &out)?;
 
-            std::mem::swap(
-                &mut self.output_framebuffers,
-                &mut self.feedback_framebuffers,
-            );
             intermediates.dispose_outputs(out.output);
         }
 

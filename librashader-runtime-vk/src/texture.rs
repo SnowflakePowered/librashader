@@ -18,6 +18,14 @@ pub struct OwnedImage {
     pub levels: u32,
 }
 
+pub struct OwnedImageLayout {
+    pub(crate) dst_layout: vk::ImageLayout,
+    pub(crate) dst_access: vk::AccessFlags,
+    pub(crate) src_stage: vk::PipelineStageFlags,
+    pub(crate) dst_stage: vk::PipelineStageFlags,
+    pub(crate) cmd: vk::CommandBuffer
+}
+
 impl OwnedImage {
     fn new_internal(
         device: ash::Device,
@@ -122,6 +130,7 @@ impl OwnedImage {
         _original: &InputImage,
         source: &InputImage,
         mipmap: bool,
+        layout: Option<OwnedImageLayout>
     ) -> error::Result<Size<u32>> {
         let size = source.image.size.scale_viewport(scaling, *viewport_size);
         if self.image.size != size || (mipmap && self.max_miplevels == 1) || (!mipmap && self.max_miplevels != 1) {
@@ -138,7 +147,20 @@ impl OwnedImage {
             }, max_levels)?;
 
             let old = std::mem::replace(self, new);
-            drop(old)
+            drop(old);
+
+            if let Some(layout) = layout {
+                unsafe {
+                    util::vulkan_image_layout_transition_levels(&self.device, layout.cmd,
+                                                                self.image.image,
+                                                                self.levels,
+                                                                vk::ImageLayout::UNDEFINED,
+                                                                layout.dst_layout, vk::AccessFlags::empty(),
+                                                                layout.dst_access, layout.src_stage, layout.dst_stage, vk::QUEUE_FAMILY_IGNORED,
+                                                                vk::QUEUE_FAMILY_IGNORED)
+
+                }
+            }
         }
         Ok(size)
     }
