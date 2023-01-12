@@ -2,7 +2,7 @@ use crate::{error, util};
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
 use crate::samplers::{SamplerSet, VulkanSampler};
-use crate::texture::InputTexture;
+use crate::texture::InputImage;
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk;
@@ -36,7 +36,7 @@ impl FilterPass {
         samplers: &SamplerSet,
         descriptor_set: vk::DescriptorSet,
         binding: &TextureBinding,
-        texture: &InputTexture,
+        texture: &InputImage,
     ) {
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
         let image_info = [vk::DescriptorImageInfo::builder()
@@ -76,8 +76,8 @@ impl FilterPass {
         frame_count: u32,
         frame_direction: i32,
         viewport: &Viewport,
-        original: &InputTexture,
-        source: &InputTexture,
+        original: &InputImage,
+        source: &InputImage,
         output: &RenderTarget,
     ) -> error::Result<()> {
         let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[0];
@@ -124,7 +124,6 @@ impl FilterPass {
 
         unsafe {
             parent.device.cmd_begin_rendering(cmd, &rendering_info);
-            // parent.device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
             parent.device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::GRAPHICS, self.graphics_pipeline.pipeline);
 
             // todo: allow frames in flight.
@@ -171,8 +170,8 @@ impl FilterPass {
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
         descriptor_set: &vk::DescriptorSet,
-        original: &InputTexture,
-        source: &InputTexture,
+        original: &InputImage,
+        source: &InputImage,
     ) {
         if let Some(offset) = self.uniform_bindings.get(&UniqueSemantics::MVP.into()) {
             self.uniform_storage.bind_mat4(*offset, mvp, None);
@@ -342,34 +341,34 @@ impl FilterPass {
         }
 
         // // PassFeedback
-        // for (index, feedback) in parent.feedback_textures.iter().enumerate() {
-        //     let Some(feedback) = feedback else {
-        //         eprintln!("no passfeedback {index}");
-        //         continue;
-        //     };
-        //     if let Some(binding) = self
-        //         .reflection
-        //         .meta
-        //         .texture_meta
-        //         .get(&TextureSemantics::PassFeedback.semantics(index))
-        //     {
-        //         FilterPass::bind_texture(
-        //             &parent.samplers,
-        //             &mut textures,
-        //             &mut samplers,
-        //             binding,
-        //             feedback,
-        //         );
-        //     }
-        //
-        //     if let Some(offset) = self
-        //         .uniform_bindings
-        //         .get(&TextureSemantics::PassFeedback.semantics(index).into())
-        //     {
-        //         self.uniform_storage
-        //             .bind_vec4(*offset, feedback.view.size, None);
-        //     }
-        // }
+        for (index, feedback) in parent.feedback_textures.iter().enumerate() {
+            let Some(feedback) = feedback else {
+                eprintln!("no passfeedback {index}");
+                continue;
+            };
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::PassFeedback.semantics(index))
+            {
+                FilterPass::bind_texture(
+                    &self.device,
+                    &parent.samplers,
+                    *descriptor_set,
+                    binding,
+                    feedback,
+                );
+            }
+
+            if let Some(offset) = self
+                .uniform_bindings
+                .get(&TextureSemantics::PassFeedback.semantics(index).into())
+            {
+                self.uniform_storage
+                    .bind_vec4(*offset, feedback.image.size, None);
+            }
+        }
 
         // bind float parameters
         for (id, offset) in

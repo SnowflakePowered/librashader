@@ -2,7 +2,7 @@ use crate::{error, util};
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
 use crate::samplers::SamplerSet;
-use crate::texture::{OwnedTexture, InputTexture, VulkanImage};
+use crate::texture::{OwnedImage, InputImage, VulkanImage};
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
@@ -23,7 +23,7 @@ use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
 use crate::draw_quad::DrawQuad;
-use crate::framebuffer::OutputFramebuffer;
+use crate::framebuffer::OutputImage;
 use crate::render_target::{DEFAULT_MVP, RenderTarget};
 use crate::viewport::Viewport;
 
@@ -128,8 +128,8 @@ pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Box<[FilterPass]>,
     pub(crate) vulkan: Vulkan,
-    pub(crate) output_framebuffers: Box<[OwnedTexture]>,
-    // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
+    pub(crate) output_framebuffers: Box<[OwnedImage]>,
+    pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
 }
 
@@ -143,8 +143,8 @@ pub(crate) struct FilterCommon {
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
 
-    pub output_textures: Box<[Option<InputTexture>]>,
-    // pub feedback_textures: Box<[Option<Texture>]>,
+    pub output_textures: Box<[Option<InputImage>]>,
+    pub feedback_textures: Box<[Option<InputImage>]>,
     // pub history_textures: Box<[Option<Texture>]>,
     pub config: FilterMutable,
     pub device: ash::Device,
@@ -153,7 +153,6 @@ pub(crate) struct FilterCommon {
 #[must_use]
 pub struct FilterChainFrameIntermediates {
     device: ash::Device,
-    framebuffers: Vec<vk::Framebuffer>,
     image_views: Vec<vk::ImageView>
 }
 
@@ -161,22 +160,13 @@ impl FilterChainFrameIntermediates {
     pub(crate) fn new(device: &ash::Device) -> Self {
         FilterChainFrameIntermediates {
             device: device.clone(),
-            framebuffers: Vec::new(),
             image_views: Vec::new(),
         }
     }
 
-    pub(crate) fn dispose_input(&mut self, input_texture_texture: InputTexture) {
-        self.image_views.push(input_texture_texture.image_view);
-    }
-
-    pub(crate) fn dispose_outputs(&mut self, output_framebuffer: OutputFramebuffer) {
+    pub(crate) fn dispose_outputs(&mut self, output_framebuffer: OutputImage) {
         // self.framebuffers.push(output_framebuffer.framebuffer);
         self.image_views.push(output_framebuffer.image_view);
-    }
-
-    pub(crate) fn dispose_framebuffer(&mut self, framebuffer: vk::Framebuffer) {
-        self.framebuffers.push(framebuffer)
     }
 
     pub(crate) fn dispose_image_views(&mut self, image_view: vk::ImageView) {
@@ -186,14 +176,6 @@ impl FilterChainFrameIntermediates {
 
 impl Drop for FilterChainFrameIntermediates {
     fn drop(&mut self) {
-        for framebuffer in &self.framebuffers {
-            if *framebuffer != vk::Framebuffer::null() {
-                unsafe {
-                    self.device.destroy_framebuffer(*framebuffer, None);
-                }
-            }
-        }
-
         for image_view in &self.image_views {
             if *image_view != vk::ImageView::null() {
                 unsafe {
@@ -234,7 +216,7 @@ impl FilterChainVulkan {
 
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
-            OwnedTexture::new(
+            OwnedImage::new(
                 &device,
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
@@ -242,9 +224,24 @@ impl FilterChainVulkan {
             )
         });
 
-        let output_framebuffers: error::Result<Vec<OwnedTexture>> = output_framebuffers.into_iter().collect();
+        let mut feedback_framebuffers = Vec::new();
+        feedback_framebuffers.resize_with(filters.len(), || {
+            OwnedImage::new(
+                &device,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+                1
+            )
+        });
+
+        let output_framebuffers: error::Result<Vec<OwnedImage>> = output_framebuffers.into_iter().collect();
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), || None);
+
+        let feedback_framebuffers: error::Result<Vec<OwnedImage>> = feedback_framebuffers.into_iter().collect();
+        let mut feedback_textures = Vec::new();
+        feedback_textures.resize_with(filters.len(), || None);
+
         eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
             common: FilterCommon {
@@ -260,11 +257,13 @@ impl FilterChainVulkan {
                 },
                 draw_quad: DrawQuad::new(&device.device, &device.memory_properties)?,
                 device: device.device.clone(),
-                output_textures: output_textures.into_boxed_slice()
+                output_textures: output_textures.into_boxed_slice(),
+                feedback_textures: feedback_textures.into_boxed_slice()
             },
             passes: filters,
             vulkan: device,
             output_framebuffers: output_framebuffers?.into_boxed_slice(),
+            feedback_framebuffers: feedback_framebuffers?.into_boxed_slice(),
         })
     }
 
@@ -491,7 +490,7 @@ impl FilterChainVulkan {
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
-        let original = InputTexture {
+        let original = InputImage {
             image: input.clone(),
             image_view: original_image_view,
             wrap_mode,
@@ -504,6 +503,16 @@ impl FilterChainVulkan {
         // rescale render buffers to ensure all bindings are valid.
         for (index, pass) in passes.iter_mut().enumerate() {
             self.output_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                &viewport.output.size,
+                &original,
+                &source,
+                // todo: need to check **next**
+                pass.config.mipmap_input
+            )?;
+
+            self.feedback_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
@@ -527,7 +536,7 @@ impl FilterChainVulkan {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
-                output: OutputFramebuffer::new(&self.vulkan, /*&pass.graphics_pipeline.render_pass,*/
+                output: OutputImage::new(&self.vulkan, /*&pass.graphics_pipeline.render_pass,*/
                                                target.image.clone())?,
             };
 
@@ -541,12 +550,8 @@ impl FilterChainVulkan {
             }
 
             source = target.as_input(pass.config.filter, pass.config.wrap_mode)?;
-            let prev_frame_output = self.common
-                .output_textures[index].replace(source.clone());
-            if let Some(prev_frame_output) = prev_frame_output {
-                intermediates.dispose_input(prev_frame_output);
-            }
 
+            self.common.output_textures[index] = Some(source.clone());
             intermediates.dispose_outputs(out.output);
         }
 
@@ -560,8 +565,8 @@ impl FilterChainVulkan {
                 x: viewport.x,
                 y: viewport.y,
                 mvp: viewport.mvp.unwrap_or(DEFAULT_MVP),
-                output: OutputFramebuffer::new(&self.vulkan,
-                                               viewport.output.clone())?,
+                output: OutputImage::new(&self.vulkan,
+                                         viewport.output.clone())?,
             };
 
             pass.draw(cmd, passes_len - 1,
@@ -569,6 +574,10 @@ impl FilterChainVulkan {
                       count as u32,
                       0, viewport, &original, &source, &out)?;
 
+            std::mem::swap(
+                &mut self.output_framebuffers,
+                &mut self.feedback_framebuffers,
+            );
             intermediates.dispose_outputs(out.output);
         }
         Ok(intermediates)

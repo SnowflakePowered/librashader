@@ -1,4 +1,4 @@
-use crate::framebuffer::OutputFramebuffer;
+use crate::framebuffer::OutputImage;
 use ash::vk;
 
 #[rustfmt::skip]
@@ -14,5 +14,5 @@ pub(crate) struct RenderTarget<'a> {
     pub x: f32,
     pub y: f32,
     pub mvp: &'a [f32; 16],
-    pub output: OutputFramebuffer,
+    pub output: OutputImage,
 }

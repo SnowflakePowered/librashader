@@ -8,7 +8,7 @@ use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 
-pub struct OwnedTexture {
+pub struct OwnedImage {
     pub device: ash::Device,
     pub mem_props: vk::PhysicalDeviceMemoryProperties,
     pub image_view: vk::ImageView,
@@ -18,14 +18,14 @@ pub struct OwnedTexture {
     pub levels: u32,
 }
 
-impl OwnedTexture {
+impl OwnedImage {
     fn new_internal(
         device: ash::Device,
         mem_props: vk::PhysicalDeviceMemoryProperties,
         size: Size<u32>,
         format: ImageFormat,
         max_miplevels: u32,
-    ) -> error::Result<OwnedTexture> {
+    ) -> error::Result<OwnedImage> {
         let image_create_info = vk::ImageCreateInfo::builder()
             .image_type(vk::ImageType::TYPE_2D)
             .format(format.into())
@@ -86,7 +86,7 @@ impl OwnedTexture {
 
         let image_view = unsafe { device.create_image_view(&view_info, None)? };
 
-        Ok(OwnedTexture {
+        Ok(OwnedImage {
             device,
             mem_props,
             image_view,
@@ -106,7 +106,7 @@ impl OwnedTexture {
         size: Size<u32>,
         format: ImageFormat,
         max_miplevels: u32,
-    ) -> error::Result<OwnedTexture> {
+    ) -> error::Result<OwnedImage> {
         Self::new_internal(vulkan.device.clone(), vulkan.memory_properties, size, format, max_miplevels)
     }
 
@@ -115,8 +115,8 @@ impl OwnedTexture {
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
-        _original: &InputTexture,
-        source: &InputTexture,
+        _original: &InputImage,
+        source: &InputImage,
         mipmap: bool,
     ) -> error::Result<Size<u32>> {
         let size = source.image.size.scale_viewport(scaling, *viewport_size);
@@ -127,7 +127,7 @@ impl OwnedTexture {
                 1
             };
 
-            let mut new = OwnedTexture::new_internal(self.device.clone(), self.mem_props, size, if format == ImageFormat::Unknown {
+            let mut new = OwnedImage::new_internal(self.device.clone(), self.mem_props, size, if format == ImageFormat::Unknown {
                 ImageFormat::R8G8B8A8Unorm
             } else {
                 format
@@ -139,39 +139,10 @@ impl OwnedTexture {
         Ok(size)
     }
 
-
-    pub fn create_image_view(&self) -> error::Result<vk::ImageView> {
-        let image_subresource = vk::ImageSubresourceRange::builder()
-            .base_mip_level(0)
-            .base_array_layer(0)
-            .level_count(1)
-            .layer_count(1)
-            .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .build();
-
-        let swizzle_components = vk::ComponentMapping::builder()
-            .r(vk::ComponentSwizzle::R)
-            .g(vk::ComponentSwizzle::G)
-            .b(vk::ComponentSwizzle::B)
-            .a(vk::ComponentSwizzle::A)
-            .build();
-
-        let mut view_info = vk::ImageViewCreateInfo::builder()
-            .view_type(vk::ImageViewType::TYPE_2D)
-            .format(self.image.format)
-            .image(self.image.image.clone())
-            .subresource_range(image_subresource)
-            .components(swizzle_components)
-            .build();
-
-        let image_view = unsafe { self.device.create_image_view(&view_info, None)? };
-        Ok(image_view)
-    }
-
-    pub fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> error::Result<InputTexture> {
-        Ok(InputTexture {
+    pub fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> error::Result<InputImage> {
+        Ok(InputImage {
             image: self.image.clone(),
-            image_view: self.create_image_view()?,
+            image_view: self.image_view.clone(),
             wrap_mode,
             filter_mode: filter,
             mip_filter: filter,
@@ -459,7 +430,7 @@ impl OwnedTexture {
     }
 }
 
-impl Drop for OwnedTexture {
+impl Drop for OwnedImage {
     fn drop(&mut self) {
         unsafe {
             if self.image_view != vk::ImageView::null() {
@@ -481,7 +452,7 @@ pub struct VulkanImage {
 
 
 #[derive(Clone)]
-pub struct InputTexture {
+pub struct InputImage {
     pub image: VulkanImage,
     pub image_view: vk::ImageView,
     pub wrap_mode: WrapMode,
