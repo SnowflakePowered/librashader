@@ -59,6 +59,7 @@ impl FramebufferInterface for Gl3Framebuffer {
         viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
+        mipmap: bool,
     ) -> Result<Size<u32>> {
         if fb.is_raw {
             return Ok(fb.size);

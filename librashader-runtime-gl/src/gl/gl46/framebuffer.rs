@@ -57,6 +57,7 @@ impl FramebufferInterface for Gl46Framebuffer {
         viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
+        mipmap: bool,
     ) -> Result<Size<u32>> {
         if fb.is_raw {
             return Ok(fb.size);
@@ -67,8 +68,14 @@ impl FramebufferInterface for Gl46Framebuffer {
             .size
             .scale_viewport(scaling, viewport.output.size);
 
-        if fb.size != size {
+        if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {
             fb.size = size;
+
+            if mipmap {
+                fb.max_levels = u32::MAX;
+            } else {
+                fb.max_levels = 1
+            }
 
             Self::init(
                 fb,

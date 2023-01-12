@@ -489,12 +489,14 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         // rescale render buffers to ensure all bindings are valid.
         for (index, pass) in passes.iter_mut().enumerate() {
+            // todo: properly check **next** pass for mipmap.
             self.output_framebuffers[index].scale::<T::FramebufferInterface>(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 viewport,
                 &original,
                 &source,
+                pass.config.mipmap_input
             )?;
 
             self.feedback_framebuffers[index].scale::<T::FramebufferInterface>(
@@ -503,6 +505,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
+                pass.config.mipmap_input
             )?;
         }
 

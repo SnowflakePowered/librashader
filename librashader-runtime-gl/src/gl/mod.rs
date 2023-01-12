@@ -52,6 +52,7 @@ pub trait FramebufferInterface {
         viewport: &Viewport,
         _original: &Texture,
         source: &Texture,
+        mipmap: bool,
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(fb: &Framebuffer);
     fn copy_from(fb: &mut Framebuffer, image: &GLImage) -> Result<()>;

@@ -44,8 +44,9 @@ impl Framebuffer {
         viewport: &Viewport,
         original: &Texture,
         source: &Texture,
+        mipmap: bool
     ) -> Result<Size<u32>> {
-        T::scale(self, scaling, format, viewport, original, source)
+        T::scale(self, scaling, format, viewport, original, source, mipmap)
     }
 
     pub fn copy_from<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<()> {

@@ -98,6 +98,7 @@ impl OwnedFramebuffer {
                 | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
         );
 
+        // todo: fix mipmap handling
         let desc = default_desc(size, format, 1);
         unsafe {
             let mut texture = self.device.CreateTexture2D(&desc, None)?;
