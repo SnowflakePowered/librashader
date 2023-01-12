@@ -30,7 +30,8 @@ mod tests {
         let base = VulkanBase::new(entry).unwrap();
         let mut filter = FilterChainVulkan::load_from_path(
             &base,
-            "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
+            // "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             None,
         )
         .unwrap();

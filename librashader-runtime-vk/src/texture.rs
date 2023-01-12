@@ -23,9 +23,13 @@ impl OwnedImage {
         device: ash::Device,
         mem_props: vk::PhysicalDeviceMemoryProperties,
         size: Size<u32>,
-        format: ImageFormat,
+        mut format: ImageFormat,
         max_miplevels: u32,
     ) -> error::Result<OwnedImage> {
+        // default to something sane
+        if format == ImageFormat::Unknown {
+            format = ImageFormat::R8G8B8A8Unorm
+        }
         let image_create_info = vk::ImageCreateInfo::builder()
             .image_type(vk::ImageType::TYPE_2D)
             .format(format.into())
@@ -330,7 +334,7 @@ impl OwnedImage {
     }
 
     /// SAFETY: self must fit the source image
-    pub unsafe fn copy_from(&self, cmd: vk::CommandBuffer, source: VulkanImage, source_layout: vk::ImageLayout) {
+    pub unsafe fn copy_from(&self, cmd: vk::CommandBuffer, source: &VulkanImage, source_layout: vk::ImageLayout) {
         let region = vk::ImageCopy::builder()
             .src_subresource(vk::ImageSubresourceLayers::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)

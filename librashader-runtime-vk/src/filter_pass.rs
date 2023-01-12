@@ -58,7 +58,7 @@ impl FilterPass {
     }
 
     pub fn get_format(&self) -> ImageFormat {
-        let mut fb_format = self.source.format;
+        let fb_format = self.source.format;
         if let Some(format) = self.config.get_format_override() {
             format
         } else if fb_format == ImageFormat::Unknown {
@@ -281,35 +281,35 @@ impl FilterPass {
                 .bind_vec4(*offset, original.image.size, None);
         }
 
-        // for (index, output) in parent.history_textures.iter().enumerate() {
-        //     let Some(output) = output else {
-        //         eprintln!("no history");
-        //         continue;
-        //     };
-        //     if let Some(binding) = self
-        //         .reflection
-        //         .meta
-        //         .texture_meta
-        //         .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
-        //     {
-        //         FilterPass::bind_texture(
-        //             &self.device,
-        //             &parent.samplers,
-        //             descriptor_set,
-        //             binding,
-        //             output,
-        //         );
-        //     }
-        //
-        //     if let Some(offset) = self.uniform_bindings.get(
-        //         &TextureSemantics::OriginalHistory
-        //             .semantics(index + 1)
-        //             .into(),
-        //     ) {
-        //         self.uniform_storage
-        //             .bind_vec4(*offset, output.size, None);
-        //     }
-        // }
+        for (index, output) in parent.history_textures.iter().enumerate() {
+            let Some(output) = output else {
+                eprintln!("no history");
+                continue;
+            };
+            if let Some(binding) = self
+                .reflection
+                .meta
+                .texture_meta
+                .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
+            {
+                FilterPass::bind_texture(
+                    &self.device,
+                    &parent.samplers,
+                    *descriptor_set,
+                    binding,
+                    output,
+                );
+            }
+
+            if let Some(offset) = self.uniform_bindings.get(
+                &TextureSemantics::OriginalHistory
+                    .semantics(index + 1)
+                    .into(),
+            ) {
+                self.uniform_storage
+                    .bind_vec4(*offset, output.image.size, None);
+            }
+        }
 
         // PassOutput
         for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
@@ -340,7 +340,7 @@ impl FilterPass {
             }
         }
 
-        // // PassFeedback
+        // PassFeedback
         for (index, feedback) in parent.feedback_textures.iter().enumerate() {
             let Some(feedback) = feedback else {
                 eprintln!("no passfeedback {index}");
@@ -419,7 +419,5 @@ impl FilterPass {
                     .bind_vec4(*offset, lut.image.image.size, None);
             }
         }
-
-        // (textures, samplers)
     }
 }

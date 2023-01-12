@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::{error, util};
 use crate::filter_pass::FilterPass;
 use crate::luts::LutTexture;
@@ -7,7 +8,7 @@ use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
 use ash::{vk, Device};
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SpirV;
@@ -130,7 +131,7 @@ pub struct FilterChainVulkan {
     pub(crate) vulkan: Vulkan,
     pub(crate) output_framebuffers: Box<[OwnedImage]>,
     pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
-    // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
+    pub(crate) history_framebuffers: VecDeque<OwnedImage>,
 }
 
 pub struct FilterMutable {
@@ -145,7 +146,7 @@ pub(crate) struct FilterCommon {
 
     pub output_textures: Box<[Option<InputImage>]>,
     pub feedback_textures: Box<[Option<InputImage>]>,
-    // pub history_textures: Box<[Option<Texture>]>,
+    pub history_textures: Box<[Option<InputImage>]>,
     pub config: FilterMutable,
     pub device: ash::Device,
 }
@@ -153,7 +154,8 @@ pub(crate) struct FilterCommon {
 #[must_use]
 pub struct FilterChainFrameIntermediates {
     device: ash::Device,
-    image_views: Vec<vk::ImageView>
+    image_views: Vec<vk::ImageView>,
+    owned: Vec<OwnedImage>
 }
 
 impl FilterChainFrameIntermediates {
@@ -161,6 +163,7 @@ impl FilterChainFrameIntermediates {
         FilterChainFrameIntermediates {
             device: device.clone(),
             image_views: Vec::new(),
+            owned: Vec::new(),
         }
     }
 
@@ -171,6 +174,10 @@ impl FilterChainFrameIntermediates {
 
     pub(crate) fn dispose_image_views(&mut self, image_view: vk::ImageView) {
         self.image_views.push(image_view)
+    }
+
+    pub(crate) fn dispose_owned(&mut self, owned: OwnedImage) {
+        self.owned.push(owned)
     }
 }
 
@@ -213,6 +220,9 @@ impl FilterChainVulkan {
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
+
+        let (history_framebuffers, history_textures) =
+            FilterChainVulkan::init_history(&device, &filters)?;
 
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
@@ -258,12 +268,14 @@ impl FilterChainVulkan {
                 draw_quad: DrawQuad::new(&device.device, &device.memory_properties)?,
                 device: device.device.clone(),
                 output_textures: output_textures.into_boxed_slice(),
-                feedback_textures: feedback_textures.into_boxed_slice()
+                feedback_textures: feedback_textures.into_boxed_slice(),
+                history_textures,
             },
             passes: filters,
             vulkan: device,
             output_framebuffers: output_framebuffers?.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers?.into_boxed_slice(),
+            history_framebuffers,
         })
     }
 
@@ -441,6 +453,107 @@ impl FilterChainVulkan {
         Ok(luts)
     }
 
+    fn init_history(
+        vulkan: &Vulkan,
+        filters: &[FilterPass],
+    ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputImage>]>)> {
+        let mut required_images = 0;
+
+        for pass in filters {
+            // If a shader uses history size, but not history, we still need to keep the texture.
+            let texture_count = pass
+                .reflection
+                .meta
+                .texture_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+            let texture_size_count = pass
+                .reflection
+                .meta
+                .texture_size_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+
+            required_images = std::cmp::max(required_images, texture_count);
+            required_images = std::cmp::max(required_images, texture_size_count);
+        }
+
+        // not using frame history;
+        if required_images <= 1 {
+            println!("[history] not using frame history");
+            return Ok((VecDeque::new(), Box::new([])));
+        }
+
+        // history0 is aliased with the original
+
+        eprintln!("[history] using frame history with {required_images} images");
+        let mut images = Vec::with_capacity(required_images);
+        images.resize_with(required_images, ||  OwnedImage::new(
+            &vulkan,
+            Size::new(1, 1),
+            ImageFormat::R8G8B8A8Unorm,
+            1
+        ));
+
+        let images: error::Result<Vec<OwnedImage>> = images.into_iter().collect();
+        let images = VecDeque::from(images?);
+
+        let mut image_views = Vec::new();
+        image_views.resize_with(required_images, || None);
+
+        Ok((images, image_views.into_boxed_slice()))
+    }
+
+    // image must be in SHADER_READ_OPTIMAL
+    pub fn push_history(&mut self, input: &VulkanImage, intermediates: &mut FilterChainFrameIntermediates,
+                        cmd: vk::CommandBuffer) -> error::Result<()> {
+        if let Some(mut back) = self.history_framebuffers.pop_back() {
+            if back.image.size != input.size || (input.format != vk::Format::UNDEFINED && input.format != back.image.format) {
+                eprintln!("[history] resizing");
+                // old back will get dropped.. do we need to defer?
+                let old_back =
+                    std::mem::replace(&mut back, OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?);
+                intermediates.dispose_owned(old_back);
+            }
+
+            unsafe {
+                util::vulkan_image_layout_transition_levels(&self.vulkan.device, cmd,
+                    input.image,
+                    1,
+                    vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                    vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    vk::AccessFlags::SHADER_READ,
+                    vk::AccessFlags::TRANSFER_READ,
+                    vk::PipelineStageFlags::FRAGMENT_SHADER,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::QUEUE_FAMILY_IGNORED,
+                    vk::QUEUE_FAMILY_IGNORED
+                );
+
+                back.copy_from(cmd, &input, vk::ImageLayout::TRANSFER_SRC_OPTIMAL);
+
+                util::vulkan_image_layout_transition_levels(&self.vulkan.device, cmd,
+                                                            input.image,
+                                                            1,
+                                                            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                                                            vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                                                            vk::AccessFlags::TRANSFER_READ,
+                                                            vk::AccessFlags::SHADER_READ,
+                                                            vk::PipelineStageFlags::TRANSFER,
+                                                            vk::PipelineStageFlags::FRAGMENT_SHADER,
+                                                            vk::QUEUE_FAMILY_IGNORED,
+                                                            vk::QUEUE_FAMILY_IGNORED
+                );
+
+            }
+
+            self.history_framebuffers.push_front(back)
+        }
+
+        Ok(())
+    }
     /// Process a frame with the input image.
     ///
     /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL`.
@@ -465,7 +578,6 @@ impl FilterChainVulkan {
             return Ok(intermediates);
         }
 
-
         let original_image_view = unsafe {
             let create_info = vk::ImageViewCreateInfo::builder()
                 .image(input.image)
@@ -489,6 +601,16 @@ impl FilterChainVulkan {
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
+
+        // update history
+        for (texture, image) in self
+            .common
+            .history_textures
+            .iter_mut()
+            .zip(self.history_framebuffers.iter())
+        {
+            *texture = Some(image.as_input(filter, wrap_mode)?);
+        }
 
         let original = InputImage {
             image: input.clone(),
@@ -580,6 +702,9 @@ impl FilterChainVulkan {
             );
             intermediates.dispose_outputs(out.output);
         }
+
+        self.push_history(input, &mut intermediates, cmd)?;
+
         Ok(intermediates)
     }
 }
