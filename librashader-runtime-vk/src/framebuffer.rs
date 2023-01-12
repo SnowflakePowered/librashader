@@ -2,7 +2,6 @@ use crate::{error, util};
 use crate::filter_chain::Vulkan;
 use crate::texture::{VulkanImage};
 use ash::vk;
-use ash::vk::{ImageAspectFlags, ImageViewType};
 use librashader_common::Size;
 
 #[derive(Clone)]
@@ -21,7 +20,7 @@ impl OutputFramebuffer {
             .base_array_layer(0)
             .level_count(1)
             .layer_count(1)
-            .aspect_mask(ImageAspectFlags::COLOR)
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
             .build();
 
         let swizzle_components = vk::ComponentMapping::builder()
@@ -32,7 +31,7 @@ impl OutputFramebuffer {
             .build();
 
         let mut view_info = vk::ImageViewCreateInfo::builder()
-            .view_type(ImageViewType::TYPE_2D)
+            .view_type(vk::ImageViewType::TYPE_2D)
             .format(image.format)
             .image(image.image.clone())
             .subresource_range(image_subresource)

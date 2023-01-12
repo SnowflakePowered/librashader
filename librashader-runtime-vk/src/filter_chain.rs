@@ -444,7 +444,12 @@ impl FilterChainVulkan {
 
     /// Process a frame with the input image.
     ///
-    /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
+    /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL`.
+    /// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL`.
+    ///
+    /// librashader **will not** create a pipeline barrier for the final pass. The output image will
+    /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
+    /// the output image to the final layout.
     pub fn frame(
         &mut self,
         count: usize,
@@ -504,6 +509,8 @@ impl FilterChainVulkan {
                 &viewport.output.size,
                 &original,
                 &source,
+                // todo: need to check **next**
+                pass.config.mipmap_input
             )?;
         }
 
@@ -526,8 +533,12 @@ impl FilterChainVulkan {
 
             pass.draw(cmd, index, &self.common, count as u32, 0,
                       viewport, &original, &source, &out)?;
-            // for second to last pass, we want to transition to copy instead.
-            out.output.end_pass(cmd);
+
+            if target.max_miplevels > 1 {
+                target.generate_mipmaps_and_end_pass(cmd);
+            } else {
+                out.output.end_pass(cmd);
+            }
 
             source = target.as_input(pass.config.filter, pass.config.wrap_mode)?;
             let prev_frame_output = self.common
