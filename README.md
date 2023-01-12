@@ -1,8 +1,8 @@
 # librashader
 
-![gameboy-player-crt-royale](https://user-images.githubusercontent.com/1000503/211937119-078be1ea-cd1c-4fb2-91da-acc8703c70aa.png)
+![gameboy-player-crt-royale](https://user-images.githubusercontent.com/1000503/211993121-2ec1f6f0-445b-4b47-8612-291a4eab5d15.png)
 
-<small>*gameboy-player-crt-royale*</small>
+<small>*Mega Bezel SMOOTH-ADV on OpenGL 4.6*</small>
 
 librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 
@@ -86,7 +86,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * UBOs use multiple discontiguous buffers. This may be improved in the future by switching to VMA rather than manually handling allocations.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
-and are more a heads-up for integrating librashader into your project. 
+and are more a heads-up for integrating librashader into your project.
 
 Compatibility issues may arise with framebuffer copies for original history, but I have not found any yet; 
 if it does end up that this results in actual rendering differences I may change the implementation to be more in line
