@@ -30,6 +30,7 @@ use winit::platform::windows::EventLoopBuilderExtWindows;
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
+const MAX_FRAMES_IN_FLIGHT: usize = 3;
 
 struct VulkanWindow;
 
@@ -136,16 +137,22 @@ impl VulkanWindow {
     }
 
     fn draw_frame(frame: usize, vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
+
+        let index = frame % MAX_FRAMES_IN_FLIGHT;
+        let in_flight = vulkan.sync.in_flight[index];
+        let image_available = vulkan.sync.image_available[index];
+        let render_finished = vulkan.sync.render_finished[index];
+
         unsafe {
             vulkan
                 .base
                 .device
-                .wait_for_fences(&[vulkan.sync.in_flight], true, u64::MAX)
+                .wait_for_fences(&[in_flight], true, u64::MAX)
                 .unwrap();
             vulkan
                 .base
                 .device
-                .reset_fences(&[vulkan.sync.in_flight])
+                .reset_fences(&[in_flight])
                 .unwrap();
 
             let (swapchain_index, _) = vulkan
@@ -154,12 +161,12 @@ impl VulkanWindow {
                 .acquire_next_image(
                     vulkan.swapchain.swapchain,
                     u64::MAX,
-                    vulkan.sync.image_available,
+                    image_available,
                     vk::Fence::null(),
                 )
                 .unwrap();
 
-            let cmd = vulkan.render_command_pool.buffers[swapchain_index as usize];
+            let cmd = vulkan.render_command_pool.buffers[index];
             let framebuffer = vulkan.render_framebuffers[swapchain_index as usize].framebuffer;
             let framebuffer_image = vulkan.swapchain.render_images[swapchain_index as usize].0;
             let swapchain_image = vulkan.swapchain.swapchain_images[swapchain_index as usize];
@@ -309,8 +316,8 @@ impl VulkanWindow {
 
             let submit_info = vk::SubmitInfo::builder()
                 .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])
-                .wait_semaphores(&[vulkan.sync.image_available])
-                .signal_semaphores(&[vulkan.sync.render_finished])
+                .wait_semaphores(&[image_available])
+                .signal_semaphores(&[render_finished])
                 .command_buffers(&[cmd])
                 .build();
 
@@ -320,12 +327,12 @@ impl VulkanWindow {
                 .queue_submit(
                     vulkan.base.graphics_queue,
                     &[submit_info],
-                    vulkan.sync.in_flight,
+                    in_flight,
                 )
                 .expect("failed to submit queue");
 
             let present_info = vk::PresentInfoKHR::builder()
-                .wait_semaphores(&[vulkan.sync.render_finished])
+                .wait_semaphores(&[render_finished])
                 .swapchains(&[vulkan.swapchain.swapchain])
                 .image_indices(&[swapchain_index])
                 .build();
@@ -336,8 +343,10 @@ impl VulkanWindow {
                 .queue_present(vulkan.base.graphics_queue, &present_info)
                 .unwrap();
 
-            vulkan.base.device.device_wait_idle().unwrap();
-            drop(intermediates)
+            //oops i pooped my pants
+            std::mem::forget(intermediates);
+            // vulkan.base.device.device_wait_idle().unwrap();
+            // drop(intermediates)
         }
     }
 }
@@ -395,10 +404,10 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
         )
     }
 
-    let swapchain_command_pool = VulkanCommandPool::new(&vulkan, 3).unwrap();
-    let render_command_pool = VulkanCommandPool::new(&vulkan, 3).unwrap();
+    let swapchain_command_pool = VulkanCommandPool::new(&vulkan, MAX_FRAMES_IN_FLIGHT as u32).unwrap();
+    let render_command_pool = VulkanCommandPool::new(&vulkan, MAX_FRAMES_IN_FLIGHT as u32).unwrap();
 
-    let sync = SyncObjects::new(&vulkan.device).unwrap();
+    let sync = SyncObjects::new(&vulkan.device, MAX_FRAMES_IN_FLIGHT).unwrap();
 
     let vulkan = VulkanDraw {
         surface,

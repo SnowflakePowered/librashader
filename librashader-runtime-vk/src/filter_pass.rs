@@ -29,6 +29,7 @@ pub struct FilterPass {
     pub config: ShaderPassConfig,
     pub graphics_pipeline: VulkanGraphicsPipeline,
     pub ubo_ring: VkUboRing,
+    pub frames_in_flight: u32,
 }
 
 impl FilterPass {
@@ -82,7 +83,7 @@ impl FilterPass {
         source: &InputImage,
         output: &RenderTarget,
     ) -> error::Result<()> {
-        let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[0];
+        let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[(frame_count % self.frames_in_flight) as usize];
 
         self.build_semantics(
             pass_index,
@@ -135,7 +136,7 @@ impl FilterPass {
                 vk::PipelineBindPoint::GRAPHICS,
                 self.graphics_pipeline.layout.layout,
                 0,
-                &[self.graphics_pipeline.layout.descriptor_sets[0]],
+                &[descriptor],
                 &[],
             );
 

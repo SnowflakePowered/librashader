@@ -357,9 +357,10 @@ impl FilterChainVulkan {
         vulkan: &Vulkan,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
-        images: u32,
+        frames_in_flight: u32,
     ) -> error::Result<Box<[FilterPass]>> {
         let mut filters = Vec::new();
+        let frames_in_flight = std::cmp::max(1, frames_in_flight);
 
         // initialize passes
         for (index, (config, mut source, mut reflect)) in passes.into_iter().enumerate() {
@@ -399,13 +400,13 @@ impl FilterChainVulkan {
                 &vulkan.pipeline_cache,
                 &spirv_words,
                 &reflection,
-                images,
+                frames_in_flight,
             )?;
 
             let ubo_ring = VkUboRing::new(
                 &vulkan.device,
                 &vulkan.memory_properties,
-                images as usize,
+                frames_in_flight as usize,
                 ubo_size,
             )?;
             // shader_vulkan: 2026
@@ -419,6 +420,7 @@ impl FilterChainVulkan {
                 config,
                 graphics_pipeline,
                 ubo_ring,
+                frames_in_flight
             });
         }
 
@@ -702,14 +704,12 @@ impl FilterChainVulkan {
             let target = &self.output_framebuffers[index];
 
             // todo: use proper mode
-            // todo: the output framebuffers can only be dropped after command queue submission.
-
             let out = RenderTarget {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
                 output: OutputImage::new(
-                    &self.vulkan, /*&pass.graphics_pipeline.render_pass,*/
+                    &self.vulkan,
                     target.image.clone(),
                 )?,
             };
