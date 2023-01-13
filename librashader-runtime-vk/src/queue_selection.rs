@@ -11,14 +11,18 @@ fn find_graphics_queue_family(
         if queue_family.queue_count > 0
             && queue_family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
         {
-            return index as u32
+            return index as u32;
         }
     }
 
-    return 0
+    return 0;
 }
 
-pub fn get_graphics_queue(instance: &ash::Instance, device: &ash::Device, physical_device: vk::PhysicalDevice) -> vk::Queue {
+pub fn get_graphics_queue(
+    instance: &ash::Instance,
+    device: &ash::Device,
+    physical_device: vk::PhysicalDevice,
+) -> vk::Queue {
     let queue_family = find_graphics_queue_family(instance, physical_device);
     unsafe { device.get_device_queue(queue_family, 0) }
 }

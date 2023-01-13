@@ -228,7 +228,7 @@ pub mod d3d11_hello_triangle {
     use crate::filter_chain::FilterChainD3D11;
 
     use crate::options::FilterChainOptionsD3D11;
-    use crate::texture::DxImageView;
+    use crate::texture::D3D11ImageView;
     use crate::viewport::Viewport;
     use librashader_common::Size;
     use std::slice;
@@ -492,7 +492,7 @@ pub mod d3d11_hello_triangle {
 
                 self.filter
                     .frame(
-                        DxImageView {
+                        D3D11ImageView {
                             handle: srv,
                             size: Size {
                                 width: tex2d_desc.Width,

@@ -1,7 +1,7 @@
 use crate::error;
 use crate::vulkan_primitives::VulkanBuffer;
 use ash::vk;
-use librashader_runtime::ringbuffer::{BoxRingBuffer, InlineRingBuffer, RingBuffer};
+use librashader_runtime::ringbuffer::{BoxRingBuffer, RingBuffer};
 use librashader_runtime::uniforms::UniformStorageAccess;
 
 pub struct VkUboRing {
@@ -40,7 +40,7 @@ impl VkUboRing {
     ) -> error::Result<()> {
         // todo: write directly to allocated buffer.
         unsafe {
-            let mut buffer = self.ring.current_mut();
+            let buffer = self.ring.current_mut();
             let mut map = buffer.map()?;
             map.copy_from(0, storage.ubo_slice())
         }

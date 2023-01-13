@@ -9,7 +9,7 @@ use bytemuck::offset_of;
 use std::ffi::CStr;
 use std::io::Cursor;
 use std::mem::align_of;
-const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") } ;
+const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 #[derive(Default, Clone, Debug, Copy)]
 struct Vertex {

@@ -1,5 +1,5 @@
 use crate::error;
-use crate::texture::{DxImageView, Texture};
+use crate::texture::{D3D11ImageView, Texture};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
@@ -152,7 +152,7 @@ impl OwnedFramebuffer {
         })
     }
 
-    pub fn copy_from(&mut self, image: &DxImageView) -> error::Result<()> {
+    pub fn copy_from(&mut self, image: &D3D11ImageView) -> error::Result<()> {
         let original_resource: ID3D11Texture2D = unsafe {
             let mut resource = None;
             image.handle.GetResource(&mut resource);

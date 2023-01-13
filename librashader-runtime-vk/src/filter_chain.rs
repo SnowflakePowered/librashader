@@ -1,10 +1,12 @@
 use crate::draw_quad::DrawQuad;
+use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputImage;
 use crate::luts::LutTexture;
+use crate::queue_selection::get_graphics_queue;
 use crate::render_target::{RenderTarget, DEFAULT_MVP};
 use crate::samplers::SamplerSet;
-use crate::texture::{InputImage, OwnedImage,  VulkanImage};
+use crate::texture::{InputImage, OwnedImage, VulkanImage};
 use crate::ubo_ring::VkUboRing;
 use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
@@ -26,17 +28,12 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
-use crate::error::FilterChainError;
-use crate::queue_selection::get_graphics_queue;
 
 pub struct Vulkan {
-    // physical_device: vk::PhysicalDevice,
     pub(crate) device: ash::Device,
-    // instance: ash::Instance,
+    pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
     queue: vk::Queue,
     pipeline_cache: vk::PipelineCache,
-    pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
-    // debug: DebugUtils,
 }
 
 type ShaderPassMeta = (
@@ -67,11 +64,10 @@ impl TryFrom<VulkanInfo> for Vulkan {
 
             let device = ash::Device::load(instance.fp_v1_0(), vulkan.device);
 
-            let pipeline_cache = unsafe {
-                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?
-            };
+            let pipeline_cache =
+                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
 
-            let debug = DebugUtils::new(
+            let _debug = DebugUtils::new(
                 &ash::Entry::from_static_fn(vk::StaticFn {
                     get_instance_proc_addr: vulkan.get_instance_proc_addr,
                 }),
@@ -79,11 +75,11 @@ impl TryFrom<VulkanInfo> for Vulkan {
             );
 
             let queue = get_graphics_queue(&instance, &device, vulkan.physical_device);
-            let memory_properties = instance.get_physical_device_memory_properties(vulkan.physical_device);
+            let memory_properties =
+                instance.get_physical_device_memory_properties(vulkan.physical_device);
 
             Ok(Vulkan {
                 device,
-                // instance,
                 queue,
                 pipeline_cache,
                 memory_properties,
@@ -93,22 +89,10 @@ impl TryFrom<VulkanInfo> for Vulkan {
     }
 }
 
-impl
-    TryFrom<(
-        vk::PhysicalDevice,
-        ash::Instance,
-        ash::Device,
-    )> for Vulkan
-{
+impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for Vulkan {
     type Error = FilterChainError;
 
-    fn try_from(
-        value: (
-            vk::PhysicalDevice,
-            ash::Instance,
-            ash::Device,
-        ),
-    ) -> error::Result<Self> {
+    fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
         unsafe {
             let device = value.2;
 
@@ -174,12 +158,7 @@ impl FilterChainFrameIntermediates {
     }
 
     pub(crate) fn dispose_outputs(&mut self, output_framebuffer: OutputImage) {
-        // self.framebuffers.push(output_framebuffer.framebuffer);
         self.image_views.push(output_framebuffer.image_view);
-    }
-
-    pub(crate) fn dispose_image_views(&mut self, image_view: vk::ImageView) {
-        self.image_views.push(image_view)
     }
 
     pub(crate) fn dispose_owned(&mut self, owned: OwnedImage) {
@@ -216,7 +195,7 @@ impl FilterChainVulkan {
     pub fn load_from_preset(
         vulkan: impl TryInto<Vulkan, Error = FilterChainError>,
         preset: ShaderPreset,
-        options: Option<&FilterChainOptionsVulkan>,
+        _options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
         let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
@@ -339,7 +318,7 @@ impl FilterChainVulkan {
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
 
         // initialize passes
-        for (index, (config, mut source, mut reflect)) in passes.into_iter().enumerate() {
+        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
             let spirv_words = reflect.compile(None)?;
 
@@ -389,14 +368,14 @@ impl FilterChainVulkan {
             filters.push(FilterPass {
                 device: vulkan.device.clone(),
                 reflection,
-                compiled: spirv_words,
+                // compiled: spirv_words,
                 uniform_storage,
                 uniform_bindings,
                 source,
                 config,
                 graphics_pipeline,
                 ubo_ring,
-                frames_in_flight
+                frames_in_flight,
             });
         }
 
@@ -456,12 +435,9 @@ impl FilterChainVulkan {
                 .queue_submit(vulkan.queue, &submits, vk::Fence::null())?;
             vulkan.device.queue_wait_idle(vulkan.queue)?;
 
-            vulkan
-                .device
-                .free_command_buffers(command_pool, &buffers);
+            vulkan.device.free_command_buffers(command_pool, &buffers);
 
-            vulkan.device
-                .destroy_command_pool(command_pool, None);
+            vulkan.device.destroy_command_pool(command_pool, None);
         }
         Ok(luts)
     }
@@ -589,7 +565,7 @@ impl FilterChainVulkan {
         viewport: &Viewport,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
-        options: Option<()>,
+        _options: Option<()>,
     ) -> error::Result<FilterChainFrameIntermediates> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
@@ -698,10 +674,7 @@ impl FilterChainVulkan {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
-                output: OutputImage::new(
-                    &self.vulkan,
-                    target.image.clone(),
-                )?,
+                output: OutputImage::new(&self.vulkan, target.image.clone())?,
             };
 
             pass.draw(

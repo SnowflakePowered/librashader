@@ -2,13 +2,13 @@ use ash::vk;
 use std::borrow::Cow;
 use std::error::Error;
 
+use crate::error::FilterChainError;
 use crate::filter_chain::Vulkan;
 use crate::hello_triangle::debug::VulkanDebug;
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 use crate::hello_triangle::surface::VulkanSurface;
 use ash::prelude::VkResult;
 use std::ffi::{CStr, CString};
-use crate::error::FilterChainError;
 
 const WINDOW_TITLE: &'static [u8] = b"librashader Vulkan\0";
 const KHRONOS_VALIDATION: &'static [u8] = b"VK_LAYER_KHRONOS_validation\0";
@@ -41,9 +41,7 @@ impl VulkanBase {
             ash::extensions::ext::DebugUtils::name().as_ptr(),
         ];
 
-        let layers = unsafe {
-            [KHRONOS_VALIDATION.as_ptr().cast()]
-        };
+        let layers = unsafe { [KHRONOS_VALIDATION.as_ptr().cast()] };
 
         let create_info = vk::InstanceCreateInfo::builder()
             .application_info(&app_info)
@@ -79,9 +77,7 @@ impl VulkanBase {
         instance: &ash::Instance,
         physical_device: &vk::PhysicalDevice,
     ) -> VkResult<(ash::Device, vk::Queue)> {
-        let debug = [unsafe {
-            CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr()
-        }];
+        let debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
 
         let indices = find_queue_family(&instance, *physical_device);
         let queue_info = [vk::DeviceQueueCreateInfo::builder()

@@ -1,4 +1,4 @@
-use crate::texture::{DxImageView, LutTexture, Texture};
+use crate::texture::{D3D11ImageView, LutTexture, Texture};
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -365,7 +365,7 @@ impl FilterChainD3D11 {
         Ok((framebuffers, history_textures.into_boxed_slice()))
     }
 
-    fn push_history(&mut self, input: &DxImageView) -> error::Result<()> {
+    fn push_history(&mut self, input: &D3D11ImageView) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             back.copy_from(input)?;
             self.history_framebuffers.push_front(back)
@@ -465,7 +465,7 @@ impl FilterChainD3D11 {
     /// Process a frame with the input image.
     pub fn frame(
         &mut self,
-        input: DxImageView,
+        input: D3D11ImageView,
         viewport: &Viewport,
         frame_count: usize,
         options: Option<&FrameOptionsD3D11>,
@@ -562,7 +562,7 @@ impl FilterChainD3D11 {
             )?;
 
             source = Texture {
-                view: DxImageView {
+                view: D3D11ImageView {
                     handle: target.create_shader_resource_view()?,
                     size,
                 },
@@ -615,7 +615,7 @@ impl FilterChainD3D11 {
 
 impl librashader_runtime::filter_chain::FilterChain for FilterChainD3D11 {
     type Error = FilterChainError;
-    type Input<'a> = DxImageView;
+    type Input<'a> = D3D11ImageView;
     type Viewport<'a> = Viewport<'a>;
     type FrameOptions = FrameOptionsD3D11;
 

@@ -18,7 +18,7 @@ mod util;
 mod viewport;
 
 pub use filter_chain::FilterChainD3D11;
-pub use texture::DxImageView;
+pub use texture::D3D11ImageView;
 pub use viewport::Viewport;
 
 #[cfg(test)]

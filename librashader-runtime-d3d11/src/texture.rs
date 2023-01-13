@@ -14,13 +14,13 @@ use crate::error::Result;
 use crate::framebuffer::OwnedFramebuffer;
 
 #[derive(Debug, Clone)]
-pub struct DxImageView {
+pub struct D3D11ImageView {
     pub handle: ID3D11ShaderResourceView,
     pub size: Size<u32>,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct Texture {
-    pub view: DxImageView,
+    pub view: D3D11ImageView,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
 }
@@ -32,7 +32,7 @@ impl Texture {
         filter: FilterMode,
     ) -> Result<Self> {
         Ok(Texture {
-            view: DxImageView {
+            view: D3D11ImageView {
                 handle: fbo.create_shader_resource_view()?,
                 size: fbo.size,
             },
@@ -167,7 +167,7 @@ impl LutTexture {
                 // staging,
                 desc,
                 image: Texture {
-                    view: DxImageView {
+                    view: D3D11ImageView {
                         handle: srv,
                         size: source.size,
                     },

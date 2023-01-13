@@ -16,16 +16,18 @@ description = "RetroArch shaders for all."
 librashader-common = { path = "../librashader-common", version = "0.1.0-alpha.4" }
 librashader-presets = { path = "../librashader-presets", version = "0.1.0-alpha.4" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-alpha.4" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-alpha.4" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-alpha.4", features = ["standalone"] }
 librashader-runtime  = { path = "../librashader-runtime", version = "0.1.0-alpha.4" }
 librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.1.0-alpha.4" }
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.1.0-alpha.4" }
+librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.1.0-alpha.4" }
 
 
 [features]
-default = ["gl", "d3d11", "reflect", "preprocess", "presets" ]
+default = ["gl", "d3d11", "vk", "reflect", "preprocess", "presets" ]
 gl = [ "runtime", "librashader-common/opengl" ]
 d3d11 = [ "runtime", "librashader-common/d3d11" ]
+vk = ["runtime", "librashader-common/vulkan" ]
 runtime = []
 reflect = []
 preprocess = []

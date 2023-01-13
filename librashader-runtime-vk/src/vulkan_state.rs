@@ -1,12 +1,12 @@
 use crate::{error, util};
 use ash::vk;
-use librashader_common::ImageFormat;
+
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use std::ffi::CStr;
 
-const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") } ;
+const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 pub struct PipelineDescriptors {
     pub replicas: u32,
@@ -101,7 +101,7 @@ impl PipelineLayoutObjects {
         descriptors.add_ubo_binding(reflection.ubo.as_ref());
         descriptors.add_texture_bindings(reflection.meta.texture_meta.values());
 
-        let mut descriptor_set_layout = [descriptors.create_descriptor_set_layout(device)?];
+        let descriptor_set_layout = [descriptors.create_descriptor_set_layout(device)?];
 
         let pipeline_create_info =
             vk::PipelineLayoutCreateInfo::builder().set_layouts(&descriptor_set_layout);
@@ -126,12 +126,7 @@ impl PipelineLayoutObjects {
             .pool_sizes(&descriptors.pool_sizes)
             .build();
 
-        let pool = unsafe {
-            device.create_descriptor_pool(
-                &pool_info,
-                None,
-            )?
-        };
+        let pool = unsafe { device.create_descriptor_pool(&pool_info, None)? };
 
         let mut descriptor_sets = Vec::new();
         let alloc_info = vk::DescriptorSetAllocateInfo::builder()

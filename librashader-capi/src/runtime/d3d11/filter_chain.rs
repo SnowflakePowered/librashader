@@ -3,7 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::ffi_body;
-use librashader::runtime::d3d11::{DxImageView, Viewport};
+use librashader::runtime::d3d11::{D3D11ImageView, Viewport};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
@@ -26,14 +26,14 @@ pub struct libra_source_image_d3d11_t {
     pub height: u32,
 }
 
-impl TryFrom<libra_source_image_d3d11_t> for DxImageView {
+impl TryFrom<libra_source_image_d3d11_t> for D3D11ImageView {
     type Error = LibrashaderError;
 
     fn try_from(value: libra_source_image_d3d11_t) -> Result<Self, Self::Error> {
         let handle = value.handle;
         assert_non_null!(noexport handle);
 
-        Ok(DxImageView {
+        Ok(D3D11ImageView {
             handle: unsafe { (&*handle).clone() },
             size: Size::new(value.width, value.height),
         })

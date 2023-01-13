@@ -88,7 +88,7 @@ impl OwnedImage {
             .a(vk::ComponentSwizzle::A)
             .build();
 
-        let mut view_info = vk::ImageViewCreateInfo::builder()
+        let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(format.into())
             .image(image.clone())
@@ -145,7 +145,7 @@ impl OwnedImage {
         {
             let max_levels = if mipmap { u32::MAX } else { 1 };
 
-            let mut new = OwnedImage::new_internal(
+            let new = OwnedImage::new_internal(
                 self.device.clone(),
                 self.mem_props,
                 size,

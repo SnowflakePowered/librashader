@@ -1,5 +1,4 @@
 use crate::framebuffer::OutputImage;
-use ash::vk;
 
 #[rustfmt::skip]
 pub(crate) static DEFAULT_MVP: &[f32; 16] = &[

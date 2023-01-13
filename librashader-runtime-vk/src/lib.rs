@@ -9,6 +9,8 @@ mod framebuffer;
 #[cfg(test)]
 mod hello_triangle;
 mod luts;
+mod parameters;
+mod queue_selection;
 mod render_target;
 mod samplers;
 mod texture;
@@ -17,10 +19,12 @@ mod util;
 mod viewport;
 mod vulkan_primitives;
 mod vulkan_state;
-mod queue_selection;
 
 pub use filter_chain::FilterChainFrameIntermediates;
 pub use filter_chain::FilterChainVulkan;
+pub use filter_chain::Vulkan;
+pub use filter_chain::VulkanInfo;
+pub use texture::VulkanImage;
 pub use viewport::Viewport;
 
 pub mod error;
@@ -29,7 +33,7 @@ pub mod options;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::filter_chain::{FilterChainVulkan, Vulkan};
+    use crate::filter_chain::FilterChainVulkan;
     use crate::hello_triangle::vulkan_base::VulkanBase;
 
     #[test]

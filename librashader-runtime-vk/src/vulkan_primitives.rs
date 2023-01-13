@@ -86,15 +86,6 @@ impl VulkanBuffer {
         }
     }
 
-    pub unsafe fn copy_from(&mut self, buffer: &[u8]) -> error::Result<()> {
-        let dst = self
-            .device
-            .map_memory(self.memory, 0, self.size, vk::MemoryMapFlags::empty())?;
-        std::ptr::copy_nonoverlapping(buffer.as_ptr(), dst.cast(), buffer.len());
-        self.device.unmap_memory(self.memory);
-        Ok(())
-    }
-
     pub fn map(&mut self) -> error::Result<VulkanBufferMapHandle> {
         let dst = unsafe {
             self.device

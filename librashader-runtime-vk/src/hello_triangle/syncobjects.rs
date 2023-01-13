@@ -15,14 +15,18 @@ impl SyncObjects {
             let mut in_flight = Vec::new();
 
             for _ in 0..frames_in_flight {
-                image_available.push(device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?);
-                render_finished.push(device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?);
-                in_flight.push(device.create_fence(
-                    &vk::FenceCreateInfo::builder()
-                        .flags(vk::FenceCreateFlags::SIGNALED)
-                        .build(),
-                    None,
-                )?)
+                image_available
+                    .push(device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?);
+                render_finished
+                    .push(device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?);
+                in_flight.push(
+                    device.create_fence(
+                        &vk::FenceCreateInfo::builder()
+                            .flags(vk::FenceCreateFlags::SIGNALED)
+                            .build(),
+                        None,
+                    )?,
+                )
             }
 
             Ok(SyncObjects {

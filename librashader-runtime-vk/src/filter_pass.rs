@@ -1,17 +1,15 @@
-use crate::draw_quad::VboType;
+use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
-use crate::samplers::{SamplerSet, VulkanSampler};
+use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use crate::ubo_ring::VkUboRing;
 use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
-use crate::{error, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
 };
@@ -22,7 +20,7 @@ use rustc_hash::FxHashMap;
 pub struct FilterPass {
     pub device: ash::Device,
     pub reflection: ShaderReflection,
-    pub(crate) compiled: ShaderCompilerOutput<Vec<u32>>,
+    // pub(crate) compiled: ShaderCompilerOutput<Vec<u32>>,
     pub(crate) uniform_storage: UniformStorage,
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
@@ -83,7 +81,8 @@ impl FilterPass {
         source: &InputImage,
         output: &RenderTarget,
     ) -> error::Result<()> {
-        let descriptor = *&self.graphics_pipeline.layout.descriptor_sets[(frame_count % self.frames_in_flight) as usize];
+        let descriptor = *&self.graphics_pipeline.layout.descriptor_sets
+            [(frame_count % self.frames_in_flight) as usize];
 
         self.build_semantics(
             pass_index,
@@ -158,7 +157,7 @@ impl FilterPass {
                 );
             }
 
-            parent.draw_quad.bind_vbo(cmd, VboType::Final);
+            parent.draw_quad.bind_vbo(cmd);
 
             parent.device.cmd_set_scissor(
                 cmd,
@@ -183,7 +182,7 @@ impl FilterPass {
 
     fn build_semantics(
         &mut self,
-        pass_index: usize,
+        _pass_index: usize,
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,

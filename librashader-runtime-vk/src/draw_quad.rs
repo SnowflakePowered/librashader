@@ -11,11 +11,6 @@ pub(crate) static VBO_DEFAULT_FINAL: &[f32; 16] = &[
     1.0, 1.0, 1.0, 1.0,
 ];
 
-pub enum VboType {
-    Offscreen,
-    Final,
-}
-
 pub struct DrawQuad {
     buffer: VulkanBuffer,
     device: ash::Device,
@@ -45,7 +40,7 @@ impl DrawQuad {
         })
     }
 
-    pub fn bind_vbo(&self, cmd: vk::CommandBuffer, vbo: VboType) {
+    pub fn bind_vbo(&self, cmd: vk::CommandBuffer) {
         unsafe {
             self.device
                 .cmd_bind_vertex_buffers(cmd, 0, &[self.buffer.handle], &[0])

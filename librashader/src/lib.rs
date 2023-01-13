@@ -21,7 +21,7 @@
 //! |-------------|------------|---------------------------|
 //! | OpenGL 3.3+ | ✔         | `gl`                     |
 //! | OpenGL 4.6  | ✔         | `gl`                     |
-//! | Vulkan      | 🚧         | `vk`                     |
+//! | Vulkan      | ✔         | `vk`                     |
 //! | Direct3D 11  | ✔         | `d3d11`                  |
 //! | Direct3D 12  | 🚧         | `d3d12`                  |
 //! | OpenGL 2    | ❌         |                          |
@@ -104,14 +104,16 @@ pub mod runtime {
     }
 
     #[cfg(feature = "d3d11")]
-    /// Shader runtime for Direct3D11
+    /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::*;
     }
 
     #[cfg(feature = "vk")]
-    /// Shader compiler targets and runtime for Vulkan.
-    pub mod vk {}
+    /// Shader runtime for Vulkan 1.3+.
+    pub mod vk {
+        pub use librashader_runtime_vk::*;
+    }
 
     #[doc(hidden)]
     pub mod helper {

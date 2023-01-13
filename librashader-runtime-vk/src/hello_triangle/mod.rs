@@ -137,7 +137,6 @@ impl VulkanWindow {
     }
 
     fn draw_frame(frame: usize, vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
-
         let index = frame % MAX_FRAMES_IN_FLIGHT;
         let in_flight = [vulkan.sync.in_flight[index]];
         let image_available = [vulkan.sync.image_available[index]];
@@ -149,11 +148,7 @@ impl VulkanWindow {
                 .device
                 .wait_for_fences(&in_flight, true, u64::MAX)
                 .unwrap();
-            vulkan
-                .base
-                .device
-                .reset_fences(&in_flight)
-                .unwrap();
+            vulkan.base.device.reset_fences(&in_flight).unwrap();
 
             let (swapchain_index, _) = vulkan
                 .swapchain
@@ -326,11 +321,7 @@ impl VulkanWindow {
             vulkan
                 .base
                 .device
-                .queue_submit(
-                    vulkan.base.graphics_queue,
-                    &submit_info,
-                    in_flight[0],
-                )
+                .queue_submit(vulkan.base.graphics_queue, &submit_info, in_flight[0])
                 .expect("failed to submit queue");
 
             let swapchain_index = [swapchain_index];
@@ -346,7 +337,6 @@ impl VulkanWindow {
                 .loader
                 .queue_present(vulkan.base.graphics_queue, &present_info)
                 .unwrap();
-
 
             vulkan.base.device.device_wait_idle().unwrap();
             drop(intermediates)
@@ -407,7 +397,8 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
         )
     }
 
-    let swapchain_command_pool = VulkanCommandPool::new(&vulkan, MAX_FRAMES_IN_FLIGHT as u32).unwrap();
+    let swapchain_command_pool =
+        VulkanCommandPool::new(&vulkan, MAX_FRAMES_IN_FLIGHT as u32).unwrap();
     let render_command_pool = VulkanCommandPool::new(&vulkan, MAX_FRAMES_IN_FLIGHT as u32).unwrap();
 
     let sync = SyncObjects::new(&vulkan.device, MAX_FRAMES_IN_FLIGHT).unwrap();

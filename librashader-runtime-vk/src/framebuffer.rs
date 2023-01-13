@@ -29,7 +29,7 @@ impl OutputImage {
             .a(vk::ComponentSwizzle::A)
             .build();
 
-        let mut view_info = vk::ImageViewCreateInfo::builder()
+        let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(image.format)
             .image(image.image.clone())
