@@ -4,16 +4,28 @@ use std::marker::PhantomData;
 
 use std::path::Path;
 
+/// An uncompressed raw image ready to upload to GPU buffers.
 pub struct Image<P: PixelFormat = RGBA8> {
+    /// The raw bytes of the image.
     pub bytes: Vec<u8>,
+    /// The size dimensions of the image.
     pub size: Size<u32>,
+    /// The byte pitch of the image.
     pub pitch: usize,
     _pd: PhantomData<P>,
 }
 
+/// R8G8B8A8 pixel format.
+///
+/// Every RGB with alpha pixel is represented with 32 bits.
 pub struct RGBA8;
+
+/// B8G8R8A8 pixel format.
+///
+/// Every BGR with alpha pixel is represented with 32 bits.
 pub struct BGRA8;
 
+/// Represents an image pixel format to convert images into.
 pub trait PixelFormat {
     #[doc(hidden)]
     fn convert(pixels: &mut Vec<u8>);

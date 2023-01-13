@@ -32,25 +32,32 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class, fully supported.
 
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
-loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path.
+loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. You may also link against
+`librashader_capi` directly with [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/librashader-capi/librashader.h).
 
-Note that the Rust crate requires nightly Rust to build.
+The C API currently does not expose the [shader reflection API](https://docs.rs/librashader/latest/librashader/reflect/index.html). Work 
+is in progress to expose this to C. In the meanwhile, if you wish to implement a custom runtime for librashader, it will have to be done
+in Rust.
 
 ### C ABI Compatibility
-Since the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
+The recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
 is important to ensure that updates to librashader do not break existing consumers.
 
-Pre-1.0, nothing is guaranteed to be stable, but the following APIs are unlikely to change their ABI.
+Pre-1.0, nothing is guaranteed to be stable, but the following APIs are unlikely to change their ABI unless otherwise indicated.
 
 * `libra_preset_*`
 * `libra_error_*`
 
-The following APIs, mostly runtime, are more likely to change their ABI.
+The following APIs, mostly runtime, are more likely to change their ABI before a 1.0 release as I experiment with what
+works best.
 
 * `libra_gl_*`
 * `libra_vk_*`
 * `libra_d3d11_*`
 * `libra_d3d12_*`
+
+If you do not mind linking against `librashader_capi` directly, [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/librashader-capi/librashader.h)
+is unlikely to break API stability. 
 
 ## Compatibility
 
