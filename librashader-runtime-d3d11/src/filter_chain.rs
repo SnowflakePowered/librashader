@@ -343,13 +343,13 @@ impl FilterChainD3D11 {
 
         // not using frame history;
         if required_images <= 1 {
-            println!("[history] not using frame history");
+            // println!("[history] not using frame history");
             return Ok((VecDeque::new(), Box::new([])));
         }
 
         // history0 is aliased with the original
 
-        eprintln!("[history] using frame history with {required_images} images");
+        // eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
             OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)
@@ -420,7 +420,7 @@ impl FilterChainD3D11 {
         let passes = passes
             .into_iter()
             .map(|shader| {
-                eprintln!("[dx11] loading {}", &shader.name.display());
+                // eprintln!("[dx11] loading {}", &shader.name.display());
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
                 let spirv = GlslangCompilation::compile(&source)?;

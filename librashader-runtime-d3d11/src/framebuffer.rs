@@ -169,7 +169,7 @@ impl OwnedFramebuffer {
         };
 
         if self.size != image.size || format != self.format {
-            eprintln!("[history] resizing");
+            // eprintln!("[history] resizing");
             self.init(image.size, ImageFormat::from(format))?;
         }
 
