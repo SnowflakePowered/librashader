@@ -15,11 +15,10 @@ mod render_target;
 mod samplers;
 mod texture;
 mod util;
-mod viewport;
 
 pub use filter_chain::FilterChain;
-pub use texture::D3D11ImageView;
-pub use viewport::Viewport;
+pub use texture::D3D11InputView;
+pub use texture::D3D11OutputView;
 
 #[cfg(test)]
 mod tests {

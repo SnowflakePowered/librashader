@@ -1,13 +1,12 @@
-use crate::error;
+use crate::{error, VulkanImage};
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use crate::ubo_ring::VkUboRing;
-use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use ash::vk;
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
@@ -76,7 +75,7 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport,
+        viewport: &Viewport<VulkanImage>,
         original: &InputImage,
         source: &InputImage,
         output: &RenderTarget,

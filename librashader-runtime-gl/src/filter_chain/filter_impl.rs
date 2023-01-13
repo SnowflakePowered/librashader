@@ -7,9 +7,9 @@ use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
 use crate::util::{gl_get_version, gl_u16_to_version};
-use crate::{error, util, GLImage, Viewport};
+use crate::{error, util, GLImage};
 use gl::types::{GLenum, GLint, GLuint};
-use librashader_common::{FilterMode, Size, WrapMode};
+use librashader_common::{FilterMode, Size, Viewport, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::{CrossGlslContext, GlslVersion};
@@ -419,7 +419,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     pub fn frame(
         &mut self,
         count: usize,
-        viewport: &Viewport,
+        viewport: &Viewport<&Framebuffer>,
         input: &GLImage,
         options: Option<&FrameOptions>,
     ) -> error::Result<()> {

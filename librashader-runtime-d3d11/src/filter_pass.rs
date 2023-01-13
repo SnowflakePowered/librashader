@@ -1,6 +1,6 @@
 use crate::filter_chain::FilterCommon;
-use crate::texture::Texture;
-use librashader_common::{ImageFormat, Size};
+use crate::texture::InputTexture;
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::cross::CrossHlslContext;
@@ -16,10 +16,9 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
 };
 
-use crate::error;
+use crate::{D3D11OutputView, error};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
-use crate::viewport::Viewport;
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 
 pub struct ConstantBufferBinding {
@@ -69,7 +68,7 @@ impl FilterPass {
         texture_binding: &mut [Option<ID3D11ShaderResourceView>; 16],
         sampler_binding: &mut [Option<ID3D11SamplerState>; 16],
         binding: &TextureBinding,
-        texture: &Texture,
+        texture: &InputTexture,
     ) {
         texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
         sampler_binding[binding.binding as usize] =
@@ -86,8 +85,8 @@ impl FilterPass {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
-        original: &Texture,
-        source: &Texture,
+        original: &InputTexture,
+        source: &InputTexture,
     ) -> (
         [Option<ID3D11ShaderResourceView>; 16],
         [Option<ID3D11SamplerState>; 16],
@@ -354,9 +353,9 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport,
-        original: &Texture,
-        source: &Texture,
+        viewport: &Viewport<D3D11OutputView>,
+        original: &InputTexture,
+        source: &InputTexture,
         output: RenderTarget,
     ) -> error::Result<()> {
         let _device = &parent.d3d11.device;
@@ -380,7 +379,7 @@ impl FilterPass {
             frame_count,
             frame_direction,
             output.output.size,
-            viewport.size,
+            viewport.output.size,
             original,
             source,
         );

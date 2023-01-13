@@ -1,5 +1,5 @@
 use crate::error;
-use crate::texture::{D3D11ImageView, Texture};
+use crate::texture::{D3D11InputView, InputTexture};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
@@ -61,8 +61,8 @@ impl OwnedFramebuffer {
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
-        _original: &Texture,
-        source: &Texture,
+        _original: &InputTexture,
+        source: &InputTexture,
     ) -> error::Result<Size<u32>> {
         if self.is_raw {
             return Ok(self.size);
@@ -152,7 +152,7 @@ impl OwnedFramebuffer {
         })
     }
 
-    pub fn copy_from(&mut self, image: &D3D11ImageView) -> error::Result<()> {
+    pub fn copy_from(&mut self, image: &D3D11InputView) -> error::Result<()> {
         let original_resource: ID3D11Texture2D = unsafe {
             let mut resource = None;
             image.handle.GetResource(&mut resource);

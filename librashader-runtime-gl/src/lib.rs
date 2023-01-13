@@ -15,12 +15,10 @@ mod texture;
 
 pub mod error;
 pub mod options;
-mod viewport;
 
 pub use crate::gl::Framebuffer;
 pub use filter_chain::FilterChain;
 pub use framebuffer::GLImage;
-pub use viewport::Viewport;
 
 #[cfg(test)]
 mod tests {

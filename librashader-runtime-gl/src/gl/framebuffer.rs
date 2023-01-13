@@ -2,9 +2,8 @@ use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::Texture;
-use crate::viewport::Viewport;
 use gl::types::{GLenum, GLuint};
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_presets::Scale2D;
 
 #[derive(Debug)]
@@ -50,7 +49,7 @@ impl Framebuffer {
         &mut self,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport,
+        viewport: &Viewport<&Framebuffer>,
         original: &Texture,
         source: &Texture,
         mipmap: bool,

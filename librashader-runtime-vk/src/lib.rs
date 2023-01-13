@@ -16,7 +16,6 @@ mod samplers;
 mod texture;
 mod ubo_ring;
 mod util;
-mod viewport;
 mod vulkan_primitives;
 mod vulkan_state;
 
@@ -25,7 +24,6 @@ pub use filter_chain::FilterChainVulkan;
 pub use filter_chain::Vulkan;
 pub use filter_chain::VulkanInstance;
 pub use texture::VulkanImage;
-pub use viewport::Viewport;
 
 pub mod error;
 pub mod options;

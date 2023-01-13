@@ -3,7 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::ffi_body;
-use librashader::runtime::gl::{Framebuffer, GLImage, Viewport};
+use librashader::runtime::gl::{Framebuffer, GLImage};
 use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
@@ -11,6 +11,7 @@ use std::slice;
 
 pub use librashader::runtime::gl::options::FilterChainOptions;
 pub use librashader::runtime::gl::options::FrameOptions;
+use librashader::runtime::Viewport;
 use librashader::Size;
 
 /// A GL function loader that librashader needs to be initialized with.

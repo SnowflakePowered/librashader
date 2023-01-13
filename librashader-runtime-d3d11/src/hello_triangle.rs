@@ -228,11 +228,12 @@ pub mod d3d11_hello_triangle {
     use crate::filter_chain::FilterChain;
 
     use crate::options::FilterChainOptions;
-    use crate::texture::D3D11ImageView;
+    use crate::texture::D3D11InputView;
     use crate::viewport::Viewport;
-    use librashader_common::Size;
+    use librashader_common::{Size, Viewport};
     use std::slice;
     use std::time::Instant;
+    use crate::D3D11OutputView;
 
     pub struct Sample {
         pub dxgi_factory: IDXGIFactory4,
@@ -492,7 +493,7 @@ pub mod d3d11_hello_triangle {
 
                 self.filter
                     .frame(
-                        D3D11ImageView {
+                        D3D11InputView {
                             handle: srv,
                             size: Size {
                                 width: tex2d_desc.Width,
@@ -502,11 +503,13 @@ pub mod d3d11_hello_triangle {
                         &Viewport {
                             x: resources.viewport.TopLeftX,
                             y: resources.viewport.TopLeftY,
-                            size: Size {
-                                width: tex2d_desc.Width,
-                                height: tex2d_desc.Height,
+                            output: D3D11OutputView {
+                                size: Size {
+                                    width: tex2d_desc.Width,
+                                    height: tex2d_desc.Height,
+                                },
+                                handle: resources.rtv.clone(),
                             },
-                            output: resources.rtv.clone(),
                             mvp: None,
                         },
                         resources.frame_count,

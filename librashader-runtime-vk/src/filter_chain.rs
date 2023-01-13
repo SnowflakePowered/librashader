@@ -8,11 +8,10 @@ use crate::render_target::{RenderTarget, DEFAULT_MVP};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, VulkanImage};
 use crate::ubo_ring::VkUboRing;
-use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
 use ash::vk;
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SpirV;
@@ -562,7 +561,7 @@ impl FilterChainVulkan {
     pub fn frame(
         &mut self,
         count: usize,
-        viewport: &Viewport,
+        viewport: &Viewport<VulkanImage>,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
         options: Option<FrameOptions>,

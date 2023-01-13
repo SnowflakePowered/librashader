@@ -14,6 +14,9 @@ pub mod dxgi;
 #[cfg(feature = "d3d11")]
 pub mod d3d11;
 
+mod viewport;
+pub use viewport::Viewport;
+
 use num_traits::AsPrimitive;
 use std::convert::Infallible;
 use std::str::FromStr;

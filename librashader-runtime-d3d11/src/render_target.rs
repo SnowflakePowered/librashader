@@ -1,6 +1,7 @@
 use crate::framebuffer::OutputFramebuffer;
-use crate::viewport::Viewport;
 use windows::Win32::Graphics::Direct3D11::D3D11_VIEWPORT;
+use librashader_common::Viewport;
+use crate::D3D11OutputView;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[
@@ -32,17 +33,17 @@ impl<'a> RenderTarget<'a> {
     }
 }
 
-impl<'a> From<&Viewport<'a>> for RenderTarget<'a> {
-    fn from(value: &Viewport<'a>) -> Self {
+impl<'a> From<&Viewport<'a, D3D11OutputView>> for RenderTarget<'a> {
+    fn from(value: &Viewport<'a, D3D11OutputView>) -> Self {
         RenderTarget::new(
             OutputFramebuffer {
-                rtv: value.output.clone(),
-                size: value.size,
+                rtv: value.output.handle.clone(),
+                size: value.output.size,
                 viewport: D3D11_VIEWPORT {
                     TopLeftX: value.x,
                     TopLeftY: value.y,
-                    Width: value.size.width as f32,
-                    Height: value.size.height as f32,
+                    Width: value.output.size.width as f32,
+                    Height: value.output.size.height as f32,
                     MinDepth: 0.0,
                     MaxDepth: 1.0,
                 },

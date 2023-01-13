@@ -2,7 +2,7 @@ use librashader_common::{FilterMode, Size, WrapMode};
 use librashader_runtime::image::Image;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Device, ID3D11DeviceContext, ID3D11ShaderResourceView, ID3D11Texture2D, D3D11_BIND_FLAG,
+    ID3D11Device, ID3D11DeviceContext, ID3D11ShaderResourceView, ID3D11RenderTargetView, ID3D11Texture2D, D3D11_BIND_FLAG,
     D3D11_BIND_RENDER_TARGET, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CPU_ACCESS_FLAG,
     D3D11_CPU_ACCESS_WRITE, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS,
     D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA,
@@ -14,25 +14,32 @@ use crate::error::Result;
 use crate::framebuffer::OwnedFramebuffer;
 
 #[derive(Debug, Clone)]
-pub struct D3D11ImageView {
+pub struct D3D11InputView {
     pub handle: ID3D11ShaderResourceView,
     pub size: Size<u32>,
 }
+
 #[derive(Debug, Clone)]
-pub(crate) struct Texture {
-    pub view: D3D11ImageView,
+pub struct D3D11OutputView {
+    pub handle: ID3D11RenderTargetView,
+    pub size: Size<u32>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct InputTexture {
+    pub view: D3D11InputView,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
 }
 
-impl Texture {
+impl InputTexture {
     pub fn from_framebuffer(
         fbo: &OwnedFramebuffer,
         wrap_mode: WrapMode,
         filter: FilterMode,
     ) -> Result<Self> {
-        Ok(Texture {
-            view: D3D11ImageView {
+        Ok(InputTexture {
+            view: D3D11InputView {
                 handle: fbo.create_shader_resource_view()?,
                 size: fbo.size,
             },
@@ -49,7 +56,7 @@ pub(crate) struct LutTexture {
     pub handle: ID3D11Texture2D,
     #[allow(dead_code)]
     pub desc: D3D11_TEXTURE2D_DESC,
-    pub image: Texture,
+    pub image: InputTexture,
 }
 
 impl LutTexture {
@@ -166,8 +173,8 @@ impl LutTexture {
                 handle,
                 // staging,
                 desc,
-                image: Texture {
-                    view: D3D11ImageView {
+                image: InputTexture {
+                    view: D3D11InputView {
                         handle: srv,
                         size: source.size,
                     },

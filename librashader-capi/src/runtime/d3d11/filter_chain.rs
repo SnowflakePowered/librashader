@@ -3,7 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::ffi_body;
-use librashader::runtime::d3d11::{D3D11ImageView, Viewport};
+use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
@@ -13,6 +13,8 @@ use windows::Win32::Graphics::Direct3D11::{
 
 pub use librashader::runtime::d3d11::options::FilterChainOptions;
 pub use librashader::runtime::d3d11::options::FrameOptions;
+
+use librashader::runtime::Viewport;
 use librashader::Size;
 
 /// OpenGL parameters for the source image.
@@ -26,14 +28,14 @@ pub struct libra_source_image_d3d11_t {
     pub height: u32,
 }
 
-impl TryFrom<libra_source_image_d3d11_t> for D3D11ImageView {
+impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
     type Error = LibrashaderError;
 
     fn try_from(value: libra_source_image_d3d11_t) -> Result<Self, Self::Error> {
         let handle = value.handle;
         assert_non_null!(noexport handle);
 
-        Ok(D3D11ImageView {
+        Ok(D3D11InputView {
             handle: unsafe { (&*handle).clone() },
             size: Size::new(value.width, value.height),
         })
@@ -139,8 +141,10 @@ pub unsafe extern "C" fn libra_d3d11_filter_chain_frame(
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
-            size: Size::new(viewport.width, viewport.height),
-            output: unsafe { (&*out).clone() },
+            output: D3D11OutputView {
+                size: Size::new(viewport.width, viewport.height),
+                handle: unsafe { (&*out).clone() },
+            },
             mvp,
         };
 

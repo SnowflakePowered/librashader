@@ -1,5 +1,5 @@
-use crate::texture::{D3D11ImageView, LutTexture, Texture};
-use librashader_common::{ImageFormat, Size};
+use crate::texture::{D3D11InputView, LutTexture, InputTexture};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::CrossHlslContext;
@@ -24,8 +24,7 @@ use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
-use crate::viewport::Viewport;
-use crate::{error, util};
+use crate::{D3D11OutputView, error, util};
 use librashader_runtime::uniforms::UniformStorage;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
@@ -67,9 +66,9 @@ pub(crate) struct FilterCommon {
     pub(crate) d3d11: Direct3D11,
     pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
-    pub output_textures: Box<[Option<Texture>]>,
-    pub feedback_textures: Box<[Option<Texture>]>,
-    pub history_textures: Box<[Option<Texture>]>,
+    pub output_textures: Box<[Option<InputTexture>]>,
+    pub feedback_textures: Box<[Option<InputTexture>]>,
+    pub history_textures: Box<[Option<InputTexture>]>,
     pub config: FilterMutable,
     pub disable_mipmaps: bool,
 }
@@ -317,7 +316,7 @@ impl FilterChain {
         device: &ID3D11Device,
         context: &ID3D11DeviceContext,
         filters: &Vec<FilterPass>,
-    ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<Texture>]>)> {
+    ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<InputTexture>]>)> {
         let mut required_images = 0;
 
         for pass in filters {
@@ -365,7 +364,7 @@ impl FilterChain {
         Ok((framebuffers, history_textures.into_boxed_slice()))
     }
 
-    fn push_history(&mut self, input: &D3D11ImageView) -> error::Result<()> {
+    fn push_history(&mut self, input: &D3D11InputView) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             back.copy_from(input)?;
             self.history_framebuffers.push_front(back)
@@ -465,8 +464,8 @@ impl FilterChain {
     /// Process a frame with the input image.
     pub fn frame(
         &mut self,
-        input: D3D11ImageView,
-        viewport: &Viewport,
+        input: D3D11InputView,
+        viewport: &Viewport<D3D11OutputView>,
         frame_count: usize,
         options: Option<&FrameOptions>,
     ) -> error::Result<()> {
@@ -496,7 +495,7 @@ impl FilterChain {
             .zip(self.feedback_framebuffers.iter())
             .zip(passes.iter())
         {
-            *texture = Some(Texture::from_framebuffer(
+            *texture = Some(InputTexture::from_framebuffer(
                 fbo,
                 pass.config.wrap_mode,
                 pass.config.filter,
@@ -509,10 +508,10 @@ impl FilterChain {
             .iter_mut()
             .zip(self.history_framebuffers.iter())
         {
-            *texture = Some(Texture::from_framebuffer(fbo, wrap_mode, filter)?);
+            *texture = Some(InputTexture::from_framebuffer(fbo, wrap_mode, filter)?);
         }
 
-        let original = Texture {
+        let original = InputTexture {
             view: input.clone(),
             filter,
             wrap_mode,
@@ -525,7 +524,7 @@ impl FilterChain {
             self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
-                &viewport.size,
+                &viewport.output.size,
                 &original,
                 &source,
             )?;
@@ -533,7 +532,7 @@ impl FilterChain {
             self.feedback_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
-                &viewport.size,
+                &viewport.output.size,
                 &original,
                 &source,
             )?;
@@ -561,8 +560,8 @@ impl FilterChain {
                 RenderTarget::new(target.as_output_framebuffer()?, None),
             )?;
 
-            source = Texture {
-                view: D3D11ImageView {
+            source = InputTexture {
+                view: D3D11InputView {
                     handle: target.create_shader_resource_view()?,
                     size,
                 },

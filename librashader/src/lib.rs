@@ -92,6 +92,7 @@ pub mod reflect {
 #[cfg(feature = "runtime")]
 pub mod runtime {
     pub use librashader_runtime::parameters::FilterChainParameters;
+    pub use librashader_common::Viewport;
 
     #[cfg(feature = "gl")]
     /// Shader runtime for OpenGL 3.3+.

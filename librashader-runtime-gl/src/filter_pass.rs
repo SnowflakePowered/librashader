@@ -3,7 +3,7 @@ use librashader_reflect::back::cross::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
@@ -13,9 +13,9 @@ use rustc_hash::FxHashMap;
 
 use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
+use crate::Framebuffer;
 use crate::gl::{BindTexture, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
-use crate::viewport::Viewport;
 
 use crate::texture::Texture;
 
@@ -38,7 +38,7 @@ impl<T: GLInterface> FilterPass<T> {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport,
+        viewport: &Viewport<&Framebuffer>,
         original: &Texture,
         source: &Texture,
         output: RenderTarget,
@@ -123,7 +123,7 @@ impl<T: GLInterface> FilterPass<T> {
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,
-        viewport: &Viewport,
+        viewport: &Viewport<&Framebuffer>,
         original: &Texture,
         source: &Texture,
     ) {

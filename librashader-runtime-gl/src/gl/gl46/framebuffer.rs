@@ -3,9 +3,8 @@ use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::Framebuffer;
 use crate::gl::FramebufferInterface;
 use crate::texture::Texture;
-use crate::viewport::Viewport;
 use gl::types::{GLenum, GLint, GLsizei, GLuint};
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 
@@ -32,12 +31,12 @@ impl FramebufferInterface for Gl46Framebuffer {
             is_raw: false,
         }
     }
-    
+
     fn scale(
         fb: &mut Framebuffer,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport,
+        viewport: &Viewport<&Framebuffer>,
         _original: &Texture,
         source: &Texture,
         mipmap: bool,
