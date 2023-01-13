@@ -1,9 +1,11 @@
+//! Vulkan shader runtime errors.
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
 use thiserror::Error;
 
+/// Cumulative error type for Vulkan filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("SPIRV reflection error")]
@@ -22,4 +24,5 @@ pub enum FilterChainError {
     VulkanResult(#[from] ash::vk::Result),
 }
 
+/// Result type for Vulkan filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;

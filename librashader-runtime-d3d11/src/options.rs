@@ -1,3 +1,5 @@
+//! Direct3D11 shader runtime options.
+
 /// Options for each Direct3D11 shader frame.
 #[repr(C)]
 #[derive(Debug, Clone)]

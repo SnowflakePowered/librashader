@@ -46,6 +46,7 @@ type ShaderPassMeta = (
     >,
 );
 
+/// A Direct3D 11 filter chain.
 pub struct FilterChain {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Vec<FilterPass>,

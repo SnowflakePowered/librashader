@@ -1,9 +1,12 @@
+//! Direct3D11 shader runtime errors.
+//!
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
 use thiserror::Error;
 
+/// Cumulative error type for Direct3D11 filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("unable to get direct3d context")]
@@ -24,4 +27,5 @@ pub enum FilterChainError {
     LutLoadError(#[from] ImageError),
 }
 
+/// Result type for Direct3D11 filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;

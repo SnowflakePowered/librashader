@@ -16,11 +16,13 @@ mod parameters;
 pub(crate) use filter_impl::FilterCommon;
 use librashader_common::{Size, Viewport};
 
+/// An OpenGL filter chain.
 pub struct FilterChain {
     pub(in crate::filter_chain) filter: FilterChainDispatch,
 }
 
 impl FilterChain {
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
         preset: ShaderPreset,
         options: Option<&FilterChainOptions>,

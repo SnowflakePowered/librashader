@@ -1,8 +1,8 @@
-use crate::FilterChainVulkan;
+use crate::FilterChain;
 use librashader_runtime::parameters::FilterChainParameters;
 use std::collections::hash_map::Iter;
 
-impl FilterChainParameters for FilterChainVulkan {
+impl FilterChainParameters for FilterChain {
     fn get_enabled_pass_count(&self) -> usize {
         self.common.config.passes_enabled
     }

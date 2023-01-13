@@ -1,4 +1,4 @@
-use crate::filter_chain::Vulkan;
+use crate::filter_chain::VulkanDevice;
 use crate::texture::{InputImage, VulkanImage};
 use crate::vulkan_primitives::{VulkanBuffer, VulkanImageMemory};
 use crate::{error, util};
@@ -15,7 +15,7 @@ pub struct LutTexture {
 
 impl LutTexture {
     pub fn new(
-        vulkan: &Vulkan,
+        vulkan: &VulkanDevice,
         cmd: vk::CommandBuffer,
         image: Image<BGRA8>,
         config: &TextureConfig,

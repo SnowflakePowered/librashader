@@ -1,3 +1,5 @@
+//! OpenGL shader runtime options.
+
 /// Options for each OpenGL shader frame.
 #[repr(C)]
 #[derive(Debug, Clone)]

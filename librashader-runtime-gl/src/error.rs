@@ -1,3 +1,5 @@
+//! OpenGL shader runtime errors.
+
 use gl::types::GLenum;
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
@@ -5,6 +7,7 @@ use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
 use thiserror::Error;
 
+/// Cumulative error type for OpenGL filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("fbo initialization error")]
@@ -27,4 +30,5 @@ pub enum FilterChainError {
     GLLinkError,
 }
 
+/// Result type for OpenGL filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;

@@ -20,8 +20,8 @@ mod vulkan_primitives;
 mod vulkan_state;
 
 pub use filter_chain::FrameIntermediates;
-pub use filter_chain::FilterChainVulkan;
-pub use filter_chain::Vulkan;
+pub use filter_chain::FilterChain;
+pub use filter_chain::VulkanDevice;
 pub use filter_chain::VulkanInstance;
 pub use texture::VulkanImage;
 
@@ -31,7 +31,7 @@ pub mod options;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::filter_chain::FilterChainVulkan;
+    use crate::filter_chain::FilterChain;
     use crate::hello_triangle::vulkan_base::VulkanBase;
 
     #[test]
@@ -39,7 +39,7 @@ mod tests {
         let entry = unsafe { ash::Entry::load().unwrap() };
         let base = VulkanBase::new(entry).unwrap();
         dbg!("finished");
-        let mut filter = FilterChainVulkan::load_from_path(
+        let mut filter = FilterChain::load_from_path(
             &base,
             // "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",

@@ -28,7 +28,8 @@ use std::collections::VecDeque;
 use std::path::Path;
 use crate::options::{FilterChainOptions, FrameOptions};
 
-pub struct Vulkan {
+/// A Vulkan device and metadata that is required by the shader runtime.
+pub struct VulkanDevice {
     pub(crate) device: ash::Device,
     pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
     queue: vk::Queue,
@@ -54,7 +55,7 @@ pub struct VulkanInstance {
     pub get_instance_proc_addr: vk::PFN_vkGetInstanceProcAddr,
 }
 
-impl TryFrom<VulkanInstance> for Vulkan {
+impl TryFrom<VulkanInstance> for VulkanDevice {
     type Error = FilterChainError;
 
     fn try_from(vulkan: VulkanInstance) -> Result<Self, FilterChainError> {
@@ -75,7 +76,7 @@ impl TryFrom<VulkanInstance> for Vulkan {
             let memory_properties =
                 instance.get_physical_device_memory_properties(vulkan.physical_device);
 
-            Ok(Vulkan {
+            Ok(VulkanDevice {
                 device,
                 queue,
                 pipeline_cache,
@@ -86,7 +87,7 @@ impl TryFrom<VulkanInstance> for Vulkan {
     }
 }
 
-impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for Vulkan {
+impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanDevice {
     type Error = FilterChainError;
 
     fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
@@ -99,7 +100,7 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for Vulkan {
 
             let memory_properties = value.1.get_physical_device_memory_properties(value.0);
 
-            Ok(Vulkan {
+            Ok(VulkanDevice {
                 device,
                 queue,
                 pipeline_cache,
@@ -110,10 +111,11 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for Vulkan {
     }
 }
 
-pub struct FilterChainVulkan {
+/// A Vulkan filter chain.
+pub struct FilterChain {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
-    vulkan: Vulkan,
+    vulkan: VulkanDevice,
     output_framebuffers: Box<[OwnedImage]>,
     feedback_framebuffers: Box<[OwnedImage]>,
     history_framebuffers: VecDeque<OwnedImage>,
@@ -136,6 +138,11 @@ pub(crate) struct FilterCommon {
     pub device: ash::Device,
 }
 
+/// Contains residual intermediate `VkImageView` and `VkImage` objects created
+/// for intermediate shader passes.
+///
+/// These Vulkan objects must stay alive until the command buffer is submitted
+/// to the rendering queue, and the GPU is done with the objects.
 #[must_use]
 pub struct FrameIntermediates {
     device: ash::Device,
@@ -173,34 +180,35 @@ impl FrameIntermediates {
     }
 }
 
-impl FilterChainVulkan {
+impl FilterChain {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        vulkan: impl TryInto<Vulkan, Error = FilterChainError>,
+        vulkan: impl TryInto<VulkanDevice, Error = FilterChainError>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptions>,
-    ) -> error::Result<FilterChainVulkan> {
+    ) -> error::Result<FilterChain> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(vulkan, preset, options)
     }
 
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
-        vulkan: impl TryInto<Vulkan, Error = FilterChainError>,
+        vulkan: impl TryInto<VulkanDevice, Error = FilterChainError>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptions>,
-    ) -> error::Result<FilterChainVulkan> {
-        let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
+    ) -> error::Result<FilterChain> {
+        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
 
         // initialize passes
         let filters = Self::init_passes(&device, passes, &semantics, 3)?;
 
-        let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
+        let luts = FilterChain::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChainVulkan::init_history(&device, &filters)?;
+            FilterChain::init_history(&device, &filters)?;
 
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
@@ -222,7 +230,7 @@ impl FilterChainVulkan {
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), || None);
 
-        Ok(FilterChainVulkan {
+        Ok(FilterChain {
             common: FilterCommon {
                 luts,
                 samplers,
@@ -303,7 +311,7 @@ impl FilterChainVulkan {
     }
 
     fn init_passes(
-        vulkan: &Vulkan,
+        vulkan: &VulkanDevice,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         frames_in_flight: u32,
@@ -377,7 +385,7 @@ impl FilterChainVulkan {
     }
 
     fn load_luts(
-        vulkan: &Vulkan,
+        vulkan: &VulkanDevice,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
@@ -437,7 +445,7 @@ impl FilterChainVulkan {
     }
 
     fn init_history(
-        vulkan: &Vulkan,
+        vulkan: &VulkanDevice,
         filters: &[FilterPass],
     ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputImage>]>)> {
         let mut required_images = 0;

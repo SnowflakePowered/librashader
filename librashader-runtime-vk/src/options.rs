@@ -1,3 +1,5 @@
+//! Vulkan shader runtime options.
+
 /// Options for each Vulkan shader frame.
 #[repr(C)]
 #[derive(Debug, Clone)]

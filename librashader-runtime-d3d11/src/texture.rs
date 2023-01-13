@@ -13,12 +13,19 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use crate::error::Result;
 use crate::framebuffer::OwnedFramebuffer;
 
+
+/// An image view for use as a shader resource.
+///
+/// Contains an `ID3D11ShaderResourceView`, and a size.
 #[derive(Debug, Clone)]
 pub struct D3D11InputView {
     pub handle: ID3D11ShaderResourceView,
     pub size: Size<u32>,
 }
 
+/// An image view for use as a render target.
+///
+/// Contains an `ID3D11RenderTargetView`, and a size.
 #[derive(Debug, Clone)]
 pub struct D3D11OutputView {
     pub handle: ID3D11RenderTargetView,

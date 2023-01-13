@@ -6,6 +6,10 @@ use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_presets::Scale2D;
 
+
+/// A handle to an OpenGL FBO and its backing texture with format and size information.
+///
+/// Generally for use as render targets.
 #[derive(Debug)]
 pub struct Framebuffer {
     pub(crate) image: GLuint,
@@ -23,6 +27,8 @@ impl Framebuffer {
     }
 
     /// Create a framebuffer from an already initialized texture and framebuffer.
+    ///
+    /// The framebuffer will not be deleted when this struct is dropped.
     pub fn new_from_raw(
         texture: GLuint,
         fbo: GLuint,

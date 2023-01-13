@@ -1,4 +1,4 @@
-use crate::filter_chain::Vulkan;
+use crate::filter_chain::VulkanDevice;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
 use crate::{error, util};
@@ -114,7 +114,7 @@ impl OwnedImage {
     }
 
     pub fn new(
-        vulkan: &Vulkan,
+        vulkan: &VulkanDevice,
         size: Size<u32>,
         format: ImageFormat,
         max_miplevels: u32,
@@ -505,6 +505,7 @@ impl Drop for OwnedImage {
     }
 }
 
+/// A handle to a `VkImage` with size and format information.
 #[derive(Clone)]
 pub struct VulkanImage {
     pub size: Size<u32>,
