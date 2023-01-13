@@ -14,7 +14,6 @@ pub use librashader::runtime::vk::capi::options::FrameOptionsVulkan;
 use librashader::runtime::{Size, Viewport};
 
 use ash::vk;
-use ash::vk::Handle;
 
 pub use ash::vk::PFN_vkGetInstanceProcAddr;
 

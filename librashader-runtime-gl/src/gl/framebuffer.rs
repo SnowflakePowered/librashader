@@ -22,10 +22,6 @@ pub struct Framebuffer {
 }
 
 impl Framebuffer {
-    pub(crate) fn new<T: FramebufferInterface>(max_levels: u32) -> Self {
-        T::new(max_levels)
-    }
-
     /// Create a framebuffer from an already initialized texture and framebuffer.
     ///
     /// The framebuffer will not be deleted when this struct is dropped.
