@@ -115,9 +115,6 @@ impl Drop for VulkanBuffer {
 
 impl<'a> VulkanBufferMapHandle<'a> {
     pub unsafe fn copy_from(&mut self, offset: usize, src: &[u8]) {
-        if self.buffer.size > (offset + src.len()) as u64 {
-            panic!("invalid write")
-        }
         std::ptr::copy_nonoverlapping(
             src.as_ptr(),
             self.ptr

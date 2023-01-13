@@ -1,8 +1,10 @@
 use gl::types::{GLenum, GLuint};
 
 use librashader_reflect::back::cross::GlslVersion;
+use crate::error;
+use crate::error::FilterChainError;
 
-pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
+pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GLuint> {
     let shader = gl::CreateShader(stage);
     gl::ShaderSource(
         shader,
@@ -15,9 +17,10 @@ pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> GLuint {
     gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
 
     if compile_status == 0 {
-        panic!("failed to compile")
+        Err(FilterChainError::GlCompileError)
+    } else {
+        Ok(shader)
     }
-    shader
 }
 
 pub fn gl_get_version() -> GlslVersion {

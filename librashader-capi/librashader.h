@@ -47,7 +47,7 @@ typedef struct _libra_error* libra_error_t;
 
 typedef struct _shader_preset* libra_shader_preset_t;
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 /// A GL function loader that librashader needs to be initialized with.
 typedef const void* (*gl_loader_t)(const char*);
 #endif
@@ -64,11 +64,11 @@ typedef struct FilterChainOptions {
     bool force_no_mipmaps;
 } FilterChainOptions;
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 typedef struct FilterChain* libra_gl_filter_chain_t;
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the source image.
 typedef struct libra_source_image_gl_t {
     /// A texture GLuint to the source image.
@@ -90,7 +90,7 @@ typedef struct libra_viewport_t {
     uint32_t height;
 } libra_viewport_t;
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the output framebuffer.
 typedef struct libra_draw_framebuffer_gl_t {
     /// A framebuffer GLuint to the output framebuffer.
@@ -110,11 +110,11 @@ typedef struct FrameOptions {
     int32_t frame_direction;
 } FrameOptions;
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
 typedef struct FilterChain* libra_d3d11_filter_chain_t;
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
 /// OpenGL parameters for the source image.
 typedef struct libra_source_image_d3d11_t {
     /// A shader resource view into the source image
@@ -151,17 +151,17 @@ typedef int32_t(*PFN_libra_error_write)(libra_error_t error, char** out);
 
 typedef int32_t(*PFN_libra_error_free_string)(char** out);
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 typedef libra_error_t(*PFN_libra_gl_init_context)(gl_loader_t loader);
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 typedef libra_error_t(*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t* preset,
     const struct FilterChainOptions* options,
     libra_gl_filter_chain_t* out);
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 typedef libra_error_t(*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t* chain,
     size_t frame_count,
     struct libra_source_image_gl_t image,
@@ -171,18 +171,18 @@ typedef libra_error_t(*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t*
     const struct FrameOptions* opt);
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
 typedef libra_error_t(*PFN_libra_gl_filter_chain_free)(libra_gl_filter_chain_t* chain);
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
 typedef libra_error_t(*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset_t* preset,
     const struct FilterChainOptions* options,
     const ID3D11Device* device,
     libra_d3d11_filter_chain_t* out);
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
 typedef libra_error_t(*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t* chain,
     size_t frame_count,
     struct libra_source_image_d3d11_t image,
@@ -192,7 +192,7 @@ typedef libra_error_t(*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_ch
     const struct FrameOptions* opt);
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
 typedef libra_error_t(*PFN_libra_d3d11_filter_chain_free)(libra_d3d11_filter_chain_t* chain);
 #endif
 
@@ -286,7 +286,7 @@ extern "C" {
     libra_error_t libra_preset_get_runtime_param_names(libra_shader_preset_t* preset,
         const char** value);
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
     /// Initialize the OpenGL Context for librashader.
     ///
     /// ## Safety
@@ -297,7 +297,7 @@ extern "C" {
     libra_error_t libra_gl_init_context(gl_loader_t loader);
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
     /// Create the filter chain given the shader preset.
     ///
     /// The shader preset is immediately invalidated and must be recreated after
@@ -312,7 +312,7 @@ extern "C" {
         libra_gl_filter_chain_t* out);
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
     /// Draw a frame with the given parameters for the given filter chain.
     ///
     /// ## Safety
@@ -331,7 +331,7 @@ extern "C" {
         const struct FrameOptions* opt);
 #endif
 
-#if defined(RUNTIME_OPENGL)
+#if defined(LIBRA_RUNTIME_OPENGL)
     /// Free a GL filter chain.
     ///
     /// The resulting value in `chain` then becomes null.
@@ -340,7 +340,7 @@ extern "C" {
     libra_error_t libra_gl_filter_chain_free(libra_gl_filter_chain_t* chain);
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
     /// Create the filter chain given the shader preset.
     ///
     /// The shader preset is immediately invalidated and must be recreated after
@@ -356,7 +356,7 @@ extern "C" {
         libra_d3d11_filter_chain_t* out);
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
     /// Draw a frame with the given parameters for the given filter chain.
     ///
     /// ## Safety
@@ -375,7 +375,7 @@ extern "C" {
         const struct FrameOptions* opt);
 #endif
 
-#if defined(RUNTIME_D3D11)
+#if defined(LIBRA_RUNTIME_D3D11)
     /// Free a D3D11 filter chain.
     ///
     /// The resulting value in `chain` then becomes null.

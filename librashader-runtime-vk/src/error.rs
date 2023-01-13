@@ -22,6 +22,8 @@ pub enum FilterChainError {
     LutLoadError(#[from] ImageError),
     #[error("vulkan error")]
     VulkanResult(#[from] ash::vk::Result),
+    #[error("could not find a valid vulkan memory type")]
+    VulkanMemoryError(u32),
 }
 
 /// Result type for Vulkan filter chains.
