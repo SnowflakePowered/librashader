@@ -11,8 +11,8 @@ use std::slice;
 
 pub use librashader::runtime::gl::options::FilterChainOptions;
 pub use librashader::runtime::gl::options::FrameOptions;
-use librashader::runtime::Viewport;
-use librashader::Size;
+use librashader::runtime::{Size, Viewport};
+
 
 /// A GL function loader that librashader needs to be initialized with.
 pub type gl_loader_t = unsafe extern "C" fn(*const c_char) -> *const c_void;

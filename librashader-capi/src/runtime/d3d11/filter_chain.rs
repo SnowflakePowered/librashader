@@ -14,8 +14,7 @@ use windows::Win32::Graphics::Direct3D11::{
 pub use librashader::runtime::d3d11::options::FilterChainOptions;
 pub use librashader::runtime::d3d11::options::FrameOptions;
 
-use librashader::runtime::Viewport;
-use librashader::Size;
+use librashader::runtime::{Size, Viewport};
 
 /// OpenGL parameters for the source image.
 #[repr(C)]
