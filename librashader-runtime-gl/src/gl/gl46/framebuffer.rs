@@ -113,7 +113,7 @@ impl FramebufferInterface for Gl46Framebuffer {
         unsafe {
             // gl::NamedFramebufferDrawBuffer(fb.handle, gl::COLOR_ATTACHMENT1);
             gl::NamedFramebufferReadBuffer(image.handle, gl::COLOR_ATTACHMENT0);
-            gl::NamedFramebufferDrawBuffer(fb.handle, gl::COLOR_ATTACHMENT1);
+            gl::NamedFramebufferDrawBuffer(fb.handle, gl::COLOR_ATTACHMENT0);
 
             gl::BlitNamedFramebuffer(
                 image.handle,
