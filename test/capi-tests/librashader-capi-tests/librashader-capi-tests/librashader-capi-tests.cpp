@@ -4,13 +4,14 @@
 #include <iostream>
 #include <filesystem>
 
-#include "librashader.h"
+#define LIBRA_RUNTIME_OPENGL
+#include "../../../../librashader-capi/librashader.h"
 int main()
 {
     std::cout << "Hello World!\n";
     std::cout << std::filesystem::current_path() << std::endl;
     libra_shader_preset_t preset;
-    auto error = libra_load_preset("../../../slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp", &preset);
+    auto error = libra_preset_create("../../../slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp", &preset);
     if (error != NULL) {
         std::cout << "error happened\n";
     }

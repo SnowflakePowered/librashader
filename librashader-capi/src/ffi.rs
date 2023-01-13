@@ -65,10 +65,57 @@ macro_rules! extern_fn {
 
         #[no_mangle]
         $(#[$($attrss)*])*
-        fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
             $crate::ffi::ffi_body!($body)
         }
-    }
+    };
+
+    ($(#[$($attrss:tt)*])* raw fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) $body:block) => {
+        paste::paste! {
+            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
+        }
+
+        #[no_mangle]
+        $(#[$($attrss)*])*
+        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+            $body
+        }
+    };
+
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) |$($ref_capture:ident),*|; mut |$($mut_capture:ident),*| $body:block) => {
+        paste::paste! {
+            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
+        }
+
+        #[no_mangle]
+        $(#[$($attrss)*])*
+        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+            $crate::ffi::ffi_body!(|$($ref_capture),*|; mut |$($mut_capture),*| $body)
+        }
+    };
+
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) mut |$($mut_capture:ident),*| $body:block) => {
+        paste::paste! {
+            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
+        }
+
+        #[no_mangle]
+        $(#[$($attrss)*])*
+        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+            $crate::ffi::ffi_body!(mut |$($mut_capture),*| $body)
+        }
+    };
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) |$($ref_capture:ident),*| $body:block) => {
+        paste::paste! {
+            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
+        }
+
+        #[no_mangle]
+        $(#[$($attrss)*])*
+        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+            $crate::ffi::ffi_body!(|$($ref_capture),*| $body)
+        }
+    };
 }
 
 pub(crate) use extern_fn;

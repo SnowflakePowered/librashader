@@ -38,11 +38,12 @@
 #![feature(vec_into_raw_parts)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use std::os::raw::c_char;
-
 pub mod ctypes;
 pub mod error;
 mod ffi;
 pub mod presets;
+
+#[cfg(feature = "reflect")]
 pub mod reflect;
+
 pub mod runtime;

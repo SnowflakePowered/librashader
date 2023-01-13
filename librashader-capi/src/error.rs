@@ -1,6 +1,6 @@
 //! The librashader error C API. (`libra_error_*`).
 use std::any::Any;
-use std::ffi::{c_char, CStr, CString};
+use std::ffi::{c_char, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use thiserror::Error;
@@ -42,7 +42,9 @@ pub enum LIBRA_ERRNO {
     RUNTIME_ERROR = 5,
 }
 
-pub type PFN_lbr_error_errno = extern "C" fn(error: libra_error_t) -> LIBRA_ERRNO;
+// Nothing here can use extern_fn because they are lower level than libra_error_t.
+
+pub type PFN_libra_error_errno = extern "C" fn(error: libra_error_t) -> LIBRA_ERRNO;
 #[no_mangle]
 /// Get the error code corresponding to this error object.
 ///
@@ -56,7 +58,7 @@ pub extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO {
     unsafe { error.as_ref().get_code() }
 }
 
-pub type PFN_lbr_error_print = extern "C" fn(error: libra_error_t) -> i32;
+pub type PFN_libra_error_print = extern "C" fn(error: libra_error_t) -> i32;
 #[no_mangle]
 /// Print the error message.
 ///
@@ -74,7 +76,7 @@ pub extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
     return 0;
 }
 
-pub type PFN_lbr_error_free = extern "C" fn(error: *mut libra_error_t) -> i32;
+pub type PFN_libra_error_free = extern "C" fn(error: *mut libra_error_t) -> i32;
 #[no_mangle]
 /// Frees any internal state kept by the error.
 ///
@@ -87,7 +89,7 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
         return 1;
     }
 
-    let mut error = unsafe { &mut *error };
+    let error = unsafe { &mut *error };
     let error = error.take();
     let Some(error) = error else {
         return 1;
@@ -97,7 +99,7 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
     return 0;
 }
 
-pub type PFN_lbr_error_write =
+pub type PFN_libra_error_write =
     extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
 #[no_mangle]
 /// Writes the error message into `out`
@@ -128,7 +130,7 @@ pub extern "C" fn libra_error_write(
     return 0;
 }
 
-pub type PFN_lbr_error_free_string = extern "C" fn(out: *mut *mut c_char) -> i32;
+pub type PFN_libra_error_free_string = extern "C" fn(out: *mut *mut c_char) -> i32;
 #[no_mangle]
 /// Frees an error string previously allocated by `libra_error_write`.
 ///
@@ -194,13 +196,14 @@ macro_rules! assert_non_null {
         }
     };
 }
-macro_rules! assert_some {
-    ($value:ident) => {
-        if $value.is_none() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
-        }
-    };
-}
+
+// macro_rules! assert_some {
+//     ($value:ident) => {
+//         if $value.is_none() {
+//             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
+//         }
+//     };
+// }
 
 macro_rules! assert_some_ptr {
     ($value:ident) => {
@@ -221,5 +224,5 @@ macro_rules! assert_some_ptr {
 
 use crate::ctypes::libra_error_t;
 pub(crate) use assert_non_null;
-pub(crate) use assert_some;
+// pub(crate) use assert_some;
 pub(crate) use assert_some_ptr;

@@ -1,8 +1,8 @@
 use crate::ctypes::{
-    libra_d3d11_filter_chain_t, libra_error_t, libra_shader_preset_t, libra_viewport_t,
+    libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
-use crate::ffi::ffi_body;
+use crate::ffi::extern_fn;
 use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
@@ -41,29 +41,22 @@ impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
     }
 }
 
-pub type PFN_lbr_d3d11_filter_chain_create = unsafe extern "C" fn(
-    preset: *mut libra_shader_preset_t,
-    options: *const FilterChainOptions,
-    device: *const ID3D11Device,
-    out: *mut MaybeUninit<libra_d3d11_filter_chain_t>,
-) -> libra_error_t;
-/// Create the filter chain given the shader preset.
-///
-/// The shader preset is immediately invalidated and must be recreated after
-/// the filter chain is created.
-///
-/// ## Safety:
-/// - `preset` must be either null, or valid and aligned.
-/// - `options` must be either null, or valid and aligned.
-/// - `out` must be aligned, but may be null, invalid, or uninitialized.
-#[no_mangle]
-pub unsafe extern "C" fn libra_d3d11_filter_chain_create(
-    preset: *mut libra_shader_preset_t,
-    options: *const FilterChainOptions,
-    device: *const ID3D11Device,
-    out: *mut MaybeUninit<libra_d3d11_filter_chain_t>,
-) -> libra_error_t {
-    ffi_body!({
+extern_fn! {
+    /// Create the filter chain given the shader preset.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    fn libra_d3d11_filter_chain_create(
+        preset: *mut libra_shader_preset_t,
+        options: *const FilterChainOptions,
+        device: *const ID3D11Device,
+        out: *mut MaybeUninit<libra_d3d11_filter_chain_t>
+    ) {
         assert_non_null!(preset);
         assert_non_null!(device);
         let preset = unsafe {
@@ -89,39 +82,28 @@ pub unsafe extern "C" fn libra_d3d11_filter_chain_create(
                 chain,
             )))))
         }
-    })
+    }
 }
 
-pub type PFN_lbr_d3d11_filter_chain_frame = unsafe extern "C" fn(
-    chain: *mut libra_d3d11_filter_chain_t,
-    frame_count: usize,
-    image: libra_source_image_d3d11_t,
-    viewport: libra_viewport_t,
-    out: *const ID3D11RenderTargetView,
-    mvp: *const f32,
-    opt: *const FrameOptions,
-) -> libra_error_t;
-
-/// Draw a frame with the given parameters for the given filter chain.
-///
-/// ## Safety
-/// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
-///    function will return an error.
-/// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
-///    values for the model view projection matrix.
-/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
-///    struct.
-#[no_mangle]
-pub unsafe extern "C" fn libra_d3d11_filter_chain_frame(
-    chain: *mut libra_d3d11_filter_chain_t,
-    frame_count: usize,
-    image: libra_source_image_d3d11_t,
-    viewport: libra_viewport_t,
-    out: *const ID3D11RenderTargetView,
-    mvp: *const f32,
-    opt: *const FrameOptions,
-) -> libra_error_t {
-    ffi_body!(mut |chain| {
+extern_fn! {
+    /// Draw a frame with the given parameters for the given filter chain.
+    ///
+    /// ## Safety
+    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
+    ///    function will return an error.
+    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
+    ///    values for the model view projection matrix.
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+    ///    struct.
+    fn libra_d3d11_filter_chain_frame(
+        chain: *mut libra_d3d11_filter_chain_t,
+        frame_count: usize,
+        image: libra_source_image_d3d11_t,
+        viewport: libra_viewport_t,
+        out: *const ID3D11RenderTargetView,
+        mvp: *const f32,
+        opt: *const FrameOptions
+    ) mut |chain| {
         assert_some_ptr!(mut chain);
         assert_non_null!(out);
 
@@ -149,26 +131,21 @@ pub unsafe extern "C" fn libra_d3d11_filter_chain_frame(
 
         let image = image.try_into()?;
         chain.frame(image, &viewport, frame_count, opt.as_ref())?;
-    })
+    }
 }
 
-pub type PFN_lbr_d3d11_filter_chain_free =
-    unsafe extern "C" fn(chain: *mut libra_d3d11_filter_chain_t) -> libra_error_t;
-/// Free a D3D11 filter chain.
-///
-/// The resulting value in `chain` then becomes null.
-/// ## Safety
-/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
-#[no_mangle]
-pub unsafe extern "C" fn libra_d3d11_filter_chain_free(
-    chain: *mut libra_d3d11_filter_chain_t,
-) -> libra_error_t {
-    ffi_body!({
+extern_fn! {
+    /// Free a D3D11 filter chain.
+    ///
+    /// The resulting value in `chain` then becomes null.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+    fn libra_d3d11_filter_chain_free(chain: *mut libra_d3d11_filter_chain_t) {
         assert_non_null!(chain);
         unsafe {
             let chain_ptr = &mut *chain;
             let chain = chain_ptr.take();
             drop(Box::from_raw(chain.unwrap().as_ptr()))
         };
-    })
+    }
 }

@@ -12,7 +12,6 @@ use librashader::reflect::{
 };
 use librashader::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
-use std::error::Error;
 
 pub(crate) struct LookupTexture {
     wrap_mode: WrapMode,
