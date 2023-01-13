@@ -120,7 +120,7 @@ pub struct FilterChain {
     feedback_framebuffers: Box<[OwnedImage]>,
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
-    intermediates: Box<[FrameIntermediates]>,
+    residuals: Box<[FrameResiduals]>,
 }
 
 pub struct FilterMutable {
@@ -145,15 +145,15 @@ pub(crate) struct FilterCommon {
 /// These Vulkan objects must stay alive until the command buffer is submitted
 /// to the rendering queue, and the GPU is done with the objects.
 #[must_use]
-struct FrameIntermediates {
+struct FrameResiduals {
     device: ash::Device,
     image_views: Vec<vk::ImageView>,
     owned: Vec<OwnedImage>,
 }
 
-impl FrameIntermediates {
+impl FrameResiduals {
     pub(crate) fn new(device: &ash::Device) -> Self {
-        FrameIntermediates {
+        FrameResiduals {
             device: device.clone(),
             image_views: Vec::new(),
             owned: Vec::new(),
@@ -181,8 +181,9 @@ impl FrameIntermediates {
     }
 }
 
-impl Drop for FrameIntermediates {
+impl Drop for FrameResiduals {
     fn drop(&mut self) {
+        // Will not double free because dispose removes active items from storage.
         self.dispose()
     }
 }
@@ -243,7 +244,7 @@ impl FilterChain {
         feedback_textures.resize_with(filters.len(), || None);
 
         let mut intermediates = Vec::new();
-        intermediates.resize_with(frames_in_flight as usize, || FrameIntermediates::new(&device.device));
+        intermediates.resize_with(frames_in_flight as usize, || FrameResiduals::new(&device.device));
 
         Ok(FilterChain {
             common: FilterCommon {
@@ -268,7 +269,7 @@ impl FilterChain {
             output_framebuffers: output_framebuffers?.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers?.into_boxed_slice(),
             history_framebuffers,
-            intermediates: intermediates.into_boxed_slice(),
+            residuals: intermediates.into_boxed_slice(),
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
         })
     }
@@ -527,7 +528,7 @@ impl FilterChain {
                     &mut back,
                     OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?,
                 );
-                self.intermediates[count % self.intermediates.len()].dispose_owned(old_back);
+                self.residuals[count % self.residuals.len()].dispose_owned(old_back);
             }
 
             unsafe {
@@ -585,7 +586,7 @@ impl FilterChain {
         cmd: vk::CommandBuffer,
         options: Option<FrameOptions>,
     ) -> error::Result<()> {
-        let intermediates = &mut self.intermediates[count % self.intermediates.len()];
+        let intermediates = &mut self.residuals[count % self.residuals.len()];
         intermediates.dispose();
 
         // limit number of passes to those enabled.
