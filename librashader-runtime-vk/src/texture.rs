@@ -66,7 +66,7 @@ impl OwnedImage {
                 &mem_props,
                 mem_reqs.memory_type_bits,
                 vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            ))
+            )?)
             .build();
 
         // todo: optimize by reusing existing memory.

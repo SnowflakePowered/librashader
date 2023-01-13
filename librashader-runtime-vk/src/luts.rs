@@ -49,7 +49,7 @@ impl LutTexture {
                 &vulkan.memory_properties,
                 mem_reqs.memory_type_bits,
                 vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            );
+            )?;
             VulkanImageMemory::new(
                 &vulkan.device,
                 &vk::MemoryAllocateInfo::builder()

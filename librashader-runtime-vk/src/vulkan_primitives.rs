@@ -71,7 +71,7 @@ impl VulkanBuffer {
                     mem_props,
                     memory_reqs.memory_type_bits,
                     vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT,
-                ))
+                )?)
                 .build();
 
             let alloc = device.allocate_memory(&alloc_info, None)?;

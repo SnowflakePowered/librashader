@@ -226,8 +226,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
             // todo: split this out.
             let (program, ubo_location) = unsafe {
-                let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str());
-                let fragment = util::gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str());
+                let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str())?;
+                let fragment = util::gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str())?;
 
                 let program = gl::CreateProgram();
                 gl::AttachShader(program, vertex);
