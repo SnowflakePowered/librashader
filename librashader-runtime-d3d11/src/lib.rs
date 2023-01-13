@@ -23,13 +23,13 @@ pub use viewport::Viewport;
 
 #[cfg(test)]
 mod tests {
-    use crate::options::FilterChainOptionsD3D11;
     use super::*;
+    use crate::options::FilterChainOptionsD3D11;
 
     #[test]
     fn triangle_d3d11() {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
-            "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsD3D11 {
                 use_deferred_context: false,
                 force_no_mipmaps: false,

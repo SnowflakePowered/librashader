@@ -96,7 +96,6 @@ impl VulkanBase {
         //     vk::PhysicalDeviceFeatures2::builder().push_next(&mut physical_device_features)
         //         .build();
 
-
         let device_create_info = vk::DeviceCreateInfo::builder()
             .queue_create_infos(&[queue_info])
             .enabled_layer_names(&[debug])
@@ -166,7 +165,7 @@ impl TryFrom<&VulkanBase> for Vulkan {
             value.device.clone(),
             value.graphics_queue.clone(),
             value.mem_props,
-            value.debug.loader.clone()
+            value.debug.loader.clone(),
         ))
     }
 }

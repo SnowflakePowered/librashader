@@ -8,7 +8,6 @@ mod swapchain;
 mod syncobjects;
 pub mod vulkan_base;
 
-use std::ffi::CString;
 use crate::filter_chain::{FilterChainVulkan, Vulkan};
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
@@ -17,14 +16,15 @@ use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::swapchain::VulkanSwapchain;
 use crate::hello_triangle::syncobjects::SyncObjects;
 use crate::hello_triangle::vulkan_base::VulkanBase;
+use crate::texture::VulkanImage;
 use crate::util;
+use crate::viewport::Viewport;
 use ash::vk;
 use ash::vk::{Handle, RenderingInfo};
+use std::ffi::CString;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use crate::texture::VulkanImage;
-use crate::viewport::Viewport;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -50,8 +50,7 @@ impl VulkanWindow {
         mut filter_chain: FilterChainVulkan,
     ) {
         let mut counter = 0;
-        event_loop.run(move |event, _, control_flow| {
-            match event {
+        event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::KeyboardInput { input, .. } => match input {
@@ -76,9 +75,7 @@ impl VulkanWindow {
                 counter += 1;
             }
             _ => (),
-        }
         })
-
     }
 
     unsafe fn record_command_buffer(
@@ -179,7 +176,6 @@ impl VulkanWindow {
                 .begin_command_buffer(cmd, &vk::CommandBufferBeginInfo::default())
                 .expect("failed to begin command buffer");
 
-
             // util::vulkan_image_layout_transition_levels(
             //     &vulkan.base.device,
             //     cmd,
@@ -212,20 +208,27 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED
             // );
 
-            let intermediates = filter.frame(frame, &Viewport {
-                x: 0.0,
-                y: 0.0,
-                output: VulkanImage {
-                    size: vulkan.swapchain.extent.into(),
-                    image: swapchain_image,
-                    format: vulkan.swapchain.format.format,
-                },
-                mvp: None,
-            }, &VulkanImage {
-                size: vulkan.swapchain.extent.into(),
-                image: framebuffer_image,
-                format: vulkan.swapchain.format.format,
-            }, cmd, None)
+            let intermediates = filter
+                .frame(
+                    frame,
+                    &Viewport {
+                        x: 0.0,
+                        y: 0.0,
+                        output: VulkanImage {
+                            size: vulkan.swapchain.extent.into(),
+                            image: swapchain_image,
+                            format: vulkan.swapchain.format.format,
+                        },
+                        mvp: None,
+                    },
+                    &VulkanImage {
+                        size: vulkan.swapchain.extent.into(),
+                        image: framebuffer_image,
+                        format: vulkan.swapchain.format.format,
+                    },
+                    cmd,
+                    None,
+                )
                 .unwrap();
 
             // eprintln!("{:x}", framebuffer_image.as_raw());

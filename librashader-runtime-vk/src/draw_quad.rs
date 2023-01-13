@@ -47,12 +47,8 @@ impl DrawQuad {
 
     pub fn bind_vbo(&self, cmd: vk::CommandBuffer, vbo: VboType) {
         unsafe {
-            self.device.cmd_bind_vertex_buffers(
-                cmd,
-                0,
-                &[self.buffer.handle],
-                &[0],
-            )
+            self.device
+                .cmd_bind_vertex_buffers(cmd, 0, &[self.buffer.handle], &[0])
         }
     }
 }

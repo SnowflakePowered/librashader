@@ -261,7 +261,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 let mut status = 0;
                 gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
                 if status != 1 {
-                    return Err(FilterChainError::GLLinkError)
+                    return Err(FilterChainError::GLLinkError);
                 }
 
                 gl::UseProgram(program);
@@ -496,7 +496,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                pass.config.mipmap_input
+                pass.config.mipmap_input,
             )?;
 
             self.feedback_framebuffers[index].scale::<T::FramebufferInterface>(
@@ -505,7 +505,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                pass.config.mipmap_input
+                pass.config.mipmap_input,
             )?;
         }
 

@@ -34,11 +34,11 @@ impl ShaderPassConfig {
     /// shader source, returns such format.
     pub fn get_format_override(&self) -> Option<ImageFormat> {
         if self.srgb_framebuffer {
-            return Some(ImageFormat::R8G8B8A8Srgb)
+            return Some(ImageFormat::R8G8B8A8Srgb);
         } else if self.float_framebuffer {
-            return Some(ImageFormat::R16G16B16A16Sfloat)
+            return Some(ImageFormat::R16G16B16A16Sfloat);
         }
-        return None
+        return None;
     }
 }
 

@@ -1,12 +1,19 @@
-use std::collections::VecDeque;
-use crate::{error, util};
+use crate::draw_quad::DrawQuad;
 use crate::filter_pass::FilterPass;
+use crate::framebuffer::OutputImage;
 use crate::luts::LutTexture;
+use crate::render_target::{RenderTarget, DEFAULT_MVP};
 use crate::samplers::SamplerSet;
-use crate::texture::{OwnedImage, InputImage, VulkanImage, OwnedImageLayout};
+use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
 use crate::ubo_ring::VkUboRing;
+use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
-use ash::vk::{CommandPoolCreateFlags, DebugUtilsObjectNameInfoEXT, Handle, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
+use crate::{error, util};
+use ash::extensions::ext::DebugUtils;
+use ash::vk::{
+    CommandPoolCreateFlags, DebugUtilsObjectNameInfoEXT, Handle, PFN_vkGetInstanceProcAddr, Queue,
+    StaticFn,
+};
 use ash::{vk, Device, Entry};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_preprocess::ShaderSource;
@@ -21,14 +28,10 @@ use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
+use std::collections::VecDeque;
 use std::error::Error;
 use std::ffi::CStr;
 use std::path::Path;
-use ash::extensions::ext::DebugUtils;
-use crate::draw_quad::DrawQuad;
-use crate::framebuffer::OutputImage;
-use crate::render_target::{DEFAULT_MVP, RenderTarget};
-use crate::viewport::Viewport;
 
 pub struct Vulkan {
     // physical_device: vk::PhysicalDevice,
@@ -38,7 +41,7 @@ pub struct Vulkan {
     command_pool: vk::CommandPool,
     pipeline_cache: vk::PipelineCache,
     pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
-    debug: DebugUtils
+    debug: DebugUtils,
 }
 
 type ShaderPassMeta = (
@@ -85,9 +88,12 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 )?
             };
 
-            let debug =             DebugUtils::new(&Entry::from_static_fn(StaticFn {
-                get_instance_proc_addr: vulkan.get_instance_proc_addr,
-            }), &instance);
+            let debug = DebugUtils::new(
+                &Entry::from_static_fn(StaticFn {
+                    get_instance_proc_addr: vulkan.get_instance_proc_addr,
+                }),
+                &instance,
+            );
 
             Ok(Vulkan {
                 device,
@@ -96,16 +102,30 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 command_pool,
                 pipeline_cache,
                 memory_properties: vulkan.memory_properties.clone(),
-                debug
+                debug,
             })
         }
     }
 }
 
-impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties, DebugUtils)> for Vulkan {
+impl
+    TryFrom<(
+        ash::Device,
+        vk::Queue,
+        vk::PhysicalDeviceMemoryProperties,
+        DebugUtils,
+    )> for Vulkan
+{
     type Error = Box<dyn Error>;
 
-    fn try_from(value: (Device, Queue, vk::PhysicalDeviceMemoryProperties, DebugUtils)) -> error::Result<Self> {
+    fn try_from(
+        value: (
+            Device,
+            Queue,
+            vk::PhysicalDeviceMemoryProperties,
+            DebugUtils,
+        ),
+    ) -> error::Result<Self> {
         unsafe {
             let device = value.0;
 
@@ -128,7 +148,7 @@ impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties, DebugU
                 command_pool,
                 pipeline_cache,
                 memory_properties: value.2,
-                debug: value.3
+                debug: value.3,
             })
         }
     }
@@ -164,7 +184,7 @@ pub(crate) struct FilterCommon {
 pub struct FilterChainFrameIntermediates {
     device: ash::Device,
     image_views: Vec<vk::ImageView>,
-    owned: Vec<OwnedImage>
+    owned: Vec<OwnedImage>,
 }
 
 impl FilterChainFrameIntermediates {
@@ -235,29 +255,21 @@ impl FilterChainVulkan {
 
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
-            OwnedImage::new(
-                &device,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                1
-            )
+            OwnedImage::new(&device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
         });
 
         let mut feedback_framebuffers = Vec::new();
         feedback_framebuffers.resize_with(filters.len(), || {
-            OwnedImage::new(
-                &device,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                1
-            )
+            OwnedImage::new(&device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
         });
 
-        let output_framebuffers: error::Result<Vec<OwnedImage>> = output_framebuffers.into_iter().collect();
+        let output_framebuffers: error::Result<Vec<OwnedImage>> =
+            output_framebuffers.into_iter().collect();
         let mut output_textures = Vec::new();
         output_textures.resize_with(filters.len(), || None);
 
-        let feedback_framebuffers: error::Result<Vec<OwnedImage>> = feedback_framebuffers.into_iter().collect();
+        let feedback_framebuffers: error::Result<Vec<OwnedImage>> =
+            feedback_framebuffers.into_iter().collect();
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), || None);
 
@@ -499,12 +511,9 @@ impl FilterChainVulkan {
 
         eprintln!("[history] using frame history with {required_images} images");
         let mut images = Vec::with_capacity(required_images);
-        images.resize_with(required_images, ||  OwnedImage::new(
-            &vulkan,
-            Size::new(1, 1),
-            ImageFormat::R8G8B8A8Unorm,
-            1
-        ));
+        images.resize_with(required_images, || {
+            OwnedImage::new(&vulkan, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
+        });
 
         let images: error::Result<Vec<OwnedImage>> = images.into_iter().collect();
         let images = VecDeque::from(images?);
@@ -516,19 +525,29 @@ impl FilterChainVulkan {
     }
 
     // image must be in SHADER_READ_OPTIMAL
-    pub fn push_history(&mut self, input: &VulkanImage, intermediates: &mut FilterChainFrameIntermediates,
-                        cmd: vk::CommandBuffer) -> error::Result<()> {
+    pub fn push_history(
+        &mut self,
+        input: &VulkanImage,
+        intermediates: &mut FilterChainFrameIntermediates,
+        cmd: vk::CommandBuffer,
+    ) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
-            if back.image.size != input.size || (input.format != vk::Format::UNDEFINED && input.format != back.image.format) {
+            if back.image.size != input.size
+                || (input.format != vk::Format::UNDEFINED && input.format != back.image.format)
+            {
                 eprintln!("[history] resizing");
                 // old back will get dropped.. do we need to defer?
-                let old_back =
-                    std::mem::replace(&mut back, OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?);
+                let old_back = std::mem::replace(
+                    &mut back,
+                    OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?,
+                );
                 intermediates.dispose_owned(old_back);
             }
 
             unsafe {
-                util::vulkan_image_layout_transition_levels(&self.vulkan.device, cmd,
+                util::vulkan_image_layout_transition_levels(
+                    &self.vulkan.device,
+                    cmd,
                     input.image,
                     1,
                     vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
@@ -538,24 +557,25 @@ impl FilterChainVulkan {
                     vk::PipelineStageFlags::FRAGMENT_SHADER,
                     vk::PipelineStageFlags::TRANSFER,
                     vk::QUEUE_FAMILY_IGNORED,
-                    vk::QUEUE_FAMILY_IGNORED
+                    vk::QUEUE_FAMILY_IGNORED,
                 );
 
                 back.copy_from(cmd, &input, vk::ImageLayout::TRANSFER_SRC_OPTIMAL);
 
-                util::vulkan_image_layout_transition_levels(&self.vulkan.device, cmd,
-                                                            input.image,
-                                                            1,
-                                                            vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                                                            vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                                                            vk::AccessFlags::TRANSFER_READ,
-                                                            vk::AccessFlags::SHADER_READ,
-                                                            vk::PipelineStageFlags::TRANSFER,
-                                                            vk::PipelineStageFlags::FRAGMENT_SHADER,
-                                                            vk::QUEUE_FAMILY_IGNORED,
-                                                            vk::QUEUE_FAMILY_IGNORED
+                util::vulkan_image_layout_transition_levels(
+                    &self.vulkan.device,
+                    cmd,
+                    input.image,
+                    1,
+                    vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                    vk::AccessFlags::TRANSFER_READ,
+                    vk::AccessFlags::SHADER_READ,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::PipelineStageFlags::FRAGMENT_SHADER,
+                    vk::QUEUE_FAMILY_IGNORED,
+                    vk::QUEUE_FAMILY_IGNORED,
                 );
-
             }
 
             self.history_framebuffers.push_front(back)
@@ -592,17 +612,21 @@ impl FilterChainVulkan {
                 .image(input.image)
                 .format(input.format)
                 .view_type(vk::ImageViewType::TYPE_2D)
-                .subresource_range(vk::ImageSubresourceRange::builder()
-                    .aspect_mask(vk::ImageAspectFlags::COLOR)
-                    .level_count(1)
-                    .layer_count(1)
-                    .build())
-                .components(vk::ComponentMapping::builder()
-                                .r(vk::ComponentSwizzle::R)
-                                .g(vk::ComponentSwizzle::G)
-                                .b(vk::ComponentSwizzle::B)
-                                .a(vk::ComponentSwizzle::A)
-                                .build())
+                .subresource_range(
+                    vk::ImageSubresourceRange::builder()
+                        .aspect_mask(vk::ImageAspectFlags::COLOR)
+                        .level_count(1)
+                        .layer_count(1)
+                        .build(),
+                )
+                .components(
+                    vk::ComponentMapping::builder()
+                        .r(vk::ComponentSwizzle::R)
+                        .g(vk::ComponentSwizzle::G)
+                        .b(vk::ComponentSwizzle::B)
+                        .a(vk::ComponentSwizzle::A)
+                        .build(),
+                )
                 .build();
 
             self.vulkan.device.create_image_view(&create_info, None)?
@@ -632,7 +656,10 @@ impl FilterChainVulkan {
         let mut source = &original;
 
         // swap output and feedback **before** recording command buffers
-        std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);
+        std::mem::swap(
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+        );
 
         // rescale render buffers to ensure all bindings are valid.
         for (index, pass) in passes.iter_mut().enumerate() {
@@ -655,15 +682,17 @@ impl FilterChainVulkan {
                 source,
                 // todo: need to check **next**
                 pass.config.mipmap_input,
-                None
+                None,
             )?;
 
-            // self.feedback_framebuffers[index].image.image
             // refresh inputs
-            self.common.feedback_inputs[index] =
-                Some(self.feedback_framebuffers[index].as_input(pass.config.filter, pass.config.wrap_mode));
-            self.common.output_inputs[index] =
-                Some(self.output_framebuffers[index].as_input(pass.config.filter, pass.config.wrap_mode));
+            self.common.feedback_inputs[index] = Some(
+                self.feedback_framebuffers[index]
+                    .as_input(pass.config.filter, pass.config.wrap_mode),
+            );
+            self.common.output_inputs[index] = Some(
+                self.output_framebuffers[index].as_input(pass.config.filter, pass.config.wrap_mode),
+            );
         }
 
         let passes_len = passes.len();
@@ -679,17 +708,27 @@ impl FilterChainVulkan {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
-                output: OutputImage::new(&self.vulkan, /*&pass.graphics_pipeline.render_pass,*/
-                                               target.image.clone())?,
+                output: OutputImage::new(
+                    &self.vulkan, /*&pass.graphics_pipeline.render_pass,*/
+                    target.image.clone(),
+                )?,
             };
 
-            pass.draw(cmd, index, &self.common, if pass.config.frame_count_mod > 0 {
-                count % pass.config.frame_count_mod as usize
-            } else {
-                count
-            } as u32
-                      , 0,
-                      viewport, &original, &source, &out)?;
+            pass.draw(
+                cmd,
+                index,
+                &self.common,
+                if pass.config.frame_count_mod > 0 {
+                    count % pass.config.frame_count_mod as usize
+                } else {
+                    count
+                } as u32,
+                0,
+                viewport,
+                &original,
+                &source,
+                &out,
+            )?;
 
             if target.max_miplevels > 1 {
                 target.generate_mipmaps_and_end_pass(cmd);
@@ -711,14 +750,20 @@ impl FilterChainVulkan {
                 x: viewport.x,
                 y: viewport.y,
                 mvp: viewport.mvp.unwrap_or(DEFAULT_MVP),
-                output: OutputImage::new(&self.vulkan,
-                                         viewport.output.clone())?,
+                output: OutputImage::new(&self.vulkan, viewport.output.clone())?,
             };
 
-            pass.draw(cmd, passes_len - 1,
-                      &self.common,
-                      count as u32,
-                      0, viewport, &original, source, &out)?;
+            pass.draw(
+                cmd,
+                passes_len - 1,
+                &self.common,
+                count as u32,
+                0,
+                viewport,
+                &original,
+                source,
+                &out,
+            )?;
 
             intermediates.dispose_outputs(out.output);
         }

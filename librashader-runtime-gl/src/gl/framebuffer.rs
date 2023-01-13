@@ -44,7 +44,7 @@ impl Framebuffer {
         viewport: &Viewport,
         original: &Texture,
         source: &Texture,
-        mipmap: bool
+        mipmap: bool,
     ) -> Result<Size<u32>> {
         T::scale(self, scaling, format, viewport, original, source, mipmap)
     }

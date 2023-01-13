@@ -1,5 +1,5 @@
-const WIDTH: i32 = 1920;
-const HEIGHT: i32 = 1080;
+const WIDTH: i32 = 800;
+const HEIGHT: i32 = 600;
 const TITLE: &str = "librashader DirectX 11";
 
 use windows::{

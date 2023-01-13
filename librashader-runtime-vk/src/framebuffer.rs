@@ -1,6 +1,6 @@
-use crate::{error, util};
 use crate::filter_chain::Vulkan;
-use crate::texture::{VulkanImage};
+use crate::texture::VulkanImage;
+use crate::{error, util};
 use ash::vk;
 use librashader_common::Size;
 
@@ -13,8 +13,7 @@ pub(crate) struct OutputImage {
 }
 
 impl OutputImage {
-    pub fn new(vulkan: &Vulkan,
-               image: VulkanImage) -> error::Result<OutputImage> {
+    pub fn new(vulkan: &Vulkan, image: VulkanImage) -> error::Result<OutputImage> {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
             .base_array_layer(0)
@@ -38,8 +37,7 @@ impl OutputImage {
             .components(swizzle_components)
             .build();
 
-        let image_view = unsafe { vulkan.device.create_image_view(
-            &view_info, None)? };
+        let image_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
 
         Ok(OutputImage {
             device: vulkan.device.clone(),
@@ -51,32 +49,40 @@ impl OutputImage {
 
     pub fn begin_pass(&self, cmd: vk::CommandBuffer) {
         unsafe {
-            util::vulkan_image_layout_transition_levels(&self.device, cmd, self.image,
-                                                        1,
-                                                        vk::ImageLayout::UNDEFINED,
-                                                        vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                                                        vk::AccessFlags::empty(),
-                                                        vk::AccessFlags::COLOR_ATTACHMENT_READ | vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-            vk::PipelineStageFlags::ALL_GRAPHICS,
-            vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
-            vk::QUEUE_FAMILY_IGNORED,
-            vk::QUEUE_FAMILY_IGNORED)
+            util::vulkan_image_layout_transition_levels(
+                &self.device,
+                cmd,
+                self.image,
+                1,
+                vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                vk::AccessFlags::empty(),
+                vk::AccessFlags::COLOR_ATTACHMENT_READ | vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                vk::PipelineStageFlags::ALL_GRAPHICS,
+                vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
+            )
         }
     }
 
     pub fn end_pass(&self, cmd: vk::CommandBuffer) {
         // todo: generate mips
         unsafe {
-            util::vulkan_image_layout_transition_levels(&self.device, cmd, self.image,
-                                                        vk::REMAINING_MIP_LEVELS,
-                                                        vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                                                        vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                                                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-                                                        vk::AccessFlags::SHADER_READ,
-                                                        vk::PipelineStageFlags::ALL_GRAPHICS,
-                                                        vk::PipelineStageFlags::FRAGMENT_SHADER,
-                                                        vk::QUEUE_FAMILY_IGNORED,
-                                                        vk::QUEUE_FAMILY_IGNORED)
+            util::vulkan_image_layout_transition_levels(
+                &self.device,
+                cmd,
+                self.image,
+                vk::REMAINING_MIP_LEVELS,
+                vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                vk::AccessFlags::SHADER_READ,
+                vk::PipelineStageFlags::ALL_GRAPHICS,
+                vk::PipelineStageFlags::FRAGMENT_SHADER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
+            )
         }
     }
 }

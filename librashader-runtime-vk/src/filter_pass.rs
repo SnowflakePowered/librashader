@@ -1,21 +1,23 @@
-use crate::{error, util};
+use crate::draw_quad::VboType;
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
 use crate::samplers::{SamplerSet, VulkanSampler};
 use crate::texture::InputImage;
 use crate::ubo_ring::VkUboRing;
+use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
+use crate::{error, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics};
+use librashader_reflect::reflect::semantics::{
+    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
-use crate::draw_quad::VboType;
-use crate::viewport::Viewport;
 
 pub struct FilterPass {
     pub device: ash::Device,
@@ -114,21 +116,28 @@ impl FilterPass {
         let rendering_info = vk::RenderingInfo::builder()
             .layer_count(1)
             .render_area(vk::Rect2D {
-                offset: vk::Offset2D {
-                    x: 0,
-                    y: 0,
-                },
+                offset: vk::Offset2D { x: 0, y: 0 },
                 extent: output.output.size.into(),
             })
             .color_attachments(&attachments);
 
         unsafe {
             parent.device.cmd_begin_rendering(cmd, &rendering_info);
-            parent.device.cmd_bind_pipeline(cmd, vk::PipelineBindPoint::GRAPHICS, self.graphics_pipeline.pipeline);
+            parent.device.cmd_bind_pipeline(
+                cmd,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.graphics_pipeline.pipeline,
+            );
 
             // todo: allow frames in flight.
-            parent.device.cmd_bind_descriptor_sets(cmd, vk::PipelineBindPoint::GRAPHICS, self.graphics_pipeline.layout.layout, 0,
-                                                   &[self.graphics_pipeline.layout.descriptor_sets[0]], &[]);
+            parent.device.cmd_bind_descriptor_sets(
+                cmd,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.graphics_pipeline.layout.layout,
+                0,
+                &[self.graphics_pipeline.layout.descriptor_sets[0]],
+                &[],
+            );
 
             if let Some(push) = &self.reflection.push_constant {
                 let mut stage_mask = vk::ShaderStageFlags::empty();
@@ -139,21 +148,32 @@ impl FilterPass {
                     stage_mask |= vk::ShaderStageFlags::VERTEX;
                 }
 
-                parent.device.cmd_push_constants(cmd, self.graphics_pipeline.layout.layout, stage_mask, 0, self.uniform_storage.push_slice());
+                parent.device.cmd_push_constants(
+                    cmd,
+                    self.graphics_pipeline.layout.layout,
+                    stage_mask,
+                    0,
+                    self.uniform_storage.push_slice(),
+                );
             }
 
             parent.draw_quad.bind_vbo(cmd, VboType::Final);
 
-            parent.device.cmd_set_scissor(cmd, 0, &[
-                vk::Rect2D {
+            parent.device.cmd_set_scissor(
+                cmd,
+                0,
+                &[vk::Rect2D {
                     offset: vk::Offset2D {
                         x: output.x as i32,
                         y: output.y as i32,
                     },
-                    extent: output.output.size.into()
-                }]);
+                    extent: output.output.size.into(),
+                }],
+            );
 
-            parent.device.cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
+            parent
+                .device
+                .cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
             parent.device.cmd_draw(cmd, 4, 1, 0, 0);
             parent.device.cmd_end_rendering(cmd);
         }

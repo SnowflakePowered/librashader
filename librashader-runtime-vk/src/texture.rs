@@ -1,7 +1,7 @@
-use crate::{error, util};
 use crate::filter_chain::Vulkan;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
+use crate::{error, util};
 use ash::vk;
 
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
@@ -23,7 +23,7 @@ pub struct OwnedImageLayout {
     pub(crate) dst_access: vk::AccessFlags,
     pub(crate) src_stage: vk::PipelineStageFlags,
     pub(crate) dst_stage: vk::PipelineStageFlags,
-    pub(crate) cmd: vk::CommandBuffer
+    pub(crate) cmd: vk::CommandBuffer,
 }
 
 impl OwnedImage {
@@ -109,7 +109,7 @@ impl OwnedImage {
             },
             memory,
             max_miplevels,
-            levels: std::cmp::min(max_miplevels, size.calculate_miplevels())
+            levels: std::cmp::min(max_miplevels, size.calculate_miplevels()),
         })
     }
 
@@ -119,7 +119,13 @@ impl OwnedImage {
         format: ImageFormat,
         max_miplevels: u32,
     ) -> error::Result<OwnedImage> {
-        Self::new_internal(vulkan.device.clone(), vulkan.memory_properties, size, format, max_miplevels)
+        Self::new_internal(
+            vulkan.device.clone(),
+            vulkan.memory_properties,
+            size,
+            format,
+            max_miplevels,
+        )
     }
 
     pub(crate) fn scale(
@@ -130,35 +136,46 @@ impl OwnedImage {
         _original: &InputImage,
         source: &InputImage,
         mipmap: bool,
-        layout: Option<OwnedImageLayout>
+        layout: Option<OwnedImageLayout>,
     ) -> error::Result<Size<u32>> {
         let size = source.image.size.scale_viewport(scaling, *viewport_size);
-        if self.image.size != size || (mipmap && self.max_miplevels == 1) || (!mipmap && self.max_miplevels != 1) {
-            let max_levels = if mipmap {
-                u32::MAX
-            } else {
-                1
-            };
+        if self.image.size != size
+            || (mipmap && self.max_miplevels == 1)
+            || (!mipmap && self.max_miplevels != 1)
+        {
+            let max_levels = if mipmap { u32::MAX } else { 1 };
 
-            let mut new = OwnedImage::new_internal(self.device.clone(), self.mem_props, size, if format == ImageFormat::Unknown {
-                ImageFormat::R8G8B8A8Unorm
-            } else {
-                format
-            }, max_levels)?;
+            let mut new = OwnedImage::new_internal(
+                self.device.clone(),
+                self.mem_props,
+                size,
+                if format == ImageFormat::Unknown {
+                    ImageFormat::R8G8B8A8Unorm
+                } else {
+                    format
+                },
+                max_levels,
+            )?;
 
             let old = std::mem::replace(self, new);
             drop(old);
 
             if let Some(layout) = layout {
                 unsafe {
-                    util::vulkan_image_layout_transition_levels(&self.device, layout.cmd,
-                                                                self.image.image,
-                                                                self.levels,
-                                                                vk::ImageLayout::UNDEFINED,
-                                                                layout.dst_layout, vk::AccessFlags::empty(),
-                                                                layout.dst_access, layout.src_stage, layout.dst_stage, vk::QUEUE_FAMILY_IGNORED,
-                                                                vk::QUEUE_FAMILY_IGNORED)
-
+                    util::vulkan_image_layout_transition_levels(
+                        &self.device,
+                        layout.cmd,
+                        self.image.image,
+                        self.levels,
+                        vk::ImageLayout::UNDEFINED,
+                        layout.dst_layout,
+                        vk::AccessFlags::empty(),
+                        layout.dst_access,
+                        layout.src_stage,
+                        layout.dst_stage,
+                        vk::QUEUE_FAMILY_IGNORED,
+                        vk::QUEUE_FAMILY_IGNORED,
+                    )
                 }
             }
         }
@@ -189,10 +206,9 @@ impl OwnedImage {
                 base_mip_level: 0,
                 level_count: 1,
                 base_array_layer: 0,
-                layer_count: vk::REMAINING_ARRAY_LAYERS
+                layer_count: vk::REMAINING_ARRAY_LAYERS,
             })
             .build();
-
 
         let mipchain_barrier = vk::ImageMemoryBarrier::builder()
             .src_access_mask(vk::AccessFlags::empty())
@@ -207,24 +223,24 @@ impl OwnedImage {
                 base_mip_level: 1,
                 base_array_layer: 0,
                 level_count: vk::REMAINING_MIP_LEVELS,
-                layer_count: vk::REMAINING_ARRAY_LAYERS
+                layer_count: vk::REMAINING_ARRAY_LAYERS,
             })
             .build();
 
         unsafe {
-            self.device.cmd_pipeline_barrier(cmd,
-                                             vk::PipelineStageFlags::ALL_GRAPHICS,
-                                             vk::PipelineStageFlags::TRANSFER,
-                                             vk::DependencyFlags::empty(),
-                                             &[],
-                                             &[],
-                                             &[input_barrier, mipchain_barrier]
+            self.device.cmd_pipeline_barrier(
+                cmd,
+                vk::PipelineStageFlags::ALL_GRAPHICS,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::DependencyFlags::empty(),
+                &[],
+                &[],
+                &[input_barrier, mipchain_barrier],
             );
 
             for level in 1..self.levels {
                 // need to transition from DST to SRC, one level at a time.
                 if level > 1 {
-
                     let next_barrier = vk::ImageMemoryBarrier::builder()
                         .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
                         .dst_access_mask(vk::AccessFlags::TRANSFER_READ)
@@ -238,17 +254,18 @@ impl OwnedImage {
                             base_mip_level: level - 1,
                             base_array_layer: 0,
                             level_count: 1,
-                            layer_count: vk::REMAINING_ARRAY_LAYERS
+                            layer_count: vk::REMAINING_ARRAY_LAYERS,
                         })
                         .build();
 
-                    self.device.cmd_pipeline_barrier(cmd,
-                                                     vk::PipelineStageFlags::TRANSFER,
-                                                     vk::PipelineStageFlags::TRANSFER,
-                                                     vk::DependencyFlags::empty(),
-                                                     &[],
-                                                     &[],
-                                                     &[next_barrier]
+                    self.device.cmd_pipeline_barrier(
+                        cmd,
+                        vk::PipelineStageFlags::TRANSFER,
+                        vk::PipelineStageFlags::TRANSFER,
+                        vk::DependencyFlags::empty(),
+                        &[],
+                        &[],
+                        &[next_barrier],
                     );
                 }
 
@@ -320,10 +337,9 @@ impl OwnedImage {
                     base_mip_level: 0,
                     level_count: self.levels - 1,
                     base_array_layer: 0,
-                    layer_count: vk::REMAINING_ARRAY_LAYERS
+                    layer_count: vk::REMAINING_ARRAY_LAYERS,
                 })
                 .build();
-
 
             let mipchain_barrier = vk::ImageMemoryBarrier::builder()
                 .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
@@ -338,39 +354,47 @@ impl OwnedImage {
                     base_mip_level: self.levels - 1,
                     base_array_layer: 0,
                     level_count: 1,
-                    layer_count: vk::REMAINING_ARRAY_LAYERS
+                    layer_count: vk::REMAINING_ARRAY_LAYERS,
                 })
                 .build();
 
             // next past waits for ALL_GRAPHICS, use dependency chain and FRAGMENT_SHADER dst stage
             // to ensure that next pass doesn't start until mipchain is complete.
-            self.device.cmd_pipeline_barrier(cmd,
-                                             vk::PipelineStageFlags::TRANSFER,
-                                             vk::PipelineStageFlags::FRAGMENT_SHADER,
-                                             vk::DependencyFlags::empty(),
-                                             &[],
-                                             &[],
-                                             &[input_barrier, mipchain_barrier]
+            self.device.cmd_pipeline_barrier(
+                cmd,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::PipelineStageFlags::FRAGMENT_SHADER,
+                vk::DependencyFlags::empty(),
+                &[],
+                &[],
+                &[input_barrier, mipchain_barrier],
             );
         }
     }
 
     /// SAFETY: self must fit the source image
-    pub unsafe fn copy_from(&self, cmd: vk::CommandBuffer, source: &VulkanImage, source_layout: vk::ImageLayout) {
+    pub unsafe fn copy_from(
+        &self,
+        cmd: vk::CommandBuffer,
+        source: &VulkanImage,
+        source_layout: vk::ImageLayout,
+    ) {
         let region = vk::ImageCopy::builder()
-            .src_subresource(vk::ImageSubresourceLayers::builder()
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .mip_level(0)
-                .base_array_layer(0)
-                .layer_count(1)
-                .build()
+            .src_subresource(
+                vk::ImageSubresourceLayers::builder()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .mip_level(0)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                    .build(),
             )
-            .dst_subresource(vk::ImageSubresourceLayers::builder()
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .mip_level(0)
-                .base_array_layer(0)
-                .layer_count(1)
-                .build()
+            .dst_subresource(
+                vk::ImageSubresourceLayers::builder()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .mip_level(0)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                    .build(),
             )
             .src_offset(Default::default())
             .dst_offset(Default::default())
@@ -378,7 +402,8 @@ impl OwnedImage {
             .build();
 
         unsafe {
-            util::vulkan_image_layout_transition_levels(&self.device,
+            util::vulkan_image_layout_transition_levels(
+                &self.device,
                 cmd,
                 self.image.image,
                 vk::REMAINING_MIP_LEVELS,
@@ -388,69 +413,80 @@ impl OwnedImage {
                 vk::AccessFlags::TRANSFER_WRITE,
                 vk::PipelineStageFlags::FRAGMENT_SHADER,
                 vk::PipelineStageFlags::TRANSFER,
-                vk::QUEUE_FAMILY_IGNORED, vk::QUEUE_FAMILY_IGNORED
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
             );
 
-            self.device.cmd_copy_image(cmd, source.image, source_layout, self.image.image, vk::ImageLayout::TRANSFER_DST_OPTIMAL, &[region]);
-            util::vulkan_image_layout_transition_levels(&self.device,
-                                                        cmd,
-                                                        self.image.image,
-                                                        vk::REMAINING_MIP_LEVELS,
-                                                        vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                                                        vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                                                        vk::AccessFlags::TRANSFER_WRITE,
-                                                        vk::AccessFlags::SHADER_READ,
-                                                        vk::PipelineStageFlags::TRANSFER,
-                                                        vk::PipelineStageFlags::FRAGMENT_SHADER,
-                                                        vk::QUEUE_FAMILY_IGNORED,
-                                                        vk::QUEUE_FAMILY_IGNORED
+            self.device.cmd_copy_image(
+                cmd,
+                source.image,
+                source_layout,
+                self.image.image,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &[region],
+            );
+            util::vulkan_image_layout_transition_levels(
+                &self.device,
+                cmd,
+                self.image.image,
+                vk::REMAINING_MIP_LEVELS,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                vk::AccessFlags::TRANSFER_WRITE,
+                vk::AccessFlags::SHADER_READ,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::PipelineStageFlags::FRAGMENT_SHADER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
             );
         }
     }
 
     pub fn clear(&self, cmd: vk::CommandBuffer) {
         unsafe {
-            util::vulkan_image_layout_transition_levels(&self.device,
-                                                        cmd,
-                                                        self.image.image,
-                                                        vk::REMAINING_MIP_LEVELS,
-                                                        vk::ImageLayout::UNDEFINED,
-                                                        vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                                                        vk::AccessFlags::empty(),
-                                                        vk::AccessFlags::TRANSFER_WRITE,
-                                                        vk::PipelineStageFlags::TOP_OF_PIPE,
-                                                        vk::PipelineStageFlags::TRANSFER,
-                                                        vk::QUEUE_FAMILY_IGNORED,
-                                                        vk::QUEUE_FAMILY_IGNORED
+            util::vulkan_image_layout_transition_levels(
+                &self.device,
+                cmd,
+                self.image.image,
+                vk::REMAINING_MIP_LEVELS,
+                vk::ImageLayout::UNDEFINED,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::AccessFlags::empty(),
+                vk::AccessFlags::TRANSFER_WRITE,
+                vk::PipelineStageFlags::TOP_OF_PIPE,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
             );
-            self.device.cmd_clear_color_image(cmd,
-                                              self.image.image,
-                                              vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                                              &vk::ClearColorValue {
-                                                  float32: [0.0, 0.0, 0.0, 0.0]
-                                              },
-                                              &[vk::ImageSubresourceRange::builder()
-                                                  .aspect_mask(vk::ImageAspectFlags::COLOR)
-                                                  .base_mip_level(0)
-                                                  .level_count(1)
-                                                  .base_array_layer(0)
-                                                  .layer_count(1)
-                                                  .build()]
-
+            self.device.cmd_clear_color_image(
+                cmd,
+                self.image.image,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &vk::ClearColorValue {
+                    float32: [0.0, 0.0, 0.0, 0.0],
+                },
+                &[vk::ImageSubresourceRange::builder()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .base_mip_level(0)
+                    .level_count(1)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                    .build()],
             );
 
-            util::vulkan_image_layout_transition_levels(&self.device,
-                                                        cmd,
-                                                        self.image.image,
-                                                        vk::REMAINING_MIP_LEVELS,
-                                                        vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                                                        vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                                                        vk::AccessFlags::TRANSFER_WRITE,
-                                                        vk::AccessFlags::SHADER_READ,
-                                                        vk::PipelineStageFlags::TRANSFER,
-                                                        vk::PipelineStageFlags::FRAGMENT_SHADER,
-                                                        vk::QUEUE_FAMILY_IGNORED,
-                                                        vk::QUEUE_FAMILY_IGNORED
+            util::vulkan_image_layout_transition_levels(
+                &self.device,
+                cmd,
+                self.image.image,
+                vk::REMAINING_MIP_LEVELS,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                vk::AccessFlags::TRANSFER_WRITE,
+                vk::AccessFlags::SHADER_READ,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::PipelineStageFlags::FRAGMENT_SHADER,
+                vk::QUEUE_FAMILY_IGNORED,
+                vk::QUEUE_FAMILY_IGNORED,
             );
         }
     }
@@ -475,7 +511,6 @@ pub struct VulkanImage {
     pub image: vk::Image,
     pub format: vk::Format,
 }
-
 
 #[derive(Clone)]
 pub struct InputImage {
