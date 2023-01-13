@@ -8,6 +8,7 @@ use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_dev
 use crate::hello_triangle::surface::VulkanSurface;
 use ash::prelude::VkResult;
 use std::ffi::{CStr, CString};
+use crate::error::FilterChainError;
 
 const WINDOW_TITLE: &'static [u8] = b"librashader Vulkan\0";
 const KHRONOS_VALIDATION: &'static [u8] = b"VK_LAYER_KHRONOS_validation\0";
@@ -162,14 +163,13 @@ impl Drop for VulkanBase {
 }
 
 impl TryFrom<&VulkanBase> for Vulkan {
-    type Error = Box<dyn Error>;
+    type Error = FilterChainError;
 
     fn try_from(value: &VulkanBase) -> Result<Self, Self::Error> {
         Vulkan::try_from((
+            value.physical_device,
+            value.instance.clone(),
             value.device.clone(),
-            value.graphics_queue.clone(),
-            value.mem_props,
-            value.debug.loader.clone(),
         ))
     }
 }

@@ -16,7 +16,7 @@ pub struct LutTexture {
 impl LutTexture {
     pub fn new(
         vulkan: &Vulkan,
-        cmd: &vk::CommandBuffer,
+        cmd: vk::CommandBuffer,
         image: Image<BGRA8>,
         config: &TextureConfig,
     ) -> error::Result<LutTexture> {
@@ -97,7 +97,7 @@ impl LutTexture {
         unsafe {
             util::vulkan_image_layout_transition_levels(
                 &vulkan.device,
-                *cmd,
+                cmd,
                 texture,
                 vk::REMAINING_MIP_LEVELS,
                 vk::ImageLayout::UNDEFINED,
@@ -115,7 +115,7 @@ impl LutTexture {
             );
 
             vulkan.device.cmd_copy_buffer_to_image(
-                *cmd,
+                cmd,
                 staging.handle,
                 texture,
                 if config.mipmap {
@@ -183,7 +183,7 @@ impl LutTexture {
             unsafe {
                 util::vulkan_image_layout_transition_levels(
                     &vulkan.device,
-                    *cmd,
+                    cmd,
                     texture,
                     vk::REMAINING_MIP_LEVELS,
                     vk::ImageLayout::GENERAL,
@@ -198,13 +198,13 @@ impl LutTexture {
 
                 // todo: respect mipmap filter?
                 vulkan.device.cmd_blit_image(
-                    *cmd,
+                    cmd,
                     texture,
                     vk::ImageLayout::GENERAL,
                     texture,
                     vk::ImageLayout::GENERAL,
                     &image_blit,
-                    vk::Filter::LINEAR,
+                    config.filter_mode.into(),
                 );
             }
         }
@@ -212,7 +212,7 @@ impl LutTexture {
         unsafe {
             util::vulkan_image_layout_transition_levels(
                 &vulkan.device,
-                *cmd,
+                cmd,
                 texture,
                 vk::REMAINING_MIP_LEVELS,
                 if config.mipmap {

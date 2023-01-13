@@ -3,10 +3,10 @@
 #![feature(strict_provenance)]
 
 mod draw_quad;
-mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
+#[cfg(test)]
 mod hello_triangle;
 mod luts;
 mod render_target;
@@ -17,6 +17,14 @@ mod util;
 mod viewport;
 mod vulkan_primitives;
 mod vulkan_state;
+mod queue_selection;
+
+pub use filter_chain::FilterChainFrameIntermediates;
+pub use filter_chain::FilterChainVulkan;
+pub use viewport::Viewport;
+
+pub mod error;
+pub mod options;
 
 #[cfg(test)]
 mod tests {

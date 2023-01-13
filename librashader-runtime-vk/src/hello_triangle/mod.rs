@@ -347,8 +347,7 @@ impl VulkanWindow {
                 .queue_present(vulkan.base.graphics_queue, &present_info)
                 .unwrap();
 
-            //oops i pooped my pants
-            // std::mem::forget(intermediates);
+
             vulkan.base.device.device_wait_idle().unwrap();
             drop(intermediates)
         }
