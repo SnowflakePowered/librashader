@@ -145,7 +145,7 @@ pub(crate) struct FilterCommon {
 /// These Vulkan objects must stay alive until the command buffer is submitted
 /// to the rendering queue, and the GPU is done with the objects.
 #[must_use]
-pub struct FrameIntermediates {
+struct FrameIntermediates {
     device: ash::Device,
     image_views: Vec<vk::ImageView>,
     owned: Vec<OwnedImage>,
@@ -170,14 +170,20 @@ impl FrameIntermediates {
 
     /// Dispose of the intermediate objects created during a frame.
     pub fn dispose(&mut self) {
-        for image_view in &self.image_views {
-            if *image_view != vk::ImageView::null() {
+        for image_view in self.image_views.drain(0..) {
+            if image_view != vk::ImageView::null() {
                 unsafe {
-                    self.device.destroy_image_view(*image_view, None);
+                    self.device.destroy_image_view(image_view, None);
                 }
             }
         }
         self.owned.clear()
+    }
+}
+
+impl Drop for FrameIntermediates {
+    fn drop(&mut self) {
+        self.dispose()
     }
 }
 
@@ -579,7 +585,7 @@ impl FilterChain {
         cmd: vk::CommandBuffer,
         options: Option<FrameOptions>,
     ) -> error::Result<()> {
-        let mut intermediates = &mut self.intermediates[count % self.intermediates.len()];
+        let intermediates = &mut self.intermediates[count % self.intermediates.len()];
         intermediates.dispose();
 
         // limit number of passes to those enabled.

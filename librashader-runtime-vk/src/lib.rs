@@ -19,7 +19,6 @@ mod util;
 mod vulkan_primitives;
 mod vulkan_state;
 
-pub use filter_chain::FrameIntermediates;
 pub use filter_chain::FilterChain;
 pub use filter_chain::VulkanDevice;
 pub use filter_chain::VulkanInstance;

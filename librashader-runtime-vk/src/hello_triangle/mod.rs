@@ -338,7 +338,7 @@ impl VulkanWindow {
                 .queue_present(vulkan.base.graphics_queue, &present_info)
                 .unwrap();
 
-            vulkan.base.device.device_wait_idle().unwrap();
+            // vulkan.base.device.device_wait_idle().unwrap();
             // intermediates.dispose();
         }
     }
