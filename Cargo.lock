@@ -771,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "librashader"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "librashader-common",
  "librashader-preprocess",
@@ -785,7 +785,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-capi"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "gl",
  "librashader",
@@ -797,7 +797,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "ash",
  "gl",
@@ -807,7 +807,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "librashader-common",
  "nom",
@@ -816,7 +816,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "librashader-common",
  "nom",
@@ -827,7 +827,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "bitflags",
  "librashader-common",
@@ -843,7 +843,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "bytemuck",
  "image",
@@ -857,7 +857,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "bytemuck",
  "gfx-maths",
@@ -874,7 +874,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "bytemuck",
  "gl",
@@ -891,7 +891,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 dependencies = [
  "ash",
  "ash-window",
