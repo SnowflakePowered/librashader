@@ -104,7 +104,7 @@ impl<T: GLInterface> FilterPass<T> {
 
 impl<T: GLInterface> FilterPass<T> {
     pub fn get_format(&self) -> ImageFormat {
-        let mut fb_format = self.source.format;
+        let fb_format = self.source.format;
         if let Some(format) = self.config.get_format_override() {
             format
         } else if fb_format == ImageFormat::Unknown {

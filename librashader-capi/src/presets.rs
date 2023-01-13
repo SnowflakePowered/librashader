@@ -7,11 +7,6 @@ use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
-pub type PFN_lbr_preset_create = unsafe extern "C" fn(
-    filename: *const c_char,
-    out: *mut MaybeUninit<libra_shader_preset_t>,
-) -> libra_error_t;
-
 extern_fn! {
     /// Load a preset.
     ///

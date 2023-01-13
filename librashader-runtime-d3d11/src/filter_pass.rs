@@ -53,7 +53,7 @@ const NULL_TEXTURES: &[Option<ID3D11ShaderResourceView>; 16] = &[
 // slang_process.cpp 229
 impl FilterPass {
     pub fn get_format(&self) -> ImageFormat {
-        let mut fb_format = self.source.format;
+        let fb_format = self.source.format;
         if let Some(format) = self.config.get_format_override() {
             format
         } else if fb_format == ImageFormat::Unknown {

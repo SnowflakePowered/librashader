@@ -4,7 +4,15 @@
 #include <iostream>
 #include <filesystem>
 
+#define VK_DEFINE_HANDLE(object) typedef struct object##_T* object;
+VK_DEFINE_HANDLE(VkInstance)
+typedef void (*PFN_vkVoidFunction)(void);
+typedef PFN_vkVoidFunction(*PFN_vkGetInstanceProcAddr)(VkInstance instance, const char* pName);
+
+
 #define LIBRA_RUNTIME_OPENGL
+#define LIBRA_RUNTIME_VULKAN
+
 #include "../../../../librashader-capi/librashader.h"
 int main()
 {
@@ -16,7 +24,11 @@ int main()
         std::cout << "error happened\n";
     }
     libra_preset_print(&preset);
+    
     libra_gl_filter_chain_t chain;
+
+    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
+    libra_PFN_vkGetInstanceProcAddr entry = reinterpret_cast<libra_PFN_vkGetInstanceProcAddr>(GetInstanceProcAddr);
 
     error = libra_gl_filter_chain_create(NULL, NULL, &chain);
     if (error != NULL) {

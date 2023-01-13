@@ -1,4 +1,4 @@
-use crate::filter_chain::VulkanDevice;
+use crate::filter_chain::VulkanObjects;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
 use crate::{error, util};
@@ -114,7 +114,7 @@ impl OwnedImage {
     }
 
     pub fn new(
-        vulkan: &VulkanDevice,
+        vulkan: &VulkanObjects,
         size: Size<u32>,
         format: ImageFormat,
         max_miplevels: u32,

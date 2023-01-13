@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::error::Error;
 
 use crate::error::FilterChainError;
-use crate::filter_chain::VulkanDevice;
+use crate::filter_chain::VulkanObjects;
 use crate::hello_triangle::debug::VulkanDebug;
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 use crate::hello_triangle::surface::VulkanSurface;
@@ -158,11 +158,11 @@ impl Drop for VulkanBase {
     }
 }
 
-impl TryFrom<&VulkanBase> for VulkanDevice {
+impl TryFrom<&VulkanBase> for VulkanObjects {
     type Error = FilterChainError;
 
     fn try_from(value: &VulkanBase) -> Result<Self, Self::Error> {
-        VulkanDevice::try_from((
+        VulkanObjects::try_from((
             value.physical_device,
             value.instance.clone(),
             value.device.clone(),

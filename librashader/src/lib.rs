@@ -28,6 +28,9 @@
 //! | DirectX 9   | ❌         |                          |
 //! | Metal       | ❌         |                          |
 //!
+//! ## C API
+//! For documentation on the librashader C API, see [librashader_capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
+//! or [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/librashader-capi/librashader.h).
 
 #[cfg(feature = "presets")]
 /// Parsing and usage of shader presets.
@@ -150,7 +153,7 @@ pub mod runtime {
                 FrameOptionsVulkan as FrameOptions,
             },
             FilterChainVulkan as FilterChain,
-            VulkanImage, VulkanDevice, VulkanInstance,
+            VulkanImage, VulkanObjects, VulkanInstance,
             error
         };
 

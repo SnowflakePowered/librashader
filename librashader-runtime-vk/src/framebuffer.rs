@@ -1,4 +1,4 @@
-use crate::filter_chain::VulkanDevice;
+use crate::filter_chain::VulkanObjects;
 use crate::texture::VulkanImage;
 use crate::{error, util};
 use ash::vk;
@@ -13,7 +13,7 @@ pub(crate) struct OutputImage {
 }
 
 impl OutputImage {
-    pub fn new(vulkan: &VulkanDevice, image: VulkanImage) -> error::Result<OutputImage> {
+    pub fn new(vulkan: &VulkanObjects, image: VulkanImage) -> error::Result<OutputImage> {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
             .base_array_layer(0)

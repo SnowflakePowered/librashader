@@ -29,6 +29,9 @@ pub enum LibrashaderError {
     #[cfg(feature = "runtime-d3d11")]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
+    #[cfg(feature = "runtime-vulkan")]
+    #[error("There was an error in the Vulkan filter chain.")]
+    VulkanFilterError(#[from] librashader::runtime::vk::error::FilterChainError),
 }
 
 /// Error codes for librashader error types.
@@ -167,6 +170,8 @@ impl LibrashaderError {
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-d3d11")]
             LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
+            #[cfg(feature = "runtime-vulkan")]
+            LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
         }
     }
     pub(crate) const fn ok() -> libra_error_t {

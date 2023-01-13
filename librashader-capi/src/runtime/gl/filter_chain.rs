@@ -14,7 +14,7 @@ pub use librashader::runtime::gl::capi::options::FrameOptionsGL;
 use librashader::runtime::{Size, Viewport};
 
 /// A GL function loader that librashader needs to be initialized with.
-pub type gl_loader_t = unsafe extern "C" fn(*const c_char) -> *const c_void;
+pub type libra_gl_loader_t = unsafe extern "system" fn(*const c_char) -> *const c_void;
 
 /// OpenGL parameters for the source image.
 #[repr(C)]
@@ -59,7 +59,7 @@ extern_fn! {
     ///
     /// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
     /// chain objects, and drawing with them causes immediate undefined behaviour.
-    raw fn libra_gl_init_context(loader: gl_loader_t) {
+    raw fn libra_gl_init_context(loader: libra_gl_loader_t) {
         gl::load_with(|s| unsafe {
             let proc_name = CString::new(s).unwrap_unchecked();
             loader(proc_name.as_ptr())

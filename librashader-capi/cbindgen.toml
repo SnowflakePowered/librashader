@@ -4,13 +4,14 @@ include_guard = "__LIBRASHADER_H__"
 pragma_once = true
 usize_is_size_t = true
 documentation_style = "c++"
-after_includes = "#ifdef _WIN32 && RUNTIME_D3D11 \n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;\n#endif"
+after_includes = "#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;\n#endif\n#if defined(LIBRA_RUNTIME_VULKAN)\n#include <vulkan\\vulkan.h>\n#endif"
 
 
 
 [defines]
 "feature = runtime-opengl" = "LIBRA_RUNTIME_OPENGL"
 "feature = runtime-d3d11" = "LIBRA_RUNTIME_D3D11"
+"feature = runtime-vulkan" = "LIBRA_RUNTIME_VULKAN"
 
 [parse]
 parse_deps = true
@@ -19,7 +20,8 @@ include = ["librashader",
     "librashader-preprocess",
     "librashader-reflect",
     "librashader-runtime-gl",
-    "librashader-runtime-d3d11"
+    "librashader-runtime-d3d11",
+    "librashader-runtime-vk",
 ]
 expand = ["librashader-capi"]
 
@@ -66,4 +68,15 @@ include = [
 "FrameOptionsGL" = "frame_gl_opt_t"
 "FilterChainD3D11" = "_filter_chain_d3d11"
 "FilterChainOptionsD3D11" = "filter_chain_d3d11_opt_t"
-"FrameOptionsD3D11" = "frame_d3d11_opt_t"
+"FrameOptionsD3D11" = "frame_vk_opt_t"
+"FilterChainVulkan" = "_filter_chain_vk"
+"FilterChainOptionsVulkan" = "filter_chain_vk_opt_t"
+"FrameOptionsVullam" = "frame_vk_opt_t"
+
+# vulkan renames
+"PhysicalDevice" = "VkPhysicalDevice"
+"Instance" = "VkInstance"
+"Device" = "VkDevice"
+"CommandBuffer" = "VkCommandBuffer"
+"Format" = "VkFormat"
+"Image" = "VkImage"

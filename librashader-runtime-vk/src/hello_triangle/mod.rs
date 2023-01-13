@@ -8,7 +8,7 @@ mod swapchain;
 mod syncobjects;
 pub mod vulkan_base;
 
-use crate::filter_chain::{FilterChainVulkan, VulkanDevice};
+use crate::filter_chain::{FilterChainVulkan, VulkanObjects};
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
 use crate::hello_triangle::pipeline::VulkanPipeline;
@@ -212,7 +212,11 @@ impl VulkanWindow {
 
            filter
                 .frame(
-                    frame,
+                    &VulkanImage {
+                        size: vulkan.swapchain.extent.into(),
+                        image: framebuffer_image,
+                        format: vulkan.swapchain.format.format,
+                    },
                     &Viewport {
                         x: 0.0,
                         y: 0.0,
@@ -223,12 +227,8 @@ impl VulkanWindow {
                         },
                         mvp: None,
                     },
-                    &VulkanImage {
-                        size: vulkan.swapchain.extent.into(),
-                        image: framebuffer_image,
-                        format: vulkan.swapchain.format.format,
-                    },
                     cmd,
+                    frame,
                     None,
                 )
                 .unwrap();

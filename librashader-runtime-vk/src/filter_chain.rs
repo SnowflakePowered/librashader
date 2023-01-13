@@ -29,7 +29,7 @@ use std::path::Path;
 use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
-pub struct VulkanDevice {
+pub struct VulkanObjects {
     pub(crate) device: ash::Device,
     pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
     queue: vk::Queue,
@@ -55,7 +55,7 @@ pub struct VulkanInstance {
     pub get_instance_proc_addr: vk::PFN_vkGetInstanceProcAddr,
 }
 
-impl TryFrom<VulkanInstance> for VulkanDevice {
+impl TryFrom<VulkanInstance> for VulkanObjects {
     type Error = FilterChainError;
 
     fn try_from(vulkan: VulkanInstance) -> Result<Self, FilterChainError> {
@@ -76,7 +76,7 @@ impl TryFrom<VulkanInstance> for VulkanDevice {
             let memory_properties =
                 instance.get_physical_device_memory_properties(vulkan.physical_device);
 
-            Ok(VulkanDevice {
+            Ok(VulkanObjects {
                 device,
                 queue,
                 pipeline_cache,
@@ -87,7 +87,7 @@ impl TryFrom<VulkanInstance> for VulkanDevice {
     }
 }
 
-impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanDevice {
+impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects {
     type Error = FilterChainError;
 
     fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
@@ -100,7 +100,7 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanDevice 
 
             let memory_properties = value.1.get_physical_device_memory_properties(value.0);
 
-            Ok(VulkanDevice {
+            Ok(VulkanObjects {
                 device,
                 queue,
                 pipeline_cache,
@@ -115,7 +115,7 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanDevice 
 pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
-    vulkan: VulkanDevice,
+    vulkan: VulkanObjects,
     output_framebuffers: Box<[OwnedImage]>,
     feedback_framebuffers: Box<[OwnedImage]>,
     history_framebuffers: VecDeque<OwnedImage>,
@@ -191,7 +191,7 @@ impl Drop for FrameResiduals {
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        vulkan: impl TryInto<VulkanDevice, Error = FilterChainError>,
+        vulkan: impl TryInto<VulkanObjects, Error = FilterChainError>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -202,7 +202,7 @@ impl FilterChainVulkan {
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
-        vulkan: impl TryInto<VulkanDevice, Error = FilterChainError>,
+        vulkan: impl TryInto<VulkanObjects, Error = FilterChainError>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
@@ -328,7 +328,7 @@ impl FilterChainVulkan {
     }
 
     fn init_passes(
-        vulkan: &VulkanDevice,
+        vulkan: &VulkanObjects,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         frames_in_flight: u32,
@@ -402,7 +402,7 @@ impl FilterChainVulkan {
     }
 
     fn load_luts(
-        vulkan: &VulkanDevice,
+        vulkan: &VulkanObjects,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
@@ -462,7 +462,7 @@ impl FilterChainVulkan {
     }
 
     fn init_history(
-        vulkan: &VulkanDevice,
+        vulkan: &VulkanObjects,
         filters: &[FilterPass],
     ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputImage>]>)> {
         let mut required_images = 0;
@@ -580,11 +580,11 @@ impl FilterChainVulkan {
     /// the output image to the final layout.
     pub fn frame(
         &mut self,
-        count: usize,
-        viewport: &Viewport<VulkanImage>,
         input: &VulkanImage,
+        viewport: &Viewport<VulkanImage>,
         cmd: vk::CommandBuffer,
-        options: Option<FrameOptionsVulkan>,
+        count: usize,
+        options: Option<&FrameOptionsVulkan>,
     ) -> error::Result<()> {
         let intermediates = &mut self.residuals[count % self.residuals.len()];
         intermediates.dispose();

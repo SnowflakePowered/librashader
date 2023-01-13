@@ -4,9 +4,9 @@
 //! possible by linking against `librashader.h` as well as any static libraries used by `librashader`.
 //!
 //! ## Usage
-//! ⚠ Rust consumers should take a look at [librashader](https://docs.rs/librashader/) ⚠
+//! ⚠ Rust consumers use [librashader](https://docs.rs/librashader/) directly instead. ⚠
 //!
-//! The C API is designed to be easy to use and safe. Most objects are only accessible behind an opaque pointer.
+//! The librashader C API is designed to be easy to use and safe. Most objects are only accessible behind an opaque pointer.
 //! Every allocated object can be freed with a corresponding `free` function **for that specific object type**.
 //!
 //! Once an object is freed, the input pointer is always set to null. Attempting to free an object that was not
@@ -44,6 +44,7 @@ mod ffi;
 pub mod presets;
 
 #[cfg(feature = "reflect")]
+#[doc(hidden)]
 pub mod reflect;
 
 pub mod runtime;

@@ -13,6 +13,10 @@ pub type libra_gl_filter_chain_t = Option<NonNull<librashader::runtime::gl::capi
 pub type libra_d3d11_filter_chain_t =
     Option<NonNull<librashader::runtime::d3d11::capi::FilterChainD3D11>>;
 
+#[cfg(feature = "runtime-vulkan")]
+pub type libra_vk_filter_chain_t =
+Option<NonNull<librashader::runtime::vk::capi::FilterChainVulkan>>;
+
 /// Parameters for the output viewport.
 #[repr(C)]
 pub struct libra_viewport_t {

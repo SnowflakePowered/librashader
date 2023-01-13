@@ -8,10 +8,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#ifdef _WIN32 && RUNTIME_D3D11 
+#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
 #include <d3d11.h>
 #else
 typedef void ID3D11Device; typedef void ID3D11RenderTargetView; typedef void ID3D1ShaderResourceView;
+#endif
+#if defined(LIBRA_RUNTIME_VULKAN)
+#include <vulkan\vulkan.h>
 #endif
 
 /// Error codes for librashader error types.
@@ -32,7 +35,13 @@ typedef int32_t LIBRA_ERRNO;
 #endif // __cplusplus
 
 /// A Direct3D 11 filter chain.
-typedef struct FilterChain FilterChain;
+typedef struct _filter_chain_d3d11 _filter_chain_d3d11;
+
+/// An OpenGL filter chain.
+typedef struct _filter_chain_gl _filter_chain_gl;
+
+/// A Vulkan filter chain.
+typedef struct _filter_chain_vk _filter_chain_vk;
 
 /// The error type for librashader.
 typedef struct _libra_error _libra_error;
@@ -49,23 +58,21 @@ typedef struct _shader_preset* libra_shader_preset_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// A GL function loader that librashader needs to be initialized with.
-typedef const void* (*gl_loader_t)(const char*);
+typedef const void* (*libra_gl_loader_t)(const char*);
 #endif
 
-/// Options for Direct3D11 filter chain creation.
-typedef struct FilterChainOptions {
-    /// Use a deferred context to record shader rendering state.
-    ///
-    /// The deferred context will be executed on the immediate context
-    /// with `RenderContextState = true`.
-    bool use_deferred_context;
-    /// Whether or not to explicitly disable mipmap
-    /// generation regardless of shader preset settings.
+/// Options for filter chain creation.
+typedef struct filter_chain_gl_opt_t {
+    /// The GLSL version. Should be at least `330`.
+    uint16_t gl_version;
+    /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
+    bool use_dsa;
+    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     bool force_no_mipmaps;
-} FilterChainOptions;
+} filter_chain_gl_opt_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef struct FilterChain* libra_gl_filter_chain_t;
+typedef struct _filter_chain_gl* libra_gl_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -102,16 +109,28 @@ typedef struct libra_draw_framebuffer_gl_t {
 } libra_draw_framebuffer_gl_t;
 #endif
 
-/// Options for each Direct3D11 shader frame.
-typedef struct FrameOptions {
+/// Options for each OpenGL shader frame.
+typedef struct frame_gl_opt_t {
     /// Whether or not to clear the history buffers.
     bool clear_history;
     /// The direction of the frame. 1 should be vertical.
     int32_t frame_direction;
-} FrameOptions;
+} frame_gl_opt_t;
+
+/// Options for Direct3D11 filter chain creation.
+typedef struct filter_chain_d3d11_opt_t {
+    /// Use a deferred context to record shader rendering state.
+    ///
+    /// The deferred context will be executed on the immediate context
+    /// with `RenderContextState = true`.
+    bool use_deferred_context;
+    /// Whether or not to explicitly disable mipmap
+    /// generation regardless of shader preset settings.
+    bool force_no_mipmaps;
+} filter_chain_d3d11_opt_t;
 
 #if defined(LIBRA_RUNTIME_D3D11)
-typedef struct FilterChain* libra_d3d11_filter_chain_t;
+typedef struct _filter_chain_d3d11* libra_d3d11_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -125,6 +144,65 @@ typedef struct libra_source_image_d3d11_t {
     uint32_t height;
 } libra_source_image_d3d11_t;
 #endif
+
+/// Options for each Direct3D11 shader frame.
+typedef struct frame_vk_opt_t {
+    /// Whether or not to clear the history buffers.
+    bool clear_history;
+    /// The direction of the frame. 1 should be vertical.
+    int32_t frame_direction;
+} frame_vk_opt_t;
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Handles required to instantiate vulkan
+typedef struct libra_device_vk_t {
+    /// A raw `VkPhysicalDevice` handle
+    /// for the physical device that will perform rendering.
+    VkPhysicalDevice physical_device;
+    /// A raw `VkInstance` handle
+    /// for the Vulkan instance that will perform rendering.
+    VkInstance instance;
+    /// A raw `VkDevice` handle
+    /// for the device attached to the instance that will perform rendering.
+    VkDevice device;
+    /// The entry loader for the Vulkan library.
+    PFN_vkGetInstanceProcAddr entry;
+} libra_device_vk_t;
+#endif
+
+/// Options for filter chain creation.
+typedef struct filter_chain_vk_opt_t {
+    /// The number of frames in flight to keep. If zero, defaults to three.
+    uint32_t frames_in_flight;
+    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
+    bool force_no_mipmaps;
+} filter_chain_vk_opt_t;
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+typedef struct _filter_chain_vk* libra_vk_filter_chain_t;
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Vulkan  parameters for the source image.
+typedef struct libra_image_vk_t {
+    /// A raw `VkImage` handle to the source image.
+    VkImage handle;
+    /// The `VkFormat` of the source image.
+    VkFormat format;
+    /// The width of the source image.
+    uint32_t width;
+    /// The height of the source image.
+    uint32_t height;
+} libra_image_vk_t;
+#endif
+
+/// Options for each Vulkan shader frame.
+typedef struct FrameOptionsVulkan {
+    /// Whether or not to clear the history buffers.
+    bool clear_history;
+    /// The direction of the frame. 1 should be vertical.
+    int32_t frame_direction;
+} FrameOptionsVulkan;
 
 typedef libra_error_t(*PFN_libra_preset_free)(libra_shader_preset_t* preset);
 
@@ -152,12 +230,12 @@ typedef int32_t(*PFN_libra_error_write)(libra_error_t error, char** out);
 typedef int32_t(*PFN_libra_error_free_string)(char** out);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef libra_error_t(*PFN_libra_gl_init_context)(gl_loader_t loader);
+typedef libra_error_t(*PFN_libra_gl_init_context)(libra_gl_loader_t loader);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 typedef libra_error_t(*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t* preset,
-    const struct FilterChainOptions* options,
+    const struct filter_chain_gl_opt_t* options,
     libra_gl_filter_chain_t* out);
 #endif
 
@@ -168,7 +246,7 @@ typedef libra_error_t(*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t*
     struct libra_viewport_t viewport,
     struct libra_draw_framebuffer_gl_t out,
     const float* mvp,
-    const struct FrameOptions* opt);
+    const struct frame_gl_opt_t* opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -177,7 +255,7 @@ typedef libra_error_t(*PFN_libra_gl_filter_chain_free)(libra_gl_filter_chain_t* 
 
 #if defined(LIBRA_RUNTIME_D3D11)
 typedef libra_error_t(*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset_t* preset,
-    const struct FilterChainOptions* options,
+    const struct filter_chain_d3d11_opt_t* options,
     const ID3D11Device* device,
     libra_d3d11_filter_chain_t* out);
 #endif
@@ -189,7 +267,7 @@ typedef libra_error_t(*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_ch
     struct libra_viewport_t viewport,
     const ID3D11RenderTargetView* out,
     const float* mvp,
-    const struct FrameOptions* opt);
+    const struct frame_vk_opt_t* opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -294,7 +372,7 @@ extern "C" {
     ///
     /// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
     /// chain objects, and drawing with them causes immediate undefined behaviour.
-    libra_error_t libra_gl_init_context(gl_loader_t loader);
+    libra_error_t libra_gl_init_context(libra_gl_loader_t loader);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -308,7 +386,7 @@ extern "C" {
     /// - `options` must be either null, or valid and aligned.
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t* preset,
-        const struct FilterChainOptions* options,
+        const struct filter_chain_gl_opt_t* options,
         libra_gl_filter_chain_t* out);
 #endif
 
@@ -328,7 +406,7 @@ extern "C" {
         struct libra_viewport_t viewport,
         struct libra_draw_framebuffer_gl_t out,
         const float* mvp,
-        const struct FrameOptions* opt);
+        const struct frame_gl_opt_t* opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -351,7 +429,7 @@ extern "C" {
     /// - `options` must be either null, or valid and aligned.
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t* preset,
-        const struct FilterChainOptions* options,
+        const struct filter_chain_d3d11_opt_t* options,
         const ID3D11Device* device,
         libra_d3d11_filter_chain_t* out);
 #endif
@@ -372,7 +450,7 @@ extern "C" {
         struct libra_viewport_t viewport,
         const ID3D11RenderTargetView* out,
         const float* mvp,
-        const struct FrameOptions* opt);
+        const struct frame_vk_opt_t* opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -382,6 +460,59 @@ extern "C" {
     /// ## Safety
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
     libra_error_t libra_d3d11_filter_chain_free(libra_d3d11_filter_chain_t* chain);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+    /// Create the filter chain given the shader preset.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - The handles provided in `vulkan` must be valid for the command buffers that
+    ///   `libra_vk_filter_chain_frame` will write to. Namely, the VkDevice must have been
+    ///    created with the `VK_KHR_dynamic_rendering` extension.
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
+        libra_shader_preset_t* preset,
+        const struct filter_chain_vk_opt_t* options,
+        libra_vk_filter_chain_t* out);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+    /// Records rendering commands for a frame with the given parameters for the given filter chain
+    /// to the input command buffer.
+    ///
+    /// librashader will not do any queue submissions.
+    ///
+    /// ## Safety
+    /// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.
+    /// - `command_buffer` must be a valid handle to a `VkCommandBuffer` that is ready for recording.
+    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
+    ///    function will return an error.
+    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
+    ///    values for the model view projection matrix.
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+    ///    struct.
+    libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t* chain,
+        VkCommandBuffer command_buffer,
+        size_t frame_count,
+        struct libra_image_vk_t image,
+        struct libra_viewport_t viewport,
+        struct libra_image_vk_t out,
+        const float* mvp,
+        const struct FrameOptionsVulkan* opt);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+    /// Free a GL filter chain.
+    ///
+    /// The resulting value in `chain` then becomes null.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    libra_error_t libra_vk_filter_chain_free(libra_vk_filter_chain_t* chain);
 #endif
 
 #ifdef __cplusplus
