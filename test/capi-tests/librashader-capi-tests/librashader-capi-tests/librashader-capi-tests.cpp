@@ -13,7 +13,7 @@ typedef PFN_vkVoidFunction(*PFN_vkGetInstanceProcAddr)(VkInstance instance, cons
 #define LIBRA_RUNTIME_OPENGL
 #define LIBRA_RUNTIME_VULKAN
 
-#include "../../../../librashader-capi/librashader.h"
+#include "../../../../include/librashader.h"
 int main()
 {
     std::cout << "Hello World!\n";
