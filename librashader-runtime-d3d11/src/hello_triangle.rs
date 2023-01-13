@@ -128,11 +128,11 @@ where
             None, // no parent window
             None, // no menus
             instance,
-            Some(&mut sample as *mut _ as _),
+            Some(&sample as *const _ as _),
         )
     };
 
-    sample.bind_to_window(&hwnd)?;
+    sample.bind_to_window(&hwnd).unwrap();
     unsafe { ShowWindow(hwnd, SW_SHOW) };
 
     loop {
@@ -285,10 +285,10 @@ pub mod d3d11_hello_triangle {
             let (rtv, backbuffer) = create_rtv(&self.device, &swapchain)?;
             let (depth_buffer, depth_stencil_view) = create_depth_buffer(&self.device)?;
             let (triangle_vbo, triangle_indices) = create_triangle_buffers(&self.device)?;
-            let triangle_uniforms = create_triangle_uniforms(&self.device)?;
+            let triangle_uniforms = create_triangle_uniforms(&self.device).unwrap();
 
-            let vs_blob = compile_shader(VERTEX_SHADER, b"main\0", b"vs_5_0")?;
-            let ps_blob = compile_shader(PIXEL_SHADER, b"main\0", b"ps_5_0")?;
+            let vs_blob = compile_shader(VERTEX_SHADER, b"main\0", b"vs_5_0\0")?;
+            let ps_blob = compile_shader(PIXEL_SHADER, b"main\0", b"ps_5_0\0")?;
 
             let vs_compiled = unsafe {
                 // SAFETY: slice as valid for as long as vs_blob is alive.
