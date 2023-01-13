@@ -14,6 +14,8 @@ pub struct FrameOptions {
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct FilterChainOptions {
+    /// The number of frames in flight to keep. If zero, defaults to three.
+    pub frames_in_flight: u32,
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
 }

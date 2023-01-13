@@ -201,8 +201,13 @@ impl FilterChain {
         let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
 
+        let mut frames_in_flight = options.map(|o| o.frames_in_flight).unwrap_or(0);
+        if frames_in_flight == 0 {
+            frames_in_flight = 3;
+        }
+
         // initialize passes
-        let filters = Self::init_passes(&device, passes, &semantics, 3)?;
+        let filters = Self::init_passes(&device, passes, &semantics, frames_in_flight)?;
 
         let luts = FilterChain::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
