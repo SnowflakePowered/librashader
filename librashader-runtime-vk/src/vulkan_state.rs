@@ -6,6 +6,8 @@ use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use std::ffi::CStr;
 
+const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") } ;
+
 pub struct PipelineDescriptors {
     pub replicas: u32,
     pub layout_bindings: Vec<vk::DescriptorSetLayoutBinding>,
@@ -119,12 +121,14 @@ impl PipelineLayoutObjects {
 
         let layout = unsafe { device.create_pipeline_layout(&pipeline_create_info, None)? };
 
+        let pool_info = vk::DescriptorPoolCreateInfo::builder()
+            .max_sets(replicas)
+            .pool_sizes(&descriptors.pool_sizes)
+            .build();
+
         let pool = unsafe {
             device.create_descriptor_pool(
-                &vk::DescriptorPoolCreateInfo::builder()
-                    .max_sets(replicas)
-                    .pool_sizes(&descriptors.pool_sizes)
-                    .build(),
+                &pool_info,
                 None,
             )?
         };
@@ -136,7 +140,8 @@ impl PipelineLayoutObjects {
             .build();
 
         for _ in 0..replicas {
-            unsafe { descriptor_sets.push(device.allocate_descriptor_sets(&alloc_info)?) }
+            let set = unsafe { device.allocate_descriptor_sets(&alloc_info)? };
+            descriptor_sets.push(set)
         }
 
         let descriptor_sets: Vec<vk::DescriptorSet> =
@@ -209,14 +214,14 @@ impl VulkanGraphicsPipeline {
             },
         ];
 
-        let input_binding = vk::VertexInputBindingDescription::builder()
+        let input_binding = [vk::VertexInputBindingDescription::builder()
             .binding(0)
             .stride(4 * std::mem::size_of::<f32>() as u32)
             .input_rate(vk::VertexInputRate::VERTEX)
-            .build();
+            .build()];
 
         let pipeline_input_state = vk::PipelineVertexInputStateCreateInfo::builder()
-            .vertex_binding_descriptions(&[input_binding])
+            .vertex_binding_descriptions(&input_binding)
             .vertex_attribute_descriptions(&vao_state)
             .build();
 
@@ -230,11 +235,13 @@ impl VulkanGraphicsPipeline {
             .line_width(1.0)
             .build();
 
+        let attachments = [vk::PipelineColorBlendAttachmentState::builder()
+            .blend_enable(false)
+            .color_write_mask(vk::ColorComponentFlags::from_raw(0xf))
+            .build()];
+
         let blend_state = vk::PipelineColorBlendStateCreateInfo::builder()
-            .attachments(&[vk::PipelineColorBlendAttachmentState::builder()
-                .blend_enable(false)
-                .color_write_mask(vk::ColorComponentFlags::from_raw(0xf))
-                .build()])
+            .attachments(&attachments)
             .build();
 
         let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
@@ -255,8 +262,9 @@ impl VulkanGraphicsPipeline {
             .rasterization_samples(vk::SampleCountFlags::TYPE_1)
             .build();
 
+        let states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
         let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder()
-            .dynamic_states(&[vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR])
+            .dynamic_states(&states)
             .build();
 
         let vertex_info = vk::ShaderModuleCreateInfo::builder()
@@ -272,12 +280,12 @@ impl VulkanGraphicsPipeline {
         let shader_stages = [
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::VERTEX)
-                .name(unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") })
+                .name(&ENTRY_POINT)
                 .module(vertex_module.shader.clone())
                 .build(),
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::FRAGMENT)
-                .name(unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") })
+                .name(&ENTRY_POINT)
                 .module(fragment_module.shader.clone())
                 .build(),
         ];

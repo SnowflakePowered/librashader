@@ -9,6 +9,7 @@ use bytemuck::offset_of;
 use std::ffi::CStr;
 use std::io::Cursor;
 use std::mem::align_of;
+const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") } ;
 
 #[derive(Default, Clone, Debug, Copy)]
 struct Vertex {
@@ -150,7 +151,7 @@ impl VulkanPipeline {
         let vertex_stage_info = vk::PipelineShaderStageCreateInfo::builder()
             .module(vertex_shader_info.module)
             .stage(vk::ShaderStageFlags::VERTEX)
-            .name(CStr::from_bytes_with_nul_unchecked(b"main\0"))
+            .name(ENTRY_POINT)
             .build();
 
         let mut frag_spv_file =
@@ -161,7 +162,7 @@ impl VulkanPipeline {
         let frag_stage_info = vk::PipelineShaderStageCreateInfo::builder()
             .module(frag_shader_info.module)
             .stage(vk::ShaderStageFlags::FRAGMENT)
-            .name(CStr::from_bytes_with_nul_unchecked(b"main\0"))
+            .name(ENTRY_POINT)
             .build();
 
         let vertex_input_state_info = vk::PipelineVertexInputStateCreateInfo::builder()
@@ -194,8 +195,9 @@ impl VulkanPipeline {
             .create_pipeline_layout(&layout_create_info, None)
             .unwrap();
 
+        let states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
         let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder()
-            .dynamic_states(&[vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR])
+            .dynamic_states(&states)
             .build();
 
         let viewport_state_info = vk::PipelineViewportStateCreateInfo::builder()

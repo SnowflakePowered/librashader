@@ -94,17 +94,17 @@ impl VulkanSwapchain {
                 let image = base.device.create_image(&create_info, None)?;
                 let mem_reqs = unsafe { base.device.get_image_memory_requirements(image.clone()) };
 
-                base.debug
-                    .loader
-                    .set_debug_utils_object_name(
-                        base.device.handle(),
-                        &vk::DebugUtilsObjectNameInfoEXT::builder()
-                            .object_handle(image.as_raw())
-                            .object_name(CStr::from_bytes_with_nul_unchecked(b"RenderImage\0"))
-                            .object_type(vk::ObjectType::IMAGE)
-                            .build(),
-                    )
-                    .expect("could not set object name");
+                // base.debug
+                //     .loader
+                //     .set_debug_utils_object_name(
+                //         base.device.handle(),
+                //         &vk::DebugUtilsObjectNameInfoEXT::builder()
+                //             .object_handle(image.as_raw())
+                //             .object_name(CStr::from_bytes_with_nul_unchecked(b"RenderImage\0"))
+                //             .object_type(vk::ObjectType::IMAGE)
+                //             .build(),
+                //     )
+                //     .expect("could not set object name");
 
                 let alloc_info = vk::MemoryAllocateInfo::builder()
                     .allocation_size(mem_reqs.size)
@@ -146,34 +146,34 @@ impl VulkanSwapchain {
                     .build();
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
-                unsafe {
-                    base.debug
-                        .loader
-                        .set_debug_utils_object_name(
-                            base.device.handle(),
-                            &vk::DebugUtilsObjectNameInfoEXT::builder()
-                                .object_handle(image.as_raw())
-                                .object_name(CStr::from_bytes_with_nul_unchecked(
-                                    b"SwapchainImage\0",
-                                ))
-                                .object_type(vk::ObjectType::IMAGE)
-                                .build(),
-                        )
-                        .expect("could not set object name");
-                    base.debug
-                        .loader
-                        .set_debug_utils_object_name(
-                            base.device.handle(),
-                            &vk::DebugUtilsObjectNameInfoEXT::builder()
-                                .object_handle(view.as_raw())
-                                .object_name(CStr::from_bytes_with_nul_unchecked(
-                                    b"SwapchainImageView\0",
-                                ))
-                                .object_type(vk::ObjectType::IMAGE_VIEW)
-                                .build(),
-                        )
-                        .expect("could not set object name");
-                }
+                // unsafe {
+                //     base.debug
+                //         .loader
+                //         .set_debug_utils_object_name(
+                //             base.device.handle(),
+                //             &vk::DebugUtilsObjectNameInfoEXT::builder()
+                //                 .object_handle(image.as_raw())
+                //                 .object_name(CStr::from_bytes_with_nul_unchecked(
+                //                     b"SwapchainImage\0",
+                //                 ))
+                //                 .object_type(vk::ObjectType::IMAGE)
+                //                 .build(),
+                //         )
+                //         .expect("could not set object name");
+                //     base.debug
+                //         .loader
+                //         .set_debug_utils_object_name(
+                //             base.device.handle(),
+                //             &vk::DebugUtilsObjectNameInfoEXT::builder()
+                //                 .object_handle(view.as_raw())
+                //                 .object_name(CStr::from_bytes_with_nul_unchecked(
+                //                     b"SwapchainImageView\0",
+                //                 ))
+                //                 .object_type(vk::ObjectType::IMAGE_VIEW)
+                //                 .build(),
+                //         )
+                //         .expect("could not set object name");
+                // }
                 Ok(view)
             })
             .collect();
@@ -201,21 +201,21 @@ impl VulkanSwapchain {
                     .build();
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
-                unsafe {
-                    base.debug
-                        .loader
-                        .set_debug_utils_object_name(
-                            base.device.handle(),
-                            &vk::DebugUtilsObjectNameInfoEXT::builder()
-                                .object_handle(view.as_raw())
-                                .object_name(CStr::from_bytes_with_nul_unchecked(
-                                    b"RenderImageView\0",
-                                ))
-                                .object_type(vk::ObjectType::IMAGE_VIEW)
-                                .build(),
-                        )
-                        .expect("could not set object name");
-                }
+                // unsafe {
+                //     base.debug
+                //         .loader
+                //         .set_debug_utils_object_name(
+                //             base.device.handle(),
+                //             &vk::DebugUtilsObjectNameInfoEXT::builder()
+                //                 .object_handle(view.as_raw())
+                //                 .object_name(CStr::from_bytes_with_nul_unchecked(
+                //                     b"RenderImageView\0",
+                //                 ))
+                //                 .object_type(vk::ObjectType::IMAGE_VIEW)
+                //                 .build(),
+                //         )
+                //         .expect("could not set object name");
+                // }
                 Ok(view)
             })
             .collect();

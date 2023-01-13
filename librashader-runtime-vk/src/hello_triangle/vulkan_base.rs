@@ -9,7 +9,8 @@ use crate::hello_triangle::surface::VulkanSurface;
 use ash::prelude::VkResult;
 use std::ffi::{CStr, CString};
 
-const WINDOW_TITLE: &'static str = "librashader Vulkan";
+const WINDOW_TITLE: &'static [u8] = b"librashader Vulkan\0";
+const KHRONOS_VALIDATION: &'static [u8] = b"VK_LAYER_KHRONOS_validation\0";
 
 pub struct VulkanBase {
     pub entry: ash::Entry,
@@ -23,17 +24,15 @@ pub struct VulkanBase {
 
 impl VulkanBase {
     pub fn new(entry: ash::Entry) -> VkResult<VulkanBase> {
-        let app_name = CString::new(WINDOW_TITLE).unwrap();
-        let engine_name = CString::new("librashader").unwrap();
-
         let app_info = vk::ApplicationInfo::builder()
-            .application_name(&app_name)
-            .engine_name(&engine_name)
+            .application_name(unsafe { &CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
+            .engine_name(unsafe { &CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
             .engine_version(0)
             .application_version(0)
             .api_version(vk::make_api_version(0, 1, 3, 0))
             .build();
 
+        dbg!("entry");
         // todo: make this xplat
         let extensions = [
             ash::extensions::khr::Surface::name().as_ptr(),
@@ -42,7 +41,7 @@ impl VulkanBase {
         ];
 
         let layers = unsafe {
-            [CStr::from_bytes_with_nul_unchecked(b"VK_LAYER_KHRONOS_validation\0").as_ptr()]
+            [KHRONOS_VALIDATION.as_ptr().cast()]
         };
 
         let create_info = vk::InstanceCreateInfo::builder()
@@ -57,9 +56,12 @@ impl VulkanBase {
 
         let physical_device = pick_physical_device(&instance);
 
+        dbg!("picked physdev");
         let (device, queue) = VulkanBase::create_device(&instance, &physical_device)?;
+        dbg!("created device");
 
         let mem_props = unsafe { instance.get_physical_device_memory_properties(physical_device) };
+        dbg!("got memprops");
 
         Ok(VulkanBase {
             entry,
@@ -76,15 +78,15 @@ impl VulkanBase {
         instance: &ash::Instance,
         physical_device: &vk::PhysicalDevice,
     ) -> VkResult<(ash::Device, vk::Queue)> {
-        let debug = unsafe {
-            CStr::from_bytes_with_nul_unchecked(b"VK_LAYER_KHRONOS_validation\0").as_ptr()
-        };
+        let debug = [unsafe {
+            CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr()
+        }];
 
         let indices = find_queue_family(&instance, *physical_device);
-        let queue_info = vk::DeviceQueueCreateInfo::builder()
+        let queue_info = [vk::DeviceQueueCreateInfo::builder()
             .queue_family_index(indices.graphics_family())
             .queue_priorities(&[1.0f32])
-            .build();
+            .build()];
 
         // let physical_device_features = vk::PhysicalDeviceFeatures::default();
 
@@ -96,13 +98,15 @@ impl VulkanBase {
         //     vk::PhysicalDeviceFeatures2::builder().push_next(&mut physical_device_features)
         //         .build();
 
+        let extensions = [
+            ash::extensions::khr::Swapchain::name().as_ptr(),
+            ash::extensions::khr::DynamicRendering::name().as_ptr(),
+        ];
+
         let device_create_info = vk::DeviceCreateInfo::builder()
-            .queue_create_infos(&[queue_info])
-            .enabled_layer_names(&[debug])
-            .enabled_extension_names(&[
-                ash::extensions::khr::Swapchain::name().as_ptr(),
-                ash::extensions::khr::DynamicRendering::name().as_ptr(),
-            ])
+            .queue_create_infos(&queue_info)
+            .enabled_layer_names(&debug)
+            .enabled_extension_names(&extensions)
             .push_next(&mut physical_device_features)
             // .enabled_features(&physical_device_features)
             .build();
@@ -122,29 +126,29 @@ unsafe extern "system" fn vulkan_debug_callback(
     p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
     _user_data: *mut std::os::raw::c_void,
 ) -> vk::Bool32 {
-    let callback_data = *p_callback_data;
-    let message_id_number: i32 = callback_data.message_id_number as i32;
-
-    let message_id_name = if callback_data.p_message_id_name.is_null() {
-        Cow::from("")
-    } else {
-        CStr::from_ptr(callback_data.p_message_id_name).to_string_lossy()
-    };
-
-    let message = if callback_data.p_message.is_null() {
-        Cow::from("")
-    } else {
-        CStr::from_ptr(callback_data.p_message).to_string_lossy()
-    };
-
-    println!(
-        "{:?}:\n{:?} [{} ({})] : {}\n",
-        message_severity,
-        message_type,
-        message_id_name,
-        &message_id_number.to_string(),
-        message,
-    );
+    // let callback_data = *p_callback_data;
+    // let message_id_number: i32 = callback_data.message_id_number as i32;
+    //
+    // let message_id_name = if callback_data.p_message_id_name.is_null() {
+    //     Cow::from("")
+    // } else {
+    //     CStr::from_ptr(callback_data.p_message_id_name).to_string_lossy()
+    // };
+    //
+    // let message = if callback_data.p_message.is_null() {
+    //     Cow::from("")
+    // } else {
+    //     CStr::from_ptr(callback_data.p_message).to_string_lossy()
+    // };
+    //
+    // println!(
+    //     "{:?}:\n{:?} [{} ({})] : {}\n",
+    //     message_severity,
+    //     message_type,
+    //     message_id_name,
+    //     &message_id_number.to_string(),
+    //     message,
+    // );
 
     vk::FALSE
 }

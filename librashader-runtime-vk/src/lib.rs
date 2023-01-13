@@ -28,10 +28,12 @@ mod tests {
     fn triangle_vk() {
         let entry = unsafe { ash::Entry::load().unwrap() };
         let base = VulkanBase::new(entry).unwrap();
+        dbg!("finished");
         let mut filter = FilterChainVulkan::load_from_path(
             &base,
             // "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            // "../test/basic.slangp",
             None,
         )
         .unwrap();

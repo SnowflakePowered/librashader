@@ -139,20 +139,20 @@ impl VulkanWindow {
     fn draw_frame(frame: usize, vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
 
         let index = frame % MAX_FRAMES_IN_FLIGHT;
-        let in_flight = vulkan.sync.in_flight[index];
-        let image_available = vulkan.sync.image_available[index];
-        let render_finished = vulkan.sync.render_finished[index];
+        let in_flight = [vulkan.sync.in_flight[index]];
+        let image_available = [vulkan.sync.image_available[index]];
+        let render_finished = [vulkan.sync.render_finished[index]];
 
         unsafe {
             vulkan
                 .base
                 .device
-                .wait_for_fences(&[in_flight], true, u64::MAX)
+                .wait_for_fences(&in_flight, true, u64::MAX)
                 .unwrap();
             vulkan
                 .base
                 .device
-                .reset_fences(&[in_flight])
+                .reset_fences(&in_flight)
                 .unwrap();
 
             let (swapchain_index, _) = vulkan
@@ -161,7 +161,7 @@ impl VulkanWindow {
                 .acquire_next_image(
                     vulkan.swapchain.swapchain,
                     u64::MAX,
-                    image_available,
+                    image_available[0],
                     vk::Fence::null(),
                 )
                 .unwrap();
@@ -314,27 +314,31 @@ impl VulkanWindow {
                 .end_command_buffer(cmd)
                 .expect("failed to record commandbuffer");
 
-            let submit_info = vk::SubmitInfo::builder()
-                .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])
-                .wait_semaphores(&[image_available])
-                .signal_semaphores(&[render_finished])
-                .command_buffers(&[cmd])
-                .build();
+            let stage_mask = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+            let cmd = [cmd];
+            let submit_info = [vk::SubmitInfo::builder()
+                .wait_dst_stage_mask(&stage_mask)
+                .wait_semaphores(&image_available)
+                .signal_semaphores(&render_finished)
+                .command_buffers(&cmd)
+                .build()];
 
             vulkan
                 .base
                 .device
                 .queue_submit(
                     vulkan.base.graphics_queue,
-                    &[submit_info],
-                    in_flight,
+                    &submit_info,
+                    in_flight[0],
                 )
                 .expect("failed to submit queue");
 
+            let swapchain_index = [swapchain_index];
+            let swapchain = [vulkan.swapchain.swapchain];
             let present_info = vk::PresentInfoKHR::builder()
-                .wait_semaphores(&[render_finished])
-                .swapchains(&[vulkan.swapchain.swapchain])
-                .image_indices(&[swapchain_index])
+                .wait_semaphores(&render_finished)
+                .swapchains(&swapchain)
+                .image_indices(&swapchain_index)
                 .build();
 
             vulkan
@@ -344,9 +348,9 @@ impl VulkanWindow {
                 .unwrap();
 
             //oops i pooped my pants
-            std::mem::forget(intermediates);
-            // vulkan.base.device.device_wait_idle().unwrap();
-            // drop(intermediates)
+            // std::mem::forget(intermediates);
+            vulkan.base.device.device_wait_idle().unwrap();
+            drop(intermediates)
         }
     }
 }

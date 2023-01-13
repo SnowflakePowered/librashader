@@ -41,7 +41,7 @@ pub struct Vulkan {
     command_pool: vk::CommandPool,
     pipeline_cache: vk::PipelineCache,
     pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
-    debug: DebugUtils,
+    // debug: DebugUtils,
 }
 
 type ShaderPassMeta = (
@@ -102,7 +102,7 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 command_pool,
                 pipeline_cache,
                 memory_properties: vulkan.memory_properties.clone(),
-                debug,
+                // debug,
             })
         }
     }
@@ -148,7 +148,7 @@ impl
                 command_pool,
                 pipeline_cache,
                 memory_properties: value.2,
-                debug: value.3,
+                // debug: value.3,
             })
         }
     }
@@ -273,7 +273,6 @@ impl FilterChainVulkan {
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), || None);
 
-        eprintln!("filters initialized ok.");
         Ok(FilterChainVulkan {
             common: FilterCommon {
                 luts,
@@ -311,7 +310,7 @@ impl FilterChainVulkan {
         let passes = passes
             .into_iter()
             .map(|shader| {
-                eprintln!("[vk] loading {}", &shader.name.display());
+                // eprintln!("[vk] loading {}", &shader.name.display());
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
                 let spirv = GlslangCompilation::compile(&source)?;
@@ -505,13 +504,13 @@ impl FilterChainVulkan {
 
         // not using frame history;
         if required_images <= 1 {
-            println!("[history] not using frame history");
+            // println!("[history] not using frame history");
             return Ok((VecDeque::new(), Box::new([])));
         }
 
         // history0 is aliased with the original
 
-        eprintln!("[history] using frame history with {required_images} images");
+        // eprintln!("[history] using frame history with {required_images} images");
         let mut images = Vec::with_capacity(required_images);
         images.resize_with(required_images, || {
             OwnedImage::new(&vulkan, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
@@ -537,7 +536,7 @@ impl FilterChainVulkan {
             if back.image.size != input.size
                 || (input.format != vk::Format::UNDEFINED && input.format != back.image.format)
             {
-                eprintln!("[history] resizing");
+                // eprintln!("[history] resizing");
                 // old back will get dropped.. do we need to defer?
                 let old_back = std::mem::replace(
                     &mut back,

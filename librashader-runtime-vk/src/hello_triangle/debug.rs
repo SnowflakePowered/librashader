@@ -29,6 +29,7 @@ impl VulkanDebug {
 
         let debug_utils_loader = DebugUtils::new(entry, instance);
 
+        dbg!("got to dbg");
         unsafe {
             let debug_call_back =
                 debug_utils_loader.create_debug_utils_messenger(&debug_info, None)?;
