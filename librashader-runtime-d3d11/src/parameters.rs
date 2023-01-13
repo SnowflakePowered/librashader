@@ -1,8 +1,8 @@
-use crate::FilterChain;
+use crate::FilterChainD3D11;
 use librashader_runtime::parameters::FilterChainParameters;
 use std::collections::hash_map::Iter;
 
-impl FilterChainParameters for FilterChain {
+impl FilterChainParameters for FilterChainD3D11 {
     fn get_enabled_pass_count(&self) -> usize {
         self.common.config.passes_enabled
     }

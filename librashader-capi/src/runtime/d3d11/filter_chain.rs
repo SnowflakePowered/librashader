@@ -11,8 +11,8 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,
 };
 
-pub use librashader::runtime::d3d11::options::FilterChainOptions;
-pub use librashader::runtime::d3d11::options::FrameOptions;
+pub use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
+pub use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
 use librashader::runtime::{Size, Viewport};
 
@@ -53,7 +53,7 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_d3d11_filter_chain_create(
         preset: *mut libra_shader_preset_t,
-        options: *const FilterChainOptions,
+        options: *const FilterChainOptionsD3D11,
         device: *const ID3D11Device,
         out: *mut MaybeUninit<libra_d3d11_filter_chain_t>
     ) {
@@ -71,7 +71,7 @@ extern_fn! {
             Some(unsafe { &*options })
         };
 
-        let chain = librashader::runtime::d3d11::FilterChain::load_from_preset(
+        let chain = librashader::runtime::d3d11::capi::FilterChainD3D11::load_from_preset(
             unsafe { &*device },
             *preset,
             options,
@@ -102,7 +102,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: *const ID3D11RenderTargetView,
         mvp: *const f32,
-        opt: *const FrameOptions
+        opt: *const FrameOptionsD3D11
     ) mut |chain| {
         assert_some_ptr!(mut chain);
         assert_non_null!(out);

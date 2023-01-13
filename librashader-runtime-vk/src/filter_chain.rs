@@ -26,7 +26,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
-use crate::options::{FilterChainOptions, FrameOptions};
+use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanDevice {
@@ -112,7 +112,7 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanDevice 
 }
 
 /// A Vulkan filter chain.
-pub struct FilterChain {
+pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
     vulkan: VulkanDevice,
@@ -188,13 +188,13 @@ impl Drop for FrameResiduals {
     }
 }
 
-impl FilterChain {
+impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         vulkan: impl TryInto<VulkanDevice, Error = FilterChainError>,
         path: impl AsRef<Path>,
-        options: Option<&FilterChainOptions>,
-    ) -> error::Result<FilterChain> {
+        options: Option<&FilterChainOptionsVulkan>,
+    ) -> error::Result<FilterChainVulkan> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(vulkan, preset, options)
@@ -204,9 +204,9 @@ impl FilterChain {
     pub fn load_from_preset(
         vulkan: impl TryInto<VulkanDevice, Error = FilterChainError>,
         preset: ShaderPreset,
-        options: Option<&FilterChainOptions>,
-    ) -> error::Result<FilterChain> {
-        let (passes, semantics) = FilterChain::load_preset(preset.shaders, &preset.textures)?;
+        options: Option<&FilterChainOptionsVulkan>,
+    ) -> error::Result<FilterChainVulkan> {
+        let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
 
         let mut frames_in_flight = options.map(|o| o.frames_in_flight).unwrap_or(0);
@@ -217,11 +217,11 @@ impl FilterChain {
         // initialize passes
         let filters = Self::init_passes(&device, passes, &semantics, frames_in_flight)?;
 
-        let luts = FilterChain::load_luts(&device, &preset.textures)?;
+        let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChain::init_history(&device, &filters)?;
+            FilterChainVulkan::init_history(&device, &filters)?;
 
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
@@ -246,7 +246,7 @@ impl FilterChain {
         let mut intermediates = Vec::new();
         intermediates.resize_with(frames_in_flight as usize, || FrameResiduals::new(&device.device));
 
-        Ok(FilterChain {
+        Ok(FilterChainVulkan {
             common: FilterCommon {
                 luts,
                 samplers,
@@ -584,7 +584,7 @@ impl FilterChain {
         viewport: &Viewport<VulkanImage>,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
-        options: Option<FrameOptions>,
+        options: Option<FrameOptionsVulkan>,
     ) -> error::Result<()> {
         let intermediates = &mut self.residuals[count % self.residuals.len()];
         intermediates.dispose();

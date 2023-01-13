@@ -1,11 +1,11 @@
-use gl::types::{GLenum, GLuint};
+
 use std::panic::catch_unwind;
 use std::path::Path;
 
 use crate::error::{FilterChainError, Result};
 use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
-use crate::options::{FilterChainOptions, FrameOptions};
+use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 use crate::{Framebuffer, GLImage};
 use librashader_presets::ShaderPreset;
 
@@ -14,18 +14,18 @@ mod inner;
 mod parameters;
 
 pub(crate) use filter_impl::FilterCommon;
-use librashader_common::{Size, Viewport};
+use librashader_common::{Viewport};
 
 /// An OpenGL filter chain.
-pub struct FilterChain {
+pub struct FilterChainGL {
     pub(in crate::filter_chain) filter: FilterChainDispatch,
 }
 
-impl FilterChain {
+impl FilterChainGL {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
         preset: ShaderPreset,
-        options: Option<&FilterChainOptions>,
+        options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         let result = catch_unwind(|| {
             if let Some(options) = options && options.use_dsa {
@@ -48,7 +48,7 @@ impl FilterChain {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
-        options: Option<&FilterChainOptions>,
+        options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
@@ -64,7 +64,7 @@ impl FilterChain {
         input: &GLImage,
         viewport: &Viewport<&Framebuffer>,
         frame_count: usize,
-        options: Option<&FrameOptions>,
+        options: Option<&FrameOptionsGL>,
     ) -> Result<()> {
         match &mut self.filter {
             FilterChainDispatch::DirectStateAccess(p) => {

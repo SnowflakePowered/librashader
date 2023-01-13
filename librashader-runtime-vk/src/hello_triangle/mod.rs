@@ -8,7 +8,7 @@ mod swapchain;
 mod syncobjects;
 pub mod vulkan_base;
 
-use crate::filter_chain::{FilterChain, VulkanDevice};
+use crate::filter_chain::{FilterChainVulkan, VulkanDevice};
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
 use crate::hello_triangle::pipeline::VulkanPipeline;
@@ -48,7 +48,7 @@ impl VulkanWindow {
         event_loop: EventLoop<()>,
         window: winit::window::Window,
         vulkan: VulkanDraw,
-        mut filter_chain: FilterChain,
+        mut filter_chain: FilterChainVulkan,
     ) {
         let mut counter = 0;
         event_loop.run(move |event, _, control_flow| match event {
@@ -136,7 +136,7 @@ impl VulkanWindow {
         vulkan.base.device.cmd_end_render_pass(cmd);
     }
 
-    fn draw_frame(frame: usize, vulkan: &VulkanDraw, filter: &mut FilterChain) {
+    fn draw_frame(frame: usize, vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
         let index = frame % MAX_FRAMES_IN_FLIGHT;
         let in_flight = [vulkan.sync.in_flight[index]];
         let image_available = [vulkan.sync.image_available[index]];
@@ -370,7 +370,7 @@ pub struct VulkanDraw {
     pub sync: SyncObjects,
 }
 
-pub fn main(vulkan: VulkanBase, filter_chain: FilterChain) {
+pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
     let event_loop = EventLoopBuilder::new()
         .with_any_thread(true)
         .with_dpi_aware(true)

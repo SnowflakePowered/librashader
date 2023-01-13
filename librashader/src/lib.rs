@@ -100,22 +100,73 @@ pub mod runtime {
     /// Note that the OpenGL runtime requires `gl` to be
     /// initialized with [`gl::load_with`](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
     pub mod gl {
-        pub use librashader_runtime_gl::*;
+        pub use librashader_runtime_gl::{
+            options::{
+                FilterChainOptionsGL as FilterChainOptions,
+                FrameOptionsGL as FrameOptions,
+            },
+            FilterChainGL as FilterChain,
+            Framebuffer, GLImage,
+            error
+        };
+
+        #[doc(hidden)]
+        /// Re-exports names to deal with C API conflicts.
+        ///
+        /// This is internal to librashader-capi and is exempt from semantic versioning.
+        pub mod capi {
+            pub use librashader_runtime_gl::*;
+        }
     }
 
     #[cfg(feature = "d3d11")]
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
-        pub use librashader_runtime_d3d11::*;
+        pub use librashader_runtime_d3d11::{
+            options::{
+                FilterChainOptionsD3D11 as FilterChainOptions,
+                FrameOptionsD3D11 as FrameOptions,
+            },
+            FilterChainD3D11 as FilterChain,
+            D3D11InputView, D3D11OutputView,
+            error
+        };
+
+        #[doc(hidden)]
+        /// Re-exports names to deal with C API conflicts.
+        ///
+        /// This is internal to librashader-capi and is exempt from semantic versioning.
+        pub mod capi {
+            pub use librashader_runtime_d3d11::*;
+        }
     }
 
     #[cfg(feature = "vk")]
     /// Shader runtime for Vulkan 1.3+.
     pub mod vk {
-        pub use librashader_runtime_vk::*;
+        pub use librashader_runtime_vk::{
+            options::{
+                FilterChainOptionsVulkan as FilterChainOptions,
+                FrameOptionsVulkan as FrameOptions,
+            },
+            FilterChainVulkan as FilterChain,
+            VulkanImage, VulkanDevice, VulkanInstance,
+            error
+        };
+
+        #[doc(hidden)]
+        /// Re-exports names to deal with C API conflicts.
+        ///
+        /// This is internal to librashader-capi and is exempt from semantic versioning.
+        pub mod capi {
+            pub use librashader_runtime_vk::*;
+        }
     }
 
     #[doc(hidden)]
+    /// Helper methods for runtimes.
+    ///
+    /// This is internal to librashader runtimes and is exempt from semantic versioning.
     pub mod helper {
         pub use librashader_runtime::semantics::insert_lut_semantics;
         pub use librashader_runtime::semantics::insert_pass_semantics;

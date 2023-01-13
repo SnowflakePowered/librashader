@@ -9,8 +9,8 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
 
-pub use librashader::runtime::gl::options::FilterChainOptions;
-pub use librashader::runtime::gl::options::FrameOptions;
+pub use librashader::runtime::gl::capi::options::FilterChainOptionsGL;
+pub use librashader::runtime::gl::capi::options::FrameOptionsGL;
 use librashader::runtime::{Size, Viewport};
 
 /// A GL function loader that librashader needs to be initialized with.
@@ -81,7 +81,7 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_gl_filter_chain_create(
         preset: *mut libra_shader_preset_t,
-        options: *const FilterChainOptions,
+        options: *const FilterChainOptionsGL,
         out: *mut MaybeUninit<libra_gl_filter_chain_t>
     ) {
         assert_non_null!(preset);
@@ -97,7 +97,7 @@ extern_fn! {
             Some(unsafe { &*options })
         };
 
-        let chain = librashader::runtime::gl::FilterChain::load_from_preset(*preset, options)?;
+        let chain = librashader::runtime::gl::capi::FilterChainGL::load_from_preset(*preset, options)?;
 
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
@@ -124,7 +124,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: libra_draw_framebuffer_gl_t,
         mvp: *const f32,
-        opt: *const FrameOptions
+        opt: *const FrameOptionsGL
     ) mut |chain| {
         assert_some_ptr!(mut chain);
         let image: GLImage = image.into();
