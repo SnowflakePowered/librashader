@@ -47,6 +47,7 @@ pub enum LIBRA_ERRNO {
 
 // Nothing here can use extern_fn because they are lower level than libra_error_t.
 
+/// Function pointer definition for libra_error_errno
 pub type PFN_libra_error_errno = extern "C" fn(error: libra_error_t) -> LIBRA_ERRNO;
 #[no_mangle]
 /// Get the error code corresponding to this error object.
@@ -61,6 +62,7 @@ pub extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO {
     unsafe { error.as_ref().get_code() }
 }
 
+/// Function pointer definition for libra_error_print
 pub type PFN_libra_error_print = extern "C" fn(error: libra_error_t) -> i32;
 #[no_mangle]
 /// Print the error message.
@@ -79,6 +81,7 @@ pub extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
     return 0;
 }
 
+/// Function pointer definition for libra_error_free
 pub type PFN_libra_error_free = extern "C" fn(error: *mut libra_error_t) -> i32;
 #[no_mangle]
 /// Frees any internal state kept by the error.
@@ -102,6 +105,7 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
     return 0;
 }
 
+/// Function pointer definition for libra_error_write
 pub type PFN_libra_error_write =
     extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
 #[no_mangle]
@@ -133,6 +137,7 @@ pub extern "C" fn libra_error_write(
     return 0;
 }
 
+/// Function pointer definition for libra_error_free_string
 pub type PFN_libra_error_free_string = extern "C" fn(out: *mut *mut c_char) -> i32;
 #[no_mangle]
 /// Frees an error string previously allocated by `libra_error_write`.

@@ -59,7 +59,9 @@ macro_rules! ffi_body {
 
 macro_rules! extern_fn {
     ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) $body:block) => {
-        paste::paste! {
+        ::paste::paste! {
+            /// Function pointer definition for
+            #[doc = ::std::stringify!($func_name)]
             pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
         }
 
@@ -71,7 +73,9 @@ macro_rules! extern_fn {
     };
 
     ($(#[$($attrss:tt)*])* raw fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) $body:block) => {
-        paste::paste! {
+        ::paste::paste! {
+            /// Function pointer definition for
+            #[doc = ::std::stringify!($func_name)]
             pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
         }
 
@@ -83,7 +87,9 @@ macro_rules! extern_fn {
     };
 
     ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) |$($ref_capture:ident),*|; mut |$($mut_capture:ident),*| $body:block) => {
-        paste::paste! {
+        ::paste::paste! {
+            /// Function pointer definition for
+            #[doc = ::std::stringify!($func_name)]
             pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
         }
 
@@ -95,7 +101,9 @@ macro_rules! extern_fn {
     };
 
     ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) mut |$($mut_capture:ident),*| $body:block) => {
-        paste::paste! {
+        ::paste::paste! {
+            /// Function pointer definition for
+            #[doc = ::std::stringify!($func_name)]
             pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
         }
 
@@ -106,8 +114,10 @@ macro_rules! extern_fn {
         }
     };
     ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) |$($ref_capture:ident),*| $body:block) => {
-        paste::paste! {
-            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
+        ::paste::paste! {
+            /// Function pointer definition for
+             #[doc = ::std::stringify!($func_name)]
+             pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
         }
 
         #[no_mangle]

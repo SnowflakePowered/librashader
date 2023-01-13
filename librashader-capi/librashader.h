@@ -11,7 +11,7 @@
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
 #include <d3d11.h>
 #else
-typedef void ID3D11Device; typedef void ID3D11RenderTargetView; typedef void ID3D1ShaderResourceView;
+typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;
 #endif
 #if defined(LIBRA_RUNTIME_VULKAN)
 #include <vulkan\vulkan.h>
@@ -23,12 +23,12 @@ enum LIBRA_ERRNO
     : int32_t
 #endif // __cplusplus
 {
- LIBRA_ERRNO_UNKNOWN_ERROR = 0,
- LIBRA_ERRNO_INVALID_PARAMETER = 1,
- LIBRA_ERRNO_INVALID_PATH = 2,
- LIBRA_ERRNO_PRESET_ERROR = 3,
- LIBRA_ERRNO_PREPROCESS_ERROR = 4,
- LIBRA_ERRNO_RUNTIME_ERROR = 5,
+    LIBRA_ERRNO_UNKNOWN_ERROR = 0,
+    LIBRA_ERRNO_INVALID_PARAMETER = 1,
+    LIBRA_ERRNO_INVALID_PATH = 2,
+    LIBRA_ERRNO_PRESET_ERROR = 3,
+    LIBRA_ERRNO_PREPROCESS_ERROR = 4,
+    LIBRA_ERRNO_RUNTIME_ERROR = 5,
 };
 #ifndef __cplusplus
 typedef int32_t LIBRA_ERRNO;
@@ -52,13 +52,15 @@ typedef struct _libra_error _libra_error;
 /// parameter metadata.
 typedef struct _shader_preset _shader_preset;
 
-typedef struct _libra_error* libra_error_t;
+/// A handle to a librashader error object.
+typedef struct _libra_error *libra_error_t;
 
-typedef struct _shader_preset* libra_shader_preset_t;
+/// A handle to a shader preset object.
+typedef struct _shader_preset *libra_shader_preset_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// A GL function loader that librashader needs to be initialized with.
-typedef const void* (*libra_gl_loader_t)(const char*);
+typedef const void *(*libra_gl_loader_t)(const char*);
 #endif
 
 /// Options for filter chain creation.
@@ -72,24 +74,25 @@ typedef struct filter_chain_gl_opt_t {
 } filter_chain_gl_opt_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef struct _filter_chain_gl* libra_gl_filter_chain_t;
+/// A handle to a OpenGL filter chain.
+typedef struct _filter_chain_gl *libra_gl_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the source image.
 typedef struct libra_source_image_gl_t {
-    /// A texture GLuint to the source image.
-    uint32_t handle;
-    /// The format of the source image.
-    uint32_t format;
-    /// The width of the source image.
-    uint32_t width;
-    /// The height of the source image.
-    uint32_t height;
+  /// A texture GLuint to the source image.
+  uint32_t handle;
+  /// The format of the source image.
+  uint32_t format;
+  /// The width of the source image.
+  uint32_t width;
+  /// The height of the source image.
+  uint32_t height;
 } libra_source_image_gl_t;
 #endif
 
-/// Parameters for the output viewport.
+/// Defines the output viewport for a rendered frame.
 typedef struct libra_viewport_t {
     float x;
     float y;
@@ -100,12 +103,12 @@ typedef struct libra_viewport_t {
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the output framebuffer.
 typedef struct libra_draw_framebuffer_gl_t {
-    /// A framebuffer GLuint to the output framebuffer.
-    uint32_t handle;
-    /// A texture GLuint to the logical buffer of the output framebuffer.
-    uint32_t texture;
-    /// The format of the output framebuffer.
-    uint32_t format;
+  /// A framebuffer GLuint to the output framebuffer.
+  uint32_t handle;
+  /// A texture GLuint to the logical buffer of the output framebuffer.
+  uint32_t texture;
+  /// The format of the output framebuffer.
+  uint32_t format;
 } libra_draw_framebuffer_gl_t;
 #endif
 
@@ -130,18 +133,19 @@ typedef struct filter_chain_d3d11_opt_t {
 } filter_chain_d3d11_opt_t;
 
 #if defined(LIBRA_RUNTIME_D3D11)
-typedef struct _filter_chain_d3d11* libra_d3d11_filter_chain_t;
+/// A handle to a Direct3D11 filter chain.
+typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
 /// OpenGL parameters for the source image.
 typedef struct libra_source_image_d3d11_t {
-    /// A shader resource view into the source image
-    const ID3D11ShaderResourceView* handle;
-    /// The width of the source image.
-    uint32_t width;
-    /// The height of the source image.
-    uint32_t height;
+  /// A shader resource view into the source image
+  const ID3D11ShaderResourceView *handle;
+  /// The width of the source image.
+  uint32_t width;
+  /// The height of the source image.
+  uint32_t height;
 } libra_source_image_d3d11_t;
 #endif
 
@@ -156,17 +160,17 @@ typedef struct frame_vk_opt_t {
 #if defined(LIBRA_RUNTIME_VULKAN)
 /// Handles required to instantiate vulkan
 typedef struct libra_device_vk_t {
-    /// A raw `VkPhysicalDevice` handle
-    /// for the physical device that will perform rendering.
-    VkPhysicalDevice physical_device;
-    /// A raw `VkInstance` handle
-    /// for the Vulkan instance that will perform rendering.
-    VkInstance instance;
-    /// A raw `VkDevice` handle
-    /// for the device attached to the instance that will perform rendering.
-    VkDevice device;
-    /// The entry loader for the Vulkan library.
-    PFN_vkGetInstanceProcAddr entry;
+  /// A raw `VkPhysicalDevice` handle
+  /// for the physical device that will perform rendering.
+  VkPhysicalDevice physical_device;
+  /// A raw `VkInstance` handle
+  /// for the Vulkan instance that will perform rendering.
+  VkInstance instance;
+  /// A raw `VkDevice` handle
+  /// for the device attached to the instance that will perform rendering.
+  VkDevice device;
+  /// The entry loader for the Vulkan library.
+  PFN_vkGetInstanceProcAddr entry;
 } libra_device_vk_t;
 #endif
 
@@ -179,20 +183,21 @@ typedef struct filter_chain_vk_opt_t {
 } filter_chain_vk_opt_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-typedef struct _filter_chain_vk* libra_vk_filter_chain_t;
+/// A handle to a Vulkan filter chain.
+typedef struct _filter_chain_vk *libra_vk_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 /// Vulkan  parameters for the source image.
 typedef struct libra_image_vk_t {
-    /// A raw `VkImage` handle to the source image.
-    VkImage handle;
-    /// The `VkFormat` of the source image.
-    VkFormat format;
-    /// The width of the source image.
-    uint32_t width;
-    /// The height of the source image.
-    uint32_t height;
+  /// A raw `VkImage` handle to the source image.
+  VkImage handle;
+  /// The `VkFormat` of the source image.
+  VkFormat format;
+  /// The width of the source image.
+  uint32_t width;
+  /// The height of the source image.
+  uint32_t height;
 } libra_image_vk_t;
 #endif
 
@@ -204,315 +209,337 @@ typedef struct FrameOptionsVulkan {
     int32_t frame_direction;
 } FrameOptionsVulkan;
 
-typedef libra_error_t(*PFN_libra_preset_free)(libra_shader_preset_t* preset);
+/// Function pointer definition for
+///libra_preset_free
+typedef libra_error_t (*PFN_libra_preset_free)(libra_shader_preset_t *preset);
 
-typedef libra_error_t(*PFN_libra_preset_set_param)(libra_shader_preset_t* preset,
-    const char* name,
-    float value);
+/// Function pointer definition for
+///libra_preset_set_param
+typedef libra_error_t (*PFN_libra_preset_set_param)(libra_shader_preset_t *preset,
+                                                    const char *name,
+                                                    float value);
 
-typedef libra_error_t(*PFN_libra_preset_get_param)(libra_shader_preset_t* preset,
-    const char* name,
-    float* value);
+/// Function pointer definition for
+///libra_preset_get_param
+typedef libra_error_t (*PFN_libra_preset_get_param)(libra_shader_preset_t *preset,
+                                                    const char *name,
+                                                    float *value);
 
-typedef libra_error_t(*PFN_libra_preset_print)(libra_shader_preset_t* preset);
+/// Function pointer definition for
+///libra_preset_print
+typedef libra_error_t (*PFN_libra_preset_print)(libra_shader_preset_t *preset);
 
-typedef libra_error_t(*PFN_libra_preset_get_runtime_param_names)(libra_shader_preset_t* preset,
-    const char** value);
+typedef libra_error_t (*PFN_libra_preset_get_runtime_param_names)(libra_shader_preset_t *preset,
+                                                                  const char **value);
 
-typedef LIBRA_ERRNO(*PFN_libra_error_errno)(libra_error_t error);
+typedef LIBRA_ERRNO (*PFN_libra_error_errno)(libra_error_t error);
 
-typedef int32_t(*PFN_libra_error_print)(libra_error_t error);
+typedef int32_t (*PFN_libra_error_print)(libra_error_t error);
 
-typedef int32_t(*PFN_libra_error_free)(libra_error_t* error);
+typedef int32_t (*PFN_libra_error_free)(libra_error_t *error);
 
-typedef int32_t(*PFN_libra_error_write)(libra_error_t error, char** out);
+typedef int32_t (*PFN_libra_error_write)(libra_error_t error, char **out);
 
-typedef int32_t(*PFN_libra_error_free_string)(char** out);
+typedef int32_t (*PFN_libra_error_free_string)(char **out);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef libra_error_t(*PFN_libra_gl_init_context)(libra_gl_loader_t loader);
+/// Function pointer definition for
+///libra_gl_init_context
+typedef libra_error_t (*PFN_libra_gl_init_context)(libra_gl_loader_t loader);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef libra_error_t(*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t* preset,
-    const struct filter_chain_gl_opt_t* options,
-    libra_gl_filter_chain_t* out);
+/// Function pointer definition for
+///libra_gl_filter_chain_create
+typedef libra_error_t (*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t *preset,
+                                                          const struct filter_chain_gl_opt_t *options,
+                                                          libra_gl_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef libra_error_t(*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t* chain,
-    size_t frame_count,
-    struct libra_source_image_gl_t image,
-    struct libra_viewport_t viewport,
-    struct libra_draw_framebuffer_gl_t out,
-    const float* mvp,
-    const struct frame_gl_opt_t* opt);
+/// Function pointer definition for
+///libra_gl_filter_chain_frame
+typedef libra_error_t (*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t *chain,
+                                                         size_t frame_count,
+                                                         struct libra_source_image_gl_t image,
+                                                         struct libra_viewport_t viewport,
+                                                         struct libra_draw_framebuffer_gl_t out,
+                                                         const float *mvp,
+                                                         const struct frame_gl_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-typedef libra_error_t(*PFN_libra_gl_filter_chain_free)(libra_gl_filter_chain_t* chain);
+/// Function pointer definition for
+///libra_gl_filter_chain_free
+typedef libra_error_t (*PFN_libra_gl_filter_chain_free)(libra_gl_filter_chain_t *chain);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-typedef libra_error_t(*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset_t* preset,
-    const struct filter_chain_d3d11_opt_t* options,
-    const ID3D11Device* device,
-    libra_d3d11_filter_chain_t* out);
+/// Function pointer definition for
+///libra_d3d11_filter_chain_create
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset_t *preset,
+                                                             const struct filter_chain_d3d11_opt_t *options,
+                                                             const ID3D11Device *device,
+                                                             libra_d3d11_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-typedef libra_error_t(*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t* chain,
-    size_t frame_count,
-    struct libra_source_image_d3d11_t image,
-    struct libra_viewport_t viewport,
-    const ID3D11RenderTargetView* out,
-    const float* mvp,
-    const struct frame_vk_opt_t* opt);
+/// Function pointer definition for
+///libra_d3d11_filter_chain_frame
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t *chain,
+                                                            size_t frame_count,
+                                                            struct libra_source_image_d3d11_t image,
+                                                            struct libra_viewport_t viewport,
+                                                            const ID3D11RenderTargetView *out,
+                                                            const float *mvp,
+                                                            const struct frame_vk_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-typedef libra_error_t(*PFN_libra_d3d11_filter_chain_free)(libra_d3d11_filter_chain_t* chain);
+/// Function pointer definition for
+///libra_d3d11_filter_chain_free
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_free)(libra_d3d11_filter_chain_t *chain);
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
-    /// Get the error code corresponding to this error object.
-    ///
-    /// ## Safety
-    ///   - `error` must be valid and initialized.
-    LIBRA_ERRNO libra_error_errno(libra_error_t error);
+/// Get the error code corresponding to this error object.
+///
+/// ## Safety
+///   - `error` must be valid and initialized.
+LIBRA_ERRNO libra_error_errno(libra_error_t error);
 
-    /// Print the error message.
-    ///
-    /// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
-    /// ## Safety
-    ///   - `error` must be a valid and initialized instance of `libra_error_t`.
-    int32_t libra_error_print(libra_error_t error);
+/// Print the error message.
+///
+/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
+/// ## Safety
+///   - `error` must be a valid and initialized instance of `libra_error_t`.
+int32_t libra_error_print(libra_error_t error);
 
-    /// Frees any internal state kept by the error.
-    ///
-    /// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
-    /// The resulting error object becomes null.
-    /// ## Safety
-    ///   - `error` must be null or a pointer to a valid and initialized instance of `libra_error_t`.
-    int32_t libra_error_free(libra_error_t* error);
+/// Frees any internal state kept by the error.
+///
+/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
+/// The resulting error object becomes null.
+/// ## Safety
+///   - `error` must be null or a pointer to a valid and initialized instance of `libra_error_t`.
+int32_t libra_error_free(libra_error_t *error);
 
-    /// Writes the error message into `out`
-    ///
-    /// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
-    /// ## Safety
-    ///   - `error` must be a valid and initialized instance of `libra_error_t`.
-    ///   - `out` must be a non-null pointer. The resulting string must not be modified.
-    int32_t libra_error_write(libra_error_t error,
-        char** out);
+/// Writes the error message into `out`
+///
+/// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
+/// ## Safety
+///   - `error` must be a valid and initialized instance of `libra_error_t`.
+///   - `out` must be a non-null pointer. The resulting string must not be modified.
+int32_t libra_error_write(libra_error_t error,
+                          char **out);
 
-    /// Frees an error string previously allocated by `libra_error_write`.
-    ///
-    /// After freeing, the pointer will be set to null.
-    /// ## Safety
-    ///   - If `libra_error_write` is not null, it must point to a string previously returned by `libra_error_write`.
-    ///     Attempting to free anything else, including strings or objects from other librashader functions, is immediate
-    ///     Undefined Behaviour.
-    int32_t libra_error_free_string(char** out);
+/// Frees an error string previously allocated by `libra_error_write`.
+///
+/// After freeing, the pointer will be set to null.
+/// ## Safety
+///   - If `libra_error_write` is not null, it must point to a string previously returned by `libra_error_write`.
+///     Attempting to free anything else, including strings or objects from other librashader functions, is immediate
+///     Undefined Behaviour.
+int32_t libra_error_free_string(char **out);
 
-    /// Load a preset.
-    ///
-    /// ## Safety
-    ///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
-    ///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
-    /// ## Returns
-    ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
-    libra_error_t libra_preset_create(const char* filename,
-        libra_shader_preset_t* out);
+/// Load a preset.
+///
+/// ## Safety
+///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
+///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
+/// ## Returns
+///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
+libra_error_t libra_preset_create(const char *filename,
+                                  libra_shader_preset_t *out);
 
-    /// Free the preset.
-    ///
-    /// If `preset` is null, this function does nothing. The resulting value in `preset` then becomes
-    /// null.
-    ///
-    /// ## Safety
-    /// - `preset` must be a valid and aligned pointer to a shader preset.
-    libra_error_t libra_preset_free(libra_shader_preset_t* preset);
+/// Free the preset.
+///
+/// If `preset` is null, this function does nothing. The resulting value in `preset` then becomes
+/// null.
+///
+/// ## Safety
+/// - `preset` must be a valid and aligned pointer to a shader preset.
+libra_error_t libra_preset_free(libra_shader_preset_t *preset);
 
-    /// Set the value of the parameter in the preset.
-    ///
-    /// ## Safety
-    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
-    /// - `name` must be null or a valid and aligned pointer to a string.
-    libra_error_t libra_preset_set_param(libra_shader_preset_t* preset, const char* name, float value);
+/// Set the value of the parameter in the preset.
+///
+/// ## Safety
+/// - `preset` must be null or a valid and aligned pointer to a shader preset.
+/// - `name` must be null or a valid and aligned pointer to a string.
+libra_error_t libra_preset_set_param(libra_shader_preset_t *preset, const char *name, float value);
 
-    /// Get the value of the parameter as set in the preset.
-    ///
-    /// ## Safety
-    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
-    /// - `name` must be null or a valid and aligned pointer to a string.
-    /// - `value` may be a pointer to a uninitialized `float`.
-    libra_error_t libra_preset_get_param(libra_shader_preset_t* preset, const char* name, float* value);
+/// Get the value of the parameter as set in the preset.
+///
+/// ## Safety
+/// - `preset` must be null or a valid and aligned pointer to a shader preset.
+/// - `name` must be null or a valid and aligned pointer to a string.
+/// - `value` may be a pointer to a uninitialized `float`.
+libra_error_t libra_preset_get_param(libra_shader_preset_t *preset, const char *name, float *value);
 
-    /// Pretty print the shader preset.
-    ///
-    /// ## Safety
-    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
-    libra_error_t libra_preset_print(libra_shader_preset_t* preset);
+/// Pretty print the shader preset.
+///
+/// ## Safety
+/// - `preset` must be null or a valid and aligned pointer to a shader preset.
+libra_error_t libra_preset_print(libra_shader_preset_t *preset);
 
-    /// Get a list of runtime parameter names.
-    ///
-    /// The returned value can not currently be freed.
-    /// This function should be considered in progress. Its use is discouraged.
-    libra_error_t libra_preset_get_runtime_param_names(libra_shader_preset_t* preset,
-        const char** value);
+/// Get a list of runtime parameter names.
+///
+/// The returned value can not currently be freed.
+/// This function should be considered in progress. Its use is discouraged.
+libra_error_t libra_preset_get_runtime_param_names(libra_shader_preset_t *preset,
+                                                   const char **value);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    /// Initialize the OpenGL Context for librashader.
-    ///
-    /// ## Safety
-    /// Attempting to create a filter chain will fail.
-    ///
-    /// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
-    /// chain objects, and drawing with them causes immediate undefined behaviour.
-    libra_error_t libra_gl_init_context(libra_gl_loader_t loader);
+/// Initialize the OpenGL Context for librashader.
+///
+/// ## Safety
+/// Attempting to create a filter chain will fail.
+///
+/// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
+/// chain objects, and drawing with them causes immediate undefined behaviour.
+libra_error_t libra_gl_init_context(libra_gl_loader_t loader);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    /// Create the filter chain given the shader preset.
-    ///
-    /// The shader preset is immediately invalidated and must be recreated after
-    /// the filter chain is created.
-    ///
-    /// ## Safety:
-    /// - `preset` must be either null, or valid and aligned.
-    /// - `options` must be either null, or valid and aligned.
-    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
-    libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t* preset,
-        const struct filter_chain_gl_opt_t* options,
-        libra_gl_filter_chain_t* out);
+/// Create the filter chain given the shader preset.
+///
+/// The shader preset is immediately invalidated and must be recreated after
+/// the filter chain is created.
+///
+/// ## Safety:
+/// - `preset` must be either null, or valid and aligned.
+/// - `options` must be either null, or valid and aligned.
+/// - `out` must be aligned, but may be null, invalid, or uninitialized.
+libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
+                                           const struct filter_chain_gl_opt_t *options,
+                                           libra_gl_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    /// Draw a frame with the given parameters for the given filter chain.
-    ///
-    /// ## Safety
-    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
-    ///    function will return an error.
-    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
-    ///    values for the model view projection matrix.
-    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
-    ///    struct.
-    libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t* chain,
-        size_t frame_count,
-        struct libra_source_image_gl_t image,
-        struct libra_viewport_t viewport,
-        struct libra_draw_framebuffer_gl_t out,
-        const float* mvp,
-        const struct frame_gl_opt_t* opt);
+/// Draw a frame with the given parameters for the given filter chain.
+///
+/// ## Safety
+/// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
+///    function will return an error.
+/// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
+///    values for the model view projection matrix.
+/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+///    struct.
+libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
+                                          size_t frame_count,
+                                          struct libra_source_image_gl_t image,
+                                          struct libra_viewport_t viewport,
+                                          struct libra_draw_framebuffer_gl_t out,
+                                          const float *mvp,
+                                          const struct frame_gl_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    /// Free a GL filter chain.
-    ///
-    /// The resulting value in `chain` then becomes null.
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
-    libra_error_t libra_gl_filter_chain_free(libra_gl_filter_chain_t* chain);
+/// Free a GL filter chain.
+///
+/// The resulting value in `chain` then becomes null.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+libra_error_t libra_gl_filter_chain_free(libra_gl_filter_chain_t *chain);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-    /// Create the filter chain given the shader preset.
-    ///
-    /// The shader preset is immediately invalidated and must be recreated after
-    /// the filter chain is created.
-    ///
-    /// ## Safety:
-    /// - `preset` must be either null, or valid and aligned.
-    /// - `options` must be either null, or valid and aligned.
-    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
-    libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t* preset,
-        const struct filter_chain_d3d11_opt_t* options,
-        const ID3D11Device* device,
-        libra_d3d11_filter_chain_t* out);
+/// Create the filter chain given the shader preset.
+///
+/// The shader preset is immediately invalidated and must be recreated after
+/// the filter chain is created.
+///
+/// ## Safety:
+/// - `preset` must be either null, or valid and aligned.
+/// - `options` must be either null, or valid and aligned.
+/// - `out` must be aligned, but may be null, invalid, or uninitialized.
+libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t *preset,
+                                              const struct filter_chain_d3d11_opt_t *options,
+                                              const ID3D11Device *device,
+                                              libra_d3d11_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-    /// Draw a frame with the given parameters for the given filter chain.
-    ///
-    /// ## Safety
-    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
-    ///    function will return an error.
-    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
-    ///    values for the model view projection matrix.
-    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
-    ///    struct.
-    libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t* chain,
-        size_t frame_count,
-        struct libra_source_image_d3d11_t image,
-        struct libra_viewport_t viewport,
-        const ID3D11RenderTargetView* out,
-        const float* mvp,
-        const struct frame_vk_opt_t* opt);
+/// Draw a frame with the given parameters for the given filter chain.
+///
+/// ## Safety
+/// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
+///    function will return an error.
+/// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
+///    values for the model view projection matrix.
+/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+///    struct.
+libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
+                                             size_t frame_count,
+                                             struct libra_source_image_d3d11_t image,
+                                             struct libra_viewport_t viewport,
+                                             const ID3D11RenderTargetView *out,
+                                             const float *mvp,
+                                             const struct frame_vk_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-    /// Free a D3D11 filter chain.
-    ///
-    /// The resulting value in `chain` then becomes null.
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
-    libra_error_t libra_d3d11_filter_chain_free(libra_d3d11_filter_chain_t* chain);
+/// Free a D3D11 filter chain.
+///
+/// The resulting value in `chain` then becomes null.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+libra_error_t libra_d3d11_filter_chain_free(libra_d3d11_filter_chain_t *chain);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-    /// Create the filter chain given the shader preset.
-    ///
-    /// The shader preset is immediately invalidated and must be recreated after
-    /// the filter chain is created.
-    ///
-    /// ## Safety:
-    /// - The handles provided in `vulkan` must be valid for the command buffers that
-    ///   `libra_vk_filter_chain_frame` will write to. Namely, the VkDevice must have been
-    ///    created with the `VK_KHR_dynamic_rendering` extension.
-    /// - `preset` must be either null, or valid and aligned.
-    /// - `options` must be either null, or valid and aligned.
-    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
-    libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
-        libra_shader_preset_t* preset,
-        const struct filter_chain_vk_opt_t* options,
-        libra_vk_filter_chain_t* out);
+/// Create the filter chain given the shader preset.
+///
+/// The shader preset is immediately invalidated and must be recreated after
+/// the filter chain is created.
+///
+/// ## Safety:
+/// - The handles provided in `vulkan` must be valid for the command buffers that
+///   `libra_vk_filter_chain_frame` will write to. Namely, the VkDevice must have been
+///    created with the `VK_KHR_dynamic_rendering` extension.
+/// - `preset` must be either null, or valid and aligned.
+/// - `options` must be either null, or valid and aligned.
+/// - `out` must be aligned, but may be null, invalid, or uninitialized.
+libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
+                                           libra_shader_preset_t *preset,
+                                           const struct filter_chain_vk_opt_t *options,
+                                           libra_vk_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-    /// Records rendering commands for a frame with the given parameters for the given filter chain
-    /// to the input command buffer.
-    ///
-    /// librashader will not do any queue submissions.
-    ///
-    /// ## Safety
-    /// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.
-    /// - `command_buffer` must be a valid handle to a `VkCommandBuffer` that is ready for recording.
-    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
-    ///    function will return an error.
-    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
-    ///    values for the model view projection matrix.
-    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
-    ///    struct.
-    libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t* chain,
-        VkCommandBuffer command_buffer,
-        size_t frame_count,
-        struct libra_image_vk_t image,
-        struct libra_viewport_t viewport,
-        struct libra_image_vk_t out,
-        const float* mvp,
-        const struct FrameOptionsVulkan* opt);
+/// Records rendering commands for a frame with the given parameters for the given filter chain
+/// to the input command buffer.
+///
+/// librashader will not do any queue submissions.
+///
+/// ## Safety
+/// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.
+/// - `command_buffer` must be a valid handle to a `VkCommandBuffer` that is ready for recording.
+/// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
+///    function will return an error.
+/// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
+///    values for the model view projection matrix.
+/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+///    struct.
+libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
+                                          VkCommandBuffer command_buffer,
+                                          size_t frame_count,
+                                          struct libra_image_vk_t image,
+                                          struct libra_viewport_t viewport,
+                                          struct libra_image_vk_t out,
+                                          const float *mvp,
+                                          const struct FrameOptionsVulkan *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-    /// Free a GL filter chain.
-    ///
-    /// The resulting value in `chain` then becomes null.
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
-    libra_error_t libra_vk_filter_chain_free(libra_vk_filter_chain_t* chain);
+/// Free a GL filter chain.
+///
+/// The resulting value in `chain` then becomes null.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+libra_error_t libra_vk_filter_chain_free(libra_vk_filter_chain_t *chain);
 #endif
 
 #ifdef __cplusplus

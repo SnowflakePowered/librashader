@@ -113,6 +113,7 @@ extern_fn! {
 }
 
 // can't use extern_fn! for this because of the mut.
+/// Function pointer definition for libra_preset_get_runtime_param_names
 pub type PFN_libra_preset_get_runtime_param_names = unsafe extern "C" fn(
     preset: *mut libra_shader_preset_t,
     value: MaybeUninit<*mut *const c_char>,
@@ -121,7 +122,8 @@ pub type PFN_libra_preset_get_runtime_param_names = unsafe extern "C" fn(
 /// Get a list of runtime parameter names.
 ///
 /// The returned value can not currently be freed.
-/// This function should be considered in progress. Its use is discouraged.
+/// This function should be considered work in progress. Its use is discouraged.
+/// Removal of this function is exempted from semantic versioning.
 #[no_mangle]
 pub unsafe extern "C" fn libra_preset_get_runtime_param_names(
     preset: *mut libra_shader_preset_t,
