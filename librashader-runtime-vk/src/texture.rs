@@ -165,14 +165,14 @@ impl OwnedImage {
         Ok(size)
     }
 
-    pub fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> error::Result<InputImage> {
-        Ok(InputImage {
+    pub fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
+        InputImage {
             image: self.image.clone(),
             image_view: self.image_view.clone(),
             wrap_mode,
             filter_mode: filter,
             mip_filter: filter,
-        })
+        }
     }
 
     pub fn generate_mipmaps_and_end_pass(&self, cmd: vk::CommandBuffer) {

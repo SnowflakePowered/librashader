@@ -49,7 +49,9 @@ impl VulkanWindow {
         vulkan: VulkanDraw,
         mut filter_chain: FilterChainVulkan,
     ) {
-        event_loop.run(move |event, _, control_flow| match event {
+        let mut counter = 0;
+        event_loop.run(move |event, _, control_flow| {
+            match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::KeyboardInput { input, .. } => match input {
@@ -70,10 +72,13 @@ impl VulkanWindow {
                 window.request_redraw();
             }
             Event::RedrawRequested(_window_id) => {
-                VulkanWindow::draw_frame(&vulkan, &mut filter_chain);
+                VulkanWindow::draw_frame(counter, &vulkan, &mut filter_chain);
+                counter += 1;
             }
             _ => (),
+        }
         })
+
     }
 
     unsafe fn record_command_buffer(
@@ -133,7 +138,7 @@ impl VulkanWindow {
         vulkan.base.device.cmd_end_render_pass(cmd);
     }
 
-    fn draw_frame(vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
+    fn draw_frame(frame: usize, vulkan: &VulkanDraw, filter: &mut FilterChainVulkan) {
         unsafe {
             vulkan
                 .base
@@ -207,7 +212,7 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED
             // );
 
-            let intermediates = filter.frame(0, &Viewport {
+            let intermediates = filter.frame(frame, &Viewport {
                 x: 0.0,
                 y: 0.0,
                 output: VulkanImage {

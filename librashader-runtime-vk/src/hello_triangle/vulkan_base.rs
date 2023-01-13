@@ -166,6 +166,7 @@ impl TryFrom<&VulkanBase> for Vulkan {
             value.device.clone(),
             value.graphics_queue.clone(),
             value.mem_props,
+            value.debug.loader.clone()
         ))
     }
 }

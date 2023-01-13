@@ -312,7 +312,7 @@ impl FilterPass {
         }
 
         // PassOutput
-        for (index, output) in parent.output_textures.iter().enumerate() {
+        for (index, output) in parent.output_inputs.iter().enumerate() {
             let Some(output) = output else {
                 continue;
             };
@@ -341,7 +341,7 @@ impl FilterPass {
         }
 
         // PassFeedback
-        for (index, feedback) in parent.feedback_textures.iter().enumerate() {
+        for (index, feedback) in parent.feedback_inputs.iter().enumerate() {
             let Some(feedback) = feedback else {
                 eprintln!("no passfeedback {index}");
                 continue;

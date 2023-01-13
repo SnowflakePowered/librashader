@@ -6,8 +6,8 @@ use crate::samplers::SamplerSet;
 use crate::texture::{OwnedImage, InputImage, VulkanImage, OwnedImageLayout};
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
-use ash::vk::{CommandPoolCreateFlags, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
-use ash::{vk, Device};
+use ash::vk::{CommandPoolCreateFlags, DebugUtilsObjectNameInfoEXT, Handle, PFN_vkGetInstanceProcAddr, Queue, StaticFn};
+use ash::{vk, Device, Entry};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -22,7 +22,9 @@ use librashader_runtime::image::{Image, UVDirection};
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::error::Error;
+use std::ffi::CStr;
 use std::path::Path;
+use ash::extensions::ext::DebugUtils;
 use crate::draw_quad::DrawQuad;
 use crate::framebuffer::OutputImage;
 use crate::render_target::{DEFAULT_MVP, RenderTarget};
@@ -36,6 +38,7 @@ pub struct Vulkan {
     command_pool: vk::CommandPool,
     pipeline_cache: vk::PipelineCache,
     pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
+    debug: DebugUtils
 }
 
 type ShaderPassMeta = (
@@ -82,6 +85,10 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 )?
             };
 
+            let debug =             DebugUtils::new(&Entry::from_static_fn(StaticFn {
+                get_instance_proc_addr: vulkan.get_instance_proc_addr,
+            }), &instance);
+
             Ok(Vulkan {
                 device,
                 // instance,
@@ -89,15 +96,16 @@ impl TryFrom<VulkanInfo<'_>> for Vulkan {
                 command_pool,
                 pipeline_cache,
                 memory_properties: vulkan.memory_properties.clone(),
+                debug
             })
         }
     }
 }
 
-impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties)> for Vulkan {
+impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties, DebugUtils)> for Vulkan {
     type Error = Box<dyn Error>;
 
-    fn try_from(value: (Device, Queue, vk::PhysicalDeviceMemoryProperties)) -> error::Result<Self> {
+    fn try_from(value: (Device, Queue, vk::PhysicalDeviceMemoryProperties, DebugUtils)) -> error::Result<Self> {
         unsafe {
             let device = value.0;
 
@@ -120,6 +128,7 @@ impl TryFrom<(ash::Device, vk::Queue, vk::PhysicalDeviceMemoryProperties)> for V
                 command_pool,
                 pipeline_cache,
                 memory_properties: value.2,
+                debug: value.3
             })
         }
     }
@@ -144,8 +153,8 @@ pub(crate) struct FilterCommon {
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
 
-    pub output_textures: Box<[Option<InputImage>]>,
-    pub feedback_textures: Box<[Option<InputImage>]>,
+    pub output_inputs: Box<[Option<InputImage>]>,
+    pub feedback_inputs: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
     pub config: FilterMutable,
     pub device: ash::Device,
@@ -267,8 +276,8 @@ impl FilterChainVulkan {
                 },
                 draw_quad: DrawQuad::new(&device.device, &device.memory_properties)?,
                 device: device.device.clone(),
-                output_textures: output_textures.into_boxed_slice(),
-                feedback_textures: feedback_textures.into_boxed_slice(),
+                output_inputs: output_textures.into_boxed_slice(),
+                feedback_inputs: feedback_textures.into_boxed_slice(),
                 history_textures,
             },
             passes: filters,
@@ -609,7 +618,7 @@ impl FilterChainVulkan {
             .iter_mut()
             .zip(self.history_framebuffers.iter())
         {
-            *texture = Some(image.as_input(filter, wrap_mode)?);
+            *texture = Some(image.as_input(filter, wrap_mode));
         }
 
         let original = InputImage {
@@ -620,7 +629,10 @@ impl FilterChainVulkan {
             mip_filter: filter,
         };
 
-        let mut source = original.clone();
+        let mut source = &original;
+
+        // swap output and feedback **before** recording command buffers
+        std::mem::swap(&mut self.output_framebuffers, &mut self.feedback_framebuffers);
 
         // rescale render buffers to ensure all bindings are valid.
         for (index, pass) in passes.iter_mut().enumerate() {
@@ -629,7 +641,7 @@ impl FilterChainVulkan {
                 pass.get_format(),
                 &viewport.output.size,
                 &original,
-                &source,
+                source,
                 // todo: need to check **next**
                 pass.config.mipmap_input,
                 None,
@@ -640,16 +652,18 @@ impl FilterChainVulkan {
                 pass.get_format(),
                 &viewport.output.size,
                 &original,
-                &source,
+                source,
                 // todo: need to check **next**
                 pass.config.mipmap_input,
                 None
             )?;
 
-            if self.common.feedback_textures[index].is_none() {
-                self.common.feedback_textures[index] =
-                    Some(source.clone());
-            }
+            // self.feedback_framebuffers[index].image.image
+            // refresh inputs
+            self.common.feedback_inputs[index] =
+                Some(self.feedback_framebuffers[index].as_input(pass.config.filter, pass.config.wrap_mode));
+            self.common.output_inputs[index] =
+                Some(self.output_framebuffers[index].as_input(pass.config.filter, pass.config.wrap_mode));
         }
 
         let passes_len = passes.len();
@@ -657,6 +671,7 @@ impl FilterChainVulkan {
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
+
             // todo: use proper mode
             // todo: the output framebuffers can only be dropped after command queue submission.
 
@@ -668,7 +683,12 @@ impl FilterChainVulkan {
                                                target.image.clone())?,
             };
 
-            pass.draw(cmd, index, &self.common, count as u32, 0,
+            pass.draw(cmd, index, &self.common, if pass.config.frame_count_mod > 0 {
+                count % pass.config.frame_count_mod as usize
+            } else {
+                count
+            } as u32
+                      , 0,
                       viewport, &original, &source, &out)?;
 
             if target.max_miplevels > 1 {
@@ -677,17 +697,15 @@ impl FilterChainVulkan {
                 out.output.end_pass(cmd);
             }
 
-            source = target.as_input(pass.config.filter, pass.config.wrap_mode)?;
-
-            let feedback = self.common.output_textures[index].replace(source.clone());
+            source = &self.common.output_inputs[index].as_ref().unwrap();
             intermediates.dispose_outputs(out.output);
         }
 
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
-            source.filter_mode = pass.config.filter;
-            source.mip_filter = pass.config.filter;
+            // source.filter_mode = pass.config.filter;
+            // source.mip_filter = pass.config.filter;
 
             let out = RenderTarget {
                 x: viewport.x,
@@ -700,7 +718,7 @@ impl FilterChainVulkan {
             pass.draw(cmd, passes_len - 1,
                       &self.common,
                       count as u32,
-                      0, viewport, &original, &source, &out)?;
+                      0, viewport, &original, source, &out)?;
 
             intermediates.dispose_outputs(out.output);
         }
