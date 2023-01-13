@@ -339,7 +339,7 @@ impl VulkanWindow {
                 .unwrap();
 
             vulkan.base.device.device_wait_idle().unwrap();
-            drop(intermediates)
+            intermediates.dispose();
         }
     }
 }

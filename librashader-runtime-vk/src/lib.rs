@@ -20,7 +20,7 @@ mod viewport;
 mod vulkan_primitives;
 mod vulkan_state;
 
-pub use filter_chain::FilterChainFrameIntermediates;
+pub use filter_chain::FrameIntermediates;
 pub use filter_chain::FilterChainVulkan;
 pub use filter_chain::Vulkan;
 pub use filter_chain::VulkanInfo;

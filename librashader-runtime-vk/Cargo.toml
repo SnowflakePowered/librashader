@@ -26,6 +26,7 @@ thiserror = "1.0.37"
 ash = { version = "0.37.1+1.3.235", features = ["linked", "debug"] }
 
 [dev-dependencies]
+num = "0.4.0"
 glfw = "0.49.0"
 winit = "0.27.5"
 raw-window-handle = "0.5"

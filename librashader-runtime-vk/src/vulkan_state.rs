@@ -60,10 +60,6 @@ impl PipelineDescriptors {
         }
     }
 
-    pub fn binding_count(&self) -> usize {
-        self.layout_bindings.len()
-    }
-
     pub fn bindings(&self) -> &[vk::DescriptorSetLayoutBinding] {
         self.layout_bindings.as_ref()
     }

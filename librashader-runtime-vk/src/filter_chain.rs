@@ -11,7 +11,6 @@ use crate::ubo_ring::VkUboRing;
 use crate::viewport::Viewport;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
-use ash::extensions::ext::DebugUtils;
 use ash::vk;
 use librashader_common::{ImageFormat, Size};
 use librashader_preprocess::ShaderSource;
@@ -28,6 +27,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
+use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 
 pub struct Vulkan {
     pub(crate) device: ash::Device,
@@ -42,12 +42,17 @@ type ShaderPassMeta = (
     CompilerBackend<impl CompileShader<SpirV, Options = Option<()>, Context = ()> + ReflectShader>,
 );
 
+/// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]
 pub struct VulkanInfo {
-    device: vk::Device,
-    instance: vk::Instance,
-    physical_device: vk::PhysicalDevice,
-    get_instance_proc_addr: vk::PFN_vkGetInstanceProcAddr,
+    /// A `VkDevice` handle.
+    pub device: vk::Device,
+    /// A `VkInstance` handle.
+    pub instance: vk::Instance,
+    /// A `VkPhysicalDevice` handle.
+    pub physical_device: vk::PhysicalDevice,
+    /// A function pointer to the Vulkan library entry point.
+    pub get_instance_proc_addr: vk::PFN_vkGetInstanceProcAddr,
 }
 
 impl TryFrom<VulkanInfo> for Vulkan {
@@ -66,13 +71,6 @@ impl TryFrom<VulkanInfo> for Vulkan {
 
             let pipeline_cache =
                 device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
-
-            let _debug = DebugUtils::new(
-                &ash::Entry::from_static_fn(vk::StaticFn {
-                    get_instance_proc_addr: vulkan.get_instance_proc_addr,
-                }),
-                &instance,
-            );
 
             let queue = get_graphics_queue(&instance, &device, vulkan.physical_device);
             let memory_properties =
@@ -96,9 +94,7 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for Vulkan {
         unsafe {
             let device = value.2;
 
-            let pipeline_cache = unsafe {
-                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?
-            };
+            let pipeline_cache = device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
 
             let queue = get_graphics_queue(&value.1, &device, value.0);
 
@@ -117,11 +113,12 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for Vulkan {
 
 pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
-    pub(crate) passes: Box<[FilterPass]>,
-    pub(crate) vulkan: Vulkan,
-    pub(crate) output_framebuffers: Box<[OwnedImage]>,
-    pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
-    pub(crate) history_framebuffers: VecDeque<OwnedImage>,
+    passes: Box<[FilterPass]>,
+    vulkan: Vulkan,
+    output_framebuffers: Box<[OwnedImage]>,
+    feedback_framebuffers: Box<[OwnedImage]>,
+    history_framebuffers: VecDeque<OwnedImage>,
+    disable_mipmaps: bool
 }
 
 pub struct FilterMutable {
@@ -133,7 +130,6 @@ pub(crate) struct FilterCommon {
     pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
-
     pub output_inputs: Box<[Option<InputImage>]>,
     pub feedback_inputs: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
@@ -142,15 +138,15 @@ pub(crate) struct FilterCommon {
 }
 
 #[must_use]
-pub struct FilterChainFrameIntermediates {
+pub struct FrameIntermediates {
     device: ash::Device,
     image_views: Vec<vk::ImageView>,
     owned: Vec<OwnedImage>,
 }
 
-impl FilterChainFrameIntermediates {
+impl FrameIntermediates {
     pub(crate) fn new(device: &ash::Device) -> Self {
-        FilterChainFrameIntermediates {
+        FrameIntermediates {
             device: device.clone(),
             image_views: Vec::new(),
             owned: Vec::new(),
@@ -164,10 +160,9 @@ impl FilterChainFrameIntermediates {
     pub(crate) fn dispose_owned(&mut self, owned: OwnedImage) {
         self.owned.push(owned)
     }
-}
 
-impl Drop for FilterChainFrameIntermediates {
-    fn drop(&mut self) {
+    /// Dispose of the intermediate objects created during a frame.
+    pub fn dispose(self) {
         for image_view in &self.image_views {
             if *image_view != vk::ImageView::null() {
                 unsafe {
@@ -175,10 +170,9 @@ impl Drop for FilterChainFrameIntermediates {
                 }
             }
         }
+        drop(self)
     }
 }
-
-pub type FilterChainOptionsVulkan = ();
 
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
@@ -195,7 +189,7 @@ impl FilterChainVulkan {
     pub fn load_from_preset(
         vulkan: impl TryInto<Vulkan, Error = FilterChainError>,
         preset: ShaderPreset,
-        _options: Option<&FilterChainOptionsVulkan>,
+        options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
         let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
@@ -252,6 +246,7 @@ impl FilterChainVulkan {
             output_framebuffers: output_framebuffers?.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers?.into_boxed_slice(),
             history_framebuffers,
+            disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
         })
     }
 
@@ -496,7 +491,7 @@ impl FilterChainVulkan {
     pub fn push_history(
         &mut self,
         input: &VulkanImage,
-        intermediates: &mut FilterChainFrameIntermediates,
+        intermediates: &mut FrameIntermediates,
         cmd: vk::CommandBuffer,
     ) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
@@ -551,7 +546,7 @@ impl FilterChainVulkan {
 
         Ok(())
     }
-    /// Process a frame with the input image.
+    /// Records shader rendering commands to the provided command buffer.
     ///
     /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL`.
     /// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL`.
@@ -559,18 +554,31 @@ impl FilterChainVulkan {
     /// librashader **will not** create a pipeline barrier for the final pass. The output image will
     /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
     /// the output image to the final layout.
+    ///
+    /// This function returns an [`FrameIntermediates`](crate::filter_chain::FrameIntermediates) struct,
+    /// which contains intermediate ImageViews. These may be disposed by calling
+    /// [`FrameIntermediates::dispose`](crate::filter_chain::FrameIntermediates::dispose),
+    /// only after they are no longer in use by the GPU, after queue submission.
     pub fn frame(
         &mut self,
         count: usize,
         viewport: &Viewport,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
-        _options: Option<()>,
-    ) -> error::Result<FilterChainFrameIntermediates> {
+        options: Option<FrameOptionsVulkan>,
+    ) -> error::Result<FrameIntermediates> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
 
-        let mut intermediates = FilterChainFrameIntermediates::new(&self.vulkan.device);
+        if let Some(options) = &options {
+            if options.clear_history {
+                for history in &mut self.history_framebuffers {
+                    history.clear(cmd);
+                }
+            }
+        }
+
+        let mut intermediates = FrameIntermediates::new(&self.vulkan.device);
         if passes.is_empty() {
             return Ok(intermediates);
         }
@@ -666,10 +674,10 @@ impl FilterChainVulkan {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
+        let frame_direction = options.map(|f| f.frame_direction).unwrap_or(1);
+
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
-
-            // todo: use proper mode
             let out = RenderTarget {
                 x: 0.0,
                 y: 0.0,
@@ -686,14 +694,14 @@ impl FilterChainVulkan {
                 } else {
                     count
                 } as u32,
-                0,
+                frame_direction,
                 viewport,
                 &original,
                 &source,
                 &out,
             )?;
 
-            if target.max_miplevels > 1 {
+            if target.max_miplevels > 1 && !self.disable_mipmaps {
                 target.generate_mipmaps_and_end_pass(cmd);
             } else {
                 out.output.end_pass(cmd);
