@@ -119,7 +119,8 @@ pub struct FilterChain {
     output_framebuffers: Box<[OwnedImage]>,
     feedback_framebuffers: Box<[OwnedImage]>,
     history_framebuffers: VecDeque<OwnedImage>,
-    disable_mipmaps: bool
+    disable_mipmaps: bool,
+    intermediates: Box<[FrameIntermediates]>,
 }
 
 pub struct FilterMutable {
@@ -168,7 +169,7 @@ impl FrameIntermediates {
     }
 
     /// Dispose of the intermediate objects created during a frame.
-    pub fn dispose(self) {
+    pub fn dispose(&mut self) {
         for image_view in &self.image_views {
             if *image_view != vk::ImageView::null() {
                 unsafe {
@@ -176,7 +177,7 @@ impl FrameIntermediates {
                 }
             }
         }
-        drop(self)
+        self.owned.clear()
     }
 }
 
@@ -235,6 +236,9 @@ impl FilterChain {
         let mut feedback_textures = Vec::new();
         feedback_textures.resize_with(filters.len(), || None);
 
+        let mut intermediates = Vec::new();
+        intermediates.resize_with(frames_in_flight as usize, || FrameIntermediates::new(&device.device));
+
         Ok(FilterChain {
             common: FilterCommon {
                 luts,
@@ -258,6 +262,7 @@ impl FilterChain {
             output_framebuffers: output_framebuffers?.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers?.into_boxed_slice(),
             history_framebuffers,
+            intermediates: intermediates.into_boxed_slice(),
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
         })
     }
@@ -503,8 +508,8 @@ impl FilterChain {
     pub fn push_history(
         &mut self,
         input: &VulkanImage,
-        intermediates: &mut FrameIntermediates,
         cmd: vk::CommandBuffer,
+        count: usize,
     ) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.image.size != input.size
@@ -516,7 +521,7 @@ impl FilterChain {
                     &mut back,
                     OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?,
                 );
-                intermediates.dispose_owned(old_back);
+                self.intermediates[count % self.intermediates.len()].dispose_owned(old_back);
             }
 
             unsafe {
@@ -566,11 +571,6 @@ impl FilterChain {
     /// librashader **will not** create a pipeline barrier for the final pass. The output image will
     /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
     /// the output image to the final layout.
-    ///
-    /// This function returns an [`FrameIntermediates`](crate::filter_chain::FrameIntermediates) struct,
-    /// which contains intermediate ImageViews. These may be disposed by calling
-    /// [`FrameIntermediates::dispose`](crate::filter_chain::FrameIntermediates::dispose),
-    /// only after they are no longer in use by the GPU, after queue submission.
     pub fn frame(
         &mut self,
         count: usize,
@@ -578,7 +578,10 @@ impl FilterChain {
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
         options: Option<FrameOptions>,
-    ) -> error::Result<FrameIntermediates> {
+    ) -> error::Result<()> {
+        let mut intermediates = &mut self.intermediates[count % self.intermediates.len()];
+        intermediates.dispose();
+
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];
 
@@ -590,9 +593,8 @@ impl FilterChain {
             }
         }
 
-        let mut intermediates = FrameIntermediates::new(&self.vulkan.device);
         if passes.is_empty() {
-            return Ok(intermediates);
+            return Ok(());
         }
 
         let original_image_view = unsafe {
@@ -751,8 +753,7 @@ impl FilterChain {
             intermediates.dispose_outputs(out.output);
         }
 
-        self.push_history(input, &mut intermediates, cmd)?;
-
-        Ok(intermediates)
+        self.push_history(input, cmd, count)?;
+        Ok(())
     }
 }

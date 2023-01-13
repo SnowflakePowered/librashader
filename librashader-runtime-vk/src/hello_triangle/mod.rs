@@ -18,13 +18,13 @@ use crate::hello_triangle::syncobjects::SyncObjects;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use crate::texture::VulkanImage;
 use crate::util;
-use crate::viewport::Viewport;
 use ash::vk;
 use ash::vk::{Handle, RenderingInfo};
 use std::ffi::CString;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
+use librashader_common::Viewport;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -210,7 +210,7 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED
             // );
 
-            let intermediates = filter
+           filter
                 .frame(
                     frame,
                     &Viewport {
@@ -339,7 +339,7 @@ impl VulkanWindow {
                 .unwrap();
 
             vulkan.base.device.device_wait_idle().unwrap();
-            intermediates.dispose();
+            // intermediates.dispose();
         }
     }
 }
