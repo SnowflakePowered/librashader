@@ -2,7 +2,7 @@ use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
-use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
+use crate::options::{FilterChainOptions, FrameOptions};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::Texture;
@@ -88,20 +88,10 @@ type ShaderPassMeta = (
 );
 
 impl<T: GLInterface> FilterChainImpl<T> {
-    pub(crate) fn create_framebuffer_raw(
-        &self,
-        texture: GLuint,
-        handle: GLuint,
-        format: GLenum,
-        size: Size<u32>,
-        miplevels: u32,
-    ) -> Framebuffer {
-        T::FramebufferInterface::new_from_raw(texture, handle, format, size, miplevels)
-    }
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub(crate) fn load_from_preset(
         preset: ShaderPreset,
-        options: Option<&FilterChainOptionsGL>,
+        options: Option<&FilterChainOptions>,
     ) -> error::Result<Self> {
         let (passes, semantics) = Self::load_preset(preset.shaders, &preset.textures)?;
 
@@ -431,7 +421,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         count: usize,
         viewport: &Viewport,
         input: &GLImage,
-        options: Option<&FrameOptionsGL>,
+        options: Option<&FrameOptions>,
     ) -> error::Result<()> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];

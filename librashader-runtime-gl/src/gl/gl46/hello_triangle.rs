@@ -7,7 +7,7 @@ use glfw::{Context, Glfw, Window, WindowEvent};
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use librashader_common::Size;
 
-use crate::filter_chain::FilterChainGL;
+use crate::filter_chain::FilterChain;
 use crate::framebuffer::GLImage;
 use crate::gl::gl46::DirectStateAccessGL;
 use crate::gl::{FramebufferInterface, GLInterface};
@@ -259,7 +259,7 @@ pub fn do_loop(
     events: Receiver<(f64, WindowEvent)>,
     triangle_program: GLuint,
     triangle_vao: GLuint,
-    filter: &mut FilterChainGL,
+    filter: &mut FilterChain,
 ) {
     let mut framecount = 0;
     let mut rendered_framebuffer = 0;

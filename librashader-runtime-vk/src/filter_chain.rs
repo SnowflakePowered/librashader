@@ -27,7 +27,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
-use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
+use crate::options::{FilterChainOptions, FrameOptions};
 
 pub struct Vulkan {
     pub(crate) device: ash::Device,
@@ -44,7 +44,7 @@ type ShaderPassMeta = (
 
 /// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]
-pub struct VulkanInfo {
+pub struct VulkanInstance {
     /// A `VkDevice` handle.
     pub device: vk::Device,
     /// A `VkInstance` handle.
@@ -55,10 +55,10 @@ pub struct VulkanInfo {
     pub get_instance_proc_addr: vk::PFN_vkGetInstanceProcAddr,
 }
 
-impl TryFrom<VulkanInfo> for Vulkan {
+impl TryFrom<VulkanInstance> for Vulkan {
     type Error = FilterChainError;
 
-    fn try_from(vulkan: VulkanInfo) -> Result<Self, FilterChainError> {
+    fn try_from(vulkan: VulkanInstance) -> Result<Self, FilterChainError> {
         unsafe {
             let instance = ash::Instance::load(
                 &vk::StaticFn {
@@ -179,7 +179,7 @@ impl FilterChainVulkan {
     pub fn load_from_path(
         vulkan: impl TryInto<Vulkan, Error = FilterChainError>,
         path: impl AsRef<Path>,
-        options: Option<&FilterChainOptionsVulkan>,
+        options: Option<&FilterChainOptions>,
     ) -> error::Result<FilterChainVulkan> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
@@ -189,7 +189,7 @@ impl FilterChainVulkan {
     pub fn load_from_preset(
         vulkan: impl TryInto<Vulkan, Error = FilterChainError>,
         preset: ShaderPreset,
-        options: Option<&FilterChainOptionsVulkan>,
+        options: Option<&FilterChainOptions>,
     ) -> error::Result<FilterChainVulkan> {
         let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
@@ -565,7 +565,7 @@ impl FilterChainVulkan {
         viewport: &Viewport,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,
-        options: Option<FrameOptionsVulkan>,
+        options: Option<FrameOptions>,
     ) -> error::Result<FrameIntermediates> {
         // limit number of passes to those enabled.
         let passes = &mut self.passes[0..self.common.config.passes_enabled];

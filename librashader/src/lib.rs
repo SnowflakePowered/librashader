@@ -7,7 +7,7 @@
 //!
 //! ## Usage
 //! The core objects in librashader are the [`ShaderPreset`](crate::presets::ShaderPreset) and the
-//! [`FilterChain`](crate::runtime::FilterChain), the implementation of which is runtime dependent.
+//! filter chain implementations.
 //!
 //! The basic workflow involves parsing a `ShaderPreset`, which can then be used to construct
 //! a `FilterChain`. All shaders will then be compiled, after which `FilterChain::frame` can be
@@ -91,7 +91,6 @@ pub mod reflect {
 /// Shader runtimes to execute a filter chain on a GPU surface.
 #[cfg(feature = "runtime")]
 pub mod runtime {
-    pub use librashader_runtime::filter_chain::FilterChain;
     pub use librashader_runtime::parameters::FilterChainParameters;
 
     #[cfg(feature = "gl")]

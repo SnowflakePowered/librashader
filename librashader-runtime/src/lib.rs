@@ -13,9 +13,6 @@ pub mod uniforms;
 /// Parameter reflection helpers and traits.
 pub mod parameters;
 
-/// Filter chain helpers and traits.
-pub mod filter_chain;
-
 /// Image handling helpers.
 pub mod image;
 

@@ -225,9 +225,9 @@ pub mod d3d11_hello_triangle {
     use super::*;
     use std::path::Path;
 
-    use crate::filter_chain::FilterChainD3D11;
+    use crate::filter_chain::FilterChain;
 
-    use crate::options::FilterChainOptionsD3D11;
+    use crate::options::FilterChainOptions;
     use crate::texture::D3D11ImageView;
     use crate::viewport::Viewport;
     use librashader_common::Size;
@@ -239,7 +239,7 @@ pub mod d3d11_hello_triangle {
         pub device: ID3D11Device,
         pub context: ID3D11DeviceContext,
         pub resources: Option<Resources>,
-        pub filter: FilterChainD3D11,
+        pub filter: FilterChain,
     }
 
     pub struct Resources {
@@ -266,10 +266,10 @@ pub mod d3d11_hello_triangle {
     impl Sample {
         pub(crate) fn new(
             filter: impl AsRef<Path>,
-            filter_options: Option<&FilterChainOptionsD3D11>,
+            filter_options: Option<&FilterChainOptions>,
         ) -> Result<Self> {
             let (dxgi_factory, device, context) = create_device()?;
-            let filter = FilterChainD3D11::load_from_path(&device, filter, filter_options).unwrap();
+            let filter = FilterChain::load_from_path(&device, filter, filter_options).unwrap();
             Ok(Sample {
                 filter,
                 dxgi_factory,

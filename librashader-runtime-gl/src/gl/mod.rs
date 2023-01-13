@@ -38,13 +38,6 @@ pub trait UboRing<const SIZE: usize> {
 
 pub trait FramebufferInterface {
     fn new(max_levels: u32) -> Framebuffer;
-    fn new_from_raw(
-        texture: GLuint,
-        handle: GLuint,
-        format: GLenum,
-        size: Size<u32>,
-        miplevels: u32,
-    ) -> Framebuffer;
     fn scale(
         fb: &mut Framebuffer,
         scaling: Scale2D,

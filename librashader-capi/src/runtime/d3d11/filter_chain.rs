@@ -11,8 +11,8 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,
 };
 
-pub use librashader::runtime::d3d11::options::FilterChainOptionsD3D11;
-pub use librashader::runtime::d3d11::options::FrameOptionsD3D11;
+pub use librashader::runtime::d3d11::options::FilterChainOptions;
+pub use librashader::runtime::d3d11::options::FrameOptions;
 use librashader::Size;
 
 /// OpenGL parameters for the source image.
@@ -42,7 +42,7 @@ impl TryFrom<libra_source_image_d3d11_t> for D3D11ImageView {
 
 pub type PFN_lbr_d3d11_filter_chain_create = unsafe extern "C" fn(
     preset: *mut libra_shader_preset_t,
-    options: *const FilterChainOptionsD3D11,
+    options: *const FilterChainOptions,
     device: *const ID3D11Device,
     out: *mut MaybeUninit<libra_d3d11_filter_chain_t>,
 ) -> libra_error_t;
@@ -58,7 +58,7 @@ pub type PFN_lbr_d3d11_filter_chain_create = unsafe extern "C" fn(
 #[no_mangle]
 pub unsafe extern "C" fn libra_d3d11_filter_chain_create(
     preset: *mut libra_shader_preset_t,
-    options: *const FilterChainOptionsD3D11,
+    options: *const FilterChainOptions,
     device: *const ID3D11Device,
     out: *mut MaybeUninit<libra_d3d11_filter_chain_t>,
 ) -> libra_error_t {
@@ -77,7 +77,7 @@ pub unsafe extern "C" fn libra_d3d11_filter_chain_create(
             Some(unsafe { &*options })
         };
 
-        let chain = librashader::runtime::d3d11::FilterChainD3D11::load_from_preset(
+        let chain = librashader::runtime::d3d11::FilterChain::load_from_preset(
             unsafe { &*device },
             *preset,
             options,
@@ -98,7 +98,7 @@ pub type PFN_lbr_d3d11_filter_chain_frame = unsafe extern "C" fn(
     viewport: libra_viewport_t,
     out: *const ID3D11RenderTargetView,
     mvp: *const f32,
-    opt: *const FrameOptionsD3D11,
+    opt: *const FrameOptions,
 ) -> libra_error_t;
 
 /// Draw a frame with the given parameters for the given filter chain.
@@ -118,7 +118,7 @@ pub unsafe extern "C" fn libra_d3d11_filter_chain_frame(
     viewport: libra_viewport_t,
     out: *const ID3D11RenderTargetView,
     mvp: *const f32,
-    opt: *const FrameOptionsD3D11,
+    opt: *const FrameOptions,
 ) -> libra_error_t {
     ffi_body!(mut |chain| {
         assert_some_ptr!(mut chain);

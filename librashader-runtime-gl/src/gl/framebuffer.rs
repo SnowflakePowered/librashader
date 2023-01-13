@@ -9,35 +9,44 @@ use librashader_presets::Scale2D;
 
 #[derive(Debug)]
 pub struct Framebuffer {
-    pub image: GLuint,
-    pub handle: GLuint,
-    pub size: Size<u32>,
-    pub format: GLenum,
-    pub max_levels: u32,
-    pub mip_levels: u32,
-    pub is_raw: bool,
+    pub(crate) image: GLuint,
+    pub(crate) handle: GLuint,
+    pub(crate) size: Size<u32>,
+    pub(crate) format: GLenum,
+    pub(crate) max_levels: u32,
+    pub(crate) mip_levels: u32,
+    pub(crate) is_raw: bool,
 }
 
 impl Framebuffer {
-    pub fn new<T: FramebufferInterface>(max_levels: u32) -> Self {
+    pub(crate) fn new<T: FramebufferInterface>(max_levels: u32) -> Self {
         T::new(max_levels)
     }
 
-    pub fn new_from_raw<T: FramebufferInterface>(
+    /// Create a framebuffer from an already initialized texture and framebuffer.
+    pub fn new_from_raw(
         texture: GLuint,
-        handle: GLuint,
+        fbo: GLuint,
         format: GLenum,
         size: Size<u32>,
-        mip_levels: u32,
-    ) -> Self {
-        T::new_from_raw(texture, handle, format, size, mip_levels)
+        miplevels: u32,
+    ) -> Framebuffer {
+        Framebuffer {
+            image: texture,
+            size,
+            format,
+            max_levels: miplevels,
+            mip_levels: miplevels,
+            handle: fbo,
+            is_raw: true,
+        }
     }
 
-    pub fn clear<T: FramebufferInterface, const REBIND: bool>(&self) {
+    pub(crate) fn clear<T: FramebufferInterface, const REBIND: bool>(&self) {
         T::clear::<REBIND>(self)
     }
 
-    pub fn scale<T: FramebufferInterface>(
+    pub(crate) fn scale<T: FramebufferInterface>(
         &mut self,
         scaling: Scale2D,
         format: ImageFormat,
@@ -49,11 +58,11 @@ impl Framebuffer {
         T::scale(self, scaling, format, viewport, original, source, mipmap)
     }
 
-    pub fn copy_from<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<()> {
+    pub(crate) fn copy_from<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<()> {
         T::copy_from(self, image)
     }
 
-    pub fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
+    pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
         Texture {
             image: GLImage {
                 handle: self.image,
@@ -70,6 +79,10 @@ impl Framebuffer {
 
 impl Drop for Framebuffer {
     fn drop(&mut self) {
+        if self.is_raw {
+            return;
+        }
+
         unsafe {
             if self.handle != 0 {
                 gl::DeleteFramebuffers(1, &self.handle);

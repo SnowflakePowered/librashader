@@ -32,24 +32,7 @@ impl FramebufferInterface for Gl46Framebuffer {
             is_raw: false,
         }
     }
-    fn new_from_raw(
-        texture: GLuint,
-        handle: GLuint,
-        format: GLenum,
-        size: Size<u32>,
-        miplevels: u32,
-    ) -> Framebuffer {
-        Framebuffer {
-            image: texture,
-            size,
-            format,
-            max_levels: miplevels,
-            mip_levels: miplevels,
-            handle,
-            is_raw: true,
-        }
-    }
-
+    
     fn scale(
         fb: &mut Framebuffer,
         scaling: Scale2D,

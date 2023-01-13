@@ -3,15 +3,14 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::ffi_body;
-use librashader::runtime::gl::{GLImage, Viewport};
-use librashader::runtime::FilterChain;
+use librashader::runtime::gl::{Framebuffer, GLImage, Viewport};
 use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
 
-pub use librashader::runtime::gl::options::FilterChainOptionsGL;
-pub use librashader::runtime::gl::options::FrameOptionsGL;
+pub use librashader::runtime::gl::options::FilterChainOptions;
+pub use librashader::runtime::gl::options::FrameOptions;
 use librashader::Size;
 
 /// A GL function loader that librashader needs to be initialized with.
@@ -37,7 +36,7 @@ pub unsafe extern "C" fn libra_gl_init_context(loader: gl_loader_t) -> libra_err
 
 pub type PFN_lbr_gl_filter_chain_create = unsafe extern "C" fn(
     preset: *mut libra_shader_preset_t,
-    options: *const FilterChainOptionsGL,
+    options: *const FilterChainOptions,
     out: *mut MaybeUninit<libra_gl_filter_chain_t>,
 ) -> libra_error_t;
 /// Create the filter chain given the shader preset.
@@ -52,7 +51,7 @@ pub type PFN_lbr_gl_filter_chain_create = unsafe extern "C" fn(
 #[no_mangle]
 pub unsafe extern "C" fn libra_gl_filter_chain_create(
     preset: *mut libra_shader_preset_t,
-    options: *const FilterChainOptionsGL,
+    options: *const FilterChainOptions,
     out: *mut MaybeUninit<libra_gl_filter_chain_t>,
 ) -> libra_error_t {
     ffi_body!({
@@ -69,7 +68,7 @@ pub unsafe extern "C" fn libra_gl_filter_chain_create(
             Some(unsafe { &*options })
         };
 
-        let chain = librashader::runtime::gl::FilterChainGL::load_from_preset(*preset, options)?;
+        let chain = librashader::runtime::gl::FilterChain::load_from_preset(*preset, options)?;
 
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
@@ -121,7 +120,7 @@ pub type PFN_lbr_gl_filter_chain_frame = unsafe extern "C" fn(
     viewport: libra_viewport_t,
     out: libra_draw_framebuffer_gl_t,
     mvp: *const f32,
-    opt: *const FrameOptionsGL,
+    opt: *const FrameOptions,
 ) -> libra_error_t;
 
 /// Draw a frame with the given parameters for the given filter chain.
@@ -141,7 +140,7 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(
     viewport: libra_viewport_t,
     out: libra_draw_framebuffer_gl_t,
     mvp: *const f32,
-    opt: *const FrameOptionsGL,
+    opt: *const FrameOptions,
 ) -> libra_error_t {
     ffi_body!(mut |chain| {
         assert_some_ptr!(mut chain);
@@ -159,10 +158,11 @@ pub unsafe extern "C" fn libra_gl_filter_chain_frame(
             Some(unsafe { opt.read() })
         };
 
+        let framebuffer = Framebuffer::new_from_raw(out.texture, out.handle, out.format, Size::new(viewport.width, viewport.height), 1);
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
-            output: &chain.create_framebuffer_raw(out.texture, out.handle, out.format, Size::new(viewport.width, viewport.height), 1),
+            output: &framebuffer,
             mvp,
         };
         chain.frame(&image, &viewport, frame_count, opt.as_ref())?;

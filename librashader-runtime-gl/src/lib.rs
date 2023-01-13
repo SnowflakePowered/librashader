@@ -18,22 +18,22 @@ pub mod options;
 mod viewport;
 
 pub use crate::gl::Framebuffer;
-pub use filter_chain::FilterChainGL;
+pub use filter_chain::FilterChain;
 pub use framebuffer::GLImage;
 pub use viewport::Viewport;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::filter_chain::FilterChainGL;
-    use crate::options::FilterChainOptionsGL;
+    use crate::filter_chain::FilterChain;
+    use crate::options::FilterChainOptions;
 
     #[test]
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = gl::gl3::hello_triangle::setup();
-        let mut filter = FilterChainGL::load_from_path(
+        let mut filter = FilterChain::load_from_path(
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-            Some(&FilterChainOptionsGL {
+            Some(&FilterChainOptions {
                 gl_version: 0,
                 use_dsa: false,
                 force_no_mipmaps: false,
@@ -47,10 +47,10 @@ mod tests {
     #[test]
     fn triangle_gl46() {
         let (glfw, window, events, shader, vao) = gl::gl46::hello_triangle::setup();
-        let mut filter = FilterChainGL::load_from_path(
+        let mut filter = FilterChain::load_from_path(
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-            Some(&FilterChainOptionsGL {
+            Some(&FilterChainOptions {
                 gl_version: 0,
                 use_dsa: true,
                 force_no_mipmaps: false,

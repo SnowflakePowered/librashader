@@ -17,21 +17,21 @@ mod texture;
 mod util;
 mod viewport;
 
-pub use filter_chain::FilterChainD3D11;
+pub use filter_chain::FilterChain;
 pub use texture::D3D11ImageView;
 pub use viewport::Viewport;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::options::FilterChainOptionsD3D11;
+    use crate::options::FilterChainOptions;
 
     #[test]
     fn triangle_d3d11() {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             // "../test/basic.slangp",
-            Some(&FilterChainOptionsD3D11 {
+            Some(&FilterChainOptions {
                 use_deferred_context: false,
                 force_no_mipmaps: false,
             }),

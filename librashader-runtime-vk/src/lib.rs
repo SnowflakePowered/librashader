@@ -23,7 +23,7 @@ mod vulkan_state;
 pub use filter_chain::FrameIntermediates;
 pub use filter_chain::FilterChainVulkan;
 pub use filter_chain::Vulkan;
-pub use filter_chain::VulkanInfo;
+pub use filter_chain::VulkanInstance;
 pub use texture::VulkanImage;
 pub use viewport::Viewport;
 
