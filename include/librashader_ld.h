@@ -31,7 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LIBRA_RUNTIME_VULKAN
 
 #if defined(_WIN32)
-#include <libloaderapi.h>
+#include <windows.h>
 #elif defined(__linux__)
 #include <dlfcn.h>
 #endif
