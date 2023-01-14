@@ -18,7 +18,6 @@ pub fn main() {
 
     let bytes = buf.into_inner().expect("Unable to extract bytes");
     let string = String::from_utf8(bytes).expect("Unable to create string");
-    // let string = string.replace("CHD_ERROR_", "CHDERR_");
     File::create(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join("librashader.h"))
         .expect("Unable to open file")
         .write_all(string.as_bytes())
@@ -29,6 +28,7 @@ pub fn main() {
         let artifacts = &["liblibrashader_capi.so", "liblibrashader_capi.a"];
         for artifact in artifacts {
             let ext = artifact.strip_prefix("lib").unwrap();
+            let ext = ext.replace("_capi", "");
             fs::rename(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(artifact), PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(ext)).unwrap();
         }
     }
