@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::error;
 use crate::vulkan_primitives::VulkanBuffer;
 use ash::vk;
@@ -6,12 +7,12 @@ use librashader_runtime::uniforms::UniformStorageAccess;
 
 pub struct VkUboRing {
     ring: BoxRingBuffer<VulkanBuffer>,
-    device: ash::Device,
+    device: Arc<ash::Device>,
 }
 
 impl VkUboRing {
     pub fn new(
-        device: &ash::Device,
+        device: &Arc<ash::Device>,
         mem_props: &vk::PhysicalDeviceMemoryProperties,
         ring_size: usize,
         buffer_size: usize,

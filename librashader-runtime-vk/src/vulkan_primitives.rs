@@ -1,15 +1,16 @@
 use crate::{error, util};
 use ash::vk;
 use std::ffi::c_void;
+use std::sync::Arc;
 
 pub struct VulkanImageMemory {
     pub handle: vk::DeviceMemory,
-    device: ash::Device,
+    device: Arc<ash::Device>,
 }
 
 impl VulkanImageMemory {
     pub fn new(
-        device: &ash::Device,
+        device: &Arc<ash::Device>,
         alloc: &vk::MemoryAllocateInfo,
     ) -> error::Result<VulkanImageMemory> {
         unsafe {

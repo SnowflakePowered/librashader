@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::error;
 use ash::vk;
 use librashader_common::{FilterMode, WrapMode};
@@ -5,12 +6,12 @@ use rustc_hash::FxHashMap;
 
 pub struct VulkanSampler {
     pub handle: vk::Sampler,
-    device: ash::Device,
+    device: Arc<ash::Device>,
 }
 
 impl VulkanSampler {
     pub fn new(
-        device: &ash::Device,
+        device: &Arc<ash::Device>,
         wrap: WrapMode,
         filter: FilterMode,
         mipmap: FilterMode,
@@ -61,7 +62,7 @@ impl SamplerSet {
         self.samplers.get(&(wrap, filter, mipmap)).unwrap()
     }
 
-    pub fn new(device: &ash::Device) -> error::Result<SamplerSet> {
+    pub fn new(device: &Arc<ash::Device>) -> error::Result<SamplerSet> {
         let mut samplers = FxHashMap::default();
         let wrap_modes = &[
             WrapMode::ClampToBorder,

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::filter_chain::VulkanObjects;
 use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
@@ -9,7 +10,7 @@ use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 
 pub struct OwnedImage {
-    pub device: ash::Device,
+    pub device: Arc<ash::Device>,
     pub mem_props: vk::PhysicalDeviceMemoryProperties,
     pub image_view: vk::ImageView,
     pub image: VulkanImage,
@@ -28,7 +29,7 @@ pub struct OwnedImageLayout {
 
 impl OwnedImage {
     fn new_internal(
-        device: ash::Device,
+        device: Arc<ash::Device>,
         mem_props: vk::PhysicalDeviceMemoryProperties,
         size: Size<u32>,
         mut format: ImageFormat,

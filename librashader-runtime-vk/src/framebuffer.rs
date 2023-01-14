@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::filter_chain::VulkanObjects;
 use crate::texture::VulkanImage;
 use crate::{error, util};
@@ -8,7 +9,7 @@ use librashader_common::Size;
 pub(crate) struct OutputImage {
     pub size: Size<u32>,
     pub image_view: vk::ImageView,
-    device: ash::Device,
+    device: Arc<ash::Device>,
     image: vk::Image,
 }
 

@@ -9,6 +9,7 @@ use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_dev
 use crate::hello_triangle::surface::VulkanSurface;
 use ash::prelude::VkResult;
 use std::ffi::{CStr, CString};
+use std::sync::Arc;
 
 const WINDOW_TITLE: &'static [u8] = b"librashader Vulkan\0";
 const KHRONOS_VALIDATION: &'static [u8] = b"VK_LAYER_KHRONOS_validation\0";
@@ -16,7 +17,7 @@ const KHRONOS_VALIDATION: &'static [u8] = b"VK_LAYER_KHRONOS_validation\0";
 pub struct VulkanBase {
     pub entry: ash::Entry,
     pub instance: ash::Instance,
-    pub device: ash::Device,
+    pub device: Arc<ash::Device>,
     pub graphics_queue: vk::Queue,
     pub debug: VulkanDebug,
     pub physical_device: vk::PhysicalDevice,
@@ -65,7 +66,7 @@ impl VulkanBase {
         Ok(VulkanBase {
             entry,
             instance,
-            device,
+            device: Arc::new(device),
             graphics_queue: queue,
             physical_device,
             mem_props,

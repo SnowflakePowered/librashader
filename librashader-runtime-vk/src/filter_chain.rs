@@ -26,11 +26,12 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
+use std::sync::Arc;
 use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
-    pub(crate) device: ash::Device,
+    pub(crate) device: Arc<ash::Device>,
     pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
     queue: vk::Queue,
     pipeline_cache: vk::PipelineCache,
@@ -77,7 +78,7 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
                 instance.get_physical_device_memory_properties(vulkan.physical_device);
 
             Ok(VulkanObjects {
-                device,
+                device:  Arc::new(device),
                 queue,
                 pipeline_cache,
                 memory_properties,
@@ -87,10 +88,10 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
     }
 }
 
-impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects {
+impl TryFrom<(vk::PhysicalDevice, ash::Instance, Arc<ash::Device>)> for VulkanObjects {
     type Error = FilterChainError;
 
-    fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
+    fn try_from(value: (vk::PhysicalDevice, ash::Instance,  Arc<ash::Device>)) -> error::Result<Self> {
         unsafe {
             let device = value.2;
 
@@ -136,7 +137,7 @@ pub(crate) struct FilterCommon {
     pub feedback_inputs: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
     pub config: FilterMutable,
-    pub device: ash::Device,
+    pub device: Arc<ash::Device>,
 }
 
 /// Contains residual intermediate `VkImageView` and `VkImage` objects created

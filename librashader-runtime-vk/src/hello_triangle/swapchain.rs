@@ -6,6 +6,7 @@ use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::{Extent3D, Handle};
 use std::ffi::CStr;
+use std::sync::Arc;
 
 pub struct VulkanSwapchain {
     pub swapchain: vk::SwapchainKHR,
@@ -18,7 +19,7 @@ pub struct VulkanSwapchain {
 
     pub render_images: Vec<(vk::Image, VulkanImageMemory)>,
     pub render_image_views: Vec<vk::ImageView>,
-    device: ash::Device,
+    device: Arc<ash::Device>,
 }
 
 impl VulkanSwapchain {
@@ -112,7 +113,7 @@ impl VulkanSwapchain {
                         &base.mem_props,
                         mem_reqs.memory_type_bits,
                         vk::MemoryPropertyFlags::DEVICE_LOCAL,
-                    ))
+                    ).unwrap())
                     .build();
 
                 // todo: optimize by reusing existing memory.

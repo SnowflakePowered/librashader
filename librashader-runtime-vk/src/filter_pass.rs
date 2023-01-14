@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::{error, VulkanImage};
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
@@ -17,7 +18,7 @@ use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 
 pub struct FilterPass {
-    pub device: ash::Device,
+    pub device: Arc<ash::Device>,
     pub reflection: ShaderReflection,
     // pub(crate) compiled: ShaderCompilerOutput<Vec<u32>>,
     pub(crate) uniform_storage: UniformStorage,
