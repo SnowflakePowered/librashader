@@ -2,16 +2,18 @@ use std::ffi::{c_char, c_void};
 use crate::ctypes::{
     libra_vk_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
 };
-use crate::error::{assert_non_null, assert_some_ptr};
+use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::vk::{VulkanImage, VulkanInstance};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
+use std::ffi::CStr;
 
 pub use librashader::runtime::vk::capi::options::FilterChainOptionsVulkan;
 pub use librashader::runtime::vk::capi::options::FrameOptionsVulkan;
 use librashader::runtime::{Size, Viewport};
+use librashader::runtime::FilterChainParameters;
 
 use ash::vk;
 
@@ -128,7 +130,7 @@ extern_fn! {
     ///    function will return an error.
     /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
     ///    values for the model view projection matrix.
-    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_vk_opt_t`
     ///    struct.
     fn libra_vk_filter_chain_frame(
         chain: *mut libra_vk_filter_chain_t,
@@ -163,12 +165,98 @@ extern_fn! {
     }
 }
 
+
 extern_fn! {
-    /// Free a GL filter chain.
+    /// Sets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    fn libra_vk_filter_chain_set_param(
+        chain: *mut libra_vk_filter_chain_t,
+        param_name: *const c_char,
+        value: f32
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        assert_non_null!(param_name);
+        unsafe {
+            let name = CStr::from_ptr(param_name);
+            let name = name.to_str()?;
+
+            if let None = chain.set_parameter(name, value) {
+                return LibrashaderError::UnknownShaderParameter(param_name).export()
+            }
+        }
+    }
+}
+
+extern_fn! {
+    /// Gets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    fn libra_vk_filter_chain_get_param(
+        chain: *mut libra_vk_filter_chain_t,
+        param_name: *const c_char,
+        out: *mut MaybeUninit<f32>
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        assert_non_null!(param_name);
+        unsafe {
+            let name = CStr::from_ptr(param_name);
+            let name = name.to_str()?;
+
+            let Some(value) = chain.get_parameter(name) else {
+                return LibrashaderError::UnknownShaderParameter(param_name).export()
+            };
+
+            out.write(MaybeUninit::new(value));
+        }
+    }
+}
+
+extern_fn! {
+    /// Sets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+    fn libra_vk_filter_chain_set_active_pass_count(
+        chain: *mut libra_vk_filter_chain_t,
+        value: u32
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        unsafe {
+            chain.set_enabled_pass_count(value as usize);
+        }
+    }
+}
+
+extern_fn! {
+    /// Gets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+    fn libra_vk_filter_chain_get_active_pass_count(
+        chain: *mut libra_vk_filter_chain_t,
+        out: *mut MaybeUninit<u32>
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        unsafe {
+            let value = chain.get_enabled_pass_count();
+            out.write(MaybeUninit::new(value as u32))
+        }
+    }
+}
+
+extern_fn! {
+    /// Free a Vulkan filter chain.
     ///
     /// The resulting value in `chain` then becomes null.
     /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
     fn libra_vk_filter_chain_free(
         chain: *mut libra_vk_filter_chain_t
     ) {

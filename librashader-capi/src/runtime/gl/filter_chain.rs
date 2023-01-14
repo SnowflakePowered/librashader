@@ -8,10 +8,12 @@ use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
+use std::ffi::CStr;
 
 pub use librashader::runtime::gl::capi::options::FilterChainOptionsGL;
 pub use librashader::runtime::gl::capi::options::FrameOptionsGL;
 use librashader::runtime::{Size, Viewport};
+use librashader::runtime::FilterChainParameters;
 
 /// A GL function loader that librashader needs to be initialized with.
 pub type libra_gl_loader_t = unsafe extern "system" fn(*const c_char) -> *const c_void;
@@ -146,6 +148,91 @@ extern_fn! {
             mvp,
         };
         chain.frame(&image, &viewport, frame_count, opt.as_ref())?;
+    }
+}
+
+extern_fn! {
+    /// Sets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    fn libra_gl_filter_chain_set_param(
+        chain: *mut libra_gl_filter_chain_t,
+        param_name: *const c_char,
+        value: f32
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        assert_non_null!(param_name);
+        unsafe {
+            let name = CStr::from_ptr(param_name);
+            let name = name.to_str()?;
+
+            if let None = chain.set_parameter(name, value) {
+                return LibrashaderError::UnknownShaderParameter(param_name).export()
+            }
+        }
+    }
+}
+
+extern_fn! {
+    /// Gets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    fn libra_gl_filter_chain_get_param(
+        chain: *mut libra_gl_filter_chain_t,
+        param_name: *const c_char,
+        out: *mut MaybeUninit<f32>
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        assert_non_null!(param_name);
+        unsafe {
+            let name = CStr::from_ptr(param_name);
+            let name = name.to_str()?;
+
+            let Some(value) = chain.get_parameter(name) else {
+                return LibrashaderError::UnknownShaderParameter(param_name).export()
+            };
+
+            out.write(MaybeUninit::new(value));
+        }
+    }
+}
+
+extern_fn! {
+    /// Sets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    fn libra_gl_filter_chain_set_active_pass_count(
+        chain: *mut libra_gl_filter_chain_t,
+        value: u32
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        unsafe {
+            chain.set_enabled_pass_count(value as usize);
+        }
+    }
+}
+
+extern_fn! {
+    /// Gets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    fn libra_gl_filter_chain_get_active_pass_count(
+        chain: *mut libra_gl_filter_chain_t,
+        out: *mut MaybeUninit<u32>
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        unsafe {
+            let value = chain.get_enabled_pass_count();
+            out.write(MaybeUninit::new(value as u32))
+        }
     }
 }
 

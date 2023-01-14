@@ -50,16 +50,28 @@ include = [
     "PFN_libra_gl_init_context",
     "PFN_libra_gl_filter_chain_create",
     "PFN_libra_gl_filter_chain_frame",
+    "PFN_libra_gl_filter_chain_set_param",
+    "PFN_libra_gl_filter_chain_get_param",
+    "PFN_libra_gl_filter_chain_set_active_pass_count",
+    "PFN_libra_gl_filter_chain_get_active_pass_count",
     "PFN_libra_gl_filter_chain_free",
 
     # d3d11
     "PFN_libra_d3d11_filter_chain_create",
     "PFN_libra_d3d11_filter_chain_frame",
+    "PFN_libra_d3d11_filter_chain_set_param",
+    "PFN_libra_d3d11_filter_chain_get_param",
+    "PFN_libra_d3d11_filter_chain_set_active_pass_count",
+    "PFN_libra_d3d11_filter_chain_get_active_pass_count",
     "PFN_libra_d3d11_filter_chain_free",
 
     # vulkan
     "PFN_libra_vk_filter_chain_create",
     "PFN_libra_vk_filter_chain_frame",
+    "PFN_libra_vk_filter_chain_set_param",
+    "PFN_libra_vk_filter_chain_get_param",
+    "PFN_libra_vk_filter_chain_set_active_pass_count",
+    "PFN_libra_vk_filter_chain_get_active_pass_count",
     "PFN_libra_vk_filter_chain_free",
 ]
 

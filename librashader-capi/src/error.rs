@@ -3,6 +3,7 @@ use std::any::Any;
 use std::ffi::{c_char, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
+use std::str::Utf8Error;
 use thiserror::Error;
 
 /// The error type for librashader.
@@ -13,8 +14,8 @@ pub enum LibrashaderError {
     UnknownError(Box<dyn Any + Send + 'static>),
     #[error("The parameter was null or invalid.")]
     InvalidParameter(&'static str),
-    #[error("The path was invalid.")]
-    InvalidPath(#[from] std::str::Utf8Error),
+    #[error("The provided string was not valid UTF8.")]
+    InvalidString(#[from] std::str::Utf8Error),
     #[error("There was an error parsing the preset.")]
     PresetError(#[from] librashader::presets::ParsePresetError),
     #[error("There was an error preprocessing the shader source.")]
@@ -23,6 +24,8 @@ pub enum LibrashaderError {
     ShaderCompileError(#[from] librashader::reflect::ShaderCompileError),
     #[error("There was an error reflecting the shader source.")]
     ShaderReflectError(#[from] librashader::reflect::ShaderReflectError),
+    #[error("The provided parameter name was invalid.")]
+    UnknownShaderParameter(*const c_char),
     #[cfg(feature = "runtime-opengl")]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
@@ -39,10 +42,12 @@ pub enum LibrashaderError {
 pub enum LIBRA_ERRNO {
     UNKNOWN_ERROR = 0,
     INVALID_PARAMETER = 1,
-    INVALID_PATH = 2,
+    INVALID_STRING = 2,
     PRESET_ERROR = 3,
     PREPROCESS_ERROR = 4,
-    RUNTIME_ERROR = 5,
+    SHADER_PARAMETER_ERROR = 5,
+    REFLECT_ERROR = 6,
+    RUNTIME_ERROR = 7,
 }
 
 // Nothing here can use extern_fn because they are lower level than libra_error_t.
@@ -165,11 +170,14 @@ impl LibrashaderError {
         match self {
             LibrashaderError::UnknownError(_) => LIBRA_ERRNO::UNKNOWN_ERROR,
             LibrashaderError::InvalidParameter(_) => LIBRA_ERRNO::INVALID_PARAMETER,
-            LibrashaderError::InvalidPath(_) => LIBRA_ERRNO::INVALID_PATH,
+            LibrashaderError::InvalidString(_) => LIBRA_ERRNO::INVALID_STRING,
             LibrashaderError::PresetError(_) => LIBRA_ERRNO::PRESET_ERROR,
             LibrashaderError::PreprocessError(_) => LIBRA_ERRNO::PREPROCESS_ERROR,
             LibrashaderError::ShaderCompileError(_) | LibrashaderError::ShaderReflectError(_) => {
-                LIBRA_ERRNO::RUNTIME_ERROR
+                LIBRA_ERRNO::REFLECT_ERROR
+            },
+            LibrashaderError::UnknownShaderParameter(_) => {
+                LIBRA_ERRNO::SHADER_PARAMETER_ERROR
             }
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,

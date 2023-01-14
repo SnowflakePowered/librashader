@@ -1,3 +1,4 @@
+use std::ffi::CStr;
 use crate::ctypes::{
     libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
 };
@@ -6,6 +7,7 @@ use crate::ffi::extern_fn;
 use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
+use std::ffi::c_char;
 use std::slice;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,
@@ -14,7 +16,7 @@ use windows::Win32::Graphics::Direct3D11::{
 pub use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
 pub use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
-use librashader::runtime::{Size, Viewport};
+use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// OpenGL parameters for the source image.
 #[repr(C)]
@@ -131,6 +133,91 @@ extern_fn! {
 
         let image = image.try_into()?;
         chain.frame(image, &viewport, frame_count, opt.as_ref())?;
+    }
+}
+
+extern_fn! {
+    /// Sets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    fn libra_d3d11_filter_chain_set_param(
+        chain: *mut libra_d3d11_filter_chain_t,
+        param_name: *const c_char,
+        value: f32
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        assert_non_null!(param_name);
+        unsafe {
+            let name = CStr::from_ptr(param_name);
+            let name = name.to_str()?;
+
+            if let None = chain.set_parameter(name, value) {
+                return LibrashaderError::UnknownShaderParameter(param_name).export()
+            }
+        }
+    }
+}
+
+extern_fn! {
+    /// Gets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    fn libra_d3d11_filter_chain_get_param(
+        chain: *mut libra_d3d11_filter_chain_t,
+        param_name: *const c_char,
+        out: *mut MaybeUninit<f32>
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        assert_non_null!(param_name);
+        unsafe {
+            let name = CStr::from_ptr(param_name);
+            let name = name.to_str()?;
+
+            let Some(value) = chain.get_parameter(name) else {
+                return LibrashaderError::UnknownShaderParameter(param_name).export()
+            };
+
+            out.write(MaybeUninit::new(value));
+        }
+    }
+}
+
+extern_fn! {
+    /// Sets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+    fn libra_d3d11_filter_chain_set_active_pass_count(
+        chain: *mut libra_d3d11_filter_chain_t,
+        value: u32
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        unsafe {
+            chain.set_enabled_pass_count(value as usize);
+        }
+    }
+}
+
+extern_fn! {
+    /// Gets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+    fn libra_d3d11_filter_chain_get_active_pass_count(
+        chain: *mut libra_d3d11_filter_chain_t,
+        out: *mut MaybeUninit<u32>
+    ) mut |chain| {
+        assert_some_ptr!(mut chain);
+        unsafe {
+            let value = chain.get_enabled_pass_count();
+            out.write(MaybeUninit::new(value as u32))
+        }
     }
 }
 

@@ -590,7 +590,8 @@ impl FilterChainVulkan {
         intermediates.dispose();
 
         // limit number of passes to those enabled.
-        let passes = &mut self.passes[0..self.common.config.passes_enabled];
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let passes = &mut self.passes[0..max];
 
         if let Some(options) = &options {
             if options.clear_history {

@@ -117,17 +117,19 @@ extern_fn! {
 pub type PFN_libra_preset_get_runtime_param_names = unsafe extern "C" fn(
     preset: *mut libra_shader_preset_t,
     value: MaybeUninit<*mut *const c_char>,
+    size: *mut MaybeUninit<*const u64>,
 ) -> libra_error_t;
 
 /// Get a list of runtime parameter names.
 ///
-/// The returned value can not currently be freed.
-/// This function should be considered work in progress. Its use is discouraged.
-/// Removal of this function is exempted from semantic versioning.
+/// The caller must provide a sufficiently sized buffer.
+/// ## Safety
+/// - `preset` must be null or a valid and aligned pointer to a shader preset.
 #[no_mangle]
 pub unsafe extern "C" fn libra_preset_get_runtime_param_names(
     preset: *mut libra_shader_preset_t,
     mut value: MaybeUninit<*mut *const c_char>,
+    mut size: *mut MaybeUninit<u64>,
 ) -> libra_error_t {
     ffi_body!(|preset| {
         assert_some_ptr!(preset);

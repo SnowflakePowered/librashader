@@ -470,7 +470,8 @@ impl FilterChainD3D11 {
         frame_count: usize,
         options: Option<&FrameOptionsD3D11>,
     ) -> error::Result<()> {
-        let passes = &mut self.passes[0..self.common.config.passes_enabled];
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let passes = &mut self.passes[0..max];
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &mut self.history_framebuffers {
