@@ -27,13 +27,11 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 ✔ = Render API is supported &mdash; 🚧 =  Support is in progress &mdash; ❌ Render API is not supported
 ## Usage
 
-🚧 *`librashader_ld` is WIP* 🚧
-
 librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class, fully supported.
 
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
 loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. You may also link against
-`librashader_capi` directly with [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
+`librashader_capi` directly at compile time with [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
 
 The C API currently does not expose the [shader reflection API](https://docs.rs/librashader/latest/librashader/reflect/index.html). Work 
 is in progress to expose this to C. In the meanwhile, if you wish to implement a custom runtime for librashader, it will have to be done

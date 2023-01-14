@@ -35,6 +35,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #elif defined(__linux__)
 #include <dlfcn.h>
 #endif
+
 #include "librashader.h"
 
 LIBRA_ERRNO __librashader__noop_error_errno(libra_error_t error) {
@@ -79,6 +80,7 @@ libra_error_t __librashader__noop_preset_get_runtime_param_names(
     return NULL;
 }
 
+#if defined(LIBRA_RUNTIME_OPENGL)
 libra_error_t __librashader__noop_gl_init_context(libra_gl_loader_t loader) {
     return NULL;
 }
@@ -101,7 +103,9 @@ libra_error_t __librashader__noop_gl_filter_chain_free(
     libra_gl_filter_chain_t *chain) {
     return NULL;
 }
+#endif
 
+#if defined(LIBRA_RUNTIME_D3D11)
 libra_error_t __librashader__noop_d3d11_filter_chain_create(
     libra_shader_preset_t *preset,
     const struct filter_chain_d3d11_opt_t *options, const ID3D11Device *device,
@@ -121,7 +125,9 @@ libra_error_t __librashader__noop_d3d11_filter_chain_free(
     libra_d3d11_filter_chain_t *chain) {
     return NULL;
 }
+#endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
 libra_error_t __librashader__noop_vk_filter_chain_create(
     struct libra_device_vk_t vulkan, libra_shader_preset_t *preset,
     const struct filter_chain_vk_opt_t *options, libra_vk_filter_chain_t *out) {
@@ -140,6 +146,7 @@ libra_error_t __librashader__noop_vk_filter_chain_free(
     libra_vk_filter_chain_t *chain) {
     return NULL;
 }
+#endif
 
 typedef struct libra_instance_t {
     PFN_libra_preset_create preset_create;
@@ -155,18 +162,24 @@ typedef struct libra_instance_t {
     PFN_libra_error_write error_write;
     PFN_libra_error_free_string error_free_string;
 
+#if defined(LIBRA_RUNTIME_OPENGL)
     PFN_libra_gl_init_context gl_init_context;
     PFN_libra_gl_filter_chain_create gl_filter_chain_create;
     PFN_libra_gl_filter_chain_frame gl_filter_chain_frame;
     PFN_libra_gl_filter_chain_free gl_filter_chain_free;
+#endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
     PFN_libra_d3d11_filter_chain_create d3d11_filter_chain_create;
     PFN_libra_d3d11_filter_chain_frame d3d11_filter_chain_frame;
     PFN_libra_d3d11_filter_chain_free d3d11_filter_chain_free;
+#endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
     PFN_libra_vk_filter_chain_create vk_filter_chain_create;
     PFN_libra_vk_filter_chain_frame vk_filter_chain_frame;
     PFN_libra_vk_filter_chain_free vk_filter_chain_free;
+#endif
 } libra_instance_t;
 
 libra_instance_t __librashader_make_null_instance() {
@@ -185,24 +198,42 @@ libra_instance_t __librashader_make_null_instance() {
         .error_write = __librashader__noop_error_write,
         .error_free_string = __librashader__noop_error_free_string,
 
+#if defined(LIBRA_RUNTIME_OPENGL)
         .gl_init_context = __librashader__noop_gl_init_context,
         .gl_filter_chain_create = __librashader__noop_gl_filter_chain_create,
         .gl_filter_chain_frame = __librashader__noop_gl_filter_chain_frame,
         .gl_filter_chain_free = __librashader__noop_gl_filter_chain_free,
+#endif
 
+#if defined(LIBRA_RUNTIME_D3D11)
         .d3d11_filter_chain_create =
             __librashader__noop_d3d11_filter_chain_create,
         .d3d11_filter_chain_frame =
             __librashader__noop_d3d11_filter_chain_frame,
         .d3d11_filter_chain_free = __librashader__noop_d3d11_filter_chain_free,
+#endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
         .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
         .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
         .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
+#endif
     };
 }
 
-
+/// Load an instance of librashader in the OS-dependent search path of the
+/// current directory.
+///
+/// `librashader_load_instance` loads from `librashader.dll` on Windows,
+/// or `librashader.so` on Linux.
+///
+/// If no librashader implementation is found, the returned `libra_instance_t`
+/// will have all function pointers set to no-op functions.
+///
+/// If any symbol fails to load, the function will be set to a no-op function.
+///
+/// \return An `libra_instance_t` struct with loaded function pointers.
+libra_instance_t librashader_load_instance();
 
 #if defined(_WIN32)
 #define _LIBRASHADER_ASSIGN_FARPROC(HMOD, INSTANCE, NAME)                    \
@@ -233,18 +264,24 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_write);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_free_string);
 
+#if defined(LIBRA_RUNTIME_OPENGL)
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_init_context);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_create);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_frame);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_free);
+#endif
 
+#if defined(LIBRA_RUNTIME_D3D11)
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_create);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_frame);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_free);
+#endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_create);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_frame);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_free);
+#endif
 
     return instance;
 }
@@ -277,19 +314,25 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_write);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_free_string);
 
+#if defined(LIBRA_RUNTIME_OPENGL)
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_init_context);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_create);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_frame);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_free);
+#endif
 
+    // Not sure why you would want this
+#if defined(LIBRA_RUNTIME_D3D11)
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_create);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_frame);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_free);
+#endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_create);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_frame);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_free);
-
+#endif
     return instance;
 }
 #else
