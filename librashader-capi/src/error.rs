@@ -3,7 +3,6 @@ use std::any::Any;
 use std::ffi::{c_char, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
-use std::str::Utf8Error;
 use thiserror::Error;
 
 /// The error type for librashader.

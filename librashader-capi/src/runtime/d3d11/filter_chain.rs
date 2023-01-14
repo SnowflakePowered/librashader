@@ -198,9 +198,7 @@ extern_fn! {
         value: u32
     ) mut |chain| {
         assert_some_ptr!(mut chain);
-        unsafe {
-            chain.set_enabled_pass_count(value as usize);
-        }
+        chain.set_enabled_pass_count(value as usize);
     }
 }
 

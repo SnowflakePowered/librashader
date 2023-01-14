@@ -50,10 +50,12 @@ enum LIBRA_ERRNO
 {
     LIBRA_ERRNO_UNKNOWN_ERROR = 0,
     LIBRA_ERRNO_INVALID_PARAMETER = 1,
-    LIBRA_ERRNO_INVALID_PATH = 2,
+    LIBRA_ERRNO_INVALID_STRING = 2,
     LIBRA_ERRNO_PRESET_ERROR = 3,
     LIBRA_ERRNO_PREPROCESS_ERROR = 4,
-    LIBRA_ERRNO_RUNTIME_ERROR = 5,
+    LIBRA_ERRNO_SHADER_PARAMETER_ERROR = 5,
+    LIBRA_ERRNO_REFLECT_ERROR = 6,
+    LIBRA_ERRNO_RUNTIME_ERROR = 7,
 };
 #ifndef __cplusplus
 typedef int32_t LIBRA_ERRNO;
@@ -82,6 +84,33 @@ typedef struct _libra_error *libra_error_t;
 
 /// A handle to a shader preset object.
 typedef struct _shader_preset *libra_shader_preset_t;
+
+/// A preset parameter.
+typedef struct libra_preset_param_t {
+    /// The name of the parameter
+    const char *name;
+    /// The description of the parameter.
+    const char *description;
+    /// The initial value the parameter is set to.
+    float initial;
+    /// The minimum value that the parameter can be set to.
+    float minimum;
+    /// The maximum value that the parameter can be set to.
+    float maximum;
+    /// The step by which this parameter can be incremented or decremented.
+    float step;
+} libra_preset_param_t;
+
+/// A list of preset parameters.
+typedef struct libra_preset_parameter_list_t {
+    /// A pointer to the parameter
+    const struct libra_preset_param_t *parameters;
+    /// The number of parameters in the list
+    uint64_t length;
+    /// For internal use only.
+    /// Changing this causes immediate undefined behaviour on freeing this parameter list.
+    uint64_t _internal_alloc;
+} libra_preset_parameter_list_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// A GL function loader that librashader needs to be initialized with.
@@ -262,10 +291,6 @@ typedef libra_error_t (*PFN_libra_preset_get_param)(libra_shader_preset_t *prese
 ///libra_preset_print
 typedef libra_error_t (*PFN_libra_preset_print)(libra_shader_preset_t *preset);
 
-/// Function pointer definition for libra_preset_get_runtime_param_names
-typedef libra_error_t (*PFN_libra_preset_get_runtime_param_names)(libra_shader_preset_t *preset,
-                                                                  const char **value);
-
 /// Function pointer definition for libra_error_errno
 typedef LIBRA_ERRNO (*PFN_libra_error_errno)(libra_error_t error);
 
@@ -309,6 +334,36 @@ typedef libra_error_t (*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Function pointer definition for
+///libra_gl_filter_chain_set_param
+typedef libra_error_t (*PFN_libra_gl_filter_chain_set_param)(libra_gl_filter_chain_t *chain,
+                                                             const char *param_name,
+                                                             float value);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Function pointer definition for
+///libra_gl_filter_chain_get_param
+typedef libra_error_t (*PFN_libra_gl_filter_chain_get_param)(libra_gl_filter_chain_t *chain,
+                                                             const char *param_name,
+                                                             float *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Function pointer definition for
+///libra_gl_filter_chain_set_active_pass_count
+typedef libra_error_t (*PFN_libra_gl_filter_chain_set_active_pass_count)(libra_gl_filter_chain_t *chain,
+                                                                         uint32_t value);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Function pointer definition for
+///libra_gl_filter_chain_get_active_pass_count
+typedef libra_error_t (*PFN_libra_gl_filter_chain_get_active_pass_count)(libra_gl_filter_chain_t *chain,
+                                                                         uint32_t *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Function pointer definition for
 ///libra_gl_filter_chain_free
 typedef libra_error_t (*PFN_libra_gl_filter_chain_free)(libra_gl_filter_chain_t *chain);
 #endif
@@ -332,6 +387,36 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_c
                                                             const ID3D11RenderTargetView *out,
                                                             const float *mvp,
                                                             const struct frame_vk_opt_t *opt);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Function pointer definition for
+///libra_d3d11_filter_chain_set_param
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_set_param)(libra_d3d11_filter_chain_t *chain,
+                                                                const char *param_name,
+                                                                float value);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Function pointer definition for
+///libra_d3d11_filter_chain_get_param
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_get_param)(libra_d3d11_filter_chain_t *chain,
+                                                                const char *param_name,
+                                                                float *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Function pointer definition for
+///libra_d3d11_filter_chain_set_active_pass_count
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_set_active_pass_count)(libra_d3d11_filter_chain_t *chain,
+                                                                            uint32_t value);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Function pointer definition for
+///libra_d3d11_filter_chain_get_active_pass_count
+typedef libra_error_t (*PFN_libra_d3d11_filter_chain_get_active_pass_count)(libra_d3d11_filter_chain_t *chain,
+                                                                            uint32_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -360,6 +445,36 @@ typedef libra_error_t (*PFN_libra_vk_filter_chain_frame)(libra_vk_filter_chain_t
                                                          struct libra_image_vk_t out,
                                                          const float *mvp,
                                                          const struct FrameOptionsVulkan *opt);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_set_param
+typedef libra_error_t (*PFN_libra_vk_filter_chain_set_param)(libra_vk_filter_chain_t *chain,
+                                                             const char *param_name,
+                                                             float value);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_get_param
+typedef libra_error_t (*PFN_libra_vk_filter_chain_get_param)(libra_vk_filter_chain_t *chain,
+                                                             const char *param_name,
+                                                             float *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_set_active_pass_count
+typedef libra_error_t (*PFN_libra_vk_filter_chain_set_active_pass_count)(libra_vk_filter_chain_t *chain,
+                                                                         uint32_t value);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_get_active_pass_count
+typedef libra_error_t (*PFN_libra_vk_filter_chain_get_active_pass_count)(libra_vk_filter_chain_t *chain,
+                                                                         uint32_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -453,11 +568,11 @@ libra_error_t libra_preset_print(libra_shader_preset_t *preset);
 
 /// Get a list of runtime parameter names.
 ///
-/// The returned value can not currently be freed.
-/// This function should be considered work in progress. Its use is discouraged.
-/// Removal of this function is exempted from semantic versioning.
-libra_error_t libra_preset_get_runtime_param_names(libra_shader_preset_t *preset,
-                                                   const char **value);
+/// ## Safety
+/// - `preset` must be null or a valid and aligned pointer to a shader preset.
+/// - `out` must be an aligned pointer to a `libra_preset_parameter_list_t`.
+libra_error_t libra_preset_get_runtime_parameters(libra_shader_preset_t *preset,
+                                                  struct libra_preset_parameter_list_t *out);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Initialize the OpenGL Context for librashader.
@@ -505,6 +620,48 @@ libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
 #endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
+/// Sets a parameter for the filter chain.
+///
+/// If the parameter does not exist, returns an error.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+/// - `param_name` must be either null or a null terminated string.
+libra_error_t libra_gl_filter_chain_set_param(libra_gl_filter_chain_t *chain,
+                                              const char *param_name,
+                                              float value);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Gets a parameter for the filter chain.
+///
+/// If the parameter does not exist, returns an error.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+/// - `param_name` must be either null or a null terminated string.
+libra_error_t libra_gl_filter_chain_get_param(libra_gl_filter_chain_t *chain,
+                                              const char *param_name,
+                                              float *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Sets the number of active passes for this chain.
+///
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+libra_error_t libra_gl_filter_chain_set_active_pass_count(libra_gl_filter_chain_t *chain,
+                                                          uint32_t value);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
+/// Gets the number of active passes for this chain.
+///
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+libra_error_t libra_gl_filter_chain_get_active_pass_count(libra_gl_filter_chain_t *chain,
+                                                          uint32_t *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_OPENGL)
 /// Free a GL filter chain.
 ///
 /// The resulting value in `chain` then becomes null.
@@ -549,6 +706,48 @@ libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
+/// Sets a parameter for the filter chain.
+///
+/// If the parameter does not exist, returns an error.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+/// - `param_name` must be either null or a null terminated string.
+libra_error_t libra_d3d11_filter_chain_set_param(libra_d3d11_filter_chain_t *chain,
+                                                 const char *param_name,
+                                                 float value);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Gets a parameter for the filter chain.
+///
+/// If the parameter does not exist, returns an error.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+/// - `param_name` must be either null or a null terminated string.
+libra_error_t libra_d3d11_filter_chain_get_param(libra_d3d11_filter_chain_t *chain,
+                                                 const char *param_name,
+                                                 float *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Sets the number of active passes for this chain.
+///
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+libra_error_t libra_d3d11_filter_chain_set_active_pass_count(libra_d3d11_filter_chain_t *chain,
+                                                             uint32_t value);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Gets the number of active passes for this chain.
+///
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d11_filter_chain_t`.
+libra_error_t libra_d3d11_filter_chain_get_active_pass_count(libra_d3d11_filter_chain_t *chain,
+                                                             uint32_t *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
 /// Free a D3D11 filter chain.
 ///
 /// The resulting value in `chain` then becomes null.
@@ -589,7 +788,7 @@ libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
 ///    function will return an error.
 /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
 ///    values for the model view projection matrix.
-/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_vk_opt_t`
 ///    struct.
 libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
                                           VkCommandBuffer command_buffer,
@@ -602,11 +801,53 @@ libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-/// Free a GL filter chain.
+/// Sets a parameter for the filter chain.
+///
+/// If the parameter does not exist, returns an error.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+/// - `param_name` must be either null or a null terminated string.
+libra_error_t libra_vk_filter_chain_set_param(libra_vk_filter_chain_t *chain,
+                                              const char *param_name,
+                                              float value);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Gets a parameter for the filter chain.
+///
+/// If the parameter does not exist, returns an error.
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+/// - `param_name` must be either null or a null terminated string.
+libra_error_t libra_vk_filter_chain_get_param(libra_vk_filter_chain_t *chain,
+                                              const char *param_name,
+                                              float *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Sets the number of active passes for this chain.
+///
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+libra_error_t libra_vk_filter_chain_set_active_pass_count(libra_vk_filter_chain_t *chain,
+                                                          uint32_t value);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Gets the number of active passes for this chain.
+///
+/// ## Safety
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
+libra_error_t libra_vk_filter_chain_get_active_pass_count(libra_vk_filter_chain_t *chain,
+                                                          uint32_t *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Free a Vulkan filter chain.
 ///
 /// The resulting value in `chain` then becomes null.
 /// ## Safety
-/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+/// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_vk_filter_chain_t`.
 libra_error_t libra_vk_filter_chain_free(libra_vk_filter_chain_t *chain);
 #endif
 

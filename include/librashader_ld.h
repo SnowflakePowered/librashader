@@ -75,11 +75,6 @@ libra_error_t __librashader__noop_preset_print(libra_shader_preset_t *preset) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_preset_get_runtime_param_names(
-    libra_shader_preset_t *preset, const char **value) {
-    return NULL;
-}
-
 #if defined(LIBRA_RUNTIME_OPENGL)
 libra_error_t __librashader__noop_gl_init_context(libra_gl_loader_t loader) {
     return NULL;
@@ -101,6 +96,26 @@ libra_error_t __librashader__noop_gl_filter_chain_frame(
 
 libra_error_t __librashader__noop_gl_filter_chain_free(
     libra_gl_filter_chain_t *chain) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_gl_filter_chain_set_param(
+    libra_gl_filter_chain_t *chain, const char *param_name, float value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_gl_filter_chain_get_param(
+    libra_gl_filter_chain_t *chain, const char *param_name, float *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_gl_filter_chain_set_active_pass_count(
+    libra_gl_filter_chain_t *chain, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_gl_filter_chain_get_active_pass_count(
+    libra_gl_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
@@ -125,6 +140,27 @@ libra_error_t __librashader__noop_d3d11_filter_chain_free(
     libra_d3d11_filter_chain_t *chain) {
     return NULL;
 }
+
+libra_error_t __librashader__noop_d3d11_filter_chain_set_param(
+    libra_d3d11_filter_chain_t *chain, const char *param_name, float value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_d3d11_filter_chain_get_param(
+    libra_d3d11_filter_chain_t *chain, const char *param_name, float *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_d3d11_filter_chain_set_active_pass_count(
+    libra_d3d11_filter_chain_t *chain, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_d3d11_filter_chain_get_active_pass_count(
+    libra_d3d11_filter_chain_t *chain, uint32_t *out) {
+    return NULL;
+}
+
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -146,6 +182,27 @@ libra_error_t __librashader__noop_vk_filter_chain_free(
     libra_vk_filter_chain_t *chain) {
     return NULL;
 }
+
+libra_error_t __librashader__noop_vk_filter_chain_set_param(
+    libra_vk_filter_chain_t *chain, const char *param_name, float value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_get_param(
+    libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_set_active_pass_count(
+    libra_vk_filter_chain_t *chain, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
+    libra_vk_filter_chain_t *chain, uint32_t *out) {
+    return NULL;
+}
+
 #endif
 
 typedef struct libra_instance_t {
@@ -154,7 +211,6 @@ typedef struct libra_instance_t {
     PFN_libra_preset_set_param preset_set_param;
     PFN_libra_preset_get_param preset_get_param;
     PFN_libra_preset_print preset_print;
-    PFN_libra_preset_get_runtime_param_names preset_get_runtime_param_names;
 
     PFN_libra_error_errno error_errno;
     PFN_libra_error_print error_print;
@@ -167,30 +223,46 @@ typedef struct libra_instance_t {
     PFN_libra_gl_filter_chain_create gl_filter_chain_create;
     PFN_libra_gl_filter_chain_frame gl_filter_chain_frame;
     PFN_libra_gl_filter_chain_free gl_filter_chain_free;
+    PFN_libra_gl_filter_chain_get_active_pass_count
+        gl_filter_chain_get_active_pass_count;
+    PFN_libra_gl_filter_chain_set_active_pass_count
+        gl_filter_chain_set_active_pass_count;
+    PFN_libra_gl_filter_chain_get_param gl_filter_chain_get_param;
+    PFN_libra_gl_filter_chain_set_param gl_filter_chain_set_param;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
     PFN_libra_d3d11_filter_chain_create d3d11_filter_chain_create;
     PFN_libra_d3d11_filter_chain_frame d3d11_filter_chain_frame;
     PFN_libra_d3d11_filter_chain_free d3d11_filter_chain_free;
+    PFN_libra_d3d11_filter_chain_get_active_pass_count
+        d3d11_filter_chain_get_active_pass_count;
+    PFN_libra_d3d11_filter_chain_set_active_pass_count
+        d3d11_filter_chain_set_active_pass_count;
+    PFN_libra_d3d11_filter_chain_get_param d3d11_filter_chain_get_param;
+    PFN_libra_d3d11_filter_chain_set_param d3d11_filter_chain_set_param;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
     PFN_libra_vk_filter_chain_create vk_filter_chain_create;
     PFN_libra_vk_filter_chain_frame vk_filter_chain_frame;
     PFN_libra_vk_filter_chain_free vk_filter_chain_free;
+    PFN_libra_vk_filter_chain_get_active_pass_count
+        vk_filter_chain_get_active_pass_count;
+    PFN_libra_vk_filter_chain_set_active_pass_count
+        vk_filter_chain_set_active_pass_count;
+    PFN_libra_vk_filter_chain_get_param vk_filter_chain_get_param;
+    PFN_libra_vk_filter_chain_set_param vk_filter_chain_set_param;
 #endif
 } libra_instance_t;
 
 libra_instance_t __librashader_make_null_instance() {
-    return libra_instance_t{
+    return libra_instance_t {
         .preset_create = __librashader__noop_preset_create,
         .preset_free = __librashader__noop_preset_free,
         .preset_set_param = __librashader__noop_preset_set_param,
         .preset_get_param = __librashader__noop_preset_get_param,
         .preset_print = __librashader__noop_preset_print,
-        .preset_get_runtime_param_names =
-            __librashader__noop_preset_get_runtime_param_names,
 
         .error_errno = __librashader__noop_error_errno,
         .error_print = __librashader__noop_error_print,
@@ -203,6 +275,14 @@ libra_instance_t __librashader_make_null_instance() {
         .gl_filter_chain_create = __librashader__noop_gl_filter_chain_create,
         .gl_filter_chain_frame = __librashader__noop_gl_filter_chain_frame,
         .gl_filter_chain_free = __librashader__noop_gl_filter_chain_free,
+        .gl_filter_chain_get_active_pass_count =
+            __librashader__noop_gl_filter_chain_get_active_pass_count,
+        .gl_filter_chain_set_active_pass_count =
+            __librashader__noop_gl_filter_chain_set_active_pass_count,
+        .gl_filter_chain_get_param =
+            __librashader__noop_gl_filter_chain_get_param,
+        .gl_filter_chain_set_param =
+            __librashader__noop_gl_filter_chain_set_param,
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -211,12 +291,28 @@ libra_instance_t __librashader_make_null_instance() {
         .d3d11_filter_chain_frame =
             __librashader__noop_d3d11_filter_chain_frame,
         .d3d11_filter_chain_free = __librashader__noop_d3d11_filter_chain_free,
+        .d3d11_filter_chain_get_active_pass_count =
+            __librashader__noop_d3d11_filter_chain_get_active_pass_count,
+        .d3d11_filter_chain_set_active_pass_count =
+            __librashader__noop_d3d11_filter_chain_set_active_pass_count,
+        .d3d11_filter_chain_get_param =
+            __librashader__noop_d3d11_filter_chain_get_param,
+        .d3d11_filter_chain_set_param =
+            __librashader__noop_d3d11_filter_chain_set_param,
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
         .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
         .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
         .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
+        .vk_filter_chain_get_active_pass_count =
+            __librashader__noop_vk_filter_chain_get_active_pass_count,
+        .vk_filter_chain_set_active_pass_count =
+            __librashader__noop_vk_filter_chain_set_active_pass_count,
+        .vk_filter_chain_get_param =
+            __librashader__noop_vk_filter_chain_get_param,
+        .vk_filter_chain_set_param =
+            __librashader__noop_vk_filter_chain_set_param,
 #endif
     };
 }
@@ -236,7 +332,7 @@ libra_instance_t __librashader_make_null_instance() {
 libra_instance_t librashader_load_instance();
 
 #if defined(_WIN32)
-#define _LIBRASHADER_ASSIGN_FARPROC(HMOD, INSTANCE, NAME)                    \
+#define _LIBRASHADER_ASSIGN_FARPROC(HMOD, INSTANCE, NAME)       \
     {                                                           \
         FARPROC address = GetProcAddress(HMOD, "libra_" #NAME); \
         if (address != NULL) {                                  \
@@ -256,7 +352,6 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_set_param);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_get_param);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_print);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_get_runtime_param_names);
 
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_errno);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_print);
@@ -269,33 +364,60 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_create);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_frame);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_free);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                gl_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                gl_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                gl_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                gl_filter_chain_set_active_pass_count);
+
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_create);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_frame);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                d3d11_filter_chain_create);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                d3d11_filter_chain_frame);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_free);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                d3d11_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                d3d11_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                d3d11_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                d3d11_filter_chain_set_active_pass_count);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_create);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_frame);
     _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_free);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                vk_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                vk_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                vk_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+                                vk_filter_chain_set_active_pass_count);
 #endif
 
     return instance;
 }
 #elif defined(__linux__)
-#define _LIBRASHADER_ASSIGN_DLSYM(HMOD, INSTANCE, NAME)         \
-    {                                                           \
-        void* address = dlsym(HMOD, "libra_" #NAME); \
-        if (address != NULL) {                                  \
-            (INSTANCE).NAME = (PFN_libra_##NAME)address;        \
-        }                                                       \
+#define _LIBRASHADER_ASSIGN_DLSYM(HMOD, INSTANCE, NAME)  \
+    {                                                    \
+        void *address = dlsym(HMOD, "libra_" #NAME);     \
+        if (address != NULL) {                           \
+            (INSTANCE).NAME = (PFN_libra_##NAME)address; \
+        }                                                \
     }
 
 libra_instance_t librashader_load_instance() {
-    void* librashader = dlopen(L"librashader.so", RTLD_LAZY);
+    void *librashader = dlopen(L"librashader.so", RTLD_LAZY);
     libra_instance_t instance = __librashader_make_null_instance();
     if (librashader == NULL) {
         return instance;
@@ -306,7 +428,6 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_set_param);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_get_param);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_print);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_get_runtime_param_names);
 
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_errno);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_print);
@@ -319,6 +440,12 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_create);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_frame);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_free);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              gl_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              gl_filter_chain_set_active_pass_count);
 #endif
 
     // Not sure why you would want this
@@ -326,12 +453,27 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_create);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_frame);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_free);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              d3d11_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              d3d11_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              d3d11_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              d3d11_filter_chain_set_active_pass_count);
+
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_create);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_frame);
     _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_free);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              vk_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
+                              vk_filter_chain_set_active_pass_count);
 #endif
     return instance;
 }

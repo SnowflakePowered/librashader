@@ -1,11 +1,40 @@
 //! The librashader preset C API (`libra_preset_*`).
-use crate::ctypes::{libra_error_t, libra_shader_preset_t};
+use crate::ctypes::{libra_shader_preset_t};
 use crate::error::{assert_non_null,  assert_some_ptr, LibrashaderError};
-use crate::ffi::{extern_fn, ffi_body};
+use crate::ffi::extern_fn;
 use librashader::presets::ShaderPreset;
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
+
+/// A list of preset parameters.
+#[repr(C)]
+pub struct libra_preset_parameter_list_t {
+    /// A pointer to the parameter
+    pub parameters: *const libra_preset_param_t,
+    /// The number of parameters in the list
+    pub length: u64,
+    /// For internal use only.
+    /// Changing this causes immediate undefined behaviour on freeing this parameter list.
+    pub _internal_alloc: u64,
+}
+
+/// A preset parameter.
+#[repr(C)]
+pub struct libra_preset_param_t {
+    /// The name of the parameter
+    pub name: *const c_char,
+    /// The description of the parameter.
+    pub description: *const c_char,
+    /// The initial value the parameter is set to.
+    pub initial: f32,
+    /// The minimum value that the parameter can be set to.
+    pub minimum: f32,
+    /// The maximum value that the parameter can be set to.
+    pub maximum: f32,
+    /// The step by which this parameter can be incremented or decremented.
+    pub step: f32,
+}
 
 extern_fn! {
     /// Load a preset.
@@ -92,7 +121,6 @@ extern_fn! {
         let name = unsafe { CStr::from_ptr(name) };
         let name = name.to_str()?;
         assert_some_ptr!(preset);
-
         assert_non_null!(value);
 
         if let Some(param) = preset.parameters.iter().find(|c| c.name == name) {
@@ -112,38 +140,68 @@ extern_fn! {
     }
 }
 
-// can't use extern_fn! for this because of the mut.
-/// Function pointer definition for libra_preset_get_runtime_param_names
-pub type PFN_libra_preset_get_runtime_param_names = unsafe extern "C" fn(
-    preset: *mut libra_shader_preset_t,
-    value: MaybeUninit<*mut *const c_char>,
-    size: *mut MaybeUninit<*const u64>,
-) -> libra_error_t;
-
-/// Get a list of runtime parameter names.
-///
-/// The caller must provide a sufficiently sized buffer.
-/// ## Safety
-/// - `preset` must be null or a valid and aligned pointer to a shader preset.
-#[no_mangle]
-pub unsafe extern "C" fn libra_preset_get_runtime_param_names(
-    preset: *mut libra_shader_preset_t,
-    mut value: MaybeUninit<*mut *const c_char>,
-    mut size: *mut MaybeUninit<u64>,
-) -> libra_error_t {
-    ffi_body!(|preset| {
+extern_fn! {
+    /// Get a list of runtime parameter names.
+    ///
+    /// ## Safety
+    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
+    /// - `out` must be an aligned pointer to a `libra_preset_parameter_list_t`.
+    fn libra_preset_get_runtime_parameters(
+        preset: *mut libra_shader_preset_t,
+        out: *mut MaybeUninit<libra_preset_parameter_list_t>
+    ) |preset| {
         assert_some_ptr!(preset);
+        assert_non_null!(out);
 
         let iter = librashader::presets::get_parameter_meta(preset)?;
-        let mut c_strings = Vec::new();
+        let mut values = Vec::new();
         for param in iter {
-            let c_string = CString::new(param.id)
-                .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
-            c_strings.push(c_string.into_raw().cast_const());
+            let name = CString::new(param.id)
+            .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
+            let description = CString::new(param.description)
+            .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
+            values.push(libra_preset_param_t {
+                name: name.into_raw().cast_const(),
+                description: description.into_raw().cast_const(),
+                initial: param.initial,
+                minimum: param.minimum,
+                maximum: param.maximum,
+                step: param.step
+            })
         }
-
-        let (parts, _len, _cap) = c_strings.into_raw_parts();
-
-        value.write(parts);
-    })
+        let (parts, len, cap) = values.into_raw_parts();
+        unsafe {
+            out.write(MaybeUninit::new(libra_preset_parameter_list_t {
+                parameters: parts,
+                length: len as u64,
+                _internal_alloc: cap as u64,
+            }));
+        }
+    }
 }
+
+// /// Get a list of runtime parameter names.
+// ///
+// /// The caller must provide a sufficiently sized buffer.
+// /// If `value` is null, then size will be written to with the size of the buffer required
+// /// to get the parameter names.
+// /// ## Safety
+// /// - `preset` must be null or a valid and aligned pointer to a shader preset.
+// #[no_mangle]
+// pub unsafe extern "C" fn libra_preset_free_runtime_param_names(
+//     value: MaybeUninit<*mut *const c_char>,
+// ) -> libra_error_t {
+//     ffi_body!(|value| {
+//         let iter = librashader::presets::get_parameter_meta(preset)?;
+//         let mut c_strings = Vec::new();
+//         for param in iter {
+//             let c_string = CString::new(param.id)
+//                 .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
+//             c_strings.push(c_string.into_raw().cast_const());
+//         }
+//
+//         let (parts, _len, _cap) = c_strings.into_raw_parts();
+//
+//         value.write(parts);
+//     })
+// }

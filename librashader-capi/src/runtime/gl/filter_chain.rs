@@ -213,9 +213,7 @@ extern_fn! {
         value: u32
     ) mut |chain| {
         assert_some_ptr!(mut chain);
-        unsafe {
-            chain.set_enabled_pass_count(value as usize);
-        }
+        chain.set_enabled_pass_count(value as usize);
     }
 }
 
@@ -229,8 +227,8 @@ extern_fn! {
         out: *mut MaybeUninit<u32>
     ) mut |chain| {
         assert_some_ptr!(mut chain);
+        let value = chain.get_enabled_pass_count();
         unsafe {
-            let value = chain.get_enabled_pass_count();
             out.write(MaybeUninit::new(value as u32))
         }
     }
