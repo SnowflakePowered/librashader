@@ -26,9 +26,17 @@ pub fn main() {
 
 
     if cfg!(target_os = "linux") {
-        let artifacts = &["liblibrashader.so", "liblibrashader.a"];
+        let artifacts = &["liblibrashader_capi.so", "liblibrashader_capi.a"];
         for artifact in artifacts {
             let ext = artifact.strip_prefix("lib").unwrap();
+            fs::rename(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(artifact), PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(ext)).unwrap();
+        }
+    }
+
+    if cfg!(target_os = "windows") {
+        let artifacts = &["librashader_capi.dll", "librashader_capi.lib", "librashader_capi.d", "librashader_capi.dll.exp", "librashader_capi.dll.lib", "librashader_capi.pdb"];
+        for artifact in artifacts {
+            let ext = artifact.replace("_capi", "");
             fs::rename(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(artifact), PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(ext)).unwrap();
         }
     }
