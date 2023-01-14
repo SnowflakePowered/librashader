@@ -9,10 +9,10 @@ use std::ptr::NonNull;
 
 /// A list of preset parameters.
 #[repr(C)]
-pub struct libra_preset_parameter_list_t {
+pub struct libra_preset_param_list_t {
     /// A pointer to the parameter
     pub parameters: *const libra_preset_param_t,
-    /// The number of parameters in the list
+    /// The number of parameters in the list.
     pub length: u64,
     /// For internal use only.
     /// Changing this causes immediate undefined behaviour on freeing this parameter list.
@@ -146,9 +146,14 @@ extern_fn! {
     /// ## Safety
     /// - `preset` must be null or a valid and aligned pointer to a shader preset.
     /// - `out` must be an aligned pointer to a `libra_preset_parameter_list_t`.
-    fn libra_preset_get_runtime_parameters(
+    /// - The output struct should be treated as immutable. Mutating any struct fields
+    ///   in the returned struct may at best cause memory leaks, and at worse
+    ///   cause undefined behaviour when later freed.
+    /// - It is safe to call `libra_preset_get_runtime_params` multiple times, however
+    ///   the output struct must only be freed once per call.
+    fn libra_preset_get_runtime_params(
         preset: *mut libra_shader_preset_t,
-        out: *mut MaybeUninit<libra_preset_parameter_list_t>
+        out: *mut MaybeUninit<libra_preset_param_list_t>
     ) |preset| {
         assert_some_ptr!(preset);
         assert_non_null!(out);
@@ -171,7 +176,7 @@ extern_fn! {
         }
         let (parts, len, cap) = values.into_raw_parts();
         unsafe {
-            out.write(MaybeUninit::new(libra_preset_parameter_list_t {
+            out.write(MaybeUninit::new(libra_preset_param_list_t {
                 parameters: parts,
                 length: len as u64,
                 _internal_alloc: cap as u64,
@@ -180,28 +185,39 @@ extern_fn! {
     }
 }
 
-// /// Get a list of runtime parameter names.
-// ///
-// /// The caller must provide a sufficiently sized buffer.
-// /// If `value` is null, then size will be written to with the size of the buffer required
-// /// to get the parameter names.
-// /// ## Safety
-// /// - `preset` must be null or a valid and aligned pointer to a shader preset.
-// #[no_mangle]
-// pub unsafe extern "C" fn libra_preset_free_runtime_param_names(
-//     value: MaybeUninit<*mut *const c_char>,
-// ) -> libra_error_t {
-//     ffi_body!(|value| {
-//         let iter = librashader::presets::get_parameter_meta(preset)?;
-//         let mut c_strings = Vec::new();
-//         for param in iter {
-//             let c_string = CString::new(param.id)
-//                 .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
-//             c_strings.push(c_string.into_raw().cast_const());
-//         }
-//
-//         let (parts, _len, _cap) = c_strings.into_raw_parts();
-//
-//         value.write(parts);
-//     })
-// }
+extern_fn! {
+    /// Free the runtime parameters.
+    ///
+    /// Unlike the other `free` functions provided by librashader,
+    /// `libra_preset_free_runtime_params` takes the struct directly.
+    /// The caller must take care to maintain the lifetime of any pointers
+    /// contained within the input `libra_preset_param_list_t`.
+    ///
+    /// ## Safety
+    /// - Any pointers rooted at `parameters` becomes invalid after this function returns,
+    ///   including any strings accessible via the input `libra_preset_param_list_t`.
+    ///   The caller must ensure that there are no live pointers, aliased or unaliased,
+    ///   to data accessible via the input `libra_preset_param_list_t`.
+    ///
+    /// - Accessing any data pointed to via the input `libra_preset_param_list_t` after it
+    ///   has been freed is a use-after-free and is immediate undefined behaviour.
+    ///
+    /// - If any struct fields of the input `libra_preset_param_list_t` was modified from
+    ///   their values given after `libra_preset_get_runtime_params`, this may result
+    ///   in undefined behaviour.
+    fn libra_preset_free_runtime_params(preset: libra_preset_param_list_t) {
+        unsafe {
+            let values = Vec::from_raw_parts(preset.parameters.cast_mut(),
+                                             preset.length as usize,
+                                            preset._internal_alloc as usize);
+
+            for value in values {
+                let name = CString::from_raw(value.name.cast_mut());
+                let description = CString::from_raw(value.description.cast_mut());
+
+                drop(name);
+                drop(description)
+            }
+        }
+    }
+}

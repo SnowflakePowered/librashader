@@ -8,8 +8,10 @@ use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 
 pub(crate) struct LutTexture {
-    pub memory: VulkanImageMemory,
-    pub staging: VulkanBuffer,
+    #[allow(dead_code)]
+    memory: VulkanImageMemory,
+    #[allow(dead_code)]
+    staging: VulkanBuffer,
     pub image: InputImage,
 }
 

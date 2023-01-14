@@ -37,7 +37,8 @@ include = [
     "PFN_libra_preset_set_param",
     "PFN_libra_preset_get_param",
     "PFN_libra_preset_print",
-    "PFN_libra_preset_get_runtime_param_names",
+    "PFN_libra_preset_get_runtime_params",
+    "PFN_libra_preset_free_runtime_params",
 
     # error
     "PFN_libra_error_errno",

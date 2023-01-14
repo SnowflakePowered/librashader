@@ -10,6 +10,18 @@ int main()
     std::cout << "Hello World!\n";
     std::cout << std::filesystem::current_path() << std::endl;
     auto instance = librashader_load_instance();
+    libra_shader_preset_t preset;
+    auto error = instance.preset_create(
+        "../../../slang-shaders/border/gameboy-player/"
+        "gameboy-player-crt-royale.slangp",
+        &preset);
+
+    libra_preset_param_list_t parameters;
+    error = instance.preset_get_runtime_params(&preset, &parameters);
+
+    libra_preset_param_t next = parameters.parameters[471];
+
+    instance.preset_free_runtime_params(parameters);
 
     /*libra_shader_preset_t preset;
     auto error = libra_preset_create("../../../slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp", &preset);
@@ -20,7 +32,6 @@ int main()
     
     libra_gl_filter_chain_t chain;
 
-    error = libra_gl_filter_chain_create(NULL, NULL, &chain);
     if (error != NULL) {
         libra_error_print(error);
         char* error_str;

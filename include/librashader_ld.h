@@ -32,8 +32,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WIN32)
 #include <windows.h>
+#define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)       \
+    {                                                           \
+        FARPROC address = GetProcAddress(HMOD, "libra_" #NAME); \
+        if (address != NULL) {                                  \
+            (INSTANCE).NAME = (PFN_libra_##NAME)address;        \
+        }                                                       \
+    }
+typedef HMODULE _LIBRASHADER_IMPL_HANDLE;
+#define _LIBRASHADER_LOAD LoadLibraryW(L"librashader.dll")
+
 #elif defined(__linux__)
 #include <dlfcn.h>
+#define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)        \
+    {                                                    \
+        void *address = dlsym(HMOD, "libra_" #NAME);     \
+        if (address != NULL) {                           \
+            (INSTANCE).NAME = (PFN_libra_##NAME)address; \
+        }                                                \
+    }
+typedef void* _LIBRASHADER_IMPL_HANDLE;
+#define _LIBRASHADER_LOAD dlopen(L"librashader.so", RTLD_LAZY)
 #endif
 
 #include "librashader.h"
@@ -74,7 +93,13 @@ libra_error_t __librashader__noop_preset_get_param(
 libra_error_t __librashader__noop_preset_print(libra_shader_preset_t *preset) {
     return NULL;
 }
-
+libra_error_t __librashader__noop_preset_get_runtime_params(
+    libra_shader_preset_t *preset, struct libra_preset_param_list_t *out) {
+    return NULL;
+}
+libra_error_t __librashader__noop_preset_free_runtime_params(struct libra_preset_param_list_t out) {
+    return NULL;
+}
 #if defined(LIBRA_RUNTIME_OPENGL)
 libra_error_t __librashader__noop_gl_init_context(libra_gl_loader_t loader) {
     return NULL;
@@ -211,6 +236,8 @@ typedef struct libra_instance_t {
     PFN_libra_preset_set_param preset_set_param;
     PFN_libra_preset_get_param preset_get_param;
     PFN_libra_preset_print preset_print;
+    PFN_libra_preset_get_runtime_params preset_get_runtime_params;
+    PFN_libra_preset_free_runtime_params preset_free_runtime_params;
 
     PFN_libra_error_errno error_errno;
     PFN_libra_error_print error_print;
@@ -263,7 +290,10 @@ libra_instance_t __librashader_make_null_instance() {
         .preset_set_param = __librashader__noop_preset_set_param,
         .preset_get_param = __librashader__noop_preset_get_param,
         .preset_print = __librashader__noop_preset_print,
-
+        .preset_get_runtime_params =
+            __librashader__noop_preset_get_runtime_params,
+        .preset_free_runtime_params =
+            __librashader__noop_preset_free_runtime_params,
         .error_errno = __librashader__noop_error_errno,
         .error_print = __librashader__noop_error_print,
         .error_free = __librashader__noop_error_free,
@@ -331,150 +361,76 @@ libra_instance_t __librashader_make_null_instance() {
 /// \return An `libra_instance_t` struct with loaded function pointers.
 libra_instance_t librashader_load_instance();
 
-#if defined(_WIN32)
-#define _LIBRASHADER_ASSIGN_FARPROC(HMOD, INSTANCE, NAME)       \
-    {                                                           \
-        FARPROC address = GetProcAddress(HMOD, "libra_" #NAME); \
-        if (address != NULL) {                                  \
-            (INSTANCE).NAME = (PFN_libra_##NAME)address;        \
-        }                                                       \
-    }
-
+#if defined(_WIN32) || defined(__linux__)
 libra_instance_t librashader_load_instance() {
-    HMODULE librashader = LoadLibraryW(L"librashader.dll");
+    _LIBRASHADER_IMPL_HANDLE librashader = _LIBRASHADER_LOAD;
     libra_instance_t instance = __librashader_make_null_instance();
     if (librashader == 0) {
         return instance;
     }
 
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_create);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_free);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_set_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_get_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, preset_print);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_set_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_get_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_print);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                                preset_get_runtime_params);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                                preset_free_runtime_params);
 
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_errno);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_print);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_free);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_write);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, error_free_string);
+    _LIBRASHADER_ASSIGN(librashader, instance, error_errno);
+    _LIBRASHADER_ASSIGN(librashader, instance, error_print);
+    _LIBRASHADER_ASSIGN(librashader, instance, error_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, error_write);
+    _LIBRASHADER_ASSIGN(librashader, instance, error_free_string);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_init_context);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_create);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_frame);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, gl_filter_chain_free);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance, gl_init_context);
+    _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_frame);
+    _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 gl_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 gl_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 gl_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 gl_filter_chain_set_active_pass_count);
 
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_create);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_frame);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, d3d11_filter_chain_free);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_set_active_pass_count);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_create);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_frame);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance, vk_filter_chain_free);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_frame);
+    _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 vk_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 vk_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 vk_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN_FARPROC(librashader, instance,
+    _LIBRASHADER_ASSIGN(librashader, instance,
                                 vk_filter_chain_set_active_pass_count);
 #endif
 
-    return instance;
-}
-#elif defined(__linux__)
-#define _LIBRASHADER_ASSIGN_DLSYM(HMOD, INSTANCE, NAME)  \
-    {                                                    \
-        void *address = dlsym(HMOD, "libra_" #NAME);     \
-        if (address != NULL) {                           \
-            (INSTANCE).NAME = (PFN_libra_##NAME)address; \
-        }                                                \
-    }
-
-libra_instance_t librashader_load_instance() {
-    void *librashader = dlopen(L"librashader.so", RTLD_LAZY);
-    libra_instance_t instance = __librashader_make_null_instance();
-    if (librashader == NULL) {
-        return instance;
-    }
-
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_create);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_free);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_set_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_get_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, preset_print);
-
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_errno);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_print);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_free);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_write);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, error_free_string);
-
-#if defined(LIBRA_RUNTIME_OPENGL)
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_init_context);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_create);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_frame);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_free);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, gl_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              gl_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              gl_filter_chain_set_active_pass_count);
-#endif
-
-    // Not sure why you would want this
-#if defined(LIBRA_RUNTIME_D3D11)
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_create);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_frame);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, d3d11_filter_chain_free);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              d3d11_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              d3d11_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              d3d11_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              d3d11_filter_chain_set_active_pass_count);
-
-#endif
-
-#if defined(LIBRA_RUNTIME_VULKAN)
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_create);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_frame);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_free);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance, vk_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              vk_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN_DLSYM(librashader, instance,
-                              vk_filter_chain_set_active_pass_count);
-#endif
     return instance;
 }
 #else
