@@ -142,16 +142,11 @@
     <ClCompile Include="librashader-capi-tests.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\librashader-capi\librashader.h" />
+    <ClInclude Include="..\..\..\..\include\librashader.h" />
+    <ClInclude Include="..\..\..\..\include\librashader_ld.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\..\..\target\debug\librashader_capi.dll.lib" />
-    <Library Include="..\..\..\..\target\debug\librashader_capi.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\target\debug\librashader_capi.dll">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
+    <Library Include="..\..\..\..\target\debug\librashader.dll.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
