@@ -2,7 +2,7 @@
 #[cfg(feature = "runtime-opengl")]
 pub mod gl;
 
-#[cfg(feature = "runtime-d3d11")]
+#[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
 pub mod d3d11;
 
 #[cfg(feature = "runtime-vulkan")]

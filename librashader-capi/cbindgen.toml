@@ -4,7 +4,7 @@ include_guard = "__LIBRASHADER_H__"
 pragma_once = true
 usize_is_size_t = true
 documentation_style = "c++"
-after_includes = "#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;\n#endif\n#if defined(LIBRA_RUNTIME_VULKAN)\n#include <vulkan\\vulkan.h>\n#endif"
+after_includes = "#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D11ShaderResourceView;\n#endif\n#if defined(LIBRA_RUNTIME_VULKAN)\n#include <vulkan\\vulkan.h>\n#endif"
 
 [defines]
 "feature = runtime-opengl" = "LIBRA_RUNTIME_OPENGL"

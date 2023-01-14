@@ -1,5 +1,6 @@
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
+#![cfg(target_os = "windows")]
 
 #[cfg(test)]
 mod hello_triangle;

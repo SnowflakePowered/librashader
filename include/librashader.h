@@ -36,10 +36,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
 #include <d3d11.h>
 #else
-typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;
+typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D11ShaderResourceView;
 #endif
 #if defined(LIBRA_RUNTIME_VULKAN)
-#include <vulkan\vulkan.h>
+#include <vulkan/vulkan.h>
 #endif
 
 /// Error codes for librashader error types.

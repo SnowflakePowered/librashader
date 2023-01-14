@@ -16,6 +16,9 @@ int main()
         "gameboy-player-crt-royale.slangp",
         &preset);
 
+    
+    instance.preset_print(&preset);
+    std::cout << "printed\n";
     libra_preset_param_list_t parameters;
     error = instance.preset_get_runtime_params(&preset, &parameters);
 

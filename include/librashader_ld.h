@@ -27,8 +27,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __LIBRASHADER_LD_H__
 #pragma once
 #define LIBRA_RUNTIME_OPENGL
-#define LIBRA_RUNTIME_D3D11
 #define LIBRA_RUNTIME_VULKAN
+
+#if defined(_WIN32)
+#define LIBRA_RUNTIME_D3D11
+#endif
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -52,7 +55,7 @@ typedef HMODULE _LIBRASHADER_IMPL_HANDLE;
         }                                                \
     }
 typedef void* _LIBRASHADER_IMPL_HANDLE;
-#define _LIBRASHADER_LOAD dlopen(L"librashader.so", RTLD_LAZY)
+#define _LIBRASHADER_LOAD dlopen("librashader.so", RTLD_LAZY)
 #endif
 
 #include "librashader.h"
@@ -440,7 +443,7 @@ typedef struct libra_instance_t {
     PFN_libra_gl_filter_chain_set_param gl_filter_chain_set_param;
 #endif
 
-#if defined(LIBRA_RUNTIME_VULKAN)
+#if defined(LIBRA_RUNTIME_D3D11)
     /// Create the filter chain given the shader preset.
     ///
     /// The shader preset is immediately invalidated and must be recreated after
@@ -712,7 +715,7 @@ libra_instance_t librashader_load_instance() {
 
 #endif
 
-#if defined(LIBRA_RUNTIME_D3D11)
+#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
     _LIBRASHADER_ASSIGN(librashader, instance,
                                 d3d11_filter_chain_create);
     _LIBRASHADER_ASSIGN(librashader, instance,
