@@ -14,7 +14,7 @@ use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::SpirV;
+use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
 use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
@@ -39,7 +39,7 @@ pub struct VulkanObjects {
 type ShaderPassMeta = (
     ShaderPassConfig,
     ShaderSource,
-    CompilerBackend<impl CompileShader<SpirV, Options = Option<()>, Context = ()> + ReflectShader>,
+    CompilerBackend<impl CompileShader<SPIRV, Options = Option<()>, Context = ()> + ReflectShader>,
 );
 
 /// A collection of handles needed to access the Vulkan instance.
@@ -289,7 +289,7 @@ impl FilterChainVulkan {
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
                 let spirv = GlslangCompilation::compile(&source)?;
-                let reflect = SpirV::from_compilation(spirv)?;
+                let reflect = SPIRV::from_compilation(spirv)?;
 
                 for parameter in source.parameters.iter() {
                     uniform_semantics.insert(

@@ -5,7 +5,7 @@ use librashader::reflect::image::{Image, UVDirection, RGBA8};
 use librashader::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
-use librashader::reflect::targets::SpirV;
+use librashader::reflect::targets::SPIRV;
 use librashader::reflect::{
     CompileShader, CompilerBackend, FromCompilation, GlslangCompilation, ReflectShader,
     ShaderCompilerOutput, ShaderReflection,
@@ -51,7 +51,7 @@ impl FilterReflection {
                 let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
                 let spirv = GlslangCompilation::compile(&source)?;
-                let mut reflect = SpirV::from_compilation(spirv)?;
+                let mut reflect = SPIRV::from_compilation(spirv)?;
 
                 for parameter in source.parameters.iter() {
                     uniform_semantics.insert(

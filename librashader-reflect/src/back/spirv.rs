@@ -1,4 +1,4 @@
-use crate::back::targets::SpirV;
+use crate::back::targets::SPIRV;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::shaderc::GlslangCompilation;
@@ -13,8 +13,8 @@ struct WriteSpirV {
     fragment: Vec<u32>,
 }
 
-impl FromCompilation<GlslangCompilation> for SpirV {
-    type Target = SpirV;
+impl FromCompilation<GlslangCompilation> for SPIRV {
+    type Target = SPIRV;
     type Options = Option<()>;
     type Context = ();
     type Output =
@@ -46,7 +46,7 @@ impl ReflectShader for WriteSpirV {
     }
 }
 
-impl CompileShader<SpirV> for WriteSpirV {
+impl CompileShader<SPIRV> for WriteSpirV {
     type Options = Option<()>;
     type Context = ();
 
