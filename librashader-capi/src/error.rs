@@ -107,7 +107,7 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
 
 /// Function pointer definition for libra_error_write
 pub type PFN_libra_error_write =
-    extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
+extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
 #[no_mangle]
 /// Writes the error message into `out`
 ///
@@ -194,12 +194,12 @@ impl LibrashaderError {
 
 macro_rules! assert_non_null {
     ($value:ident) => {
-        if $value.is_null() {
+        if $value.is_null() || !$value.is_aligned() {
             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
     };
     (noexport $value:ident) => {
-        if $value.is_null() {
+        if $value.is_null() || !$value.is_aligned() {
             return Err($crate::error::LibrashaderError::InvalidParameter(
                 stringify!($value),
             ));
@@ -234,5 +234,6 @@ macro_rules! assert_some_ptr {
 
 use crate::ctypes::libra_error_t;
 pub(crate) use assert_non_null;
+
 // pub(crate) use assert_some;
 pub(crate) use assert_some_ptr;
