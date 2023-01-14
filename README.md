@@ -37,6 +37,21 @@ The C API currently does not expose the [shader reflection API](https://docs.rs/
 is in progress to expose this to C. In the meanwhile, if you wish to implement a custom runtime for librashader, it will have to be done
 in Rust.
 
+### Building
+
+For Rust projects, simply add the crate to your `Cargo.toml`
+```
+cargo add librashader
+```
+
+To build the C compatible dynamic library, [cargo-post](https://crates.io/crates/cargo-post) is required.
+
+```
+cargo post build --release --package librashader-capi
+```
+
+This will output a `librashader.dll` or `librashader.so` in the target folder.
+
 ### C ABI Compatibility
 The recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
 is important to ensure that updates to librashader do not break existing consumers.
