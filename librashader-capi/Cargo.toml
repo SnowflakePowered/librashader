@@ -3,7 +3,7 @@ name = "librashader-capi"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -21,7 +21,7 @@ runtime-d3d11 = ["windows", "librashader/d3d11"]
 runtime-vulkan = ["ash", "librashader/vk"]
 
 [dependencies]
-librashader = { path = "../librashader", version = "0.1.0-alpha.5" }
+librashader = { path = "../librashader", version = "0.1.0-alpha.6" }
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
