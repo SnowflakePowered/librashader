@@ -7,7 +7,7 @@ use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 
-pub struct LutTexture {
+pub(crate) struct LutTexture {
     pub memory: VulkanImageMemory,
     pub staging: VulkanBuffer,
     pub image: InputImage,

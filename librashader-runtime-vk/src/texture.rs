@@ -183,7 +183,7 @@ impl OwnedImage {
         Ok(size)
     }
 
-    pub fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
+    pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
         InputImage {
             image: self.image.clone(),
             image_view: self.image_view.clone(),
@@ -509,14 +509,19 @@ impl Drop for OwnedImage {
 /// A handle to a `VkImage` with size and format information.
 #[derive(Clone)]
 pub struct VulkanImage {
-    pub size: Size<u32>,
+    /// A handle to the `VkImage`.
     pub image: vk::Image,
+    /// The size of the image.
+    pub size: Size<u32>,
+    /// The `VkFormat` of the image.
     pub format: vk::Format,
 }
 
 #[derive(Clone)]
-pub struct InputImage {
+pub(crate) struct InputImage {
+    /// A handle to the `VkImage`.
     pub image: VulkanImage,
+    /// A handle to the `VkImageView` for the image.
     pub image_view: vk::ImageView,
     pub wrap_mode: WrapMode,
     pub filter_mode: FilterMode,
