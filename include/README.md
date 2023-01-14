@@ -11,3 +11,38 @@ with librashader.
 An easier alternative is to use the `librashader_ld.h` header library to load function pointers
 from any `librashader.dll` or `librashader.so` implementation in the search path. You should customize this
 header file to remove support for any runtimes you do not need.
+
+## Usage
+
+A basic example of using `librashader_ld.h` to load a shader preset.
+
+```c++
+#include "librashader_ld.h"
+
+libra_gl_filter_chain_t load_gl_filter_chain(libra_gl_loader_t opengl, const char *preset_path) {
+  // Ideally you should not need to check for success. If loading fails, then everything should just no-op.
+
+  // If you want to check for failure, all function pointers are intialized by default to their corresponding
+  // __librashader__noop_* functions in librashader.h. 
+  libra_instance_t librashader = librashader_load_instance();
+
+  libra_shader_preset_t preset;
+  libra_error_t error = librashader.preset_create(preset_path, &preset);
+  if (error != NULL) {
+    std::cout << "Could not load preset\n";
+    return NULL;
+  }
+
+  // OpenGL runtime needs to be initialized.
+  if (librashader.gl_init_context(opengl) != NULL) {
+    std::cout << "Could not initialize OpenGL context\n";
+    return NULL;
+  }
+  
+  libra_gl_filter_chain_t chain;
+  if (librashader.gl_filter_chain_create(&preset, NULL, &chain) {
+    std::cout << "Could not create OpenGL filter chain\n";
+  }
+  return chain;
+}
+```
