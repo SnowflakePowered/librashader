@@ -773,6 +773,7 @@ dependencies = [
 name = "librashader"
 version = "0.1.0-alpha.6"
 dependencies = [
+ "ash",
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
@@ -781,6 +782,7 @@ dependencies = [
  "librashader-runtime-d3d11",
  "librashader-runtime-gl",
  "librashader-runtime-vk",
+ "windows",
 ]
 
 [[package]]

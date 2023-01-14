@@ -69,7 +69,7 @@ pub mod preprocess {
 pub mod reflect {
     /// Supported shader compiler targets.
     pub mod targets {
-        pub use librashader_reflect::back::targets::SpirV;
+        pub use librashader_reflect::back::targets::SPIRV;
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
     }
