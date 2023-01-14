@@ -5,13 +5,13 @@ use std::sync::mpsc::Receiver;
 use glfw::{Context, Glfw, Window, WindowEvent};
 
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
-use librashader_common::Size;
+use librashader_common::{Size, Viewport};
 
 use crate::filter_chain::FilterChainGL;
+use crate::Framebuffer;
 use crate::framebuffer::GLImage;
 use crate::gl::gl3::CompatibilityGL;
 use crate::gl::{FramebufferInterface, GLInterface};
-use crate::viewport::Viewport;
 
 const WIDTH: u32 = 800;
 const HEIGHT: u32 = 600;
@@ -465,7 +465,7 @@ void main()
     let (fb_width, fb_height) = window.get_framebuffer_size();
     let (vp_width, vp_height) = window.get_size();
 
-    let output = <CompatibilityGL as GLInterface>::FramebufferInterface::new_from_raw(
+    let output = Framebuffer::new_from_raw(
         output_texture,
         output_framebuffer_handle,
         gl::RGBA8,
