@@ -34,7 +34,7 @@ prefix_with_name = true
 [export]
 include = [
     # preset
-    "PFN_libra_load_preset",
+    "PFN_libra_preset_create",
     "PFN_libra_preset_free",
     "PFN_libra_preset_set_param",
     "PFN_libra_preset_get_param",
@@ -58,6 +58,11 @@ include = [
     "PFN_libra_d3d11_filter_chain_create",
     "PFN_libra_d3d11_filter_chain_frame",
     "PFN_libra_d3d11_filter_chain_free",
+
+    # d3d11
+    "PFN_libra_vk_filter_chain_create",
+    "PFN_libra_vk_filter_chain_frame",
+    "PFN_libra_vk_filter_chain_free",
 ]
 
 [export.rename]

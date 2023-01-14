@@ -94,9 +94,13 @@ typedef struct libra_source_image_gl_t {
 
 /// Defines the output viewport for a rendered frame.
 typedef struct libra_viewport_t {
+    /// The x offset in the viewport framebuffer to begin rendering from.
     float x;
+    /// The y offset in the viewport framebuffer to begin rendering from.
     float y;
+    /// The width of the viewport framebuffer.
     uint32_t width;
+    /// The height of the viewport framebuffer.
     uint32_t height;
 } libra_viewport_t;
 
@@ -210,6 +214,10 @@ typedef struct FrameOptionsVulkan {
 } FrameOptionsVulkan;
 
 /// Function pointer definition for
+///libra_preset_create
+typedef libra_error_t (*PFN_libra_preset_create)(const char *filename, libra_shader_preset_t *out);
+
+/// Function pointer definition for
 ///libra_preset_free
 typedef libra_error_t (*PFN_libra_preset_free)(libra_shader_preset_t *preset);
 
@@ -229,17 +237,23 @@ typedef libra_error_t (*PFN_libra_preset_get_param)(libra_shader_preset_t *prese
 ///libra_preset_print
 typedef libra_error_t (*PFN_libra_preset_print)(libra_shader_preset_t *preset);
 
+/// Function pointer definition for libra_preset_get_runtime_param_names
 typedef libra_error_t (*PFN_libra_preset_get_runtime_param_names)(libra_shader_preset_t *preset,
                                                                   const char **value);
 
+/// Function pointer definition for libra_error_errno
 typedef LIBRA_ERRNO (*PFN_libra_error_errno)(libra_error_t error);
 
+/// Function pointer definition for libra_error_print
 typedef int32_t (*PFN_libra_error_print)(libra_error_t error);
 
+/// Function pointer definition for libra_error_free
 typedef int32_t (*PFN_libra_error_free)(libra_error_t *error);
 
+/// Function pointer definition for libra_error_write
 typedef int32_t (*PFN_libra_error_write)(libra_error_t error, char **out);
 
+/// Function pointer definition for libra_error_free_string
 typedef int32_t (*PFN_libra_error_free_string)(char **out);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -299,6 +313,34 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_c
 /// Function pointer definition for
 ///libra_d3d11_filter_chain_free
 typedef libra_error_t (*PFN_libra_d3d11_filter_chain_free)(libra_d3d11_filter_chain_t *chain);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_create
+typedef libra_error_t (*PFN_libra_vk_filter_chain_create)(struct libra_device_vk_t vulkan,
+                                                          libra_shader_preset_t *preset,
+                                                          const struct filter_chain_vk_opt_t *options,
+                                                          libra_vk_filter_chain_t *out);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_frame
+typedef libra_error_t (*PFN_libra_vk_filter_chain_frame)(libra_vk_filter_chain_t *chain,
+                                                         VkCommandBuffer command_buffer,
+                                                         size_t frame_count,
+                                                         struct libra_image_vk_t image,
+                                                         struct libra_viewport_t viewport,
+                                                         struct libra_image_vk_t out,
+                                                         const float *mvp,
+                                                         const struct FrameOptionsVulkan *opt);
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Function pointer definition for
+///libra_vk_filter_chain_free
+typedef libra_error_t (*PFN_libra_vk_filter_chain_free)(libra_vk_filter_chain_t *chain);
 #endif
 
 #ifdef __cplusplus
@@ -387,7 +429,8 @@ libra_error_t libra_preset_print(libra_shader_preset_t *preset);
 /// Get a list of runtime parameter names.
 ///
 /// The returned value can not currently be freed.
-/// This function should be considered in progress. Its use is discouraged.
+/// This function should be considered work in progress. Its use is discouraged.
+/// Removal of this function is exempted from semantic versioning.
 libra_error_t libra_preset_get_runtime_param_names(libra_shader_preset_t *preset,
                                                    const char **value);
 

@@ -1,28 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module type="CPP_MODULE" version="4">
-  <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/librashader-preprocess/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-presets/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-reflect/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/naga/benches" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/naga/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/naga/tests" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-gl/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-compiler/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-common/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-d3d11/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-gl46/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-runtime/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-capi/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-capi-exports/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-capi/examples" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/librashader-runtime-vk/src" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/target" />
-      <excludeFolder url="file://$MODULE_DIR$/librashader-capi/target" />
-    </content>
-    <orderEntry type="inheritedJdk" />
-    <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-</module>
+<module classpath="CMake" type="CPP_MODULE" version="4" />
