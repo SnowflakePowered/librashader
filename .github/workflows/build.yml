@@ -27,6 +27,7 @@ jobs:
       with:
         vulkan-query-version: latest
         vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Cross, SPIRV-Headers, SPIRV-Reflect, SPIRV-Tools, Glslang
+        vulkan-use-cache: true
     - name: Setup cargo post
       uses: baptiste0928/cargo-install@bf6758885262d0e6f61089a9d8c8790d3ac3368f
       with:
