@@ -23,6 +23,7 @@ jobs:
       with:
         toolchain: nightly
         override: true
+    - uses: humbletim/setup-vulkan-sdk@v1.2.0
     - name: Setup cargo post
       uses: baptiste0928/cargo-install@bf6758885262d0e6f61089a9d8c8790d3ac3368f
       with:
