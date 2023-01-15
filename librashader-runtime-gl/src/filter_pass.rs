@@ -6,9 +6,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, TextureBinding, UniformBinding,
-};
+use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
 use rustc_hash::FxHashMap;
 

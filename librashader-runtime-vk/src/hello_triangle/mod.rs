@@ -8,7 +8,7 @@ mod swapchain;
 mod syncobjects;
 pub mod vulkan_base;
 
-use crate::filter_chain::{FilterChainVulkan};
+use crate::filter_chain::FilterChainVulkan;
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
 use crate::hello_triangle::pipeline::VulkanPipeline;

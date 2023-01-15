@@ -22,11 +22,7 @@ impl VulkanImageMemory {
     }
 
     pub fn bind(&self, image: &vk::Image) -> error::Result<()> {
-        unsafe {
-            Ok(self
-                .device
-                .bind_image_memory(*image, self.handle, 0)?)
-        }
+        unsafe { Ok(self.device.bind_image_memory(*image, self.handle, 0)?) }
     }
 }
 

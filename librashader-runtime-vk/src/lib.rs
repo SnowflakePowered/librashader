@@ -29,7 +29,7 @@ pub mod options;
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::filter_chain::FilterChainVulkan;
     use crate::hello_triangle::vulkan_base::VulkanBase;
 

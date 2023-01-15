@@ -1,4 +1,3 @@
-
 use ash::prelude::VkResult;
 use ash::vk;
 

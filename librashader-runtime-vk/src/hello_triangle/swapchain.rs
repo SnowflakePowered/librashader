@@ -4,7 +4,7 @@ use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
 use ash::prelude::VkResult;
 use ash::vk;
-use ash::vk::{Extent3D};
+use ash::vk::Extent3D;
 
 use std::sync::Arc;
 

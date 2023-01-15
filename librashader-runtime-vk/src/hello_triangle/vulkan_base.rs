@@ -1,14 +1,12 @@
 use ash::vk;
 
-
-
 use crate::error::FilterChainError;
 use crate::filter_chain::VulkanObjects;
 use crate::hello_triangle::debug::VulkanDebug;
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 
 use ash::prelude::VkResult;
-use std::ffi::{CStr};
+use std::ffi::CStr;
 use std::sync::Arc;
 
 const WINDOW_TITLE: &[u8] = b"librashader Vulkan\0";

@@ -14,9 +14,7 @@ use librashader_reflect::reflect::semantics::{
 };
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
-use librashader_runtime::uniforms::{
-    UniformStorage, UniformStorageAccess,
-};
+use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
 
