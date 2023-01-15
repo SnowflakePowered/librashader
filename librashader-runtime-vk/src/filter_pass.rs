@@ -303,7 +303,7 @@ impl FilterPass {
 
         for (index, output) in parent.history_textures.iter().enumerate() {
             let Some(output) = output else {
-                eprintln!("no history");
+                // eprintln!("no history");
                 continue;
             };
             if let Some(binding) = self
@@ -363,7 +363,7 @@ impl FilterPass {
         // PassFeedback
         for (index, feedback) in parent.feedback_inputs.iter().enumerate() {
             let Some(feedback) = feedback else {
-                eprintln!("no passfeedback {index}");
+                // eprintln!("no passfeedback {index}");
                 continue;
             };
             if let Some(binding) = self
