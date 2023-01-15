@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use gl::types::{GLsizei, GLuint};
 use librashader_common::Size;
 use librashader_presets::TextureConfig;
@@ -11,7 +11,7 @@ use rustc_hash::FxHashMap;
 
 pub struct Gl3LutLoad;
 impl LoadLut for Gl3LutLoad {
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>> {
+    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, InputTexture>> {
         let mut luts = FxHashMap::default();
         let pixel_unpack = unsafe {
             let mut binding = 0;
@@ -64,7 +64,7 @@ impl LoadLut for Gl3LutLoad {
 
             luts.insert(
                 index,
-                Texture {
+                InputTexture {
                     image: GLImage {
                         handle,
                         format: gl::RGBA8,

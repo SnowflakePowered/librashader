@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_presets::Scale2D;
@@ -52,8 +52,8 @@ impl Framebuffer {
         scaling: Scale2D,
         format: ImageFormat,
         viewport: &Viewport<&Framebuffer>,
-        original: &Texture,
-        source: &Texture,
+        original: &InputTexture,
+        source: &InputTexture,
         mipmap: bool,
     ) -> Result<Size<u32>> {
         T::scale(self, scaling, format, viewport, original, source, mipmap)
@@ -63,8 +63,8 @@ impl Framebuffer {
         T::copy_from(self, image)
     }
 
-    pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> Texture {
-        Texture {
+    pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputTexture {
+        InputTexture {
             image: GLImage {
                 handle: self.image,
                 format: self.format,

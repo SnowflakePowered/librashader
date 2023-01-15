@@ -18,3 +18,6 @@ pub mod image;
 
 /// Ringbuffer helpers
 pub mod ringbuffer;
+
+/// Generic implementation of semantics binding.
+pub mod binding;

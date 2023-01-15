@@ -37,14 +37,14 @@ pub struct D3D11OutputView {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct InputTexture {
+pub struct InputTexture {
     pub view: D3D11InputView,
     pub filter: FilterMode,
     pub wrap_mode: WrapMode,
 }
 
 impl InputTexture {
-    pub fn from_framebuffer(
+    pub(crate) fn from_framebuffer(
         fbo: &OwnedFramebuffer,
         wrap_mode: WrapMode,
         filter: FilterMode,
@@ -60,6 +60,12 @@ impl InputTexture {
     }
 }
 
+impl AsRef<InputTexture> for InputTexture {
+    fn as_ref(&self) -> &InputTexture {
+        self
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct LutTexture {
     // The handle to the Texture2D must be kept alive.
@@ -68,6 +74,12 @@ pub(crate) struct LutTexture {
     #[allow(dead_code)]
     pub desc: D3D11_TEXTURE2D_DESC,
     pub image: InputTexture,
+}
+
+impl AsRef<InputTexture> for LutTexture {
+    fn as_ref(&self) -> &InputTexture {
+        &self.image
+    }
 }
 
 impl LutTexture {

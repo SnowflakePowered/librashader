@@ -6,7 +6,7 @@ use crate::binding::UniformLocation;
 use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::samplers::SamplerSet;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 pub use framebuffer::Framebuffer;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -16,7 +16,7 @@ use librashader_runtime::uniforms::UniformStorageAccess;
 use rustc_hash::FxHashMap;
 
 pub trait LoadLut {
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, Texture>>;
+    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, InputTexture>>;
 }
 
 pub trait DrawQuad {
@@ -42,8 +42,8 @@ pub trait FramebufferInterface {
         scaling: Scale2D,
         format: ImageFormat,
         viewport: &Viewport<&Framebuffer>,
-        _original: &Texture,
-        source: &Texture,
+        _original: &InputTexture,
+        source: &InputTexture,
         mipmap: bool,
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(fb: &Framebuffer);
@@ -52,8 +52,8 @@ pub trait FramebufferInterface {
 }
 
 pub trait BindTexture {
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture);
-    fn gen_mipmaps(texture: &Texture);
+    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture);
+    fn gen_mipmaps(texture: &InputTexture);
 }
 
 pub trait GLInterface {

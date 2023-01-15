@@ -15,6 +15,7 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
 };
+use librashader_runtime::binding::{BindSemantics, TextureInput};
 
 use crate::{D3D11OutputView, error};
 use crate::render_target::RenderTarget;
@@ -50,6 +51,30 @@ const NULL_TEXTURES: &[Option<ID3D11ShaderResourceView>; 16] = &[
     None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
 ];
 
+impl TextureInput for InputTexture {
+    fn size(&self) -> Size<u32> {
+        self.view.size
+    }
+}
+
+impl BindSemantics for FilterPass {
+    type InputTexture = InputTexture;
+    type SamplerSet = SamplerSet;
+    type DescriptorSet<'a> = (&'a mut [Option<ID3D11ShaderResourceView>; 16], &'a mut [Option<ID3D11SamplerState>; 16]);
+    type DeviceContext = ();
+    type UniformOffset = MemberOffset;
+
+    fn bind_texture<'a>(
+        descriptors: &mut Self::DescriptorSet<'a>, samplers: &Self::SamplerSet,
+        binding: &TextureBinding, texture: &Self::InputTexture,
+        _device: &Self::DeviceContext) {
+        let (texture_binding, sampler_binding) = descriptors;
+        texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
+        sampler_binding[binding.binding as usize] =
+            Some(samplers.get(texture.wrap_mode, texture.filter).clone());
+    }
+}
+
 // slang_process.cpp 229
 impl FilterPass {
     pub fn get_format(&self) -> ImageFormat {
@@ -76,7 +101,7 @@ impl FilterPass {
     }
 
     // framecount should be pre-modded
-    fn build_semantics(
+    fn build_semantics<'a>(
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
@@ -85,264 +110,35 @@ impl FilterPass {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
+        mut descriptors: (&'a mut [Option<ID3D11ShaderResourceView>; 16], &'a mut [Option<ID3D11SamplerState>; 16]),
         original: &InputTexture,
         source: &InputTexture,
-    ) -> (
-        [Option<ID3D11ShaderResourceView>; 16],
-        [Option<ID3D11SamplerState>; 16],
     ) {
-        let mut textures: [Option<ID3D11ShaderResourceView>; 16] = std::array::from_fn(|_| None);
-        let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
-
-        // Bind MVP
-        if let Some(offset) = self.uniform_bindings.get(&UniqueSemantics::MVP.into()) {
-            self.uniform_storage.bind_mat4(*offset, mvp, None);
-        }
-
-        // bind OutputSize
-        if let Some(offset) = self.uniform_bindings.get(&UniqueSemantics::Output.into()) {
-            self.uniform_storage.bind_vec4(*offset, fb_size, None);
-        }
-
-        // bind FinalViewportSize
-        if let Some(offset) = self
-            .uniform_bindings
-            .get(&UniqueSemantics::FinalViewport.into())
-        {
-            self.uniform_storage.bind_vec4(*offset, viewport_size, None);
-        }
-
-        // bind FrameCount
-        if let Some(offset) = self
-            .uniform_bindings
-            .get(&UniqueSemantics::FrameCount.into())
-        {
-            self.uniform_storage.bind_scalar(*offset, frame_count, None);
-        }
-
-        // bind FrameDirection
-        if let Some(offset) = self
-            .uniform_bindings
-            .get(&UniqueSemantics::FrameDirection.into())
-        {
-            self.uniform_storage
-                .bind_scalar(*offset, frame_direction, None);
-        }
-
-        // bind Original sampler
-        if let Some(binding) = self
-            .reflection
-            .meta
-            .texture_meta
-            .get(&TextureSemantics::Original.semantics(0))
-        {
-            FilterPass::bind_texture(
-                &parent.samplers,
-                &mut textures,
-                &mut samplers,
-                binding,
-                original,
-            );
-        }
-        //
-        // bind OriginalSize
-        if let Some(offset) = self
-            .uniform_bindings
-            .get(&TextureSemantics::Original.semantics(0).into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, original.view.size, None);
-        }
-
-        // bind Source sampler
-        if let Some(binding) = self
-            .reflection
-            .meta
-            .texture_meta
-            .get(&TextureSemantics::Source.semantics(0))
-        {
-            // eprintln!("setting source binding to {}", binding.binding);
-            FilterPass::bind_texture(
-                &parent.samplers,
-                &mut textures,
-                &mut samplers,
-                binding,
-                source,
-            );
-        }
-
-        // bind SourceSize
-        if let Some(offset) = self
-            .uniform_bindings
-            .get(&TextureSemantics::Source.semantics(0).into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, source.view.size, None);
-        }
-
-        if let Some(binding) = self
-            .reflection
-            .meta
-            .texture_meta
-            .get(&TextureSemantics::OriginalHistory.semantics(0))
-        {
-            FilterPass::bind_texture(
-                &parent.samplers,
-                &mut textures,
-                &mut samplers,
-                binding,
-                original,
-            );
-        }
-
-        if let Some(offset) = self
-            .uniform_bindings
-            .get(&TextureSemantics::OriginalHistory.semantics(0).into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, original.view.size, None);
-        }
-
-        for (index, output) in parent.history_textures.iter().enumerate() {
-            let Some(output) = output else {
-                // eprintln!("no history");
-                continue;
-            };
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
-            {
-                FilterPass::bind_texture(
-                    &parent.samplers,
-                    &mut textures,
-                    &mut samplers,
-                    binding,
-                    output,
-                );
-            }
-
-            if let Some(offset) = self.uniform_bindings.get(
-                &TextureSemantics::OriginalHistory
-                    .semantics(index + 1)
-                    .into(),
-            ) {
-                self.uniform_storage
-                    .bind_vec4(*offset, output.view.size, None);
-            }
-        }
-
-        // PassOutput
-        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
-            let Some(output) = output else {
-                continue;
-            };
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::PassOutput.semantics(index))
-            {
-                FilterPass::bind_texture(
-                    &parent.samplers,
-                    &mut textures,
-                    &mut samplers,
-                    binding,
-                    output,
-                );
-            }
-
-            if let Some(offset) = self
-                .uniform_bindings
-                .get(&TextureSemantics::PassOutput.semantics(index).into())
-            {
-                self.uniform_storage
-                    .bind_vec4(*offset, output.view.size, None);
-            }
-        }
-
-        // PassFeedback
-        for (index, feedback) in parent.feedback_textures.iter().enumerate() {
-            let Some(feedback) = feedback else {
-                // eprintln!("no passfeedback {index}");
-                continue;
-            };
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::PassFeedback.semantics(index))
-            {
-                FilterPass::bind_texture(
-                    &parent.samplers,
-                    &mut textures,
-                    &mut samplers,
-                    binding,
-                    feedback,
-                );
-            }
-
-            if let Some(offset) = self
-                .uniform_bindings
-                .get(&TextureSemantics::PassFeedback.semantics(index).into())
-            {
-                self.uniform_storage
-                    .bind_vec4(*offset, feedback.view.size, None);
-            }
-        }
-
-        // bind float parameters
-        for (id, offset) in
-            self.uniform_bindings
-                .iter()
-                .filter_map(|(binding, value)| match binding {
-                    UniformBinding::Parameter(id) => Some((id, value)),
-                    _ => None,
-                })
-        {
-            let id = id.as_str();
-
-            let default = self
-                .source
-                .parameters
-                .iter()
-                .find(|&p| p.id == id)
-                .map(|f| f.initial)
-                .unwrap_or(0f32);
-
-            let value = *parent.config.parameters.get(id).unwrap_or(&default);
-
-            self.uniform_storage.bind_scalar(*offset, value, None);
-        }
-
-        // bind luts
-        for (index, lut) in &parent.luts {
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::User.semantics(*index))
-            {
-                FilterPass::bind_texture(
-                    &parent.samplers,
-                    &mut textures,
-                    &mut samplers,
-                    binding,
-                    &lut.image,
-                );
-            }
-
-            if let Some(offset) = self
-                .uniform_bindings
-                .get(&TextureSemantics::User.semantics(*index).into())
-            {
-                self.uniform_storage
-                    .bind_vec4(*offset, lut.image.view.size, None);
-            }
-        }
-
-        (textures, samplers)
+        Self::bind_semantics(
+            &(),
+            &parent.samplers,
+            &mut self.uniform_storage,
+            &mut descriptors,
+            mvp,
+            frame_count,
+            frame_direction,
+            fb_size,
+            viewport_size,
+            original,
+            source,
+            &self.uniform_bindings,
+            &self.reflection.meta.texture_meta,
+            parent.output_textures[0..pass_index].iter()
+                .map(|o| o.as_ref()),
+            parent.feedback_textures.iter()
+                .map(|o| o.as_ref()),
+            parent.history_textures.iter()
+                .map(|o| o.as_ref()),
+            parent.luts.iter()
+                .map(|(u, i)| (*u, i.as_ref())),
+            &self.source.parameters,
+            &parent.config.parameters
+        );
     }
 
     pub(crate) fn draw(
@@ -370,7 +166,11 @@ impl FilterPass {
             context.PSSetShader(&self.pixel_shader, None);
         }
 
-        let (textures, samplers) = self.build_semantics(
+        let mut textures: [Option<ID3D11ShaderResourceView>; 16] = std::array::from_fn(|_| None);
+        let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
+        let mut descriptors = (&mut textures, &mut samplers);
+
+        self.build_semantics(
             pass_index,
             parent,
             output.mvp,
@@ -378,6 +178,7 @@ impl FilterPass {
             frame_direction,
             output.output.size,
             viewport.output.size,
+            descriptors,
             original,
             source,
         );

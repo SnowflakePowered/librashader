@@ -1,4 +1,4 @@
-use gl::types::{GLsizei, GLuint};
+use gl::types::{GLint, GLsizei, GLuint};
 use librashader_reflect::back::cross::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
@@ -6,18 +6,32 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::reflect::semantics::{
-    MemberOffset, TextureSemantics, UniformBinding, UniqueSemantics,
-};
+use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics};
 use rustc_hash::FxHashMap;
+use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
 
-use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
+use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::Framebuffer;
 use crate::gl::{BindTexture, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
+use crate::samplers::SamplerSet;
 
-use crate::texture::Texture;
+use crate::texture::InputTexture;
+
+pub struct UniformOffset {
+    pub location: VariableLocation,
+    pub offset: MemberOffset
+}
+
+impl UniformOffset {
+    pub fn new(location: VariableLocation, offset: MemberOffset) -> Self {
+        Self {
+            location,
+            offset
+        }
+    }
+}
 
 pub struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
@@ -26,9 +40,40 @@ pub struct FilterPass<T: GLInterface> {
     pub ubo_location: UniformLocation<GLuint>,
     pub ubo_ring: Option<T::UboRing>,
     pub(crate) uniform_storage: GlUniformStorage,
-    pub uniform_bindings: FxHashMap<UniformBinding, (VariableLocation, MemberOffset)>,
+    pub uniform_bindings: FxHashMap<UniformBinding, UniformOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
+}
+
+impl TextureInput for InputTexture {
+    fn size(&self) -> Size<u32> {
+        self.image.size
+    }
+}
+
+impl ContextOffset<GlUniformBinder, UniformLocation<GLint>> for UniformOffset {
+    fn offset(&self) -> MemberOffset {
+        self.offset
+    }
+
+    fn context(&self) -> UniformLocation<GLint> {
+        self.location.location()
+    }
+}
+
+impl<T: GLInterface> BindSemantics<GlUniformBinder, UniformLocation<GLint>> for FilterPass<T> {
+    type InputTexture = InputTexture;
+    type SamplerSet = SamplerSet;
+    type DescriptorSet<'a> = ();
+    type DeviceContext = ();
+    type UniformOffset = UniformOffset;
+
+    fn bind_texture<'a>(
+        _descriptors: &mut Self::DescriptorSet<'a>, samplers: &Self::SamplerSet,
+        binding: &TextureBinding, texture: &Self::InputTexture,
+        _device: &Self::DeviceContext) {
+        T::BindTexture::bind_texture(&samplers, binding, texture);
+    }
 }
 
 impl<T: GLInterface> FilterPass<T> {
@@ -39,8 +84,8 @@ impl<T: GLInterface> FilterPass<T> {
         frame_count: u32,
         frame_direction: i32,
         viewport: &Viewport<&Framebuffer>,
-        original: &Texture,
-        source: &Texture,
+        original: &InputTexture,
+        source: &InputTexture,
         output: RenderTarget,
     ) {
         let framebuffer = output.framebuffer;
@@ -124,216 +169,33 @@ impl<T: GLInterface> FilterPass<T> {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport: &Viewport<&Framebuffer>,
-        original: &Texture,
-        source: &Texture,
+        original: &InputTexture,
+        source: &InputTexture,
     ) {
-        // Bind MVP
-        if let Some((location, offset)) = self.uniform_bindings.get(&UniqueSemantics::MVP.into()) {
-            self.uniform_storage
-                .bind_mat4(*offset, mvp, location.location());
-        }
-
-        // bind OutputSize
-        if let Some((location, offset)) = self.uniform_bindings.get(&UniqueSemantics::Output.into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, fb_size, location.location());
-        }
-
-        // bind FinalViewportSize
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&UniqueSemantics::FinalViewport.into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, viewport.output.size, location.location());
-        }
-
-        // bind FrameCount
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&UniqueSemantics::FrameCount.into())
-        {
-            self.uniform_storage
-                .bind_scalar(*offset, frame_count, location.location());
-        }
-
-        // bind FrameDirection
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&UniqueSemantics::FrameDirection.into())
-        {
-            self.uniform_storage
-                .bind_scalar(*offset, frame_direction, location.location());
-        }
-
-        // bind Original sampler
-        if let Some(binding) = self
-            .reflection
-            .meta
-            .texture_meta
-            .get(&TextureSemantics::Original.semantics(0))
-        {
-            T::BindTexture::bind_texture(&parent.samplers, binding, original);
-        }
-
-        // bind OriginalSize
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&TextureSemantics::Original.semantics(0).into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, original.image.size, location.location());
-        }
-
-        // bind Source sampler
-        if let Some(binding) = self
-            .reflection
-            .meta
-            .texture_meta
-            .get(&TextureSemantics::Source.semantics(0))
-        {
-            // eprintln!("setting source binding to {}", binding.binding);
-            T::BindTexture::bind_texture(&parent.samplers, binding, source);
-        }
-
-        // bind SourceSize
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&TextureSemantics::Source.semantics(0).into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, source.image.size, location.location());
-        }
-
-        if let Some(binding) = self
-            .reflection
-            .meta
-            .texture_meta
-            .get(&TextureSemantics::OriginalHistory.semantics(0))
-        {
-            T::BindTexture::bind_texture(&parent.samplers, binding, original);
-        }
-        if let Some((location, offset)) = self
-            .uniform_bindings
-            .get(&TextureSemantics::OriginalHistory.semantics(0).into())
-        {
-            self.uniform_storage
-                .bind_vec4(*offset, original.image.size, location.location());
-        }
-
-        for (index, output) in parent.history_textures.iter().enumerate() {
-            if !output.is_bound() {
-                continue;
-            }
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::OriginalHistory.semantics(index + 1))
-            {
-                T::BindTexture::bind_texture(&parent.samplers, binding, output);
-            }
-
-            if let Some((location, offset)) = self.uniform_bindings.get(
-                &TextureSemantics::OriginalHistory
-                    .semantics(index + 1)
-                    .into(),
-            ) {
-                self.uniform_storage
-                    .bind_vec4(*offset, output.image.size, location.location());
-            }
-        }
-
-        // PassOutput
-        for (index, output) in parent.output_textures[0..pass_index].iter().enumerate() {
-            if !output.is_bound() {
-                continue;
-            }
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::PassOutput.semantics(index))
-            {
-                T::BindTexture::bind_texture(&parent.samplers, binding, output);
-            }
-
-            if let Some((location, offset)) = self
-                .uniform_bindings
-                .get(&TextureSemantics::PassOutput.semantics(index).into())
-            {
-                self.uniform_storage
-                    .bind_vec4(*offset, output.image.size, location.location());
-            }
-        }
-
-        // PassFeedback
-        for (index, feedback) in parent.feedback_textures.iter().enumerate() {
-            if !feedback.is_bound() {
-                continue;
-            }
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::PassFeedback.semantics(index))
-            {
-                T::BindTexture::bind_texture(&parent.samplers, binding, feedback);
-            }
-
-            if let Some((location, offset)) = self
-                .uniform_bindings
-                .get(&TextureSemantics::PassFeedback.semantics(index).into())
-            {
-                self.uniform_storage
-                    .bind_vec4(*offset, feedback.image.size, location.location());
-            }
-        }
-
-        // bind float parameters
-        for (id, (location, offset)) in
-            self.uniform_bindings
-                .iter()
-                .filter_map(|(binding, value)| match binding {
-                    UniformBinding::Parameter(id) => Some((id, value)),
-                    _ => None,
-                })
-        {
-            let id = id.as_str();
-            // presets override params
-            let default = self
-                .source
-                .parameters
-                .iter()
-                .find(|&p| p.id == id)
-                .map(|f| f.initial)
-                .unwrap_or(0f32);
-
-            let value = *parent.config.parameters.get(id).unwrap_or(&default);
-
-            self.uniform_storage
-                .bind_scalar(*offset, value, location.location());
-        }
-
-        // bind luts
-        for (index, lut) in &parent.luts {
-            if let Some(binding) = self
-                .reflection
-                .meta
-                .texture_meta
-                .get(&TextureSemantics::User.semantics(*index))
-            {
-                T::BindTexture::bind_texture(&parent.samplers, binding, lut);
-            }
-
-            if let Some((location, offset)) = self
-                .uniform_bindings
-                .get(&TextureSemantics::User.semantics(*index).into())
-            {
-                self.uniform_storage
-                    .bind_vec4(*offset, lut.image.size, location.location());
-            }
-        }
+        Self::bind_semantics(
+            &(),
+            &parent.samplers,
+            &mut self.uniform_storage,
+            &mut (),
+            mvp,
+            frame_count,
+            frame_direction,
+            fb_size,
+            viewport.output.size,
+            original,
+            source,
+            &self.uniform_bindings,
+            &self.reflection.meta.texture_meta,
+            parent.output_textures[0..pass_index].iter()
+                .map(|o| o.bound()),
+            parent.feedback_textures.iter()
+                .map(|o| o.bound()),
+            parent.history_textures.iter()
+                .map(|o| o.bound()),
+            parent.luts.iter()
+                .map(|(u, i)| (*u, i)),
+            &self.source.parameters,
+            &parent.config.parameters
+        );
     }
 }

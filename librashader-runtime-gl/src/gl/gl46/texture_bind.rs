@@ -1,12 +1,12 @@
 use crate::gl::BindTexture;
 use crate::samplers::SamplerSet;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use librashader_reflect::reflect::semantics::TextureBinding;
 
 pub struct Gl46BindTexture;
 
 impl BindTexture for Gl46BindTexture {
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
+    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture) {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::BindTextureUnit(binding.binding, texture.image.handle);
@@ -17,7 +17,7 @@ impl BindTexture for Gl46BindTexture {
         }
     }
 
-    fn gen_mipmaps(texture: &Texture) {
+    fn gen_mipmaps(texture: &InputTexture) {
         unsafe { gl::GenerateTextureMipmap(texture.image.handle) }
     }
 }

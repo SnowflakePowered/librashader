@@ -249,3 +249,9 @@ impl LutTexture {
         })
     }
 }
+
+impl AsRef<InputImage> for LutTexture {
+    fn as_ref(&self) -> &InputImage {
+        &self.image
+    }
+}

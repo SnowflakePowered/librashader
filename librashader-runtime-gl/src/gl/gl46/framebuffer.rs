@@ -2,7 +2,7 @@ use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::Framebuffer;
 use crate::gl::FramebufferInterface;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use gl::types::{GLenum, GLint, GLsizei};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::Scale2D;
@@ -37,8 +37,8 @@ impl FramebufferInterface for Gl46Framebuffer {
         scaling: Scale2D,
         format: ImageFormat,
         viewport: &Viewport<&Framebuffer>,
-        _original: &Texture,
-        source: &Texture,
+        _original: &InputTexture,
+        source: &InputTexture,
         mipmap: bool,
     ) -> Result<Size<u32>> {
         if fb.is_raw {

@@ -518,7 +518,7 @@ pub struct VulkanImage {
 }
 
 #[derive(Clone)]
-pub(crate) struct InputImage {
+pub struct InputImage {
     /// A handle to the `VkImage`.
     pub image: VulkanImage,
     /// A handle to the `VkImageView` for the image.
@@ -526,4 +526,10 @@ pub(crate) struct InputImage {
     pub wrap_mode: WrapMode,
     pub filter_mode: FilterMode,
     pub mip_filter: FilterMode,
+}
+
+impl AsRef<InputImage> for InputImage {
+    fn as_ref(&self) -> &InputImage {
+        &self
+    }
 }

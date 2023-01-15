@@ -1,11 +1,11 @@
 use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
-use crate::filter_pass::FilterPass;
+use crate::filter_pass::{FilterPass, UniformOffset};
 use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, util, GLImage};
 use gl::types::{GLint, GLuint};
@@ -37,11 +37,11 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
 pub(crate) struct FilterCommon {
     // semantics: ReflectSemantics,
     pub config: FilterMutable,
-    pub luts: FxHashMap<usize, Texture>,
+    pub luts: FxHashMap<usize, InputTexture>,
     pub samplers: SamplerSet,
-    pub output_textures: Box<[Texture]>,
-    pub feedback_textures: Box<[Texture]>,
-    pub history_textures: Box<[Texture]>,
+    pub output_textures: Box<[InputTexture]>,
+    pub feedback_textures: Box<[InputTexture]>,
+    pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
 }
 
@@ -114,13 +114,13 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || T::FramebufferInterface::new(1));
         let mut output_textures = Vec::new();
-        output_textures.resize_with(filters.len(), Texture::default);
+        output_textures.resize_with(filters.len(), InputTexture::default);
 
         // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
         feedback_framebuffers.resize_with(filters.len(), || T::FramebufferInterface::new(1));
         let mut feedback_textures = Vec::new();
-        feedback_textures.resize_with(filters.len(), Texture::default);
+        feedback_textures.resize_with(filters.len(), InputTexture::default);
 
         // load luts
         let luts = T::LoadLut::load_luts(&preset.textures)?;
@@ -304,21 +304,21 @@ impl<T: GLInterface> FilterChainImpl<T> {
             for param in reflection.meta.parameter_meta.values() {
                 uniform_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
-                    (Self::reflect_uniform_location(program, param), param.offset),
+                    UniformOffset::new(Self::reflect_uniform_location(program, param), param.offset),
                 );
             }
 
             for (semantics, param) in &reflection.meta.unique_meta {
                 uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
-                    (Self::reflect_uniform_location(program, param), param.offset),
+                    UniformOffset::new(Self::reflect_uniform_location(program, param), param.offset),
                 );
             }
 
             for (semantics, param) in &reflection.meta.texture_size_meta {
                 uniform_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
-                    (Self::reflect_uniform_location(program, param), param.offset),
+                    UniformOffset::new(Self::reflect_uniform_location(program, param), param.offset),
                 );
             }
 
@@ -351,7 +351,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         filters: &[FilterPass<T>],
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> (VecDeque<Framebuffer>, Box<[Texture]>) {
+    ) -> (VecDeque<Framebuffer>, Box<[InputTexture]>) {
         let mut required_images = 0;
 
         for pass in filters {
@@ -388,7 +388,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         framebuffers.resize_with(required_images, || T::FramebufferInterface::new(1));
 
         let mut history_textures = Vec::new();
-        history_textures.resize_with(required_images, || Texture {
+        history_textures.resize_with(required_images, || InputTexture {
             image: Default::default(),
             filter,
             mip_filter: filter,
@@ -470,7 +470,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         }
 
         // shader_gl3: 2067
-        let original = Texture {
+        let original = InputTexture {
             image: *input,
             filter,
             mip_filter: filter,

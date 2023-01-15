@@ -36,10 +36,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
 #include <d3d11.h>
 #else
-typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D11ShaderResourceView;
+typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D1ShaderResourceView;
 #endif
 #if defined(LIBRA_RUNTIME_VULKAN)
-#include <vulkan/vulkan.h>
+#include <vulkan\vulkan.h>
 #endif
 
 /// Error codes for librashader error types.
@@ -102,15 +102,15 @@ typedef struct libra_preset_param_t {
 } libra_preset_param_t;
 
 /// A list of preset parameters.
-typedef struct libra_preset_param_list_t {
+typedef struct libra_preset_parameter_list_t {
     /// A pointer to the parameter
     const struct libra_preset_param_t *parameters;
-    /// The number of parameters in the list.
+    /// The number of parameters in the list
     uint64_t length;
     /// For internal use only.
     /// Changing this causes immediate undefined behaviour on freeing this parameter list.
     uint64_t _internal_alloc;
-} libra_preset_param_list_t;
+} libra_preset_parameter_list_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// A GL function loader that librashader needs to be initialized with.
@@ -292,13 +292,9 @@ typedef libra_error_t (*PFN_libra_preset_get_param)(libra_shader_preset_t *prese
 typedef libra_error_t (*PFN_libra_preset_print)(libra_shader_preset_t *preset);
 
 /// Function pointer definition for
-///libra_preset_get_runtime_params
-typedef libra_error_t (*PFN_libra_preset_get_runtime_params)(libra_shader_preset_t *preset,
-                                                             struct libra_preset_param_list_t *out);
-
-/// Function pointer definition for
-///libra_preset_free_runtime_params
-typedef libra_error_t (*PFN_libra_preset_free_runtime_params)(struct libra_preset_param_list_t preset);
+///libra_preset_get_runtime_parameters
+typedef libra_error_t (*PFN_libra_preset_get_runtime_parameters)(libra_shader_preset_t *preset,
+                                                                 struct libra_preset_parameter_list_t *out);
 
 /// Function pointer definition for libra_error_errno
 typedef LIBRA_ERRNO (*PFN_libra_error_errno)(libra_error_t error);
@@ -580,34 +576,8 @@ libra_error_t libra_preset_print(libra_shader_preset_t *preset);
 /// ## Safety
 /// - `preset` must be null or a valid and aligned pointer to a shader preset.
 /// - `out` must be an aligned pointer to a `libra_preset_parameter_list_t`.
-/// - The output struct should be treated as immutable. Mutating any struct fields
-///   in the returned struct may at best cause memory leaks, and at worse
-///   cause undefined behaviour when later freed.
-/// - It is safe to call `libra_preset_get_runtime_params` multiple times, however
-///   the output struct must only be freed once per call.
-libra_error_t libra_preset_get_runtime_params(libra_shader_preset_t *preset,
-                                              struct libra_preset_param_list_t *out);
-
-/// Free the runtime parameters.
-///
-/// Unlike the other `free` functions provided by librashader,
-/// `libra_preset_free_runtime_params` takes the struct directly.
-/// The caller must take care to maintain the lifetime of any pointers
-/// contained within the input `libra_preset_param_list_t`.
-///
-/// ## Safety
-/// - Any pointers rooted at `parameters` becomes invalid after this function returns,
-///   including any strings accessible via the input `libra_preset_param_list_t`.
-///   The caller must ensure that there are no live pointers, aliased or unaliased,
-///   to data accessible via the input `libra_preset_param_list_t`.
-///
-/// - Accessing any data pointed to via the input `libra_preset_param_list_t` after it
-///   has been freed is a use-after-free and is immediate undefined behaviour.
-///
-/// - If any struct fields of the input `libra_preset_param_list_t` was modified from
-///   their values given after `libra_preset_get_runtime_params`, this may result
-///   in undefined behaviour.
-libra_error_t libra_preset_free_runtime_params(struct libra_preset_param_list_t preset);
+libra_error_t libra_preset_get_runtime_parameters(libra_shader_preset_t *preset,
+                                                  struct libra_preset_parameter_list_t *out);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Initialize the OpenGL Context for librashader.

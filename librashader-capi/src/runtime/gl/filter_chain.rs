@@ -56,8 +56,11 @@ impl From<libra_source_image_gl_t> for GLImage {
 extern_fn! {
     /// Initialize the OpenGL Context for librashader.
     ///
+    /// This only has to be done once throughout the lifetime of the application,
+    /// unless for whatever reason you switch OpenGL loaders mid-flight.
+    ///
     /// ## Safety
-    /// Attempting to create a filter chain will fail.
+    /// Attempting to create a filter chain will fail if the GL context is not initialized.
     ///
     /// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
     /// chain objects, and drawing with them causes immediate undefined behaviour.

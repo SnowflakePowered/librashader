@@ -1,12 +1,12 @@
 use crate::gl::BindTexture;
 use crate::samplers::SamplerSet;
-use crate::texture::Texture;
+use crate::texture::InputTexture;
 use librashader_reflect::reflect::semantics::TextureBinding;
 
 pub struct Gl3BindTexture;
 
 impl BindTexture for Gl3BindTexture {
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &Texture) {
+    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture) {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
             gl::ActiveTexture(gl::TEXTURE0 + binding.binding);
@@ -19,7 +19,7 @@ impl BindTexture for Gl3BindTexture {
         }
     }
 
-    fn gen_mipmaps(texture: &Texture) {
+    fn gen_mipmaps(texture: &InputTexture) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, texture.image.handle);
             gl::GenerateMipmap(gl::TEXTURE_2D);
