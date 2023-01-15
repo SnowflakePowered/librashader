@@ -1,11 +1,12 @@
-name: Rust
+name: Build
 
 on:
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
-
+  schedule:
+    - cron: "0 0 * * 6"
 env:
   CARGO_TERM_COLOR: always
 
@@ -17,13 +18,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
+    - name: Install nightly
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: nightly
+        override: true
     - name: Setup cargo post
       uses: baptiste0928/cargo-install@bf6758885262d0e6f61089a9d8c8790d3ac3368f
       with:
         crate: cargo-post
     - name: Build dynamic library
       run: cargo post build --release --package librashader-capi
-    - name: Upload a Build Artifact
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v3.1.2
       with:
         name: build-outputs
