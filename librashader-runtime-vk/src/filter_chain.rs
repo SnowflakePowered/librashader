@@ -7,7 +7,7 @@ use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
 use crate::render_target::{RenderTarget, DEFAULT_MVP};
 use crate::samplers::SamplerSet;
-use crate::texture::{InputImage, OwnedImage, VulkanImage};
+use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
@@ -673,6 +673,12 @@ impl FilterChainVulkan {
                 .map(|(_, p)| p.config.mipmap_input)
                 .unwrap_or(false);
 
+            // needs a barrier to SHADER_READ_ONLY_OPTIMAL otherwise any non-filled in output framebuffers
+            // (like the final one which is just held there and not ever written to, but needs to be
+            // there for indexing) will always stay in UNDEFINED.
+            //
+            // since scaling is hopefully a rare occurrence (since it's tested for if the output size
+            // requires changing) it should be ok.
             self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
@@ -680,7 +686,13 @@ impl FilterChainVulkan {
                 &original,
                 source,
                 should_mipmap,
-                None,
+                Some(OwnedImageLayout {
+                    dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                    dst_access: vk::AccessFlags::SHADER_READ,
+                    src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
+                    dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
+                    cmd,
+                }),
             )?;
 
             self.feedback_framebuffers[index].scale(
@@ -690,7 +702,13 @@ impl FilterChainVulkan {
                 &original,
                 source,
                 should_mipmap,
-                None,
+                Some(OwnedImageLayout {
+                    dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                    dst_access: vk::AccessFlags::SHADER_READ,
+                    src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
+                    dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
+                    cmd,
+                }),
             )?;
 
             // refresh inputs
