@@ -24,7 +24,7 @@ ash = { version = "0.37.1+1.3.235", optional = true }
 
 num-traits = "0.2.15"
 
-[dependencies.windows]
+[target.'cfg(windows)'.dependencies.windows]
 optional = true
 version = "0.43.0"
 features = [
@@ -33,3 +33,6 @@ features = [
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D11",
 ]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]

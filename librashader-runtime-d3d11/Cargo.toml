@@ -41,3 +41,7 @@ features = [
 
 [dev-dependencies]
 gfx-maths = "0.2.8"
+
+[package.metadata.docs.rs]
+default-target = "x86_64-pc-windows-msvc"
+targets = []

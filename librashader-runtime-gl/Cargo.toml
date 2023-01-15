@@ -25,3 +25,6 @@ thiserror = "1.0.37"
 
 [dev-dependencies]
 glfw = "0.47.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
