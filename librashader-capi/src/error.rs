@@ -28,7 +28,10 @@ pub enum LibrashaderError {
     #[cfg(feature = "runtime-opengl")]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
-    #[cfg(any(feature = "docsrs", all(target_os = "windows", feature = "runtime-d3d11")))]
+    #[cfg(any(
+        feature = "docsrs",
+        all(target_os = "windows", feature = "runtime-d3d11")
+    ))]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
     #[cfg(feature = "runtime-vulkan")]
@@ -111,7 +114,7 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
 
 /// Function pointer definition for libra_error_write
 pub type PFN_libra_error_write =
-extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
+    extern "C" fn(error: libra_error_t, out: *mut MaybeUninit<*mut c_char>) -> i32;
 #[no_mangle]
 /// Writes the error message into `out`
 ///
@@ -174,13 +177,14 @@ impl LibrashaderError {
             LibrashaderError::PreprocessError(_) => LIBRA_ERRNO::PREPROCESS_ERROR,
             LibrashaderError::ShaderCompileError(_) | LibrashaderError::ShaderReflectError(_) => {
                 LIBRA_ERRNO::REFLECT_ERROR
-            },
-            LibrashaderError::UnknownShaderParameter(_) => {
-                LIBRA_ERRNO::SHADER_PARAMETER_ERROR
             }
+            LibrashaderError::UnknownShaderParameter(_) => LIBRA_ERRNO::SHADER_PARAMETER_ERROR,
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
-            #[cfg(any(feature = "docsrs", all(target_os = "windows", feature = "runtime-d3d11")))]
+            #[cfg(any(
+                feature = "docsrs",
+                all(target_os = "windows", feature = "runtime-d3d11")
+            ))]
             LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-vulkan")]
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,

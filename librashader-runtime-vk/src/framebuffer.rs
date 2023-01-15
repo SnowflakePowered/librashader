@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use crate::filter_chain::VulkanObjects;
 use crate::texture::VulkanImage;
 use crate::{error, util};
 use ash::vk;
 use librashader_common::Size;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub(crate) struct OutputImage {

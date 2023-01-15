@@ -20,8 +20,8 @@ mod vulkan_primitives;
 mod vulkan_state;
 
 pub use filter_chain::FilterChainVulkan;
-pub use filter_chain::VulkanObjects;
 pub use filter_chain::VulkanInstance;
+pub use filter_chain::VulkanObjects;
 pub use texture::VulkanImage;
 
 pub mod error;

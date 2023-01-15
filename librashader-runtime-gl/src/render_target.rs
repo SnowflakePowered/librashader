@@ -1,5 +1,5 @@
-use librashader_common::Viewport;
 use crate::gl::Framebuffer;
+use librashader_common::Viewport;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[

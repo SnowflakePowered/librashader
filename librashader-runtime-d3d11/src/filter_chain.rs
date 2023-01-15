@@ -1,4 +1,4 @@
-use crate::texture::{D3D11InputView, LutTexture, InputTexture};
+use crate::texture::{D3D11InputView, InputTexture, LutTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -24,7 +24,7 @@ use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
-use crate::{D3D11OutputView, error, util};
+use crate::{error, util, D3D11OutputView};
 use librashader_runtime::uniforms::UniformStorage;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,

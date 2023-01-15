@@ -21,7 +21,7 @@ pub type libra_d3d11_filter_chain_t =
 /// A handle to a Vulkan filter chain.
 #[cfg(feature = "runtime-vulkan")]
 pub type libra_vk_filter_chain_t =
-Option<NonNull<librashader::runtime::vk::capi::FilterChainVulkan>>;
+    Option<NonNull<librashader::runtime::vk::capi::FilterChainVulkan>>;
 
 /// Defines the output viewport for a rendered frame.
 #[repr(C)]

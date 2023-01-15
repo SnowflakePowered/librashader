@@ -227,7 +227,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             // todo: split this out.
             let (program, ubo_location) = unsafe {
                 let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str())?;
-                let fragment = util::gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str())?;
+                let fragment =
+                    util::gl_compile_shader(gl::FRAGMENT_SHADER, glsl.fragment.as_str())?;
 
                 let program = gl::CreateProgram();
                 gl::AttachShader(program, vertex);
@@ -304,21 +305,30 @@ impl<T: GLInterface> FilterChainImpl<T> {
             for param in reflection.meta.parameter_meta.values() {
                 uniform_bindings.insert(
                     UniformBinding::Parameter(param.id.clone()),
-                    UniformOffset::new(Self::reflect_uniform_location(program, param), param.offset),
+                    UniformOffset::new(
+                        Self::reflect_uniform_location(program, param),
+                        param.offset,
+                    ),
                 );
             }
 
             for (semantics, param) in &reflection.meta.unique_meta {
                 uniform_bindings.insert(
                     UniformBinding::SemanticVariable(*semantics),
-                    UniformOffset::new(Self::reflect_uniform_location(program, param), param.offset),
+                    UniformOffset::new(
+                        Self::reflect_uniform_location(program, param),
+                        param.offset,
+                    ),
                 );
             }
 
             for (semantics, param) in &reflection.meta.texture_size_meta {
                 uniform_bindings.insert(
                     UniformBinding::TextureSize(*semantics),
-                    UniformOffset::new(Self::reflect_uniform_location(program, param), param.offset),
+                    UniformOffset::new(
+                        Self::reflect_uniform_location(program, param),
+                        param.offset,
+                    ),
                 );
             }
 

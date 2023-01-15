@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use crate::error;
 use crate::vulkan_primitives::VulkanBuffer;
 use ash::vk;
 use librashader_runtime::ringbuffer::{BoxRingBuffer, RingBuffer};
 use librashader_runtime::uniforms::UniformStorageAccess;
+use std::sync::Arc;
 
 pub struct VkUboRing {
     ring: BoxRingBuffer<VulkanBuffer>,

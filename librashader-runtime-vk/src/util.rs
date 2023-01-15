@@ -1,8 +1,8 @@
 use ash::vk;
 
-use librashader_reflect::reflect::semantics::BindingStage;
 use crate::error;
 use crate::error::FilterChainError;
+use librashader_reflect::reflect::semantics::BindingStage;
 
 pub fn binding_stage_to_vulkan_stage(stage_mask: BindingStage) -> vk::ShaderStageFlags {
     let mut mask = vk::ShaderStageFlags::default();
@@ -33,7 +33,11 @@ pub fn find_vulkan_memory_type(
     if host_reqs == vk::MemoryPropertyFlags::empty() {
         Err(FilterChainError::VulkanMemoryError(device_reqs))
     } else {
-        Ok(find_vulkan_memory_type(props, device_reqs, vk::MemoryPropertyFlags::empty())?)
+        Ok(find_vulkan_memory_type(
+            props,
+            device_reqs,
+            vk::MemoryPropertyFlags::empty(),
+        )?)
     }
 }
 

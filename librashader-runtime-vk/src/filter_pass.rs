@@ -1,11 +1,10 @@
-use std::sync::Arc;
-use crate::{error, VulkanImage};
 use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use crate::ubo_ring::VkUboRing;
 use crate::vulkan_state::VulkanGraphicsPipeline;
+use crate::{error, VulkanImage};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
@@ -14,9 +13,12 @@ use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
 };
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::uniforms::{BindUniform, NoUniformBinder, UniformStorage, UniformStorageAccess};
-use rustc_hash::FxHashMap;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::uniforms::{
+    BindUniform, NoUniformBinder, UniformStorage, UniformStorageAccess,
+};
+use rustc_hash::FxHashMap;
+use std::sync::Arc;
 
 pub struct FilterPass {
     pub device: Arc<ash::Device>,
@@ -45,8 +47,12 @@ impl BindSemantics for FilterPass {
     type UniformOffset = MemberOffset;
 
     fn bind_texture<'a>(
-        descriptors: &mut Self::DescriptorSet<'a>, samplers: &Self::SamplerSet,
-        binding: &TextureBinding, texture: &Self::InputTexture, device: &Self::DeviceContext) {
+        descriptors: &mut Self::DescriptorSet<'a>,
+        samplers: &Self::SamplerSet,
+        binding: &TextureBinding,
+        texture: &Self::InputTexture,
+        device: &Self::DeviceContext,
+    ) {
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
         let image_info = [vk::DescriptorImageInfo::builder()
             .sampler(sampler.handle)
@@ -244,16 +250,14 @@ impl FilterPass {
             source,
             &self.uniform_bindings,
             &self.reflection.meta.texture_meta,
-            parent.output_inputs[0..pass_index].iter()
+            parent.output_inputs[0..pass_index]
+                .iter()
                 .map(|o| o.as_ref()),
-            parent.feedback_inputs.iter()
-                .map(|o| o.as_ref()),
-            parent.history_textures.iter()
-                .map(|o| o.as_ref()),
-            parent.luts.iter()
-                .map(|(u, i)| (*u, i.as_ref())),
+            parent.feedback_inputs.iter().map(|o| o.as_ref()),
+            parent.history_textures.iter().map(|o| o.as_ref()),
+            parent.luts.iter().map(|(u, i)| (*u, i.as_ref())),
             &self.source.parameters,
-            &parent.config.parameters
+            &parent.config.parameters,
         );
     }
 }

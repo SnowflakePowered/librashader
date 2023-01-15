@@ -6,30 +6,29 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics};
-use rustc_hash::FxHashMap;
+use librashader_reflect::reflect::semantics::{
+    MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+};
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
+use rustc_hash::FxHashMap;
 
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
-use crate::Framebuffer;
 use crate::gl::{BindTexture, GLInterface, UboRing};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
+use crate::Framebuffer;
 
 use crate::texture::InputTexture;
 
 pub struct UniformOffset {
     pub location: VariableLocation,
-    pub offset: MemberOffset
+    pub offset: MemberOffset,
 }
 
 impl UniformOffset {
     pub fn new(location: VariableLocation, offset: MemberOffset) -> Self {
-        Self {
-            location,
-            offset
-        }
+        Self { location, offset }
     }
 }
 
@@ -69,9 +68,12 @@ impl<T: GLInterface> BindSemantics<GlUniformBinder, UniformLocation<GLint>> for 
     type UniformOffset = UniformOffset;
 
     fn bind_texture<'a>(
-        _descriptors: &mut Self::DescriptorSet<'a>, samplers: &Self::SamplerSet,
-        binding: &TextureBinding, texture: &Self::InputTexture,
-        _device: &Self::DeviceContext) {
+        _descriptors: &mut Self::DescriptorSet<'a>,
+        samplers: &Self::SamplerSet,
+        binding: &TextureBinding,
+        texture: &Self::InputTexture,
+        _device: &Self::DeviceContext,
+    ) {
         T::BindTexture::bind_texture(&samplers, binding, texture);
     }
 }
@@ -186,16 +188,14 @@ impl<T: GLInterface> FilterPass<T> {
             source,
             &self.uniform_bindings,
             &self.reflection.meta.texture_meta,
-            parent.output_textures[0..pass_index].iter()
+            parent.output_textures[0..pass_index]
+                .iter()
                 .map(|o| o.bound()),
-            parent.feedback_textures.iter()
-                .map(|o| o.bound()),
-            parent.history_textures.iter()
-                .map(|o| o.bound()),
-            parent.luts.iter()
-                .map(|(u, i)| (*u, i)),
+            parent.feedback_textures.iter().map(|o| o.bound()),
+            parent.history_textures.iter().map(|o| o.bound()),
+            parent.luts.iter().map(|(u, i)| (*u, i)),
             &self.source.parameters,
-            &parent.config.parameters
+            &parent.config.parameters,
         );
     }
 }

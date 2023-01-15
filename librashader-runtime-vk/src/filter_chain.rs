@@ -3,6 +3,7 @@ use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputImage;
 use crate::luts::LutTexture;
+use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
 use crate::render_target::{RenderTarget, DEFAULT_MVP};
 use crate::samplers::SamplerSet;
@@ -27,7 +28,6 @@ use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
-use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
@@ -78,7 +78,7 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
                 instance.get_physical_device_memory_properties(vulkan.physical_device);
 
             Ok(VulkanObjects {
-                device:  Arc::new(device),
+                device: Arc::new(device),
                 queue,
                 pipeline_cache,
                 memory_properties,
@@ -91,11 +91,14 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
 impl TryFrom<(vk::PhysicalDevice, ash::Instance, Arc<ash::Device>)> for VulkanObjects {
     type Error = FilterChainError;
 
-    fn try_from(value: (vk::PhysicalDevice, ash::Instance,  Arc<ash::Device>)) -> error::Result<Self> {
+    fn try_from(
+        value: (vk::PhysicalDevice, ash::Instance, Arc<ash::Device>),
+    ) -> error::Result<Self> {
         unsafe {
             let device = value.2;
 
-            let pipeline_cache = device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
+            let pipeline_cache =
+                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
 
             let queue = get_graphics_queue(&value.1, &device, value.0);
 
@@ -245,7 +248,9 @@ impl FilterChainVulkan {
         feedback_textures.resize_with(filters.len(), || None);
 
         let mut intermediates = Vec::new();
-        intermediates.resize_with(frames_in_flight as usize, || FrameResiduals::new(&device.device));
+        intermediates.resize_with(frames_in_flight as usize, || {
+            FrameResiduals::new(&device.device)
+        });
 
         Ok(FilterChainVulkan {
             common: FilterCommon {

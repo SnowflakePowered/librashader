@@ -11,15 +11,15 @@ use librashader_reflect::reflect::semantics::{
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 
+use librashader_runtime::binding::{BindSemantics, TextureInput};
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
 };
-use librashader_runtime::binding::{BindSemantics, TextureInput};
 
-use crate::{D3D11OutputView, error};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
+use crate::{error, D3D11OutputView};
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 
 pub struct ConstantBufferBinding {
@@ -60,14 +60,20 @@ impl TextureInput for InputTexture {
 impl BindSemantics for FilterPass {
     type InputTexture = InputTexture;
     type SamplerSet = SamplerSet;
-    type DescriptorSet<'a> = (&'a mut [Option<ID3D11ShaderResourceView>; 16], &'a mut [Option<ID3D11SamplerState>; 16]);
+    type DescriptorSet<'a> = (
+        &'a mut [Option<ID3D11ShaderResourceView>; 16],
+        &'a mut [Option<ID3D11SamplerState>; 16],
+    );
     type DeviceContext = ();
     type UniformOffset = MemberOffset;
 
     fn bind_texture<'a>(
-        descriptors: &mut Self::DescriptorSet<'a>, samplers: &Self::SamplerSet,
-        binding: &TextureBinding, texture: &Self::InputTexture,
-        _device: &Self::DeviceContext) {
+        descriptors: &mut Self::DescriptorSet<'a>,
+        samplers: &Self::SamplerSet,
+        binding: &TextureBinding,
+        texture: &Self::InputTexture,
+        _device: &Self::DeviceContext,
+    ) {
         let (texture_binding, sampler_binding) = descriptors;
         texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
         sampler_binding[binding.binding as usize] =
@@ -110,7 +116,10 @@ impl FilterPass {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
-        mut descriptors: (&'a mut [Option<ID3D11ShaderResourceView>; 16], &'a mut [Option<ID3D11SamplerState>; 16]),
+        mut descriptors: (
+            &'a mut [Option<ID3D11ShaderResourceView>; 16],
+            &'a mut [Option<ID3D11SamplerState>; 16],
+        ),
         original: &InputTexture,
         source: &InputTexture,
     ) {
@@ -128,16 +137,14 @@ impl FilterPass {
             source,
             &self.uniform_bindings,
             &self.reflection.meta.texture_meta,
-            parent.output_textures[0..pass_index].iter()
+            parent.output_textures[0..pass_index]
+                .iter()
                 .map(|o| o.as_ref()),
-            parent.feedback_textures.iter()
-                .map(|o| o.as_ref()),
-            parent.history_textures.iter()
-                .map(|o| o.as_ref()),
-            parent.luts.iter()
-                .map(|(u, i)| (*u, i.as_ref())),
+            parent.feedback_textures.iter().map(|o| o.as_ref()),
+            parent.history_textures.iter().map(|o| o.as_ref()),
+            parent.luts.iter().map(|(u, i)| (*u, i.as_ref())),
             &self.source.parameters,
-            &parent.config.parameters
+            &parent.config.parameters,
         );
     }
 

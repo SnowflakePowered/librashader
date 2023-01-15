@@ -1,4 +1,3 @@
-
 use std::panic::catch_unwind;
 use std::path::Path;
 
@@ -14,7 +13,7 @@ mod inner;
 mod parameters;
 
 pub(crate) use filter_impl::FilterCommon;
-use librashader_common::{Viewport};
+use librashader_common::Viewport;
 
 /// An OpenGL filter chain.
 pub struct FilterChainGL {

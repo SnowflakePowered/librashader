@@ -109,11 +109,14 @@ impl VulkanSwapchain {
 
                 let alloc_info = vk::MemoryAllocateInfo::builder()
                     .allocation_size(mem_reqs.size)
-                    .memory_type_index(find_vulkan_memory_type(
-                        &base.mem_props,
-                        mem_reqs.memory_type_bits,
-                        vk::MemoryPropertyFlags::DEVICE_LOCAL,
-                    ).unwrap())
+                    .memory_type_index(
+                        find_vulkan_memory_type(
+                            &base.mem_props,
+                            mem_reqs.memory_type_bits,
+                            vk::MemoryPropertyFlags::DEVICE_LOCAL,
+                        )
+                        .unwrap(),
+                    )
                     .build();
 
                 // todo: optimize by reusing existing memory.

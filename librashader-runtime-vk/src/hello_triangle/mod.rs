@@ -20,11 +20,11 @@ use crate::texture::VulkanImage;
 use crate::util;
 use ash::vk;
 use ash::vk::{Handle, RenderingInfo};
+use librashader_common::Viewport;
 use std::ffi::CString;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use librashader_common::Viewport;
 
 // Constants
 const WINDOW_TITLE: &'static str = "librashader Vulkan";
@@ -210,7 +210,7 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED
             // );
 
-           filter
+            filter
                 .frame(
                     &VulkanImage {
                         size: vulkan.swapchain.extent.into(),

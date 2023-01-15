@@ -1,7 +1,7 @@
 use crate::framebuffer::OutputFramebuffer;
-use windows::Win32::Graphics::Direct3D11::D3D11_VIEWPORT;
-use librashader_common::Viewport;
 use crate::D3D11OutputView;
+use librashader_common::Viewport;
+use windows::Win32::Graphics::Direct3D11::D3D11_VIEWPORT;
 
 #[rustfmt::skip]
 static DEFAULT_MVP: &[f32; 16] = &[

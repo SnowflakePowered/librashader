@@ -1,8 +1,8 @@
 use gl::types::{GLenum, GLuint};
 
-use librashader_reflect::back::cross::GlslVersion;
 use crate::error;
 use crate::error::FilterChainError;
+use librashader_reflect::back::cross::GlslVersion;
 
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GLuint> {
     let shader = gl::CreateShader(stage);

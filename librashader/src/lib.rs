@@ -69,9 +69,9 @@ pub mod preprocess {
 pub mod reflect {
     /// Supported shader compiler targets.
     pub mod targets {
-        pub use librashader_reflect::back::targets::SPIRV;
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
+        pub use librashader_reflect::back::targets::SPIRV;
     }
 
     pub use librashader_reflect::error::*;
@@ -94,8 +94,8 @@ pub mod reflect {
 /// Shader runtimes to execute a filter chain on a GPU surface.
 #[cfg(feature = "runtime")]
 pub mod runtime {
+    pub use librashader_common::{Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
-    pub use librashader_common::{Viewport, Size};
 
     #[cfg(feature = "gl")]
     /// Shader runtime for OpenGL 3.3+.
@@ -104,13 +104,9 @@ pub mod runtime {
     /// initialized with [`gl::load_with`](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
     pub mod gl {
         pub use librashader_runtime_gl::{
-            options::{
-                FilterChainOptionsGL as FilterChainOptions,
-                FrameOptionsGL as FrameOptions,
-            },
-            FilterChainGL as FilterChain,
-            Framebuffer, GLImage,
-            error
+            error,
+            options::{FilterChainOptionsGL as FilterChainOptions, FrameOptionsGL as FrameOptions},
+            FilterChainGL as FilterChain, Framebuffer, GLImage,
         };
 
         #[doc(hidden)]
@@ -126,13 +122,11 @@ pub mod runtime {
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::{
+            error,
             options::{
-                FilterChainOptionsD3D11 as FilterChainOptions,
-                FrameOptionsD3D11 as FrameOptions,
+                FilterChainOptionsD3D11 as FilterChainOptions, FrameOptionsD3D11 as FrameOptions,
             },
-            FilterChainD3D11 as FilterChain,
-            D3D11InputView, D3D11OutputView,
-            error
+            D3D11InputView, D3D11OutputView, FilterChainD3D11 as FilterChain,
         };
 
         #[doc(hidden)]
@@ -148,13 +142,11 @@ pub mod runtime {
     /// Shader runtime for Vulkan 1.3+.
     pub mod vk {
         pub use librashader_runtime_vk::{
+            error,
             options::{
-                FilterChainOptionsVulkan as FilterChainOptions,
-                FrameOptionsVulkan as FrameOptions,
+                FilterChainOptionsVulkan as FilterChainOptions, FrameOptionsVulkan as FrameOptions,
             },
-            FilterChainVulkan as FilterChain,
-            VulkanImage, VulkanObjects, VulkanInstance,
-            error
+            FilterChainVulkan as FilterChain, VulkanImage, VulkanInstance, VulkanObjects,
         };
 
         #[doc(hidden)]

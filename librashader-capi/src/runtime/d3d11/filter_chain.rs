@@ -1,13 +1,11 @@
-use std::ffi::CStr;
-use crate::ctypes::{
-    libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
-};
+use crate::ctypes::{libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
+use std::ffi::c_char;
+use std::ffi::CStr;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
-use std::ffi::c_char;
 use std::slice;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,

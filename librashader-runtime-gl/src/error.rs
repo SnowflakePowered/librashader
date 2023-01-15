@@ -29,7 +29,7 @@ pub enum FilterChainError {
     #[error("opengl could not link program")]
     GLLinkError,
     #[error("opengl could not compile program")]
-    GlCompileError
+    GlCompileError,
 }
 
 /// Result type for OpenGL filter chains.

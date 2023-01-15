@@ -1,8 +1,8 @@
-use std::sync::Arc;
 use crate::hello_triangle::physicaldevice::find_queue_family;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use ash::prelude::VkResult;
 use ash::vk;
+use std::sync::Arc;
 
 pub struct VulkanCommandPool {
     pool: vk::CommandPool,

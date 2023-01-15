@@ -1,27 +1,25 @@
-use std::ffi::{c_char, c_void};
-use crate::ctypes::{
-    libra_vk_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
-};
+use crate::ctypes::{libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::vk::{VulkanImage, VulkanInstance};
+use std::ffi::CStr;
+use std::ffi::{c_char, c_void};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
-use std::ffi::CStr;
 
 pub use librashader::runtime::vk::capi::options::FilterChainOptionsVulkan;
 pub use librashader::runtime::vk::capi::options::FrameOptionsVulkan;
-use librashader::runtime::{Size, Viewport};
 use librashader::runtime::FilterChainParameters;
+use librashader::runtime::{Size, Viewport};
 
 use ash::vk;
 
 pub use ash::vk::PFN_vkGetInstanceProcAddr;
 
 /// A Vulkan instance function loader that the Vulkan filter chain needs to be initialized with.
-pub type libra_PFN_vkGetInstanceProcAddr = unsafe extern "system" fn(instance: *mut c_void, p_name: *const c_char);
-
+pub type libra_PFN_vkGetInstanceProcAddr =
+    unsafe extern "system" fn(instance: *mut c_void, p_name: *const c_char);
 
 /// Vulkan  parameters for the source image.
 #[repr(C)]
@@ -49,7 +47,7 @@ pub struct libra_device_vk_t {
     /// for the device attached to the instance that will perform rendering.
     pub device: vk::Device,
     /// The entry loader for the Vulkan library.
-    pub entry: vk::PFN_vkGetInstanceProcAddr
+    pub entry: vk::PFN_vkGetInstanceProcAddr,
 }
 
 impl From<libra_image_vk_t> for VulkanImage {
@@ -164,7 +162,6 @@ extern_fn! {
         chain.frame(&image, &viewport, command_buffer, frame_count, opt.as_ref())?;
     }
 }
-
 
 extern_fn! {
     /// Sets a parameter for the filter chain.

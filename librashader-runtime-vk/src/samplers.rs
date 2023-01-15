@@ -1,8 +1,8 @@
-use std::sync::Arc;
 use crate::error;
 use ash::vk;
 use librashader_common::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
+use std::sync::Arc;
 
 pub struct VulkanSampler {
     pub handle: vk::Sampler,

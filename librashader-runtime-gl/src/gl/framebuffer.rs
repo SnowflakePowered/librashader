@@ -6,7 +6,6 @@ use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_presets::Scale2D;
 
-
 /// A handle to an OpenGL FBO and its backing texture with format and size information.
 ///
 /// Generally for use as render targets.

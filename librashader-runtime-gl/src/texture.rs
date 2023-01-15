@@ -1,5 +1,5 @@
-use gl::types::GLuint;
 use crate::framebuffer::GLImage;
+use gl::types::GLuint;
 use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Default, Debug, Copy, Clone)]
