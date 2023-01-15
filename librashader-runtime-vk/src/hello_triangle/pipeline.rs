@@ -250,7 +250,7 @@ impl VulkanPipeline {
             samples: vk::SampleCountFlags::TYPE_1,
             load_op: vk::AttachmentLoadOp::CLEAR,
             store_op: vk::AttachmentStoreOp::STORE,
-            initial_layout: vk::ImageLayout::UNDEFINED,
+            initial_layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             final_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
             ..Default::default()
         }];
@@ -259,14 +259,15 @@ impl VulkanPipeline {
             layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
         }];
 
-        let dependencies = [vk::SubpassDependency {
-            src_subpass: vk::SUBPASS_EXTERNAL,
-            src_stage_mask: vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
-            dst_access_mask: vk::AccessFlags::COLOR_ATTACHMENT_READ
-                | vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-            dst_stage_mask: vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
-            ..Default::default()
-        }];
+        // gonna use an explicit transition instead
+        // let dependencies = [
+        //     vk::SubpassDependency {
+        //     src_subpass: vk::SUBPASS_EXTERNAL,
+        //     src_stage_mask: vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+        //     dst_access_mask: vk::AccessFlags::COLOR_ATTACHMENT_READ | vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+        //     dst_stage_mask: vk::PipelineStageFlags::FRAGMENT_SHADER,
+        //     ..Default::default()
+        // }];
 
         let subpass = vk::SubpassDescription::builder()
             .color_attachments(&color_attachment_refs)
