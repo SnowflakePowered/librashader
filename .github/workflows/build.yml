@@ -24,6 +24,9 @@ jobs:
         toolchain: nightly
         override: true
     - uses: humbletim/setup-vulkan-sdk@v1.2.0
+      with:
+        vulkan-query-version: latest
+        vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Cross, SPIRV-Headers, SPIRV-Reflect, SPIRV-Tools, Glslang
     - name: Setup cargo post
       uses: baptiste0928/cargo-install@bf6758885262d0e6f61089a9d8c8790d3ac3368f
       with:
