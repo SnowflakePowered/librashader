@@ -14,8 +14,8 @@
 //! called with appropriate input and output parameters to draw a frame with the shader effect applied.
 //!
 //! ## Runtimes
-//! Currently available runtimes are OpenGL 3.3+ and 4.6 (with DSA), and Direct3D 11.
-//! Work on the Vulkan and Direct3D 12 runtimes are in progress.
+//! Currently available runtimes are Vulkan 1.3+, OpenGL 3.3+ and 4.6 (with DSA), and Direct3D 11.
+//! Work on the Direct3D 12 runtimes are in progress. The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html).
 //!
 //! | **API**     | **Status** | **`librashader` feature** |
 //! |-------------|------------|---------------------------|
@@ -47,9 +47,7 @@ pub mod presets {
         let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset
             .shaders
             .iter()
-            .map(|s| ShaderSource::load(&s.name).map(|s|
-                s.parameters.into_values()
-                    .collect()))
+            .map(|s| ShaderSource::load(&s.name).map(|s| s.parameters.into_values().collect()))
             .into_iter()
             .collect();
         let iters = iters?;

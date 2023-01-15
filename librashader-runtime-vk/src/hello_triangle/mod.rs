@@ -186,13 +186,17 @@ impl VulkanWindow {
                 vk::ImageLayout::UNDEFINED,
                 vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
                 vk::AccessFlags::MEMORY_READ
-                    | vk::AccessFlags::MEMORY_WRITE | vk::AccessFlags::HOST_READ | vk::AccessFlags::HOST_WRITE
-                    | vk::AccessFlags::COLOR_ATTACHMENT_READ | vk::AccessFlags::COLOR_ATTACHMENT_WRITE | vk::AccessFlags::SHADER_READ,
+                    | vk::AccessFlags::MEMORY_WRITE
+                    | vk::AccessFlags::HOST_READ
+                    | vk::AccessFlags::HOST_WRITE
+                    | vk::AccessFlags::COLOR_ATTACHMENT_READ
+                    | vk::AccessFlags::COLOR_ATTACHMENT_WRITE
+                    | vk::AccessFlags::SHADER_READ,
                 vk::AccessFlags::COLOR_ATTACHMENT_WRITE | vk::AccessFlags::COLOR_ATTACHMENT_READ,
                 vk::PipelineStageFlags::ALL_COMMANDS,
                 vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
                 vk::QUEUE_FAMILY_IGNORED,
-                vk::QUEUE_FAMILY_IGNORED
+                vk::QUEUE_FAMILY_IGNORED,
             );
 
             Self::record_command_buffer(vulkan, framebuffer, cmd);
@@ -205,13 +209,17 @@ impl VulkanWindow {
                 vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 vk::AccessFlags::MEMORY_READ
-                    | vk::AccessFlags::MEMORY_WRITE | vk::AccessFlags::HOST_READ | vk::AccessFlags::HOST_WRITE
-                    | vk::AccessFlags::COLOR_ATTACHMENT_READ | vk::AccessFlags::COLOR_ATTACHMENT_WRITE | vk::AccessFlags::SHADER_READ,
+                    | vk::AccessFlags::MEMORY_WRITE
+                    | vk::AccessFlags::HOST_READ
+                    | vk::AccessFlags::HOST_WRITE
+                    | vk::AccessFlags::COLOR_ATTACHMENT_READ
+                    | vk::AccessFlags::COLOR_ATTACHMENT_WRITE
+                    | vk::AccessFlags::SHADER_READ,
                 vk::AccessFlags::SHADER_READ,
                 vk::PipelineStageFlags::ALL_COMMANDS,
                 vk::PipelineStageFlags::FRAGMENT_SHADER,
                 vk::QUEUE_FAMILY_IGNORED,
-                vk::QUEUE_FAMILY_IGNORED
+                vk::QUEUE_FAMILY_IGNORED,
             );
             //
             // util::vulkan_image_layout_transition_levels(

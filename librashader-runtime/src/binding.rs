@@ -238,12 +238,12 @@ where
         {
             let id = id.as_str();
 
-            let default = parameter_defaults.get(id)
+            let default = parameter_defaults
+                .get(id)
                 .map(|f| f.initial)
                 .unwrap_or(0f32);
 
-            let value = *runtime_parameters.get(id)
-                .unwrap_or(&default);
+            let value = *runtime_parameters.get(id).unwrap_or(&default);
 
             uniform_storage.bind_scalar(offset.offset(), value, offset.context());
         }
