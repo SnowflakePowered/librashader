@@ -16,6 +16,7 @@ use spirv_cross::{glsl, hlsl, ErrorCode};
 use crate::back::cross::{CrossGlslContext, CrossHlslContext};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
+use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 
 pub struct CrossReflect<T>
 where
@@ -220,37 +221,6 @@ where
             ));
         }
         Ok(())
-    }
-}
-
-struct UboData {
-    // id: u32,
-    // descriptor_set: u32,
-    binding: u32,
-    size: u32,
-}
-
-struct TextureData<'a> {
-    // id: u32,
-    // descriptor_set: u32,
-    name: &'a str,
-    binding: u32,
-}
-
-// todo: might want to take these crate helpers out.
-
-#[derive(Copy, Clone)]
-enum SemanticErrorBlame {
-    Vertex,
-    Fragment,
-}
-
-impl SemanticErrorBlame {
-    fn error(self, kind: SemanticsErrorKind) -> ShaderReflectError {
-        match self {
-            SemanticErrorBlame::Vertex => ShaderReflectError::VertexSemanticError(kind),
-            SemanticErrorBlame::Fragment => ShaderReflectError::FragmentSemanticError(kind),
-        }
     }
 }
 
@@ -879,7 +849,7 @@ mod test {
 
         for (_index, param) in result.parameters.iter().enumerate() {
             uniform_semantics.insert(
-                param.id.clone(),
+                param.1.id.clone(),
                 UniformSemantic::Unique(Semantic {
                     semantics: UniqueSemantics::FloatParameter,
                     index: (),

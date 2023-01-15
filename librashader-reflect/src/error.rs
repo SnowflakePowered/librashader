@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ShaderCompileError {
     /// Compile error from naga.
-    #[cfg(feature = "unstable-rust-pipeline")]
+    #[cfg(feature = "unstable-naga")]
     #[error("shader")]
     NagaCompileError(Vec<naga::front::glsl::Error>),
 
@@ -55,14 +55,9 @@ pub enum SemanticsErrorKind {
 #[derive(Error, Debug)]
 pub enum ShaderReflectError {
     /// Compile error from naga.
-    #[cfg(feature = "unstable-rust-pipeline")]
+    #[cfg(feature = "unstable-naga")]
     #[error("shader")]
     NagaCompileError(#[from] naga::front::spv::Error),
-
-    /// Parse error from rspirv.
-    #[cfg(feature = "unstable-rust-pipeline")]
-    #[error("rspirv")]
-    RspirvParseError(#[from] rspirv::binary::ParseState),
 
     /// Reflection error from spirv-cross.
     #[error("spirv")]
@@ -99,7 +94,7 @@ pub enum ShaderReflectError {
     BindingInUse(u32),
 }
 
-#[cfg(feature = "unstable-rust-pipeline")]
+#[cfg(feature = "unstable-naga")]
 impl From<Vec<naga::front::glsl::Error>> for ShaderCompileError {
     fn from(err: Vec<naga::front::glsl::Error>) -> Self {
         ShaderCompileError::NagaCompileError(err)

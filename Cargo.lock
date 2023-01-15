@@ -435,15 +435,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fxhash"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
-dependencies = [
- "byteorder",
-]
-
-[[package]]
 name = "gfx-maths"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,8 +685,6 @@ dependencies = [
  "librashader-common",
  "librashader-preprocess",
  "naga",
- "rspirv",
- "rspirv-reflect",
  "rustc-hash",
  "shaderc",
  "spirv_cross",
@@ -1231,26 +1220,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "921904a62e410e37e215c40381b7117f830d9d89ba60ab5236170541dd25646b"
 dependencies = [
  "xmlparser",
-]
-
-[[package]]
-name = "rspirv"
-version = "0.11.0+1.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1503993b59ca9ae4127365c3293517576d7ce56be9f3d8abb1625c85ddc583ba"
-dependencies = [
- "fxhash",
- "num-traits",
- "spirv",
-]
-
-[[package]]
-name = "rspirv-reflect"
-version = "0.7.0"
-source = "git+https://github.com/Traverse-Research/rspirv-reflect#8894d3570cd738c61e26b08349f55277092b9e3c"
-dependencies = [
- "rspirv",
- "thiserror",
 ]
 
 [[package]]

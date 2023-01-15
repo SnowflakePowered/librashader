@@ -7,10 +7,10 @@ pub mod cross;
 /// Shader semantics and reflection information.
 pub mod semantics;
 
-#[cfg(feature = "unstable-rust-pipeline")]
+mod helper;
+
+#[cfg(feature = "unstable-naga")]
 mod naga;
-#[cfg(feature = "unstable-rust-pipeline")]
-mod rspirv;
 
 /// A trait for compilation outputs that can provide reflection information.
 pub trait ReflectShader {

@@ -1,4 +1,4 @@
-#[cfg(feature = "unstable-rust-pipeline")]
+#[cfg(feature = "unstable-naga")]
 pub mod naga;
 
 pub mod shaderc;
