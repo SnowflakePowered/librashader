@@ -426,7 +426,7 @@ impl FilterChainD3D11 {
                 let spirv = GlslangCompilation::compile(&source)?;
                 let reflect = HLSL::from_compilation(spirv)?;
 
-                for parameter in source.parameters.iter() {
+                for parameter in source.parameters.values() {
                     uniform_semantics.insert(
                         parameter.id.clone(),
                         UniformSemantic::Unique(Semantic {

@@ -224,16 +224,16 @@ where
 }
 
 struct UboData {
-    id: u32,
-    descriptor_set: u32,
+    // id: u32,
+    // descriptor_set: u32,
     binding: u32,
     size: u32,
 }
 
 struct TextureData<'a> {
-    id: u32,
+    // id: u32,
+    // descriptor_set: u32,
     name: &'a str,
-    descriptor_set: u32,
     binding: u32,
 }
 
@@ -276,9 +276,9 @@ where
 
         let size = ast.get_declared_struct_size(ubo.base_type_id)?;
         Ok(UboData {
-            descriptor_set,
+            // descriptor_set,
+            // id: ubo.id,
             binding,
-            id: ubo.id,
             size,
         })
     }
@@ -538,9 +538,9 @@ where
         }
 
         Ok(TextureData {
-            id: texture.id,
+            // id: texture.id,
+            // descriptor_set,
             name: &texture.name,
-            descriptor_set,
             binding,
         })
     }

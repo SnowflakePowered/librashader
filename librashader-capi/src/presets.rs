@@ -141,7 +141,7 @@ extern_fn! {
 }
 
 extern_fn! {
-    /// Get a list of runtime parameter names.
+    /// Get a list of runtime parameters.
     ///
     /// ## Safety
     /// - `preset` must be null or a valid and aligned pointer to a shader preset.

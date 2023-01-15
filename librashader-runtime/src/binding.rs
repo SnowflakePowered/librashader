@@ -99,7 +99,7 @@ where
         pass_feedback: impl Iterator<Item = Option<impl AsRef<Self::InputTexture>>>,
         original_history: impl Iterator<Item = Option<impl AsRef<Self::InputTexture>>>,
         lookup_textures: impl Iterator<Item = (usize, impl AsRef<Self::InputTexture>)>,
-        parameter_defaults: &[ShaderParameter],
+        parameter_defaults: &HashMap<String, ShaderParameter, impl BuildHasher>,
         runtime_parameters: &HashMap<String, f32, impl BuildHasher>,
     ) {
         // Bind MVP
@@ -238,13 +238,12 @@ where
         {
             let id = id.as_str();
 
-            let default = parameter_defaults
-                .iter()
-                .find(|&p| p.id == id)
+            let default = parameter_defaults.get(id)
                 .map(|f| f.initial)
                 .unwrap_or(0f32);
 
-            let value = *runtime_parameters.get(id).unwrap_or(&default);
+            let value = *runtime_parameters.get(id)
+                .unwrap_or(&default);
 
             uniform_storage.bind_scalar(offset.offset(), value, offset.context());
         }

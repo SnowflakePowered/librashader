@@ -173,7 +173,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 let spirv = GlslangCompilation::compile(&source)?;
                 let reflect = GLSL::from_compilation(spirv)?;
 
-                for parameter in source.parameters.iter() {
+                for parameter in source.parameters.values() {
                     uniform_semantics.insert(
                         parameter.id.clone(),
                         UniformSemantic::Unique(Semantic {

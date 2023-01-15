@@ -1,4 +1,3 @@
-use librashader_common::Size;
 use librashader_reflect::reflect::semantics::MemberOffset;
 use std::marker::PhantomData;
 

@@ -814,6 +814,7 @@ version = "0.1.0-beta.6"
 dependencies = [
  "librashader-common",
  "nom",
+ "rustc-hash",
  "thiserror",
 ]
 

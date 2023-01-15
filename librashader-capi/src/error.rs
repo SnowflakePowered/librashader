@@ -194,10 +194,6 @@ impl LibrashaderError {
         None
     }
 
-    pub(crate) fn panic(panic: Box<dyn Any + Send + 'static>) -> libra_error_t {
-        LibrashaderError::UnknownError(panic).export()
-    }
-
     pub(crate) fn export(self) -> libra_error_t {
         NonNull::new(Box::into_raw(Box::new(self)))
     }
