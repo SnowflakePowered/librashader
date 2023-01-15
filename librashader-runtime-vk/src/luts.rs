@@ -22,7 +22,6 @@ impl LutTexture {
         image: Image<BGRA8>,
         config: &TextureConfig,
     ) -> error::Result<LutTexture> {
-        // todo: might need to use bgra8
         let image_info = vk::ImageCreateInfo::builder()
             .image_type(vk::ImageType::TYPE_2D)
             .format(vk::Format::B8G8R8A8_UNORM)

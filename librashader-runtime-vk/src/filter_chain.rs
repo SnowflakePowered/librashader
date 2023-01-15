@@ -666,15 +666,20 @@ impl FilterChainVulkan {
         );
 
         // rescale render buffers to ensure all bindings are valid.
-        for (index, pass) in passes.iter_mut().enumerate() {
+        let mut iterator = passes.iter_mut().enumerate().peekable();
+        while let Some((index, pass)) = iterator.next() {
+            let should_mipmap = iterator
+                .peek()
+                .map(|(_, p)| p.config.mipmap_input)
+                .unwrap_or(false);
+
             self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
                 &original,
                 source,
-                // todo: need to check **next**
-                pass.config.mipmap_input,
+                should_mipmap,
                 None,
             )?;
 
@@ -684,8 +689,7 @@ impl FilterChainVulkan {
                 &viewport.output.size,
                 &original,
                 source,
-                // todo: need to check **next**
-                pass.config.mipmap_input,
+                should_mipmap,
                 None,
             )?;
 

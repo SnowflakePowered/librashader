@@ -172,7 +172,6 @@ impl FilterPass {
                 self.graphics_pipeline.pipeline,
             );
 
-            // todo: allow frames in flight.
             parent.device.cmd_bind_descriptor_sets(
                 cmd,
                 vk::PipelineBindPoint::GRAPHICS,

@@ -68,7 +68,6 @@ impl OutputImage {
     }
 
     pub fn end_pass(&self, cmd: vk::CommandBuffer) {
-        // todo: generate mips
         unsafe {
             util::vulkan_image_layout_transition_levels(
                 &self.device,
