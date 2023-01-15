@@ -19,4 +19,12 @@ librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-beta.6
 bytemuck = "1.12.3"
 rustc-hash = "1.1.0"
 num-traits = "0.2.15"
-image = "0.24.5"
+
+[dependencies.image]
+version = "0.24.5"
+features = [
+    "gif", "jpeg", "png",
+    "tga", "pnm", "tiff",
+    "webp", "bmp", "dds",
+]
+default-features = false
