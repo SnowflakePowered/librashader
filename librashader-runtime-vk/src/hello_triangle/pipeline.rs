@@ -276,7 +276,7 @@ impl VulkanPipeline {
         let renderpass_create_info = vk::RenderPassCreateInfo::builder()
             .attachments(&renderpass_attachments)
             .subpasses(std::slice::from_ref(&subpass))
-            .dependencies(&dependencies);
+            .dependencies(&[]);
 
         let renderpass = base
             .device
