@@ -6,7 +6,7 @@ use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{
-    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+    BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
@@ -94,18 +94,6 @@ impl FilterPass {
         }
     }
 
-    fn bind_texture(
-        samplers: &SamplerSet,
-        texture_binding: &mut [Option<ID3D11ShaderResourceView>; 16],
-        sampler_binding: &mut [Option<ID3D11SamplerState>; 16],
-        binding: &TextureBinding,
-        texture: &InputTexture,
-    ) {
-        texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
-        sampler_binding[binding.binding as usize] =
-            Some(samplers.get(texture.wrap_mode, texture.filter).clone());
-    }
-
     // framecount should be pre-modded
     fn build_semantics<'a>(
         &mut self,
@@ -175,7 +163,7 @@ impl FilterPass {
 
         let mut textures: [Option<ID3D11ShaderResourceView>; 16] = std::array::from_fn(|_| None);
         let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
-        let mut descriptors = (&mut textures, &mut samplers);
+        let descriptors = (&mut textures, &mut samplers);
 
         self.build_semantics(
             pass_index,

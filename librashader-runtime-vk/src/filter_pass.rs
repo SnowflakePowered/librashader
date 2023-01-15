@@ -10,12 +10,12 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
-    BindingStage, MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+    BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::uniforms::{
-    BindUniform, NoUniformBinder, UniformStorage, UniformStorageAccess,
+    UniformStorage, UniformStorageAccess,
 };
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
@@ -46,6 +46,7 @@ impl BindSemantics for FilterPass {
     type DeviceContext = Arc<ash::Device>;
     type UniformOffset = MemberOffset;
 
+    #[inline(always)]
     fn bind_texture<'a>(
         descriptors: &mut Self::DescriptorSet<'a>,
         samplers: &Self::SamplerSet,
@@ -74,33 +75,6 @@ impl BindSemantics for FilterPass {
 }
 
 impl FilterPass {
-    #[inline(always)]
-    fn bind_texture(
-        device: &ash::Device,
-        samplers: &SamplerSet,
-        descriptor_set: vk::DescriptorSet,
-        binding: &TextureBinding,
-        texture: &InputImage,
-    ) {
-        let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
-        let image_info = [vk::DescriptorImageInfo::builder()
-            .sampler(sampler.handle)
-            .image_view(texture.image_view)
-            .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-            .build()];
-
-        let write_desc = [vk::WriteDescriptorSet::builder()
-            .dst_set(descriptor_set)
-            .dst_binding(binding.binding)
-            .dst_array_element(0)
-            .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
-            .image_info(&image_info)
-            .build()];
-        unsafe {
-            device.update_descriptor_sets(&write_desc, &[]);
-        }
-    }
-
     pub fn get_format(&self) -> ImageFormat {
         let fb_format = self.source.format;
         if let Some(format) = self.config.get_format_override() {
@@ -124,13 +98,13 @@ impl FilterPass {
         source: &InputImage,
         output: &RenderTarget,
     ) -> error::Result<()> {
-        let mut descriptor = *&self.graphics_pipeline.layout.descriptor_sets
+        let mut descriptor = self.graphics_pipeline.layout.descriptor_sets
             [(frame_count % self.frames_in_flight) as usize];
 
         self.build_semantics(
             pass_index,
             parent,
-            &output.mvp,
+            output.mvp,
             frame_count,
             frame_direction,
             output.output.size,
@@ -231,7 +205,7 @@ impl FilterPass {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
-        mut descriptor_set: &mut vk::DescriptorSet,
+        descriptor_set: &mut vk::DescriptorSet,
         original: &InputImage,
         source: &InputImage,
     ) {
@@ -239,7 +213,7 @@ impl FilterPass {
             &self.device,
             &parent.samplers,
             &mut self.uniform_storage,
-            &mut descriptor_set,
+            descriptor_set,
             mvp,
             frame_count,
             frame_direction,

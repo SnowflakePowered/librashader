@@ -35,7 +35,7 @@ impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
         assert_non_null!(noexport handle);
 
         Ok(D3D11InputView {
-            handle: unsafe { (&*handle).clone() },
+            handle: unsafe { (*handle).clone() },
             size: Size::new(value.width, value.height),
         })
     }
@@ -124,7 +124,7 @@ extern_fn! {
             y: viewport.y,
             output: D3D11OutputView {
                 size: Size::new(viewport.width, viewport.height),
-                handle: unsafe { (&*out).clone() },
+                handle: unsafe { (*out).clone() },
             },
             mvp,
         };
@@ -152,7 +152,7 @@ extern_fn! {
             let name = CStr::from_ptr(param_name);
             let name = name.to_str()?;
 
-            if let None = chain.set_parameter(name, value) {
+            if chain.set_parameter(name, value).is_none() {
                 return LibrashaderError::UnknownShaderParameter(param_name).export()
             }
         }

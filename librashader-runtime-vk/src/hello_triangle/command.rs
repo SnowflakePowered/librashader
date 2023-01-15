@@ -12,7 +12,7 @@ pub struct VulkanCommandPool {
 
 impl VulkanCommandPool {
     pub fn new(base: &VulkanBase, frames_in_flight: u32) -> VkResult<VulkanCommandPool> {
-        let indices = find_queue_family(&base.instance, base.physical_device.clone());
+        let indices = find_queue_family(&base.instance, base.physical_device);
 
         let create_info = vk::CommandPoolCreateInfo::builder()
             .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)

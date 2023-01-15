@@ -1,4 +1,4 @@
-use crate::hello_triangle::swapchain::VulkanSwapchain;
+
 use ash::prelude::VkResult;
 use ash::vk;
 

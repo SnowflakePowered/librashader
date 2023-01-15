@@ -24,10 +24,8 @@ pub(crate) fn pick_physical_device(instance: &ash::Instance) -> vk::PhysicalDevi
 
     let mut result = None;
     for &physical_device in physical_devices.iter() {
-        if is_physical_device_suitable(instance, physical_device) {
-            if result.is_none() {
-                result = Some(physical_device)
-            }
+        if is_physical_device_suitable(instance, physical_device) && result.is_none() {
+            result = Some(physical_device)
         }
     }
 
@@ -113,7 +111,7 @@ fn is_physical_device_suitable(
 
     let indices = find_queue_family(instance, physical_device);
 
-    return indices.is_complete();
+    indices.is_complete()
 }
 
 pub fn find_queue_family(

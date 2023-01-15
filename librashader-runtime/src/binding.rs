@@ -79,7 +79,7 @@ where
         device: &Self::DeviceContext,
     );
 
-    #[clippy::allow(too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     /// Write uniform and texture semantics to the provided storages.
     fn bind_semantics<'a>(
         device: &Self::DeviceContext,

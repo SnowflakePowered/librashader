@@ -505,7 +505,7 @@ impl FilterChainVulkan {
         // eprintln!("[history] using frame history with {required_images} images");
         let mut images = Vec::with_capacity(required_images);
         images.resize_with(required_images, || {
-            OwnedImage::new(&vulkan, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
+            OwnedImage::new(vulkan, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
         });
 
         let images: error::Result<Vec<OwnedImage>> = images.into_iter().collect();
@@ -553,7 +553,7 @@ impl FilterChainVulkan {
                     vk::QUEUE_FAMILY_IGNORED,
                 );
 
-                back.copy_from(cmd, &input, vk::ImageLayout::TRANSFER_SRC_OPTIMAL);
+                back.copy_from(cmd, input, vk::ImageLayout::TRANSFER_SRC_OPTIMAL);
 
                 util::vulkan_image_layout_transition_levels(
                     &self.vulkan.device,
@@ -729,7 +729,7 @@ impl FilterChainVulkan {
                 frame_direction,
                 viewport,
                 &original,
-                &source,
+                source,
                 &out,
             )?;
 
@@ -739,7 +739,7 @@ impl FilterChainVulkan {
                 out.output.end_pass(cmd);
             }
 
-            source = &self.common.output_inputs[index].as_ref().unwrap();
+            source = self.common.output_inputs[index].as_ref().unwrap();
             intermediates.dispose_outputs(out.output);
         }
 

@@ -33,7 +33,7 @@ impl OutputImage {
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(image.format)
-            .image(image.image.clone())
+            .image(image.image)
             .subresource_range(image_subresource)
             .components(swizzle_components)
             .build();

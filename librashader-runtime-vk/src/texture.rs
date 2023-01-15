@@ -59,7 +59,7 @@ impl OwnedImage {
             .build();
 
         let image = unsafe { device.create_image(&image_create_info, None)? };
-        let mem_reqs = unsafe { device.get_image_memory_requirements(image.clone()) };
+        let mem_reqs = unsafe { device.get_image_memory_requirements(image) };
 
         let alloc_info = vk::MemoryAllocateInfo::builder()
             .allocation_size(mem_reqs.size)
@@ -92,7 +92,7 @@ impl OwnedImage {
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(format.into())
-            .image(image.clone())
+            .image(image)
             .subresource_range(image_subresource)
             .components(swizzle_components)
             .build();
@@ -186,7 +186,7 @@ impl OwnedImage {
     pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
         InputImage {
             image: self.image.clone(),
-            image_view: self.image_view.clone(),
+            image_view: self.image_view,
             wrap_mode,
             filter_mode: filter,
             mip_filter: filter,
@@ -530,6 +530,6 @@ pub struct InputImage {
 
 impl AsRef<InputImage> for InputImage {
     fn as_ref(&self) -> &InputImage {
-        &self
+        self
     }
 }

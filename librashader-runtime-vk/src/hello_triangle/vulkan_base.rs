@@ -1,18 +1,18 @@
 use ash::vk;
-use std::borrow::Cow;
-use std::error::Error;
+
+
 
 use crate::error::FilterChainError;
 use crate::filter_chain::VulkanObjects;
 use crate::hello_triangle::debug::VulkanDebug;
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
-use crate::hello_triangle::surface::VulkanSurface;
+
 use ash::prelude::VkResult;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr};
 use std::sync::Arc;
 
-const WINDOW_TITLE: &'static [u8] = b"librashader Vulkan\0";
-const KHRONOS_VALIDATION: &'static [u8] = b"VK_LAYER_KHRONOS_validation\0";
+const WINDOW_TITLE: &[u8] = b"librashader Vulkan\0";
+const KHRONOS_VALIDATION: &[u8] = b"VK_LAYER_KHRONOS_validation\0";
 
 pub struct VulkanBase {
     pub entry: ash::Entry,
@@ -27,8 +27,8 @@ pub struct VulkanBase {
 impl VulkanBase {
     pub fn new(entry: ash::Entry) -> VkResult<VulkanBase> {
         let app_info = vk::ApplicationInfo::builder()
-            .application_name(unsafe { &CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
-            .engine_name(unsafe { &CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
+            .application_name(unsafe { CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
+            .engine_name(unsafe { CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
             .engine_version(0)
             .application_version(0)
             .api_version(vk::make_api_version(0, 1, 3, 0))
@@ -80,7 +80,7 @@ impl VulkanBase {
     ) -> VkResult<(ash::Device, vk::Queue)> {
         let debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
 
-        let indices = find_queue_family(&instance, *physical_device);
+        let indices = find_queue_family(instance, *physical_device);
         let queue_info = [vk::DeviceQueueCreateInfo::builder()
             .queue_family_index(indices.graphics_family())
             .queue_priorities(&[1.0f32])
@@ -119,9 +119,9 @@ impl VulkanBase {
 }
 
 unsafe extern "system" fn vulkan_debug_callback(
-    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
-    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
-    p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
+    _message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    _message_type: vk::DebugUtilsMessageTypeFlagsEXT,
+    _p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
     _user_data: *mut std::os::raw::c_void,
 ) -> vk::Bool32 {
     // let callback_data = *p_callback_data;

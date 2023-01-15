@@ -25,7 +25,7 @@ impl VulkanImageMemory {
         unsafe {
             Ok(self
                 .device
-                .bind_image_memory(image.clone(), self.handle.clone(), 0)?)
+                .bind_image_memory(*image, self.handle, 0)?)
         }
     }
 }
@@ -76,7 +76,7 @@ impl VulkanBuffer {
                 .build();
 
             let alloc = device.allocate_memory(&alloc_info, None)?;
-            device.bind_buffer_memory(buffer.clone(), alloc.clone(), 0)?;
+            device.bind_buffer_memory(buffer, alloc, 0)?;
 
             Ok(VulkanBuffer {
                 handle: buffer,

@@ -1,15 +1,15 @@
 use crate::hello_triangle::find_memorytype_index;
-use crate::hello_triangle::surface::VulkanSurface;
+
 use crate::hello_triangle::swapchain::VulkanSwapchain;
 use crate::hello_triangle::vulkan_base::VulkanBase;
 use ash::prelude::VkResult;
 use ash::util::{read_spv, Align};
 use ash::vk;
-use bytemuck::offset_of;
+
 use std::ffi::CStr;
 use std::io::Cursor;
 use std::mem::align_of;
-const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
+const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 #[derive(Default, Clone, Debug, Copy)]
 struct Vertex {

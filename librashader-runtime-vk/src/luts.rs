@@ -45,7 +45,7 @@ impl LutTexture {
         let texture = unsafe { vulkan.device.create_image(&image_info, None)? };
 
         let memory = unsafe {
-            let mem_reqs = vulkan.device.get_image_memory_requirements(texture.clone());
+            let mem_reqs = vulkan.device.get_image_memory_requirements(texture);
             let mem_type = util::find_vulkan_memory_type(
                 &vulkan.memory_properties,
                 mem_reqs.memory_type_bits,
@@ -77,7 +77,7 @@ impl LutTexture {
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(vk::Format::B8G8R8A8_UNORM)
-            .image(texture.clone())
+            .image(texture)
             .subresource_range(image_subresource)
             .components(swizzle_components)
             .build();

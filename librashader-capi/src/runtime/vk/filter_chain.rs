@@ -181,7 +181,7 @@ extern_fn! {
             let name = CStr::from_ptr(param_name);
             let name = name.to_str()?;
 
-            if let None = chain.set_parameter(name, value) {
+            if chain.set_parameter(name, value).is_none() {
                 return LibrashaderError::UnknownShaderParameter(param_name).export()
             }
         }

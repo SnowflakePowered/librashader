@@ -67,7 +67,7 @@ macro_rules! extern_fn {
 
         #[no_mangle]
         $(#[$($attrss)*])*
-        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+        pub unsafe extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
             $crate::ffi::ffi_body!($body)
         }
     };
@@ -81,7 +81,7 @@ macro_rules! extern_fn {
 
         #[no_mangle]
         $(#[$($attrss)*])*
-        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+        pub unsafe extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
             $body
         }
     };
@@ -95,7 +95,7 @@ macro_rules! extern_fn {
 
         #[no_mangle]
         $(#[$($attrss)*])*
-        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+        pub unsafe extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
             $crate::ffi::ffi_body!(|$($ref_capture),*|; mut |$($mut_capture),*| $body)
         }
     };
@@ -109,7 +109,7 @@ macro_rules! extern_fn {
 
         #[no_mangle]
         $(#[$($attrss)*])*
-        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+        pub unsafe extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
             $crate::ffi::ffi_body!(mut |$($mut_capture),*| $body)
         }
     };
@@ -122,7 +122,7 @@ macro_rules! extern_fn {
 
         #[no_mangle]
         $(#[$($attrss)*])*
-        pub extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
+        pub unsafe extern "C" fn $func_name($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t {
             $crate::ffi::ffi_body!(|$($ref_capture),*| $body)
         }
     };

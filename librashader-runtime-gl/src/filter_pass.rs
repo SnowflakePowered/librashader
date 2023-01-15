@@ -7,7 +7,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{
-    MemberOffset, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+    MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
 use rustc_hash::FxHashMap;
@@ -74,7 +74,7 @@ impl<T: GLInterface> BindSemantics<GlUniformBinder, UniformLocation<GLint>> for 
         texture: &Self::InputTexture,
         _device: &Self::DeviceContext,
     ) {
-        T::BindTexture::bind_texture(&samplers, binding, texture);
+        T::BindTexture::bind_texture(samplers, binding, texture);
     }
 }
 

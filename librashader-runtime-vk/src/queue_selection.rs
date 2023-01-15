@@ -15,7 +15,7 @@ fn find_graphics_queue_family(
         }
     }
 
-    return 0;
+    0
 }
 
 pub fn get_graphics_queue(

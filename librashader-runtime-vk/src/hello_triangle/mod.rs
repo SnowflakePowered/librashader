@@ -8,7 +8,7 @@ mod swapchain;
 mod syncobjects;
 pub mod vulkan_base;
 
-use crate::filter_chain::{FilterChainVulkan, VulkanObjects};
+use crate::filter_chain::{FilterChainVulkan};
 use crate::hello_triangle::command::VulkanCommandPool;
 use crate::hello_triangle::framebuffer::VulkanFramebuffer;
 use crate::hello_triangle::pipeline::VulkanPipeline;
@@ -19,15 +19,15 @@ use crate::hello_triangle::vulkan_base::VulkanBase;
 use crate::texture::VulkanImage;
 use crate::util;
 use ash::vk;
-use ash::vk::{Handle, RenderingInfo};
+
 use librashader_common::Viewport;
-use std::ffi::CString;
+
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
 
 // Constants
-const WINDOW_TITLE: &'static str = "librashader Vulkan";
+const WINDOW_TITLE: &str = "librashader Vulkan";
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 const MAX_FRAMES_IN_FLIGHT: usize = 3;
@@ -384,7 +384,7 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
     let pipeline = unsafe { VulkanPipeline::new(&vulkan, &swapchain) }.unwrap();
 
     let mut render_framebuffers = vec![];
-    for (index, image) in swapchain.render_image_views.iter().enumerate() {
+    for (_index, image) in swapchain.render_image_views.iter().enumerate() {
         render_framebuffers.push(
             VulkanFramebuffer::new(
                 &vulkan.device,

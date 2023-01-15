@@ -1,5 +1,5 @@
 use crate::framebuffer::GLImage;
-use gl::types::GLuint;
+
 use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -18,7 +18,7 @@ impl InputTexture {
     /// Returns a reference to itself if the texture is bound.
     pub fn bound(&self) -> Option<&Self> {
         if self.is_bound() {
-            Some(&self)
+            Some(self)
         } else {
             None
         }

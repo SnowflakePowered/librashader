@@ -65,11 +65,11 @@ impl VulkanSurface {
                 if available_format.format == vk::Format::B8G8R8A8_SRGB
                     && available_format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
                 {
-                    return Ok(available_format.clone());
+                    return Ok(*available_format);
                 }
             }
 
-            return Ok(available_formats.first().unwrap().clone());
+            return Ok(*available_formats.first().unwrap());
         }
     }
 

@@ -39,7 +39,7 @@ impl FilterChainGL {
             })
         });
         match result {
-            Err(_) => return Err(FilterChainError::GLLoadError),
+            Err(_) => Err(FilterChainError::GLLoadError),
             Ok(res) => res,
         }
     }

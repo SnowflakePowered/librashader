@@ -9,8 +9,7 @@ use librashader_common::{Size, Viewport};
 
 use crate::filter_chain::FilterChainGL;
 use crate::framebuffer::GLImage;
-use crate::gl::gl3::CompatibilityGL;
-use crate::gl::{FramebufferInterface, GLInterface};
+
 use crate::Framebuffer;
 
 const WIDTH: u32 = 800;

@@ -66,7 +66,7 @@ pub unsafe fn vulkan_image_layout_transition_levels(
     barrier.new_layout = new_layout;
     barrier.src_queue_family_index = src_queue_family_index;
     barrier.dst_queue_family_index = dst_queue_family_index;
-    barrier.image = image.clone();
+    barrier.image = image;
     barrier.subresource_range.aspect_mask = vk::ImageAspectFlags::COLOR;
     barrier.subresource_range.base_array_layer = 0;
     barrier.subresource_range.level_count = levels;

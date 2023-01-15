@@ -6,7 +6,7 @@ use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use std::ffi::CStr;
 
-const ENTRY_POINT: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
+const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 pub struct PipelineDescriptors {
     pub replicas: u32,
@@ -138,12 +138,12 @@ impl PipelineLayoutObjects {
         let descriptor_sets: Vec<vk::DescriptorSet> =
             descriptor_sets.into_iter().flatten().collect();
 
-        return Ok(PipelineLayoutObjects {
+        Ok(PipelineLayoutObjects {
             layout,
             descriptor_set_layout,
             descriptor_sets,
             pool,
-        });
+        })
     }
 }
 
@@ -184,7 +184,7 @@ impl VulkanGraphicsPipeline {
         replicas: u32,
     ) -> error::Result<VulkanGraphicsPipeline> {
         // shader_vulkan 1927 (init_pipeline_layout)
-        let pipeline_layout = PipelineLayoutObjects::new(&reflection, replicas, device)?;
+        let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::builder()
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP)
@@ -271,13 +271,13 @@ impl VulkanGraphicsPipeline {
         let shader_stages = [
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::VERTEX)
-                .name(&ENTRY_POINT)
-                .module(vertex_module.shader.clone())
+                .name(ENTRY_POINT)
+                .module(vertex_module.shader)
                 .build(),
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::FRAGMENT)
-                .name(&ENTRY_POINT)
-                .module(fragment_module.shader.clone())
+                .name(ENTRY_POINT)
+                .module(fragment_module.shader)
                 .build(),
         ];
 
@@ -297,7 +297,7 @@ impl VulkanGraphicsPipeline {
         let pipeline = unsafe {
             // panic_safety: if this is successful this should return 1 pipelines.
             device
-                .create_graphics_pipelines(cache.clone(), &[pipeline_info], None)
+                .create_graphics_pipelines(*cache, &[pipeline_info], None)
                 .map_err(|e| e.1)
                 .unwrap()[0]
         };

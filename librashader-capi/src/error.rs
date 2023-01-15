@@ -61,7 +61,7 @@ pub type PFN_libra_error_errno = extern "C" fn(error: libra_error_t) -> LIBRA_ER
 ///
 /// ## Safety
 ///   - `error` must be valid and initialized.
-pub extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO {
+pub unsafe extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO {
     let Some(error) = error else {
         return LIBRA_ERRNO::UNKNOWN_ERROR
     };
@@ -77,7 +77,7 @@ pub type PFN_libra_error_print = extern "C" fn(error: libra_error_t) -> i32;
 /// If `error` is null, this function does nothing and returns 1. Otherwise, this function returns 0.
 /// ## Safety
 ///   - `error` must be a valid and initialized instance of `libra_error_t`.
-pub extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
+pub unsafe extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
     let Some(error) = error else {
         return 1
     };
@@ -85,7 +85,7 @@ pub extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
         let error = error.as_ref();
         println!("{error:?}: {error}");
     }
-    return 0;
+    0
 }
 
 /// Function pointer definition for libra_error_free
@@ -97,7 +97,7 @@ pub type PFN_libra_error_free = extern "C" fn(error: *mut libra_error_t) -> i32;
 /// The resulting error object becomes null.
 /// ## Safety
 ///   - `error` must be null or a pointer to a valid and initialized instance of `libra_error_t`.
-pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
+pub unsafe extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
     if error.is_null() {
         return 1;
     }
@@ -109,7 +109,7 @@ pub extern "C" fn libra_error_free(error: *mut libra_error_t) -> i32 {
     };
 
     unsafe { drop(Box::from_raw(error.as_ptr())) }
-    return 0;
+    0
 }
 
 /// Function pointer definition for libra_error_write
@@ -122,7 +122,7 @@ pub type PFN_libra_error_write =
 /// ## Safety
 ///   - `error` must be a valid and initialized instance of `libra_error_t`.
 ///   - `out` must be a non-null pointer. The resulting string must not be modified.
-pub extern "C" fn libra_error_write(
+pub unsafe extern "C" fn libra_error_write(
     error: libra_error_t,
     out: *mut MaybeUninit<*mut c_char>,
 ) -> i32 {
@@ -141,7 +141,7 @@ pub extern "C" fn libra_error_write(
 
         out.write(MaybeUninit::new(cstring.into_raw()))
     }
-    return 0;
+    0
 }
 
 /// Function pointer definition for libra_error_free_string
@@ -154,7 +154,7 @@ pub type PFN_libra_error_free_string = extern "C" fn(out: *mut *mut c_char) -> i
 ///   - If `libra_error_write` is not null, it must point to a string previously returned by `libra_error_write`.
 ///     Attempting to free anything else, including strings or objects from other librashader functions, is immediate
 ///     Undefined Behaviour.
-pub extern "C" fn libra_error_free_string(out: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn libra_error_free_string(out: *mut *mut c_char) -> i32 {
     if out.is_null() {
         return 1;
     }
@@ -164,7 +164,7 @@ pub extern "C" fn libra_error_free_string(out: *mut *mut c_char) -> i32 {
         *out = std::ptr::null_mut();
         drop(CString::from_raw(ptr))
     }
-    return 0;
+    0
 }
 
 impl LibrashaderError {

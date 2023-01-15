@@ -4,8 +4,8 @@ use crate::util::find_vulkan_memory_type;
 use crate::vulkan_primitives::VulkanImageMemory;
 use ash::prelude::VkResult;
 use ash::vk;
-use ash::vk::{Extent3D, Handle};
-use std::ffi::CStr;
+use ash::vk::{Extent3D};
+
 use std::sync::Arc;
 
 pub struct VulkanSwapchain {
@@ -93,7 +93,7 @@ impl VulkanSwapchain {
 
             unsafe {
                 let image = base.device.create_image(&create_info, None)?;
-                let mem_reqs = unsafe { base.device.get_image_memory_requirements(image.clone()) };
+                let mem_reqs = unsafe { base.device.get_image_memory_requirements(image) };
 
                 // base.debug
                 //     .loader

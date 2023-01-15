@@ -38,7 +38,7 @@ impl ShaderPassConfig {
         } else if self.float_framebuffer {
             return Some(ImageFormat::R16G16B16A16Sfloat);
         }
-        return None;
+        None
     }
 }
 
