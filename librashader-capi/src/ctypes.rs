@@ -14,7 +14,7 @@ pub type libra_error_t = Option<NonNull<LibrashaderError>>;
 pub type libra_gl_filter_chain_t = Option<NonNull<librashader::runtime::gl::capi::FilterChainGL>>;
 
 /// A handle to a Direct3D11 filter chain.
-#[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+#[cfg(all(feature = "runtime-d3d11"))]
 pub type libra_d3d11_filter_chain_t =
     Option<NonNull<librashader::runtime::d3d11::capi::FilterChainD3D11>>;
 

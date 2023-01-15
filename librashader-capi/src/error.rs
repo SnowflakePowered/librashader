@@ -28,7 +28,7 @@ pub enum LibrashaderError {
     #[cfg(feature = "runtime-opengl")]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
-    #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+    #[cfg(any(feature = "docsrs", all(target_os = "windows", feature = "runtime-d3d11")))]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
     #[cfg(feature = "runtime-vulkan")]
@@ -180,7 +180,7 @@ impl LibrashaderError {
             }
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
-            #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+            #[cfg(any(feature = "docsrs", all(target_os = "windows", feature = "runtime-d3d11")))]
             LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-vulkan")]
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,

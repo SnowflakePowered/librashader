@@ -122,7 +122,7 @@ pub mod runtime {
         }
     }
 
-    #[cfg(all(target_os = "windows", feature = "d3d11"))]
+    #[cfg(feature = "d3d11")]
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::{

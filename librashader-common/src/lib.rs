@@ -7,11 +7,11 @@ pub mod gl;
 pub mod vk;
 
 /// DXGI common conversions.
-#[cfg(all(target_os = "windows", feature = "dxgi"))]
+#[cfg(feature = "dxgi")]
 pub mod dxgi;
 
 /// Direct3D 11 common conversions.
-#[cfg(all(target_os = "windows", feature = "d3d11"))]
+#[cfg(feature = "d3d11")]
 pub mod d3d11;
 
 mod viewport;
