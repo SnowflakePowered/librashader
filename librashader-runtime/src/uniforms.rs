@@ -1,5 +1,6 @@
 use librashader_reflect::reflect::semantics::MemberOffset;
 use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
 
 /// A scalar value that is valid as a uniform member
 pub trait UniformScalar: Copy + bytemuck::Pod {}
@@ -36,7 +37,10 @@ pub trait UniformStorageAccess {
     fn push_slice(&self) -> &[u8];
 }
 
-impl<T, H> UniformStorageAccess for UniformStorage<T, H> {
+impl<T, H, S> UniformStorageAccess for UniformStorage<T, H, S>
+where
+    S: Deref<Target = [u8]> + DerefMut,
+{
     fn ubo_pointer(&self) -> *const u8 {
         self.ubo.as_ptr()
     }
@@ -64,24 +68,29 @@ impl<T> BindUniform<Option<()>, T> for NoUniformBinder {
 }
 
 /// A helper to bind uniform variables to UBO or Push Constant Buffers.
-pub struct UniformStorage<H = NoUniformBinder, C = Option<()>> {
-    ubo: Box<[u8]>,
+pub struct UniformStorage<H = NoUniformBinder, C = Option<()>, S = Box<[u8]>>
+where
+    S: Deref<Target = [u8]> + DerefMut,
+{
+    ubo: S,
     push: Box<[u8]>,
     _h: PhantomData<H>,
     _c: PhantomData<C>,
 }
 
-impl<H, C> UniformStorage<H, C> {
-    /// Create a new `UniformStorage` with the given size for UBO and Push Constant Buffer sizes.
-    pub fn new(ubo_size: usize, push_size: usize) -> Self {
-        UniformStorage {
-            ubo: vec![0u8; ubo_size].into_boxed_slice(),
-            push: vec![0u8; push_size].into_boxed_slice(),
-            _h: Default::default(),
-            _c: Default::default(),
-        }
+impl<H, C, S> UniformStorage<H, C, S>
+where
+    S: Deref<Target = [u8]> + DerefMut,
+{
+    pub fn inner_ubo(&self) -> &S {
+        &self.ubo
     }
+}
 
+impl<H, C, S> UniformStorage<H, C, S>
+where
+    S: Deref<Target = [u8]> + DerefMut,
+{
     #[inline(always)]
     fn write_scalar_inner<T: UniformScalar>(buffer: &mut [u8], value: T, ctx: C)
     where
@@ -100,8 +109,8 @@ impl<H, C> UniformStorage<H, C> {
         H: BindUniform<C, T>,
     {
         let (buffer, offset) = match offset {
-            MemberOffset::Ubo(offset) => (&mut self.ubo, offset),
-            MemberOffset::PushConstant(offset) => (&mut self.push, offset),
+            MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
+            MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
         };
 
         Self::write_scalar_inner(
@@ -110,10 +119,33 @@ impl<H, C> UniformStorage<H, C> {
             ctx,
         )
     }
+
+    /// Create a new `UniformStorage` with the given backing storage
+    pub fn new_with_storage(storage: S, push_size: usize) -> UniformStorage<H, C, S> {
+        UniformStorage {
+            ubo: storage,
+            push: vec![0u8; push_size].into_boxed_slice(),
+            _h: Default::default(),
+            _c: Default::default(),
+        }
+    }
 }
 
-impl<H, C> UniformStorage<H, C>
+impl<H, C> UniformStorage<H, C, Box<[u8]>> {
+    /// Create a new `UniformStorage` with the given size for UBO and Push Constant Buffer sizes.
+    pub fn new(ubo_size: usize, push_size: usize) -> UniformStorage<H, C, Box<[u8]>> {
+        UniformStorage {
+            ubo: vec![0u8; ubo_size].into_boxed_slice(),
+            push: vec![0u8; push_size].into_boxed_slice(),
+            _h: Default::default(),
+            _c: Default::default(),
+        }
+    }
+}
+
+impl<H, C, S> UniformStorage<H, C, S>
 where
+    S: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 4]>,
 {
     #[inline(always)]
@@ -128,8 +160,8 @@ where
     #[inline(always)]
     pub fn bind_vec4(&mut self, offset: MemberOffset, value: impl Into<[f32; 4]>, ctx: C) {
         let (buffer, offset) = match offset {
-            MemberOffset::Ubo(offset) => (&mut self.ubo, offset),
-            MemberOffset::PushConstant(offset) => (&mut self.push, offset),
+            MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
+            MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
         };
 
         Self::write_vec4_inner(
@@ -140,8 +172,9 @@ where
     }
 }
 
-impl<H, C> UniformStorage<H, C>
+impl<H, C, S> UniformStorage<H, C, S>
 where
+    S: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 16]>,
 {
     #[inline(always)]
@@ -156,8 +189,8 @@ where
     #[inline(always)]
     pub fn bind_mat4(&mut self, offset: MemberOffset, value: &[f32; 16], ctx: C) {
         let (buffer, offset) = match offset {
-            MemberOffset::Ubo(offset) => (&mut self.ubo, offset),
-            MemberOffset::PushConstant(offset) => (&mut self.push, offset),
+            MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
+            MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
         };
         Self::write_mat4_inner(
             &mut buffer[offset..][..16 * std::mem::size_of::<f32>()],

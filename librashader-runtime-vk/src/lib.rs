@@ -14,7 +14,6 @@ mod queue_selection;
 mod render_target;
 mod samplers;
 mod texture;
-mod ubo_ring;
 mod util;
 mod vulkan_primitives;
 mod vulkan_state;

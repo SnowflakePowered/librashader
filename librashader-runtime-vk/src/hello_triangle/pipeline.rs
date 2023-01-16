@@ -12,6 +12,8 @@ use std::mem::align_of;
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 #[derive(Default, Clone, Debug, Copy)]
+#[repr(C)]
+#[allow(dead_code)]
 struct Vertex {
     pos: [f32; 4],
     color: [f32; 4],

@@ -1,6 +1,7 @@
 use crate::error;
 use crate::vulkan_primitives::VulkanBuffer;
 use ash::vk;
+use std::sync::Arc;
 
 #[rustfmt::skip]
 pub(crate) static VBO_DEFAULT_FINAL: &[f32; 16] = &[
@@ -13,12 +14,12 @@ pub(crate) static VBO_DEFAULT_FINAL: &[f32; 16] = &[
 
 pub struct DrawQuad {
     buffer: VulkanBuffer,
-    device: ash::Device,
+    device: Arc<ash::Device>,
 }
 
 impl DrawQuad {
     pub fn new(
-        device: &ash::Device,
+        device: &Arc<ash::Device>,
         mem_props: &vk::PhysicalDeviceMemoryProperties,
     ) -> error::Result<DrawQuad> {
         let mut buffer = VulkanBuffer::new(

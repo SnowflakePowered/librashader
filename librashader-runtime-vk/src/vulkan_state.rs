@@ -183,7 +183,6 @@ impl VulkanGraphicsPipeline {
         reflection: &ShaderReflection,
         replicas: u32,
     ) -> error::Result<VulkanGraphicsPipeline> {
-        // shader_vulkan 1927 (init_pipeline_layout)
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::builder()

@@ -8,7 +8,8 @@ use crate::queue_selection::get_graphics_queue;
 use crate::render_target::{RenderTarget, DEFAULT_MVP};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
-use crate::ubo_ring::VkUboRing;
+// use crate::ubo_ring::VkUboRing;
+use crate::vulkan_primitives::RawVulkanBuffer;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
 use ash::vk;
@@ -352,8 +353,13 @@ impl FilterChainVulkan {
                 .as_ref()
                 .map(|ubo| ubo.size as usize)
                 .unwrap_or(0);
-            let uniform_storage = UniformStorage::new(
-                ubo_size,
+            let uniform_storage = UniformStorage::new_with_storage(
+                RawVulkanBuffer::new(
+                    &vulkan.device,
+                    &vulkan.memory_properties,
+                    vk::BufferUsageFlags::UNIFORM_BUFFER,
+                    ubo_size,
+                )?,
                 reflection
                     .push_constant
                     .as_ref()
@@ -383,13 +389,12 @@ impl FilterChainVulkan {
                 frames_in_flight,
             )?;
 
-            let ubo_ring = VkUboRing::new(
-                &vulkan.device,
-                &vulkan.memory_properties,
-                frames_in_flight as usize,
-                ubo_size,
-            )?;
-            // shader_vulkan: 2026
+            // let ubo_ring = VkUboRing::new(
+            //     &vulkan.device,
+            //     &vulkan.memory_properties,
+            //     frames_in_flight as usize,
+            //     ubo_size,
+            // )?;
             filters.push(FilterPass {
                 device: vulkan.device.clone(),
                 reflection,
@@ -399,7 +404,7 @@ impl FilterChainVulkan {
                 source,
                 config,
                 graphics_pipeline,
-                ubo_ring,
+                // ubo_ring,
                 frames_in_flight,
             });
         }

@@ -6,6 +6,7 @@ use librashader_reflect::reflect::semantics::{
 };
 use std::collections::HashMap;
 use std::hash::BuildHasher;
+use std::ops::{Deref, DerefMut};
 
 /// Trait for input textures used during uniform binding,
 pub trait TextureInput {
@@ -47,8 +48,9 @@ where
 }
 
 /// Trait that abstracts binding of semantics to shader uniforms.
-pub trait BindSemantics<H = NoUniformBinder, C = Option<()>>
+pub trait BindSemantics<H = NoUniformBinder, C = Option<()>, S = Box<[u8]>>
 where
+    S: Deref<Target = [u8]> + DerefMut,
     H: BindUniform<C, f32>,
     H: BindUniform<C, u32>,
     H: BindUniform<C, i32>,
@@ -84,7 +86,7 @@ where
     fn bind_semantics<'a>(
         device: &Self::DeviceContext,
         sampler_set: &Self::SamplerSet,
-        uniform_storage: &mut UniformStorage<H, C>,
+        uniform_storage: &mut UniformStorage<H, C, S>,
         descriptor_set: &mut Self::DescriptorSet<'a>,
         mvp: &[f32; 16],
         frame_count: u32,

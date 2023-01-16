@@ -2,7 +2,7 @@ use crate::filter_chain::FilterCommon;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
-use crate::ubo_ring::VkUboRing;
+use crate::vulkan_primitives::RawVulkanBuffer;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, VulkanImage};
 use ash::vk;
@@ -14,7 +14,7 @@ use librashader_reflect::reflect::semantics::{
 };
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
-use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
+use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
 
@@ -22,12 +22,12 @@ pub struct FilterPass {
     pub device: Arc<ash::Device>,
     pub reflection: ShaderReflection,
     // pub(crate) compiled: ShaderCompilerOutput<Vec<u32>>,
-    pub(crate) uniform_storage: UniformStorage,
+    pub(crate) uniform_storage: UniformStorage<NoUniformBinder, Option<()>, RawVulkanBuffer>,
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
     pub graphics_pipeline: VulkanGraphicsPipeline,
-    pub ubo_ring: VkUboRing,
+    // pub ubo_ring: VkUboRing,
     pub frames_in_flight: u32,
 }
 
@@ -37,7 +37,7 @@ impl TextureInput for InputImage {
     }
 }
 
-impl BindSemantics for FilterPass {
+impl BindSemantics<NoUniformBinder, Option<()>, RawVulkanBuffer> for FilterPass {
     type InputTexture = InputImage;
     type SamplerSet = SamplerSet;
     type DescriptorSet<'a> = vk::DescriptorSet;
@@ -113,10 +113,21 @@ impl FilterPass {
         );
 
         if let Some(ubo) = &self.reflection.ubo {
-            // shader_vulkan: 2554 (ra uses uses one big buffer)
-            // itll be simpler for us if we just use a RingBuffer<vk::Buffer> tbh.
-            self.ubo_ring
-                .bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
+            // RetroArch uses uses one big buffer for this and handles alignment themselves.
+            // It's simpler here if we just use a buffer for each pass but not ideal.
+            //
+            // May want to switch to something like VMA in the future.
+
+            // VkUboRing is no longer used, we just write directly to the storage now.
+
+            // self.ubo_ring
+            //     .bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
+
+            self.uniform_storage.inner_ubo().bind_to_descriptor_set(
+                descriptor,
+                ubo.binding,
+                &self.uniform_storage,
+            )?;
         }
 
         output.output.begin_pass(cmd);
