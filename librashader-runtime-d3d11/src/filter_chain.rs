@@ -16,7 +16,7 @@ use std::collections::VecDeque;
 
 use std::path::Path;
 
-use crate::error::FilterChainError;
+use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedFramebuffer;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
@@ -101,17 +101,18 @@ impl FilterChainD3D11 {
         // initialize passes
         let filters = FilterChainD3D11::init_passes(device, passes, &semantics)?;
 
-        let mut immediate_context = None;
-        unsafe {
-            device.GetImmediateContext(&mut immediate_context);
-        }
-
-        let Some(immediate_context) = immediate_context else {
-            return Err(FilterChainError::Direct3DContextError)
-        };
+        let immediate_context = unsafe { device.GetImmediateContext()? };
 
         let current_context = if use_deferred_context {
-            unsafe { device.CreateDeferredContext(0)? }
+            // check if device supports deferred contexts
+            if let Err(_) = unsafe { device.CreateDeferredContext(0, None) } {
+                immediate_context.clone()
+            } else {
+                let mut context = None;
+                unsafe { device.CreateDeferredContext(0, Some(&mut context))? };
+                assume_d3d11_init!(context, "CreateDeferredContext");
+                context
+            }
         } else {
             immediate_context.clone()
         };
@@ -197,7 +198,8 @@ impl FilterChainD3D11 {
 impl FilterChainD3D11 {
     fn create_constant_buffer(device: &ID3D11Device, size: u32) -> error::Result<ID3D11Buffer> {
         unsafe {
-            let buffer = device.CreateBuffer(
+            let mut buffer = None;
+            device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
                     ByteWidth: size,
                     Usage: D3D11_USAGE_DYNAMIC,
@@ -207,8 +209,9 @@ impl FilterChainD3D11 {
                     StructureByteStride: 0,
                 },
                 None,
+                Some(&mut buffer),
             )?;
-
+            assume_d3d11_init!(buffer, "CreateBuffer");
             Ok(buffer)
         }
     }
@@ -602,7 +605,12 @@ impl FilterChainD3D11 {
 
         if self.common.d3d11.context_is_deferred {
             unsafe {
-                let command_list = self.common.d3d11.current_context.FinishCommandList(false)?;
+                let mut command_list = None;
+                self.common
+                    .d3d11
+                    .current_context
+                    .FinishCommandList(false, Some(&mut command_list))?;
+                assume_d3d11_init!(command_list, "FinishCommandList");
                 self.common
                     .d3d11
                     .immediate_context

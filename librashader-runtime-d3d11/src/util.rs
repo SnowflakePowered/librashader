@@ -1,4 +1,5 @@
 use crate::error;
+use crate::error::assume_d3d11_init;
 use std::slice;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::Fxc::{
@@ -129,8 +130,12 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
     }
 }
 
-pub type ShaderFactory<'a, L, T> =
-    unsafe fn(&'a ID3D11Device, &[u8], linkage: L) -> windows::core::Result<T>;
+pub type ShaderFactory<'a, L, T> = unsafe fn(
+    &'a ID3D11Device,
+    &[u8],
+    linkage: L,
+    Option<*mut Option<T>>,
+) -> windows::core::Result<()>;
 
 pub fn d3d11_compile_bound_shader<'a, T, L>(
     device: &'a ID3D11Device,
@@ -139,14 +144,16 @@ pub fn d3d11_compile_bound_shader<'a, T, L>(
     factory: ShaderFactory<'a, L, T>,
 ) -> error::Result<T>
 where
-    L: Into<windows::core::InParam<'a, ID3D11ClassLinkage>>,
+    L: Into<windows::core::InParam<ID3D11ClassLinkage>>,
 {
     unsafe {
         // SAFETY: slice as valid for as long as vs_blob is alive.
         let dxil =
             slice::from_raw_parts(blob.GetBufferPointer().cast::<u8>(), blob.GetBufferSize());
 
-        let compiled = factory(device, dxil, linkage)?;
+        let mut compiled = None;
+        factory(device, dxil, linkage, Some(&mut compiled))?;
+        assume_d3d11_init!(compiled, "CreateXXShader");
         Ok(compiled)
     }
 }
@@ -160,8 +167,9 @@ pub fn d3d11_create_input_layout(
         // SAFETY: slice as valid for as long as vs_blob is alive.
         let dxil =
             slice::from_raw_parts(blob.GetBufferPointer().cast::<u8>(), blob.GetBufferSize());
-
-        let compiled = device.CreateInputLayout(desc, dxil)?;
-        Ok(compiled)
+        let mut input_layout = None;
+        device.CreateInputLayout(desc, dxil, Some(&mut input_layout))?;
+        assume_d3d11_init!(input_layout, "CreateInputLayout");
+        Ok(input_layout)
     }
 }

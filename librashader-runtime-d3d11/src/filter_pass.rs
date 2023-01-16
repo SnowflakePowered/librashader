@@ -14,7 +14,8 @@ use rustc_hash::FxHashMap;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
-    ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAP_WRITE_DISCARD,
+    ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAPPED_SUBRESOURCE,
+    D3D11_MAP_WRITE_DISCARD,
 };
 
 use crate::render_target::RenderTarget;
@@ -181,7 +182,8 @@ impl FilterPass {
         if let Some(ubo) = &self.uniform_buffer {
             // upload uniforms
             unsafe {
-                let map = context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
+                let mut map = D3D11_MAPPED_SUBRESOURCE::default();
+                context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut map))?;
                 std::ptr::copy_nonoverlapping(
                     self.uniform_storage.ubo_pointer(),
                     map.pData.cast(),
@@ -191,21 +193,18 @@ impl FilterPass {
             }
 
             if ubo.stage_mask.contains(BindingStage::VERTEX) {
-                unsafe {
-                    context.VSSetConstantBuffers(ubo.binding, Some(&[Some(ubo.buffer.clone())]))
-                }
+                unsafe { context.VSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
             }
             if ubo.stage_mask.contains(BindingStage::FRAGMENT) {
-                unsafe {
-                    context.PSSetConstantBuffers(ubo.binding, Some(&[Some(ubo.buffer.clone())]))
-                }
+                unsafe { context.PSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
             }
         }
 
         if let Some(push) = &self.push_buffer {
             // upload push constants
             unsafe {
-                let map = context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0)?;
+                let mut map = D3D11_MAPPED_SUBRESOURCE::default();
+                context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut map))?;
                 std::ptr::copy_nonoverlapping(
                     self.uniform_storage.push_pointer(),
                     map.pData.cast(),
@@ -215,14 +214,10 @@ impl FilterPass {
             }
 
             if push.stage_mask.contains(BindingStage::VERTEX) {
-                unsafe {
-                    context.VSSetConstantBuffers(push.binding, Some(&[Some(push.buffer.clone())]))
-                }
+                unsafe { context.VSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
             }
             if push.stage_mask.contains(BindingStage::FRAGMENT) {
-                unsafe {
-                    context.PSSetConstantBuffers(push.binding, Some(&[Some(push.buffer.clone())]))
-                }
+                unsafe { context.PSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
             }
         }
 
@@ -232,10 +227,16 @@ impl FilterPass {
         }
 
         unsafe {
-            context.PSSetShaderResources(0, Some(&textures));
-            context.PSSetSamplers(0, Some(&samplers));
+            // SAFETY: Niche optimization for Option<NonNull<T>>
+            // Assumes that IUnknown is defined as IUnknown(std::ptr::NonNull<std::ffi::c_void>)
+            const _: () = assert!(
+                std::mem::size_of::<Option<windows::core::IUnknown>>()
+                    == std::mem::size_of::<windows::core::IUnknown>()
+            );
+            context.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
+            context.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
 
-            context.OMSetRenderTargets(Some(&[Some(output.output.rtv.clone())]), None);
+            context.OMSetRenderTargets(Some(&[output.output.rtv.clone()]), None);
             context.RSSetViewports(Some(&[output.output.viewport]))
         }
 
@@ -246,7 +247,7 @@ impl FilterPass {
 
         unsafe {
             // unbind resources.
-            context.PSSetShaderResources(0, Some(NULL_TEXTURES));
+            context.PSSetShaderResources(0, Some(std::mem::transmute(NULL_TEXTURES.as_ref())));
             context.OMSetRenderTargets(None, None);
         }
         Ok(())

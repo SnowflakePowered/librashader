@@ -9,8 +9,8 @@ use thiserror::Error;
 /// Cumulative error type for Direct3D11 filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
-    #[error("unable to get direct3d context")]
-    Direct3DContextError,
+    #[error("invariant assumption about d3d11 did not hold. report this as an issue.")]
+    Direct3DOperationError(&'static str),
     #[error("direct3d driver error")]
     Direct3DError(#[from] windows::core::Error),
     #[error("SPIRV reflection error")]
@@ -26,6 +26,22 @@ pub enum FilterChainError {
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
 }
+
+macro_rules! assume_d3d11_init {
+    ($value:ident, $call:literal) => {
+        let $value = $value.ok_or($crate::error::FilterChainError::Direct3DOperationError(
+            $call,
+        ))?;
+    };
+    (mut $value:ident, $call:literal) => {
+        let mut $value = $value.ok_or($crate::error::FilterChainError::Direct3DOperationError(
+            $call,
+        ))?;
+    };
+}
+
+/// Macro for unwrapping result of a D3D function.
+pub(crate) use assume_d3d11_init;
 
 /// Result type for Direct3D11 filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;

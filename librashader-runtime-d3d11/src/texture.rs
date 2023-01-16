@@ -11,7 +11,7 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
-use crate::error::Result;
+use crate::error::{assume_d3d11_init, Result};
 use crate::framebuffer::OwnedFramebuffer;
 
 /// An image view for use as a shader resource.
@@ -131,10 +131,13 @@ impl LutTexture {
         // since we load them with the Image module.
 
         unsafe {
-            let handle = device.CreateTexture2D(&desc, None).unwrap();
+            let mut handle = None;
+            device.CreateTexture2D(&desc, None, Some(&mut handle))?;
+            assume_d3d11_init!(handle, "CreateTexture2D");
 
             // need a staging texture to defer mipmap generation
-            let staging = device.CreateTexture2D(
+            let mut staging = None;
+            device.CreateTexture2D(
                 &D3D11_TEXTURE2D_DESC {
                     MipLevels: 1,
                     BindFlags: D3D11_BIND_FLAG(0),
@@ -148,7 +151,9 @@ impl LutTexture {
                     SysMemPitch: source.pitch as u32,
                     SysMemSlicePitch: 0,
                 }),
+                Some(&mut staging),
             )?;
+            assume_d3d11_init!(staging, "CreateTexture2D");
 
             // todo: do format conversion (leverage image crate..?
             // is this necessary with CopySubresourceRegion)...
@@ -171,7 +176,8 @@ impl LutTexture {
                 }),
             );
 
-            let srv = device.CreateShaderResourceView(
+            let mut srv = None;
+            device.CreateShaderResourceView(
                 &handle,
                 Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
                     Format: desc.Format,
@@ -183,7 +189,9 @@ impl LutTexture {
                         },
                     },
                 }),
+                Some(&mut srv),
             )?;
+            assume_d3d11_init!(srv, "CreateShaderResourceView");
 
             if (desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS).0 != 0 {
                 context.GenerateMips(&srv)

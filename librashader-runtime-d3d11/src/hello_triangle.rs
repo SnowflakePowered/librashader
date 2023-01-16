@@ -298,15 +298,22 @@ pub mod d3d11_hello_triangle {
                 )
             };
 
-            let vs = unsafe { self.device.CreateVertexShader(vs_compiled, None) }?;
+            let vs = unsafe {
+                let mut vso = None;
+                self.device
+                    .CreateVertexShader(vs_compiled, None, Some(&mut vso))?;
+                vso.unwrap()
+            };
 
             let ps = unsafe {
                 let ps = slice::from_raw_parts(
                     ps_blob.GetBufferPointer().cast::<u8>(),
                     ps_blob.GetBufferSize(),
                 );
-                self.device.CreatePixelShader(ps, None)
-            }?;
+                let mut pso = None;
+                self.device.CreatePixelShader(ps, None, Some(&mut pso))?;
+                pso.unwrap()
+            };
 
             let (input_layout, stencil_state, raster_state) =
                 create_pipeline_state(&self.device, vs_compiled)?;
@@ -370,11 +377,13 @@ pub mod d3d11_hello_triangle {
             let buffer_number = 0;
 
             unsafe {
-                let mapped_resource = self.context.Map(
+                let mut mapped_resource = Default::default();
+                self.context.Map(
                     &resources.triangle_uniforms,
                     0,
                     D3D11_MAP_WRITE_DISCARD,
                     0,
+                    Some(&mut mapped_resource),
                 )?;
                 std::ptr::copy_nonoverlapping(
                     &resources.triangle_uniform_values,
@@ -387,10 +396,10 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 self.context.VSSetConstantBuffers(
                     buffer_number,
-                    Some(&[Some(resources.triangle_uniforms.clone())]),
+                    Some(&[resources.triangle_uniforms.clone()]),
                 );
                 self.context.OMSetRenderTargets(
-                    Some(&[Some(resources.rtv.clone())]),
+                    Some(&[resources.rtv.clone()]),
                     &resources.depth_stencil_view,
                 );
                 self.context.RSSetViewports(Some(&[resources.viewport]))
@@ -435,18 +444,23 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 let mut tex2d_desc = Default::default();
                 resources.backbuffer.GetDesc(&mut tex2d_desc);
-                let backup = self.device.CreateTexture2D(
+                let mut backup = None;
+
+                self.device.CreateTexture2D(
                     &D3D11_TEXTURE2D_DESC {
                         BindFlags: D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
                         CPUAccessFlags: D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE,
                         ..tex2d_desc
                     },
                     None,
+                    Some(&mut backup),
                 )?;
+                let backup = backup.unwrap();
 
                 self.context.CopyResource(&backup, &resources.backbuffer);
 
-                let srv = self.device.CreateShaderResourceView(
+                let mut srv = None;
+                self.device.CreateShaderResourceView(
                     &backup,
                     Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
                         Format: tex2d_desc.Format,
@@ -458,11 +472,17 @@ pub mod d3d11_hello_triangle {
                             },
                         },
                     }),
+                    Some(&mut srv),
                 )?;
+                let srv = srv.unwrap();
 
-                let shader_out = self.device.CreateTexture2D(&tex2d_desc, None)?;
+                let mut shader_out = None;
+                self.device
+                    .CreateTexture2D(&tex2d_desc, None, Some(&mut shader_out))?;
+                let shader_out = shader_out.unwrap();
 
-                let _rtv = self.device.CreateRenderTargetView(
+                let mut rtv = None;
+                self.device.CreateRenderTargetView(
                     &shader_out,
                     Some(&D3D11_RENDER_TARGET_VIEW_DESC {
                         Format: tex2d_desc.Format,
@@ -471,6 +491,7 @@ pub mod d3d11_hello_triangle {
                             Texture2D: D3D11_TEX2D_RTV { MipSlice: 0 },
                         },
                     }),
+                    Some(&mut rtv),
                 )?;
 
                 // OutputFramebuffer {
@@ -533,9 +554,10 @@ pub mod d3d11_hello_triangle {
     ) -> Result<(ID3D11RenderTargetView, ID3D11Texture2D)> {
         unsafe {
             let backbuffer: ID3D11Texture2D = swapchain.GetBuffer(0)?;
-            let rtv = device.CreateRenderTargetView(&backbuffer, None)?;
+            let mut rtv = None;
+            device.CreateRenderTargetView(&backbuffer, None, Some(&mut rtv))?;
 
-            Ok((rtv, backbuffer))
+            Ok((rtv.unwrap(), backbuffer))
         }
     }
     fn create_pipeline_state(
@@ -547,7 +569,8 @@ pub mod d3d11_hello_triangle {
         ID3D11RasterizerState,
     )> {
         unsafe {
-            let input_layout = device.CreateInputLayout(
+            let mut input_layout = None;
+            device.CreateInputLayout(
                 &[
                     D3D11_INPUT_ELEMENT_DESC {
                         SemanticName: s!("POSITION"),
@@ -569,42 +592,55 @@ pub mod d3d11_hello_triangle {
                     },
                 ],
                 vs_blob,
+                Some(&mut input_layout),
             )?;
 
-            let stencil_state = device.CreateDepthStencilState(&D3D11_DEPTH_STENCIL_DESC {
-                DepthEnable: BOOL::from(true),
-                DepthWriteMask: D3D11_DEPTH_WRITE_MASK_ALL,
-                DepthFunc: D3D11_COMPARISON_LESS,
-                StencilEnable: BOOL::from(true),
-                StencilReadMask: 0xff,
-                StencilWriteMask: 0xff,
-                FrontFace: D3D11_DEPTH_STENCILOP_DESC {
-                    StencilFailOp: D3D11_STENCIL_OP_KEEP,
-                    StencilDepthFailOp: D3D11_STENCIL_OP_INCR,
-                    StencilPassOp: D3D11_STENCIL_OP_KEEP,
-                    StencilFunc: D3D11_COMPARISON_ALWAYS,
-                },
-                BackFace: D3D11_DEPTH_STENCILOP_DESC {
-                    StencilFailOp: D3D11_STENCIL_OP_KEEP,
-                    StencilDepthFailOp: D3D11_STENCIL_OP_DECR,
-                    StencilPassOp: D3D11_STENCIL_OP_KEEP,
-                    StencilFunc: D3D11_COMPARISON_ALWAYS,
-                },
-            })?;
+            let input_layout = input_layout.unwrap();
 
-            let rasterizer_state = device.CreateRasterizerState(&D3D11_RASTERIZER_DESC {
-                AntialiasedLineEnable: BOOL::from(false),
-                CullMode: D3D11_CULL_NONE,
-                DepthBias: 0,
-                DepthBiasClamp: 0.0f32,
-                DepthClipEnable: BOOL::from(true),
-                FillMode: D3D11_FILL_SOLID,
-                FrontCounterClockwise: BOOL::from(false),
-                MultisampleEnable: BOOL::from(false),
-                ScissorEnable: BOOL::from(false),
-                SlopeScaledDepthBias: 0.0f32,
-            })?;
+            let mut stencil_state = None;
+            device.CreateDepthStencilState(
+                &D3D11_DEPTH_STENCIL_DESC {
+                    DepthEnable: BOOL::from(true),
+                    DepthWriteMask: D3D11_DEPTH_WRITE_MASK_ALL,
+                    DepthFunc: D3D11_COMPARISON_LESS,
+                    StencilEnable: BOOL::from(true),
+                    StencilReadMask: 0xff,
+                    StencilWriteMask: 0xff,
+                    FrontFace: D3D11_DEPTH_STENCILOP_DESC {
+                        StencilFailOp: D3D11_STENCIL_OP_KEEP,
+                        StencilDepthFailOp: D3D11_STENCIL_OP_INCR,
+                        StencilPassOp: D3D11_STENCIL_OP_KEEP,
+                        StencilFunc: D3D11_COMPARISON_ALWAYS,
+                    },
+                    BackFace: D3D11_DEPTH_STENCILOP_DESC {
+                        StencilFailOp: D3D11_STENCIL_OP_KEEP,
+                        StencilDepthFailOp: D3D11_STENCIL_OP_DECR,
+                        StencilPassOp: D3D11_STENCIL_OP_KEEP,
+                        StencilFunc: D3D11_COMPARISON_ALWAYS,
+                    },
+                },
+                Some(&mut stencil_state),
+            )?;
+            let stencil_state = stencil_state.unwrap();
 
+            let mut rasterizer_state = None;
+            device.CreateRasterizerState(
+                &D3D11_RASTERIZER_DESC {
+                    AntialiasedLineEnable: BOOL::from(false),
+                    CullMode: D3D11_CULL_NONE,
+                    DepthBias: 0,
+                    DepthBiasClamp: 0.0f32,
+                    DepthClipEnable: BOOL::from(true),
+                    FillMode: D3D11_FILL_SOLID,
+                    FrontCounterClockwise: BOOL::from(false),
+                    MultisampleEnable: BOOL::from(false),
+                    ScissorEnable: BOOL::from(false),
+                    SlopeScaledDepthBias: 0.0f32,
+                },
+                Some(&mut rasterizer_state),
+            )?;
+
+            let rasterizer_state = rasterizer_state.unwrap();
             Ok((input_layout, stencil_state, rasterizer_state))
         }
     }
@@ -613,7 +649,8 @@ pub mod d3d11_hello_triangle {
         device: &ID3D11Device,
     ) -> Result<(ID3D11Texture2D, ID3D11DepthStencilView)> {
         unsafe {
-            let buffer = device.CreateTexture2D(
+            let mut buffer = None;
+            device.CreateTexture2D(
                 &D3D11_TEXTURE2D_DESC {
                     Width: WIDTH as u32,
                     Height: HEIGHT as u32,
@@ -630,9 +667,13 @@ pub mod d3d11_hello_triangle {
                     MiscFlags: Default::default(),
                 },
                 None,
+                Some(&mut buffer),
             )?;
 
-            let view = device.CreateDepthStencilView(
+            let buffer = buffer.unwrap();
+
+            let mut view = None;
+            device.CreateDepthStencilView(
                 &buffer,
                 Some(&D3D11_DEPTH_STENCIL_VIEW_DESC {
                     Format: DXGI_FORMAT_D24_UNORM_S8_UINT,
@@ -642,13 +683,17 @@ pub mod d3d11_hello_triangle {
                     },
                     ..Default::default()
                 }),
+                Some(&mut view),
             )?;
+
+            let view = view.unwrap();
 
             Ok((buffer, view))
         }
     }
 
     fn create_triangle_uniforms(device: &ID3D11Device) -> Result<ID3D11Buffer> {
+        let mut buffer = None;
         unsafe {
             device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
@@ -660,8 +705,10 @@ pub mod d3d11_hello_triangle {
                     StructureByteStride: 0,
                 },
                 None,
-            )
+                Some(&mut buffer),
+            )?;
         }
+        Ok(buffer.unwrap())
     }
 
     fn create_triangle_buffers(device: &ID3D11Device) -> Result<(ID3D11Buffer, ID3D11Buffer)> {
@@ -682,7 +729,8 @@ pub mod d3d11_hello_triangle {
 
         let indices = [0, 1, 2];
         unsafe {
-            let vertex_buffer = device.CreateBuffer(
+            let mut vertex_buffer = None;
+            device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
                     ByteWidth: (std::mem::size_of::<Vertex>() * vertices.len()) as u32,
                     Usage: D3D11_USAGE_DEFAULT,
@@ -696,9 +744,11 @@ pub mod d3d11_hello_triangle {
                     SysMemPitch: 0,
                     SysMemSlicePitch: 0,
                 }),
+                Some(&mut vertex_buffer),
             )?;
 
-            let index_buffer = device.CreateBuffer(
+            let mut index_buffer = None;
+            device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
                     ByteWidth: (std::mem::size_of::<u32>() * indices.len()) as u32,
                     Usage: D3D11_USAGE_DEFAULT,
@@ -712,9 +762,10 @@ pub mod d3d11_hello_triangle {
                     SysMemPitch: 0,
                     SysMemSlicePitch: 0,
                 }),
+                Some(&mut index_buffer),
             )?;
 
-            Ok((vertex_buffer, index_buffer))
+            Ok((vertex_buffer.unwrap(), index_buffer.unwrap()))
         }
     }
     fn create_device() -> Result<(IDXGIFactory4, ID3D11Device, ID3D11DeviceContext)> {

@@ -1,4 +1,5 @@
 use crate::error;
+use crate::error::assume_d3d11_init;
 use bytemuck::offset_of;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
@@ -52,7 +53,8 @@ pub(crate) struct DrawQuad {
 impl DrawQuad {
     pub fn new(device: &ID3D11Device, context: &ID3D11DeviceContext) -> error::Result<DrawQuad> {
         unsafe {
-            let buffer = device.CreateBuffer(
+            let mut buffer = None;
+            device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
                     ByteWidth: std::mem::size_of::<[D3D11Vertex; 4]>() as u32,
                     Usage: D3D11_USAGE_IMMUTABLE,
@@ -66,7 +68,9 @@ impl DrawQuad {
                     SysMemPitch: 0,
                     SysMemSlicePitch: 0,
                 }),
+                Some(&mut buffer),
             )?;
+            assume_d3d11_init!(buffer, "CreateBuffer");
 
             Ok(DrawQuad {
                 buffer,

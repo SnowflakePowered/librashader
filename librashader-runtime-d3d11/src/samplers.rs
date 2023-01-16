@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::error::{assume_d3d11_init, Result};
 use librashader_common::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
 use windows::Win32::Graphics::Direct3D11::{
@@ -23,31 +23,42 @@ impl SamplerSet {
         ];
         for wrap_mode in wrap_modes {
             unsafe {
-                let linear = device.CreateSamplerState(&D3D11_SAMPLER_DESC {
-                    Filter: FilterMode::Linear.into(),
-                    AddressU: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
-                    AddressV: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
-                    AddressW: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
-                    MipLODBias: 0.0,
-                    MaxAnisotropy: 1,
-                    ComparisonFunc: D3D11_COMPARISON_NEVER,
-                    BorderColor: [0.0, 0.0, 0.0, 0.0],
-                    MinLOD: -D3D11_FLOAT32_MAX,
-                    MaxLOD: D3D11_FLOAT32_MAX,
-                })?;
+                let mut linear = None;
+                device.CreateSamplerState(
+                    &D3D11_SAMPLER_DESC {
+                        Filter: FilterMode::Linear.into(),
+                        AddressU: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
+                        AddressV: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
+                        AddressW: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
+                        MipLODBias: 0.0,
+                        MaxAnisotropy: 1,
+                        ComparisonFunc: D3D11_COMPARISON_NEVER,
+                        BorderColor: [0.0, 0.0, 0.0, 0.0],
+                        MinLOD: -D3D11_FLOAT32_MAX,
+                        MaxLOD: D3D11_FLOAT32_MAX,
+                    },
+                    Some(&mut linear),
+                )?;
 
-                let nearest = device.CreateSamplerState(&D3D11_SAMPLER_DESC {
-                    Filter: FilterMode::Nearest.into(),
-                    AddressU: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
-                    AddressV: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
-                    AddressW: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
-                    MipLODBias: 0.0,
-                    MaxAnisotropy: 1,
-                    ComparisonFunc: D3D11_COMPARISON_NEVER,
-                    BorderColor: [0.0, 0.0, 0.0, 0.0],
-                    MinLOD: -D3D11_FLOAT32_MAX,
-                    MaxLOD: D3D11_FLOAT32_MAX,
-                })?;
+                assume_d3d11_init!(linear, "CreateSamplerState");
+
+                let mut nearest = None;
+                device.CreateSamplerState(
+                    &D3D11_SAMPLER_DESC {
+                        Filter: FilterMode::Nearest.into(),
+                        AddressU: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
+                        AddressV: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
+                        AddressW: D3D11_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
+                        MipLODBias: 0.0,
+                        MaxAnisotropy: 1,
+                        ComparisonFunc: D3D11_COMPARISON_NEVER,
+                        BorderColor: [0.0, 0.0, 0.0, 0.0],
+                        MinLOD: -D3D11_FLOAT32_MAX,
+                        MaxLOD: D3D11_FLOAT32_MAX,
+                    },
+                    Some(&mut nearest),
+                )?;
+                assume_d3d11_init!(nearest, "CreateSamplerState");
 
                 samplers.insert((*wrap_mode, FilterMode::Linear), linear);
                 samplers.insert((*wrap_mode, FilterMode::Nearest), nearest);

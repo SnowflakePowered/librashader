@@ -1,4 +1,5 @@
 use crate::error;
+use crate::error::assume_d3d11_init;
 use crate::texture::{D3D11InputView, InputTexture};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
@@ -43,7 +44,9 @@ impl OwnedFramebuffer {
                     | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
             );
             let desc = default_desc(size, format, 1);
-            let texture = device.CreateTexture2D(&desc, None)?;
+            let mut texture = None;
+            device.CreateTexture2D(&desc, None, Some(&mut texture))?;
+            assume_d3d11_init!(texture, "CreateTexture2D");
 
             Ok(OwnedFramebuffer {
                 texture,
@@ -101,7 +104,10 @@ impl OwnedFramebuffer {
         // todo: fix mipmap handling
         let desc = default_desc(size, format, 1);
         unsafe {
-            let mut texture = self.device.CreateTexture2D(&desc, None)?;
+            let mut texture = None;
+            self.device
+                .CreateTexture2D(&desc, None, Some(&mut texture))?;
+            assume_d3d11_init!(mut texture, "CreateTexture2D");
             std::mem::swap(&mut self.texture, &mut texture);
             drop(texture)
         }
@@ -112,8 +118,9 @@ impl OwnedFramebuffer {
     }
 
     pub fn create_shader_resource_view(&self) -> error::Result<ID3D11ShaderResourceView> {
+        let mut srv = None;
         unsafe {
-            Ok(self.device.CreateShaderResourceView(
+            self.device.CreateShaderResourceView(
                 &self.texture,
                 Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
                     Format: self.format,
@@ -125,13 +132,17 @@ impl OwnedFramebuffer {
                         },
                     },
                 }),
-            )?)
+                Some(&mut srv),
+            )?;
         }
+        assume_d3d11_init!(srv, "CreateShaderResourceView");
+        Ok(srv)
     }
 
     pub fn create_render_target_view(&self) -> error::Result<ID3D11RenderTargetView> {
+        let mut rtv = None;
         unsafe {
-            Ok(self.device.CreateRenderTargetView(
+            self.device.CreateRenderTargetView(
                 &self.texture,
                 Some(&D3D11_RENDER_TARGET_VIEW_DESC {
                     Format: self.format,
@@ -140,8 +151,12 @@ impl OwnedFramebuffer {
                         Texture2D: D3D11_TEX2D_RTV { MipSlice: 0 },
                     },
                 }),
-            )?)
+                Some(&mut rtv),
+            )?
         }
+
+        assume_d3d11_init!(rtv, "CreateRenderTargetView");
+        Ok(rtv)
     }
 
     pub fn as_output_framebuffer(&self) -> error::Result<OutputFramebuffer> {
@@ -154,11 +169,7 @@ impl OwnedFramebuffer {
 
     pub fn copy_from(&mut self, image: &D3D11InputView) -> error::Result<()> {
         let original_resource: ID3D11Texture2D = unsafe {
-            let mut resource = None;
-            image.handle.GetResource(&mut resource);
-            let Some(resource) = resource else {
-                return Ok(())
-            };
+            let resource = image.handle.GetResource()?;
             resource.cast()?
         };
 

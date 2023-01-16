@@ -24,7 +24,7 @@ rustc-hash = "1.1.0"
 bytemuck = "1.12.3"
 
 [dependencies.windows]
-version = "0.43.0"
+version = "0.44.0"
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi_Common",
