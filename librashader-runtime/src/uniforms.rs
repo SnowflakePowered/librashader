@@ -82,6 +82,7 @@ impl<H, C, S> UniformStorage<H, C, S>
 where
     S: Deref<Target = [u8]> + DerefMut,
 {
+    /// Access the backing storage for the UBO.
     pub fn inner_ubo(&self) -> &S {
         &self.ubo
     }
