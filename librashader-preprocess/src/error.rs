@@ -23,7 +23,7 @@ pub enum PreprocessError {
     /// The given pragma was declared multiple times with differing values.
     #[error("duplicate pragma found")]
     DuplicatePragmaError(String),
-    /// The imaged format requested by the shader was unknown or not supported.
+    /// The image format requested by the shader was unknown or not supported.
     #[error("shader format is unknown or not found")]
     UnknownImageFormat,
     /// The stage declared by the shader source was not `vertex` or `fragment`.

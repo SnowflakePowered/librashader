@@ -23,6 +23,7 @@ librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.1.0-
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.1.0-beta.7", optional = true }
 
 ash = { version = "0.37.1+1.3.235", optional = true }
+spirv_cross = { version = "0.23.1", optional = true, features = ["glsl"] }
 
 [dependencies.windows]
 version = "0.44.0"
@@ -33,7 +34,7 @@ optional = true
 
 [features]
 default = ["gl", "d3d11", "vk", "reflect", "preprocess", "presets" ]
-gl = [ "runtime", "librashader-common/opengl", "librashader-runtime-gl" ]
+gl = [ "runtime", "librashader-common/opengl", "librashader-runtime-gl", "spirv_cross" ]
 d3d11 = [ "runtime", "librashader-common/d3d11", "librashader-runtime-d3d11", "windows" ]
 vk = ["runtime", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
 runtime = []

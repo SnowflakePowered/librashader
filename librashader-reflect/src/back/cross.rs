@@ -20,7 +20,7 @@ impl FromCompilation<GlslangCompilation> for GLSL {
     type Target = GLSL;
     type Options = GlslVersion;
     type Context = CrossGlslContext;
-    type Output = impl CompileShader<Self::Target, Options = GlslVersion, Context = CrossGlslContext>
+    type Output = impl CompileShader<Self::Target, Options = GlslVersion, Context = Self::Context>
         + ReflectShader;
 
     fn from_compilation(
@@ -34,7 +34,8 @@ impl FromCompilation<GlslangCompilation> for GLSL {
 
 /// The context for a HLSL compilation via spirv-cross.
 pub struct CrossHlslContext {
-    pub compiler: CompiledProgram<spirv_cross::hlsl::Target>,
+    /// The compiled HLSL program.
+    pub artifact: CompiledProgram<spirv_cross::hlsl::Target>,
 }
 
 impl FromCompilation<GlslangCompilation> for HLSL {

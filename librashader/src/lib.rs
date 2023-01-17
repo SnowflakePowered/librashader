@@ -82,7 +82,25 @@ pub mod reflect {
         targets::OutputTarget, CompileShader, CompilerBackend, FromCompilation,
         ShaderCompilerOutput,
     };
-    pub use librashader_reflect::front::shaderc::GlslangCompilation;
+
+    /// Reflection via SPIRV-Cross.
+    pub mod cross {
+        pub use librashader_reflect::front::shaderc::GlslangCompilation;
+
+        #[cfg(feature = "gl")]
+        /// The version of GLSL to compile to.
+        pub use spirv_cross::glsl::Version as GlslVersion;
+
+        #[cfg(feature = "gl")]
+        pub use librashader_reflect::back::cross::CrossGlslContext;
+
+        #[cfg(any(feature = "d3d11", feature = "d3d12"))]
+        pub use librashader_reflect::back::cross::CrossHlslContext;
+
+        pub use librashader_reflect::reflect::cross::CompiledAst;
+
+        pub use librashader_reflect::reflect::cross::CompiledProgram;
+    }
     pub use librashader_reflect::reflect::semantics::BindingMeta;
 
     /// Helpers to deal with image loading.

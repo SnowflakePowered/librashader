@@ -18,7 +18,7 @@ use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 
-pub struct CrossReflect<T>
+pub(crate) struct CrossReflect<T>
 where
     T: spirv_cross::spirv::Target,
 {
@@ -26,9 +26,9 @@ where
     fragment: Ast<T>,
 }
 
-///! The output of the SPIR-V AST after compilation.
-///!
-///! This output is immutable and can not be recompiled later.
+///The output of the SPIR-V AST after compilation.
+///
+/// This output is immutable and can not be recompiled later.
 pub struct CompiledAst<T: spirv_cross::spirv::Target>(Ast<T>);
 impl<T: spirv_cross::spirv::Target> Deref for CompiledAst<T> {
     type Target = Ast<T>;
@@ -38,7 +38,7 @@ impl<T: spirv_cross::spirv::Target> Deref for CompiledAst<T> {
     }
 }
 
-///! The compiled SPIR-V program after compilation.
+/// The compiled SPIR-V program after compilation.
 pub struct CompiledProgram<T>
 where
     T: spirv_cross::spirv::Target,
@@ -820,7 +820,7 @@ impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
             vertex: self.vertex.compile()?,
             fragment: self.fragment.compile()?,
             context: CrossHlslContext {
-                compiler: CompiledProgram {
+                artifact: CompiledProgram {
                     vertex: CompiledAst(self.vertex),
                     fragment: CompiledAst(self.fragment),
                 },

@@ -17,8 +17,8 @@ impl FromCompilation<GlslangCompilation> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
     type Context = ();
-    type Output =
-        impl CompileShader<Self::Target, Options = Option<()>, Context = ()> + ReflectShader;
+    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
+        + ReflectShader;
 
     fn from_compilation(
         compile: GlslangCompilation,
