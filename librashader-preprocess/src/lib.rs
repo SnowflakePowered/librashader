@@ -1,3 +1,4 @@
+//! Shader preprocessing for librashader
 mod error;
 mod include;
 mod pragma;

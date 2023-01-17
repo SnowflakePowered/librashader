@@ -1,3 +1,4 @@
+//! Shader preset definition (`.slangp`) parser for librashader.
 #![feature(drain_filter)]
 
 mod error;

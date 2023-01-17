@@ -1,3 +1,4 @@
+//! Shader reflection and cross-compilation for librashader.
 #![feature(type_alias_impl_trait)]
 
 /// Shader codegen backends.

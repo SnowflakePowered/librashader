@@ -1,3 +1,5 @@
+//! Common types and conversions for librashader.
+
 /// OpenGL common conversions.
 #[cfg(feature = "opengl")]
 pub mod gl;

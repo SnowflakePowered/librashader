@@ -1,8 +1,8 @@
 # librashader
 
-![gameboy-player-crt-royale](https://user-images.githubusercontent.com/1000503/211993121-2ec1f6f0-445b-4b47-8612-291a4eab5d15.png)
+![Mega Bezel SMOOTH-ADV](https://user-images.githubusercontent.com/1000503/212806508-11e6942d-ac48-4659-bd61-1e50259d92b2.png)
 
-<small>*Mega Bezel SMOOTH-ADV on OpenGL 4.6*</small>
+<small>*Mega Bezel SMOOTH-ADV on DirectX 11*</small>
 
 librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 

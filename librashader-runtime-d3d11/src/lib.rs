@@ -1,3 +1,8 @@
+//! librashader Direct3D 11 runtime
+//!
+//! This crate should not be used directly.
+//! See [`librashader::runtime::d3d11`](https://docs.rs/librashader/latest/librashader/runtime/d3d11/index.html) instead.
+
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
 #[cfg(test)]

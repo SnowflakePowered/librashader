@@ -1,3 +1,8 @@
+//! librashader OpenGL runtime
+//!
+//! This crate should not be used directly.
+//! See [`librashader::runtime::gl`](https://docs.rs/librashader/latest/librashader/runtime/gl/index.html) instead.
+
 #![feature(strict_provenance)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
