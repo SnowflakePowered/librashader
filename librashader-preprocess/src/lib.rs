@@ -67,7 +67,7 @@ pub(crate) trait SourceOutput {
     fn push_line(&mut self, str: &str);
     fn mark_line(&mut self, line_no: usize, comment: &str) {
         #[cfg(feature = "line_directives")]
-        self.push_line(&format!("#line {} \"{}\"", line_no, comment))
+        self.push_line(&format!("#line {line_no} \"{comment}\""))
     }
 }
 

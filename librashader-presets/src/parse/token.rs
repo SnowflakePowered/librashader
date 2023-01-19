@@ -157,13 +157,13 @@ mod test {
     fn parses_single_line_comment() {
         let parsed =
             single_comment("// Define textures to be used by the different passes\ntetx=n".into());
-        eprintln!("{:?}", parsed)
+        eprintln!("{parsed:?}")
     }
 
     #[test]
     fn parses_key_value_line() {
         let parsed = do_lex(TEST);
-        eprintln!("{:#?}", parsed)
+        eprintln!("{parsed:#?}")
     }
 
     // todo: fix

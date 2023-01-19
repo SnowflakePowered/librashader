@@ -136,7 +136,7 @@ extern_fn! {
     /// - `preset` must be null or a valid and aligned pointer to a shader preset.
     fn libra_preset_print(preset: *mut libra_shader_preset_t) |preset| {
         assert_some_ptr!(preset);
-        println!("{:#?}", preset);
+        println!("{preset:#?}");
     }
 }
 

@@ -14,16 +14,15 @@ use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
-use librashader_preprocess::ShaderSource;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+
+use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SPIRV;
-use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
+use librashader_reflect::back::CompileShader;
 use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{
-    Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics,
-};
+use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::reflect;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
@@ -38,11 +37,9 @@ pub struct VulkanObjects {
     pipeline_cache: vk::PipelineCache,
 }
 
-type ShaderPassMeta = (
-    ShaderPassConfig,
-    ShaderSource,
-    CompilerBackend<impl CompileShader<SPIRV, Options = Option<()>, Context = ()> + ReflectShader>,
-);
+type ShaderPassMeta = reflect::ShaderPassMeta<
+    impl CompileShader<SPIRV, Options = Option<()>, Context = ()> + ReflectShader,
+>;
 
 /// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]
@@ -211,7 +208,11 @@ impl FilterChainVulkan {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
-        let (passes, semantics) = FilterChainVulkan::load_preset(preset.shaders, &preset.textures)?;
+        let (passes, semantics) = reflect::compile_preset_passes::<
+            SPIRV,
+            GlslangCompilation,
+            FilterChainError,
+        >(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
 
         let mut frames_in_flight = options.map(|o| o.frames_in_flight).unwrap_or(0);
@@ -279,59 +280,6 @@ impl FilterChainVulkan {
             residuals: intermediates.into_boxed_slice(),
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
         })
-    }
-
-    fn load_preset(
-        passes: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
-    ) -> error::Result<(Vec<ShaderPassMeta>, ShaderSemantics)> {
-        let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-        let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> =
-            Default::default();
-
-        let passes = passes
-            .into_iter()
-            .map(|shader| {
-                // eprintln!("[vk] loading {}", &shader.name.display());
-                let source: ShaderSource = ShaderSource::load(&shader.name)?;
-
-                let spirv = GlslangCompilation::compile(&source)?;
-                let reflect = SPIRV::from_compilation(spirv)?;
-
-                for parameter in source.parameters.values() {
-                    uniform_semantics.insert(
-                        parameter.id.clone(),
-                        UniformSemantic::Unique(Semantic {
-                            semantics: UniqueSemantics::FloatParameter,
-                            index: (),
-                        }),
-                    );
-                }
-                Ok::<_, FilterChainError>((shader, source, reflect))
-            })
-            .into_iter()
-            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
-            )?;
-
-        for details in &passes {
-            librashader_runtime::semantics::insert_pass_semantics(
-                &mut uniform_semantics,
-                &mut texture_semantics,
-                &details.0,
-            )
-        }
-        librashader_runtime::semantics::insert_lut_semantics(
-            textures,
-            &mut uniform_semantics,
-            &mut texture_semantics,
-        );
-
-        let semantics = ShaderSemantics {
-            uniform_semantics,
-            texture_semantics,
-        };
-
-        Ok((passes, semantics))
     }
 
     fn init_passes(

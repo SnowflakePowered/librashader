@@ -53,7 +53,6 @@ pub mod presets {
             .shaders
             .iter()
             .map(|s| ShaderSource::load(&s.name).map(|s| s.parameters.into_values().collect()))
-            .into_iter()
             .collect();
         let iters = iters?;
         Ok(iters.into_iter().flatten())
@@ -113,6 +112,16 @@ pub mod reflect {
         pub use librashader_reflect::reflect::cross::CompiledProgram;
     }
     pub use librashader_reflect::reflect::semantics::BindingMeta;
+
+    #[doc(hidden)]
+    #[cfg(feature = "internal")]
+    /// Helper methods for runtimes.
+    ///
+    /// This is internal to librashader runtimes and is exempt from semantic versioning.
+    pub mod helper {
+        pub use librashader_runtime::image;
+        pub use librashader_runtime::reflect::compile_preset_passes;
+    }
 }
 
 /// Shader runtimes to execute a filter chain on a GPU surface.
@@ -189,16 +198,6 @@ pub mod runtime {
         pub mod capi {
             pub use librashader_runtime_vk::*;
         }
-    }
-
-    #[doc(hidden)]
-    #[cfg(feature = "internal")]
-    /// Helper methods for runtimes.
-    ///
-    /// This is internal to librashader runtimes and is exempt from semantic versioning.
-    pub mod helper {
-        pub use librashader_runtime::semantics::insert_lut_semantics;
-        pub use librashader_runtime::semantics::insert_pass_semantics;
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::error::ShaderCompileError;
+use crate::front::ShaderCompilation;
 use librashader_preprocess::ShaderSource;
 use shaderc::{CompilationArtifact, CompileOptions, Limit, ShaderKind};
 
@@ -12,6 +13,12 @@ impl GlslangCompilation {
     /// Tries to compile SPIR-V from the provided shader source.
     pub fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
         compile_spirv(source)
+    }
+}
+
+impl ShaderCompilation for GlslangCompilation {
+    fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
+        GlslangCompilation::compile(source)
     }
 }
 

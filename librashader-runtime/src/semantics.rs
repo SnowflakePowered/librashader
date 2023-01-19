@@ -58,7 +58,7 @@ pub fn insert_pass_semantics(
     );
 }
 
-/// /// Insert the available semantics for the input texture config into the provided semantic maps.
+/// Insert the available semantics for the input texture config into the provided semantic maps.
 pub fn insert_lut_semantics(
     textures: &[TextureConfig],
     uniform_semantics: &mut UniformSemanticsMap,

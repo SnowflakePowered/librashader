@@ -26,3 +26,6 @@ pub mod ringbuffer;
 
 /// Generic implementation of semantics binding.
 pub mod binding;
+
+/// Generic helpers for loading shader passes into compiled shader targets and semantics.
+pub mod reflect;

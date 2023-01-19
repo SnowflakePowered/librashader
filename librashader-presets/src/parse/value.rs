@@ -99,7 +99,7 @@ fn from_ul(input: Span) -> Result<u32, ParsePresetError> {
 
 fn from_float(input: Span) -> Result<f32, ParsePresetError> {
     f32::from_str(input.trim()).map_err(|_| {
-        eprintln!("{:?}", input);
+        eprintln!("{input:?}");
         ParsePresetError::ParserError {
             offset: input.location_offset(),
             row: input.location_line(),
@@ -491,7 +491,7 @@ mod test {
         let root =
             PathBuf::from("../test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
         let basic = parse_preset(root);
-        eprintln!("{:?}", basic);
+        eprintln!("{basic:?}");
         assert!(basic.is_ok());
     }
 }

@@ -1,14 +1,12 @@
 use crate::texture::{D3D11InputView, InputTexture, LutTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
-use librashader_preprocess::ShaderSource;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+
+use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::targets::HLSL;
-use librashader_reflect::back::{CompileShader, CompilerBackend, FromCompilation};
+use librashader_reflect::back::CompileShader;
 use librashader_reflect::front::shaderc::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{
-    Semantic, ShaderSemantics, TextureSemantics, UniformBinding, UniformSemantic, UniqueSemantics,
-};
+use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
@@ -25,6 +23,7 @@ use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
+use librashader_runtime::reflect;
 use librashader_runtime::uniforms::UniformStorage;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
@@ -38,13 +37,9 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-type ShaderPassMeta = (
-    ShaderPassConfig,
-    ShaderSource,
-    CompilerBackend<
-        impl CompileShader<HLSL, Options = Option<()>, Context = CrossHlslContext> + ReflectShader,
-    >,
-);
+type ShaderPassMeta = reflect::ShaderPassMeta<
+    impl CompileShader<HLSL, Options = Option<()>, Context = CrossHlslContext> + ReflectShader,
+>;
 
 /// A Direct3D 11 filter chain.
 pub struct FilterChainD3D11 {
@@ -92,7 +87,11 @@ impl FilterChainD3D11 {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
-        let (passes, semantics) = FilterChainD3D11::load_preset(preset.shaders, &preset.textures)?;
+        let (passes, semantics) = reflect::compile_preset_passes::<
+            HLSL,
+            GlslangCompilation,
+            FilterChainError,
+        >(preset.shaders, &preset.textures)?;
 
         let use_deferred_context = options.map(|f| f.use_deferred_context).unwrap_or(false);
 
@@ -410,59 +409,6 @@ impl FilterChainD3D11 {
             luts.insert(index, texture);
         }
         Ok(luts)
-    }
-
-    fn load_preset(
-        passes: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
-    ) -> error::Result<(Vec<ShaderPassMeta>, ShaderSemantics)> {
-        let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-        let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> =
-            Default::default();
-
-        let passes = passes
-            .into_iter()
-            .map(|shader| {
-                // eprintln!("[dx11] loading {}", &shader.name.display());
-                let source: ShaderSource = ShaderSource::load(&shader.name)?;
-
-                let spirv = GlslangCompilation::compile(&source)?;
-                let reflect = HLSL::from_compilation(spirv)?;
-
-                for parameter in source.parameters.values() {
-                    uniform_semantics.insert(
-                        parameter.id.clone(),
-                        UniformSemantic::Unique(Semantic {
-                            semantics: UniqueSemantics::FloatParameter,
-                            index: (),
-                        }),
-                    );
-                }
-                Ok::<_, FilterChainError>((shader, source, reflect))
-            })
-            .into_iter()
-            .collect::<error::Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>>>(
-            )?;
-
-        for details in &passes {
-            librashader_runtime::semantics::insert_pass_semantics(
-                &mut uniform_semantics,
-                &mut texture_semantics,
-                &details.0,
-            )
-        }
-        librashader_runtime::semantics::insert_lut_semantics(
-            textures,
-            &mut uniform_semantics,
-            &mut texture_semantics,
-        );
-
-        let semantics = ShaderSemantics {
-            uniform_semantics,
-            texture_semantics,
-        };
-
-        Ok((passes, semantics))
     }
 
     /// Process a frame with the input image.

@@ -1,17 +1,13 @@
 use crate::error;
-use librashader::preprocess::ShaderSource;
-use librashader::presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader::reflect::image::{Image, UVDirection, RGBA8};
-use librashader::reflect::semantics::{
-    Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
-};
+
+use librashader::presets::{ShaderPassConfig, ShaderPreset};
+use librashader::reflect::semantics::ShaderSemantics;
 use librashader::reflect::targets::SPIRV;
-use librashader::reflect::{
-    CompileShader, CompilerBackend, FromCompilation, GlslangCompilation, ReflectShader,
-    ShaderCompilerOutput, ShaderReflection,
-};
+use librashader::reflect::{CompileShader, ReflectShader, ShaderCompilerOutput, ShaderReflection};
 use librashader::{FilterMode, WrapMode};
-use rustc_hash::FxHashMap;
+
+use librashader::reflect::cross::GlslangCompilation;
+use librashader::reflect::helper::image::{Image, UVDirection, RGBA8};
 
 pub(crate) struct LookupTexture {
     wrap_mode: WrapMode,
@@ -40,55 +36,12 @@ impl FilterReflection {
         direction: UVDirection,
     ) -> Result<FilterReflection, error::LibrashaderError> {
         let (passes, textures) = (preset.shaders, preset.textures);
-        let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-        let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> =
-            Default::default();
 
-        let passes = passes
-            .into_iter()
-            .enumerate()
-            .map(|(index, shader)| {
-                let source: ShaderSource = ShaderSource::load(&shader.name)?;
-
-                let spirv = GlslangCompilation::compile(&source)?;
-                let mut reflect = SPIRV::from_compilation(spirv)?;
-
-                for parameter in source.parameters.iter() {
-                    uniform_semantics.insert(
-                        parameter.id.clone(),
-                        UniformSemantic::Unique(Semantic {
-                            semantics: UniqueSemantics::FloatParameter,
-                            index: (),
-                        }),
-                    );
-                }
-
-                Ok::<_, error::LibrashaderError>((shader, source, reflect))
-            })
-            .into_iter()
-            .collect::<Result<
-                Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>,
-                error::LibrashaderError,
-            >>()?;
-
-        for details in &passes {
-            librashader::runtime::helper::insert_pass_semantics(
-                &mut uniform_semantics,
-                &mut texture_semantics,
-                &details.0,
-            )
-        }
-
-        librashader::runtime::helper::insert_lut_semantics(
-            &textures,
-            &mut uniform_semantics,
-            &mut texture_semantics,
-        );
-
-        let semantics = ShaderSemantics {
-            uniform_semantics,
-            texture_semantics,
-        };
+        let (passes, semantics) = librashader::reflect::helper::compile_preset_passes::<
+            SPIRV,
+            GlslangCompilation,
+            error::LibrashaderError,
+        >(passes, &textures)?;
 
         let mut reflects = Vec::new();
 
@@ -114,7 +67,6 @@ impl FilterReflection {
                     image: lut,
                 })
             })
-            .into_iter()
             .collect::<Result<Vec<LookupTexture>, error::LibrashaderError>>()?;
 
         Ok(FilterReflection {
