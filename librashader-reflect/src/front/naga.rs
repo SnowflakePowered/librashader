@@ -10,7 +10,16 @@ pub struct NagaCompilation {
     pub(crate) fragment: Module,
 }
 
-pub fn compile_spirv(source: &ShaderSource) -> Result<NagaCompilation, ShaderCompileError> {
+impl TryFrom<&ShaderSource> for NagaCompilation {
+    type Error = ShaderCompileError;
+
+    /// Tries to compile SPIR-V from the provided shader source.
+    fn try_from(source: &ShaderSource) -> Result<Self, Self::Error> {
+        compile_spirv(source)
+    }
+}
+
+fn compile_spirv(source: &ShaderSource) -> Result<NagaCompilation, ShaderCompileError> {
     let mut parser = Parser::default();
     let vertex = parser.parse(&Options::from(ShaderStage::Vertex), &source.vertex)?;
     let fragment = parser.parse(&Options::from(ShaderStage::Fragment), &source.fragment)?;

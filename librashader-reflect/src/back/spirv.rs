@@ -1,7 +1,7 @@
 use crate::back::targets::SPIRV;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::front::shaderc::GlslangCompilation;
+use crate::front::GlslangCompilation;
 use crate::reflect::cross::GlslReflect;
 use crate::reflect::semantics::ShaderSemantics;
 use crate::reflect::{ReflectShader, ShaderReflection};

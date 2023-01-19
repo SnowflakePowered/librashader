@@ -95,7 +95,7 @@ pub mod reflect {
 
     /// Reflection via SPIRV-Cross.
     pub mod cross {
-        pub use librashader_reflect::front::shaderc::GlslangCompilation;
+        pub use librashader_reflect::front::GlslangCompilation;
 
         #[cfg(feature = "gl")]
         /// The version of GLSL to compile to.
@@ -115,6 +115,7 @@ pub mod reflect {
 
     pub use librashader_reflect::reflect::presets;
 
+    pub use librashader_reflect::front::ShaderCompilation;
     #[doc(hidden)]
     #[cfg(feature = "internal")]
     /// Helper methods for runtimes.

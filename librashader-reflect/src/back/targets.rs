@@ -26,7 +26,7 @@ impl OutputTarget for SPIRV {
 mod test {
     use crate::back::targets::GLSL;
     use crate::back::FromCompilation;
-    use crate::front::shaderc::GlslangCompilation;
+    use crate::front::GlslangCompilation;
     #[allow(dead_code)]
     pub fn test_compile(value: GlslangCompilation) {
         let _x = GLSL::from_compilation(value).unwrap();

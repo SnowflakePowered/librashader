@@ -18,7 +18,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::CompileShader;
-use librashader_reflect::front::shaderc::GlslangCompilation;
+use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::CompilePreset;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;

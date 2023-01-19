@@ -15,7 +15,7 @@ use librashader_presets::ShaderPreset;
 use librashader_reflect::back::cross::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::CompileShader;
-use librashader_reflect::front::shaderc::GlslangCompilation;
+use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
 };

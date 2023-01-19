@@ -1,5 +1,5 @@
 use crate::back::targets::OutputTarget;
-use crate::back::{CompileShader, CompilerBackend, FromCompilation};
+use crate::back::{CompilerBackend, FromCompilation};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::ShaderCompilation;
 use crate::reflect::semantics::{

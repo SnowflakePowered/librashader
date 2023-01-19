@@ -1,7 +1,7 @@
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
-use crate::front::shaderc::GlslangCompilation;
+use crate::front::GlslangCompilation;
 use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect};
 use crate::reflect::ReflectShader;
 

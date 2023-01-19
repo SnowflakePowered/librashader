@@ -1,5 +1,5 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
-use crate::front::shaderc::GlslangCompilation;
+use crate::front::GlslangCompilation;
 use crate::reflect::semantics::{
     BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics,
     TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,

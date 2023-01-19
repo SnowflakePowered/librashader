@@ -4,7 +4,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::CompileShader;
-use librashader_reflect::front::shaderc::GlslangCompilation;
+use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
