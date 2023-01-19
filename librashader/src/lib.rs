@@ -1,4 +1,5 @@
 #![forbid(missing_docs)]
+#![feature(doc_cfg)]
 //! RetroArch shader preset compiler and runtime.
 //!
 //! librashader provides convenient and safe access to RetroArch ['slang' shaders](https://github.com/libretro/slang-shaders).
@@ -33,10 +34,14 @@
 //! or [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
 
 #[cfg(feature = "presets")]
+#[doc(cfg(presets))]
 /// Parsing and usage of shader presets.
 ///
-/// Shader presets contain shader and texture parameters, and the order in which to apply a set of shaders
-/// in a filter chain.
+/// This module contains facilities and types for parsing `.slangp` shader presets files.
+///
+/// Shader presets contain shader and texture parameters, and the order in which to apply a set of
+/// shaders in a filter chain. A librashader runtime takes a resulting [`ShaderPreset`](crate::presets::ShaderPreset)
+/// as input to create a filter chain.
 pub mod presets {
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
     pub use librashader_presets::*;
@@ -56,15 +61,21 @@ pub mod presets {
 }
 
 #[cfg(feature = "preprocess")]
+#[doc(cfg(preprocess))]
 /// Loading and preprocessing of 'slang' shader source files.
 ///
-/// Shader sources files must be loaded with imports resolved before being able to be compiled.
-/// Shader parameters are also defined in `#pragma`s within shader source files which must be parsed.
+/// This module contains facilities and types for resolving `#include` directives in `.slang`
+/// into a single compilation unit. `#pragma` directives are also parsed and resolved as
+/// [`ShaderParameter`](crate::preprocess::ShaderParameter) structs.
+///
+/// The resulting [`ShaderSource`](crate::preprocess::ShaderSource) can then be passed into a
+/// reflection target for reflection and compilation into the target shader format.
 pub mod preprocess {
     pub use librashader_preprocess::*;
 }
 
 #[cfg(feature = "reflect")]
+#[doc(cfg(reflect))]
 /// Shader compilation and reflection.
 pub mod reflect {
     /// Supported shader compiler targets.
@@ -106,12 +117,16 @@ pub mod reflect {
 
 /// Shader runtimes to execute a filter chain on a GPU surface.
 #[cfg(feature = "runtime")]
+#[doc(cfg(runtime))]
 pub mod runtime {
     pub use librashader_common::{Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
 
     #[cfg(feature = "gl")]
+    #[doc(cfg(gl))]
     /// Shader runtime for OpenGL 3.3+.
+    ///
+    /// DSA support requires OpenGL 4.6.
     ///
     /// Note that the OpenGL runtime requires `gl` to be
     /// initialized with [`gl::load_with`](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
@@ -123,6 +138,7 @@ pub mod runtime {
         };
 
         #[doc(hidden)]
+        #[cfg(feature = "internal")]
         /// Re-exports names to deal with C API conflicts.
         ///
         /// This is internal to librashader-capi and is exempt from semantic versioning.
@@ -132,6 +148,7 @@ pub mod runtime {
     }
 
     #[cfg(feature = "d3d11")]
+    #[doc(cfg(d3d11))]
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::{
@@ -143,6 +160,7 @@ pub mod runtime {
         };
 
         #[doc(hidden)]
+        #[cfg(feature = "internal")]
         /// Re-exports names to deal with C API conflicts.
         ///
         /// This is internal to librashader-capi and is exempt from semantic versioning.
@@ -152,6 +170,7 @@ pub mod runtime {
     }
 
     #[cfg(feature = "vk")]
+    #[doc(cfg(vk))]
     /// Shader runtime for Vulkan 1.3+.
     pub mod vk {
         pub use librashader_runtime_vk::{
@@ -163,6 +182,7 @@ pub mod runtime {
         };
 
         #[doc(hidden)]
+        #[cfg(feature = "internal")]
         /// Re-exports names to deal with C API conflicts.
         ///
         /// This is internal to librashader-capi and is exempt from semantic versioning.
@@ -172,6 +192,7 @@ pub mod runtime {
     }
 
     #[doc(hidden)]
+    #[cfg(feature = "internal")]
     /// Helper methods for runtimes.
     ///
     /// This is internal to librashader runtimes and is exempt from semantic versioning.
