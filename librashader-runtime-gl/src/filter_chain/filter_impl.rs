@@ -14,15 +14,14 @@ use librashader_common::{FilterMode, Viewport, WrapMode};
 use librashader_presets::ShaderPreset;
 use librashader_reflect::back::cross::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
-use librashader_reflect::back::CompileShader;
+use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
 };
 
-use librashader_reflect::reflect::presets::CompilePreset;
+use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
-use librashader_runtime::decl_shader_pass_meta;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
@@ -81,7 +80,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     }
 }
 
-decl_shader_pass_meta!(type ShaderPassMeta = <GLSL, GlslangCompilation>);
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<GLSL, GlslangCompilation>>;
 
 impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.

@@ -17,12 +17,11 @@ use librashader_common::{ImageFormat, Size, Viewport};
 
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SPIRV;
-use librashader_reflect::back::CompileShader;
+use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::presets::CompilePreset;
+use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;
-use librashader_runtime::decl_shader_pass_meta;
 use librashader_runtime::image::{Image, UVDirection};
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
@@ -38,7 +37,7 @@ pub struct VulkanObjects {
     pipeline_cache: vk::PipelineCache,
 }
 
-decl_shader_pass_meta!(type ShaderPassMeta = <SPIRV, GlslangCompilation>);
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation>>;
 
 /// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]

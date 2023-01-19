@@ -89,8 +89,8 @@ pub mod reflect {
     pub use librashader_reflect::reflect::{semantics, ReflectShader, ShaderReflection};
 
     pub use librashader_reflect::back::{
-        targets::OutputTarget, CompileShader, CompilerBackend, FromCompilation,
-        ShaderCompilerOutput,
+        targets::OutputTarget, CompileReflectShader, CompileShader, CompilerBackend,
+        FromCompilation, ShaderCompilerOutput,
     };
 
     /// Reflection via SPIRV-Cross.
@@ -113,7 +113,7 @@ pub mod reflect {
     }
     pub use librashader_reflect::reflect::semantics::BindingMeta;
 
-    pub use librashader_reflect::reflect::presets;
+    pub use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 
     pub use librashader_reflect::front::ShaderCompilation;
     #[doc(hidden)]

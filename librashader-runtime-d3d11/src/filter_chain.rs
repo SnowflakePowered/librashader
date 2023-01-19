@@ -3,7 +3,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
-use librashader_reflect::back::CompileShader;
+use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;
@@ -22,8 +22,7 @@ use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
-use librashader_reflect::reflect::presets::CompilePreset;
-use librashader_runtime::decl_shader_pass_meta;
+use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::uniforms::UniformStorage;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
@@ -37,7 +36,7 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-decl_shader_pass_meta!(type ShaderPassMeta = <HLSL, GlslangCompilation>);
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
 /// A Direct3D 11 filter chain.
 pub struct FilterChainD3D11 {

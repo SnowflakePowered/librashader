@@ -33,6 +33,35 @@ pub trait CompileShader<T: OutputTarget> {
     ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError>;
 }
 
+/// Marker trait for combinations of targets and compilations that can be reflected and compiled
+/// successfully.
+///
+/// This trait is automatically implemented for reflected outputs that have [`FromCompilation`](crate::back::FromCompilation) implement
+/// for a given target that also implement [`CompileShader`](crate::back::CompileShader) for that target.
+pub trait CompileReflectShader<T: OutputTarget, C>:
+    CompileShader<
+        T,
+        Options = <T as FromCompilation<C>>::Options,
+        Context = <T as FromCompilation<C>>::Context,
+    > + ReflectShader
+where
+    T: FromCompilation<C>,
+{
+}
+
+impl<T, C, O> CompileReflectShader<T, C> for O
+where
+    T: OutputTarget,
+    T: FromCompilation<C>,
+    O: ReflectShader,
+    O: CompileShader<
+        T,
+        Options = <T as FromCompilation<C>>::Options,
+        Context = <T as FromCompilation<C>>::Context,
+    >,
+{
+}
+
 impl<T, E> CompileShader<E> for CompilerBackend<T>
 where
     T: CompileShader<E>,
