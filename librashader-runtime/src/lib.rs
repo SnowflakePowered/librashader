@@ -23,3 +23,22 @@ pub mod ringbuffer;
 
 /// Generic implementation of semantics binding.
 pub mod binding;
+
+/// Used to declare a `ShaderPassMeta` type for the given target shader language and compilation type.
+#[macro_export]
+macro_rules! decl_shader_pass_meta {
+    (type $ty_name:ident = <$target:ty, $compilation:ty>) => {
+        type $ty_name =
+            librashader_reflect::reflect::presets::ShaderPassMeta<
+                impl librashader_reflect::back::CompileShader<
+                        $target,
+                        Options = <$target as librashader_reflect::back::FromCompilation<
+                            $compilation,
+                        >>::Options,
+                        Context = <$target as librashader_reflect::back::FromCompilation<
+                            $compilation,
+                        >>::Context,
+                    > + librashader_reflect::reflect::ReflectShader,
+            >;
+    };
+}
