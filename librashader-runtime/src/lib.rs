@@ -1,9 +1,11 @@
 //! Helpers and shared logic for librashader runtime implementations.
 //!
-//! Most of this is code internal to librashader runtime implementations and is not
-//! intended for general use unless writing a librashader runtime.
+//! Most of this is only useful when _writing_ a librashader runtime implementations,
+//! not _using_ a librashader runtime. Types useful for _using_ the runtime implementations
+//! will be re-exported in [`librashader::runtime`](https://docs.rs/librashader/latest/librashader/runtime/index.html).
 //!
-//! This crate is exempt from semantic versioning of the librashader API.
+//! If you are _writing_ a librashader runtime implementation, using these traits and helpers will
+//! help in maintaining consistent behaviour in binding semantics and image handling.
 #![feature(array_chunks)]
 
 /// Scaling helpers.

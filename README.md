@@ -27,15 +27,13 @@ of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests ar
 ✔ = Render API is supported &mdash; 🚧 =  Support is in progress &mdash; ❌ Render API is not supported
 ## Usage
 
-librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class, fully supported.
+librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class and fully supported.
+The C API is geared more towards integration with existing projects. The Rust `librashader` crate exposes more
+of the internals if you wish to use parts of librashader piecemeal.
 
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
 loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. You may also link against
 `librashader_capi` directly at compile time with [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
-
-The C API currently does not expose the [shader reflection API](https://docs.rs/librashader/latest/librashader/reflect/index.html). Work 
-is in progress to expose this to C. In the meanwhile, if you wish to implement a custom runtime for librashader, it will have to be done
-in Rust.
 
 ### Building
 
@@ -113,6 +111,15 @@ Compatibility issues may arise with framebuffer copies for original history, but
 if it does end up that this results in actual rendering differences I may change the implementation to be more in line
 with RetroArch's copy implementation. However, since the Vulkan runtime already uses `vkCmdCopyImage` it is likely that it will
 not cause issues.
+
+### Writing a librashader Runtime
+
+If you wish to contribute a runtime implementation not already available, see the [librashader-runtime](https://docs.rs/librashader-runtime/latest/librashader_runtime/)
+crate for helpers and shared logic used across all librashader runtime implementations. Using these helpers and traits will
+ensure that your runtime has consistent behaviour for uniform and texture semantics bindings with the existing librashader runtimes.
+
+These types should not be exposed in your publish API to the end user, and should be kept internal to the implementation of 
+the runtime.
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
