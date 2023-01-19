@@ -19,11 +19,12 @@ use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
     MemberOffset, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
 };
+
 use librashader_reflect::reflect::ReflectShader;
-use librashader_runtime::reflect;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
+use librashader_reflect::reflect::presets::CompilePreset;
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -79,7 +80,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     }
 }
 
-type ShaderPassMeta = reflect::ShaderPassMeta<
+type ShaderPassMeta = librashader_reflect::reflect::presets::ShaderPassMeta<
     impl CompileShader<GLSL, Options = GlslVersion, Context = CrossGlslContext> + ReflectShader,
 >;
 
@@ -89,8 +90,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
-        let (passes, semantics) = reflect::compile_preset_passes::<
-            GLSL,
+        let (passes, semantics) = GLSL::compile_preset_passes::<
             GlslangCompilation,
             FilterChainError,
         >(preset.shaders, &preset.textures)?;

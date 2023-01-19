@@ -22,12 +22,12 @@ use librashader_reflect::front::shaderc::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
-use librashader_runtime::reflect;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
+use librashader_reflect::reflect::presets::CompilePreset;
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
@@ -37,7 +37,7 @@ pub struct VulkanObjects {
     pipeline_cache: vk::PipelineCache,
 }
 
-type ShaderPassMeta = reflect::ShaderPassMeta<
+type ShaderPassMeta = librashader_reflect::reflect::presets::ShaderPassMeta<
     impl CompileShader<SPIRV, Options = Option<()>, Context = ()> + ReflectShader,
 >;
 
@@ -208,8 +208,7 @@ impl FilterChainVulkan {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan> {
-        let (passes, semantics) = reflect::compile_preset_passes::<
-            SPIRV,
+        let (passes, semantics) = SPIRV::compile_preset_passes::<
             GlslangCompilation,
             FilterChainError,
         >(preset.shaders, &preset.textures)?;

@@ -685,6 +685,7 @@ dependencies = [
  "bitflags",
  "librashader-common",
  "librashader-preprocess",
+ "librashader-presets",
  "naga",
  "rustc-hash",
  "shaderc",

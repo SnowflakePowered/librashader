@@ -7,6 +7,9 @@ pub mod cross;
 /// Shader semantics and reflection information.
 pub mod semantics;
 
+/// Reflection helpers for reflecting and compiling shaders as part of a shader preset.
+pub mod presets;
+
 mod helper;
 
 #[cfg(feature = "unstable-naga")]

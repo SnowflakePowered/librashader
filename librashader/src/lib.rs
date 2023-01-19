@@ -113,6 +113,8 @@ pub mod reflect {
     }
     pub use librashader_reflect::reflect::semantics::BindingMeta;
 
+    pub use librashader_reflect::reflect::presets;
+
     #[doc(hidden)]
     #[cfg(feature = "internal")]
     /// Helper methods for runtimes.
@@ -120,7 +122,6 @@ pub mod reflect {
     /// This is internal to librashader runtimes and is exempt from semantic versioning.
     pub mod helper {
         pub use librashader_runtime::image;
-        pub use librashader_runtime::reflect::compile_preset_passes;
     }
 }
 
