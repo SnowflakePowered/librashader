@@ -8,7 +8,6 @@ use crate::reflect::semantics::{
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{ShaderPassConfig, TextureConfig};
 use rustc_hash::FxHashMap;
-use std::error::Error;
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -50,7 +49,6 @@ pub trait CompilePresetTarget: OutputTarget {
         Self: Sized,
         Self: FromCompilation<C>,
         C: ShaderCompilation,
-        E: Error,
         E: From<PreprocessError>,
         E: From<ShaderReflectError>,
         E: From<ShaderCompileError>,
@@ -75,7 +73,6 @@ where
     T: OutputTarget,
     T: FromCompilation<C>,
     C: ShaderCompilation,
-    E: Error,
     E: From<PreprocessError>,
     E: From<ShaderReflectError>,
     E: From<ShaderCompileError>,
