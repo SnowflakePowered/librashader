@@ -4,5 +4,4 @@ use librashader_common::{FilterMode, WrapMode};
 
 pub struct SamplerSet {
     samplers: FxHashMap<(WrapMode, FilterMode), D3D12_GPU_DESCRIPTOR_HANDLE>,
-    heap: D3D12Descriptor_heap
 }
