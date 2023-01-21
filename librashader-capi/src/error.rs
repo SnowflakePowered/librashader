@@ -26,15 +26,15 @@ pub enum LibrashaderError {
     #[error("The provided parameter name was invalid.")]
     UnknownShaderParameter(*const c_char),
     #[cfg(feature = "runtime-opengl")]
+    #[doc(cfg(feature = "runtime-opengl"))]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
-    #[cfg(any(
-        feature = "docsrs",
-        all(target_os = "windows", feature = "runtime-d3d11")
-    ))]
+    #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
     #[cfg(feature = "runtime-vulkan")]
+    #[doc(cfg(feature = "runtime-vulkan"))]
     #[error("There was an error in the Vulkan filter chain.")]
     VulkanFilterError(#[from] librashader::runtime::vk::error::FilterChainError),
 }
@@ -181,10 +181,7 @@ impl LibrashaderError {
             LibrashaderError::UnknownShaderParameter(_) => LIBRA_ERRNO::SHADER_PARAMETER_ERROR,
             #[cfg(feature = "runtime-opengl")]
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
-            #[cfg(any(
-                feature = "docsrs",
-                all(target_os = "windows", feature = "runtime-d3d11")
-            ))]
+            #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
             LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-vulkan")]
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,

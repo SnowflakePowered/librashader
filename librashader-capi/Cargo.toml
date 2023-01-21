@@ -20,9 +20,6 @@ runtime-opengl = ["gl", "librashader/gl"]
 runtime-d3d11 = ["windows", "librashader/d3d11"]
 runtime-vulkan = ["ash", "librashader/vk"]
 
-# Do not enable, for docs.rs build only.
-docsrs = []
-
 [dependencies]
 librashader = { path = "../librashader", version = "0.1.0-beta.7", features = ["internal"] }
 thiserror = "1.0.37"
@@ -31,7 +28,7 @@ gl = { version = "0.14.0", optional = true }
 rustc-hash = "1.1.0"
 ash = { version = "0.37.2+1.3.238", optional = true }
 
-[dependencies.windows]
+[target.'cfg(windows)'.dependencies.windows]
 version = "0.44.0"
 features = [
     "Win32_Graphics_Direct3D11",
@@ -42,4 +39,4 @@ optional = true
 cbindgen = { git = "https://github.com/eqrion/cbindgen" }
 
 [package.metadata.docs.rs]
-features = ["docsrs"]
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]

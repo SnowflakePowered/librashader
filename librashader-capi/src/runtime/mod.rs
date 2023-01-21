@@ -1,12 +1,12 @@
 //! librashader runtime C APIs
+#[doc(cfg(feature = "runtime-opengl"))]
 #[cfg(feature = "runtime-opengl")]
 pub mod gl;
 
-#[cfg(any(
-    feature = "docsrs",
-    all(target_os = "windows", feature = "runtime-d3d11")
-))]
+#[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
+#[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
 pub mod d3d11;
 
+#[doc(cfg(feature = "runtime-vulkan"))]
 #[cfg(feature = "runtime-vulkan")]
 pub mod vk;

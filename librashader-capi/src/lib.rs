@@ -1,3 +1,4 @@
+#![feature(doc_cfg)]
 //! The C API for [librashader](https://docs.rs/librashader/).
 //!
 //! The librashader C API is designed to be loaded dynamically via `librashader_ld.h`, but static usage is also

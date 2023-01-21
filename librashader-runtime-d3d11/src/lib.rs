@@ -1,3 +1,4 @@
+#![cfg(target_os = "windows")]
 //! librashader Direct3D 11 runtime
 //!
 //! This crate should not be used directly.

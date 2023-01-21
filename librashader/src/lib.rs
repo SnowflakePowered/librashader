@@ -34,7 +34,7 @@
 //! or [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
 
 #[cfg(feature = "presets")]
-#[doc(cfg(presets))]
+#[doc(cfg(feature = "presets"))]
 /// Parsing and usage of shader presets.
 ///
 /// This module contains facilities and types for parsing `.slangp` shader presets files.
@@ -60,7 +60,7 @@ pub mod presets {
 }
 
 #[cfg(feature = "preprocess")]
-#[doc(cfg(preprocess))]
+#[doc(cfg(feature = "preprocess"))]
 /// Loading and preprocessing of 'slang' shader source files.
 ///
 /// This module contains facilities and types for resolving `#include` directives in `.slang`
@@ -74,7 +74,7 @@ pub mod preprocess {
 }
 
 #[cfg(feature = "reflect")]
-#[doc(cfg(reflect))]
+#[doc(cfg(feature = "reflect"))]
 /// Shader reflection and cross-compilation.
 ///
 /// The `type_alias_impl_trait` nightly feature is required. You should choose your
@@ -117,7 +117,7 @@ pub mod preprocess {
 /// [naga](https://docs.rs/naga/latest/naga/index.html), a pure-Rust shader compiler, when it has
 /// matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
 ///
-/// In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::front::GlslangCompilation),
+/// In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::reflect::cross::GlslangCompilation),
 /// which does transpilation via [shaderc](https://github.com/google/shaderc) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
 pub mod reflect {
     /// Supported shader compiler targets.
@@ -140,14 +140,11 @@ pub mod reflect {
     pub mod cross {
         pub use librashader_reflect::front::GlslangCompilation;
 
-        #[cfg(feature = "gl")]
         /// The version of GLSL to compile to.
         pub use spirv_cross::glsl::Version as GlslVersion;
 
-        #[cfg(feature = "gl")]
         pub use librashader_reflect::back::cross::CrossGlslContext;
 
-        #[cfg(any(feature = "d3d11", feature = "d3d12"))]
         pub use librashader_reflect::back::cross::CrossHlslContext;
 
         pub use librashader_reflect::reflect::cross::CompiledAst;
@@ -171,13 +168,13 @@ pub mod reflect {
 
 /// Shader runtimes to execute a filter chain on a GPU surface.
 #[cfg(feature = "runtime")]
-#[doc(cfg(runtime))]
+#[doc(cfg(feature = "runtime"))]
 pub mod runtime {
     pub use librashader_common::{Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
 
     #[cfg(feature = "gl")]
-    #[doc(cfg(gl))]
+    #[doc(cfg(feature = "gl"))]
     /// Shader runtime for OpenGL 3.3+.
     ///
     /// DSA support requires OpenGL 4.6.
@@ -201,8 +198,8 @@ pub mod runtime {
         }
     }
 
-    #[cfg(feature = "d3d11")]
-    #[doc(cfg(d3d11))]
+    #[cfg(all(target_os = "windows", feature = "d3d11"))]
+    #[doc(cfg(all(target_os = "windows", feature = "d3d11")))]
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::{
@@ -224,7 +221,7 @@ pub mod runtime {
     }
 
     #[cfg(feature = "vk")]
-    #[doc(cfg(vk))]
+    #[doc(cfg(feature = "vk"))]
     /// Shader runtime for Vulkan 1.3+.
     pub mod vk {
         pub use librashader_runtime_vk::{
