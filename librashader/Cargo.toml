@@ -23,7 +23,7 @@ librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.1.0-
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.1.0-beta.7", optional = true }
 
 ash = { version = "0.37.1+1.3.235", optional = true }
-spirv_cross = { version = "0.23.1", optional = true, features = ["glsl"] }
+spirv_cross = { package = "librashader-spirv-cross", version = "0.23", features = ["glsl"], optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.44.0"

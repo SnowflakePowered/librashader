@@ -52,7 +52,9 @@ pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
 
 impl ValidateTypeSemantics<Type> for UniqueSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
-        let (Type::Float { ref array, vecsize, columns } | Type::Int { ref array, vecsize, columns } | Type::UInt { ref array, vecsize, columns }) = *ty else {
+        let (Type::Float { ref array, vecsize, columns, .. }
+            | Type::Int { ref array, vecsize, columns, .. }
+            | Type::UInt { ref array, vecsize, columns, .. }) = *ty else {
             return None
         };
 
@@ -89,7 +91,7 @@ impl ValidateTypeSemantics<Type> for UniqueSemantics {
 
 impl ValidateTypeSemantics<Type> for TextureSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
-        let Type::Float { ref array, vecsize, columns } = *ty else {
+        let Type::Float { ref array, vecsize, columns, .. } = *ty else {
             return None
         };
 

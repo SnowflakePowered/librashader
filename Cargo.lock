@@ -630,7 +630,7 @@ dependencies = [
  "librashader-runtime-d3d11",
  "librashader-runtime-gl",
  "librashader-runtime-vk",
- "spirv_cross",
+ "librashader-spirv-cross",
  "windows",
 ]
 
@@ -641,6 +641,7 @@ dependencies = [
  "ash",
  "gl",
  "librashader",
+ "librashader-spirv-cross",
  "paste",
  "rustc-hash",
  "thiserror",
@@ -686,10 +687,10 @@ dependencies = [
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
+ "librashader-spirv-cross",
  "naga",
  "rustc-hash",
  "shaderc",
- "spirv_cross",
  "thiserror",
 ]
 
@@ -718,8 +719,8 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
+ "librashader-spirv-cross",
  "rustc-hash",
- "spirv_cross",
  "thiserror",
  "windows",
 ]
@@ -736,8 +737,8 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
+ "librashader-spirv-cross",
  "rustc-hash",
- "spirv_cross",
  "thiserror",
 ]
 
@@ -754,12 +755,23 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
+ "librashader-spirv-cross",
  "num",
  "raw-window-handle 0.5.0",
  "rustc-hash",
- "spirv_cross",
  "thiserror",
  "winit",
+]
+
+[[package]]
+name = "librashader-spirv-cross"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe7fccac471e14b681ffaabd42d09fbd9f9cf87a896acdc0d321a977c6821012"
+dependencies = [
+ "cc",
+ "js-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1364,17 +1376,6 @@ checksum = "246bfa38fe3db3f1dfc8ca5a2cdeb7348c78be2112740cc0ec8ef18b6d94f830"
 dependencies = [
  "bitflags",
  "num-traits",
-]
-
-[[package]]
-name = "spirv_cross"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60647fadbf83c4a72f0d7ea67a7ca3a81835cf442b8deae5c134c3e0055b2e14"
-dependencies = [
- "cc",
- "js-sys",
- "wasm-bindgen",
 ]
 
 [[package]]

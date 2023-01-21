@@ -13,7 +13,7 @@ description = "RetroArch shaders for all."
 
 [dependencies]
 shaderc = { version = "0.8.2", features = [] }
-spirv_cross = { version = "0.23.1", features = [ "glsl", "hlsl" ] }
+spirv_cross = { package = "librashader-spirv-cross", version = "0.23", features = [ "glsl", "hlsl" ] }
 
 thiserror = "1.0.37"
 bitflags = "1.3.2"
