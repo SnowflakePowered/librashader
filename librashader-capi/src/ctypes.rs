@@ -30,8 +30,8 @@ pub struct libra_viewport_t {
     pub x: f32,
     /// The y offset in the viewport framebuffer to begin rendering from.
     pub y: f32,
-    /// The width of the viewport framebuffer.
-    pub width: u32,
     /// The height of the viewport framebuffer.
     pub height: u32,
+    /// The width of the viewport framebuffer.
+    pub width: u32,
 }

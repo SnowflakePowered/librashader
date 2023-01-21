@@ -28,10 +28,10 @@ pub struct libra_image_vk_t {
     pub handle: vk::Image,
     /// The `VkFormat` of the source image.
     pub format: vk::Format,
-    /// The width of the source image.
-    pub width: u32,
     /// The height of the source image.
     pub height: u32,
+    /// The width of the source image.
+    pub width: u32,
 }
 
 /// Handles required to instantiate vulkan
