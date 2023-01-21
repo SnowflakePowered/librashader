@@ -7,6 +7,7 @@ members = [
     "librashader-reflect",
     "librashader-runtime",
     "librashader-runtime-d3d11",
+    "librashader-runtime-d3d12",
     "librashader-runtime-gl",
     "librashader-runtime-vk",
     "librashader-capi",
