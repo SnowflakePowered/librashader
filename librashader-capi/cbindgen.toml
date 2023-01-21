@@ -84,10 +84,10 @@ include = [
 "FrameOptionsGL" = "frame_gl_opt_t"
 "FilterChainD3D11" = "_filter_chain_d3d11"
 "FilterChainOptionsD3D11" = "filter_chain_d3d11_opt_t"
-"FrameOptionsD3D11" = "frame_vk_opt_t"
+"FrameOptionsD3D11" = "frame_d3d11_opt_t"
 "FilterChainVulkan" = "_filter_chain_vk"
 "FilterChainOptionsVulkan" = "filter_chain_vk_opt_t"
-"FrameOptionsVullam" = "frame_vk_opt_t"
+"FrameOptionsVulkan" = "frame_vk_opt_t"
 
 # vulkan renames
 "PhysicalDevice" = "VkPhysicalDevice"

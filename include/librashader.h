@@ -214,12 +214,12 @@ typedef struct libra_source_image_d3d11_t {
 #endif
 
 /// Options for each Direct3D11 shader frame.
-typedef struct frame_vk_opt_t {
+typedef struct frame_d3d11_opt_t {
     /// Whether or not to clear the history buffers.
     bool clear_history;
     /// The direction of the frame. 1 should be vertical.
     int32_t frame_direction;
-} frame_vk_opt_t;
+} frame_d3d11_opt_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 /// Handles required to instantiate vulkan
@@ -267,12 +267,12 @@ typedef struct libra_image_vk_t {
 #endif
 
 /// Options for each Vulkan shader frame.
-typedef struct FrameOptionsVulkan {
+typedef struct frame_vk_opt_t {
     /// Whether or not to clear the history buffers.
     bool clear_history;
     /// The direction of the frame. 1 should be vertical.
     int32_t frame_direction;
-} FrameOptionsVulkan;
+} frame_vk_opt_t;
 
 /// Function pointer definition for
 /// libra_preset_create
@@ -397,7 +397,7 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(
     libra_d3d11_filter_chain_t *chain, size_t frame_count,
     struct libra_source_image_d3d11_t image, struct libra_viewport_t viewport,
     const ID3D11RenderTargetView *out, const float *mvp,
-    const struct frame_vk_opt_t *opt);
+    const struct frame_d3d11_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -450,7 +450,7 @@ typedef libra_error_t (*PFN_libra_vk_filter_chain_frame)(
     libra_vk_filter_chain_t *chain, VkCommandBuffer command_buffer,
     size_t frame_count, struct libra_image_vk_t image,
     struct libra_viewport_t viewport, struct libra_image_vk_t out,
-    const float *mvp, const struct FrameOptionsVulkan *opt);
+    const float *mvp, const struct frame_vk_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -761,7 +761,7 @@ libra_error_t libra_d3d11_filter_chain_frame(
     libra_d3d11_filter_chain_t *chain, size_t frame_count,
     struct libra_source_image_d3d11_t image, struct libra_viewport_t viewport,
     const ID3D11RenderTargetView *out, const float *mvp,
-    const struct frame_vk_opt_t *opt);
+    const struct frame_d3d11_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -861,7 +861,7 @@ libra_error_t libra_vk_filter_chain_frame(
     libra_vk_filter_chain_t *chain, VkCommandBuffer command_buffer,
     size_t frame_count, struct libra_image_vk_t image,
     struct libra_viewport_t viewport, struct libra_image_vk_t out,
-    const float *mvp, const struct FrameOptionsVulkan *opt);
+    const float *mvp, const struct frame_vk_opt_t *opt);
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
