@@ -16,6 +16,10 @@ pub mod dxgi;
 #[cfg(all(target_os = "windows", feature = "d3d11"))]
 pub mod d3d11;
 
+/// Direct3D 12 common conversions.
+#[cfg(all(target_os = "windows", feature = "d3d12"))]
+pub mod d3d12;
+
 mod viewport;
 pub use viewport::Viewport;
 
