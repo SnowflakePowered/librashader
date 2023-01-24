@@ -746,6 +746,7 @@ name = "librashader-runtime-d3d12"
 version = "0.1.0-beta.8"
 dependencies = [
  "array-init",
+ "bit-set",
  "bytemuck",
  "gfx-maths",
  "librashader-common",

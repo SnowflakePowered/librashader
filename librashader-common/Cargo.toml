@@ -15,6 +15,7 @@ description = "RetroArch shaders for all."
 default = []
 opengl = ["gl"]
 d3d11 = ["windows", "dxgi"]
+d3d12 = ["windows", "dxgi"]
 dxgi = ["windows"]
 vulkan = ["ash"]
 
@@ -32,4 +33,5 @@ features = [
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Direct3D12",
 ]
