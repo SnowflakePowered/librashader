@@ -74,13 +74,14 @@ impl FilterChainD3D12 {
 
             let fence_event = unsafe { CreateEventA(None, false, false, None)? };
             let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
+            let mut residuals = Vec::new();
 
             let mut luts = FxHashMap::default();
 
             for (index, texture) in textures.iter().enumerate() {
                 let image = Image::load(&texture.path, UVDirection::TopLeft)?;
 
-                let texture = LutTexture::new(
+                let (texture, staging) = LutTexture::new(
                     device,
                     heap,
                     &cmd,
@@ -91,6 +92,7 @@ impl FilterChainD3D12 {
                     false,
                 )?;
                 luts.insert(index, texture);
+                residuals.push(staging);
             }
 
             cmd.Close()?;
@@ -106,6 +108,7 @@ impl FilterChainD3D12 {
 
                 unsafe { WaitForSingleObject(fence_event, INFINITE) };
             }
+
             Ok(luts)
         }
     }
