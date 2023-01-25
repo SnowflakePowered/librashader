@@ -1,20 +1,26 @@
-use rustc_hash::FxHashMap;
-use windows::Win32::Graphics::Direct3D12::{D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, D3D12_SAMPLER_DESC, D3D12_TEXTURE_ADDRESS_MODE, ID3D12Device};
-use librashader_common::{FilterMode, WrapMode};
-use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, SamplerHeap};
 use crate::error;
+use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, SamplerPaletteHeap};
+use librashader_common::{FilterMode, WrapMode};
+use rustc_hash::FxHashMap;
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, D3D12_SAMPLER_DESC,
+    D3D12_TEXTURE_ADDRESS_MODE,
+};
 
 pub struct SamplerSet {
-    samplers: FxHashMap<(WrapMode, FilterMode), D3D12DescriptorHeapSlot<SamplerHeap>>,
-    heap: D3D12DescriptorHeap<SamplerHeap>
+    samplers: FxHashMap<(WrapMode, FilterMode), D3D12DescriptorHeapSlot<SamplerPaletteHeap>>,
+    heap: D3D12DescriptorHeap<SamplerPaletteHeap>,
 }
 
 impl SamplerSet {
-    pub fn get(&self, wrap: WrapMode, filter: FilterMode) -> &D3D12DescriptorHeapSlot<SamplerHeap> {
+    pub fn get(
+        &self,
+        wrap: WrapMode,
+        filter: FilterMode,
+    ) -> &D3D12DescriptorHeapSlot<SamplerPaletteHeap> {
         self.samplers.get(&(wrap, filter)).unwrap()
     }
     pub fn new(device: &ID3D12Device) -> error::Result<SamplerSet> {
-
         let mut samplers = FxHashMap::default();
         let wrap_modes = &[
             WrapMode::ClampToBorder,
@@ -23,7 +29,7 @@ impl SamplerSet {
             WrapMode::MirroredRepeat,
         ];
 
-        let mut heap = D3D12DescriptorHeap::new(&device, (2 * wrap_modes.len()))?;
+        let mut heap = D3D12DescriptorHeap::new(&device, 2 * wrap_modes.len())?;
 
         for wrap_mode in wrap_modes {
             unsafe {
@@ -58,7 +64,7 @@ impl SamplerSet {
                         MinLOD: -D3D12_FLOAT32_MAX,
                         MaxLOD: D3D12_FLOAT32_MAX,
                     },
-                    *nearest.as_ref()
+                    *nearest.as_ref(),
                 );
 
                 samplers.insert((*wrap_mode, FilterMode::Linear), linear);

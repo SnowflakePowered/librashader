@@ -32,8 +32,8 @@ use std::path::Path;
 
 pub trait DXSample {
     fn new(filter: impl AsRef<Path>, command_line: &SampleCommandLine) -> Result<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 
     fn bind_to_window(&mut self, hwnd: &HWND) -> Result<()>;
 
@@ -69,8 +69,8 @@ fn build_command_line() -> SampleCommandLine {
 }
 
 fn run_sample<S>(mut sample: S) -> Result<()>
-    where
-        S: DXSample,
+where
+    S: DXSample,
 {
     let instance = unsafe { GetModuleHandleA(None)? };
 
@@ -214,7 +214,7 @@ fn get_hardware_adapter(factory: &IDXGIFactory4) -> Result<IDXGIAdapter1> {
                 std::ptr::null_mut::<Option<ID3D12Device>>(),
             )
         }
-            .is_ok()
+        .is_ok()
         {
             return Ok(adapter);
         }
@@ -223,18 +223,23 @@ fn get_hardware_adapter(factory: &IDXGIFactory4) -> Result<IDXGIAdapter1> {
     unreachable!()
 }
 
-unsafe extern "system" fn debug_log(category: D3D12_MESSAGE_CATEGORY, severity: D3D12_MESSAGE_SEVERITY, id: D3D12_MESSAGE_ID, pdescription: ::windows::core::PCSTR, pcontext: *mut ::core::ffi::c_void) {
+unsafe extern "system" fn debug_log(
+    category: D3D12_MESSAGE_CATEGORY,
+    severity: D3D12_MESSAGE_SEVERITY,
+    id: D3D12_MESSAGE_ID,
+    pdescription: ::windows::core::PCSTR,
+    pcontext: *mut ::core::ffi::c_void,
+) {
     unsafe {
         let desc = CStr::from_ptr(pdescription.as_ptr().cast());
         eprintln!("[{severity:?}-{category:?}] {desc:?}")
-
     }
 }
 
 pub mod d3d12_hello_triangle {
-    use std::path::Path;
-    use crate::filter_chain::FilterChainD3D12;
     use super::*;
+    use crate::filter_chain::FilterChainD3D12;
+    use std::path::Path;
 
     const FRAME_COUNT: u32 = 2;
 
@@ -274,10 +279,17 @@ pub mod d3d12_hello_triangle {
         fn new(filter: impl AsRef<Path>, command_line: &SampleCommandLine) -> Result<Self> {
             let (dxgi_factory, device) = create_device(command_line)?;
             //
-            // let queue = device.cast::<ID3D12InfoQueue1>()?;
-            // unsafe {
-            //     queue.RegisterMessageCallback(Some(debug_log), D3D12_MESSAGE_CALLBACK_FLAG_NONE, std::ptr::null_mut(), &mut 0).expect("could not register message callback");
-            // }
+            let queue = device.cast::<ID3D12InfoQueue1>()?;
+            unsafe {
+                queue
+                    .RegisterMessageCallback(
+                        Some(debug_log),
+                        D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+                        std::ptr::null_mut(),
+                        &mut 0,
+                    )
+                    .expect("could not register message callback");
+            }
             let filter = FilterChainD3D12::load_from_path(&device, filter, None).unwrap();
 
             Ok(Sample {
@@ -321,7 +333,7 @@ pub mod d3d12_hello_triangle {
                     None,
                 )?
             }
-                .cast()?;
+            .cast()?;
 
             // This sample does not support fullscreen transitions
             unsafe {
@@ -496,11 +508,7 @@ pub mod d3d12_hello_triangle {
         // Record commands.
         unsafe {
             // TODO: workaround for https://github.com/microsoft/win32metadata/issues/1006
-            command_list.ClearRenderTargetView(
-                rtv_handle,
-                &*[0.3, 0.4, 0.6, 1.0].as_ptr(),
-                &[],
-            );
+            command_list.ClearRenderTargetView(rtv_handle, &*[0.3, 0.4, 0.6, 1.0].as_ptr(), &[]);
             command_list.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             command_list.IASetVertexBuffers(0, Some(&[resources.vbv]));
             command_list.DrawInstanced(3, 1, 0, 0);
@@ -536,14 +544,13 @@ pub mod d3d12_hello_triangle {
     }
 
     fn create_device(command_line: &SampleCommandLine) -> Result<(IDXGIFactory4, ID3D12Device)> {
-        // unsafe {
-        //     let mut debug: Option<ID3D12Debug> = None;
-        //     if let Some(debug) = D3D12GetDebugInterface(&mut debug).ok().and(debug) {
-        //         eprintln!("enabling debug");
-        //         debug.EnableDebugLayer();
-        //     }
-        // }
-
+        unsafe {
+            let mut debug: Option<ID3D12Debug> = None;
+            if let Some(debug) = D3D12GetDebugInterface(&mut debug).ok().and(debug) {
+                eprintln!("enabling debug");
+                debug.EnableDebugLayer();
+            }
+        }
 
         let dxgi_factory_flags = DXGI_CREATE_FACTORY_DEBUG;
 
@@ -571,7 +578,7 @@ pub mod d3d12_hello_triangle {
         let signature = unsafe {
             D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &mut signature, None)
         }
-            .map(|()| signature.unwrap())?;
+        .map(|()| signature.unwrap())?;
 
         unsafe {
             device.CreateRootSignature(
@@ -609,7 +616,7 @@ pub mod d3d12_hello_triangle {
         device: &ID3D12Device,
         root_signature: &ID3D12RootSignature,
     ) -> Result<ID3D12PipelineState> {
-        let compile_flags =  D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+        let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 
         let vertex_shader = compile_shader(SHADER, b"VSMain\0", b"vs_5_0\0")?;
         let pixel_shader = compile_shader(SHADER, b"PSMain\0", b"ps_5_0\0")?;
@@ -791,8 +798,8 @@ pub mod d3d12_hello_triangle {
                     .fence
                     .SetEventOnCompletion(fence, resources.fence_event)
             }
-                .ok()
-                .unwrap();
+            .ok()
+            .unwrap();
 
             unsafe { WaitForSingleObject(resources.fence_event, INFINITE) };
         }
@@ -800,7 +807,6 @@ pub mod d3d12_hello_triangle {
         resources.frame_index = unsafe { resources.swap_chain.GetCurrentBackBufferIndex() };
     }
 }
-
 
 pub fn main<S: DXSample>(sample: S) -> Result<()> {
     run_sample(sample)?;
