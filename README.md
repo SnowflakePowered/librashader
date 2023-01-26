@@ -101,7 +101,9 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
     * HDR10 support is not part of the shader runtime and is not supported.
   * Vulkan 1.3+
-    * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html). This extension must be enabled at device creation to use librashader.
+    * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html) by default.
+      This extension must be enabled at device creation. Explicit render passes can be used by configuring filter chain options, but may have reduced performance 
+      compared to dynamic rendering.
     * UBOs use multiple discontiguous buffers. This may be improved in the future by switching to VMA rather than manually handling allocations.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,

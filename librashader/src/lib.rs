@@ -16,7 +16,9 @@
 //!
 //! ## Runtimes
 //! Currently available runtimes are Vulkan 1.3+, OpenGL 3.3+ and 4.6 (with DSA), and Direct3D 11.
-//! Work on the Direct3D 12 runtime is in progress. The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html).
+//! Work on the Direct3D 12 runtime is in progress. The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
+//! by default, unless [`FilterChainOptions::render_pass_format`](crate::runtime::vk::FilterChainOptions) is explicitly set. Note that dynamic rendering
+//! will being the best performance.
 //!
 //! | **API**     | **Status** | **`librashader` feature** |
 //! |-------------|------------|---------------------------|

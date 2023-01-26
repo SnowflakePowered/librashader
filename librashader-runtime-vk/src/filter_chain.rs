@@ -149,6 +149,7 @@ struct FrameResiduals {
     device: ash::Device,
     image_views: Vec<vk::ImageView>,
     owned: Vec<OwnedImage>,
+    framebuffers: Vec<Option<vk::Framebuffer>>
 }
 
 impl FrameResiduals {
@@ -157,6 +158,7 @@ impl FrameResiduals {
             device: device.clone(),
             image_views: Vec::new(),
             owned: Vec::new(),
+            framebuffers: Vec::new(),
         }
     }
 
@@ -168,12 +170,24 @@ impl FrameResiduals {
         self.owned.push(owned)
     }
 
+    pub(crate) fn dispose_framebuffers(&mut self, fb: Option<vk::Framebuffer>) {
+        self.framebuffers.push(fb)
+    }
+
     /// Dispose of the intermediate objects created during a frame.
     pub fn dispose(&mut self) {
         for image_view in self.image_views.drain(0..) {
             if image_view != vk::ImageView::null() {
                 unsafe {
                     self.device.destroy_image_view(image_view, None);
+                }
+            }
+        }
+        for framebuffer in self.framebuffers.drain(0..) {
+            if let Some(framebuffer) = framebuffer
+                && framebuffer != vk::Framebuffer::null() {
+                unsafe {
+                    self.device.destroy_framebuffer(framebuffer, None);
                 }
             }
         }
@@ -218,7 +232,8 @@ impl FilterChainVulkan {
         }
 
         // initialize passes
-        let filters = Self::init_passes(&device, passes, &semantics, frames_in_flight)?;
+        let filters = Self::init_passes(&device, passes, &semantics, frames_in_flight, options
+            .map(|o| o.render_pass_format).unwrap_or(vk::Format::UNDEFINED))?;
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
@@ -284,6 +299,7 @@ impl FilterChainVulkan {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         frames_in_flight: u32,
+        render_pass_format: vk::Format,
     ) -> error::Result<Box<[FilterPass]>> {
         let mut filters = Vec::new();
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
@@ -332,6 +348,7 @@ impl FilterChainVulkan {
                 &spirv_words,
                 &reflection,
                 frames_in_flight,
+                render_pass_format
             )?;
 
             // let ubo_ring = VkUboRing::new(
@@ -685,7 +702,7 @@ impl FilterChainVulkan {
                 output: OutputImage::new(&self.vulkan, target.image.clone())?,
             };
 
-            pass.draw(
+            let residual_fb = pass.draw(
                 cmd,
                 index,
                 &self.common,
@@ -709,6 +726,7 @@ impl FilterChainVulkan {
 
             source = self.common.output_inputs[index].as_ref().unwrap();
             intermediates.dispose_outputs(out.output);
+            intermediates.dispose_framebuffers(residual_fb);
         }
 
         // try to hint the optimizer
@@ -724,7 +742,7 @@ impl FilterChainVulkan {
                 output: OutputImage::new(&self.vulkan, viewport.output.clone())?,
             };
 
-            pass.draw(
+            let residual_fb = pass.draw(
                 cmd,
                 passes_len - 1,
                 &self.common,
@@ -737,6 +755,7 @@ impl FilterChainVulkan {
             )?;
 
             intermediates.dispose_outputs(out.output);
+            intermediates.dispose_framebuffers(residual_fb);
         }
 
         self.push_history(input, cmd, count)?;

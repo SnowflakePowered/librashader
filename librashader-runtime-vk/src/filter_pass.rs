@@ -95,7 +95,7 @@ impl FilterPass {
         original: &InputImage,
         source: &InputImage,
         output: &RenderTarget,
-    ) -> error::Result<()> {
+    ) -> error::Result<Option<vk::Framebuffer>> {
         let mut descriptor = self.graphics_pipeline.layout.descriptor_sets
             [(frame_count % self.frames_in_flight) as usize];
 
@@ -132,23 +132,9 @@ impl FilterPass {
 
         output.output.begin_pass(cmd);
 
-        let attachments = [vk::RenderingAttachmentInfo::builder()
-            .load_op(vk::AttachmentLoadOp::DONT_CARE)
-            .store_op(vk::AttachmentStoreOp::STORE)
-            .image_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-            .image_view(output.output.image_view)
-            .build()];
-
-        let rendering_info = vk::RenderingInfo::builder()
-            .layer_count(1)
-            .render_area(vk::Rect2D {
-                offset: vk::Offset2D { x: 0, y: 0 },
-                extent: output.output.size.into(),
-            })
-            .color_attachments(&attachments);
+        let residual = self.graphics_pipeline.begin_rendering(&parent.device, output, cmd)?;
 
         unsafe {
-            parent.device.cmd_begin_rendering(cmd, &rendering_info);
             parent.device.cmd_bind_pipeline(
                 cmd,
                 vk::PipelineBindPoint::GRAPHICS,
@@ -200,9 +186,9 @@ impl FilterPass {
                 .device
                 .cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
             parent.device.cmd_draw(cmd, 4, 1, 0, 0);
-            parent.device.cmd_end_rendering(cmd);
+            self.graphics_pipeline.end_rendering(&parent.device, cmd);
         }
-        Ok(())
+        Ok(residual)
     }
 
     fn build_semantics(

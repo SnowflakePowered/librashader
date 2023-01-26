@@ -30,12 +30,14 @@ pub use texture::VulkanImage;
 
 pub mod error;
 pub mod options;
+mod render_pass;
 
 #[cfg(test)]
 mod tests {
-
+    use ash::vk;
     use crate::filter_chain::FilterChainVulkan;
     use crate::hello_triangle::vulkan_base::VulkanBase;
+    use crate::options::FilterChainOptionsVulkan;
 
     #[test]
     fn triangle_vk() {
@@ -47,7 +49,11 @@ mod tests {
             // "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             // "../test/basic.slangp",
-            None,
+            Some(&FilterChainOptionsVulkan {
+                frames_in_flight: 3,
+                force_no_mipmaps: false,
+                render_pass_format: vk::Format::R8G8B8A8_UNORM,
+            }),
         )
         .unwrap();
 

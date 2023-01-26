@@ -5,6 +5,10 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use std::ffi::CStr;
+use crate::framebuffer::OutputImage;
+use crate::render_target::RenderTarget;
+use crate::render_pass::VulkanRenderPass;
+
 
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
@@ -173,6 +177,7 @@ impl Drop for VulkanShaderModule {
 pub struct VulkanGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     pub pipeline: vk::Pipeline,
+    pub render_pass: Option<VulkanRenderPass>
 }
 
 impl VulkanGraphicsPipeline {
@@ -182,6 +187,7 @@ impl VulkanGraphicsPipeline {
         shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
         reflection: &ShaderReflection,
         replicas: u32,
+        render_pass_format: vk::Format
     ) -> error::Result<VulkanGraphicsPipeline> {
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
@@ -280,7 +286,7 @@ impl VulkanGraphicsPipeline {
                 .build(),
         ];
 
-        let pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
+        let mut pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
             .stages(&shader_stages)
             .vertex_input_state(&pipeline_input_state)
             .input_assembly_state(&input_assembly)
@@ -290,8 +296,15 @@ impl VulkanGraphicsPipeline {
             .viewport_state(&viewport_state)
             .depth_stencil_state(&depth_stencil_state)
             .dynamic_state(&dynamic_state)
-            .layout(pipeline_layout.layout)
-            .build();
+            .layout(pipeline_layout.layout);
+
+        let mut render_pass = None;
+        if render_pass_format != vk::Format::UNDEFINED {
+            render_pass = Some(VulkanRenderPass::create_render_pass(&device, render_pass_format)?);
+            pipeline_info = pipeline_info.render_pass(render_pass.as_ref().unwrap().handle)
+        }
+
+        let pipeline_info = pipeline_info.build();
 
         let pipeline = unsafe {
             // panic_safety: if this is successful this should return 1 pipelines.
@@ -304,6 +317,81 @@ impl VulkanGraphicsPipeline {
         Ok(VulkanGraphicsPipeline {
             layout: pipeline_layout,
             pipeline,
+            render_pass,
         })
+    }
+
+    #[inline(always)]
+    pub(crate) fn begin_rendering(&self, device: &ash::Device, output: &RenderTarget, cmd: vk::CommandBuffer) -> error::Result<Option<vk::Framebuffer>>{
+        if let Some(render_pass) = &self.render_pass {
+            let attachments = [output.output.image_view];
+            let framebuffer = unsafe {
+                device.create_framebuffer(
+                    &vk::FramebufferCreateInfo::builder()
+                        .render_pass(render_pass.handle)
+                        .attachments(&attachments)
+                        .width(output.output.size.width)
+                        .height(output.output.size.height)
+                        .layers(1)
+                        .build(),
+                    None,
+                )?
+            };
+
+            let clear_values = [vk::ClearValue {
+                color: vk::ClearColorValue {
+                    float32: [0.0, 0.0, 0.0, 0.0]
+                }
+            }];
+
+            let render_pass_info = vk::RenderPassBeginInfo::builder()
+                .framebuffer(framebuffer)
+                .render_pass(render_pass.handle)
+                .clear_values(&clear_values)
+                // always render into the full output, regardless of viewport settings.
+                .render_area(vk::Rect2D {
+                    offset: vk::Offset2D {
+                        x: 0,
+                        y: 0,
+                    },
+                    extent: output.output.size.into(),
+                }).build();
+            unsafe {
+                device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
+            }
+            Ok(Some(framebuffer))
+        } else {
+            let attachments = [vk::RenderingAttachmentInfo::builder()
+                .load_op(vk::AttachmentLoadOp::DONT_CARE)
+                .store_op(vk::AttachmentStoreOp::STORE)
+                .image_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+                .image_view(output.output.image_view)
+                .build()];
+
+            let rendering_info = vk::RenderingInfo::builder()
+                .layer_count(1)
+                .render_area(vk::Rect2D {
+                    offset: vk::Offset2D { x: 0, y: 0 },
+                    extent: output.output.size.into(),
+                })
+                .color_attachments(&attachments)
+                .build();
+
+            unsafe {
+                device.cmd_begin_rendering(cmd, &rendering_info);
+            }
+            Ok(None)
+        }
+
+    }
+
+    pub(crate) fn end_rendering(&self, device: &ash::Device, cmd: vk::CommandBuffer) {
+        unsafe {
+            if self.render_pass.is_none() {
+                device.cmd_end_rendering(cmd);
+            } else {
+                device.cmd_end_render_pass(cmd)
+            }
+        }
     }
 }
