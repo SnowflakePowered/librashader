@@ -1,0 +1,44 @@
+[package]
+name = "librashader-runtime-d3d12"
+edition = "2021"
+
+license = "MPL-2.0 OR GPL-3.0-only"
+version = "0.1.0-beta.8"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
+
+[dependencies]
+librashader-common = { path = "../librashader-common", features = ["d3d12"], version = "0.1.0-beta.8" }
+librashader-presets = { path = "../librashader-presets", version = "0.1.0-beta.8" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-beta.8" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-beta.8", features = ["standalone"]  }
+librashader-runtime = { path = "../librashader-runtime", version = "0.1.0-beta.8" }
+thiserror = "1.0.37"
+spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
+
+rustc-hash = "1.1.0"
+bytemuck = "1.12.3"
+array-init = "2.1.0"
+bit-set = "0.5.3"
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.44.0"
+features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D12",
+    "Win32_Graphics_Direct3D_Fxc",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_UI_WindowsAndMessaging",
+]
+[dev-dependencies]
+gfx-maths = "0.2.8"
