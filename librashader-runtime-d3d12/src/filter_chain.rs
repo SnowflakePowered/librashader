@@ -88,8 +88,7 @@ impl FilterChainD3D12 {
                     &image,
                     texture.filter_mode,
                     texture.wrap_mode,
-                    // todo: mipmaps
-                    false,
+                    texture.mipmap,
                 )?;
                 luts.insert(index, texture);
                 residuals.push(staging);
