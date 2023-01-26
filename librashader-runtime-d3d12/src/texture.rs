@@ -7,6 +7,7 @@ use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_runtime::image::Image;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_UNKNOWN, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RANGE, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_STATE_COPY_DEST};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+use librashader_runtime::scaling::MipmapSize;
 
 pub struct LutTexture {
     resource: ID3D12Resource,
@@ -33,8 +34,7 @@ impl LutTexture {
             Width: source.size.width as u64,
             Height: source.size.height,
             DepthOrArraySize: 1,
-            MipLevels: 1, // todo: mipmaps
-            // MipLevels: if mipmap { u16::MAX } else { 1 },
+            MipLevels: if mipmap { source.size.calculate_miplevels() as u16 } else { 1 },
             Format: ImageFormat::R8G8B8A8Unorm.into(),
             SampleDesc: DXGI_SAMPLE_DESC {
                 Count: 1,
@@ -94,8 +94,6 @@ impl LutTexture {
         };
 
         let mut layout = D3D12_PLACED_SUBRESOURCE_FOOTPRINT::default();
-        // let mut numrows = 0;
-        // let mut rowsize = 0;
         let mut total = 0;
         // texture upload
         unsafe {
@@ -105,7 +103,8 @@ impl LutTexture {
                 1,
                 0,
                 Some(&mut layout),
-                None, None,
+                None,
+                None,
                 Some(&mut total),
             );
 
@@ -150,6 +149,8 @@ impl LutTexture {
 
             d3d12_resource_transition(cmd, &resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
         }
+
+
         // todo: upload image data to textur
 
         Ok((LutTexture {
@@ -161,6 +162,3 @@ impl LutTexture {
         }, upload))
     }
 }
-
-
-// todo https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Libraries/D3D12RaytracingFallback/Include/d3dx12.h#L1893

@@ -18,6 +18,7 @@ pub trait D3D12ShaderVisibleHeapType: D3D12HeapType {}
 
 pub struct SamplerPaletteHeap;
 pub struct LutTextureHeap;
+pub struct ResourceWorkHeap;
 
 impl D3D12ShaderVisibleHeapType for SamplerPaletteHeap {}
 
@@ -40,6 +41,19 @@ impl const D3D12HeapType for LutTextureHeap {
             Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
             NumDescriptors: size as u32,
             Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+            NodeMask: 0,
+        }
+    }
+}
+
+impl D3D12ShaderVisibleHeapType for ResourceWorkHeap {}
+impl const D3D12HeapType for ResourceWorkHeap {
+    // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
+    fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
+        D3D12_DESCRIPTOR_HEAP_DESC {
+            Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            NumDescriptors: size as u32,
+            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
             NodeMask: 0,
         }
     }
@@ -75,6 +89,7 @@ impl<T: D3D12ShaderVisibleHeapType> AsRef<D3D12_GPU_DESCRIPTOR_HANDLE>
 }
 
 struct D3D12DescriptorHeapInner {
+    device: ID3D12Device,
     heap: ID3D12DescriptorHeap,
     desc: D3D12_DESCRIPTOR_HEAP_DESC,
     cpu_start: D3D12_CPU_DESCRIPTOR_HANDLE,
@@ -116,6 +131,7 @@ impl<T> D3D12DescriptorHeap<T> {
 
             Ok(D3D12DescriptorHeap(
                 Arc::new(RefCell::new(D3D12DescriptorHeapInner {
+                    device: device.clone(),
                     heap,
                     desc,
                     cpu_start,
@@ -156,6 +172,26 @@ impl<T> D3D12DescriptorHeap<T> {
         }
 
         todo!("error need to fail");
+    }
+
+    pub fn copy_descriptors<const NUM_DESC: usize>(&mut self,
+                                                      source: &[impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE>; NUM_DESC])
+        -> error::Result<[D3D12DescriptorHeapSlot<T>; NUM_DESC]> {
+        let dest = array_init::try_array_init(|_| self.alloc_slot())?;
+        let mut inner = self.0.borrow_mut();
+
+        unsafe {
+            // unfortunately we can't guarantee that the source and dest descriptors are contiguous so...
+            for i in 0..NUM_DESC {
+                inner.device.CopyDescriptorsSimple(
+                    1,
+                    *dest[i].as_ref(),
+                    *source[i].as_ref(),
+                    inner.desc.Type
+                );
+            }
+        }
+        Ok(dest)
     }
 }
 
