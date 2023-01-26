@@ -160,7 +160,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_frame(
     libra_d3d11_filter_chain_t *chain, size_t frame_count,
     struct libra_source_image_d3d11_t image, struct libra_viewport_t viewport,
     const ID3D11RenderTargetView *out, const float *mvp,
-    const struct frame_vk_opt_t *opt) {
+    const struct frame_d3d11_opt_t *opt) {
     return NULL;
 }
 
@@ -202,7 +202,7 @@ libra_error_t __librashader__noop_vk_filter_chain_frame(
     libra_vk_filter_chain_t *chain, VkCommandBuffer command_buffer,
     size_t frame_count, struct libra_image_vk_t image,
     struct libra_viewport_t viewport, struct libra_image_vk_t out,
-    const float *mvp, const struct FrameOptionsVulkan *opt) {
+    const float *mvp, const struct frame_vk_opt_t *opt) {
     return NULL;
 }
 
