@@ -85,6 +85,8 @@ struct D3D12DescriptorHeapInner {
     //
     //  0 - Occupied
     //  1 - free
+
+    // todo: actually use a bitset here.
     map: Box<[bool]>,
 }
 
