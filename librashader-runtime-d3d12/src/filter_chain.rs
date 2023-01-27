@@ -18,6 +18,7 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
+use crate::mipmap::D3D12MipmapGen;
 
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
@@ -39,6 +40,7 @@ pub(crate) struct FilterCommon {
     // pub disable_mipmaps: bool,
     lut_heap: D3D12DescriptorHeap<LutTextureHeap>,
     luts: FxHashMap<usize, LutTexture>,
+    mipmap_gen: D3D12MipmapGen,
 }
 
 impl FilterChainD3D12 {
@@ -124,8 +126,9 @@ impl FilterChainD3D12 {
         )?;
 
         let samplers = SamplerSet::new(device)?;
-        let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
+        let mipmap_gen = D3D12MipmapGen::new(device)?;
 
+        let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
         let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures)?;
 
         Ok(FilterChainD3D12 {
@@ -134,6 +137,7 @@ impl FilterChainD3D12 {
                 samplers,
                 lut_heap,
                 luts,
+                mipmap_gen,
             },
         })
     }
