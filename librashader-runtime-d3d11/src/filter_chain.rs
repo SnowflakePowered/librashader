@@ -45,7 +45,6 @@ pub struct FilterChainD3D11 {
     pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
     pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
-    pub(crate) draw_quad: DrawQuad,
 }
 
 pub(crate) struct Direct3D11 {
@@ -64,6 +63,7 @@ pub(crate) struct FilterCommon {
     pub history_textures: Box<[Option<InputTexture>]>,
     pub config: FilterMutable,
     pub disable_mipmaps: bool,
+    pub(crate) draw_quad: DrawQuad,
 }
 
 impl FilterChainD3D11 {
@@ -163,7 +163,6 @@ impl FilterChainD3D11 {
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             history_framebuffers,
-            draw_quad,
             common: FilterCommon {
                 d3d11: Direct3D11 {
                     device: device.clone(),
@@ -185,6 +184,7 @@ impl FilterChainD3D11 {
                 output_textures: output_textures.into_boxed_slice(),
                 feedback_textures: feedback_textures.into_boxed_slice(),
                 history_textures,
+                draw_quad,
             },
         })
     }
@@ -433,8 +433,6 @@ impl FilterChainD3D11 {
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
-        self.draw_quad.bind_vertices();
-
         for ((texture, fbo), pass) in self
             .common
             .feedback_textures
@@ -491,7 +489,6 @@ impl FilterChainD3D11 {
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             let size = target.size;
-
             pass.draw(
                 index,
                 &self.common,

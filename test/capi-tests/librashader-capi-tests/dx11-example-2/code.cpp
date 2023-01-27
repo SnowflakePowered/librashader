@@ -39,7 +39,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     ID3D11DeviceContext* baseDeviceContext;
 
     D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
-                      D3D11_CREATE_DEVICE_BGRA_SUPPORT, featureLevels,
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG, featureLevels,
                       ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &baseDevice,
                       nullptr, &baseDeviceContext);
 
@@ -64,8 +64,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         &preset);
 
     libra_d3d11_filter_chain_t filter_chain;
+    filter_chain_d3d11_opt_t opt = {
+        .use_deferred_context = true,
+        .force_no_mipmaps = false,
+    };
 
-    libra.d3d11_filter_chain_create(&preset, NULL, device, &filter_chain);
+    libra.d3d11_filter_chain_create(&preset, &opt, device, &filter_chain);
     ///////////////////////////////////////////////////////////////////////////////////////////////
     IDXGIDevice1* dxgiDevice;
 
@@ -392,7 +396,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         MSG msg;
 
         while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE)) {
-            //if (msg.message == WM_KEYDOWN) return 0;
+            if (msg.message == WM_KEYDOWN) return 0;
             DispatchMessageA(&msg);
         }
 
@@ -476,9 +480,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                                             framebufferVP.Width};
 
         libra_viewport_t vp = {0, 0, framebufferVP.Height, framebufferVP.Width};
+        frame_d3d11_opt_t frame_opt = {.clear_history = false,
+                                   .frame_direction = -1};
 
         libra.d3d11_filter_chain_frame(&filter_chain, frameCount, input, vp,
-                                       framebufferRTV, NULL, NULL);
+                                       framebufferRTV, NULL, &frame_opt);
 
         ////////////////////////////////////////////////////////////////////////
         swapChain->Present(1, 0);

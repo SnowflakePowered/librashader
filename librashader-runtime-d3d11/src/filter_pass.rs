@@ -157,6 +157,7 @@ impl FilterPass {
             }
         }
         unsafe {
+            parent.draw_quad.bind_vertices();
             context.IASetInputLayout(&self.vertex_layout);
             context.VSSetShader(&self.vertex_shader, None);
             context.PSSetShader(&self.pixel_shader, None);
