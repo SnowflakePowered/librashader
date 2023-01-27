@@ -4,7 +4,7 @@ use crate::ffi::extern_fn;
 use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
 use std::ffi::c_char;
 use std::ffi::CStr;
-use std::mem::MaybeUninit;
+use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 use std::slice;
 use windows::Win32::Graphics::Direct3D11::{
@@ -20,7 +20,7 @@ use librashader::runtime::{FilterChainParameters, Size, Viewport};
 #[repr(C)]
 pub struct libra_source_image_d3d11_t {
     /// A shader resource view into the source image
-    pub handle: ID3D11ShaderResourceView,
+    pub handle: ManuallyDrop<ID3D11ShaderResourceView>,
     /// The height of the source image.
     pub height: u32,
     /// The width of the source image.
@@ -34,7 +34,7 @@ impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
         let handle = value.handle.clone();
 
         Ok(D3D11InputView {
-            handle,
+            handle: ManuallyDrop::into_inner(handle),
             size: Size::new(value.width, value.height),
         })
     }
@@ -54,7 +54,7 @@ extern_fn! {
     fn libra_d3d11_filter_chain_create(
         preset: *mut libra_shader_preset_t,
         options: *const FilterChainOptionsD3D11,
-        device: ID3D11Device,
+        device: ManuallyDrop<ID3D11Device>,
         out: *mut MaybeUninit<libra_d3d11_filter_chain_t>
     ) {
         assert_non_null!(preset);
@@ -101,7 +101,7 @@ extern_fn! {
         frame_count: usize,
         image: libra_source_image_d3d11_t,
         viewport: libra_viewport_t,
-        out: ID3D11RenderTargetView,
+        out: ManuallyDrop<ID3D11RenderTargetView>,
         mvp: *const f32,
         opt: *const FrameOptionsD3D11
     ) mut |chain| {
@@ -124,7 +124,7 @@ extern_fn! {
             y: viewport.y,
             output: D3D11OutputView {
                 size: Size::new(viewport.width, viewport.height),
-                handle: out.clone(),
+                handle: ManuallyDrop::into_inner(out.clone()),
             },
             mvp,
         };

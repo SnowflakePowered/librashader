@@ -257,7 +257,7 @@ pub mod d3d11_hello_triangle {
         pub elapsed: f32,
         triangle_uniform_values: TriangleUniforms,
         pub backbuffer: ID3D11Texture2D,
-        pub rtv: ID3D11RenderTargetView,
+        pub backbuffer_rtv: ID3D11RenderTargetView,
         pub viewport: D3D11_VIEWPORT,
         pub shader_output: Option<ID3D11Texture2D>,
         pub frame_count: usize,
@@ -325,7 +325,7 @@ pub mod d3d11_hello_triangle {
 
             self.resources = Some(Resources {
                 swapchain,
-                rtv,
+                backbuffer_rtv: rtv,
                 backbuffer,
                 depth_buffer,
                 depth_stencil_view,
@@ -399,7 +399,7 @@ pub mod d3d11_hello_triangle {
                     Some(&[resources.triangle_uniforms.clone()]),
                 );
                 self.context.OMSetRenderTargets(
-                    Some(&[resources.rtv.clone()]),
+                    Some(&[resources.backbuffer_rtv.clone()]),
                     &resources.depth_stencil_view,
                 );
                 self.context.RSSetViewports(Some(&[resources.viewport]))
@@ -408,7 +408,7 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 let color = [0.3, 0.4, 0.6, 1.0];
                 self.context
-                    .ClearRenderTargetView(&resources.rtv, color.as_ptr());
+                    .ClearRenderTargetView(&resources.backbuffer_rtv, color.as_ptr());
                 self.context.ClearDepthStencilView(
                     &resources.depth_stencil_view,
                     D3D11_CLEAR_DEPTH.0 as u32,
@@ -444,7 +444,7 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 let mut tex2d_desc = Default::default();
                 resources.backbuffer.GetDesc(&mut tex2d_desc);
-                let mut backup = None;
+                let mut backbuffer_copy = None;
 
                 self.device.CreateTexture2D(
                     &D3D11_TEXTURE2D_DESC {
@@ -453,13 +453,13 @@ pub mod d3d11_hello_triangle {
                         ..tex2d_desc
                     },
                     None,
-                    Some(&mut backup),
+                    Some(&mut backbuffer_copy),
                 )?;
-                let backup = backup.unwrap();
+                let backup = backbuffer_copy.unwrap();
 
                 self.context.CopyResource(&backup, &resources.backbuffer);
 
-                let mut srv = None;
+                let mut copy_srv = None;
                 self.device.CreateShaderResourceView(
                     &backup,
                     Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
@@ -472,9 +472,9 @@ pub mod d3d11_hello_triangle {
                             },
                         },
                     }),
-                    Some(&mut srv),
+                    Some(&mut copy_srv),
                 )?;
-                let srv = srv.unwrap();
+                let srv = copy_srv.unwrap();
 
                 let mut shader_out = None;
                 self.device
@@ -494,23 +494,6 @@ pub mod d3d11_hello_triangle {
                     Some(&mut rtv),
                 )?;
 
-                // OutputFramebuffer {
-                //                             rtv: resources.rtv.clone(),
-                //                             // rtv,
-                //                             size: Size {
-                //                                 width: tex2d_desc.Width,
-                //                                 height: tex2d_desc.Height,
-                //                             },
-                //                             viewport: resources.viewport, // viewport: D3D11_VIEWPORT {
-                //                                                           //     TopLeftX: 0.0,
-                //                                                           //     TopLeftY: 0.0,
-                //                                                           //     Width: tex2d_desc.Width as f32,
-                //                                                           //     Height:  tex2d_desc.Height as f32,
-                //                                                           //     MinDepth: 0.0,
-                //                                                           //     MaxDepth: 1.0,
-                //                                                           // },
-                //                         },
-
                 self.filter
                     .frame(
                         D3D11InputView {
@@ -528,7 +511,7 @@ pub mod d3d11_hello_triangle {
                                     width: tex2d_desc.Width,
                                     height: tex2d_desc.Height,
                                 },
-                                handle: resources.rtv.clone(),
+                                handle: resources.backbuffer_rtv.clone(),
                             },
                             mvp: None,
                         },
