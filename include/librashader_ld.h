@@ -26,12 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __LIBRASHADER_LD_H__
 #define __LIBRASHADER_LD_H__
 #pragma once
-#define LIBRA_RUNTIME_OPENGL
-#define LIBRA_RUNTIME_VULKAN
 
-#if defined(_WIN32)
-#define LIBRA_RUNTIME_D3D11
-#endif
+// Uncomment the following defines to activate runtimes.
+ 
+//#define LIBRA_RUNTIME_OPENGL
+//#define LIBRA_RUNTIME_VULKAN
+//
+//#if defined(_WIN32)
+//#define LIBRA_RUNTIME_D3D11
+//#endif
 
 #if defined(_WIN32)
 #include <windows.h>

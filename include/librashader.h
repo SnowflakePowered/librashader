@@ -23,6 +23,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 #ifndef __LIBRASHADER_H__
 #define __LIBRASHADER_H__
 
@@ -36,11 +37,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
 #include <d3d11.h>
 #else
-typedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D11ShaderResourceView;
+typedef void ID3D11Device;
+typedef void ID3D11RenderTargetView;
+typedef void ID3D11ShaderResourceView;
 #endif
 #if defined(LIBRA_RUNTIME_VULKAN)
 #include <vulkan\vulkan.h>
+#else
+typedef int32_t VkFormat;
+typedef uint64_t VkImage;
+typedef void* VkPhysicalDevice;
+typedef void* VkInstance;
+typedef void* VkCommandBuffer;
 #endif
+
 
 /// Error codes for librashader error types.
 enum LIBRA_ERRNO
@@ -199,7 +209,7 @@ typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
 /// OpenGL parameters for the source image.
 typedef struct libra_source_image_d3d11_t {
   /// A shader resource view into the source image
-  const ID3D11ShaderResourceView *handle;
+  const ID3D11ShaderResourceView * handle;
   /// The height of the source image.
   uint32_t height;
   /// The width of the source image.
@@ -238,6 +248,11 @@ typedef struct filter_chain_vk_opt_t {
     uint32_t frames_in_flight;
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     bool force_no_mipmaps;
+    /// The format to use for the render pass. If this is `VK_FORMAT_UNDEFINED`, dynamic rendering
+    /// will be used instead of a render pass. If this is set to some format, the render passes
+    /// will be created with such format. It is recommended if possible to use dynamic rendering,
+    /// because render-pass mode will create new framebuffers per pass.
+    VkFormat render_pass_format;
 } filter_chain_vk_opt_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -382,7 +397,7 @@ typedef libra_error_t (*PFN_libra_gl_filter_chain_free)(libra_gl_filter_chain_t 
 ///libra_d3d11_filter_chain_create
 typedef libra_error_t (*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset_t *preset,
                                                              const struct filter_chain_d3d11_opt_t *options,
-                                                             const ID3D11Device *device,
+                                                             const ID3D11Device * device,
                                                              libra_d3d11_filter_chain_t *out);
 #endif
 
@@ -393,7 +408,7 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_c
                                                             size_t frame_count,
                                                             struct libra_source_image_d3d11_t image,
                                                             struct libra_viewport_t viewport,
-                                                            const ID3D11RenderTargetView *out,
+                                                            const ID3D11RenderTargetView * out,
                                                             const float *mvp,
                                                             const struct frame_d3d11_opt_t *opt);
 #endif
@@ -717,10 +732,11 @@ libra_error_t libra_gl_filter_chain_free(libra_gl_filter_chain_t *chain);
 /// ## Safety:
 /// - `preset` must be either null, or valid and aligned.
 /// - `options` must be either null, or valid and aligned.
+/// - `device` must not be null.
 /// - `out` must be aligned, but may be null, invalid, or uninitialized.
 libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t *preset,
                                               const struct filter_chain_d3d11_opt_t *options,
-                                              const ID3D11Device *device,
+                                              const ID3D11Device * device,
                                               libra_d3d11_filter_chain_t *out);
 #endif
 
@@ -734,11 +750,13 @@ libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t *preset,
 ///    values for the model view projection matrix.
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
 ///    struct.
+/// - `out` must not be null.
+/// - `image.handle` must not be null.
 libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
                                              size_t frame_count,
                                              struct libra_source_image_d3d11_t image,
                                              struct libra_viewport_t viewport,
-                                             const ID3D11RenderTargetView *out,
+                                             const ID3D11RenderTargetView * out,
                                              const float *mvp,
                                              const struct frame_d3d11_opt_t *opt);
 #endif

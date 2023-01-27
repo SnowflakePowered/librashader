@@ -4,7 +4,51 @@ include_guard = "__LIBRASHADER_H__"
 pragma_once = true
 usize_is_size_t = true
 documentation_style = "c++"
-after_includes = "#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)\n#include <d3d11.h>\n#else\ntypedef void ID3D11Device;typedef void ID3D11RenderTargetView;typedef void ID3D11ShaderResourceView;\n#endif\n#if defined(LIBRA_RUNTIME_VULKAN)\n#include <vulkan\\vulkan.h>\n#endif"
+header = """
+/*
+librashader.h
+SPDX-License-Identifier: MIT
+This file is part of the librashader C headers.
+
+Copyright 2022 chyyran
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+"""
+
+after_includes = """
+#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
+#include <d3d11.h>
+#else
+typedef void ID3D11Device;
+typedef void ID3D11RenderTargetView;
+typedef void ID3D11ShaderResourceView;
+#endif
+#if defined(LIBRA_RUNTIME_VULKAN)
+#include <vulkan\\vulkan.h>
+#else
+typedef int32_t VkFormat;
+typedef uint64_t VkImage;
+typedef void* VkPhysicalDevice;
+typedef void* VkInstance;
+typedef void* VkCommandBuffer;
+#endif
+"""
 
 [defines]
 "feature = runtime-opengl" = "LIBRA_RUNTIME_OPENGL"
@@ -96,3 +140,8 @@ include = [
 "CommandBuffer" = "VkCommandBuffer"
 "Format" = "VkFormat"
 "Image" = "VkImage"
+
+#hack to get proper pointer indirection for COM pointers
+"ID3D11Device" = "const ID3D11Device *"
+"ID3D11RenderTargetView" = "const ID3D11RenderTargetView *"
+"ID3D11ShaderResourceView" = "const ID3D11ShaderResourceView *"
