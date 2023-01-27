@@ -279,17 +279,19 @@ pub mod d3d12_hello_triangle {
         fn new(filter: impl AsRef<Path>, command_line: &SampleCommandLine) -> Result<Self> {
             let (dxgi_factory, device) = create_device(command_line)?;
             //
-            let queue = device.cast::<ID3D12InfoQueue1>()?;
-            unsafe {
-                queue
-                    .RegisterMessageCallback(
-                        Some(debug_log),
-                        D3D12_MESSAGE_CALLBACK_FLAG_NONE,
-                        std::ptr::null_mut(),
-                        &mut 0,
-                    )
-                    .expect("could not register message callback");
+            if let Ok(queue) = device.cast::<ID3D12InfoQueue1>() {
+                unsafe {
+                    queue
+                        .RegisterMessageCallback(
+                            Some(debug_log),
+                            D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+                            std::ptr::null_mut(),
+                            &mut 0,
+                        )
+                        .expect("could not register message callback");
+                }
             }
+
             let filter = FilterChainD3D12::load_from_path(&device, filter, None).unwrap();
 
             Ok(Sample {
