@@ -32,8 +32,7 @@ The C API is geared more towards integration with existing projects. The Rust `l
 of the internals if you wish to use parts of librashader piecemeal.
 
 The librashader C API is best used by linking statically with `librashader_ld`, which implements a loader that dynamically
-loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. You may also link against
-`librashader_capi` directly at compile time with [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
+loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. 
 
 ### Building
 
@@ -67,8 +66,9 @@ works best.
 * `libra_d3d11_*`
 * `libra_d3d12_*`
 
-If you do not mind linking against `librashader_capi` directly, [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h)
-is unlikely to break API stability. 
+Linking against `librashader.h` directly is possible, but is not officially supported. You will need to ensure linkage
+parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`. The [corrosion](https://github.com/corrosion-rs/)
+CMake package is highly recommended.
 
 ## Compatibility
 
