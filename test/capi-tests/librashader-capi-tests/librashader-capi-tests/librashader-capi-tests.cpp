@@ -16,6 +16,11 @@ int main()
         "gameboy-player-crt-royale.slangp",
         &preset);
 
+    libra_shader_preset_t preset2;
+    libra_preset_create(
+        "../../../slang-shaders/border/gameboy-player/"
+        "gameboy-player-crt-royale.slangp",
+        &preset2);
     
     instance.preset_print(&preset);
     std::cout << "printed\n";

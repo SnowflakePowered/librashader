@@ -70,6 +70,16 @@ Linking against `librashader.h` directly is possible, but is not officially supp
 parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`. The [corrosion](https://github.com/corrosion-rs/)
 CMake package is highly recommended.
 
+### Examples
+
+The following Rust examples show how to use each librashader runtime.
+* [Vulkan](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-vk/src/lib.rs#L40)
+* [OpenGL](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-gl/src/lib.rs#L34)
+* [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/src/lib.rs#L33)
+
+Some basic examples on using the C API are also provided in the [librashader-capi-tests](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/librashader-capi-tests)
+directory.
+
 ## Compatibility
 
 librashader implements the entire RetroArch shader pipeline and is highly compatible with existing shaders,

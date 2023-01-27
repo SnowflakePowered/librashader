@@ -4,3 +4,6 @@
 [submodule "naga"]
 	path = naga
 	url = https://github.com/chyyran/naga
+[submodule "test/capi-tests/librashader-capi-tests/dx11-example/external/crosswindow"]
+	path = test/capi-tests/librashader-capi-tests/dx11-example/external/crosswindow
+	url = https://github.com/alaingalvan/crosswindow.git
