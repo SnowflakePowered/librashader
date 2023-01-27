@@ -149,10 +149,10 @@ typedef struct libra_source_image_gl_t {
   uint32_t handle;
   /// The format of the source image.
   uint32_t format;
-  /// The height of the source image.
-  uint32_t height;
   /// The width of the source image.
   uint32_t width;
+  /// The height of the source image.
+  uint32_t height;
 } libra_source_image_gl_t;
 #endif
 
@@ -162,10 +162,10 @@ typedef struct libra_viewport_t {
     float x;
     /// The y offset in the viewport framebuffer to begin rendering from.
     float y;
-    /// The height of the viewport framebuffer.
-    uint32_t height;
     /// The width of the viewport framebuffer.
     uint32_t width;
+    /// The height of the viewport framebuffer.
+    uint32_t height;
 } libra_viewport_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -206,14 +206,14 @@ typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-/// OpenGL parameters for the source image.
+/// Direct3D 11 parameters for the source image.
 typedef struct libra_source_image_d3d11_t {
   /// A shader resource view into the source image
   const ID3D11ShaderResourceView * handle;
-  /// The height of the source image.
-  uint32_t height;
   /// The width of the source image.
   uint32_t width;
+  /// The height of the source image.
+  uint32_t height;
 } libra_source_image_d3d11_t;
 #endif
 
@@ -261,16 +261,16 @@ typedef struct _filter_chain_vk *libra_vk_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-/// Vulkan  parameters for the source image.
+/// Vulkan parameters for the source image.
 typedef struct libra_image_vk_t {
   /// A raw `VkImage` handle to the source image.
   VkImage handle;
   /// The `VkFormat` of the source image.
   VkFormat format;
-  /// The height of the source image.
-  uint32_t height;
   /// The width of the source image.
   uint32_t width;
+  /// The height of the source image.
+  uint32_t height;
 } libra_image_vk_t;
 #endif
 

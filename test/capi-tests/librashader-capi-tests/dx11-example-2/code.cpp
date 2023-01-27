@@ -476,10 +476,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         deviceContext->CopyResource(framebufferCopy, framebufferTexture);
 
-        libra_source_image_d3d11_t input = {framebufferCopySRV, framebufferVP.Height,
-                                            framebufferVP.Width};
+        libra_source_image_d3d11_t input = {framebufferCopySRV,
+                                            framebufferVP.Width,
+                                            framebufferVP.Height
+        };
 
-        libra_viewport_t vp = {0, 0, framebufferVP.Height, framebufferVP.Width};
+        libra_viewport_t vp = {0, 0, framebufferVP.Width, framebufferVP.Height,};
         frame_d3d11_opt_t frame_opt = {.clear_history = false,
                                    .frame_direction = -1};
 

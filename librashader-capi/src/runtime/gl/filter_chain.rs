@@ -23,10 +23,10 @@ pub struct libra_source_image_gl_t {
     pub handle: u32,
     /// The format of the source image.
     pub format: u32,
-    /// The height of the source image.
-    pub height: u32,
     /// The width of the source image.
     pub width: u32,
+    /// The height of the source image.
+    pub height: u32,
 }
 
 /// OpenGL parameters for the output framebuffer.

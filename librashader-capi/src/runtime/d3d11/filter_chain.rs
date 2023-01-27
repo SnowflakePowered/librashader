@@ -21,10 +21,10 @@ use librashader::runtime::{FilterChainParameters, Size, Viewport};
 pub struct libra_source_image_d3d11_t {
     /// A shader resource view into the source image
     pub handle: ManuallyDrop<ID3D11ShaderResourceView>,
-    /// The height of the source image.
-    pub height: u32,
     /// The width of the source image.
     pub width: u32,
+    /// The height of the source image.
+    pub height: u32,
 }
 
 impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
