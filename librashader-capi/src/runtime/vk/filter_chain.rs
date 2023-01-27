@@ -21,7 +21,7 @@ pub use ash::vk::PFN_vkGetInstanceProcAddr;
 pub type libra_PFN_vkGetInstanceProcAddr =
     unsafe extern "system" fn(instance: *mut c_void, p_name: *const c_char);
 
-/// Vulkan  parameters for the source image.
+/// Vulkan parameters for the source image.
 #[repr(C)]
 pub struct libra_image_vk_t {
     /// A raw `VkImage` handle to the source image.

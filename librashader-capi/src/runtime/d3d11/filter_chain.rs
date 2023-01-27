@@ -16,7 +16,7 @@ pub use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
-/// OpenGL parameters for the source image.
+/// Direct3D 11 parameters for the source image.
 #[repr(C)]
 pub struct libra_source_image_d3d11_t {
     /// A shader resource view into the source image
