@@ -1,4 +1,8 @@
 // based off https://github.com/kevinmoran/BeginnerDirect3D11/tree/master/02.%20Drawing%20a%20Triangle
+//
+// This example should not be taken as "good" code, it is just an example of how to use librashader in Direct3D11.
+// 
+// Namely, you should not recreate the input texture every frame. It is much cheaper to have one long lived copy texture.
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define UNICODE
