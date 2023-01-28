@@ -11,6 +11,9 @@ pub enum PreprocessError {
     /// An IO error occurred when reading the source file.
     #[error("the file was not found during resolution")]
     IOError(PathBuf, std::io::Error),
+    /// A known encoding was not found for the file.
+    #[error("a known encoding was not found for the file. supported encodings are UTF-8 and Latin-1")]
+    EncodingError(PathBuf),
     /// Unexpected EOF when reading the source file.
     #[error("unexpected end of file")]
     UnexpectedEof,

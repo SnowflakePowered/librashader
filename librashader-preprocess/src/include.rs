@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::str::Lines;
+use encoding_rs::{DecoderResult, WINDOWS_1252};
 
 #[cfg(feature = "line_directives")]
 const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &str =
@@ -10,11 +11,34 @@ const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &str =
 
 fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
     let path = path.as_ref();
-    let mut source = String::new();
+    let mut buf = Vec::new();
     File::open(path)
-        .and_then(|mut f| f.read_to_string(&mut source))
+        .and_then(|mut f| {
+            f.read_to_end(&mut buf)?;
+            Ok(())
+        })
         .map_err(|e| PreprocessError::IOError(path.to_path_buf(), e))?;
-    Ok(source)
+
+    match String::from_utf8(buf) {
+        Ok(s) => Ok(s),
+        Err(e) => {
+            let buf = e.into_bytes();
+            let decoder = WINDOWS_1252.new_decoder();
+            let Some(len) = decoder.max_utf8_buffer_length_without_replacement(buf.len()) else {
+                return Err(PreprocessError::EncodingError(path.to_path_buf()))
+            };
+
+            let mut latin1_string = String::with_capacity(len);
+
+            let (result, _) = WINDOWS_1252.new_decoder()
+                .decode_to_string_without_replacement(&buf, &mut latin1_string, true);
+            if result == DecoderResult::InputEmpty {
+                Ok(latin1_string)
+            } else {
+                Err(PreprocessError::EncodingError(path.to_path_buf()))
+            }
+        }
+    }
 }
 
 pub fn read_source(path: impl AsRef<Path>) -> Result<String, PreprocessError> {

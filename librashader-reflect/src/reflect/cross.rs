@@ -261,7 +261,7 @@ where
         blame: SemanticErrorBlame,
     ) -> Result<u32, ShaderReflectError> {
         let size = ast.get_declared_struct_size(push.base_type_id)?;
-        if size >= MAX_PUSH_BUFFER_SIZE {
+        if size > MAX_PUSH_BUFFER_SIZE {
             return Err(blame.error(SemanticsErrorKind::InvalidPushBufferSize(size)));
         }
         Ok(size)
