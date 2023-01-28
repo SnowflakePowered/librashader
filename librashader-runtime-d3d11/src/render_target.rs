@@ -7,7 +7,7 @@ use windows::Win32::Graphics::Direct3D11::D3D11_VIEWPORT;
 static DEFAULT_MVP: &[f32; 16] = &[
     2f32, 0.0, 0.0, 0.0,
     0.0, 2.0, 0.0, 0.0,
-    0.0, 0.0, 2.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
     -1.0, -1.0, 0.0, 1.0,
 ];
 
