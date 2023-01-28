@@ -1,13 +1,14 @@
 use std::mem::ManuallyDrop;
 use crate::error;
 use crate::error::assume_d3d12_init;
-use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, LutTextureHeap};
+use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, LutTextureHeap, ResourceWorkHeap};
 use crate::util::{d3d12_get_closest_format, d3d12_resource_transition, d3d12_update_subresources};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_runtime::image::Image;
-use windows::Win32::Graphics::Direct3D12::{ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_UNKNOWN, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RANGE, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_STATE_COPY_DEST};
+use windows::Win32::Graphics::Direct3D12::{ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_UNKNOWN, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RANGE, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use librashader_runtime::scaling::MipmapSize;
+use crate::mipmap::{D3D12MipmapGen, MipmapGenContext};
 
 pub struct LutTexture {
     resource: ID3D12Resource,
@@ -15,6 +16,7 @@ pub struct LutTexture {
     size: Size<u32>,
     filter: FilterMode,
     wrap_mode: WrapMode,
+    miplevels: Option<u16>,
 }
 
 impl LutTexture {
@@ -28,13 +30,14 @@ impl LutTexture {
         mipmap: bool,
     ) -> error::Result<(LutTexture, ID3D12Resource)> {
         // todo: d3d12:800
+        let miplevels = source.size.calculate_miplevels() as u16;
         let mut desc = D3D12_RESOURCE_DESC {
             Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
             Alignment: 0,
             Width: source.size.width as u64,
             Height: source.size.height,
             DepthOrArraySize: 1,
-            MipLevels: if mipmap { source.size.calculate_miplevels() as u16 } else { 1 },
+            MipLevels: if mipmap { miplevels } else { 1 },
             Format: ImageFormat::R8G8B8A8Unorm.into(),
             SampleDesc: DXGI_SAMPLE_DESC {
                 Count: 1,
@@ -44,11 +47,17 @@ impl LutTexture {
             Flags: Default::default(),
         };
 
-        let format_support = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+        let mut format_support = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
             Format: desc.Format,
             Support1: D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE,
             ..Default::default()
         };
+
+        if mipmap {
+            desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
+            format_support.Support2 |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+        }
 
         desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
         let descriptor = heap.alloc_slot()?;
@@ -150,15 +159,23 @@ impl LutTexture {
             d3d12_resource_transition(cmd, &resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
         }
 
-
-        // todo: upload image data to textur
-
         Ok((LutTexture {
             resource,
             descriptor,
             size: source.size,
             filter,
             wrap_mode,
+            miplevels: if mipmap { Some(miplevels) } else { None }
         }, upload))
+    }
+
+    pub fn generate_mipmaps(&self, gen_mips: &mut MipmapGenContext) -> error::Result<()> {
+        if let Some(miplevels) = self.miplevels {
+            gen_mips.generate_mipmaps(&self.resource,
+                                      miplevels as u16,
+                                      self.size, ImageFormat::R8G8B8A8Unorm.into())?
+        }
+
+        Ok(())
     }
 }
