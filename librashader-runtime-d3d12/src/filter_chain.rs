@@ -1,5 +1,6 @@
+use std::borrow::Borrow;
 use crate::error;
-use crate::heap::{D3D12DescriptorHeap, LutTextureHeap};
+use crate::heap::{D3D12DescriptorHeap, LutTextureHeap, ResourceWorkHeap};
 use crate::samplers::SamplerSet;
 use crate::texture::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
@@ -11,12 +12,14 @@ use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
 use windows::core::Interface;
+use windows::w;
+use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandList, ID3D12CommandQueue, ID3D12Device, ID3D12Fence,
     ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
     D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
 };
-use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
+use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 use crate::mipmap::D3D12MipmapGen;
 
@@ -59,7 +62,9 @@ impl FilterChainD3D12 {
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<LutTextureHeap>,
         textures: &[TextureConfig],
+        mipmap_gen: &D3D12MipmapGen
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
+        let mut work_heap: D3D12DescriptorHeap<ResourceWorkHeap> = D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
         unsafe {
             // 1 time queue infrastructure for lut uploads
             let command_pool: ID3D12CommandAllocator =
@@ -74,11 +79,14 @@ impl FilterChainD3D12 {
                     NodeMask: 0,
                 })?;
 
+            queue.SetName(w!("LutQueue"))?;
+
             let fence_event = unsafe { CreateEventA(None, false, false, None)? };
             let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
             let mut residuals = Vec::new();
 
             let mut luts = FxHashMap::default();
+
 
             for (index, texture) in textures.iter().enumerate() {
                 let image = Image::load(&texture.path, UVDirection::TopLeft)?;
@@ -101,15 +109,40 @@ impl FilterChainD3D12 {
             queue.ExecuteCommandLists(&[cmd.cast()?]);
             queue.Signal(&fence, 1)?;
 
-            // Wait until the previous frame is finished.
+            // Wait until finished
             if unsafe { fence.GetCompletedValue() } < 1 {
                 unsafe { fence.SetEventOnCompletion(1, fence_event) }
                     .ok()
                     .unwrap();
 
                 unsafe { WaitForSingleObject(fence_event, INFINITE) };
+                unsafe { ResetEvent(fence_event) };
             }
 
+            cmd.Reset(&command_pool, None).unwrap();
+
+            let residuals = mipmap_gen
+                .mipmapping_context(&cmd, &mut work_heap, |context| {
+                for lut in luts.values() {
+                    lut.generate_mipmaps(context).unwrap()
+                }
+            })?;
+
+            //
+            cmd.Close()?;
+            queue.ExecuteCommandLists(&[cmd.cast()?]);
+            queue.Signal(&fence, 2)?;
+            //
+            if unsafe { fence.GetCompletedValue() } < 2 {
+                unsafe { fence.SetEventOnCompletion(2, fence_event) }
+                    .ok()
+                    .unwrap();
+
+                unsafe { WaitForSingleObject(fence_event, INFINITE) };
+                unsafe { CloseHandle(fence_event) };
+            }
+
+            std::mem::forget(residuals);
             Ok(luts)
         }
     }
@@ -126,10 +159,10 @@ impl FilterChainD3D12 {
         )?;
 
         let samplers = SamplerSet::new(device)?;
-        let mipmap_gen = D3D12MipmapGen::new(device)?;
+        let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
 
         let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
-        let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures)?;
+        let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures, &mipmap_gen).unwrap();
 
         Ok(FilterChainD3D12 {
             common: FilterCommon {

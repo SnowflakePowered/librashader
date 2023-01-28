@@ -310,6 +310,10 @@ pub mod d3d12_hello_triangle {
                 })?
             };
 
+            unsafe {
+                command_queue.SetName(w!("MainLoopQueue"))?;
+            }
+
             let (width, height) = self.window_size();
 
             let swap_chain_desc = DXGI_SWAP_CHAIN_DESC1 {

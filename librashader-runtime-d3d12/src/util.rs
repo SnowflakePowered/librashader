@@ -140,10 +140,22 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
     }
 }
 
+#[inline(always)]
 pub fn d3d12_resource_transition(cmd: &ID3D12GraphicsCommandList,
     resource: &ID3D12Resource,
     before: D3D12_RESOURCE_STATES,
-    after: D3D12_RESOURCE_STATES
+    after: D3D12_RESOURCE_STATES,
+) {
+    d3d12_resource_transition_subresource(cmd, resource, before, after,D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+}
+
+
+#[inline(always)]
+pub fn d3d12_resource_transition_subresource(cmd: &ID3D12GraphicsCommandList,
+                                 resource: &ID3D12Resource,
+                                 before: D3D12_RESOURCE_STATES,
+                                 after: D3D12_RESOURCE_STATES,
+                                 subresource: u32
 ) {
     let barrier = [D3D12_RESOURCE_BARRIER {
         Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
@@ -151,7 +163,7 @@ pub fn d3d12_resource_transition(cmd: &ID3D12GraphicsCommandList,
         Anonymous: D3D12_RESOURCE_BARRIER_0 {
             Transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
                 pResource: windows::core::ManuallyDrop::new(resource),
-                Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                Subresource: subresource,
                 StateBefore: before,
                 StateAfter: after,
             })

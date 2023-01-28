@@ -88,6 +88,12 @@ impl<T: D3D12ShaderVisibleHeapType> AsRef<D3D12_GPU_DESCRIPTOR_HANDLE>
     }
 }
 
+impl<T: D3D12ShaderVisibleHeapType> From<&D3D12DescriptorHeap<T>> for ID3D12DescriptorHeap {
+    fn from(value: &D3D12DescriptorHeap<T>) -> Self {
+        value.0.borrow().heap.clone()
+    }
+}
+
 struct D3D12DescriptorHeapInner {
     device: ID3D12Device,
     heap: ID3D12DescriptorHeap,
@@ -158,7 +164,7 @@ impl<T> D3D12DescriptorHeap<T> {
                 let gpu_handle = inner
                     .gpu_start
                     .map(|gpu_start| D3D12_GPU_DESCRIPTOR_HANDLE {
-                        ptr: (handle.ptr as u64 - inner.cpu_start.ptr as u64 + gpu_start.ptr),
+                        ptr: (handle.ptr as u64 - inner.cpu_start.ptr as u64) + gpu_start.ptr,
                     });
 
                 return Ok(D3D12DescriptorHeapSlot {
@@ -175,7 +181,7 @@ impl<T> D3D12DescriptorHeap<T> {
     }
 
     pub fn copy_descriptors<const NUM_DESC: usize>(&mut self,
-                                                      source: &[impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE>; NUM_DESC])
+                                                      source: &[&D3D12_CPU_DESCRIPTOR_HANDLE; NUM_DESC])
         -> error::Result<[D3D12DescriptorHeapSlot<T>; NUM_DESC]> {
         let dest = array_init::try_array_init(|_| self.alloc_slot())?;
         let mut inner = self.0.borrow_mut();
@@ -186,7 +192,7 @@ impl<T> D3D12DescriptorHeap<T> {
                 inner.device.CopyDescriptorsSimple(
                     1,
                     *dest[i].as_ref(),
-                    *source[i].as_ref(),
+                    *source[i],
                     inner.desc.Type
                 );
             }
