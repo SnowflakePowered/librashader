@@ -46,6 +46,7 @@
 //! In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::front::GlslangCompilation),
 //! which does transpilation via [shaderc](https://github.com/google/shaderc) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
 #![feature(type_alias_impl_trait)]
+#![feature(let_chains)]
 
 /// Shader codegen backends.
 pub mod back;

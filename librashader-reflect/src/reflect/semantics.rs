@@ -194,11 +194,54 @@ pub struct PushReflection {
 /// A uniform can be bound to **either** the UBO, or as a Push Constant. Binding
 /// the same variable name to both locations will result in indeterminate results.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MemberOffset {
+pub struct MemberOffset {
     /// The offset of the uniform member within the UBO.
-    Ubo(usize),
+    pub ubo: Option<usize>,
     /// The offset of the uniform member within the Push Constant range.
-    PushConstant(usize),
+    pub push: Option<usize>,
+}
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The type of member offset available.
+pub enum MemberOffsetType {
+    /// The offset is for a UBO.
+    Ubo,
+    /// The offset is for a push constant block.
+    PushConstant
+}
+
+impl MemberOffset {
+    pub(crate) fn new(off: usize, ty: MemberOffsetType) -> Self {
+        match ty {
+            MemberOffsetType::Ubo => {
+                MemberOffset {
+                    ubo: Some(off),
+                    push: None,
+                }
+            }
+            MemberOffsetType::PushConstant => {
+                MemberOffset {
+                    ubo: None,
+                    push: Some(off),
+                }
+            }
+        }
+    }
+
+    pub(crate) fn offset(&self, ty: MemberOffsetType) -> Option<usize> {
+        match ty {
+            MemberOffsetType::Ubo => {self.ubo}
+            MemberOffsetType::PushConstant => {self.push}
+        }
+    }
+
+    pub(crate) fn offset_mut(&mut self, ty: MemberOffsetType) -> &mut Option<usize> {
+        match ty {
+            MemberOffsetType::Ubo => {&mut self.ubo}
+            MemberOffsetType::PushConstant => {&mut self.push}
+        }
+    }
 }
 
 /// Reflection information about a non-texture related uniform variable.
