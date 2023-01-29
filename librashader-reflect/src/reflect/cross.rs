@@ -1,6 +1,6 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
-use crate::reflect::semantics::{BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, MemberOffsetType};
+use crate::reflect::semantics::{BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, UniformMemberBlock};
 use crate::reflect::{align_uniform_size, ReflectShader};
 use std::ops::Deref;
 
@@ -268,7 +268,7 @@ where
         pass_number: usize,
         semantics: &ShaderSemantics,
         meta: &mut BindingMeta,
-        offset_type: MemberOffsetType,
+        offset_type: UniformMemberBlock,
         blame: SemanticErrorBlame,
     ) -> Result<(), ShaderReflectError> {
         let ranges = ast.get_active_buffer_ranges(resource.id)?;
@@ -620,7 +620,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffsetType::Ubo,
+                UniformMemberBlock::Ubo,
                 SemanticErrorBlame::Vertex,
             )?;
         }
@@ -632,7 +632,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffsetType::Ubo,
+                UniformMemberBlock::Ubo,
                 SemanticErrorBlame::Fragment,
             )?;
         }
@@ -644,7 +644,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffsetType::PushConstant,
+                UniformMemberBlock::PushConstant,
                 SemanticErrorBlame::Vertex,
             )?;
         }
@@ -656,7 +656,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffsetType::PushConstant,
+                UniformMemberBlock::PushConstant,
                 SemanticErrorBlame::Fragment,
             )?;
         }

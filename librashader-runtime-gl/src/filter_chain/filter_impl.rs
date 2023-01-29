@@ -53,30 +53,37 @@ pub struct FilterMutable {
 
 impl<T: GLInterface> FilterChainImpl<T> {
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
-        // todo: support both ubo and pushco
-        // todo: fix this.
-        match meta.offset() {
-            MemberOffset::Ubo(_) => {
-                let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}\0", meta.id());
-                let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}\0", meta.id());
-                unsafe {
-                    let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                    let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
 
-                    VariableLocation::Ubo(UniformLocation { vertex, fragment })
-                }
-            }
-            MemberOffset::PushConstant(_) => {
-                let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}\0", meta.id());
-                let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id());
-                unsafe {
-                    let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                    let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
+        let mut location = VariableLocation {
+            ubo: None,
+            push: None,
+        };
 
-                    VariableLocation::Push(UniformLocation { vertex, fragment })
-                }
+        let offset = meta.offset();
+
+        if offset.ubo.is_some() {
+            let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}\0", meta.id());
+            let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}\0", meta.id());
+            unsafe {
+                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
+                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
+
+                location.ubo = Some(UniformLocation { vertex, fragment })
             }
         }
+
+        if offset.push.is_some() {
+            let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}\0", meta.id());
+            let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id());
+            unsafe {
+                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
+                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
+
+                location.push = Some(UniformLocation { vertex, fragment })
+            }
+        }
+
+        location
     }
 }
 

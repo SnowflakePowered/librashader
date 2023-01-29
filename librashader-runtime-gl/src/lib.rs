@@ -6,6 +6,7 @@
 #![feature(strict_provenance)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
+#![feature(is_some_and)]
 
 mod binding;
 mod filter_chain;
@@ -35,7 +36,7 @@ mod tests {
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = gl::gl3::hello_triangle::setup();
         let mut filter = FilterChainGL::load_from_path(
-            "../test/slang-shaders/crt/crt-lottes.slangp",
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsGL {
                 gl_version: 0,
                 use_dsa: false,

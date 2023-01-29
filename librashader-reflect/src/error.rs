@@ -1,4 +1,4 @@
-use crate::reflect::semantics::{MemberOffset, MemberOffsetType};
+use crate::reflect::semantics::{MemberOffset, UniformMemberBlock};
 use thiserror::Error;
 
 /// Error type for shader compilation.
@@ -81,7 +81,7 @@ pub enum ShaderReflectError {
         semantic: String,
         expected: usize,
         received: usize,
-        ty: MemberOffsetType,
+        ty: UniformMemberBlock,
         pass: usize
     },
     /// The size of the given uniform did not match up in both the vertex and fragment shader.

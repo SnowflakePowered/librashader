@@ -203,24 +203,29 @@ pub struct MemberOffset {
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// The type of member offset available.
-pub enum MemberOffsetType {
+/// The block where a uniform member is located.
+pub enum UniformMemberBlock {
     /// The offset is for a UBO.
     Ubo,
     /// The offset is for a push constant block.
     PushConstant
 }
 
+impl UniformMemberBlock {
+    /// A list of valid member block types.
+    pub const TYPES: [UniformMemberBlock; 2] = [UniformMemberBlock::Ubo, UniformMemberBlock::PushConstant];
+}
+
 impl MemberOffset {
-    pub(crate) fn new(off: usize, ty: MemberOffsetType) -> Self {
+    pub(crate) fn new(off: usize, ty: UniformMemberBlock) -> Self {
         match ty {
-            MemberOffsetType::Ubo => {
+            UniformMemberBlock::Ubo => {
                 MemberOffset {
                     ubo: Some(off),
                     push: None,
                 }
             }
-            MemberOffsetType::PushConstant => {
+            UniformMemberBlock::PushConstant => {
                 MemberOffset {
                     ubo: None,
                     push: Some(off),
@@ -229,17 +234,17 @@ impl MemberOffset {
         }
     }
 
-    pub(crate) fn offset(&self, ty: MemberOffsetType) -> Option<usize> {
+    pub fn offset(&self, ty: UniformMemberBlock) -> Option<usize> {
         match ty {
-            MemberOffsetType::Ubo => {self.ubo}
-            MemberOffsetType::PushConstant => {self.push}
+            UniformMemberBlock::Ubo => {self.ubo}
+            UniformMemberBlock::PushConstant => {self.push}
         }
     }
 
-    pub(crate) fn offset_mut(&mut self, ty: MemberOffsetType) -> &mut Option<usize> {
+    pub(crate) fn offset_mut(&mut self, ty: UniformMemberBlock) -> &mut Option<usize> {
         match ty {
-            MemberOffsetType::Ubo => {&mut self.ubo}
-            MemberOffsetType::PushConstant => {&mut self.push}
+            UniformMemberBlock::Ubo => {&mut self.ubo}
+            UniformMemberBlock::PushConstant => {&mut self.push}
         }
     }
 }
