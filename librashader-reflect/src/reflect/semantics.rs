@@ -194,11 +194,59 @@ pub struct PushReflection {
 /// A uniform can be bound to **either** the UBO, or as a Push Constant. Binding
 /// the same variable name to both locations will result in indeterminate results.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MemberOffset {
+pub struct MemberOffset {
     /// The offset of the uniform member within the UBO.
-    Ubo(usize),
+    pub ubo: Option<usize>,
     /// The offset of the uniform member within the Push Constant range.
-    PushConstant(usize),
+    pub push: Option<usize>,
+}
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The block where a uniform member is located.
+pub enum UniformMemberBlock {
+    /// The offset is for a UBO.
+    Ubo,
+    /// The offset is for a push constant block.
+    PushConstant
+}
+
+impl UniformMemberBlock {
+    /// A list of valid member block types.
+    pub const TYPES: [UniformMemberBlock; 2] = [UniformMemberBlock::Ubo, UniformMemberBlock::PushConstant];
+}
+
+impl MemberOffset {
+    pub(crate) fn new(off: usize, ty: UniformMemberBlock) -> Self {
+        match ty {
+            UniformMemberBlock::Ubo => {
+                MemberOffset {
+                    ubo: Some(off),
+                    push: None,
+                }
+            }
+            UniformMemberBlock::PushConstant => {
+                MemberOffset {
+                    ubo: None,
+                    push: Some(off),
+                }
+            }
+        }
+    }
+
+    pub fn offset(&self, ty: UniformMemberBlock) -> Option<usize> {
+        match ty {
+            UniformMemberBlock::Ubo => {self.ubo}
+            UniformMemberBlock::PushConstant => {self.push}
+        }
+    }
+
+    pub(crate) fn offset_mut(&mut self, ty: UniformMemberBlock) -> &mut Option<usize> {
+        match ty {
+            UniformMemberBlock::Ubo => {&mut self.ubo}
+            UniformMemberBlock::PushConstant => {&mut self.push}
+        }
+    }
 }
 
 /// Reflection information about a non-texture related uniform variable.

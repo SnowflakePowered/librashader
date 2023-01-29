@@ -48,17 +48,17 @@ impl TextureInput for InputTexture {
     }
 }
 
-impl ContextOffset<GlUniformBinder, UniformLocation<GLint>> for UniformOffset {
+impl ContextOffset<GlUniformBinder, VariableLocation> for UniformOffset {
     fn offset(&self) -> MemberOffset {
         self.offset
     }
 
-    fn context(&self) -> UniformLocation<GLint> {
-        self.location.location()
+    fn context(&self) -> VariableLocation {
+        self.location
     }
 }
 
-impl<T: GLInterface> BindSemantics<GlUniformBinder, UniformLocation<GLint>> for FilterPass<T> {
+impl<T: GLInterface> BindSemantics<GlUniformBinder, VariableLocation> for FilterPass<T> {
     type InputTexture = InputTexture;
     type SamplerSet = SamplerSet;
     type DescriptorSet<'a> = ();

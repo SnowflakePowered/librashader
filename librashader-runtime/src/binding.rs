@@ -50,6 +50,7 @@ where
 /// Trait that abstracts binding of semantics to shader uniforms.
 pub trait BindSemantics<H = NoUniformBinder, C = Option<()>, S = Box<[u8]>>
 where
+    C: Copy,
     S: Deref<Target = [u8]> + DerefMut,
     H: BindUniform<C, f32>,
     H: BindUniform<C, u32>,

@@ -1,4 +1,4 @@
-use librashader_reflect::reflect::semantics::MemberOffset;
+use librashader_reflect::reflect::semantics::{MemberOffset, UniformMemberBlock};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
@@ -15,7 +15,7 @@ pub trait BindUniform<C, T> {
     /// A `BindUniform` implementation should not write to a backing buffer from a [`UniformStorage`](crate::uniforms::UniformStorage).
     /// If the binding is successful and no writes to a backing buffer is necessary, this function should return `Some(())`.
     /// If this function returns `None`, then the value will instead be written to the backing buffer.
-    fn bind_uniform(value: T, ctx: C) -> Option<()>;
+    fn bind_uniform(block: UniformMemberBlock, value: T, ctx: C) -> Option<()>;
 }
 
 /// A trait to access the raw pointer to a backing uniform storage.
@@ -62,7 +62,7 @@ where
 /// All uniform data is thus written into the backing buffer storage.
 pub struct NoUniformBinder;
 impl<T> BindUniform<Option<()>, T> for NoUniformBinder {
-    fn bind_uniform(_: T, _: Option<()>) -> Option<()> {
+    fn bind_uniform(_: UniformMemberBlock, _: T, _: Option<()>) -> Option<()> {
         None
     }
 }
@@ -86,10 +86,22 @@ where
     pub fn inner_ubo(&self) -> &S {
         &self.ubo
     }
+
+    pub(crate) fn buffer(&mut self, ty: UniformMemberBlock) -> &mut [u8] {
+        match ty {
+            UniformMemberBlock::Ubo => {
+                self.ubo.deref_mut()
+            }
+            UniformMemberBlock::PushConstant => {
+                self.push.deref_mut()
+            }
+        }
+    }
 }
 
 impl<H, C, S> UniformStorage<H, C, S>
 where
+    C: Copy,
     S: Deref<Target = [u8]> + DerefMut,
 {
     #[inline(always)]
@@ -105,19 +117,19 @@ where
     where
         H: BindUniform<C, T>,
     {
-        if H::bind_uniform(value, ctx).is_some() {
-            return;
+        for ty in UniformMemberBlock::TYPES {
+            if H::bind_uniform(ty, value, ctx).is_some() {
+                continue;
+            }
+
+            if let Some(offset) = offset.offset(ty) {
+                let buffer = self.buffer(ty);
+                Self::write_scalar_inner(
+                    &mut buffer[offset..][..std::mem::size_of::<T>()],
+                    value,
+                )
+            }
         }
-
-        let (buffer, offset) = match offset {
-            MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
-            MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
-        };
-
-        Self::write_scalar_inner(
-            &mut buffer[offset..][..std::mem::size_of::<T>()],
-            value,
-        )
     }
 
     /// Create a new `UniformStorage` with the given backing storage
@@ -145,6 +157,7 @@ impl<H, C> UniformStorage<H, C, Box<[u8]>> {
 
 impl<H, C, S> UniformStorage<H, C, S>
 where
+    C: Copy,
     S: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 4]>,
 {
@@ -157,24 +170,26 @@ where
     #[inline(always)]
     pub fn bind_vec4(&mut self, offset: MemberOffset, value: impl Into<[f32; 4]>, ctx: C) {
         let vec4 = value.into();
-        if H::bind_uniform(&vec4, ctx).is_some() {
-            return;
+
+
+        for ty in UniformMemberBlock::TYPES {
+            if H::bind_uniform(ty, &vec4, ctx).is_some() {
+                continue;
+            }
+            if let Some(offset) = offset.offset(ty) {
+                let buffer = self.buffer(ty);
+                Self::write_vec4_inner(
+                    &mut buffer[offset..][..4 * std::mem::size_of::<f32>()],
+                    &vec4,
+                );
+            }
         }
-
-        let (buffer, offset) = match offset {
-            MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
-            MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
-        };
-
-        Self::write_vec4_inner(
-            &mut buffer[offset..][..4 * std::mem::size_of::<f32>()],
-            &vec4,
-        );
     }
 }
 
 impl<H, C, S> UniformStorage<H, C, S>
 where
+    C: Copy,
     S: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 16]>,
 {
@@ -187,16 +202,17 @@ where
     /// Bind a `mat4` to the given offset.
     #[inline(always)]
     pub fn bind_mat4(&mut self, offset: MemberOffset, value: &[f32; 16], ctx: C) {
-        if H::bind_uniform(value, ctx).is_some() {
-            return;
+        for ty in UniformMemberBlock::TYPES {
+            if H::bind_uniform(ty, value, ctx).is_some() {
+                continue;
+            }
+            if let Some(offset) = offset.offset(ty) {
+                let buffer = self.buffer(ty);
+                Self::write_mat4_inner(
+                    &mut buffer[offset..][..16 * std::mem::size_of::<f32>()],
+                    value,
+                );
+            }
         }
-        let (buffer, offset) = match offset {
-            MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
-            MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
-        };
-        Self::write_mat4_inner(
-            &mut buffer[offset..][..16 * std::mem::size_of::<f32>()],
-            value,
-        );
     }
 }

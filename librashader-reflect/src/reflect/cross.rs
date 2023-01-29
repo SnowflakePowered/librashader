@@ -1,11 +1,6 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
-use crate::reflect::semantics::{
-    BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics,
-    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
-    UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT,
-    MAX_PUSH_BUFFER_SIZE,
-};
+use crate::reflect::semantics::{BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, UniformMemberBlock};
 use crate::reflect::{align_uniform_size, ReflectShader};
 use std::ops::Deref;
 
@@ -273,7 +268,7 @@ where
         pass_number: usize,
         semantics: &ShaderSemantics,
         meta: &mut BindingMeta,
-        offset_type: impl Fn(usize) -> MemberOffset,
+        offset_type: UniformMemberBlock,
         blame: SemanticErrorBlame,
     ) -> Result<(), ShaderReflectError> {
         let ranges = ast.get_active_buffer_ranges(resource.id)?;
@@ -298,13 +293,17 @@ where
 
                 match &parameter.semantics {
                     UniqueSemantics::FloatParameter => {
-                        let offset = offset_type(range.offset);
-                        if let Some(meta) = meta.parameter_meta.get(&name) {
-                            if offset != meta.offset {
+                        let offset = range.offset;
+                        if let Some(meta) = meta.parameter_meta.get_mut(&name) {
+                            if let Some(expected) = meta.offset.offset(offset_type)
+                                && expected != offset
+                            {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name,
-                                    vertex: meta.offset,
-                                    fragment: offset,
+                                    expected,
+                                    received: offset,
+                                    ty: offset_type,
+                                    pass: pass_number
                                 });
                             }
                             if meta.size != typeinfo.size {
@@ -312,27 +311,34 @@ where
                                     semantic: name,
                                     vertex: meta.size,
                                     fragment: typeinfo.size,
+                                    pass: pass_number
                                 });
                             }
+
+                            *meta.offset.offset_mut(offset_type) = Some(offset);
                         } else {
                             meta.parameter_meta.insert(
                                 name.clone(),
                                 VariableMeta {
                                     id: name,
-                                    offset,
+                                    offset: MemberOffset::new(offset, offset_type),
                                     size: typeinfo.size,
                                 },
                             );
                         }
                     }
                     semantics => {
-                        let offset = offset_type(range.offset);
-                        if let Some(meta) = meta.unique_meta.get(semantics) {
-                            if offset != meta.offset {
+                        let offset = range.offset;
+                        if let Some(meta) = meta.unique_meta.get_mut(semantics) {
+                            if let Some(expected) = meta.offset.offset(offset_type)
+                                && expected != offset
+                            {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name,
-                                    vertex: meta.offset,
-                                    fragment: offset,
+                                    expected,
+                                    received: offset,
+                                    ty: offset_type,
+                                    pass: pass_number
                                 });
                             }
                             if meta.size != typeinfo.size * typeinfo.columns {
@@ -340,14 +346,17 @@ where
                                     semantic: name,
                                     vertex: meta.size,
                                     fragment: typeinfo.size,
+                                    pass: pass_number
                                 });
                             }
+
+                            *meta.offset.offset_mut(offset_type) = Some(offset);
                         } else {
                             meta.unique_meta.insert(
                                 *semantics,
                                 VariableMeta {
                                     id: name,
-                                    offset,
+                                    offset: MemberOffset::new(offset, offset_type),
                                     size: typeinfo.size * typeinfo.columns,
                                 },
                             );
@@ -368,14 +377,17 @@ where
                     }
                 }
 
-                // this will break if range is both ubo and push buf whatever
-                let offset = offset_type(range.offset);
+                let offset = range.offset;
                 if let Some(meta) = meta.texture_size_meta.get_mut(&texture) {
-                    if offset != meta.offset {
+                    if let Some(expected) = meta.offset.offset(offset_type)
+                        && expected != offset
+                    {
                         return Err(ShaderReflectError::MismatchedOffset {
                             semantic: name,
-                            vertex: meta.offset,
-                            fragment: offset,
+                            expected,
+                            received: offset,
+                            ty: offset_type,
+                            pass: pass_number
                         });
                     }
 
@@ -383,12 +395,13 @@ where
                         SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                         SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
                     });
+
+                    *meta.offset.offset_mut(offset_type) = Some(offset);
                 } else {
                     meta.texture_size_meta.insert(
                         texture,
                         TextureSizeMeta {
-                            offset,
-                            // todo: fix this. to allow both
+                            offset: MemberOffset::new(offset, offset_type),
                             stage_mask: match blame {
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                                 SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
@@ -607,7 +620,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffset::Ubo,
+                UniformMemberBlock::Ubo,
                 SemanticErrorBlame::Vertex,
             )?;
         }
@@ -619,7 +632,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffset::Ubo,
+                UniformMemberBlock::Ubo,
                 SemanticErrorBlame::Fragment,
             )?;
         }
@@ -631,7 +644,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffset::PushConstant,
+                UniformMemberBlock::PushConstant,
                 SemanticErrorBlame::Vertex,
             )?;
         }
@@ -643,7 +656,7 @@ where
                 pass_number,
                 semantics,
                 &mut meta,
-                MemberOffset::PushConstant,
+                UniformMemberBlock::PushConstant,
                 SemanticErrorBlame::Fragment,
             )?;
         }

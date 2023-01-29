@@ -88,11 +88,6 @@ shaders.
 
 Please report an issue if you run into a shader that works in RetroArch, but not under librashader.
 
-* Variables can only be bound in *either* the UBO or push constant block.
-  * RetroArch allows a variable to be present in both a push constant block and a UBO block at the same time. To make the 
-    implementation a little cleaner, librashader only allows a variable to be in *either* a push constant block or a UBO
-    block. As far as I have tested, there are no shaders in [libretro/slang-shaders](https://github.com/libretro/slang-shaders)
-    that bind the same variable in both the push constant and the UBO block.
 * Filter chains do not terminate at the backbuffer.
   * Unlike RetroArch, librashader does not have full knowledge of the entire rendering state and is designed to be pluggable
     at any point in your render pipeline. Instead, filter chains terminate at a caller-provided output surface and viewport. 
