@@ -93,14 +93,10 @@ where
     S: Deref<Target = [u8]> + DerefMut,
 {
     #[inline(always)]
-    fn write_scalar_inner<T: UniformScalar>(buffer: &mut [u8], value: T, ctx: C)
-    where
-        H: BindUniform<C, T>,
+    fn write_scalar_inner<T: UniformScalar>(buffer: &mut [u8], value: T)
     {
-        if H::bind_uniform(value, ctx).is_none() {
-            let buffer = bytemuck::cast_slice_mut(buffer);
-            buffer[0] = value;
-        };
+        let buffer = bytemuck::cast_slice_mut(buffer);
+        buffer[0] = value;
     }
 
     /// Bind a scalar to the given offset.
@@ -109,6 +105,10 @@ where
     where
         H: BindUniform<C, T>,
     {
+        if H::bind_uniform(value, ctx).is_some() {
+            return;
+        }
+
         let (buffer, offset) = match offset {
             MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
             MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
@@ -117,7 +117,6 @@ where
         Self::write_scalar_inner(
             &mut buffer[offset..][..std::mem::size_of::<T>()],
             value,
-            ctx,
         )
     }
 
@@ -150,16 +149,18 @@ where
     H: for<'a> BindUniform<C, &'a [f32; 4]>,
 {
     #[inline(always)]
-    fn write_vec4_inner(buffer: &mut [u8], vec4: impl Into<[f32; 4]>, ctx: C) {
-        let vec4 = vec4.into();
-        if H::bind_uniform(&vec4, ctx).is_none() {
-            let vec4 = bytemuck::cast_slice(&vec4);
-            buffer.copy_from_slice(vec4);
-        }
+    fn write_vec4_inner(buffer: &mut [u8], vec4: &[f32; 4]) {
+        let vec4 = bytemuck::cast_slice(vec4);
+        buffer.copy_from_slice(vec4);
     }
     /// Bind a `vec4` to the given offset.
     #[inline(always)]
     pub fn bind_vec4(&mut self, offset: MemberOffset, value: impl Into<[f32; 4]>, ctx: C) {
+        let vec4 = value.into();
+        if H::bind_uniform(&vec4, ctx).is_some() {
+            return;
+        }
+
         let (buffer, offset) = match offset {
             MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
             MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
@@ -167,8 +168,7 @@ where
 
         Self::write_vec4_inner(
             &mut buffer[offset..][..4 * std::mem::size_of::<f32>()],
-            value,
-            ctx,
+            &vec4,
         );
     }
 }
@@ -179,16 +179,17 @@ where
     H: for<'a> BindUniform<C, &'a [f32; 16]>,
 {
     #[inline(always)]
-    fn write_mat4_inner(buffer: &mut [u8], mat4: &[f32; 16], ctx: C) {
-        if H::bind_uniform(mat4, ctx).is_none() {
-            let mat4 = bytemuck::cast_slice(mat4);
-            buffer.copy_from_slice(mat4);
-        }
+    fn write_mat4_inner(buffer: &mut [u8], mat4: &[f32; 16]) {
+        let mat4 = bytemuck::cast_slice(mat4);
+        buffer.copy_from_slice(mat4);
     }
 
     /// Bind a `mat4` to the given offset.
     #[inline(always)]
     pub fn bind_mat4(&mut self, offset: MemberOffset, value: &[f32; 16], ctx: C) {
+        if H::bind_uniform(value, ctx).is_some() {
+            return;
+        }
         let (buffer, offset) = match offset {
             MemberOffset::Ubo(offset) => (self.ubo.deref_mut(), offset),
             MemberOffset::PushConstant(offset) => (self.push.deref_mut(), offset),
@@ -196,7 +197,6 @@ where
         Self::write_mat4_inner(
             &mut buffer[offset..][..16 * std::mem::size_of::<f32>()],
             value,
-            ctx,
         );
     }
 }
