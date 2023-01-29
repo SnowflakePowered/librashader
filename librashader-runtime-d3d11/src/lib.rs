@@ -33,8 +33,7 @@ mod tests {
     #[test]
     fn triangle_d3d11() {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
-            // "../test/slang-shaders/presets/crt-royale-kurozumi.slangp",
-            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/slang-shaders/crt/crt-royale.slangp",
             // "../test/basic.slangp",
             Some(&FilterChainOptionsD3D11 {
                 use_deferred_context: false,

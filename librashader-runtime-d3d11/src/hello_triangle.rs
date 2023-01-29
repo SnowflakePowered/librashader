@@ -411,7 +411,7 @@ pub mod d3d11_hello_triangle {
                     .ClearRenderTargetView(&resources.backbuffer_rtv, color.as_ptr());
                 self.context.ClearDepthStencilView(
                     &resources.depth_stencil_view,
-                    D3D11_CLEAR_DEPTH.0 as u32,
+                    D3D11_CLEAR_DEPTH.0,
                     1.0,
                     0,
                 );

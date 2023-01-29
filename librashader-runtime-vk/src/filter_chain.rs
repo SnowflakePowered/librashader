@@ -149,7 +149,7 @@ struct FrameResiduals {
     device: ash::Device,
     image_views: Vec<vk::ImageView>,
     owned: Vec<OwnedImage>,
-    framebuffers: Vec<Option<vk::Framebuffer>>
+    framebuffers: Vec<Option<vk::Framebuffer>>,
 }
 
 impl FrameResiduals {
@@ -232,8 +232,15 @@ impl FilterChainVulkan {
         }
 
         // initialize passes
-        let filters = Self::init_passes(&device, passes, &semantics, frames_in_flight, options
-            .map(|o| o.render_pass_format).unwrap_or(vk::Format::UNDEFINED))?;
+        let filters = Self::init_passes(
+            &device,
+            passes,
+            &semantics,
+            frames_in_flight,
+            options
+                .map(|o| o.render_pass_format)
+                .unwrap_or(vk::Format::UNDEFINED),
+        )?;
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
@@ -348,7 +355,7 @@ impl FilterChainVulkan {
                 &spirv_words,
                 &reflection,
                 frames_in_flight,
-                render_pass_format
+                render_pass_format,
             )?;
 
             // let ubo_ring = VkUboRing::new(

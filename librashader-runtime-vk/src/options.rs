@@ -24,5 +24,5 @@ pub struct FilterChainOptionsVulkan {
     /// will be used instead of a render pass. If this is set to some format, the render passes
     /// will be created with such format. It is recommended if possible to use dynamic rendering,
     /// because render-pass mode will create new framebuffers per pass.
-    pub render_pass_format: vk::Format
+    pub render_pass_format: vk::Format,
 }

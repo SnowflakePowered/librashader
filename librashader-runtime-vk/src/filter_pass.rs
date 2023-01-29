@@ -132,7 +132,9 @@ impl FilterPass {
 
         output.output.begin_pass(cmd);
 
-        let residual = self.graphics_pipeline.begin_rendering(&parent.device, output, cmd)?;
+        let residual = self
+            .graphics_pipeline
+            .begin_rendering(&parent.device, output, cmd)?;
 
         unsafe {
             parent.device.cmd_bind_pipeline(

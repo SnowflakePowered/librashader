@@ -2,7 +2,9 @@ use crate::error;
 use crate::error::assume_d3d11_init;
 use std::slice;
 use windows::core::PCSTR;
-use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION};
+use windows::Win32::Graphics::Direct3D::Fxc::{
+    D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION,
+};
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::Graphics::Dxgi::Common::*;

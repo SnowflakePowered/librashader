@@ -17,7 +17,7 @@ use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
-    MemberOffset, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
+    ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
 };
 
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
@@ -53,7 +53,6 @@ pub struct FilterMutable {
 
 impl<T: GLInterface> FilterChainImpl<T> {
     fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
-
         let mut location = VariableLocation {
             ubo: None,
             push: None,

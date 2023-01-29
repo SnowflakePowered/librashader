@@ -1,4 +1,4 @@
-use crate::reflect::semantics::{MemberOffset, UniformMemberBlock};
+use crate::reflect::semantics::UniformMemberBlock;
 use thiserror::Error;
 
 /// Error type for shader compilation.
@@ -82,7 +82,7 @@ pub enum ShaderReflectError {
         expected: usize,
         received: usize,
         ty: UniformMemberBlock,
-        pass: usize
+        pass: usize,
     },
     /// The size of the given uniform did not match up in both the vertex and fragment shader.
     #[error("mismatched component")]
@@ -90,7 +90,7 @@ pub enum ShaderReflectError {
         semantic: String,
         vertex: u32,
         fragment: u32,
-        pass: usize
+        pass: usize,
     },
     /// The binding number is already in use.
     #[error("the binding is already in use")]

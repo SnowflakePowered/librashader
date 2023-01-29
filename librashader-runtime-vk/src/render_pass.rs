@@ -10,10 +10,7 @@ pub struct VulkanRenderPass {
 }
 
 impl VulkanRenderPass {
-    pub fn create_render_pass(
-        device: &ash::Device,
-        mut format: vk::Format,
-    ) -> error::Result<Self> {
+    pub fn create_render_pass(device: &ash::Device, format: vk::Format) -> error::Result<Self> {
         // format should never be undefined.
         let attachment = [vk::AttachmentDescription::builder()
             .flags(vk::AttachmentDescriptionFlags::empty())

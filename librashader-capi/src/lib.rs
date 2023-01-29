@@ -27,13 +27,30 @@
 //! ## Booleans
 //! Some option structs take `bool` values.
 //! Any booleans passed to librashader **must have a bit pattern equivalent to either `1` or `0`**. Any other value will cause
-//! **immediate undefined behaviour**.
+//! **immediate undefined behaviour**. Using `_Bool` from `stdbool.h` should maintain this invariant.
 //!
 //! ## Errors
 //! The librashader C API provides a robust, reflective error system. Every function returns a `libra_error_t`, which is either
 //! a null pointer, or a handle to an opaque allocated error object. If the returned error is null, then the function was successful.
 //! Otherwise, error information can be accessed via the `libra_error_` set of APIs. If an error indeed occurs, it may be freed by
 //! `libra_error_free`.
+//!
+//! It is **highly recommended** to check for errors after every call to a librashader API like in the following example.
+//!
+//! ```c
+//! libra_preset_t preset;
+//! libra_error_t error = libra.preset_create(
+//!         "slang-shaders/crt/crt-lottes.slangp", &preset);
+//! if (error != NULL) {
+//!    libra.error_print(error);
+//!    libra.error_free(&error);
+//!    exit(1);
+//! }
+//! ```
+//!
+//! There is a case to be made for skipping error checking for `*_filter_chain_frame` due to performance reasons,
+//! but only if you are certain that the safety invariants are upheld on each call. Failure to check for errors
+//! may result in **undefined behaviour** stemming from failure to uphold safety invariants.
 #![allow(non_camel_case_types)]
 #![feature(try_blocks)]
 #![feature(pointer_is_aligned)]

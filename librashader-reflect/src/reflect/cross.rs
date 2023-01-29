@@ -1,6 +1,11 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
-use crate::reflect::semantics::{BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics, TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE, UniformMemberBlock};
+use crate::reflect::semantics::{
+    BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics,
+    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
+    UniformMemberBlock, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta,
+    MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
+};
 use crate::reflect::{align_uniform_size, ReflectShader};
 use std::ops::Deref;
 
@@ -311,7 +316,7 @@ where
                                     semantic: name,
                                     vertex: meta.size,
                                     fragment: typeinfo.size,
-                                    pass: pass_number
+                                    pass: pass_number,
                                 });
                             }
 
@@ -346,7 +351,7 @@ where
                                     semantic: name,
                                     vertex: meta.size,
                                     fragment: typeinfo.size,
-                                    pass: pass_number
+                                    pass: pass_number,
                                 });
                             }
 
@@ -851,7 +856,7 @@ mod test {
     use rustc_hash::FxHashMap;
 
     use crate::back::CompileShader;
-    use crate::front::shaderc::GlslangCompilation;
+    use crate::front::GlslangCompilation;
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;

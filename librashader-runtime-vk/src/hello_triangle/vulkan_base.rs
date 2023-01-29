@@ -2,7 +2,7 @@ use ash::vk;
 
 use crate::error::FilterChainError;
 use crate::filter_chain::VulkanObjects;
-use crate::hello_triangle::debug::VulkanDebug;
+
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 
 use ash::prelude::VkResult;
@@ -76,7 +76,7 @@ impl VulkanBase {
         instance: &ash::Instance,
         physical_device: &vk::PhysicalDevice,
     ) -> VkResult<(ash::Device, vk::Queue)> {
-        let debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
+        let _debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
 
         let indices = find_queue_family(instance, *physical_device);
         let queue_info = [vk::DeviceQueueCreateInfo::builder()

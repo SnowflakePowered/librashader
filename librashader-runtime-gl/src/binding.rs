@@ -10,26 +10,10 @@ pub struct VariableLocation {
 
 impl VariableLocation {
     pub fn location(&self, offset_type: UniformMemberBlock) -> Option<UniformLocation<GLint>> {
-        let value = match offset_type {
-            UniformMemberBlock::Ubo => {
-                self.ubo
-            }
-            UniformMemberBlock::PushConstant => {
-                self.push
-            }
-        };
-        value
-    }
-    pub fn is_valid(&self, offset_type: UniformMemberBlock, stage: BindingStage) -> bool {
-        let value = self.location(offset_type);
-        let mut validity = false;
-        if stage.contains(BindingStage::FRAGMENT) {
-            validity = validity || value.is_some_and(|f| f.fragment >= 0);
+        match offset_type {
+            UniformMemberBlock::Ubo => self.ubo,
+            UniformMemberBlock::PushConstant => self.push,
         }
-        if stage.contains(BindingStage::VERTEX) {
-            validity = validity || value.is_some_and(|f| f.vertex >= 0);
-        }
-        validity
     }
 }
 
@@ -97,7 +81,11 @@ where
 }
 
 impl BindUniform<VariableLocation, &[f32; 4]> for GlUniformBinder {
-    fn bind_uniform(block: UniformMemberBlock, vec4: &[f32; 4], location: VariableLocation) -> Option<()> {
+    fn bind_uniform(
+        block: UniformMemberBlock,
+        vec4: &[f32; 4],
+        location: VariableLocation,
+    ) -> Option<()> {
         if let Some(location) = location.location(block)
             && location.bindable()
         {
@@ -117,7 +105,11 @@ impl BindUniform<VariableLocation, &[f32; 4]> for GlUniformBinder {
 }
 
 impl BindUniform<VariableLocation, &[f32; 16]> for GlUniformBinder {
-    fn bind_uniform(block: UniformMemberBlock, mat4: &[f32; 16], location: VariableLocation) -> Option<()> {
+    fn bind_uniform(
+        block: UniformMemberBlock,
+        mat4: &[f32; 16],
+        location: VariableLocation,
+    ) -> Option<()> {
         if let Some(location) = location.location(block)
             && location.bindable()
         {

@@ -1,14 +1,12 @@
 use crate::{error, util};
 use ash::vk;
 
+use crate::render_pass::VulkanRenderPass;
+use crate::render_target::RenderTarget;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use std::ffi::CStr;
-use crate::framebuffer::OutputImage;
-use crate::render_target::RenderTarget;
-use crate::render_pass::VulkanRenderPass;
-
 
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
@@ -177,7 +175,7 @@ impl Drop for VulkanShaderModule {
 pub struct VulkanGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     pub pipeline: vk::Pipeline,
-    pub render_pass: Option<VulkanRenderPass>
+    pub render_pass: Option<VulkanRenderPass>,
 }
 
 impl VulkanGraphicsPipeline {
@@ -187,7 +185,7 @@ impl VulkanGraphicsPipeline {
         shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
         reflection: &ShaderReflection,
         replicas: u32,
-        render_pass_format: vk::Format
+        render_pass_format: vk::Format,
     ) -> error::Result<VulkanGraphicsPipeline> {
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
@@ -300,7 +298,10 @@ impl VulkanGraphicsPipeline {
 
         let mut render_pass = None;
         if render_pass_format != vk::Format::UNDEFINED {
-            render_pass = Some(VulkanRenderPass::create_render_pass(&device, render_pass_format)?);
+            render_pass = Some(VulkanRenderPass::create_render_pass(
+                device,
+                render_pass_format,
+            )?);
             pipeline_info = pipeline_info.render_pass(render_pass.as_ref().unwrap().handle)
         }
 
@@ -322,7 +323,12 @@ impl VulkanGraphicsPipeline {
     }
 
     #[inline(always)]
-    pub(crate) fn begin_rendering(&self, device: &ash::Device, output: &RenderTarget, cmd: vk::CommandBuffer) -> error::Result<Option<vk::Framebuffer>>{
+    pub(crate) fn begin_rendering(
+        &self,
+        device: &ash::Device,
+        output: &RenderTarget,
+        cmd: vk::CommandBuffer,
+    ) -> error::Result<Option<vk::Framebuffer>> {
         if let Some(render_pass) = &self.render_pass {
             let attachments = [output.output.image_view];
             let framebuffer = unsafe {
@@ -340,8 +346,8 @@ impl VulkanGraphicsPipeline {
 
             let clear_values = [vk::ClearValue {
                 color: vk::ClearColorValue {
-                    float32: [0.0, 0.0, 0.0, 0.0]
-                }
+                    float32: [0.0, 0.0, 0.0, 0.0],
+                },
             }];
 
             let render_pass_info = vk::RenderPassBeginInfo::builder()
@@ -350,12 +356,10 @@ impl VulkanGraphicsPipeline {
                 .clear_values(&clear_values)
                 // always render into the full output, regardless of viewport settings.
                 .render_area(vk::Rect2D {
-                    offset: vk::Offset2D {
-                        x: 0,
-                        y: 0,
-                    },
+                    offset: vk::Offset2D { x: 0, y: 0 },
                     extent: output.output.size.into(),
-                }).build();
+                })
+                .build();
             unsafe {
                 device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
             }
@@ -382,7 +386,6 @@ impl VulkanGraphicsPipeline {
             }
             Ok(None)
         }
-
     }
 
     pub(crate) fn end_rendering(&self, device: &ash::Device, cmd: vk::CommandBuffer) {

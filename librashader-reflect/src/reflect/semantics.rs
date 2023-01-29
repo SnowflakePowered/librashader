@@ -201,50 +201,46 @@ pub struct MemberOffset {
     pub push: Option<usize>,
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// The block where a uniform member is located.
 pub enum UniformMemberBlock {
     /// The offset is for a UBO.
     Ubo,
     /// The offset is for a push constant block.
-    PushConstant
+    PushConstant,
 }
 
 impl UniformMemberBlock {
     /// A list of valid member block types.
-    pub const TYPES: [UniformMemberBlock; 2] = [UniformMemberBlock::Ubo, UniformMemberBlock::PushConstant];
+    pub const TYPES: [UniformMemberBlock; 2] =
+        [UniformMemberBlock::Ubo, UniformMemberBlock::PushConstant];
 }
 
 impl MemberOffset {
     pub(crate) fn new(off: usize, ty: UniformMemberBlock) -> Self {
         match ty {
-            UniformMemberBlock::Ubo => {
-                MemberOffset {
-                    ubo: Some(off),
-                    push: None,
-                }
-            }
-            UniformMemberBlock::PushConstant => {
-                MemberOffset {
-                    ubo: None,
-                    push: Some(off),
-                }
-            }
+            UniformMemberBlock::Ubo => MemberOffset {
+                ubo: Some(off),
+                push: None,
+            },
+            UniformMemberBlock::PushConstant => MemberOffset {
+                ubo: None,
+                push: Some(off),
+            },
         }
     }
 
     pub fn offset(&self, ty: UniformMemberBlock) -> Option<usize> {
         match ty {
-            UniformMemberBlock::Ubo => {self.ubo}
-            UniformMemberBlock::PushConstant => {self.push}
+            UniformMemberBlock::Ubo => self.ubo,
+            UniformMemberBlock::PushConstant => self.push,
         }
     }
 
     pub(crate) fn offset_mut(&mut self, ty: UniformMemberBlock) -> &mut Option<usize> {
         match ty {
-            UniformMemberBlock::Ubo => {&mut self.ubo}
-            UniformMemberBlock::PushConstant => {&mut self.push}
+            UniformMemberBlock::Ubo => &mut self.ubo,
+            UniformMemberBlock::PushConstant => &mut self.push,
         }
     }
 }

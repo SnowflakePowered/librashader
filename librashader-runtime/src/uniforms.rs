@@ -89,12 +89,8 @@ where
 
     pub(crate) fn buffer(&mut self, ty: UniformMemberBlock) -> &mut [u8] {
         match ty {
-            UniformMemberBlock::Ubo => {
-                self.ubo.deref_mut()
-            }
-            UniformMemberBlock::PushConstant => {
-                self.push.deref_mut()
-            }
+            UniformMemberBlock::Ubo => self.ubo.deref_mut(),
+            UniformMemberBlock::PushConstant => self.push.deref_mut(),
         }
     }
 }
@@ -105,8 +101,7 @@ where
     S: Deref<Target = [u8]> + DerefMut,
 {
     #[inline(always)]
-    fn write_scalar_inner<T: UniformScalar>(buffer: &mut [u8], value: T)
-    {
+    fn write_scalar_inner<T: UniformScalar>(buffer: &mut [u8], value: T) {
         let buffer = bytemuck::cast_slice_mut(buffer);
         buffer[0] = value;
     }
@@ -124,10 +119,7 @@ where
 
             if let Some(offset) = offset.offset(ty) {
                 let buffer = self.buffer(ty);
-                Self::write_scalar_inner(
-                    &mut buffer[offset..][..std::mem::size_of::<T>()],
-                    value,
-                )
+                Self::write_scalar_inner(&mut buffer[offset..][..std::mem::size_of::<T>()], value)
             }
         }
     }
@@ -170,7 +162,6 @@ where
     #[inline(always)]
     pub fn bind_vec4(&mut self, offset: MemberOffset, value: impl Into<[f32; 4]>, ctx: C) {
         let vec4 = value.into();
-
 
         for ty in UniformMemberBlock::TYPES {
             if H::bind_uniform(ty, &vec4, ctx).is_some() {

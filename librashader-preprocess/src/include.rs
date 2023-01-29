@@ -1,9 +1,9 @@
 use crate::{PreprocessError, SourceOutput};
+use encoding_rs::{DecoderResult, WINDOWS_1252};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::str::Lines;
-use encoding_rs::{DecoderResult, WINDOWS_1252};
 
 #[cfg(feature = "line_directives")]
 const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &str =
@@ -30,7 +30,8 @@ fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
 
             let mut latin1_string = String::with_capacity(len);
 
-            let (result, _) = WINDOWS_1252.new_decoder()
+            let (result, _) = WINDOWS_1252
+                .new_decoder()
                 .decode_to_string_without_replacement(&buf, &mut latin1_string, true);
             if result == DecoderResult::InputEmpty {
                 Ok(latin1_string)
