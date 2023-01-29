@@ -17,7 +17,7 @@ pub struct VulkanBase {
     pub instance: ash::Instance,
     pub device: Arc<ash::Device>,
     pub graphics_queue: vk::Queue,
-    pub debug: VulkanDebug,
+    // pub debug: VulkanDebug,
     pub physical_device: vk::PhysicalDevice,
     pub mem_props: vk::PhysicalDeviceMemoryProperties,
 }
@@ -50,7 +50,7 @@ impl VulkanBase {
 
         let instance = unsafe { entry.create_instance(&create_info, None)? };
 
-        let debug = VulkanDebug::new(&entry, &instance, Some(vulkan_debug_callback))?;
+        // let debug = VulkanDebug::new(&entry, &instance, Some(vulkan_debug_callback))?;
 
         let physical_device = pick_physical_device(&instance);
 
@@ -68,7 +68,7 @@ impl VulkanBase {
             graphics_queue: queue,
             physical_device,
             mem_props,
-            debug,
+            // debug,
         })
     }
 
@@ -101,7 +101,7 @@ impl VulkanBase {
 
         let device_create_info = vk::DeviceCreateInfo::builder()
             .queue_create_infos(&queue_info)
-            .enabled_layer_names(&debug)
+            // .enabled_layer_names(&debug)
             .enabled_extension_names(&extensions)
             .push_next(&mut physical_device_features)
             // .enabled_features(&physical_device_features)
