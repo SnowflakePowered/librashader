@@ -243,11 +243,12 @@ pub mod d3d11_hello_triangle {
     use crate::filter_chain::FilterChainD3D11;
 
     use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
-    use crate::texture::D3D11InputView;
+    use crate::texture::{D3D11InputView, LutTexture};
     use crate::D3D11OutputView;
-    use librashader_common::{Size, Viewport};
+    use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
     use std::slice;
     use std::time::Instant;
+    use librashader_runtime::image::Image;
 
     pub struct Sample {
         pub dxgi_factory: IDXGIFactory4,
@@ -255,6 +256,7 @@ pub mod d3d11_hello_triangle {
         pub context: ID3D11DeviceContext,
         pub resources: Option<Resources>,
         pub filter: FilterChainD3D11,
+        pub lut: Option<ID3D11Texture2D>
     }
 
     pub struct Resources {
@@ -284,15 +286,37 @@ pub mod d3d11_hello_triangle {
         pub(crate) fn new(
             filter: impl AsRef<Path>,
             filter_options: Option<&FilterChainOptionsD3D11>,
+            image: Option<Image>,
         ) -> Result<Self> {
             let (dxgi_factory, device, context) = create_device()?;
             let filter = FilterChainD3D11::load_from_path(&device, filter, filter_options).unwrap();
+            let lut = if let Some(image) = image {
+              let lut = LutTexture::new(&device, &context, &image, D3D11_TEXTURE2D_DESC {
+                  Width: image.size.width,
+                  Height: image.size.height,
+                  MipLevels: 1,
+                  ArraySize: 0,
+                  Format: ImageFormat::R8G8B8A8Unorm.into(),
+                  SampleDesc: DXGI_SAMPLE_DESC {
+                      Count: 1,
+                      Quality: 0,
+                  },
+                  Usage: D3D11_USAGE_DYNAMIC,
+                  BindFlags: D3D11_BIND_SHADER_RESOURCE,
+                  CPUAccessFlags: Default::default(),
+                  MiscFlags: Default::default(),
+              }, FilterMode::Linear, WrapMode::ClampToEdge).unwrap();
+                Some(lut.handle)
+            } else {
+                None
+            };
             Ok(Sample {
                 filter,
                 dxgi_factory,
                 device,
                 context,
                 resources: None,
+                lut,
             })
         }
     }
@@ -488,32 +512,24 @@ pub mod d3d11_hello_triangle {
 
             unsafe {
                 self.context.DrawIndexed(3, 0, 0);
+                self.context.OMSetRenderTargets(None, None);
             }
 
             unsafe {
+                let input = if let Some(lut) = &self.lut {
+                    lut.clone()
+                } else {
+                    resources.renderbuffer.clone()
+                };
+
                 let mut tex2d_desc = Default::default();
-                resources.renderbuffer.GetDesc(&mut tex2d_desc);
+                input.GetDesc(&mut tex2d_desc);
                 let mut backbuffer_desc = Default::default();
                 resources.backbuffer.as_ref().unwrap().GetDesc(&mut backbuffer_desc);
 
-                let mut renderbuffer_copy = None;
-
-                self.device.CreateTexture2D(
-                    &D3D11_TEXTURE2D_DESC {
-                        BindFlags: D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
-                        CPUAccessFlags: D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE,
-                        ..tex2d_desc
-                    },
-                    None,
-                    Some(&mut renderbuffer_copy),
-                )?;
-                let backup = renderbuffer_copy.unwrap();
-
-                self.context.CopyResource(&backup, &resources.renderbuffer);
-
-                let mut copy_srv = None;
+                let mut input_srv = None;
                 self.device.CreateShaderResourceView(
-                    &backup,
+                    &input,
                     Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
                         Format: tex2d_desc.Format,
                         ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
@@ -524,27 +540,9 @@ pub mod d3d11_hello_triangle {
                             },
                         },
                     }),
-                    Some(&mut copy_srv),
+                    Some(&mut input_srv),
                 )?;
-                let srv = copy_srv.unwrap();
-
-                let mut shader_out = None;
-                self.device
-                    .CreateTexture2D(&tex2d_desc, None, Some(&mut shader_out))?;
-                let shader_out = shader_out.unwrap();
-
-                let mut rtv = None;
-                self.device.CreateRenderTargetView(
-                    &shader_out,
-                    Some(&D3D11_RENDER_TARGET_VIEW_DESC {
-                        Format: tex2d_desc.Format,
-                        ViewDimension: D3D11_RTV_DIMENSION_TEXTURE2D,
-                        Anonymous: D3D11_RENDER_TARGET_VIEW_DESC_0 {
-                            Texture2D: D3D11_TEX2D_RTV { MipSlice: 0 },
-                        },
-                    }),
-                    Some(&mut rtv),
-                )?;
+                let srv = input_srv.unwrap();
 
                 // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
                 self.filter
@@ -557,8 +555,8 @@ pub mod d3d11_hello_triangle {
                             },
                         },
                         &Viewport {
-                            x: resources.viewport.TopLeftX,
-                            y: resources.viewport.TopLeftY,
+                            x: 0f32,
+                            y: 0f32,
                             output: D3D11OutputView {
                                 size: Size {
                                     width: backbuffer_desc.Width,

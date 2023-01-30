@@ -93,14 +93,3 @@ where
         height: height.round().as_(),
     }
 }
-
-pub fn calculate_miplevels(size: Size<u32>) -> u32 {
-    let mut size = std::cmp::max(size.width, size.height);
-    let mut levels = 0;
-    while size != 0 {
-        levels += 1;
-        size >>= 1;
-    }
-
-    levels
-}

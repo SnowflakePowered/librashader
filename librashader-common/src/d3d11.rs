@@ -16,7 +16,8 @@ impl From<FilterMode> for Direct3D11::D3D11_FILTER {
     fn from(value: FilterMode) -> Self {
         match value {
             FilterMode::Linear => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-            _ => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_POINT,
+            FilterMode::Nearest => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_POINT,
+            _ => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
         }
     }
 }

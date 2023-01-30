@@ -27,6 +27,7 @@ pub use texture::D3D11OutputView;
 
 #[cfg(test)]
 mod tests {
+    use librashader_runtime::image::{Image, UVDirection};
     use super::*;
     use crate::options::FilterChainOptionsD3D11;
 
@@ -41,6 +42,7 @@ mod tests {
                 use_deferred_context: false,
                 force_no_mipmaps: false,
             }),
+            Some(Image::load("../test/sf2.png", UVDirection::TopLeft).unwrap())
         )
         .unwrap();
         // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(

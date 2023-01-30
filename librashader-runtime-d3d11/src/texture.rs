@@ -10,6 +10,7 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_USAGE_STAGING,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+use librashader_runtime::scaling::MipmapSize;
 
 use crate::error::{assume_d3d11_init, Result};
 use crate::framebuffer::OwnedFramebuffer;
@@ -116,15 +117,8 @@ impl LutTexture {
 
         // determine number of mipmaps required
         if (desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS).0 != 0 {
-            let mut width = desc.Width >> 5;
-            let mut height = desc.Height >> 5;
             desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-
-            while width != 0 && height != 0 {
-                width >>= 1;
-                height >>= 1;
-                desc.MipLevels += 1;
-            }
+            desc.MipLevels = source.size.calculate_miplevels();
         }
 
         // Don't need to determine format support because LUTs are always DXGI_FORMAT_R8G8B8A8_UNORM
