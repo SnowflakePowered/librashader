@@ -51,11 +51,10 @@ impl Framebuffer {
         scaling: Scale2D,
         format: ImageFormat,
         viewport: &Viewport<&Framebuffer>,
-        original: &InputTexture,
-        source: &InputTexture,
+        source_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
-        T::scale(self, scaling, format, viewport, original, source, mipmap)
+        T::scale(self, scaling, format, viewport, source_size, mipmap)
     }
 
     pub(crate) fn copy_from<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<()> {

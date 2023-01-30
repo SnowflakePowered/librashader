@@ -42,8 +42,7 @@ pub trait FramebufferInterface {
         scaling: Scale2D,
         format: ImageFormat,
         viewport: &Viewport<&Framebuffer>,
-        _original: &InputTexture,
-        source: &InputTexture,
+        source_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(fb: &Framebuffer);

@@ -37,17 +37,14 @@ impl FramebufferInterface for Gl46Framebuffer {
         scaling: Scale2D,
         format: ImageFormat,
         viewport: &Viewport<&Framebuffer>,
-        _original: &InputTexture,
-        source: &InputTexture,
+        source_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
         if fb.is_raw {
             return Ok(fb.size);
         }
 
-        let size = source
-            .image
-            .size
+        let size = source_size
             .scale_viewport(scaling, viewport.output.size);
 
         if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {

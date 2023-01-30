@@ -4,7 +4,7 @@ use crate::texture::{D3D11InputView, InputTexture};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{calculate_miplevels, MipmapSize, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
@@ -67,15 +67,14 @@ impl OwnedFramebuffer {
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
-        _original: &InputTexture,
-        source: &InputTexture,
+        source_size: &Size<u32>,
         should_mipmap: bool,
     ) -> error::Result<Size<u32>> {
         if self.is_raw {
             return Ok(self.size);
         }
 
-        let size = source.view.size.scale_viewport(scaling, *viewport_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size);
 
         if self.size != size
             || (should_mipmap && self.max_mipmap == 1)
@@ -113,7 +112,6 @@ impl OwnedFramebuffer {
                 | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
         );
 
-        // todo: fix mipmap handling
         let desc = default_desc(size, format, self.max_mipmap);
         unsafe {
             let mut texture = None;

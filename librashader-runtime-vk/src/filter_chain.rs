@@ -640,6 +640,7 @@ impl FilterChainVulkan {
         );
 
         // rescale render buffers to ensure all bindings are valid.
+        let mut source_size = source.image.size;
         let mut iterator = passes.iter_mut().enumerate().peekable();
         while let Some((index, pass)) = iterator.next() {
             let should_mipmap = iterator
@@ -653,12 +654,11 @@ impl FilterChainVulkan {
             //
             // since scaling is hopefully a rare occurrence (since it's tested for if the output size
             // requires changing) it should be ok.
-            self.output_framebuffers[index].scale(
+            let next_size = self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
-                &original,
-                source,
+                &source_size,
                 should_mipmap,
                 Some(OwnedImageLayout {
                     dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
@@ -673,8 +673,7 @@ impl FilterChainVulkan {
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
-                &original,
-                source,
+                &source_size,
                 should_mipmap,
                 Some(OwnedImageLayout {
                     dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
@@ -685,6 +684,7 @@ impl FilterChainVulkan {
                 }),
             )?;
 
+            source_size = next_size;
             // refresh inputs
             self.common.feedback_inputs[index] = Some(
                 self.feedback_framebuffers[index]

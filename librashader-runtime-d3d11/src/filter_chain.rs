@@ -30,6 +30,7 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
+use librashader_runtime::binding::TextureInput;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -468,18 +469,18 @@ impl FilterChainD3D11 {
         let mut iterator = passes.iter_mut().enumerate().peekable();
 
         // rescale render buffers to ensure all bindings are valid.
+        let mut source_size = source.size();
         while let Some((index, pass)) = iterator.next() {
             let should_mipmap = iterator
                 .peek()
                 .map(|(_, p)| p.config.mipmap_input)
                 .unwrap_or(false);
 
-            self.output_framebuffers[index].scale(
+            let next_size = self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
-                &original,
-                &source,
+                &source_size,
                 should_mipmap
             )?;
 
@@ -487,10 +488,11 @@ impl FilterChainD3D11 {
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
-                &original,
-                &source,
+                &source_size,
                 should_mipmap
             )?;
+
+            source_size = next_size;
         }
 
         let passes_len = passes.len();
