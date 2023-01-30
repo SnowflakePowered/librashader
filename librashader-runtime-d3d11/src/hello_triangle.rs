@@ -180,8 +180,8 @@ fn sample_wndproc<S: DXSample>(sample: &mut S, message: u32, wparam: WPARAM) -> 
         }
         WM_SIZE => {
             sample.resize(LOWORD(wparam.0), HIWORD(wparam.0)).unwrap();
-          true
-        },
+            true
+        }
         _ => false,
     }
 }
@@ -242,13 +242,13 @@ pub mod d3d11_hello_triangle {
 
     use crate::filter_chain::FilterChainD3D11;
 
-    use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
+    use crate::options::{FilterChainOptionsD3D11};
     use crate::texture::{D3D11InputView, LutTexture};
     use crate::D3D11OutputView;
     use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
+    use librashader_runtime::image::Image;
     use std::slice;
     use std::time::Instant;
-    use librashader_runtime::image::Image;
 
     pub struct Sample {
         pub dxgi_factory: IDXGIFactory4,
@@ -256,7 +256,7 @@ pub mod d3d11_hello_triangle {
         pub context: ID3D11DeviceContext,
         pub resources: Option<Resources>,
         pub filter: FilterChainD3D11,
-        pub lut: Option<ID3D11Texture2D>
+        pub lut: Option<ID3D11Texture2D>,
     }
 
     pub struct Resources {
@@ -291,21 +291,29 @@ pub mod d3d11_hello_triangle {
             let (dxgi_factory, device, context) = create_device()?;
             let filter = FilterChainD3D11::load_from_path(&device, filter, filter_options).unwrap();
             let lut = if let Some(image) = image {
-              let lut = LutTexture::new(&device, &context, &image, D3D11_TEXTURE2D_DESC {
-                  Width: image.size.width,
-                  Height: image.size.height,
-                  MipLevels: 1,
-                  ArraySize: 0,
-                  Format: ImageFormat::R8G8B8A8Unorm.into(),
-                  SampleDesc: DXGI_SAMPLE_DESC {
-                      Count: 1,
-                      Quality: 0,
-                  },
-                  Usage: D3D11_USAGE_DYNAMIC,
-                  BindFlags: D3D11_BIND_SHADER_RESOURCE,
-                  CPUAccessFlags: Default::default(),
-                  MiscFlags: Default::default(),
-              }, FilterMode::Linear, WrapMode::ClampToEdge).unwrap();
+                let lut = LutTexture::new(
+                    &device,
+                    &context,
+                    &image,
+                    D3D11_TEXTURE2D_DESC {
+                        Width: image.size.width,
+                        Height: image.size.height,
+                        MipLevels: 1,
+                        ArraySize: 0,
+                        Format: ImageFormat::R8G8B8A8Unorm.into(),
+                        SampleDesc: DXGI_SAMPLE_DESC {
+                            Count: 1,
+                            Quality: 0,
+                        },
+                        Usage: D3D11_USAGE_DYNAMIC,
+                        BindFlags: D3D11_BIND_SHADER_RESOURCE,
+                        CPUAccessFlags: Default::default(),
+                        MiscFlags: Default::default(),
+                    },
+                    FilterMode::Linear,
+                    WrapMode::ClampToEdge,
+                )
+                .unwrap();
                 Some(lut.handle)
             } else {
                 None
@@ -372,11 +380,12 @@ pub mod d3d11_hello_triangle {
                 backbuffer.GetDesc(&mut desc);
                 desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
-                self.device.CreateTexture2D(&desc, None, Some(&mut renderbuffer))?;
+                self.device
+                    .CreateTexture2D(&desc, None, Some(&mut renderbuffer))?;
                 let renderbuffer = renderbuffer.unwrap();
-                self.device.CreateRenderTargetView(&renderbuffer, None, Some(&mut rtv))?;
+                self.device
+                    .CreateRenderTargetView(&renderbuffer, None, Some(&mut rtv))?;
                 (renderbuffer, rtv.unwrap())
-
             };
             self.resources = Some(Resources {
                 swapchain,
@@ -411,14 +420,15 @@ pub mod d3d11_hello_triangle {
             Ok(())
         }
 
-        fn resize(&mut self, w: u32, h: u32) -> Result<()> {
+        fn resize(&mut self, _w: u32, _h: u32) -> Result<()> {
             unsafe {
                 if let Some(resources) = self.resources.as_mut() {
                     drop(resources.backbuffer_rtv.take());
                     drop(resources.backbuffer.take());
-                    resources.swapchain.ResizeBuffers(0, 0,
-                                                      0, DXGI_FORMAT_UNKNOWN, 0)
-                        .unwrap_or_else(|f| eprintln!("{:?}", f));
+                    resources
+                        .swapchain
+                        .ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0)
+                        .unwrap_or_else(|f| eprintln!("{f:?}"));
                     let (rtv, backbuffer) = create_rtv(&self.device, &resources.swapchain)?;
 
                     resources.backbuffer = Some(backbuffer);
@@ -525,7 +535,11 @@ pub mod d3d11_hello_triangle {
                 let mut tex2d_desc = Default::default();
                 input.GetDesc(&mut tex2d_desc);
                 let mut backbuffer_desc = Default::default();
-                resources.backbuffer.as_ref().unwrap().GetDesc(&mut backbuffer_desc);
+                resources
+                    .backbuffer
+                    .as_ref()
+                    .unwrap()
+                    .GetDesc(&mut backbuffer_desc);
 
                 let mut input_srv = None;
                 self.device.CreateShaderResourceView(

@@ -1,5 +1,6 @@
 use librashader_common::{FilterMode, Size, WrapMode};
 use librashader_runtime::image::Image;
+use librashader_runtime::scaling::MipmapSize;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView,
@@ -10,7 +11,6 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC, D3D11_USAGE_STAGING,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
-use librashader_runtime::scaling::MipmapSize;
 
 use crate::error::{assume_d3d11_init, Result};
 use crate::framebuffer::OwnedFramebuffer;

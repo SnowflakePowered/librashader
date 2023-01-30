@@ -23,6 +23,7 @@ use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
+use librashader_runtime::binding::TextureInput;
 use librashader_runtime::uniforms::UniformStorage;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
@@ -30,7 +31,6 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
-use librashader_runtime::binding::TextureInput;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -121,7 +121,7 @@ impl FilterChainD3D11 {
                 &current_context,
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
-                false
+                false,
             )
         });
 
@@ -141,7 +141,7 @@ impl FilterChainD3D11 {
                 &current_context,
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
-                false
+                false,
             )
         });
         // resolve all results
@@ -353,7 +353,13 @@ impl FilterChainD3D11 {
         // eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
-            OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
+            OwnedFramebuffer::new(
+                device,
+                context,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+                false,
+            )
         });
 
         let framebuffers = framebuffers
@@ -481,7 +487,7 @@ impl FilterChainD3D11 {
                 pass.get_format(),
                 &viewport.output.size,
                 &source_size,
-                should_mipmap
+                should_mipmap,
             )?;
 
             self.feedback_framebuffers[index].scale(
@@ -489,7 +495,7 @@ impl FilterChainD3D11 {
                 pass.get_format(),
                 &viewport.output.size,
                 &source_size,
-                should_mipmap
+                should_mipmap,
             )?;
 
             source_size = next_size;

@@ -2,7 +2,6 @@ use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::Framebuffer;
 use crate::gl::FramebufferInterface;
-use crate::texture::InputTexture;
 use gl::types::{GLenum, GLint, GLsizei};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::Scale2D;
@@ -46,8 +45,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             return Ok(fb.size);
         }
 
-        let size = source_size
-            .scale_viewport(scaling, viewport.output.size);
+        let size = source_size.scale_viewport(scaling, viewport.output.size);
 
         if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {
             fb.size = size;

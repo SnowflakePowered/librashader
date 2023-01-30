@@ -1,6 +1,6 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
-use crate::texture::{D3D11InputView, InputTexture};
+use crate::texture::{D3D11InputView};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
@@ -57,7 +57,11 @@ impl OwnedFramebuffer {
                 device: device.clone(),
                 context: context.clone(),
                 is_raw: false,
-                max_mipmap: if mipmap { size.calculate_miplevels() } else { 1 },
+                max_mipmap: if mipmap {
+                    size.calculate_miplevels()
+                } else {
+                    1
+                },
             })
         }
     }
