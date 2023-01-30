@@ -125,7 +125,7 @@ If you wish to contribute a runtime implementation not already available, see th
 crate for helpers and shared logic used across all librashader runtime implementations. Using these helpers and traits will
 ensure that your runtime has consistent behaviour for uniform and texture semantics bindings with the existing librashader runtimes.
 
-These types should not be exposed in your publish API to the end user, and should be kept internal to the implementation of 
+These types should not be exposed to the end user in the runtime's public API, and should be kept internal to the implementation of 
 the runtime.
 
 ## License
@@ -142,7 +142,10 @@ library found in the load path. A non-MPL-2.0 compatible project may link agains
 `librashader_ld` to use the librashader runtime, *provided that `librashader.so` or `librashader.dll` 
 are distributed under the restrictions of MPLv2*.
 
-Note that this means that if your project is not compatible with MPL-2.0, you **can not distribute `librashader.so` or `librashader.dll`**
-alongside your project. The end user must obtain the implementation of librashader themselves.
+Note that this means that if your project is unable to comply with the requirements of MPL-2.0, 
+you **can not distribute `librashader.so` or `librashader.dll`** alongside your project. 
+The end user must obtain the implementation of librashader themselves. For more information, 
+see the [MPL 2.0 FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).
 
-At your discretion, you may instead choose to distribute `librashader` under the terms of GPLv3 rather than MPL-2.0
+
+At your discretion, you may instead choose to distribute `librashader` under the terms of GPLv3 rather than MPL-2.0.
