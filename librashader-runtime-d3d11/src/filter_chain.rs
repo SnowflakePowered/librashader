@@ -527,8 +527,8 @@ impl FilterChainD3D11 {
                     handle: target.create_shader_resource_view()?,
                     size,
                 },
-                filter,
-                wrap_mode,
+                filter: pass.config.filter,
+                wrap_mode: pass.config.wrap_mode,
             };
             self.common.output_textures[index] = Some(source.clone());
         }

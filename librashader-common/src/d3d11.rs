@@ -17,7 +17,6 @@ impl From<FilterMode> for Direct3D11::D3D11_FILTER {
         match value {
             FilterMode::Linear => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
             FilterMode::Nearest => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_POINT,
-            _ => Direct3D11::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
         }
     }
 }
