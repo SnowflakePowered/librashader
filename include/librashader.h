@@ -248,11 +248,9 @@ typedef struct filter_chain_vk_opt_t {
     uint32_t frames_in_flight;
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     bool force_no_mipmaps;
-    /// The format to use for the render pass. If this is `VK_FORMAT_UNDEFINED`, dynamic rendering
-    /// will be used instead of a render pass. If this is set to some format, the render passes
-    /// will be created with such format. It is recommended if possible to use dynamic rendering,
+    /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
     /// because render-pass mode will create new framebuffers per pass.
-    VkFormat render_pass_format;
+    bool use_render_pass;
 } filter_chain_vk_opt_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)

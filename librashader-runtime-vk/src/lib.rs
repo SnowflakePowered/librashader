@@ -52,7 +52,7 @@ mod tests {
             Some(&FilterChainOptionsVulkan {
                 frames_in_flight: 3,
                 force_no_mipmaps: false,
-                render_pass_format: vk::Format::R8G8B8A8_UNORM,
+                use_render_pass: true,
             }),
         )
         .unwrap();

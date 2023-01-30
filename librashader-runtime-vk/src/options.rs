@@ -20,9 +20,7 @@ pub struct FilterChainOptionsVulkan {
     pub frames_in_flight: u32,
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
-    /// The format to use for the render pass. If this is `VK_FORMAT_UNDEFINED`, dynamic rendering
-    /// will be used instead of a render pass. If this is set to some format, the render passes
-    /// will be created with such format. It is recommended if possible to use dynamic rendering,
+    /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
     /// because render-pass mode will create new framebuffers per pass.
-    pub render_pass_format: vk::Format,
+    pub use_render_pass: bool,
 }

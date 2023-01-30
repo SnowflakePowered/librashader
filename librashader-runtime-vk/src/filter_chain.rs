@@ -238,8 +238,8 @@ impl FilterChainVulkan {
             &semantics,
             frames_in_flight,
             options
-                .map(|o| o.render_pass_format)
-                .unwrap_or(vk::Format::UNDEFINED),
+                .map(|o| o.use_render_pass)
+                .unwrap_or(false),
         )?;
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
@@ -306,7 +306,7 @@ impl FilterChainVulkan {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         frames_in_flight: u32,
-        render_pass_format: vk::Format,
+        use_render_pass: bool,
     ) -> error::Result<Box<[FilterPass]>> {
         let mut filters = Vec::new();
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
@@ -348,6 +348,16 @@ impl FilterChainVulkan {
             for (semantics, param) in &reflection.meta.texture_size_meta {
                 uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
+
+            let render_pass_format = if !use_render_pass {
+                vk::Format::UNDEFINED
+            } else if let Some(format) = config.get_format_override() {
+                format.into()
+            } else if source.format != ImageFormat::Unknown {
+                source.format.into()
+            } else {
+                ImageFormat::R8G8B8A8Unorm.into()
+            };
 
             let graphics_pipeline = VulkanGraphicsPipeline::new(
                 &vulkan.device,

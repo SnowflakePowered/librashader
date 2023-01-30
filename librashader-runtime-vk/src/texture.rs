@@ -142,6 +142,7 @@ impl OwnedImage {
         if self.image.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
+            || vk::Format::from(format) != self.image.format
         {
             let max_levels = if mipmap { u32::MAX } else { 1 };
 
