@@ -4,7 +4,7 @@ use crate::texture::{D3D11InputView, InputTexture};
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::ViewportSize;
+use librashader_runtime::scaling::{calculate_miplevels, MipmapSize, ViewportSize};
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
@@ -20,12 +20,13 @@ use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
 #[derive(Debug, Clone)]
 pub(crate) struct OwnedFramebuffer {
-    pub texture: ID3D11Texture2D,
-    pub size: Size<u32>,
-    pub format: DXGI_FORMAT,
+    render: ID3D11Texture2D,
+    pub(crate) size: Size<u32>,
+    format: DXGI_FORMAT,
     device: ID3D11Device,
     context: ID3D11DeviceContext,
     is_raw: bool,
+    max_mipmap: u32,
 }
 
 impl OwnedFramebuffer {
@@ -34,6 +35,7 @@ impl OwnedFramebuffer {
         context: &ID3D11DeviceContext,
         size: Size<u32>,
         format: ImageFormat,
+        mipmap: bool,
     ) -> error::Result<OwnedFramebuffer> {
         unsafe {
             let format = d3d11_get_closest_format(
@@ -44,17 +46,18 @@ impl OwnedFramebuffer {
                     | D3D11_FORMAT_SUPPORT_RENDER_TARGET.0,
             );
             let desc = default_desc(size, format, 1);
-            let mut texture = None;
-            device.CreateTexture2D(&desc, None, Some(&mut texture))?;
-            assume_d3d11_init!(texture, "CreateTexture2D");
+            let mut render = None;
+            device.CreateTexture2D(&desc, None, Some(&mut render))?;
+            assume_d3d11_init!(render, "CreateTexture2D");
 
             Ok(OwnedFramebuffer {
-                texture,
+                render,
                 size,
                 format,
                 device: device.clone(),
                 context: context.clone(),
                 is_raw: false,
+                max_mipmap: if mipmap { size.calculate_miplevels() } else { 1 },
             })
         }
     }
@@ -66,6 +69,7 @@ impl OwnedFramebuffer {
         viewport_size: &Size<u32>,
         _original: &InputTexture,
         source: &InputTexture,
+        should_mipmap: bool,
     ) -> error::Result<Size<u32>> {
         if self.is_raw {
             return Ok(self.size);
@@ -73,8 +77,16 @@ impl OwnedFramebuffer {
 
         let size = source.view.size.scale_viewport(scaling, *viewport_size);
 
-        if self.size != size {
+        if self.size != size
+            || (should_mipmap && self.max_mipmap == 1)
+            || (!should_mipmap && self.max_mipmap != 1)
+        {
             self.size = size;
+            self.max_mipmap = if should_mipmap {
+                size.calculate_miplevels()
+            } else {
+                1
+            };
 
             self.init(
                 size,
@@ -102,13 +114,13 @@ impl OwnedFramebuffer {
         );
 
         // todo: fix mipmap handling
-        let desc = default_desc(size, format, 1);
+        let desc = default_desc(size, format, self.max_mipmap);
         unsafe {
             let mut texture = None;
             self.device
                 .CreateTexture2D(&desc, None, Some(&mut texture))?;
             assume_d3d11_init!(mut texture, "CreateTexture2D");
-            std::mem::swap(&mut self.texture, &mut texture);
+            std::mem::swap(&mut self.render, &mut texture);
             drop(texture)
         }
         self.format = format;
@@ -121,7 +133,7 @@ impl OwnedFramebuffer {
         let mut srv = None;
         unsafe {
             self.device.CreateShaderResourceView(
-                &self.texture,
+                &self.render,
                 Some(&D3D11_SHADER_RESOURCE_VIEW_DESC {
                     Format: self.format,
                     ViewDimension: D3D_SRV_DIMENSION_TEXTURE2D,
@@ -143,7 +155,7 @@ impl OwnedFramebuffer {
         let mut rtv = None;
         unsafe {
             self.device.CreateRenderTargetView(
-                &self.texture,
+                &self.render,
                 Some(&D3D11_RENDER_TARGET_VIEW_DESC {
                     Format: self.format,
                     ViewDimension: D3D11_RTV_DIMENSION_TEXTURE2D,
@@ -188,7 +200,7 @@ impl OwnedFramebuffer {
         // will need a staging texture + full so might not be worth it.
         unsafe {
             self.context.CopySubresourceRegion(
-                &self.texture,
+                &self.render,
                 0,
                 0,
                 0,

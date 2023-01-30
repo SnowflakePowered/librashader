@@ -120,6 +120,7 @@ impl FilterChainD3D11 {
                 &current_context,
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
+                false
             )
         });
 
@@ -139,6 +140,7 @@ impl FilterChainD3D11 {
                 &current_context,
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm,
+                false
             )
         });
         // resolve all results
@@ -350,7 +352,7 @@ impl FilterChainD3D11 {
         // eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
-            OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)
+            OwnedFramebuffer::new(device, context, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
 
         let framebuffers = framebuffers
@@ -463,15 +465,22 @@ impl FilterChainD3D11 {
         };
 
         let mut source = original.clone();
+        let mut iterator = passes.iter_mut().enumerate().peekable();
 
         // rescale render buffers to ensure all bindings are valid.
-        for (index, pass) in passes.iter_mut().enumerate() {
+        while let Some((index, pass)) = iterator.next() {
+            let should_mipmap = iterator
+                .peek()
+                .map(|(_, p)| p.config.mipmap_input)
+                .unwrap_or(false);
+
             self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
                 pass.get_format(),
                 &viewport.output.size,
                 &original,
                 &source,
+                should_mipmap
             )?;
 
             self.feedback_framebuffers[index].scale(
@@ -480,6 +489,7 @@ impl FilterChainD3D11 {
                 &viewport.output.size,
                 &original,
                 &source,
+                should_mipmap
             )?;
         }
 

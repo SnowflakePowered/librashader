@@ -154,6 +154,7 @@ impl FilterPass {
         if self.config.mipmap_input && !parent.disable_mipmaps {
             unsafe {
                 context.GenerateMips(&source.view.handle);
+                // context.GenerateMips(&original.view.handle);
             }
         }
         unsafe {

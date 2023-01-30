@@ -80,6 +80,16 @@ pub trait DXSample {
     fn window_size(&self) -> (i32, i32) {
         (WIDTH, HEIGHT)
     }
+    fn resize(&mut self, w: u32, h: u32) -> Result<()>;
+}
+
+#[inline]
+pub fn LOWORD(l: usize) -> u32 {
+    (l & 0xffff) as u32
+}
+#[inline]
+pub fn HIWORD(l: usize) -> u32 {
+    ((l >> 16) & 0xffff) as u32
 }
 
 fn run_sample<S>(mut sample: S) -> Result<()>
@@ -168,6 +178,10 @@ fn sample_wndproc<S: DXSample>(sample: &mut S, message: u32, wparam: WPARAM) -> 
             sample.render().unwrap();
             true
         }
+        WM_SIZE => {
+            sample.resize(LOWORD(wparam.0), HIWORD(wparam.0)).unwrap();
+          true
+        },
         _ => false,
     }
 }
@@ -190,6 +204,7 @@ extern "system" fn wndproc<S: DXSample>(
             unsafe { PostQuitMessage(0) };
             LRESULT::default()
         }
+
         _ => {
             let user_data = unsafe { GetWindowLongPtrA(window, GWLP_USERDATA) };
             let sample = std::ptr::NonNull::<S>::new(user_data as _);
@@ -227,7 +242,7 @@ pub mod d3d11_hello_triangle {
 
     use crate::filter_chain::FilterChainD3D11;
 
-    use crate::options::FilterChainOptionsD3D11;
+    use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
     use crate::texture::D3D11InputView;
     use crate::D3D11OutputView;
     use librashader_common::{Size, Viewport};
@@ -256,8 +271,10 @@ pub mod d3d11_hello_triangle {
         pub frame_end: Instant,
         pub elapsed: f32,
         triangle_uniform_values: TriangleUniforms,
-        pub backbuffer: ID3D11Texture2D,
-        pub backbuffer_rtv: ID3D11RenderTargetView,
+        pub renderbuffer: ID3D11Texture2D,
+        pub renderbufffer_rtv: ID3D11RenderTargetView,
+        pub backbuffer: Option<ID3D11Texture2D>,
+        pub backbuffer_rtv: Option<ID3D11RenderTargetView>,
         pub viewport: D3D11_VIEWPORT,
         pub shader_output: Option<ID3D11Texture2D>,
         pub frame_count: usize,
@@ -323,10 +340,24 @@ pub mod d3d11_hello_triangle {
                 self.context.RSSetState(&raster_state);
             }
 
+            let (renderbuffer, render_rtv) = unsafe {
+                let mut renderbuffer = None;
+                let mut rtv = None;
+                let mut desc = Default::default();
+
+                backbuffer.GetDesc(&mut desc);
+                desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+                self.device.CreateTexture2D(&desc, None, Some(&mut renderbuffer))?;
+                let renderbuffer = renderbuffer.unwrap();
+                self.device.CreateRenderTargetView(&renderbuffer, None, Some(&mut rtv))?;
+                (renderbuffer, rtv.unwrap())
+
+            };
             self.resources = Some(Resources {
                 swapchain,
-                backbuffer_rtv: rtv,
-                backbuffer,
+                backbuffer_rtv: Some(rtv),
+                backbuffer: Some(backbuffer),
                 depth_buffer,
                 depth_stencil_view,
                 triangle_vertices: triangle_vbo,
@@ -339,6 +370,8 @@ pub mod d3d11_hello_triangle {
                 frame_start: Instant::now(),
                 elapsed: 0f32,
                 triangle_uniform_values: Default::default(),
+                renderbuffer,
+                renderbufffer_rtv: render_rtv,
                 viewport: D3D11_VIEWPORT {
                     TopLeftX: 0.0,
                     TopLeftY: 0.0,
@@ -354,6 +387,22 @@ pub mod d3d11_hello_triangle {
             Ok(())
         }
 
+        fn resize(&mut self, w: u32, h: u32) -> Result<()> {
+            unsafe {
+                if let Some(resources) = self.resources.as_mut() {
+                    drop(resources.backbuffer_rtv.take());
+                    drop(resources.backbuffer.take());
+                    resources.swapchain.ResizeBuffers(0, 0,
+                                                      0, DXGI_FORMAT_UNKNOWN, 0)
+                        .unwrap_or_else(|f| eprintln!("{:?}", f));
+                    let (rtv, backbuffer) = create_rtv(&self.device, &resources.swapchain)?;
+
+                    resources.backbuffer = Some(backbuffer);
+                    resources.backbuffer_rtv = Some(rtv);
+                }
+            }
+            Ok(())
+        }
         fn render(&mut self) -> Result<()> {
             let Some(resources) = &mut self.resources else {
                 return Ok(());
@@ -399,7 +448,7 @@ pub mod d3d11_hello_triangle {
                     Some(&[resources.triangle_uniforms.clone()]),
                 );
                 self.context.OMSetRenderTargets(
-                    Some(&[resources.backbuffer_rtv.clone()]),
+                    Some(&[resources.renderbufffer_rtv.clone()]),
                     &resources.depth_stencil_view,
                 );
                 self.context.RSSetViewports(Some(&[resources.viewport]))
@@ -408,7 +457,7 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 let color = [0.3, 0.4, 0.6, 1.0];
                 self.context
-                    .ClearRenderTargetView(&resources.backbuffer_rtv, color.as_ptr());
+                    .ClearRenderTargetView(&resources.renderbufffer_rtv, color.as_ptr());
                 self.context.ClearDepthStencilView(
                     &resources.depth_stencil_view,
                     D3D11_CLEAR_DEPTH.0,
@@ -443,8 +492,11 @@ pub mod d3d11_hello_triangle {
 
             unsafe {
                 let mut tex2d_desc = Default::default();
-                resources.backbuffer.GetDesc(&mut tex2d_desc);
-                let mut backbuffer_copy = None;
+                resources.renderbuffer.GetDesc(&mut tex2d_desc);
+                let mut backbuffer_desc = Default::default();
+                resources.backbuffer.as_ref().unwrap().GetDesc(&mut backbuffer_desc);
+
+                let mut renderbuffer_copy = None;
 
                 self.device.CreateTexture2D(
                     &D3D11_TEXTURE2D_DESC {
@@ -453,11 +505,11 @@ pub mod d3d11_hello_triangle {
                         ..tex2d_desc
                     },
                     None,
-                    Some(&mut backbuffer_copy),
+                    Some(&mut renderbuffer_copy),
                 )?;
-                let backup = backbuffer_copy.unwrap();
+                let backup = renderbuffer_copy.unwrap();
 
-                self.context.CopyResource(&backup, &resources.backbuffer);
+                self.context.CopyResource(&backup, &resources.renderbuffer);
 
                 let mut copy_srv = None;
                 self.device.CreateShaderResourceView(
@@ -494,6 +546,7 @@ pub mod d3d11_hello_triangle {
                     Some(&mut rtv),
                 )?;
 
+                // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
                 self.filter
                     .frame(
                         D3D11InputView {
@@ -508,10 +561,10 @@ pub mod d3d11_hello_triangle {
                             y: resources.viewport.TopLeftY,
                             output: D3D11OutputView {
                                 size: Size {
-                                    width: tex2d_desc.Width,
-                                    height: tex2d_desc.Height,
+                                    width: backbuffer_desc.Width,
+                                    height: backbuffer_desc.Height,
                                 },
-                                handle: resources.backbuffer_rtv.clone(),
+                                handle: resources.backbuffer_rtv.as_ref().unwrap().clone(),
                             },
                             mvp: None,
                         },
