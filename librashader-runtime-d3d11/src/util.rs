@@ -126,6 +126,7 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             None,
         )?;
 
+        // SAFETY: if D3DCompile succeeds then blob is Some
         Ok(blob.unwrap())
     }
 }

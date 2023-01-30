@@ -220,30 +220,29 @@ impl FilterChainD3D11 {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
     ) -> error::Result<Vec<FilterPass>> {
-        // let mut filters = Vec::new();
         let mut filters = Vec::new();
 
         for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(None)?;
 
-            let vertex_dxil =
+            let vertex_dxbc =
                 util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
             let vs = d3d11_compile_bound_shader(
                 device,
-                &vertex_dxil,
+                &vertex_dxbc,
                 None,
                 ID3D11Device::CreateVertexShader,
             )?;
 
             let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
-            let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxil)?;
+            let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
 
-            let fragment_dxil =
+            let fragment_dxbc =
                 util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
             let ps = d3d11_compile_bound_shader(
                 device,
-                &fragment_dxil,
+                &fragment_dxbc,
                 None,
                 ID3D11Device::CreatePixelShader,
             )?;
