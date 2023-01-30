@@ -116,6 +116,7 @@ pub fn d3d12_get_closest_format(
 }
 
 pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
+    // todo: compile with dxc
     unsafe {
         let mut blob = None;
         D3DCompile(
@@ -126,11 +127,12 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             None,
             PCSTR(entry.as_ptr()),
             PCSTR(version.as_ptr()),
-            if cfg!(feature = "debug-shader") {
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-            } else {
-                D3DCOMPILE_OPTIMIZATION_LEVEL3
-            },
+                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+            // if cfg!(feature = "debug-shader") {
+            //     D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+            // } else {
+            //     D3DCOMPILE_OPTIMIZATION_LEVEL3
+            // },
             0,
             &mut blob,
             None,

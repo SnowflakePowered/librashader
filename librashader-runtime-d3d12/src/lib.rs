@@ -1,6 +1,6 @@
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
-
+#![feature(type_alias_impl_trait)]
 mod error;
 mod filter_chain;
 mod heap;
@@ -9,6 +9,9 @@ mod samplers;
 mod texture;
 mod util;
 mod mipmap;
+mod filter_pass;
+mod quad_render;
+mod graphics_pipeline;
 
 #[cfg(test)]
 mod tests {

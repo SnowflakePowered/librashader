@@ -1,12 +1,12 @@
 use std::borrow::Borrow;
-use crate::error;
+use crate::{error, util};
 use crate::heap::{D3D12DescriptorHeap, LutTextureHeap, ResourceWorkHeap};
 use crate::samplers::SamplerSet;
 use crate::texture::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::presets::CompilePresetTarget;
+use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
 use std::error::Error;
@@ -21,7 +21,16 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
+use librashader_common::ImageFormat;
+use librashader_reflect::back::{CompileReflectShader, CompileShader};
+use librashader_reflect::reflect::ReflectShader;
+use librashader_reflect::reflect::semantics::ShaderSemantics;
+use crate::filter_pass::FilterPass;
+use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::mipmap::D3D12MipmapGen;
+use crate::quad_render::DrawQuad;
+
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
@@ -30,6 +39,7 @@ pub struct FilterChainD3D12 {
     // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
     // pub(crate) draw_quad: DrawQuad,
+    pub(crate) filters: Vec<FilterPass>,
 }
 
 pub(crate) struct FilterCommon {
@@ -44,6 +54,7 @@ pub(crate) struct FilterCommon {
     lut_heap: D3D12DescriptorHeap<LutTextureHeap>,
     luts: FxHashMap<usize, LutTexture>,
     mipmap_gen: D3D12MipmapGen,
+    root_signature: D3D12RootSignature,
 }
 
 impl FilterChainD3D12 {
@@ -56,6 +67,41 @@ impl FilterChainD3D12 {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(device, preset, options)
+    }
+
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    pub fn load_from_preset(
+        device: &ID3D12Device,
+        preset: ShaderPreset,
+        options: Option<&()>,
+    ) -> error::Result<FilterChainD3D12> {
+        let (passes, semantics) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+            preset.shaders,
+            &preset.textures,
+        )?;
+
+        let samplers = SamplerSet::new(device)?;
+        let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
+
+        let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
+        let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures, &mipmap_gen).unwrap();
+
+        let root_signature = D3D12RootSignature::new(device)?;
+
+        let filters = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
+
+        Ok(FilterChainD3D12 {
+            common: FilterCommon {
+                d3d12: device.clone(),
+                samplers,
+                lut_heap,
+                luts,
+                mipmap_gen,
+                root_signature,
+            },
+            filters
+        })
     }
 
     fn load_luts(
@@ -142,36 +188,41 @@ impl FilterChainD3D12 {
                 unsafe { CloseHandle(fence_event) };
             }
 
-            std::mem::forget(residuals);
+            drop(residuals);
             Ok(luts)
         }
     }
 
-    /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(
-        device: &ID3D12Device,
-        preset: ShaderPreset,
-        options: Option<&()>,
-    ) -> error::Result<FilterChainD3D12> {
-        let (passes, semantics) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
-            preset.shaders,
-            &preset.textures,
-        )?;
+    fn init_passes(device: &ID3D12Device,
+                   root_signature: &D3D12RootSignature,
+                   passes: Vec<ShaderPassMeta>,
+                   semantics: &ShaderSemantics,)
+        -> error::Result<Vec<FilterPass>> {
 
-        let samplers = SamplerSet::new(device)?;
-        let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
+        let mut filters = Vec::new();
+        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+            let reflection = reflect.reflect(index, semantics)?;
+            let hlsl = reflect.compile(None)?;
 
-        let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
-        let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures, &mipmap_gen).unwrap();
+            let graphics_pipeline = D3D12GraphicsPipeline::new(device,
+                                                               &hlsl,
+                root_signature,
+                if let Some(format) = config.get_format_override() {
+                    format
+                } else if source.format != ImageFormat::Unknown {
+                    source.format
+                } else {
+                    ImageFormat::R8G8B8A8Unorm
+                }.into()
+            )?;
 
-        Ok(FilterChainD3D12 {
-            common: FilterCommon {
-                d3d12: device.clone(),
-                samplers,
-                lut_heap,
-                luts,
-                mipmap_gen,
-            },
-        })
+            filters.push(FilterPass {
+                pipeline: graphics_pipeline,
+            })
+
+        }
+
+        Ok(filters)
     }
+
 }
