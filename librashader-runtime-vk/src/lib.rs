@@ -37,7 +37,7 @@ mod tests {
     use crate::filter_chain::FilterChainVulkan;
     use crate::hello_triangle::vulkan_base::VulkanBase;
     use crate::options::FilterChainOptionsVulkan;
-    use ash::vk;
+    
 
     #[test]
     fn triangle_vk() {

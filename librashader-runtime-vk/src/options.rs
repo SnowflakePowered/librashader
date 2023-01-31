@@ -1,6 +1,6 @@
 //! Vulkan shader runtime options.
 
-use ash::vk;
+
 
 /// Options for each Vulkan shader frame.
 #[repr(C)]

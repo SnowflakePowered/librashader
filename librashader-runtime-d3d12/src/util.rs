@@ -2,9 +2,9 @@ use std::mem::ManuallyDrop;
 use std::u64;
 use crate::error;
 use windows::core::PCSTR;
-use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION};
+use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION};
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
-use windows::Win32::Graphics::Direct3D12::{ID3D12Device, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FEATURE_FORMAT_SUPPORT, ID3D12CommandList, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_RESOURCE_DESC, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, D3D12_RESOURCE_DESC1, D3D12_RESOURCE_BARRIER_0, D3D12_RESOURCE_TRANSITION_BARRIER, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATES, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_MEMCPY_DEST, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
+use windows::Win32::Graphics::Direct3D12::{ID3D12Device, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FEATURE_FORMAT_SUPPORT, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, D3D12_RESOURCE_BARRIER_0, D3D12_RESOURCE_TRANSITION_BARRIER, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATES, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_MEMCPY_DEST, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
 use windows::Win32::Graphics::Dxgi::Common::*;
 use crate::error::assume_d3d12_init;
 
@@ -326,13 +326,13 @@ unsafe fn memcpy_subresource(
 ) {
     for z in 0..num_slices  as usize {
         let dest_slice =
-            dest.pData.offset((dest.SlicePitch * z) as isize);
-        let src_slice = src.pData.offset((src.SlicePitch * z as isize) as isize);
+            dest.pData.add(dest.SlicePitch * z);
+        let src_slice = src.pData.offset(src.SlicePitch * z as isize);
 
         for y in 0..num_rows as usize {
             std::ptr::copy_nonoverlapping(
-                src_slice.offset((src.RowPitch * y as isize) as isize),
-                dest_slice.offset((dest.RowPitch * y) as isize),
+                src_slice.offset(src.RowPitch * y as isize),
+                dest_slice.add(dest.RowPitch * y),
                 row_sizes_in_bytes as usize,
             );
         }

@@ -1,6 +1,6 @@
-use std::borrow::Borrow;
-use crate::{error, util};
-use crate::heap::{D3D12DescriptorHeap, LutTextureHeap, ResourceWorkHeap};
+
+use crate::{error};
+use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap};
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
@@ -15,7 +15,7 @@ use windows::core::Interface;
 use windows::w;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12CommandAllocator, ID3D12CommandList, ID3D12CommandQueue, ID3D12Device, ID3D12Fence,
+    ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence,
     ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
     D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
 };
@@ -57,7 +57,7 @@ pub(crate) struct FilterCommon {
     // pub history_textures: Box<[Option<InputTexture>]>,
     pub config: FilterMutable,
     // pub disable_mipmaps: bool,
-    lut_heap: D3D12DescriptorHeap<LutTextureHeap>,
+    lut_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     pub luts: FxHashMap<usize, LutTexture>,
     pub mipmap_gen: D3D12MipmapGen,
     pub root_signature: D3D12RootSignature,
@@ -77,12 +77,11 @@ impl FilterChainD3D12 {
         Self::load_from_preset(device, preset, options)
     }
 
-
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
         device: &ID3D12Device,
         preset: ShaderPreset,
-        options: Option<&()>,
+        _options: Option<&()>,
     ) -> error::Result<FilterChainD3D12> {
         let (passes, semantics) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
             preset.shaders,
@@ -128,7 +127,7 @@ impl FilterChainD3D12 {
 
     fn load_luts(
         device: &ID3D12Device,
-        heap: &mut D3D12DescriptorHeap<LutTextureHeap>,
+        heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         textures: &[TextureConfig],
         mipmap_gen: &D3D12MipmapGen
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
