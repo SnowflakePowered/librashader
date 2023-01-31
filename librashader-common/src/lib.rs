@@ -73,10 +73,10 @@ pub enum ImageFormat {
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
 /// The filtering mode for a texture sampler.
 pub enum FilterMode {
-    #[default]
     /// Linear filtering.
     Linear = 0,
 
+    #[default]
     /// Nearest-neighbour (point) filtering.
     Nearest,
 }
