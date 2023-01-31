@@ -2,12 +2,7 @@ use crate::error;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use windows::Win32::Graphics::Direct3D12::{
-    ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC,
-    D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-    D3D12_GPU_DESCRIPTOR_HANDLE,
-};
+use windows::Win32::Graphics::Direct3D12::{ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_TYPE};
 
 #[const_trait]
 pub trait D3D12HeapType {
@@ -24,7 +19,9 @@ pub struct CpuStagingHeap;
 #[derive(Clone)]
 pub struct ResourceWorkHeap;
 
-impl D3D12ShaderVisibleHeapType for SamplerPaletteHeap {}
+#[derive(Clone)]
+pub struct SamplerWorkHeap;
+
 
 impl const D3D12HeapType for SamplerPaletteHeap {
     // sampler palettes just get set directly
@@ -32,7 +29,7 @@ impl const D3D12HeapType for SamplerPaletteHeap {
         D3D12_DESCRIPTOR_HEAP_DESC {
             Type: D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
             NumDescriptors: size as u32,
-            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
             NodeMask: 0,
         }
     }
@@ -56,6 +53,19 @@ impl const D3D12HeapType for ResourceWorkHeap {
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
             Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            NumDescriptors: size as u32,
+            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+            NodeMask: 0,
+        }
+    }
+}
+
+impl D3D12ShaderVisibleHeapType for SamplerWorkHeap {}
+impl const D3D12HeapType for SamplerWorkHeap {
+    // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
+    fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
+        D3D12_DESCRIPTOR_HEAP_DESC {
+            Type: D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
             NumDescriptors: size as u32,
             Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
             NodeMask: 0,
@@ -99,14 +109,16 @@ impl<T: D3D12ShaderVisibleHeapType> From<&D3D12DescriptorHeap<T>> for ID3D12Desc
     }
 }
 
+#[derive(Debug)]
 struct D3D12DescriptorHeapInner {
     device: ID3D12Device,
     heap: ID3D12DescriptorHeap,
-    desc: D3D12_DESCRIPTOR_HEAP_DESC,
+    ty: D3D12_DESCRIPTOR_HEAP_TYPE,
     cpu_start: D3D12_CPU_DESCRIPTOR_HANDLE,
     gpu_start: Option<D3D12_GPU_DESCRIPTOR_HANDLE>,
     handle_size: usize,
     start: usize,
+    num_descriptors: usize,
     // Bit flag representation of available handles in the heap.
     //
     //  0 - Occupied
@@ -144,11 +156,12 @@ impl<T> D3D12DescriptorHeap<T> {
                 Arc::new(RefCell::new(D3D12DescriptorHeapInner {
                     device: device.clone(),
                     heap,
-                    desc,
+                    ty: desc.Type,
                     cpu_start,
                     gpu_start,
                     handle_size: device.GetDescriptorHandleIncrementSize(desc.Type) as usize,
                     start: 0,
+                    num_descriptors: desc.NumDescriptors as usize,
                     map: vec![false; desc.NumDescriptors as usize].into_boxed_slice(),
                 })),
                 PhantomData::default(),
@@ -156,11 +169,71 @@ impl<T> D3D12DescriptorHeap<T> {
         }
     }
 
+    /// suballocates this heap into equally sized chunks.
+    /// if there aren't enough descriptors, throws an error.
+    ///
+    /// it is UB (programmer error) to call this if the descriptor heap already has
+    /// descriptors allocated for it.
+    ///
+    /// size must also divide equally into the size of the heap.
+    pub unsafe fn suballocate(self, size: usize) -> Vec<D3D12DescriptorHeap<T>> {
+        // has to be called right after creation.
+        assert_eq!(Arc::strong_count(&self.0), 1,
+                   "D3D12DescriptorHeap::suballocate can only be callled immediately after creation.");
+
+        let inner = Arc::try_unwrap(self.0)
+            .expect("[d3d12] undefined behaviour to suballocate a descriptor heap with live descriptors.")
+            .into_inner();
+
+        // number of suballocated heaps
+        let num_heaps = inner.num_descriptors / size;
+        let remainder = inner.num_descriptors % size;
+
+        assert_eq!(remainder, 0, "D3D12DescriptorHeap::suballocate \
+            must be called with a size that equally divides the number of descriptors");
+
+        let mut heaps = Vec::new();
+
+        let mut start = 0;
+        let root_cpu_ptr = inner.cpu_start.ptr;
+        let root_gpu_ptr = inner.gpu_start.map(|p| p.ptr);
+
+        for _ in 0..num_heaps {
+            let new_cpu_start =  root_cpu_ptr + (start * inner.handle_size);
+            let new_gpu_start = root_gpu_ptr
+                .map(|r| D3D12_GPU_DESCRIPTOR_HANDLE {
+                    ptr: r + (start as u64 * inner.handle_size as u64)
+                });
+
+            heaps.push(D3D12DescriptorHeapInner {
+                device: inner.device.clone(),
+                heap: inner.heap.clone(),
+                ty: inner.ty,
+                cpu_start: D3D12_CPU_DESCRIPTOR_HANDLE {
+                    ptr: new_cpu_start
+                },
+                gpu_start: new_gpu_start,
+                handle_size: inner.handle_size,
+                start: 0,
+                num_descriptors: size,
+                map: vec![false; size].into_boxed_slice(),
+            });
+
+            start += size;
+        }
+
+        heaps.into_iter()
+            .map(|inner| D3D12DescriptorHeap(
+                Arc::new(RefCell::new(inner)),
+                PhantomData::default()))
+            .collect()
+    }
+
     pub fn alloc_slot(&mut self) -> error::Result<D3D12DescriptorHeapSlot<T>> {
         let mut handle = D3D12_CPU_DESCRIPTOR_HANDLE { ptr: 0 };
 
         let mut inner = self.0.borrow_mut();
-        for i in inner.start..inner.desc.NumDescriptors as usize {
+        for i in inner.start..inner.num_descriptors {
             if !inner.map[i] {
                 inner.map[i] = true;
                 handle.ptr = inner.cpu_start.ptr + (i * inner.handle_size);
@@ -198,7 +271,7 @@ impl<T> D3D12DescriptorHeap<T> {
                     1,
                     *dest[i].as_ref(),
                     *source[i],
-                    inner.desc.Type
+                    inner.ty
                 );
             }
         }

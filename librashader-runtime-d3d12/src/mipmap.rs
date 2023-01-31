@@ -202,7 +202,7 @@ impl D3D12MipmapGen {
 
         for i in 1..miplevels as u32 {
             let scaled = size.scale_mipmap(i);
-            let mipmap_params =MipConstants {
+            let mipmap_params = MipConstants {
                 inv_out_texel_size: [
                     1.0 / scaled.width as f32,
                     1.0 / scaled.height as f32

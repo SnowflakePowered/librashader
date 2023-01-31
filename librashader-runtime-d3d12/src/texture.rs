@@ -60,7 +60,7 @@ impl OutputTexture {
 
 pub struct InputTexture {
     descriptor: InputDescriptor,
-    size: Size<u32>,
+    pub(crate) size: Size<u32>,
     format: ImageFormat,
     wrap_mode: WrapMode,
     filter: FilterMode

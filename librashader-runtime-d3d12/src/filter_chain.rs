@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use crate::{error};
-use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap};
+use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap};
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
@@ -61,7 +61,6 @@ pub(crate) struct FilterCommon {
     pub luts: FxHashMap<usize, LutTexture>,
     pub mipmap_gen: D3D12MipmapGen,
     pub root_signature: D3D12RootSignature,
-    pub work_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
     pub draw_quad: DrawQuad,
 }
 
@@ -83,6 +82,8 @@ impl FilterChainD3D12 {
         preset: ShaderPreset,
         _options: Option<&()>,
     ) -> error::Result<FilterChainD3D12> {
+        let shader_count = preset.shaders.len();
+        let lut_count = preset.textures.len();
         let (passes, semantics) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
             preset.shaders,
             &preset.textures,
@@ -94,7 +95,9 @@ impl FilterChainD3D12 {
         let draw_quad = DrawQuad::new(device)?;
         let mut staging_heap =
             D3D12DescriptorHeap::new(device,
-                                                         (MAX_BINDINGS_COUNT as usize) * 64 + 2048 + preset.textures.len())?;
+                                                         (MAX_BINDINGS_COUNT as usize) *
+                                                             shader_count + 2048 + lut_count)?;
+
 
 
         let luts = FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen).unwrap();
@@ -104,8 +107,6 @@ impl FilterChainD3D12 {
         let filters = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
 
 
-        let work_heap =
-            D3D12DescriptorHeap::<ResourceWorkHeap>::new(device, (MAX_BINDINGS_COUNT as usize) * 64 + 2048)?;
 
 
         // initialize output framebuffers
@@ -159,7 +160,6 @@ impl FilterChainD3D12 {
                 luts,
                 mipmap_gen,
                 root_signature,
-                work_heap,
                 draw_quad,
                 config: FilterMutable {
                     passes_enabled: preset.shader_count as usize,
@@ -332,7 +332,30 @@ impl FilterChainD3D12 {
         -> error::Result<Vec<FilterPass>> {
 
         let mut filters = Vec::new();
-        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+        let shader_count = passes.len();
+        let work_heap =
+            D3D12DescriptorHeap::<ResourceWorkHeap>::new(device,
+                                                         (MAX_BINDINGS_COUNT as usize) *
+                                                             shader_count)?;
+        let work_heaps = unsafe {
+            work_heap.suballocate(shader_count)
+        };
+
+
+        let sampler_work_heap =
+            D3D12DescriptorHeap::new(device,
+                                     (MAX_BINDINGS_COUNT as usize) * shader_count)?;
+
+        let sampler_work_heaps = unsafe {
+            sampler_work_heap.suballocate(shader_count)
+        };
+
+        for (index, (((config, source, mut reflect),
+            texture_heap), sampler_heap))
+            in passes.into_iter()
+            .zip(work_heaps)
+            .zip(sampler_work_heaps)
+            .enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(None)?;
 
@@ -396,6 +419,8 @@ impl FilterChainD3D12 {
                 ubo_cbuffer,
                 pipeline: graphics_pipeline,
                 config: config.clone(),
+                texture_heap,
+                sampler_heap
             })
 
         }
