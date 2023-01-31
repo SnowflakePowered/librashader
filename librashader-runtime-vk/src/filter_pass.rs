@@ -17,7 +17,7 @@ use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
-use crate::draw_quad::QuadType;
+use librashader_runtime::quad::QuadType;
 
 pub struct FilterPass {
     pub device: Arc<ash::Device>,

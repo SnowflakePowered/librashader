@@ -1,4 +1,4 @@
-use crate::draw_quad::{DrawQuad, QuadType};
+use crate::draw_quad::DrawQuad;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputImage;
@@ -28,7 +28,7 @@ use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
-use librashader_runtime::quad::{DEFAULT_MVP, IDENTITY_MVP};
+use librashader_runtime::quad::{DEFAULT_MVP, IDENTITY_MVP, QuadType};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
