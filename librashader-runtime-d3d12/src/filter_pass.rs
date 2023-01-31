@@ -15,3 +15,4 @@ pub(crate) struct FilterPass {
     pub(crate) push_cbuffer: Option<D3D12ConstantBuffer>,
     pub(crate) ubo_cbuffer: Option<D3D12ConstantBuffer>,
 }
+

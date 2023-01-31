@@ -138,7 +138,8 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             None,
         )?;
 
-        Ok(blob.unwrap())
+        assume_d3d12_init!(blob, "D3DCompile");
+        Ok(blob)
     }
 }
 

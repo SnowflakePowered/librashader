@@ -13,6 +13,7 @@ mod filter_pass;
 mod quad_render;
 mod graphics_pipeline;
 mod buffer;
+mod framebuffer;
 
 #[cfg(test)]
 mod tests {

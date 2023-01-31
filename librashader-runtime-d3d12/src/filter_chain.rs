@@ -34,6 +34,11 @@ use crate::quad_render::DrawQuad;
 
 type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
+pub struct FilterMutable {
+    pub(crate) passes_enabled: usize,
+    pub(crate) parameters: FxHashMap<String, f32>,
+}
+
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
     // pub(crate) passes: Vec<FilterPass>,
@@ -41,24 +46,23 @@ pub struct FilterChainD3D12 {
     // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
     // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
     // pub(crate) draw_quad: DrawQuad,
-    pub(crate) filters: Vec<FilterPass>,
+    pub(crate) passes: Vec<FilterPass>,
 }
 
 pub(crate) struct FilterCommon {
     pub(crate) d3d12: ID3D12Device,
-    // pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     // pub output_textures: Box<[Option<InputTexture>]>,
     // pub feedback_textures: Box<[Option<InputTexture>]>,
     // pub history_textures: Box<[Option<InputTexture>]>,
-    // pub config: FilterMutable,
+    pub config: FilterMutable,
     // pub disable_mipmaps: bool,
     lut_heap: D3D12DescriptorHeap<LutTextureHeap>,
-    luts: FxHashMap<usize, LutTexture>,
-    mipmap_gen: D3D12MipmapGen,
-    root_signature: D3D12RootSignature,
-    work_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
-    draw_quad: DrawQuad,
+    pub luts: FxHashMap<usize, LutTexture>,
+    pub mipmap_gen: D3D12MipmapGen,
+    pub root_signature: D3D12RootSignature,
+    pub work_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
+    pub draw_quad: DrawQuad,
 }
 
 impl FilterChainD3D12 {
@@ -109,8 +113,16 @@ impl FilterChainD3D12 {
                 root_signature,
                 work_heap,
                 draw_quad,
+                config: FilterMutable {
+                    passes_enabled: preset.shader_count as usize,
+                    parameters: preset
+                        .parameters
+                        .into_iter()
+                        .map(|param| (param.name, param.value))
+                        .collect(),
+                },
             },
-            filters
+            passes: filters
         })
     }
 

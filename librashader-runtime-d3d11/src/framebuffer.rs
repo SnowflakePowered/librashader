@@ -25,7 +25,6 @@ pub(crate) struct OwnedFramebuffer {
     format: DXGI_FORMAT,
     device: ID3D11Device,
     context: ID3D11DeviceContext,
-    is_raw: bool,
     max_mipmap: u32,
 }
 
@@ -56,7 +55,6 @@ impl OwnedFramebuffer {
                 format,
                 device: device.clone(),
                 context: context.clone(),
-                is_raw: false,
                 max_mipmap: if mipmap {
                     size.calculate_miplevels()
                 } else {
@@ -74,10 +72,6 @@ impl OwnedFramebuffer {
         source_size: &Size<u32>,
         should_mipmap: bool,
     ) -> error::Result<Size<u32>> {
-        if self.is_raw {
-            return Ok(self.size);
-        }
-
         let size = source_size.scale_viewport(scaling, *viewport_size);
 
         if self.size != size
