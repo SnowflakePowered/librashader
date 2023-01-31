@@ -6,12 +6,13 @@ mod filter_chain;
 mod heap;
 mod hello_triangle;
 mod samplers;
-mod texture;
+mod luts;
 mod util;
 mod mipmap;
 mod filter_pass;
 mod quad_render;
 mod graphics_pipeline;
+mod buffer;
 
 #[cfg(test)]
 mod tests {

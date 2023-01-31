@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use crate::{error, util};
 use crate::heap::{D3D12DescriptorHeap, LutTextureHeap, ResourceWorkHeap};
 use crate::samplers::SamplerSet;
-use crate::texture::LutTexture;
+use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::front::GlslangCompilation;
@@ -24,7 +24,9 @@ use windows::Win32::System::WindowsProgramming::INFINITE;
 use librashader_common::ImageFormat;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::reflect::ReflectShader;
-use librashader_reflect::reflect::semantics::ShaderSemantics;
+use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, UniformBinding};
+use librashader_runtime::uniforms::UniformStorage;
+use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::filter_pass::FilterPass;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::mipmap::D3D12MipmapGen;
@@ -55,6 +57,8 @@ pub(crate) struct FilterCommon {
     luts: FxHashMap<usize, LutTexture>,
     mipmap_gen: D3D12MipmapGen,
     root_signature: D3D12RootSignature,
+    work_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
+    draw_quad: DrawQuad,
 }
 
 impl FilterChainD3D12 {
@@ -84,12 +88,16 @@ impl FilterChainD3D12 {
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
 
+        let draw_quad = DrawQuad::new(device)?;
         let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
         let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures, &mipmap_gen).unwrap();
 
         let root_signature = D3D12RootSignature::new(device)?;
 
         let filters = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
+
+        let work_heap =
+            D3D12DescriptorHeap::<ResourceWorkHeap>::new(device, (MAX_BINDINGS_COUNT as usize) * 64 + 2048)?;
 
         Ok(FilterChainD3D12 {
             common: FilterCommon {
@@ -99,6 +107,8 @@ impl FilterChainD3D12 {
                 luts,
                 mipmap_gen,
                 root_signature,
+                work_heap,
+                draw_quad,
             },
             filters
         })
@@ -216,8 +226,54 @@ impl FilterChainD3D12 {
                 }.into()
             )?;
 
+            let uniform_storage = UniformStorage::new(
+                reflection
+                    .ubo
+                    .as_ref()
+                    .map(|ubo| ubo.size as usize)
+                    .unwrap_or(0),
+                reflection
+                    .push_constant
+                    .as_ref()
+                    .map(|push| push.size as usize)
+                    .unwrap_or(0),
+            );
+
+            let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
+                let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, ubo.size as usize)?);
+                Some(buffer)
+            } else {
+                None
+            };
+
+            let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
+                let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, push.size as usize)?);
+                Some(buffer)
+            } else {
+                None
+            };
+
+            let mut uniform_bindings = FxHashMap::default();
+            for param in reflection.meta.parameter_meta.values() {
+                uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
+            }
+
+            for (semantics, param) in &reflection.meta.unique_meta {
+                uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), param.offset);
+            }
+
+            for (semantics, param) in &reflection.meta.texture_size_meta {
+                uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
+            }
+
             filters.push(FilterPass {
+                reflection,
+                uniform_bindings,
+                uniform_storage,
+                push_cbuffer,
+                ubo_cbuffer,
                 pipeline: graphics_pipeline,
+                config: config.clone(),
             })
 
         }
