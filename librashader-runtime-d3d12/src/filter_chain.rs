@@ -1,4 +1,4 @@
-
+use std::collections::VecDeque;
 use crate::{error};
 use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap};
 use crate::samplers::SamplerSet;
@@ -21,16 +21,18 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
-use librashader_common::ImageFormat;
+use librashader_common::{ImageFormat, Size};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::reflect::ReflectShader;
-use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, UniformBinding};
+use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_runtime::uniforms::UniformStorage;
 use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::filter_pass::FilterPass;
+use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::mipmap::D3D12MipmapGen;
 use crate::quad_render::DrawQuad;
+use crate::texture::InputTexture;
 
 type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
@@ -41,23 +43,21 @@ pub struct FilterMutable {
 
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
-    // pub(crate) passes: Vec<FilterPass>,
-    // pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
-    // pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
-    // pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
-    // pub(crate) draw_quad: DrawQuad,
     pub(crate) passes: Vec<FilterPass>,
+    pub(crate) output_framebuffers: Box<[OwnedImage]>,
+    pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
+    pub(crate) history_framebuffers: VecDeque<OwnedImage>,
+    staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
 }
 
 pub(crate) struct FilterCommon {
     pub(crate) d3d12: ID3D12Device,
     pub samplers: SamplerSet,
-    // pub output_textures: Box<[Option<InputTexture>]>,
-    // pub feedback_textures: Box<[Option<InputTexture>]>,
-    // pub history_textures: Box<[Option<InputTexture>]>,
+    pub output_textures: Box<[Option<InputTexture>]>,
+    pub feedback_textures: Box<[Option<InputTexture>]>,
+    pub history_textures: Box<[Option<InputTexture>]>,
     pub config: FilterMutable,
     // pub disable_mipmaps: bool,
-    lut_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     pub luts: FxHashMap<usize, LutTexture>,
     pub mipmap_gen: D3D12MipmapGen,
     pub root_signature: D3D12RootSignature,
@@ -92,21 +92,70 @@ impl FilterChainD3D12 {
         let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
 
         let draw_quad = DrawQuad::new(device)?;
-        let mut lut_heap = D3D12DescriptorHeap::new(device, preset.textures.len())?;
-        let luts = FilterChainD3D12::load_luts(device, &mut lut_heap, &preset.textures, &mipmap_gen).unwrap();
+        let mut staging_heap =
+            D3D12DescriptorHeap::new(device,
+                                                         (MAX_BINDINGS_COUNT as usize) * 64 + 2048 + preset.textures.len())?;
+
+
+        let luts = FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen).unwrap();
 
         let root_signature = D3D12RootSignature::new(device)?;
 
         let filters = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
 
+
         let work_heap =
             D3D12DescriptorHeap::<ResourceWorkHeap>::new(device, (MAX_BINDINGS_COUNT as usize) * 64 + 2048)?;
+
+
+        // initialize output framebuffers
+        let mut output_framebuffers = Vec::new();
+        output_framebuffers.resize_with(filters.len(), || {
+            OwnedImage::new(
+                device,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+                false,
+            )
+        });
+
+        // resolve all results
+        let output_framebuffers = output_framebuffers
+            .into_iter()
+            .collect::<error::Result<Vec<OwnedImage>>>()?;
+        let mut output_textures = Vec::new();
+        output_textures.resize_with(filters.len(), || None);
+
+        // let mut output_textures = Vec::new();
+        // output_textures.resize_with(filters.len(), || None);
+        //
+        // // initialize feedback framebuffers
+        let mut feedback_framebuffers = Vec::new();
+        feedback_framebuffers.resize_with(filters.len(), || {
+            OwnedImage::new(
+                device,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+                false,
+            )
+        });
+
+        // resolve all results
+        let feedback_framebuffers = feedback_framebuffers
+            .into_iter()
+            .collect::<error::Result<Vec<OwnedImage>>>()?;
+        let mut feedback_textures = Vec::new();
+        feedback_textures.resize_with(filters.len(), || None);
+
+        let (history_framebuffers, history_textures) =
+            FilterChainD3D12::init_history(device, &filters)?;
 
         Ok(FilterChainD3D12 {
             common: FilterCommon {
                 d3d12: device.clone(),
                 samplers,
-                lut_heap,
+                output_textures: output_textures.into_boxed_slice(),
+                feedback_textures: feedback_textures.into_boxed_slice(),
                 luts,
                 mipmap_gen,
                 root_signature,
@@ -120,10 +169,72 @@ impl FilterChainD3D12 {
                         .map(|param| (param.name, param.value))
                         .collect(),
                 },
+                history_textures,
             },
-            passes: filters
+            staging_heap,
+            passes: filters,
+            output_framebuffers: output_framebuffers.into_boxed_slice(),
+            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
+            history_framebuffers,
         })
     }
+
+    fn init_history(
+        device: &ID3D12Device,
+        filters: &Vec<FilterPass>,
+    ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputTexture>]>)> {
+        let mut required_images = 0;
+
+        for pass in filters {
+            // If a shader uses history size, but not history, we still need to keep the texture.
+            let texture_count = pass
+                .reflection
+                .meta
+                .texture_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+            let texture_size_count = pass
+                .reflection
+                .meta
+                .texture_size_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+
+            required_images = std::cmp::max(required_images, texture_count);
+            required_images = std::cmp::max(required_images, texture_size_count);
+        }
+
+        // not using frame history;
+        if required_images <= 1 {
+            // println!("[history] not using frame history");
+            return Ok((VecDeque::new(), Box::new([])));
+        }
+
+        // history0 is aliased with the original
+
+        // eprintln!("[history] using frame history with {required_images} images");
+        let mut framebuffers = VecDeque::with_capacity(required_images);
+        framebuffers.resize_with(required_images, || {
+            OwnedImage::new(
+                device,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm,
+                false,
+            )
+        });
+
+        let framebuffers = framebuffers
+            .into_iter()
+            .collect::<error::Result<VecDeque<OwnedImage>>>()?;
+
+        let mut history_textures = Vec::new();
+        history_textures.resize_with(required_images, || None);
+
+        Ok((framebuffers, history_textures.into_boxed_slice()))
+    }
+
 
     fn load_luts(
         device: &ID3D12Device,
