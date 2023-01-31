@@ -505,6 +505,8 @@ impl FilterChainD3D11 {
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
         for (index, pass) in pass.iter_mut().enumerate() {
+            source.filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
             let target = &self.output_framebuffers[index];
             let size = target.size;
             pass.draw(
@@ -537,6 +539,7 @@ impl FilterChainD3D11 {
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
             source.filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
             pass.draw(
                 passes_len - 1,
                 &self.common,

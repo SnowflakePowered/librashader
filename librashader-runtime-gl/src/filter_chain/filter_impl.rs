@@ -472,6 +472,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
+            source.filter = pass.config.filter;
+            source.mip_filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            
             pass.draw(
                 index,
                 &self.common,
@@ -497,6 +501,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if let Some(pass) = last.iter_mut().next() {
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
 
             pass.draw(
                 passes_len - 1,

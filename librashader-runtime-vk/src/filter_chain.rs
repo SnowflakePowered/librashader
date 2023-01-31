@@ -641,7 +641,7 @@ impl FilterChainVulkan {
             mip_filter: filter,
         };
 
-        let mut source = &original;
+        let mut source = original.clone();
 
         // swap output and feedback **before** recording command buffers
         std::mem::swap(
@@ -712,6 +712,10 @@ impl FilterChainVulkan {
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
+            source.filter_mode = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            source.mip_filter = pass.config.filter;
+
             let out = RenderTarget {
                 x: 0.0,
                 y: 0.0,
@@ -731,7 +735,7 @@ impl FilterChainVulkan {
                 frame_direction,
                 viewport,
                 &original,
-                source,
+                &source,
                 &out,
             )?;
 
@@ -741,7 +745,7 @@ impl FilterChainVulkan {
                 out.output.end_pass(cmd);
             }
 
-            source = self.common.output_inputs[index].as_ref().unwrap();
+            source = self.common.output_inputs[index].clone().unwrap();
             intermediates.dispose_outputs(out.output);
             intermediates.dispose_framebuffers(residual_fb);
         }
@@ -749,8 +753,9 @@ impl FilterChainVulkan {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
-            // source.filter_mode = pass.config.filter;
-            // source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            source.mip_filter = pass.config.filter;
 
             let out = RenderTarget {
                 x: viewport.x,
@@ -767,7 +772,7 @@ impl FilterChainVulkan {
                 0,
                 viewport,
                 &original,
-                source,
+                &source,
                 &out,
             )?;
 
