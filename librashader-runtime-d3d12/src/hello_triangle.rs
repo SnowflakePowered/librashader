@@ -226,9 +226,9 @@ fn get_hardware_adapter(factory: &IDXGIFactory4) -> Result<IDXGIAdapter1> {
 unsafe extern "system" fn debug_log(
     category: D3D12_MESSAGE_CATEGORY,
     severity: D3D12_MESSAGE_SEVERITY,
-    id: D3D12_MESSAGE_ID,
+    _id: D3D12_MESSAGE_ID,
     pdescription: ::windows::core::PCSTR,
-    pcontext: *mut ::core::ffi::c_void,
+    _pcontext: *mut ::core::ffi::c_void,
 ) {
     unsafe {
         let desc = CStr::from_ptr(pdescription.as_ptr().cast());
@@ -622,7 +622,7 @@ pub mod d3d12_hello_triangle {
         device: &ID3D12Device,
         root_signature: &ID3D12RootSignature,
     ) -> Result<ID3D12PipelineState> {
-        let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+        let _compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 
         let vertex_shader = compile_shader(SHADER, b"VSMain\0", b"vs_5_0\0")?;
         let pixel_shader = compile_shader(SHADER, b"PSMain\0", b"ps_5_0\0")?;
@@ -709,7 +709,7 @@ pub mod d3d12_hello_triangle {
 
     fn create_vertex_buffer(
         device: &ID3D12Device,
-        aspect_ratio: f32,
+        _aspect_ratio: f32,
     ) -> Result<(ID3D12Resource, D3D12_VERTEX_BUFFER_VIEW)> {
         let vertices = [
             Vertex {

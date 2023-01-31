@@ -38,8 +38,8 @@ mod tests {
     // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
     // "../test/null.slangp",
 
-    const FILTER_PATH: &'static str = "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp";
-    const IMAGE_PATH: &'static str = "../test/finalfightlong.png";
+    const FILTER_PATH: &str = "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp";
+    const IMAGE_PATH: &str = "../test/finalfightlong.png";
     #[test]
     fn triangle_d3d11_args() {
         let mut args = env::args();

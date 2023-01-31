@@ -29,11 +29,11 @@ impl SamplerSet {
             WrapMode::MirroredRepeat,
         ];
 
-        let mut heap = D3D12DescriptorHeap::new(&device, 2 * wrap_modes.len())?;
+        let mut heap = D3D12DescriptorHeap::new(device, 2 * wrap_modes.len())?;
 
         for wrap_mode in wrap_modes {
             unsafe {
-                let mut linear = heap.alloc_slot()?;
+                let linear = heap.alloc_slot()?;
                 device.CreateSampler(
                     &D3D12_SAMPLER_DESC {
                         Filter: FilterMode::Linear.into(),
@@ -50,7 +50,7 @@ impl SamplerSet {
                     *linear.as_ref(),
                 );
 
-                let mut nearest = heap.alloc_slot()?;
+                let nearest = heap.alloc_slot()?;
                 device.CreateSampler(
                     &D3D12_SAMPLER_DESC {
                         Filter: FilterMode::Nearest.into(),

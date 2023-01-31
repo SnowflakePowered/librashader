@@ -15,9 +15,13 @@ pub trait D3D12HeapType {
 }
 
 pub trait D3D12ShaderVisibleHeapType: D3D12HeapType {}
-
+#[derive(Clone)]
 pub struct SamplerPaletteHeap;
-pub struct LutTextureHeap;
+
+#[derive(Clone)]
+pub struct CpuStagingHeap;
+
+#[derive(Clone)]
 pub struct ResourceWorkHeap;
 
 impl D3D12ShaderVisibleHeapType for SamplerPaletteHeap {}
@@ -34,7 +38,7 @@ impl const D3D12HeapType for SamplerPaletteHeap {
     }
 }
 
-impl const D3D12HeapType for LutTextureHeap {
+impl const D3D12HeapType for CpuStagingHeap {
     // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
@@ -59,6 +63,7 @@ impl const D3D12HeapType for ResourceWorkHeap {
     }
 }
 
+#[derive(Clone)]
 pub struct D3D12DescriptorHeapSlot<T> {
     cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
     gpu_handle: Option<D3D12_GPU_DESCRIPTOR_HANDLE>,
@@ -184,7 +189,7 @@ impl<T> D3D12DescriptorHeap<T> {
                                                       source: &[&D3D12_CPU_DESCRIPTOR_HANDLE; NUM_DESC])
         -> error::Result<[D3D12DescriptorHeapSlot<T>; NUM_DESC]> {
         let dest = array_init::try_array_init(|_| self.alloc_slot())?;
-        let mut inner = self.0.borrow_mut();
+        let inner = self.0.borrow_mut();
 
         unsafe {
             // unfortunately we can't guarantee that the source and dest descriptors are contiguous so...

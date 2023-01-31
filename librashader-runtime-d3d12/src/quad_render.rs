@@ -2,10 +2,10 @@ use crate::error;
 use bytemuck::{offset_of, Pod, Zeroable};
 use windows::core::PCSTR;
 use windows::w;
-use windows::Win32::Graphics::Direct3D::{D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP};
-use windows::Win32::Graphics::Direct3D12::{D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, D3D12_INPUT_ELEMENT_DESC, D3D12_VERTEX_BUFFER_VIEW, ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource};
+use windows::Win32::Graphics::Direct3D::{D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP};
+use windows::Win32::Graphics::Direct3D12::{D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, D3D12_INPUT_ELEMENT_DESC, D3D12_VERTEX_BUFFER_VIEW, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
-use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
+use crate::buffer::{D3D12Buffer};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]

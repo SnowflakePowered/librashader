@@ -98,10 +98,6 @@ impl OwnedFramebuffer {
     }
 
     pub fn init(&mut self, size: Size<u32>, format: ImageFormat) -> error::Result<()> {
-        if self.is_raw {
-            return Ok(());
-        }
-
         let format = d3d11_get_closest_format(
             &self.device,
             DXGI_FORMAT::from(format),
