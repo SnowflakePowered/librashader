@@ -31,6 +31,7 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
+use librashader_runtime::quad::{IDENTITY_MVP, QuadType};
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -521,7 +522,8 @@ impl FilterChainD3D11 {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(target.as_output_framebuffer()?, None),
+                RenderTarget::new(target.as_output_framebuffer()?, Some(IDENTITY_MVP)),
+                QuadType::Offscreen
             )?;
 
             source = InputTexture {
@@ -553,6 +555,7 @@ impl FilterChainD3D11 {
                 &original,
                 &source,
                 viewport.into(),
+                QuadType::Final
             )?;
         }
 

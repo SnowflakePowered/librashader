@@ -17,6 +17,7 @@ use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
+use crate::draw_quad::QuadType;
 
 pub struct FilterPass {
     pub device: Arc<ash::Device>,
@@ -95,6 +96,7 @@ impl FilterPass {
         original: &InputImage,
         source: &InputImage,
         output: &RenderTarget,
+        vbo_type: QuadType,
     ) -> error::Result<Option<vk::Framebuffer>> {
         let mut descriptor = self.graphics_pipeline.layout.descriptor_sets
             [(frame_count % self.frames_in_flight) as usize];
@@ -170,7 +172,7 @@ impl FilterPass {
                 );
             }
 
-            parent.draw_quad.bind_vbo(cmd);
+            parent.draw_quad.bind_vbo(cmd, vbo_type);
 
             parent.device.cmd_set_scissor(
                 cmd,

@@ -17,6 +17,7 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAPPED_SUBRESOURCE,
     D3D11_MAP_WRITE_DISCARD,
 };
+use librashader_runtime::quad::QuadType;
 
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
@@ -147,6 +148,7 @@ impl FilterPass {
         original: &InputTexture,
         source: &InputTexture,
         output: RenderTarget,
+        vbo_type: QuadType,
     ) -> error::Result<()> {
         let _device = &parent.d3d11.device;
         let context = &parent.d3d11.current_context;
@@ -158,7 +160,7 @@ impl FilterPass {
             }
         }
         unsafe {
-            parent.draw_quad.bind_vertices();
+            parent.draw_quad.bind_vertices(vbo_type);
             context.IASetInputLayout(&self.vertex_layout);
             context.VSSetShader(&self.vertex_shader, None);
             context.PSSetShader(&self.pixel_shader, None);

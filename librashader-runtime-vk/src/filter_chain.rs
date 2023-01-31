@@ -1,11 +1,11 @@
-use crate::draw_quad::DrawQuad;
+use crate::draw_quad::{DrawQuad, QuadType};
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputImage;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
-use crate::render_target::{RenderTarget, DEFAULT_MVP};
+use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
 // use crate::ubo_ring::VkUboRing;
@@ -28,6 +28,7 @@ use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
+use librashader_runtime::quad::{DEFAULT_MVP, IDENTITY_MVP};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
@@ -719,7 +720,7 @@ impl FilterChainVulkan {
             let out = RenderTarget {
                 x: 0.0,
                 y: 0.0,
-                mvp: DEFAULT_MVP,
+                mvp: IDENTITY_MVP,
                 output: OutputImage::new(&self.vulkan, target.image.clone())?,
             };
 
@@ -737,6 +738,7 @@ impl FilterChainVulkan {
                 &original,
                 &source,
                 &out,
+                QuadType::Offscreen
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
@@ -774,6 +776,7 @@ impl FilterChainVulkan {
                 &original,
                 &source,
                 &out,
+                QuadType::Final
             )?;
 
             intermediates.dispose_outputs(out.output);

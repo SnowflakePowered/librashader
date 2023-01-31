@@ -25,3 +25,4 @@ pub mod ringbuffer;
 
 /// Generic implementation of semantics binding.
 pub mod binding;
+pub mod quad;
