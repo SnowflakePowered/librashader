@@ -27,24 +27,65 @@ pub use texture::D3D11OutputView;
 
 #[cfg(test)]
 mod tests {
+    use std::env;
     use super::*;
     use crate::options::FilterChainOptionsD3D11;
     use librashader_runtime::image::{Image, UVDirection};
 
+    // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
+    // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",
+    // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
+    // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+    // "../test/null.slangp",
+
+    const FILTER_PATH: &'static str = "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp";
+    const IMAGE_PATH: &'static str = "../test/finalfightlong.png";
     #[test]
-    fn triangle_d3d11() {
+    fn triangle_d3d11_args() {
+        let mut args = env::args();
+        let _ = args.next();
+        let _ = args.next();
+        let filter = args.next();
+        let image = args.next()
+            .and_then(|f| Image::load(f, UVDirection::TopLeft).ok())
+            .or_else(|| Some(Image::load(IMAGE_PATH, UVDirection::TopLeft).unwrap()))
+            .unwrap();
+
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
-            "../test/slang-shaders/crt/crt-royale.slangp",
-            // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
-            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-            // "../test/null.slangp",
+            filter.as_deref().unwrap_or(FILTER_PATH),
             Some(&FilterChainOptionsD3D11 {
                 use_deferred_context: false,
                 force_no_mipmaps: false,
             }),
-            Some(Image::load("../test/sf2.png", UVDirection::TopLeft).unwrap()),
+            // replace below with 'None' for the triangle
+            Some(image)
         )
         .unwrap();
+        // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
+        //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+        //     Some(&FilterChainOptions {
+        //         use_deferred_context: true,
+        //     })
+        // )
+        // .unwrap();
+
+        // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
+
+        hello_triangle::main(sample).unwrap();
+    }
+
+    #[test]
+    fn triangle_d3d11() {
+        let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
+            FILTER_PATH,
+            Some(&FilterChainOptionsD3D11 {
+                use_deferred_context: false,
+                force_no_mipmaps: false,
+            }),
+            // replace below with 'None' for the triangle
+            None
+        )
+            .unwrap();
         // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
         //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
         //     Some(&FilterChainOptions {
