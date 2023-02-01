@@ -8,6 +8,9 @@ use crate::reflect::ReflectShader;
 /// The GLSL version to use.
 pub type GlslVersion = spirv_cross::glsl::Version;
 
+/// The HLSL shader model version to use
+pub type HlslVersion = spirv_cross::hlsl::ShaderModel;
+
 /// The context for a GLSL compilation via spirv-cross.
 pub struct CrossGlslContext {
     /// A map of bindings of sampler names to binding locations.
@@ -40,7 +43,7 @@ pub struct CrossHlslContext {
 
 impl FromCompilation<GlslangCompilation> for HLSL {
     type Target = HLSL;
-    type Options = Option<()>;
+    type Options = Option<HlslVersion>;
     type Context = CrossHlslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;

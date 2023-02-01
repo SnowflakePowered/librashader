@@ -13,7 +13,7 @@ use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{glsl, hlsl, ErrorCode};
 
-use crate::back::cross::{CrossGlslContext, CrossHlslContext};
+use crate::back::cross::{CrossGlslContext, CrossHlslContext, HlslVersion};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
@@ -823,15 +823,16 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
 }
 
 impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
-    type Options = Option<()>;
+    type Options = Option<HlslVersion>;
     type Context = CrossHlslContext;
 
     fn compile(
         mut self,
-        _options: Self::Options,
+        options: Self::Options,
     ) -> Result<ShaderCompilerOutput<String, CrossHlslContext>, ShaderCompileError> {
+        let sm = options.unwrap_or(ShaderModel::V5_0);
         let mut options = hlsl::CompilerOptions::default();
-        options.shader_model = ShaderModel::V5_0;
+        options.shader_model = sm;
 
         self.vertex.set_compiler_options(&options)?;
         self.fragment.set_compiler_options(&options)?;
