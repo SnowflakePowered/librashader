@@ -1,4 +1,5 @@
 use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_DESCRIPTOR_HANDLE};
+use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use crate::heap::{CpuStagingHeap, D3D12DescriptorHeapSlot, RenderTargetHeap};
 
@@ -61,7 +62,7 @@ impl OutputTexture {
 pub struct InputTexture {
     pub(crate) descriptor: InputDescriptor,
     pub(crate) size: Size<u32>,
-    format: ImageFormat,
+    format: DXGI_FORMAT,
     pub(crate) wrap_mode: WrapMode,
     pub(crate) filter: FilterMode
 }
@@ -76,7 +77,7 @@ impl InputTexture {
         InputTexture {
             descriptor: srv,
             size,
-            format,
+            format: format.into(),
             wrap_mode,
             filter
         }
@@ -85,7 +86,7 @@ impl InputTexture {
     // unsafe since the lifetime of the handle has to survive
     pub unsafe fn new_from_raw(handle: D3D12_CPU_DESCRIPTOR_HANDLE,
                                size: Size<u32>,
-                               format: ImageFormat,
+                               format: DXGI_FORMAT,
                                wrap_mode: WrapMode,
                                filter: FilterMode
     ) -> InputTexture {
