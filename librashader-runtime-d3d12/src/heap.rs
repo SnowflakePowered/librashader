@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::sync::Arc;
-use windows::Win32::Graphics::Direct3D12::{ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_TYPE};
+use windows::Win32::Graphics::Direct3D12::{ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_TYPE, D3D12_DESCRIPTOR_HEAP_TYPE_RTV};
 
 #[const_trait]
 pub trait D3D12HeapType {
@@ -16,6 +16,9 @@ pub struct SamplerPaletteHeap;
 
 #[derive(Clone)]
 pub struct CpuStagingHeap;
+
+#[derive(Clone)]
+pub struct RenderTargetHeap;
 
 #[derive(Clone)]
 pub struct ResourceWorkHeap;
@@ -40,6 +43,18 @@ impl const D3D12HeapType for CpuStagingHeap {
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
             Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            NumDescriptors: size as u32,
+            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+            NodeMask: 0,
+        }
+    }
+}
+
+impl const D3D12HeapType for RenderTargetHeap {
+    // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
+    fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
+        D3D12_DESCRIPTOR_HEAP_DESC {
+            Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
             NumDescriptors: size as u32,
             Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
             NodeMask: 0,
@@ -73,7 +88,6 @@ impl const D3D12HeapType for SamplerWorkHeap {
     }
 }
 
-#[derive(Clone)]
 pub struct D3D12DescriptorHeapSlot<T> {
     cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
     gpu_handle: Option<D3D12_GPU_DESCRIPTOR_HANDLE>,
@@ -191,7 +205,7 @@ impl<T> D3D12DescriptorHeap<T> {
     /// descriptors allocated for it.
     ///
     /// size must also divide equally into the size of the heap.
-    pub unsafe fn suballocate(self, size: usize) -> Vec<D3D12DescriptorHeap<T>> {
+    pub unsafe fn suballocate(self, size: usize) -> (Vec<D3D12DescriptorHeap<T>>, ID3D12DescriptorHeap) {
         // has to be called right after creation.
         assert_eq!(Arc::strong_count(&self.0), 1,
                    "D3D12DescriptorHeap::suballocate can only be callled immediately after creation.");
@@ -237,11 +251,11 @@ impl<T> D3D12DescriptorHeap<T> {
             start += size;
         }
 
-        heaps.into_iter()
+        (heaps.into_iter()
             .map(|inner| D3D12DescriptorHeap(
                 Arc::new(RefCell::new(inner)),
                 PhantomData::default()))
-            .collect()
+            .collect(), inner.heap)
     }
 
     pub fn alloc_slot(&mut self) -> error::Result<D3D12DescriptorHeapSlot<T>> {

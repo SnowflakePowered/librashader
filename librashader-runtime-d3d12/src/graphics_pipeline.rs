@@ -8,7 +8,7 @@ use crate::{error, util};
 use crate::quad_render::DrawQuad;
 
 pub struct D3D12GraphicsPipeline {
-    pipeline_state: ID3D12PipelineState,
+    pub(crate) handle: ID3D12PipelineState,
 }
 
 const D3D12_SLANG_ROOT_PARAMETERS: &[D3D12_ROOT_PARAMETER; 4] = &[
@@ -198,7 +198,7 @@ impl D3D12GraphicsPipeline {
         };
 
         Ok(D3D12GraphicsPipeline {
-            pipeline_state,
+            handle: pipeline_state,
         })
     }
 }

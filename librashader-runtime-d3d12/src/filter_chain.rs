@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use crate::{error};
-use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap};
+use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap, RenderTargetHeap};
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
@@ -14,17 +14,14 @@ use std::path::Path;
 use windows::core::Interface;
 use windows::w;
 use windows::Win32::Foundation::CloseHandle;
-use windows::Win32::Graphics::Direct3D12::{
-    ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence,
-    ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
-};
+use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, ID3D12DescriptorHeap};
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, TextureSemantics, UniformBinding};
+use librashader_runtime::binding::TextureInput;
 use librashader_runtime::uniforms::UniformStorage;
 use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::filter_pass::FilterPass;
@@ -32,7 +29,7 @@ use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::mipmap::D3D12MipmapGen;
 use crate::quad_render::DrawQuad;
-use crate::texture::InputTexture;
+use crate::texture::{InputTexture, OutputTexture};
 
 type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
@@ -48,6 +45,10 @@ pub struct FilterChainD3D12 {
     pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
     pub(crate) history_framebuffers: VecDeque<OwnedImage>,
     staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
+    rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
+
+    pub texture_heap: ID3D12DescriptorHeap,
+    pub sampler_heap: ID3D12DescriptorHeap,
 }
 
 pub(crate) struct FilterCommon {
@@ -97,6 +98,10 @@ impl FilterChainD3D12 {
             D3D12DescriptorHeap::new(device,
                                                          (MAX_BINDINGS_COUNT as usize) *
                                                              shader_count + 2048 + lut_count)?;
+        let mut rtv_heap =
+            D3D12DescriptorHeap::new(device,
+                                     (MAX_BINDINGS_COUNT as usize) *
+                                         shader_count + 2048 + lut_count)?;
 
 
 
@@ -104,7 +109,8 @@ impl FilterChainD3D12 {
 
         let root_signature = D3D12RootSignature::new(device)?;
 
-        let filters = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
+        let (texture_heap, sampler_heap, filters)
+            = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
 
 
 
@@ -172,10 +178,13 @@ impl FilterChainD3D12 {
                 history_textures,
             },
             staging_heap,
+            rtv_heap,
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             history_framebuffers,
+            texture_heap,
+            sampler_heap
         })
     }
 
@@ -329,7 +338,7 @@ impl FilterChainD3D12 {
                    root_signature: &D3D12RootSignature,
                    passes: Vec<ShaderPassMeta>,
                    semantics: &ShaderSemantics,)
-        -> error::Result<Vec<FilterPass>> {
+        -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
 
         let mut filters = Vec::new();
         let shader_count = passes.len();
@@ -337,8 +346,8 @@ impl FilterChainD3D12 {
             D3D12DescriptorHeap::<ResourceWorkHeap>::new(device,
                                                          (MAX_BINDINGS_COUNT as usize) *
                                                              shader_count)?;
-        let work_heaps = unsafe {
-            work_heap.suballocate(shader_count)
+        let (work_heaps, texture_heap_handle) = unsafe {
+            work_heap.suballocate(MAX_BINDINGS_COUNT as usize)
         };
 
 
@@ -346,12 +355,12 @@ impl FilterChainD3D12 {
             D3D12DescriptorHeap::new(device,
                                      (MAX_BINDINGS_COUNT as usize) * shader_count)?;
 
-        let sampler_work_heaps = unsafe {
-            sampler_work_heap.suballocate(shader_count)
+        let (sampler_work_heaps, sampler_heap_handle) = unsafe {
+            sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize)
         };
 
         for (index, (((config, source, mut reflect),
-            texture_heap), sampler_heap))
+            mut texture_heap), mut sampler_heap))
             in passes.into_iter()
             .zip(work_heaps)
             .zip(sampler_work_heaps)
@@ -411,6 +420,8 @@ impl FilterChainD3D12 {
                 uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
             }
 
+            let texture_heap = texture_heap.alloc_range()?;
+            let sampler_heap = sampler_heap.alloc_range()?;
             filters.push(FilterPass {
                 reflection,
                 uniform_bindings,
@@ -426,7 +437,84 @@ impl FilterChainD3D12 {
 
         }
 
-        Ok(filters)
+        Ok((texture_heap_handle, sampler_heap_handle, filters))
+    }
+
+    /// Process a frame with the input image.
+    pub fn frame(
+        &mut self,
+        input: InputTexture,
+        viewport: &Viewport<OutputTexture>,
+        frame_count: usize,
+        options: Option<&()>,
+    ) -> error::Result<()>
+    {
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let passes = &mut self.passes[0..max];
+        if passes.is_empty() {
+            return Ok(());
+        }
+
+        let filter = passes[0].config.filter;
+        let wrap_mode = passes[0].config.wrap_mode;
+
+        for ((texture, fbo), pass) in self
+            .common
+            .feedback_textures
+            .iter_mut()
+            .zip(self.feedback_framebuffers.iter())
+            .zip(passes.iter())
+        {
+            *texture = Some(fbo.create_shader_resource_view(&mut self.staging_heap,
+                                                       pass.config.filter,
+                                                       pass.config.wrap_mode)?);
+        }
+
+        for (texture, fbo) in self
+            .common
+            .history_textures
+            .iter_mut()
+            .zip(self.history_framebuffers.iter())
+        {
+            *texture = Some(fbo.create_shader_resource_view(&mut self.staging_heap,
+                                                         filter,
+                                                         wrap_mode)?);
+        }
+
+
+        let original = &input;
+        let mut source = &input;
+
+
+        // rescale render buffers to ensure all bindings are valid.
+        let mut source_size = source.size();
+        let mut iterator = passes.iter_mut().enumerate().peekable();
+        while let Some((index, pass)) = iterator.next() {
+            let should_mipmap = iterator
+                .peek()
+                .map(|(_, p)| p.config.mipmap_input)
+                .unwrap_or(false);
+
+            // let next_size = self.output_framebuffers[index].scale(
+            //     pass.config.scaling.clone(),
+            //     pass.get_format(),
+            //     &viewport.output.size,
+            //     &source_size,
+            //     should_mipmap,
+            // )?;
+            //
+            // self.feedback_framebuffers[index].scale(
+            //     pass.config.scaling.clone(),
+            //     pass.get_format(),
+            //     &viewport.output.size,
+            //     &source_size,
+            //     should_mipmap,
+            // )?;
+
+            // source_size = next_size;
+        }
+
+        Ok(())
     }
 
 }

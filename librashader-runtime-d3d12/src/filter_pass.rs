@@ -1,19 +1,24 @@
 use rustc_hash::FxHashMap;
+use windows::core::Interface;
+use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D11::ID3D11Device;
-use windows::Win32::Graphics::Direct3D12::ID3D12Device;
-use librashader_common::{ImageFormat, Size};
+use windows::Win32::Graphics::Direct3D12::{D3D12_RENDER_PASS_BEGINNING_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD, D3D12_RENDER_PASS_ENDING_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE, D3D12_RENDER_PASS_FLAG_NONE, D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT, ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
-use librashader_runtime::uniforms::UniformStorage;
+use librashader_runtime::quad::QuadType;
+use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 use crate::buffer::D3D12ConstantBuffer;
+use crate::{error, util};
 use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::D3D12GraphicsPipeline;
 use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap};
+use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
-use crate::texture::InputTexture;
+use crate::texture::{InputTexture, OutputTexture};
 
 pub(crate) struct FilterPass {
     pub(crate) pipeline: D3D12GraphicsPipeline,
@@ -23,8 +28,8 @@ pub(crate) struct FilterPass {
     pub uniform_storage: UniformStorage,
     pub(crate) push_cbuffer: Option<D3D12ConstantBuffer>,
     pub(crate) ubo_cbuffer: Option<D3D12ConstantBuffer>,
-    pub(crate) texture_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
-    pub(crate) sampler_heap: D3D12DescriptorHeap<SamplerWorkHeap>,
+    pub(crate) texture_heap: [D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16],
+    pub(crate) sampler_heap: [D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16],
     pub source: ShaderSource,
 
 }
@@ -34,7 +39,7 @@ impl TextureInput for InputTexture {
         self.size
     }
 }
-//
+
 impl BindSemantics for FilterPass {
     type InputTexture = InputTexture;
     type SamplerSet = SamplerSet;
@@ -87,18 +92,15 @@ impl FilterPass {
         frame_direction: i32,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
-        mut descriptors: (
-            &'a mut [D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16],
-            &'a mut [D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16],
-        ),
         original: &InputTexture,
         source: &InputTexture,
     ) {
+
         Self::bind_semantics(
             &(),
             &parent.samplers,
             &mut self.uniform_storage,
-            &mut descriptors,
+            &mut (&mut self.texture_heap, &mut self.sampler_heap),
             mvp,
             frame_count,
             frame_direction,
@@ -117,5 +119,122 @@ impl FilterPass {
             &self.source.parameters,
             &parent.config.parameters,
         );
+    }
+
+    /// preconditions
+    /// rootsig is bound
+    /// descriptor heaps are bound
+    /// input must be ready to read from
+    /// output must be ready to write to
+    pub(crate) fn draw(
+        &mut self,
+        cmd: &ID3D12GraphicsCommandList,
+        pass_index: usize,
+        parent: &FilterCommon,
+        frame_count: u32,
+        frame_direction: i32,
+        viewport: &Viewport<OutputTexture>,
+        original: &InputTexture,
+        source: &InputTexture,
+        output: RenderTarget,
+        vbo_type: QuadType,
+    ) -> error::Result<()> {
+
+        parent.draw_quad.bind_vertices(cmd, vbo_type);
+        unsafe {
+            cmd.SetPipelineState(&self.pipeline.handle);
+        }
+
+        self.build_semantics(
+            pass_index,
+            parent,
+            output.mvp,
+            frame_count,
+            frame_direction,
+            output.output.size,
+            viewport.output.size,
+            original,
+            source,
+        );
+
+        // todo: write directly to persistently bound cbuffer.
+        if let Some(ubo) = &self.reflection.ubo
+            && let Some(cbuffer) = &mut self.ubo_cbuffer
+            && ubo.size != 0
+        {
+            {
+                let guard = cbuffer.buffer.map(None)?;
+                guard.slice.copy_from_slice(self.uniform_storage.ubo_slice());
+            }
+
+            unsafe {
+                cmd.SetGraphicsRootConstantBufferView(2, cbuffer.desc.BufferLocation)
+            }
+        }
+
+        if let Some(push) = &self.reflection.push_constant
+            && let Some(cbuffer) = &mut self.push_cbuffer
+            && push.size != 0
+        {
+            {
+                let guard = cbuffer.buffer.map(None)?;
+                guard.slice.copy_from_slice(self.uniform_storage.push_slice());
+            }
+
+            unsafe {
+                cmd.SetGraphicsRootConstantBufferView(3, cbuffer.desc.BufferLocation)
+            }
+        }
+
+        unsafe {
+            cmd.SetGraphicsRootDescriptorTable(0, *self.texture_heap[0].as_ref());
+            cmd.SetGraphicsRootDescriptorTable(0, *self.sampler_heap[0].as_ref());
+        }
+
+        // todo: check for non-renderpass.
+
+        let cmd = cmd.cast::<ID3D12GraphicsCommandList4>()?;
+        unsafe {
+            let pass = [D3D12_RENDER_PASS_RENDER_TARGET_DESC {
+                cpuDescriptor: *output.output.descriptor.as_ref(),
+                BeginningAccess: D3D12_RENDER_PASS_BEGINNING_ACCESS {
+                    Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD,
+                    ..Default::default()
+                },
+                EndingAccess: D3D12_RENDER_PASS_ENDING_ACCESS {
+                    Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
+                    Anonymous: Default::default(),
+                },
+            }];
+            
+            cmd.BeginRenderPass(Some(&pass), None, D3D12_RENDER_PASS_FLAG_NONE)
+        }
+
+        unsafe {
+            cmd.RSSetViewports(&[D3D12_VIEWPORT {
+                TopLeftX: output.x,
+                TopLeftY: output.y,
+                Width: output.output.size.width as f32,
+                Height: output.output.size.height as f32,
+                MinDepth: 0.0,
+                MaxDepth: 1.0,
+            }]);
+            
+            cmd.RSSetScissorRects(&[RECT {
+                left: 0,
+                top: 0,
+                right: output.output.size.width as i32,
+                bottom: output.output.size.height as i32,
+            }]);
+
+            // todo put this in drawquad
+            cmd.DrawInstanced(4, 1, 0, 0)
+        }
+
+        unsafe {
+            cmd.EndRenderPass()
+        }
+
+        Ok(())
     }
 }

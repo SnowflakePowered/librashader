@@ -1,6 +1,6 @@
 use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_DESCRIPTOR_HANDLE};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
-use crate::heap::{CpuStagingHeap, D3D12DescriptorHeapSlot};
+use crate::heap::{CpuStagingHeap, D3D12DescriptorHeapSlot, RenderTargetHeap};
 
 pub(crate) enum InputDescriptor {
     Owned(D3D12DescriptorHeapSlot<CpuStagingHeap>),
@@ -8,7 +8,7 @@ pub(crate) enum InputDescriptor {
 }
 
 pub(crate) enum OutputDescriptor {
-    Owned(D3D12DescriptorHeapSlot<CpuStagingHeap>),
+    Owned(D3D12DescriptorHeapSlot<RenderTargetHeap>),
     Raw(D3D12_CPU_DESCRIPTOR_HANDLE)
 }
 
@@ -31,12 +31,12 @@ impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for OutputDescriptor {
 }
 
 pub struct OutputTexture {
-    descriptor: OutputDescriptor,
-    size: Size<u32>,
+    pub(crate) descriptor: OutputDescriptor,
+    pub(crate) size: Size<u32>,
 }
 
 impl OutputTexture {
-    pub fn new(handle: D3D12DescriptorHeapSlot<CpuStagingHeap>,
+    pub fn new(handle: D3D12DescriptorHeapSlot<RenderTargetHeap>,
                size: Size<u32>,
               ) -> OutputTexture {
         let descriptor = OutputDescriptor::Owned(handle);
