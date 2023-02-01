@@ -136,7 +136,7 @@ impl FilterPass {
         viewport: &Viewport<OutputTexture>,
         original: &InputTexture,
         source: &InputTexture,
-        output: RenderTarget,
+        output: &RenderTarget,
         vbo_type: QuadType,
     ) -> error::Result<()> {
 
@@ -188,7 +188,7 @@ impl FilterPass {
 
         unsafe {
             cmd.SetGraphicsRootDescriptorTable(0, *self.texture_heap[0].as_ref());
-            cmd.SetGraphicsRootDescriptorTable(0, *self.sampler_heap[0].as_ref());
+            cmd.SetGraphicsRootDescriptorTable(1, *self.sampler_heap[0].as_ref());
         }
 
         // todo: check for non-renderpass.

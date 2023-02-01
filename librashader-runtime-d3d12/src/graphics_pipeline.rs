@@ -79,7 +79,7 @@ const D3D12_SLANG_ROOT_SIGNATURE: &D3D12_ROOT_SIGNATURE_DESC = &D3D12_ROOT_SIGNA
 };
 
 pub struct D3D12RootSignature {
-    signature: ID3D12RootSignature
+    pub(crate) handle: ID3D12RootSignature
 }
 
 impl D3D12RootSignature {
@@ -107,7 +107,7 @@ impl D3D12RootSignature {
         };
 
         Ok(D3D12RootSignature {
-            signature,
+            handle: signature,
         })
     }
 }
@@ -129,7 +129,7 @@ impl D3D12GraphicsPipeline {
 
         let pipeline_state: ID3D12PipelineState = unsafe {
             let pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-                pRootSignature: windows::core::ManuallyDrop::new(&root_signature.signature),
+                pRootSignature: windows::core::ManuallyDrop::new(&root_signature.handle),
                 VS: D3D12_SHADER_BYTECODE {
                     pShaderBytecode: vertex_dxbc.GetBufferPointer(),
                     BytecodeLength: vertex_dxbc.GetBufferSize(),

@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use crate::{error};
+use crate::{error, util};
 use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap, RenderTargetHeap};
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
@@ -14,7 +14,7 @@ use std::path::Path;
 use windows::core::Interface;
 use windows::w;
 use windows::Win32::Foundation::CloseHandle;
-use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, ID3D12DescriptorHeap};
+use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, ID3D12DescriptorHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET};
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -22,6 +22,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_runtime::binding::TextureInput;
+use librashader_runtime::quad::{IDENTITY_MVP, QuadType};
 use librashader_runtime::uniforms::UniformStorage;
 use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::filter_pass::FilterPass;
@@ -29,6 +30,7 @@ use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::mipmap::D3D12MipmapGen;
 use crate::quad_render::DrawQuad;
+use crate::render_target::RenderTarget;
 use crate::texture::{InputTexture, OutputTexture};
 
 type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -443,7 +445,8 @@ impl FilterChainD3D12 {
     /// Process a frame with the input image.
     pub fn frame(
         &mut self,
-        input: InputTexture,
+        cmd: &ID3D12GraphicsCommandList,
+        mut input: InputTexture,
         viewport: &Viewport<OutputTexture>,
         frame_count: usize,
         options: Option<&()>,
@@ -482,8 +485,8 @@ impl FilterChainD3D12 {
         }
 
 
-        let original = &input;
-        let mut source = &input;
+        let original = input;
+        let mut source = unsafe { original.cloned() };
 
 
         // rescale render buffers to ensure all bindings are valid.
@@ -512,7 +515,77 @@ impl FilterChainD3D12 {
             )?;
 
             source_size = next_size;
+
+            // refresh inputs
+            self.common.feedback_textures[index] = Some(
+                self.feedback_framebuffers[index]
+                    .create_shader_resource_view(&mut self.staging_heap, pass.config.filter, pass.config.wrap_mode)?,
+            );
+            self.common.output_textures[index] = Some(
+                self.output_framebuffers[index]
+                    .create_shader_resource_view(&mut self.staging_heap, pass.config.filter, pass.config.wrap_mode)?,
+            );
         }
+
+        let passes_len = passes.len();
+        let (pass, last) = passes.split_at_mut(passes_len - 1);
+
+        let mut residuals = Vec::new();
+
+        unsafe {
+            let heaps = [self.texture_heap.clone(), self.sampler_heap.clone()];
+            cmd.SetDescriptorHeaps(&heaps);
+            cmd.SetGraphicsRootSignature(&self.common.root_signature.handle);
+        }
+        for (index, pass) in pass.iter_mut().enumerate() {
+
+            source.filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            let target = &self.output_framebuffers[index];
+            util::d3d12_resource_transition(&cmd,
+                                            &target.handle,
+                                            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                                            D3D12_RESOURCE_STATE_RENDER_TARGET);
+            let size = target.size;
+            let view = target.create_render_target_view(&mut self.rtv_heap)?;
+
+            let out = RenderTarget {
+                x: 0.0,
+                y: 0.0,
+                mvp:IDENTITY_MVP,
+                output: OutputTexture { descriptor: view.descriptor, size },
+            };
+
+            pass.draw(
+                cmd,
+                index,
+                &self.common,
+                if pass.config.frame_count_mod > 0 {
+                    frame_count % pass.config.frame_count_mod as usize
+                } else {
+                    frame_count
+                } as u32,
+                1,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Offscreen
+            )?;
+
+            util::d3d12_resource_transition(&cmd,
+                                            &target.handle,
+                                            D3D12_RESOURCE_STATE_RENDER_TARGET,
+                                            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            // let target_handle = target.create_shader_resource_view(
+            //     &mut self.staging_heap,
+            //     pass.config.filter,
+            //     pass.config.wrap_mode,
+            // )?;
+            residuals.push(out.output.descriptor);
+            source = self.common.output_textures[index].as_ref().unwrap().cloned()
+        }
+
 
         Ok(())
     }
