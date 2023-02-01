@@ -4,8 +4,8 @@ use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_runtime::scaling::MipmapSize;
 use crate::error;
 use crate::error::assume_d3d12_init;
-use crate::heap::{CpuStagingHeap, D3D12DescriptorHeap};
-use crate::texture::InputTexture;
+use crate::heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
+use crate::texture::{InputTexture, OutputTexture};
 use crate::util::d3d12_get_closest_format;
 
 #[derive(Debug, Clone)]
@@ -113,8 +113,8 @@ impl OwnedImage {
         Ok(InputTexture::new(descriptor, self.size, self.format, wrap_mode, filter))
     }
 
-    pub(crate) fn create_render_target_view(&self, heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
-                                              filter: FilterMode, wrap_mode: WrapMode) -> error::Result<InputTexture> {
+    pub(crate) fn create_render_target_view(&self, heap: &mut D3D12DescriptorHeap<RenderTargetHeap>
+    ) -> error::Result<OutputTexture> {
 
         let descriptor = heap.alloc_slot()?;
 
@@ -133,6 +133,6 @@ impl OwnedImage {
             self.device.CreateRenderTargetView(&self.handle, Some(&rtv_desc), *descriptor.as_ref());
         }
 
-        Ok(InputTexture::new(descriptor, self.size, self.format, wrap_mode, filter))
+        Ok(OutputTexture::new(descriptor, self.size))
     }
 }

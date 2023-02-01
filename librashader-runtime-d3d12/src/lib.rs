@@ -15,6 +15,7 @@ mod graphics_pipeline;
 mod buffer;
 mod framebuffer;
 mod texture;
+mod render_target;
 
 #[cfg(test)]
 mod tests {

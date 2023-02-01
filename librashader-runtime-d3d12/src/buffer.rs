@@ -5,8 +5,8 @@ use crate::error;
 use crate::error::assume_d3d12_init;
 
 pub struct D3D12ConstantBuffer {
-    buffer: D3D12Buffer,
-    desc: D3D12_CONSTANT_BUFFER_VIEW_DESC,
+    pub buffer: D3D12Buffer,
+    pub desc: D3D12_CONSTANT_BUFFER_VIEW_DESC,
 }
 
 pub struct D3D12Buffer {
