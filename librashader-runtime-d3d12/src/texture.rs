@@ -2,12 +2,12 @@ use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_DESCRIPTOR_HANDLE};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use crate::heap::{CpuStagingHeap, D3D12DescriptorHeapSlot};
 
-enum InputDescriptor {
+pub(crate) enum InputDescriptor {
     Owned(D3D12DescriptorHeapSlot<CpuStagingHeap>),
     Raw(D3D12_CPU_DESCRIPTOR_HANDLE)
 }
 
-enum OutputDescriptor {
+pub(crate) enum OutputDescriptor {
     Owned(D3D12DescriptorHeapSlot<CpuStagingHeap>),
     Raw(D3D12_CPU_DESCRIPTOR_HANDLE)
 }
@@ -59,11 +59,11 @@ impl OutputTexture {
 }
 
 pub struct InputTexture {
-    descriptor: InputDescriptor,
+    pub(crate) descriptor: InputDescriptor,
     pub(crate) size: Size<u32>,
     format: ImageFormat,
-    wrap_mode: WrapMode,
-    filter: FilterMode
+    pub(crate) wrap_mode: WrapMode,
+    pub(crate) filter: FilterMode
 }
 
 impl InputTexture {
@@ -99,4 +99,10 @@ impl InputTexture {
         }
     }
 
+}
+
+impl AsRef<InputTexture> for InputTexture {
+    fn as_ref(&self) -> &InputTexture {
+        self
+    }
 }

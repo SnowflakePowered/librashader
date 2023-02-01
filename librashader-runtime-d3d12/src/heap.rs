@@ -1,6 +1,7 @@
 use crate::error;
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::ops::Deref;
 use std::sync::Arc;
 use windows::Win32::Graphics::Direct3D12::{ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_TYPE};
 
@@ -21,7 +22,6 @@ pub struct ResourceWorkHeap;
 
 #[derive(Clone)]
 pub struct SamplerWorkHeap;
-
 
 impl const D3D12HeapType for SamplerPaletteHeap {
     // sampler palettes just get set directly
@@ -86,6 +86,21 @@ impl<T> D3D12DescriptorHeapSlot<T> {
     /// Get the index of the resource within the heap.
     pub fn index(&self) -> usize {
         self.slot
+    }
+
+    /// unsafe because type must match
+    pub unsafe fn copy_descriptor(&mut self, source: D3D12_CPU_DESCRIPTOR_HANDLE) {
+        unsafe {
+            let heap =  self.heap.deref()
+                .borrow();
+
+            heap.device.CopyDescriptorsSimple(
+                1,
+                self.cpu_handle,
+                source,
+                heap.ty
+            )
+        }
     }
 }
 
@@ -258,23 +273,8 @@ impl<T> D3D12DescriptorHeap<T> {
         todo!("error need to fail");
     }
 
-    pub fn copy_descriptors<const NUM_DESC: usize>(&mut self,
-                                                      source: &[&D3D12_CPU_DESCRIPTOR_HANDLE; NUM_DESC])
-        -> error::Result<[D3D12DescriptorHeapSlot<T>; NUM_DESC]> {
+    pub fn alloc_range<const NUM_DESC: usize>(&mut self)-> error::Result<[D3D12DescriptorHeapSlot<T>; NUM_DESC]> {
         let dest = array_init::try_array_init(|_| self.alloc_slot())?;
-        let inner = self.0.borrow_mut();
-
-        unsafe {
-            // unfortunately we can't guarantee that the source and dest descriptors are contiguous so...
-            for i in 0..NUM_DESC {
-                inner.device.CopyDescriptorsSimple(
-                    1,
-                    *dest[i].as_ref(),
-                    *source[i],
-                    inner.ty
-                );
-            }
-        }
         Ok(dest)
     }
 }
