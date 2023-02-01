@@ -263,7 +263,7 @@ pub mod d3d12_hello_triangle {
         root_signature: ID3D12RootSignature,
         pso: ID3D12PipelineState,
         command_list: ID3D12GraphicsCommandList,
-
+        framebuffer: ID3D12Resource,
         // we need to keep this around to keep the reference alive, even though
         // nothing reads from it
         #[allow(dead_code)]
@@ -352,7 +352,7 @@ pub mod d3d12_hello_triangle {
             let rtv_heap: ID3D12DescriptorHeap = unsafe {
                 self.device
                     .CreateDescriptorHeap(&D3D12_DESCRIPTOR_HEAP_DESC {
-                        NumDescriptors: FRAME_COUNT,
+                        NumDescriptors: FRAME_COUNT + 1,
                         Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
                         ..Default::default()
                     })
@@ -378,6 +378,26 @@ pub mod d3d12_hello_triangle {
                     };
                     Ok(render_target)
                 })?;
+
+            let framebuffer: ID3D12Resource = unsafe {
+                let render_target: ID3D12Resource = swap_chain.GetBuffer(0)?;
+                let mut desc = render_target.GetDesc();
+                let mut heapprops = D3D12_HEAP_PROPERTIES::default();
+                let mut heappflags = D3D12_HEAP_FLAGS::default();
+                render_target.GetHeapProperties(Some(&mut heapprops), Some(&mut heappflags))?;
+                desc.Flags &= !D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+                let mut fb = None;
+                self.device.CreateCommittedResource(&heapprops, D3D12_HEAP_FLAG_NONE, &desc,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    None, &mut fb
+                )?;
+
+                fb.unwrap()
+            };
+
+            unsafe {
+                framebuffer.SetName(w!("framebuffer"))?;
+            }
 
             let viewport = D3D12_VIEWPORT {
                 TopLeftX: 0.0,
@@ -438,6 +458,7 @@ pub mod d3d12_hello_triangle {
                 root_signature,
                 pso,
                 command_list,
+                framebuffer,
                 vertex_buffer,
                 vbv,
                 fence,
@@ -519,13 +540,37 @@ pub mod d3d12_hello_triangle {
             command_list.IASetVertexBuffers(0, Some(&[resources.vbv]));
             command_list.DrawInstanced(3, 1, 0, 0);
 
-            // Indicate that the back buffer will now be used to present.
             command_list.ResourceBarrier(&[transition_barrier(
                 &resources.render_targets[resources.frame_index as usize],
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
+                D3D12_RESOURCE_STATE_COPY_SOURCE,
+            )]);
+
+            command_list.ResourceBarrier(&[transition_barrier(
+                &resources.framebuffer,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_COPY_DEST,
+            )]);
+        }
+
+        unsafe {
+            command_list.CopyResource(&resources.framebuffer,
+                                      &resources.render_targets[resources.frame_index as usize]);
+            command_list.ResourceBarrier(&[transition_barrier(
+                &resources.framebuffer,
+                D3D12_RESOURCE_STATE_COPY_DEST,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            )]);
+
+
+            command_list.ResourceBarrier(&[transition_barrier(
+                &resources.render_targets[resources.frame_index as usize],
+                D3D12_RESOURCE_STATE_COPY_SOURCE,
                 D3D12_RESOURCE_STATE_PRESENT,
             )]);
         }
+
+
 
         unsafe { command_list.Close() }
     }
