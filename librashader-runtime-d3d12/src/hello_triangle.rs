@@ -240,6 +240,8 @@ pub mod d3d12_hello_triangle {
     use super::*;
     use crate::filter_chain::FilterChainD3D12;
     use std::path::Path;
+    use librashader_common::{FilterMode, Size, Viewport, WrapMode};
+    use crate::texture::{InputTexture, OutputTexture};
 
     const FRAME_COUNT: u32 = 2;
 
@@ -248,6 +250,7 @@ pub mod d3d12_hello_triangle {
         device: ID3D12Device,
         resources: Option<Resources>,
         pub filter: FilterChainD3D12,
+        framecount: usize
     }
 
     struct Resources {
@@ -299,6 +302,7 @@ pub mod d3d12_hello_triangle {
                 device,
                 resources: None,
                 filter,
+                framecount: 0
             })
         }
 
@@ -479,7 +483,7 @@ pub mod d3d12_hello_triangle {
 
         fn render(&mut self) {
             if let Some(resources) = &mut self.resources {
-                populate_command_list(resources).unwrap();
+                populate_command_list(resources, &mut self.filter, self.framecount).unwrap();
 
                 // Execute the command list.
                 let command_list = ID3D12CommandList::from(&resources.command_list);
@@ -489,11 +493,12 @@ pub mod d3d12_hello_triangle {
                 unsafe { resources.swap_chain.Present(1, 0) }.ok().unwrap();
 
                 wait_for_previous_frame(resources);
+                self.framecount += 1;
             }
         }
     }
 
-    fn populate_command_list(resources: &Resources) -> Result<()> {
+    fn populate_command_list(resources: &Resources, filter: &mut FilterChainD3D12, frame_count: usize) -> Result<()> {
         // Command list allocators can only be reset when the associated
         // command lists have finished execution on the GPU; apps should use
         // fences to determine GPU execution progress.
@@ -562,6 +567,22 @@ pub mod d3d12_hello_triangle {
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             )]);
 
+            filter.frame(
+                InputTexture::new_from_raw(D3D12_CPU_DESCRIPTOR_HANDLE {
+                    ptr: 0
+                }, Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32),
+                DXGI_FORMAT_R8G8B8A8_UNORM,
+                                           WrapMode::ClampToEdge,
+                                           FilterMode::Linear,
+                ),
+                &Viewport {
+                    x: 0.0,
+                    y: 0.0,
+                    mvp: None,
+                    output: OutputTexture::new_from_raw(D3D12_CPU_DESCRIPTOR_HANDLE {
+                        ptr: 0
+                    }, Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32)),
+                }, frame_count, None).unwrap();
 
             command_list.ResourceBarrier(&[transition_barrier(
                 &resources.render_targets[resources.frame_index as usize],

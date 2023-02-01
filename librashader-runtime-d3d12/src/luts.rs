@@ -54,7 +54,6 @@ impl LutTexture {
         if mipmap {
             desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
             format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
-            format_support.Support2 |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
         }
 
         desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
@@ -86,7 +85,7 @@ impl LutTexture {
                 Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture2D: D3D12_TEX2D_SRV {
-                        MipLevels: desc.MipLevels as u32,
+                        MipLevels: u32::MAX,
                         ..Default::default()
                     },
                 },

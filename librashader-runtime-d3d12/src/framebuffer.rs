@@ -1,7 +1,8 @@
 use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, ID3D12Device, ID3D12Resource};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_SAMPLE_DESC};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
-use librashader_runtime::scaling::MipmapSize;
+use librashader_presets::Scale2D;
+use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 use crate::error;
 use crate::error::assume_d3d12_init;
 use crate::heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
@@ -26,14 +27,14 @@ impl OwnedImage {
         mipmap: bool,
     ) -> error::Result<OwnedImage> {
         unsafe {
-            let miplevels = size.calculate_miplevels() as u16;
+            let miplevels = if mipmap { size.calculate_miplevels() } else { 1 };
             let mut desc = D3D12_RESOURCE_DESC {
                 Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
                 Alignment: 0,
                 Width: size.width as u64,
                 Height: size.height,
                 DepthOrArraySize: 1,
-                MipLevels: if mipmap { miplevels } else { 1 },
+                MipLevels: miplevels as u16,
                 Format: format.into(),
                 SampleDesc: DXGI_SAMPLE_DESC {
                     Count: 1,
@@ -54,11 +55,9 @@ impl OwnedImage {
             if mipmap {
                 desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
                 format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
-                format_support.Support2 |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
             }
 
             desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
-
             let mut resource: Option<ID3D12Resource> = None;
             unsafe {
                 device.CreateCommittedResource(
@@ -83,7 +82,7 @@ impl OwnedImage {
                 size,
                 format,
                 device: device.clone(),
-                max_mipmap: miplevels,
+                max_mipmap: miplevels as u16,
             })
         }
     }
@@ -101,7 +100,7 @@ impl OwnedImage {
                 Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture2D: D3D12_TEX2D_SRV {
-                        MipLevels: self.max_mipmap as u32,
+                        MipLevels: u32::MAX,
                         ..Default::default()
                     },
                 },
@@ -134,5 +133,31 @@ impl OwnedImage {
         }
 
         Ok(OutputTexture::new(descriptor, self.size))
+    }
+
+    pub fn scale(&mut self,
+                 scaling: Scale2D,
+                 format: ImageFormat,
+                 viewport_size: &Size<u32>,
+                 source_size: &Size<u32>,
+                 mipmap: bool,
+    ) -> error::Result<Size<u32>>
+    {
+        let size = source_size.scale_viewport(scaling, *viewport_size);
+        if self.size != size
+            || (mipmap && self.max_mipmap == 1)
+            || (!mipmap && self.max_mipmap != 1)
+            || format != self.format
+        {
+            let mut new = OwnedImage::new(
+                &self.device,
+                size,
+                format,
+                mipmap
+            )?;
+
+           std::mem::swap(self, &mut new);
+        }
+        Ok(size)
     }
 }

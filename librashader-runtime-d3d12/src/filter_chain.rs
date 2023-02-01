@@ -495,23 +495,23 @@ impl FilterChainD3D12 {
                 .map(|(_, p)| p.config.mipmap_input)
                 .unwrap_or(false);
 
-            // let next_size = self.output_framebuffers[index].scale(
-            //     pass.config.scaling.clone(),
-            //     pass.get_format(),
-            //     &viewport.output.size,
-            //     &source_size,
-            //     should_mipmap,
-            // )?;
-            //
-            // self.feedback_framebuffers[index].scale(
-            //     pass.config.scaling.clone(),
-            //     pass.get_format(),
-            //     &viewport.output.size,
-            //     &source_size,
-            //     should_mipmap,
-            // )?;
+            let next_size = self.output_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                &viewport.output.size,
+                &source_size,
+                should_mipmap,
+            )?;
 
-            // source_size = next_size;
+            self.feedback_framebuffers[index].scale(
+                pass.config.scaling.clone(),
+                pass.get_format(),
+                &viewport.output.size,
+                &source_size,
+                should_mipmap,
+            )?;
+
+            source_size = next_size;
         }
 
         Ok(())
