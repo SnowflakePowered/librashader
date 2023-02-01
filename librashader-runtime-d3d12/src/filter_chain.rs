@@ -22,7 +22,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, TextureSemantics, UniformBinding};
 use librashader_runtime::binding::TextureInput;
-use librashader_runtime::quad::{IDENTITY_MVP, QuadType};
+use librashader_runtime::quad::{DEFAULT_MVP, IDENTITY_MVP, QuadType};
 use librashader_runtime::uniforms::UniformStorage;
 use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::filter_pass::FilterPass;
@@ -552,7 +552,7 @@ impl FilterChainD3D12 {
             let out = RenderTarget {
                 x: 0.0,
                 y: 0.0,
-                mvp:IDENTITY_MVP,
+                mvp: DEFAULT_MVP,
                 output: OutputTexture { descriptor: view.descriptor, size },
             };
 
