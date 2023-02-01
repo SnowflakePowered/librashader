@@ -1,5 +1,6 @@
+use std::ops::Deref;
 use crate::error;
-use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, SamplerPaletteHeap};
+use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, SamplerPaletteHeap};
 use librashader_common::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
 use windows::Win32::Graphics::Direct3D12::{
@@ -47,7 +48,7 @@ impl SamplerSet {
                         MinLOD: -D3D12_FLOAT32_MAX,
                         MaxLOD: D3D12_FLOAT32_MAX,
                     },
-                    *linear.as_ref(),
+                    *linear.deref().as_ref(),
                 );
 
                 let nearest = heap.alloc_slot()?;
@@ -64,7 +65,7 @@ impl SamplerSet {
                         MinLOD: -D3D12_FLOAT32_MAX,
                         MaxLOD: D3D12_FLOAT32_MAX,
                     },
-                    *nearest.as_ref(),
+                    *nearest.deref().as_ref(),
                 );
 
                 samplers.insert((*wrap_mode, FilterMode::Linear), linear);

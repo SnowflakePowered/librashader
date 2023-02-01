@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use rustc_hash::FxHashMap;
 use windows::core::Interface;
 use windows::Win32::Foundation::RECT;
@@ -15,7 +16,7 @@ use crate::buffer::D3D12ConstantBuffer;
 use crate::{error, util};
 use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::D3D12GraphicsPipeline;
-use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap};
+use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputTexture, OutputTexture};
@@ -65,7 +66,7 @@ impl BindSemantics for FilterPass {
             texture_binding[binding.binding as usize]
                 .copy_descriptor(*texture.descriptor.as_ref());
             sampler_binding[binding.binding as usize]
-                .copy_descriptor(*samplers.get(texture.wrap_mode, texture.filter).as_ref())
+                .copy_descriptor(*samplers.get(texture.wrap_mode, texture.filter).deref().as_ref())
         }
     }
 }
@@ -187,8 +188,8 @@ impl FilterPass {
         }
 
         unsafe {
-            cmd.SetGraphicsRootDescriptorTable(0, *self.texture_heap[0].as_ref());
-            cmd.SetGraphicsRootDescriptorTable(1, *self.sampler_heap[0].as_ref());
+            cmd.SetGraphicsRootDescriptorTable(0, *self.texture_heap[0].deref().as_ref());
+            cmd.SetGraphicsRootDescriptorTable(1, *self.sampler_heap[0].deref().as_ref());
         }
 
         // todo: check for non-renderpass.

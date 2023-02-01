@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use crate::{error, util};
-use crate::heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap, RenderTargetHeap};
+use crate::descriptor_heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap, RenderTargetHeap};
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
@@ -31,7 +31,7 @@ use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::mipmap::D3D12MipmapGen;
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
-use crate::texture::{InputTexture, OutputTexture};
+use crate::texture::{InputTexture, OutputDescriptor, OutputTexture};
 
 type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
@@ -49,8 +49,10 @@ pub struct FilterChainD3D12 {
     staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
-    pub texture_heap: ID3D12DescriptorHeap,
-    pub sampler_heap: ID3D12DescriptorHeap,
+    texture_heap: ID3D12DescriptorHeap,
+    sampler_heap: ID3D12DescriptorHeap,
+
+    residuals: Vec<OutputDescriptor>
 }
 
 pub(crate) struct FilterCommon {
@@ -90,7 +92,7 @@ impl FilterChainD3D12 {
         let (passes, semantics) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
             preset.shaders,
             &preset.textures,
-        )?;
+        ).unwrap();
 
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
@@ -112,7 +114,7 @@ impl FilterChainD3D12 {
         let root_signature = D3D12RootSignature::new(device)?;
 
         let (texture_heap, sampler_heap, filters)
-            = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics)?;
+            = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics).unwrap();
 
 
 
@@ -186,7 +188,8 @@ impl FilterChainD3D12 {
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             history_framebuffers,
             texture_heap,
-            sampler_heap
+            sampler_heap,
+            residuals: Vec::new()
         })
     }
 
@@ -452,6 +455,8 @@ impl FilterChainD3D12 {
         options: Option<&()>,
     ) -> error::Result<()>
     {
+        drop(self.residuals.drain(..));
+
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
         if passes.is_empty() {
@@ -486,8 +491,13 @@ impl FilterChainD3D12 {
 
 
         let original = input;
-        let mut source = unsafe { original.cloned() };
+        let mut source = unsafe { original.clone() };
 
+        // swap output and feedback **before** recording command buffers
+        std::mem::swap(
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+        );
 
         // rescale render buffers to ensure all bindings are valid.
         let mut source_size = source.size();
@@ -530,7 +540,6 @@ impl FilterChainD3D12 {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        let mut residuals = Vec::new();
 
         unsafe {
             let heaps = [self.texture_heap.clone(), self.sampler_heap.clone()];
@@ -582,11 +591,42 @@ impl FilterChainD3D12 {
             //     pass.config.filter,
             //     pass.config.wrap_mode,
             // )?;
-            residuals.push(out.output.descriptor);
-            source = self.common.output_textures[index].as_ref().unwrap().cloned()
+            self.residuals.push(out.output.descriptor);
+            source = self.common.output_textures[index].as_ref().unwrap().clone()
         }
 
+        // try to hint the optimizer
+        assert_eq!(last.len(), 1);
+        if let Some(pass) = last.iter_mut().next() {
+            source.filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
 
+            let out = RenderTarget {
+                x: 0.0,
+                y: 0.0,
+                mvp: DEFAULT_MVP,
+                output: viewport.output.clone(),
+            };
+
+            pass.draw(
+                cmd,
+                passes_len - 1,
+                &self.common,
+                if pass.config.frame_count_mod > 0 {
+                    frame_count % pass.config.frame_count_mod as usize
+                } else {
+                    frame_count
+                } as u32,
+                1,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final
+            )?;
+        }
+
+        // todo: history
         Ok(())
     }
 

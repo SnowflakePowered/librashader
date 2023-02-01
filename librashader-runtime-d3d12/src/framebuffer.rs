@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, ID3D12Device, ID3D12Resource};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_SAMPLE_DESC};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
@@ -5,7 +6,7 @@ use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 use crate::error;
 use crate::error::assume_d3d12_init;
-use crate::heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
+use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
 use crate::texture::{InputTexture, OutputTexture};
 use crate::util::d3d12_get_closest_format;
 
@@ -106,7 +107,7 @@ impl OwnedImage {
                 },
             };
 
-            self.device.CreateShaderResourceView(&self.handle, Some(&srv_desc), *descriptor.as_ref());
+            self.device.CreateShaderResourceView(&self.handle, Some(&srv_desc), *descriptor.deref().as_ref());
         }
 
         Ok(InputTexture::new(descriptor, self.size, self.format, wrap_mode, filter))
@@ -129,7 +130,7 @@ impl OwnedImage {
                 },
             };
 
-            self.device.CreateRenderTargetView(&self.handle, Some(&rtv_desc), *descriptor.as_ref());
+            self.device.CreateRenderTargetView(&self.handle, Some(&rtv_desc), *descriptor.deref().as_ref());
         }
 
         Ok(OutputTexture::new(descriptor, self.size))

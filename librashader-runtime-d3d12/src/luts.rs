@@ -1,7 +1,7 @@
-
+use std::ops::Deref;
 use crate::error;
 use crate::error::assume_d3d12_init;
-use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, CpuStagingHeap};
+use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, CpuStagingHeap};
 use crate::util::{d3d12_get_closest_format, d3d12_resource_transition, d3d12_update_subresources};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_runtime::image::Image;
@@ -91,7 +91,7 @@ impl LutTexture {
                 },
             };
 
-            device.CreateShaderResourceView(&resource, Some(&srv_desc), *descriptor.as_ref());
+            device.CreateShaderResourceView(&resource, Some(&srv_desc), *descriptor.deref().as_ref());
         }
 
         let mut buffer_desc = D3D12_RESOURCE_DESC {

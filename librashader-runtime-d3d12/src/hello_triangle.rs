@@ -237,11 +237,12 @@ unsafe extern "system" fn debug_log(
 }
 
 pub mod d3d12_hello_triangle {
+    use std::ops::Deref;
     use super::*;
     use crate::filter_chain::FilterChainD3D12;
     use std::path::Path;
     use librashader_common::{FilterMode, Size, Viewport, WrapMode};
-    use crate::heap::{CpuStagingHeap, D3D12DescriptorHeap};
+    use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
     use crate::texture::{InputTexture, OutputTexture};
 
     const FRAME_COUNT: u32 = 2;
@@ -500,10 +501,10 @@ pub mod d3d12_hello_triangle {
                                 ..Default::default()
                             }
                         },
-                    }), *srv.as_ref())
+                    }), *srv.deref().as_ref())
                 }
 
-                populate_command_list(resources, &mut self.filter, self.framecount, *srv.as_ref()).unwrap();
+                populate_command_list(resources, &mut self.filter, self.framecount, *srv.deref().as_ref()).unwrap();
 
                 // Execute the command list.
                 let command_list = ID3D12CommandList::from(&resources.command_list);
@@ -590,6 +591,12 @@ pub mod d3d12_hello_triangle {
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             )]);
 
+            command_list.ResourceBarrier(&[transition_barrier(
+                &resources.render_targets[resources.frame_index as usize],
+                D3D12_RESOURCE_STATE_COPY_SOURCE,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+            )]);
+
             filter.frame(
                 command_list,
                 InputTexture::new_from_raw(framebuffer,
@@ -602,14 +609,13 @@ pub mod d3d12_hello_triangle {
                     x: 0.0,
                     y: 0.0,
                     mvp: None,
-                    output: OutputTexture::new_from_raw(D3D12_CPU_DESCRIPTOR_HANDLE {
-                        ptr: 0
-                    }, Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32)),
+                    output: OutputTexture::new_from_raw(rtv_handle,
+                                                        Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32)),
                 }, frame_count, None).unwrap();
 
             command_list.ResourceBarrier(&[transition_barrier(
                 &resources.render_targets[resources.frame_index as usize],
-                D3D12_RESOURCE_STATE_COPY_SOURCE,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
                 D3D12_RESOURCE_STATE_PRESENT,
             )]);
         }

@@ -3,7 +3,7 @@
 #![feature(type_alias_impl_trait)]
 mod error;
 mod filter_chain;
-mod heap;
+mod descriptor_heap;
 mod hello_triangle;
 mod samplers;
 mod luts;
@@ -25,7 +25,8 @@ mod tests {
     #[test]
     fn triangle_d3d12() {
         let sample = hello_triangle::d3d12_hello_triangle::Sample::new(
-            "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
+            "../test/slang-shaders/crt/crt-royale.slangp",
+            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             &SampleCommandLine {
                 use_warp_device: false,
             },

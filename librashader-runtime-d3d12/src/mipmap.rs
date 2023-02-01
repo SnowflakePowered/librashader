@@ -1,10 +1,11 @@
 
 use std::mem::ManuallyDrop;
+use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{D3D12_COMPUTE_PIPELINE_STATE_DESC, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_0, D3D12_RESOURCE_BARRIER_TYPE_UAV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_UAV_BARRIER, D3D12_SHADER_BYTECODE, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEX2D_UAV, D3D12_UAV_DIMENSION_TEXTURE2D, D3D12_UNORDERED_ACCESS_VIEW_DESC, D3D12_UNORDERED_ACCESS_VIEW_DESC_0, ID3D12DescriptorHeap, ID3D12Device, ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12Resource, ID3D12RootSignature};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use librashader_common::Size;
 use crate::{error, util};
-use crate::heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap};
+use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap};
 use crate::util::d3d_compile_shader;
 use bytemuck::{Zeroable, Pod};
 use librashader_runtime::scaling::MipmapSize;
@@ -173,7 +174,7 @@ impl D3D12MipmapGen {
             };
 
             self.device.CreateShaderResourceView(resource,
-                                                 Some(&srv_desc), *srv.as_ref());
+                                                 Some(&srv_desc), *srv.deref().as_ref());
         }
 
         let mut heap_slots = Vec::with_capacity(miplevels as usize);
@@ -193,12 +194,12 @@ impl D3D12MipmapGen {
             };
 
             self.device.CreateUnorderedAccessView(resource, None,
-                                                  Some(&desc), *descriptor.as_ref()
+                                                  Some(&desc), *descriptor.deref().as_ref()
             );
             heap_slots.push(descriptor);
         }
 
-        cmd.SetComputeRootDescriptorTable(0, *heap_slots[0].as_ref());
+        cmd.SetComputeRootDescriptorTable(0, *heap_slots[0].deref().as_ref());
 
         for i in 1..miplevels as u32 {
             let scaled = size.scale_mipmap(i);
@@ -225,7 +226,7 @@ impl D3D12MipmapGen {
                 i
             );
 
-            cmd.SetComputeRootDescriptorTable(1, *heap_slots[i as usize].as_ref());
+            cmd.SetComputeRootDescriptorTable(1, *heap_slots[i as usize].deref().as_ref());
             cmd.SetComputeRoot32BitConstants(2,
                                              (std::mem::size_of::<MipConstants>() / std::mem::size_of::<u32>()) as u32,
                                              mipmap_params.as_ptr().cast(),
