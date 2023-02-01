@@ -13,10 +13,7 @@ use crate::texture::InputTexture;
 
 pub struct LutTexture {
     resource: ID3D12Resource,
-    descriptor: D3D12DescriptorHeapSlot<CpuStagingHeap>,
-    size: Size<u32>,
-    filter: FilterMode,
-    wrap_mode: WrapMode,
+    view: InputTexture,
     miplevels: Option<u16>,
 }
 
@@ -160,12 +157,16 @@ impl LutTexture {
             d3d12_resource_transition(cmd, &resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
         }
 
+        let view = InputTexture::new(
+            descriptor,
+            source.size,
+            ImageFormat::R8G8B8A8Unorm,
+            wrap_mode,
+            filter,
+        );
         Ok((LutTexture {
             resource,
-            descriptor,
-            size: source.size,
-            filter,
-            wrap_mode,
+            view,
             miplevels: if mipmap { Some(miplevels) } else { None }
         }, upload))
     }
@@ -174,16 +175,15 @@ impl LutTexture {
         if let Some(miplevels) = self.miplevels {
             gen_mips.generate_mipmaps(&self.resource,
                                       miplevels,
-                                      self.size, ImageFormat::R8G8B8A8Unorm.into())?
+                                      self.view.size, ImageFormat::R8G8B8A8Unorm.into())?
         }
 
         Ok(())
     }
+}
 
-    pub fn as_input(&self)
-        -> InputTexture {
-        InputTexture::new(self.descriptor.clone(),
-                          self.size, ImageFormat::R8G8B8A8Unorm,
-                          self.wrap_mode, self.filter)
+impl AsRef<InputTexture> for LutTexture {
+    fn as_ref(&self) -> &InputTexture {
+        &self.view
     }
 }

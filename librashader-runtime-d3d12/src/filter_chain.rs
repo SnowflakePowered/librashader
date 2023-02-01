@@ -420,7 +420,8 @@ impl FilterChainD3D12 {
                 pipeline: graphics_pipeline,
                 config: config.clone(),
                 texture_heap,
-                sampler_heap
+                sampler_heap,
+                source,
             })
 
         }
