@@ -100,6 +100,13 @@ impl InputTexture {
         }
     }
 
+    // parent descriptor has to stay alive.
+    pub fn cloned(&self) -> InputTexture {
+        unsafe {
+            Self::new_from_raw(*self.descriptor.as_ref(),
+                               self.size, self.format, self.wrap_mode, self.filter)
+        }
+    }
 }
 
 impl AsRef<InputTexture> for InputTexture {

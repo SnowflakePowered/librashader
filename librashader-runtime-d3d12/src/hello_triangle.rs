@@ -241,6 +241,7 @@ pub mod d3d12_hello_triangle {
     use crate::filter_chain::FilterChainD3D12;
     use std::path::Path;
     use librashader_common::{FilterMode, Size, Viewport, WrapMode};
+    use crate::heap::{CpuStagingHeap, D3D12DescriptorHeap};
     use crate::texture::{InputTexture, OutputTexture};
 
     const FRAME_COUNT: u32 = 2;
@@ -276,6 +277,7 @@ pub mod d3d12_hello_triangle {
         fence: ID3D12Fence,
         fence_value: u64,
         fence_event: HANDLE,
+        frambuffer_heap: D3D12DescriptorHeap<CpuStagingHeap>
     }
 
     impl DXSample for Sample {
@@ -468,6 +470,7 @@ pub mod d3d12_hello_triangle {
                 fence,
                 fence_value,
                 fence_event,
+                frambuffer_heap: D3D12DescriptorHeap::new(&self.device, 1024).unwrap(),
             });
 
             Ok(())
@@ -483,7 +486,24 @@ pub mod d3d12_hello_triangle {
 
         fn render(&mut self) {
             if let Some(resources) = &mut self.resources {
-                populate_command_list(resources, &mut self.filter, self.framecount).unwrap();
+                let srv = resources.frambuffer_heap.alloc_slot()
+                    .unwrap();
+
+                unsafe {
+                    self.device.CreateShaderResourceView(&resources.framebuffer, Some(&D3D12_SHADER_RESOURCE_VIEW_DESC {
+                        Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                        ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
+                        Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                        Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            Texture2D: D3D12_TEX2D_SRV {
+                                MipLevels: u32::MAX,
+                                ..Default::default()
+                            }
+                        },
+                    }), *srv.as_ref())
+                }
+
+                populate_command_list(resources, &mut self.filter, self.framecount, *srv.as_ref()).unwrap();
 
                 // Execute the command list.
                 let command_list = ID3D12CommandList::from(&resources.command_list);
@@ -498,7 +518,10 @@ pub mod d3d12_hello_triangle {
         }
     }
 
-    fn populate_command_list(resources: &Resources, filter: &mut FilterChainD3D12, frame_count: usize) -> Result<()> {
+    fn populate_command_list(resources: &mut Resources, filter: &mut FilterChainD3D12,
+                             frame_count: usize,
+        framebuffer: D3D12_CPU_DESCRIPTOR_HANDLE,
+    ) -> Result<()> {
         // Command list allocators can only be reset when the associated
         // command lists have finished execution on the GPU; apps should use
         // fences to determine GPU execution progress.
@@ -568,9 +591,9 @@ pub mod d3d12_hello_triangle {
             )]);
 
             filter.frame(
-                InputTexture::new_from_raw(D3D12_CPU_DESCRIPTOR_HANDLE {
-                    ptr: 0
-                }, Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32),
+                command_list,
+                InputTexture::new_from_raw(framebuffer,
+                                           Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32),
                 DXGI_FORMAT_R8G8B8A8_UNORM,
                                            WrapMode::ClampToEdge,
                                            FilterMode::Linear,
