@@ -153,6 +153,16 @@ pub mod reflect {
 
         pub use librashader_reflect::reflect::cross::CompiledProgram;
     }
+
+    /// DXIL reflection via spirv-to-dxil.
+    pub mod dxil {
+        /// The maximum shader model to use when compiling the DXIL blob.
+        pub use librashader_reflect::back::dxil::ShaderModel;
+
+        /// A compiled DXIL artifact.
+        pub use librashader_reflect::back::dxil::DxilObject;
+    }
+
     pub use librashader_reflect::reflect::semantics::BindingMeta;
 
     pub use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};

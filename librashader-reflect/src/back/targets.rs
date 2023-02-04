@@ -10,8 +10,13 @@ pub struct GLSL;
 pub struct HLSL;
 /// Shader compiler target for SPIR-V.
 pub struct SPIRV;
-/// Shader compiler target for MSL
+/// Shader compiler target for MSL.
 pub struct MSL;
+/// Shader compiler target for DXIL.
+///
+/// The resulting DXIL object is always unvalidated and
+/// must be validated using platform APIs before usage.
+pub struct DXIL;
 
 impl OutputTarget for GLSL {
     type Output = String;

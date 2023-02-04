@@ -21,6 +21,11 @@ pub enum ShaderCompileError {
     /// Error when transpiling from spirv-cross.
     #[error("cross")]
     SpirvCrossCompileError(#[from] spirv_cross::ErrorCode),
+
+    /// Error when transpiling from spirv-to-dxil
+    #[cfg(feature = "dxil")]
+    #[error("spirv-to-dxil")]
+    SpirvToDxilCompileError(String),
 }
 
 /// The error kind encountered when reflecting shader semantics.

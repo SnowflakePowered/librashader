@@ -6,11 +6,11 @@ use crate::reflect::cross::GlslReflect;
 use crate::reflect::semantics::ShaderSemantics;
 use crate::reflect::{ReflectShader, ShaderReflection};
 
-struct WriteSpirV {
+pub(crate) struct WriteSpirV {
     // rely on GLSL to provide out reflection but we don't actually need the AST.
-    reflect: GlslReflect,
-    vertex: Vec<u32>,
-    fragment: Vec<u32>,
+    pub(crate) reflect: GlslReflect,
+    pub(crate) vertex: Vec<u32>,
+    pub(crate) fragment: Vec<u32>,
 }
 
 impl FromCompilation<GlslangCompilation> for SPIRV {
