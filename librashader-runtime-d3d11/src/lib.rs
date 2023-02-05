@@ -27,10 +27,10 @@ pub use texture::D3D11OutputView;
 
 #[cfg(test)]
 mod tests {
-    use std::env;
     use super::*;
     use crate::options::FilterChainOptionsD3D11;
     use librashader_runtime::image::{Image, UVDirection};
+    use std::env;
 
     // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
     // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",
@@ -46,7 +46,8 @@ mod tests {
         let _ = args.next();
         let _ = args.next();
         let filter = args.next();
-        let image = args.next()
+        let image = args
+            .next()
             .and_then(|f| Image::load(f, UVDirection::TopLeft).ok())
             .or_else(|| Some(Image::load(IMAGE_PATH, UVDirection::TopLeft).unwrap()))
             .unwrap();
@@ -58,7 +59,7 @@ mod tests {
                 force_no_mipmaps: false,
             }),
             // replace below with 'None' for the triangle
-            Some(image)
+            Some(image),
         )
         .unwrap();
         // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
@@ -83,9 +84,9 @@ mod tests {
                 force_no_mipmaps: false,
             }),
             // replace below with 'None' for the triangle
-            None
+            None,
         )
-            .unwrap();
+        .unwrap();
         // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
         //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
         //     Some(&FilterChainOptions {

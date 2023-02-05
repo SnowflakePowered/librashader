@@ -1,9 +1,13 @@
-use std::ops::Deref;
-use rustc_hash::FxHashMap;
-use windows::core::Interface;
-use windows::Win32::Foundation::RECT;
-use windows::Win32::Graphics::Direct3D11::ID3D11Device;
-use windows::Win32::Graphics::Direct3D12::{D3D12_RENDER_PASS_BEGINNING_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD, D3D12_RENDER_PASS_ENDING_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE, D3D12_RENDER_PASS_FLAG_NONE, D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT, ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4};
+use crate::buffer::D3D12ConstantBuffer;
+use crate::descriptor_heap::{
+    D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap,
+};
+use crate::filter_chain::FilterCommon;
+use crate::graphics_pipeline::D3D12GraphicsPipeline;
+use crate::render_target::RenderTarget;
+use crate::samplers::SamplerSet;
+use crate::texture::{InputTexture, OutputTexture};
+use crate::{error, util};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -12,14 +16,17 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
-use crate::buffer::D3D12ConstantBuffer;
-use crate::{error, util};
-use crate::filter_chain::FilterCommon;
-use crate::graphics_pipeline::D3D12GraphicsPipeline;
-use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap};
-use crate::render_target::RenderTarget;
-use crate::samplers::SamplerSet;
-use crate::texture::{InputTexture, OutputTexture};
+use rustc_hash::FxHashMap;
+use std::ops::Deref;
+use windows::core::Interface;
+use windows::Win32::Foundation::RECT;
+use windows::Win32::Graphics::Direct3D11::ID3D11Device;
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4,
+    D3D12_RENDER_PASS_BEGINNING_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD,
+    D3D12_RENDER_PASS_ENDING_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
+    D3D12_RENDER_PASS_FLAG_NONE, D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT,
+};
 
 pub(crate) struct FilterPass {
     pub(crate) pipeline: D3D12GraphicsPipeline,
@@ -32,7 +39,6 @@ pub(crate) struct FilterPass {
     pub(crate) texture_heap: [D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16],
     pub(crate) sampler_heap: [D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16],
     pub source: ShaderSource,
-
 }
 
 impl TextureInput for InputTexture {
@@ -44,8 +50,7 @@ impl TextureInput for InputTexture {
 impl BindSemantics for FilterPass {
     type InputTexture = InputTexture;
     type SamplerSet = SamplerSet;
-    type DescriptorSet<'a> =
-    (
+    type DescriptorSet<'a> = (
         &'a mut [D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16],
         &'a mut [D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16],
     );
@@ -59,14 +64,16 @@ impl BindSemantics for FilterPass {
         texture: &Self::InputTexture,
         _device: &Self::DeviceContext,
     ) {
-        let (texture_binding,
-            sampler_binding) = descriptors;
+        let (texture_binding, sampler_binding) = descriptors;
 
         unsafe {
-            texture_binding[binding.binding as usize]
-                .copy_descriptor(*texture.descriptor.as_ref());
-            sampler_binding[binding.binding as usize]
-                .copy_descriptor(*samplers.get(texture.wrap_mode, texture.filter).deref().as_ref())
+            texture_binding[binding.binding as usize].copy_descriptor(*texture.descriptor.as_ref());
+            sampler_binding[binding.binding as usize].copy_descriptor(
+                *samplers
+                    .get(texture.wrap_mode, texture.filter)
+                    .deref()
+                    .as_ref(),
+            )
         }
     }
 }
@@ -96,7 +103,6 @@ impl FilterPass {
         original: &InputTexture,
         source: &InputTexture,
     ) {
-
         Self::bind_semantics(
             &(),
             &parent.samplers,
@@ -140,7 +146,6 @@ impl FilterPass {
         output: &RenderTarget,
         vbo_type: QuadType,
     ) -> error::Result<()> {
-
         parent.draw_quad.bind_vertices(cmd, vbo_type);
         unsafe {
             cmd.SetPipelineState(&self.pipeline.handle);
@@ -207,7 +212,7 @@ impl FilterPass {
                     Anonymous: Default::default(),
                 },
             }];
-            
+
             cmd.BeginRenderPass(Some(&pass), None, D3D12_RENDER_PASS_FLAG_NONE)
         }
 
@@ -220,7 +225,7 @@ impl FilterPass {
                 MinDepth: 0.0,
                 MaxDepth: 1.0,
             }]);
-            
+
             cmd.RSSetScissorRects(&[RECT {
                 left: 0,
                 top: 0,
@@ -232,9 +237,7 @@ impl FilterPass {
             cmd.DrawInstanced(4, 1, 0, 0)
         }
 
-        unsafe {
-            cmd.EndRenderPass()
-        }
+        unsafe { cmd.EndRenderPass() }
 
         Ok(())
     }

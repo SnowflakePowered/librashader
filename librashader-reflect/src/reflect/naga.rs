@@ -1,6 +1,6 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
-use crate::front::NagaCompilation;
 use crate::front::GlslangCompilation;
+use crate::front::NagaCompilation;
 use crate::reflect::helper::SemanticErrorBlame;
 use crate::reflect::semantics::MAX_BINDINGS_COUNT;
 use naga::front::spv::Options;
@@ -105,9 +105,9 @@ impl NagaReflect {
 }
 #[cfg(test)]
 mod test {
+    use librashader_preprocess::ShaderSource;
     use rspirv::dr::Instruction;
     use rspirv::spirv::Op;
-    use librashader_preprocess::ShaderSource;
 
     #[test]
     pub fn test_into() {
@@ -118,7 +118,9 @@ mod test {
         rspirv::binary::parse_words(&compilation.vertex.as_binary(), &mut loader).unwrap();
         let module = loader.module();
 
-        let outputs: Vec<&Instruction> = module.types_global_values.iter()
+        let outputs: Vec<&Instruction> = module
+            .types_global_values
+            .iter()
             .filter(|i| i.class.opcode == Op::Variable)
             .collect();
 

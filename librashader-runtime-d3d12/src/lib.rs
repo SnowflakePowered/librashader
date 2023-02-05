@@ -1,21 +1,21 @@
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
+mod buffer;
+mod descriptor_heap;
 mod error;
 mod filter_chain;
-mod descriptor_heap;
-mod hello_triangle;
-mod samplers;
-mod luts;
-mod util;
-mod mipmap;
 mod filter_pass;
-mod quad_render;
-mod graphics_pipeline;
-mod buffer;
 mod framebuffer;
-mod texture;
+mod graphics_pipeline;
+mod hello_triangle;
+mod luts;
+mod mipmap;
+mod quad_render;
 mod render_target;
+mod samplers;
+mod texture;
+mod util;
 
 #[cfg(test)]
 mod tests {

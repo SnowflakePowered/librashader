@@ -3,7 +3,7 @@ pub enum QuadType {
     /// Offscreen, intermediate passes.
     Offscreen,
     /// Final pass to render target.
-    Final
+    Final,
 }
 
 /// Identity MVP for use in intermediate passes.
@@ -14,7 +14,6 @@ pub static IDENTITY_MVP: &[f32; 16] = &[
     0.0, 0.0, 1.0, 0.0,
     0.0, 0.0, 0.0, 1.0,
 ];
-
 
 /// Default MVP for use when rendering to the render target.
 #[rustfmt::skip]

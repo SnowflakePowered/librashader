@@ -1,6 +1,7 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
 use bytemuck::offset_of;
+use librashader_runtime::quad::QuadType;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 use windows::Win32::Graphics::Direct3D11::{
@@ -9,7 +10,6 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_USAGE_IMMUTABLE,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
-use librashader_runtime::quad::QuadType;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]

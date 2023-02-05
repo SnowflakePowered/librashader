@@ -237,13 +237,13 @@ unsafe extern "system" fn debug_log(
 }
 
 pub mod d3d12_hello_triangle {
-    use std::ops::Deref;
     use super::*;
-    use crate::filter_chain::FilterChainD3D12;
-    use std::path::Path;
-    use librashader_common::{FilterMode, Size, Viewport, WrapMode};
     use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
+    use crate::filter_chain::FilterChainD3D12;
     use crate::texture::{InputTexture, OutputTexture};
+    use librashader_common::{FilterMode, Size, Viewport, WrapMode};
+    use std::ops::Deref;
+    use std::path::Path;
 
     const FRAME_COUNT: u32 = 2;
 
@@ -252,7 +252,7 @@ pub mod d3d12_hello_triangle {
         device: ID3D12Device,
         resources: Option<Resources>,
         pub filter: FilterChainD3D12,
-        framecount: usize
+        framecount: usize,
     }
 
     struct Resources {
@@ -278,7 +278,7 @@ pub mod d3d12_hello_triangle {
         fence: ID3D12Fence,
         fence_value: u64,
         fence_event: HANDLE,
-        frambuffer_heap: D3D12DescriptorHeap<CpuStagingHeap>
+        frambuffer_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     }
 
     impl DXSample for Sample {
@@ -305,7 +305,7 @@ pub mod d3d12_hello_triangle {
                 device,
                 resources: None,
                 filter,
-                framecount: 0
+                framecount: 0,
             })
         }
 
@@ -394,9 +394,13 @@ pub mod d3d12_hello_triangle {
                 render_target.GetHeapProperties(Some(&mut heapprops), Some(&mut heappflags))?;
                 desc.Flags &= !D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
                 let mut fb = None;
-                self.device.CreateCommittedResource(&heapprops, D3D12_HEAP_FLAG_NONE, &desc,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                    None, &mut fb
+                self.device.CreateCommittedResource(
+                    &heapprops,
+                    D3D12_HEAP_FLAG_NONE,
+                    &desc,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    None,
+                    &mut fb,
                 )?;
 
                 fb.unwrap()
@@ -487,24 +491,33 @@ pub mod d3d12_hello_triangle {
 
         fn render(&mut self) {
             if let Some(resources) = &mut self.resources {
-                let srv = resources.frambuffer_heap.alloc_slot()
-                    .unwrap();
+                let srv = resources.frambuffer_heap.alloc_slot().unwrap();
 
                 unsafe {
-                    self.device.CreateShaderResourceView(&resources.framebuffer, Some(&D3D12_SHADER_RESOURCE_VIEW_DESC {
-                        Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-                        ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
-                        Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-                        Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            Texture2D: D3D12_TEX2D_SRV {
-                                MipLevels: u32::MAX,
-                                ..Default::default()
-                            }
-                        },
-                    }), *srv.deref().as_ref())
+                    self.device.CreateShaderResourceView(
+                        &resources.framebuffer,
+                        Some(&D3D12_SHADER_RESOURCE_VIEW_DESC {
+                            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                            ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
+                            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                                Texture2D: D3D12_TEX2D_SRV {
+                                    MipLevels: u32::MAX,
+                                    ..Default::default()
+                                },
+                            },
+                        }),
+                        *srv.deref().as_ref(),
+                    )
                 }
 
-                populate_command_list(resources, &mut self.filter, self.framecount, *srv.deref().as_ref()).unwrap();
+                populate_command_list(
+                    resources,
+                    &mut self.filter,
+                    self.framecount,
+                    *srv.deref().as_ref(),
+                )
+                .unwrap();
 
                 // Execute the command list.
                 let command_list = ID3D12CommandList::from(&resources.command_list);
@@ -519,8 +532,10 @@ pub mod d3d12_hello_triangle {
         }
     }
 
-    fn populate_command_list(resources: &mut Resources, filter: &mut FilterChainD3D12,
-                             frame_count: usize,
+    fn populate_command_list(
+        resources: &mut Resources,
+        filter: &mut FilterChainD3D12,
+        frame_count: usize,
         framebuffer: D3D12_CPU_DESCRIPTOR_HANDLE,
     ) -> Result<()> {
         // Command list allocators can only be reset when the associated
@@ -583,8 +598,10 @@ pub mod d3d12_hello_triangle {
         }
 
         unsafe {
-            command_list.CopyResource(&resources.framebuffer,
-                                      &resources.render_targets[resources.frame_index as usize]);
+            command_list.CopyResource(
+                &resources.framebuffer,
+                &resources.render_targets[resources.frame_index as usize],
+            );
             command_list.ResourceBarrier(&[transition_barrier(
                 &resources.framebuffer,
                 D3D12_RESOURCE_STATE_COPY_DEST,
@@ -597,21 +614,35 @@ pub mod d3d12_hello_triangle {
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
             )]);
 
-            filter.frame(
-                command_list,
-                InputTexture::new_from_raw(framebuffer,
-                                           Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32),
-                DXGI_FORMAT_R8G8B8A8_UNORM,
-                                           WrapMode::ClampToEdge,
-                                           FilterMode::Linear,
-                ),
-                &Viewport {
-                    x: 0.0,
-                    y: 0.0,
-                    mvp: None,
-                    output: OutputTexture::new_from_raw(rtv_handle,
-                                                        Size::new(resources.viewport.Width as u32, resources.viewport.Height as u32)),
-                }, frame_count, None).unwrap();
+            filter
+                .frame(
+                    command_list,
+                    InputTexture::new_from_raw(
+                        framebuffer,
+                        Size::new(
+                            resources.viewport.Width as u32,
+                            resources.viewport.Height as u32,
+                        ),
+                        DXGI_FORMAT_R8G8B8A8_UNORM,
+                        WrapMode::ClampToEdge,
+                        FilterMode::Linear,
+                    ),
+                    &Viewport {
+                        x: 0.0,
+                        y: 0.0,
+                        mvp: None,
+                        output: OutputTexture::new_from_raw(
+                            rtv_handle,
+                            Size::new(
+                                resources.viewport.Width as u32,
+                                resources.viewport.Height as u32,
+                            ),
+                        ),
+                    },
+                    frame_count,
+                    None,
+                )
+                .unwrap();
 
             command_list.ResourceBarrier(&[transition_barrier(
                 &resources.render_targets[resources.frame_index as usize],
@@ -619,8 +650,6 @@ pub mod d3d12_hello_triangle {
                 D3D12_RESOURCE_STATE_PRESENT,
             )]);
         }
-
-
 
         unsafe { command_list.Close() }
     }

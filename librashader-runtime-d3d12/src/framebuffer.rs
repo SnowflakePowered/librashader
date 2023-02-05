@@ -1,24 +1,35 @@
-use std::ops::Deref;
-use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, ID3D12Device, ID3D12Resource};
-use windows::Win32::Graphics::Dxgi::Common::{DXGI_SAMPLE_DESC};
+use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
+use crate::error;
+use crate::error::assume_d3d12_init;
+use crate::texture::{InputTexture, OutputTexture};
+use crate::util::d3d12_get_closest_format;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
-use crate::error;
-use crate::error::assume_d3d12_init;
-use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
-use crate::texture::{InputTexture, OutputTexture};
-use crate::util::d3d12_get_closest_format;
+use std::ops::Deref;
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+    D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
+    D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
+    D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D,
+    D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES,
+    D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN, D3D12_RENDER_TARGET_VIEW_DESC,
+    D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RTV_DIMENSION_TEXTURE2D,
+    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
+    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV,
+};
+use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
 #[derive(Debug, Clone)]
 pub(crate) struct OwnedImage {
-    pub(crate)handle: ID3D12Resource,
+    pub(crate) handle: ID3D12Resource,
     pub(crate) size: Size<u32>,
     format: ImageFormat,
     device: ID3D12Device,
     max_mipmap: u16,
 }
-
 
 impl OwnedImage {
     pub fn new(
@@ -28,7 +39,11 @@ impl OwnedImage {
         mipmap: bool,
     ) -> error::Result<OwnedImage> {
         unsafe {
-            let miplevels = if mipmap { size.calculate_miplevels() } else { 1 };
+            let miplevels = if mipmap {
+                size.calculate_miplevels()
+            } else {
+                1
+            };
             let mut desc = D3D12_RESOURCE_DESC {
                 Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
                 Alignment: 0,
@@ -88,10 +103,12 @@ impl OwnedImage {
         }
     }
 
-
-    pub(crate) fn create_shader_resource_view(&self, heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
-                                              filter: FilterMode, wrap_mode: WrapMode) -> error::Result<InputTexture> {
-
+    pub(crate) fn create_shader_resource_view(
+        &self,
+        heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
+        filter: FilterMode,
+        wrap_mode: WrapMode,
+    ) -> error::Result<InputTexture> {
         let descriptor = heap.alloc_slot()?;
 
         unsafe {
@@ -107,15 +124,26 @@ impl OwnedImage {
                 },
             };
 
-            self.device.CreateShaderResourceView(&self.handle, Some(&srv_desc), *descriptor.deref().as_ref());
+            self.device.CreateShaderResourceView(
+                &self.handle,
+                Some(&srv_desc),
+                *descriptor.deref().as_ref(),
+            );
         }
 
-        Ok(InputTexture::new(descriptor, self.size, self.format, wrap_mode, filter))
+        Ok(InputTexture::new(
+            descriptor,
+            self.size,
+            self.format,
+            wrap_mode,
+            filter,
+        ))
     }
 
-    pub(crate) fn create_render_target_view(&self, heap: &mut D3D12DescriptorHeap<RenderTargetHeap>
+    pub(crate) fn create_render_target_view(
+        &self,
+        heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
     ) -> error::Result<OutputTexture> {
-
         let descriptor = heap.alloc_slot()?;
 
         unsafe {
@@ -130,34 +158,33 @@ impl OwnedImage {
                 },
             };
 
-            self.device.CreateRenderTargetView(&self.handle, Some(&rtv_desc), *descriptor.deref().as_ref());
+            self.device.CreateRenderTargetView(
+                &self.handle,
+                Some(&rtv_desc),
+                *descriptor.deref().as_ref(),
+            );
         }
 
         Ok(OutputTexture::new(descriptor, self.size))
     }
 
-    pub fn scale(&mut self,
-                 scaling: Scale2D,
-                 format: ImageFormat,
-                 viewport_size: &Size<u32>,
-                 source_size: &Size<u32>,
-                 mipmap: bool,
-    ) -> error::Result<Size<u32>>
-    {
+    pub fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ImageFormat,
+        viewport_size: &Size<u32>,
+        source_size: &Size<u32>,
+        mipmap: bool,
+    ) -> error::Result<Size<u32>> {
         let size = source_size.scale_viewport(scaling, *viewport_size);
         if self.size != size
             || (mipmap && self.max_mipmap == 1)
             || (!mipmap && self.max_mipmap != 1)
             || format != self.format
         {
-            let mut new = OwnedImage::new(
-                &self.device,
-                size,
-                format,
-                mipmap
-            )?;
+            let mut new = OwnedImage::new(&self.device, size, format, mipmap)?;
 
-           std::mem::swap(self, &mut new);
+            std::mem::swap(self, &mut new);
         }
         Ok(size)
     }

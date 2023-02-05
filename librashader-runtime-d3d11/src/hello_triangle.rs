@@ -242,7 +242,7 @@ pub mod d3d11_hello_triangle {
 
     use crate::filter_chain::FilterChainD3D11;
 
-    use crate::options::{FilterChainOptionsD3D11};
+    use crate::options::FilterChainOptionsD3D11;
     use crate::texture::{D3D11InputView, LutTexture};
     use crate::D3D11OutputView;
     use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};

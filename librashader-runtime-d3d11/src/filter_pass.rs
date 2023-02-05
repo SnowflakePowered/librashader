@@ -12,12 +12,12 @@ use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 
 use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::quad::QuadType;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAPPED_SUBRESOURCE,
     D3D11_MAP_WRITE_DISCARD,
 };
-use librashader_runtime::quad::QuadType;
 
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;

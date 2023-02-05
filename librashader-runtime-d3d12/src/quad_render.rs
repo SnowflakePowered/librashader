@@ -1,12 +1,15 @@
+use crate::buffer::D3D12Buffer;
 use crate::error;
 use bytemuck::{offset_of, Pod, Zeroable};
+use librashader_runtime::quad::QuadType;
 use windows::core::PCSTR;
 use windows::w;
-use windows::Win32::Graphics::Direct3D::{D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP};
-use windows::Win32::Graphics::Direct3D12::{D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, D3D12_INPUT_ELEMENT_DESC, D3D12_VERTEX_BUFFER_VIEW, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource};
+use windows::Win32::Graphics::Direct3D::D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource,
+    D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, D3D12_INPUT_ELEMENT_DESC, D3D12_VERTEX_BUFFER_VIEW,
+};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
-use librashader_runtime::quad::QuadType;
-use crate::buffer::{D3D12Buffer};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
@@ -47,13 +50,14 @@ pub(crate) struct DrawQuad {
 }
 
 impl DrawQuad {
-    pub fn new(device: &ID3D12Device)
-        -> error::Result<DrawQuad> {
+    pub fn new(device: &ID3D12Device) -> error::Result<DrawQuad> {
         let stride = std::mem::size_of::<D3D12Vertex>() as u32;
-        let size = std::mem::size_of::<[D3D12Vertex;4]>() as u32;
+        let size = std::mem::size_of::<[D3D12Vertex; 4]>() as u32;
         let mut buffer = D3D12Buffer::new(device, size as usize)?;
-        buffer.map(None)?
-            .slice.copy_from_slice(bytemuck::cast_slice(QUAD_VBO_DATA));
+        buffer
+            .map(None)?
+            .slice
+            .copy_from_slice(bytemuck::cast_slice(QUAD_VBO_DATA));
 
         let view = D3D12_VERTEX_BUFFER_VIEW {
             BufferLocation: buffer.gpu_address(),
@@ -62,13 +66,10 @@ impl DrawQuad {
         };
 
         let buffer = buffer.into_raw();
-        unsafe  {
+        unsafe {
             buffer.SetName(w!("drawquad"))?;
         }
-        Ok(DrawQuad {
-            buffer,
-            view
-        })
+        Ok(DrawQuad { buffer, view })
     }
 
     pub fn bind_vertices(&self, cmd: &ID3D12GraphicsCommandList, _vbo_type: QuadType) {

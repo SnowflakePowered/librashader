@@ -1,6 +1,6 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
-use crate::texture::{D3D11InputView};
+use crate::texture::D3D11InputView;
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;

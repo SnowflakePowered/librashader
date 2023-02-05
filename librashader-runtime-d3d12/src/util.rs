@@ -1,15 +1,29 @@
+use crate::error;
+use crate::error::assume_d3d12_init;
+use librashader_reflect::reflect::semantics::BindingStage;
 use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 use std::u64;
-use crate::error;
 use windows::core::{Interface, PCSTR, PCWSTR};
-use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION};
+use windows::Win32::Graphics::Direct3D::Dxc::{
+    DxcValidatorFlags_Default, DxcValidatorFlags_InPlaceEdit, DxcValidatorFlags_ModuleOnly,
+    DxcValidatorFlags_ValidMask, IDxcBlob, IDxcBlobUtf8, IDxcCompiler, IDxcLibrary, IDxcUtils,
+    IDxcValidator, DXC_CP, DXC_CP_UTF8,
+};
+use windows::Win32::Graphics::Direct3D::Fxc::{
+    D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION,
+};
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
-use windows::Win32::Graphics::Direct3D12::{ID3D12Device, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FEATURE_FORMAT_SUPPORT, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, D3D12_RESOURCE_BARRIER_0, D3D12_RESOURCE_TRANSITION_BARRIER, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATES, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_MEMCPY_DEST, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
-use windows::Win32::Graphics::Direct3D::Dxc::{DXC_CP, DXC_CP_UTF8, DxcValidatorFlags_Default, DxcValidatorFlags_InPlaceEdit, DxcValidatorFlags_ModuleOnly, DxcValidatorFlags_ValidMask, IDxcBlob, IDxcBlobUtf8, IDxcCompiler, IDxcLibrary, IDxcUtils, IDxcValidator};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
+    D3D12_FEATURE_FORMAT_SUPPORT, D3D12_MEMCPY_DEST, D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
+    D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_0, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+    D3D12_RESOURCE_BARRIER_FLAG_NONE, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+    D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_STATES, D3D12_RESOURCE_TRANSITION_BARRIER,
+    D3D12_SUBRESOURCE_DATA, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0,
+    D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+};
 use windows::Win32::Graphics::Dxgi::Common::*;
-use librashader_reflect::reflect::semantics::BindingStage;
-use crate::error::assume_d3d12_init;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -130,7 +144,7 @@ pub fn fxc_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             None,
             PCSTR(entry.as_ptr()),
             PCSTR(version.as_ptr()),
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+            D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
             // if cfg!(feature = "debug-shader") {
             //     D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
             // } else {
@@ -146,20 +160,22 @@ pub fn fxc_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
     }
 }
 
-
-pub fn dxc_compile_shader(library: &IDxcUtils, compiler: &IDxcCompiler, source: &String, profile: BindingStage) -> error::Result<IDxcBlob> {
+pub fn dxc_compile_shader(
+    library: &IDxcUtils,
+    compiler: &IDxcCompiler,
+    source: &String,
+    profile: BindingStage,
+) -> error::Result<IDxcBlob> {
     // todo: compile with dxc
     // let mut source = source.to_vec();
 
-    let include = unsafe {
-        library.CreateDefaultIncludeHandler()?
-    };
+    let include = unsafe { library.CreateDefaultIncludeHandler()? };
 
     let blob = unsafe {
         library.CreateBlobFromPinned(
             source.as_ptr().cast(),
             source.as_bytes().len() as u32,
-            DXC_CP_UTF8
+            DXC_CP_UTF8,
         )?
     };
 
@@ -170,20 +186,21 @@ pub fn dxc_compile_shader(library: &IDxcUtils, compiler: &IDxcCompiler, source: 
     };
 
     unsafe {
-        let result = compiler.Compile(&blob,
+        let result = compiler.Compile(
+            &blob,
             PCWSTR::null(),
             windows::w!("main"),
             profile,
             None,
             &[],
-            &include
+            &include,
         )?;
 
         if let Ok(buf) = result.GetErrorBuffer() {
             unsafe {
                 let buf: IDxcBlobUtf8 = buf.cast().unwrap();
-                let buf = std::slice::from_raw_parts(buf.GetBufferPointer()
-                                                         .cast(), buf.GetBufferSize());
+                let buf =
+                    std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
                 let str = std::str::from_utf8_unchecked(buf);
                 if str.len() != 0 {
                     eprintln!("{}", str);
@@ -196,26 +213,27 @@ pub fn dxc_compile_shader(library: &IDxcUtils, compiler: &IDxcCompiler, source: 
     }
 }
 
-
-pub fn dxc_validate_shader(library: &IDxcUtils, validator: &IDxcValidator, source: &[u8]) -> error::Result<IDxcBlob> {
+pub fn dxc_validate_shader(
+    library: &IDxcUtils,
+    validator: &IDxcValidator,
+    source: &[u8],
+) -> error::Result<IDxcBlob> {
     // todo: compile with dxc
     // let mut source = source.to_vec();
 
-    let blob = unsafe {
-        library.CreateBlob(source.as_ptr().cast(),
-                           source.len() as u32,
-                           DXC_CP(0))?
-    };
+    let blob =
+        unsafe { library.CreateBlob(source.as_ptr().cast(), source.len() as u32, DXC_CP(0))? };
 
     unsafe {
         let result = validator
-            .Validate(&blob, DxcValidatorFlags_InPlaceEdit).unwrap();
+            .Validate(&blob, DxcValidatorFlags_InPlaceEdit)
+            .unwrap();
 
         if let Ok(buf) = result.GetErrorBuffer() {
             unsafe {
                 let buf: IDxcBlobUtf8 = buf.cast().unwrap();
-                let buf = std::slice::from_raw_parts(buf.GetBufferPointer()
-                                                         .cast(), buf.GetBufferSize());
+                let buf =
+                    std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
                 let str = std::str::from_utf8_unchecked(buf);
                 if str.len() != 0 {
                     eprintln!("{}", str);
@@ -227,21 +245,28 @@ pub fn dxc_validate_shader(library: &IDxcUtils, validator: &IDxcValidator, sourc
 }
 
 #[inline(always)]
-pub fn d3d12_resource_transition(cmd: &ID3D12GraphicsCommandList,
+pub fn d3d12_resource_transition(
+    cmd: &ID3D12GraphicsCommandList,
     resource: &ID3D12Resource,
     before: D3D12_RESOURCE_STATES,
     after: D3D12_RESOURCE_STATES,
 ) {
-    d3d12_resource_transition_subresource(cmd, resource, before, after,D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+    d3d12_resource_transition_subresource(
+        cmd,
+        resource,
+        before,
+        after,
+        D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+    );
 }
 
-
 #[inline(always)]
-pub fn d3d12_resource_transition_subresource(cmd: &ID3D12GraphicsCommandList,
-                                 resource: &ID3D12Resource,
-                                 before: D3D12_RESOURCE_STATES,
-                                 after: D3D12_RESOURCE_STATES,
-                                 subresource: u32
+pub fn d3d12_resource_transition_subresource(
+    cmd: &ID3D12GraphicsCommandList,
+    resource: &ID3D12Resource,
+    before: D3D12_RESOURCE_STATES,
+    after: D3D12_RESOURCE_STATES,
+    subresource: u32,
 ) {
     let barrier = [D3D12_RESOURCE_BARRIER {
         Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
@@ -252,24 +277,22 @@ pub fn d3d12_resource_transition_subresource(cmd: &ID3D12GraphicsCommandList,
                 Subresource: subresource,
                 StateBefore: before,
                 StateAfter: after,
-            })
+            }),
         },
     }];
 
-    unsafe {
-        cmd.ResourceBarrier(&barrier)
-    }
+    unsafe { cmd.ResourceBarrier(&barrier) }
 }
 
-pub fn d3d12_update_subresources(cmd: &ID3D12GraphicsCommandList,
-                                 destination_resource: &ID3D12Resource,
-                                 intermediate_resource: &ID3D12Resource,
-                                 intermediate_offset: u64,
-                                 first_subresouce: u32,
-                                 num_subresources: u32,
-    source: &[D3D12_SUBRESOURCE_DATA]
+pub fn d3d12_update_subresources(
+    cmd: &ID3D12GraphicsCommandList,
+    destination_resource: &ID3D12Resource,
+    intermediate_resource: &ID3D12Resource,
+    intermediate_offset: u64,
+    first_subresouce: u32,
+    num_subresources: u32,
+    source: &[D3D12_SUBRESOURCE_DATA],
 ) -> error::Result<u64> {
-
     // let allocation_size = std::mem::size_of::<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>()
     //     + std::mem::size_of::<u32>()
     //     + std::mem::size_of::<u64>() * num_subresources;
@@ -280,10 +303,10 @@ pub fn d3d12_update_subresources(cmd: &ID3D12GraphicsCommandList,
         destination_resource.GetDevice(&mut device)?;
         assume_d3d12_init!(device, "GetDevice");
 
-
-        let mut layouts = vec![D3D12_PLACED_SUBRESOURCE_FOOTPRINT::default(); num_subresources as usize];
+        let mut layouts =
+            vec![D3D12_PLACED_SUBRESOURCE_FOOTPRINT::default(); num_subresources as usize];
         let mut num_rows = vec![0; num_subresources as usize];
-        let mut row_sizes_in_bytes =  vec![0; num_subresources as usize];
+        let mut row_sizes_in_bytes = vec![0; num_subresources as usize];
         let mut required_size = 0;
         // texture upload
         unsafe {
@@ -329,18 +352,15 @@ fn update_subresources(
 ) -> error::Result<u64> {
     // ToDo: implement validation as in the original function
 
-
     unsafe {
         let mut data = std::ptr::null_mut();
         intermediate_resource.Map(0, None, Some(&mut data))?;
 
         for i in 0..num_subresources as usize {
             let dest_data = D3D12_MEMCPY_DEST {
-                pData: data.offset(layouts[i].Offset as isize)
-                    as *mut std::ffi::c_void,
+                pData: data.offset(layouts[i].Offset as isize) as *mut std::ffi::c_void,
                 RowPitch: layouts[i].Footprint.RowPitch as usize,
-                SlicePitch: ((layouts[i].Footprint.RowPitch)
-                    * num_rows[i]) as usize,
+                SlicePitch: ((layouts[i].Footprint.RowPitch) * num_rows[i]) as usize,
             };
 
             memcpy_subresource(
@@ -366,12 +386,11 @@ fn update_subresources(
             );
         } else {
             for i in 0..num_subresources as usize {
-
                 let dest_location = D3D12_TEXTURE_COPY_LOCATION {
                     pResource: windows::core::ManuallyDrop::new(destination_resource),
                     Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
                     Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                        SubresourceIndex: i as u32 + first_subresouce
+                        SubresourceIndex: i as u32 + first_subresouce,
                     },
                 };
 
@@ -379,23 +398,15 @@ fn update_subresources(
                     pResource: windows::core::ManuallyDrop::new(intermediate_resource),
                     Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
                     Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                        PlacedFootprint: layouts[i]
+                        PlacedFootprint: layouts[i],
                     },
                 };
 
-                cmd.CopyTextureRegion(
-                    &dest_location,
-                    0,
-                    0,
-                    0,
-                    &source_location,
-                    None,
-                );
+                cmd.CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, None);
             }
         }
         Ok(required_size)
     }
-
 }
 
 // this function should not leak to the public API, so
@@ -407,9 +418,8 @@ unsafe fn memcpy_subresource(
     num_rows: u32,
     num_slices: u32,
 ) {
-    for z in 0..num_slices  as usize {
-        let dest_slice =
-            dest.pData.add(dest.SlicePitch * z);
+    for z in 0..num_slices as usize {
+        let dest_slice = dest.pData.add(dest.SlicePitch * z);
         let src_slice = src.pData.offset(src.SlicePitch * z as isize);
 
         for y in 0..num_rows as usize {

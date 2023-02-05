@@ -1,10 +1,10 @@
+use crate::back::spirv::WriteSpirV;
+use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 pub use spirv_to_dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
 use spirv_to_dxil::{ConstantBufferConfig, RuntimeConfig, ShaderStage, ValidatorVersion};
-use crate::back::{CompilerBackend, CompileShader, FromCompilation, ShaderCompilerOutput};
-use crate::back::spirv::WriteSpirV;
 
-use crate::back::targets::{DXIL, OutputTarget};
+use crate::back::targets::{OutputTarget, DXIL};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
 use crate::reflect::cross::GlslReflect;
@@ -19,7 +19,7 @@ impl FromCompilation<GlslangCompilation> for DXIL {
     type Options = Option<ShaderModel>;
     type Context = ();
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-    + ReflectShader;
+        + ReflectShader;
 
     fn from_compilation(
         compile: GlslangCompilation,
@@ -60,26 +60,28 @@ impl CompileShader<DXIL> for WriteSpirV {
             ..RuntimeConfig::default()
         };
 
-
         // todo: do we want to allow other entry point names?
-        let vertex =
-            spirv_to_dxil::spirv_to_dxil(&self.vertex,
-                                         None, "main",
-                                         ShaderStage::Vertex,
-                                         sm,
-                                         ValidatorVersion::None,
-                                         config.clone())
-                .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
+        let vertex = spirv_to_dxil::spirv_to_dxil(
+            &self.vertex,
+            None,
+            "main",
+            ShaderStage::Vertex,
+            sm,
+            ValidatorVersion::None,
+            config.clone(),
+        )
+        .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
 
-
-        let fragment =
-            spirv_to_dxil::spirv_to_dxil(&self.fragment,
-                                         None, "main",
-                                         ShaderStage::Fragment,
-                                         sm,
-                                         ValidatorVersion::None,
-                                         config)
-                .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
+        let fragment = spirv_to_dxil::spirv_to_dxil(
+            &self.fragment,
+            None,
+            "main",
+            ShaderStage::Fragment,
+            sm,
+            ValidatorVersion::None,
+            config,
+        )
+        .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
 
         Ok(ShaderCompilerOutput {
             vertex,
