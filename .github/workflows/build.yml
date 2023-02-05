@@ -35,6 +35,12 @@ jobs:
       uses: baptiste0928/cargo-install@bf6758885262d0e6f61089a9d8c8790d3ac3368f
       with:
         crate: cargo-post
+    - uses: actions/setup-python@v1
+      name: Setup Python
+      with:
+        python-version: '3.x'
+    - run: pip install meson ninja
+      name: Install Meson for spirv-to-dxil-sys
     - name: Build dynamic library
       run: cargo post build --release --package librashader-capi
     - name: Upload build artifacts
