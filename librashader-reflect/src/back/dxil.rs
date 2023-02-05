@@ -1,6 +1,6 @@
 pub use spirv_to_dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
-use spirv_to_dxil::{ShaderStage, ValidatorVersion};
+use spirv_to_dxil::{ConstantBufferConfig, RuntimeConfig, ShaderStage, ValidatorVersion};
 use crate::back::{CompilerBackend, CompileShader, FromCompilation, ShaderCompilerOutput};
 use crate::back::spirv::WriteSpirV;
 
@@ -68,7 +68,7 @@ impl CompileShader<DXIL> for WriteSpirV {
                                          ShaderStage::Vertex,
                                          sm,
                                          ValidatorVersion::None,
-                                         Default::default())
+                                         config.clone())
                 .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
 
 
@@ -76,9 +76,9 @@ impl CompileShader<DXIL> for WriteSpirV {
             spirv_to_dxil::spirv_to_dxil(&self.fragment,
                                          None, "main",
                                          ShaderStage::Fragment,
-                                         ShaderModel::ShaderModel6_0,
+                                         sm,
                                          ValidatorVersion::None,
-                                         Default::default())
+                                         config)
                 .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
 
         Ok(ShaderCompilerOutput {
