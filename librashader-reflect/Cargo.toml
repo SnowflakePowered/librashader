@@ -26,9 +26,12 @@ librashader-presets = { path = "../librashader-presets", version = "0.1.0-beta.1
 spirv-to-dxil = { version = "0.2", optional = true }
 naga = { version = "0.10.0", features = ["glsl-in", "spv-in", "spv-out", "glsl-out", "wgsl-out"], optional = true }
 
+bytemuck = "1.13.0"
+rspirv = { version = "0.11.0+1.5.4", optional = true }
+
 [features]
-default = ["dxil"]
-unstable-naga = [ "naga" ]
+default = ["dxil", "unstable-naga"]
+unstable-naga = [ "naga", "rspirv" ]
 standalone = ["shaderc/build-from-source"]
 dxil = ["spirv-to-dxil"]
 

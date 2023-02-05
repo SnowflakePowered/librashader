@@ -48,6 +48,19 @@ impl CompileShader<DXIL> for WriteSpirV {
     ) -> Result<ShaderCompilerOutput<DxilObject, Self::Context>, ShaderCompileError> {
         let sm = options.unwrap_or(ShaderModel::ShaderModel6_0);
 
+        let config = RuntimeConfig {
+            runtime_data_cbv: ConstantBufferConfig {
+                register_space: 0,
+                base_shader_register: u32::MAX,
+            },
+            push_constant_cbv: ConstantBufferConfig {
+                register_space: 0,
+                base_shader_register: 1,
+            },
+            ..RuntimeConfig::default()
+        };
+
+
         // todo: do we want to allow other entry point names?
         let vertex =
             spirv_to_dxil::spirv_to_dxil(&self.vertex,

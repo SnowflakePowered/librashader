@@ -1,6 +1,6 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
-use crate::front::naga::NagaCompilation;
-use crate::front::shaderc::GlslangCompilation;
+use crate::front::NagaCompilation;
+use crate::front::GlslangCompilation;
 use crate::reflect::helper::SemanticErrorBlame;
 use crate::reflect::semantics::MAX_BINDINGS_COUNT;
 use naga::front::spv::Options;
@@ -105,11 +105,23 @@ impl NagaReflect {
 }
 #[cfg(test)]
 mod test {
+    use rspirv::dr::Instruction;
+    use rspirv::spirv::Op;
     use librashader_preprocess::ShaderSource;
 
     #[test]
     pub fn test_into() {
-        let result = ShaderSource::load("../test/basic.slang").unwrap();
-        let _spirv = crate::front::shaderc::compile_spirv(&result).unwrap();
+        let result = ShaderSource::load("../test/slang-shaders/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
+        let compilation = crate::front::GlslangCompilation::try_from(&result).unwrap();
+
+        let mut loader = rspirv::dr::Loader::new();
+        rspirv::binary::parse_words(&compilation.vertex.as_binary(), &mut loader).unwrap();
+        let module = loader.module();
+
+        let outputs: Vec<&Instruction> = module.types_global_values.iter()
+            .filter(|i| i.class.opcode == Op::Variable)
+            .collect();
+
+        println!("{:#?}", outputs);
     }
 }

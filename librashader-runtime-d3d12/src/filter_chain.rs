@@ -4,7 +4,7 @@ use crate::descriptor_heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHe
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::HLSL;
+use librashader_reflect::back::targets::DXIL;
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::image::{Image, UVDirection};
@@ -15,6 +15,7 @@ use windows::core::Interface;
 use windows::w;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, ID3D12DescriptorHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET};
+use windows::Win32::Graphics::Direct3D::Dxc::{CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcLibrary, IDxcValidator};
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -33,7 +34,7 @@ use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::texture::{InputTexture, OutputDescriptor, OutputTexture};
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -89,7 +90,7 @@ impl FilterChainD3D12 {
     ) -> error::Result<FilterChainD3D12> {
         let shader_count = preset.shaders.len();
         let lut_count = preset.textures.len();
-        let (passes, semantics) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+        let (passes, semantics) = DXIL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
             preset.shaders,
             &preset.textures,
         ).unwrap();
@@ -344,6 +345,13 @@ impl FilterChainD3D12 {
                    passes: Vec<ShaderPassMeta>,
                    semantics: &ShaderSemantics,)
         -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
+        let validator: IDxcValidator = unsafe {
+            DxcCreateInstance(&CLSID_DxcValidator)?
+        };
+
+        let dxc: IDxcLibrary = unsafe {
+            DxcCreateInstance(&CLSID_DxcLibrary)?
+        };
 
         let mut filters = Vec::new();
         let shader_count = passes.len();
@@ -370,19 +378,25 @@ impl FilterChainD3D12 {
             .zip(work_heaps)
             .zip(sampler_work_heaps)
             .enumerate() {
+
             let reflection = reflect.reflect(index, semantics)?;
-            let hlsl = reflect.compile(None)?;
+            let dxil = reflect.compile(None)?;
+
+            eprintln!("building pipeline for pass {:?}", index);
 
             let graphics_pipeline = D3D12GraphicsPipeline::new(device,
-                                                               &hlsl,
-                root_signature,
-                if let Some(format) = config.get_format_override() {
+                                                               &dxc,
+                                                               &validator,
+                                                               &dxil,
+                                                               root_signature,
+                                                               if let Some(format) = config.get_format_override() {
                     format
                 } else if source.format != ImageFormat::Unknown {
                     source.format
                 } else {
                     ImageFormat::R8G8B8A8Unorm
-                }.into()
+                }.into(),
+                &source
             )?;
 
             let uniform_storage = UniformStorage::new(

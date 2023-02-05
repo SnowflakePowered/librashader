@@ -113,30 +113,36 @@ impl D3D12RootSignature {
 }
 impl D3D12GraphicsPipeline {
     pub fn new(device: &ID3D12Device,
-               shader_assembly: &ShaderCompilerOutput<String, CrossHlslContext>,
+               library: &IDxcLibrary,
+               validator: &IDxcValidator,
+               shader_assembly: &ShaderCompilerOutput<DxilObject, (Vec<u32>, Vec<u32>)>,
                root_signature: &D3D12RootSignature,
-               render_format: DXGI_FORMAT
+               render_format: DXGI_FORMAT,
+               source: &ShaderSource,
     ) -> error::Result<D3D12GraphicsPipeline> {
-        let vertex_dxbc =
-            util::d3d_compile_shader(shader_assembly.vertex.as_bytes(),
-                                     b"main\0", b"vs_5_0\0")?;
-        let fragment_dxbc =
-            util::d3d_compile_shader(shader_assembly.fragment.as_bytes(), b"main\0",
-                                     b"ps_5_0\0")?;
+        if shader_assembly.vertex.requires_runtime_data() {
+            panic!("vertex needs rt data??")
+        }
+        if shader_assembly.fragment.requires_runtime_data() {
+            panic!("fragment needs rt data??")
+        }
+        let vertex_dxil =
+            util::dxc_validate_shader(library, validator, &shader_assembly.vertex)?;
+        let fragment_dxil =
+            util::dxc_validate_shader(library, validator, &shader_assembly.fragment)?;
 
         let input_element = DrawQuad::get_spirv_cross_vbo_desc();
-
 
         let pipeline_state: ID3D12PipelineState = unsafe {
             let pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
                 pRootSignature: windows::core::ManuallyDrop::new(&root_signature.handle),
                 VS: D3D12_SHADER_BYTECODE {
-                    pShaderBytecode: vertex_dxbc.GetBufferPointer(),
-                    BytecodeLength: vertex_dxbc.GetBufferSize(),
+                    pShaderBytecode: vertex_dxil.GetBufferPointer(),
+                    BytecodeLength: vertex_dxil.GetBufferSize(),
                 },
                 PS: D3D12_SHADER_BYTECODE {
-                    pShaderBytecode: fragment_dxbc.GetBufferPointer(),
-                    BytecodeLength: fragment_dxbc.GetBufferSize(),
+                    pShaderBytecode: fragment_dxil.GetBufferPointer(),
+                    BytecodeLength: fragment_dxil.GetBufferSize(),
                 },
                 StreamOutput: Default::default(),
                 BlendState: D3D12_BLEND_DESC {

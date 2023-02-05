@@ -1,10 +1,12 @@
+use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 use std::u64;
 use crate::error;
-use windows::core::PCSTR;
+use windows::core::{Interface, PCSTR};
 use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION};
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D12::{ID3D12Device, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FEATURE_FORMAT_SUPPORT, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, D3D12_RESOURCE_BARRIER_0, D3D12_RESOURCE_TRANSITION_BARRIER, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATES, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_MEMCPY_DEST, D3D12_SUBRESOURCE_DATA, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT};
+use windows::Win32::Graphics::Direct3D::Dxc::{DXC_CP, DxcValidatorFlags_Default, DxcValidatorFlags_InPlaceEdit, DxcValidatorFlags_ModuleOnly, DxcValidatorFlags_ValidMask, IDxcBlob, IDxcBlobUtf8, IDxcLibrary, IDxcValidator};
 use windows::Win32::Graphics::Dxgi::Common::*;
 use crate::error::assume_d3d12_init;
 
@@ -115,7 +117,7 @@ pub fn d3d12_get_closest_format(
     DXGI_FORMAT_UNKNOWN
 }
 
-pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
+pub fn fxc_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
     // todo: compile with dxc
     unsafe {
         let mut blob = None;
@@ -140,6 +142,37 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
 
         assume_d3d12_init!(blob, "D3DCompile");
         Ok(blob)
+    }
+}
+
+pub fn dxc_validate_shader(library: &IDxcLibrary, validator: &IDxcValidator, source: &[u8]) -> error::Result<IDxcBlob> {
+    // todo: compile with dxc
+    // let mut source = source.to_vec();
+
+    let blob = unsafe {
+        library.CreateBlobWithEncodingOnHeapCopy(
+            source.as_ptr().cast(),
+            source.len() as u32,
+            DXC_CP(0)
+        )?
+    };
+
+    unsafe {
+        let result = validator
+            .Validate(&blob, DxcValidatorFlags_InPlaceEdit).unwrap();
+
+        if let Ok(buf) = result.GetErrorBuffer() {
+            unsafe {
+                let buf: IDxcBlobUtf8 = buf.cast().unwrap();
+                let buf = std::slice::from_raw_parts(buf.GetBufferPointer()
+                                                         .cast(), buf.GetBufferSize());
+                let str = std::str::from_utf8_unchecked(buf);
+                if str.len() != 0 {
+                    eprintln!("{}", str);
+                }
+            }
+        }
+        Ok(IDxcBlob::from(blob))
     }
 }
 

@@ -6,7 +6,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use librashader_common::Size;
 use crate::{error, util};
 use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap};
-use crate::util::d3d_compile_shader;
+use crate::util::fxc_compile_shader;
 use bytemuck::{Zeroable, Pod};
 use librashader_runtime::scaling::MipmapSize;
 
@@ -102,7 +102,7 @@ impl <'a> MipmapGenContext<'a> {
 impl D3D12MipmapGen {
     pub fn new(device: &ID3D12Device) -> error::Result<D3D12MipmapGen> {
         unsafe {
-            let blob = d3d_compile_shader(GENERATE_MIPS_SRC, b"main\0", b"cs_5_1\0").unwrap();
+            let blob = fxc_compile_shader(GENERATE_MIPS_SRC, b"main\0", b"cs_5_1\0").unwrap();
             let blob = std::slice::from_raw_parts(blob.GetBufferPointer().cast(), blob.GetBufferSize());
             let root_signature: ID3D12RootSignature = device.CreateRootSignature(0, blob).unwrap();
 
