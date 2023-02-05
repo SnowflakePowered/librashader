@@ -39,7 +39,7 @@ jobs:
       name: Setup Python
       with:
         python-version: '3.x'
-    - run: pip install meson ninja
+    - run: pip install meson ninja mako
       name: Install Meson for spirv-to-dxil-sys
     - name: Build dynamic library
       run: cargo post build --release --package librashader-capi
