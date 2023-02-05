@@ -17,11 +17,12 @@ use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{
-    ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
+    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
 };
 
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
+use librashader_runtime::binding::BindingUtil;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
@@ -52,7 +53,7 @@ pub struct FilterMutable {
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
-    fn reflect_uniform_location(pipeline: GLuint, meta: &impl UniformMeta) -> VariableLocation {
+    fn reflect_uniform_location(pipeline: GLuint, meta: &dyn UniformMeta) -> VariableLocation {
         let mut location = VariableLocation {
             ubo: None,
             push: None,
@@ -251,45 +252,12 @@ impl<T: GLInterface> FilterChainImpl<T> {
                     .unwrap_or(0),
             );
 
-            let mut uniform_bindings = FxHashMap::default();
-            for param in reflection.meta.parameter_meta.values() {
-                uniform_bindings.insert(
-                    UniformBinding::Parameter(param.id.clone()),
-                    UniformOffset::new(
-                        Self::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
-                );
-            }
-
-            for (semantics, param) in &reflection.meta.unique_meta {
-                uniform_bindings.insert(
-                    UniformBinding::SemanticVariable(*semantics),
-                    UniformOffset::new(
-                        Self::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
-                );
-            }
-
-            for (semantics, param) in &reflection.meta.texture_size_meta {
-                uniform_bindings.insert(
-                    UniformBinding::TextureSize(*semantics),
-                    UniformOffset::new(
-                        Self::reflect_uniform_location(program, param),
-                        param.offset,
-                    ),
-                );
-            }
-
-            // eprintln!("{:#?}", reflection.meta.texture_meta);
-            // eprintln!("{:#?}", reflection.meta);
-            // eprintln!("{:#?}", locations);
-            // eprintln!("{:#?}", reflection.push_constant);
-            // eprintln!("====fragment====");
-            // eprintln!("{:#}", glsl.fragment);
-            // eprintln!("====vertex====");
-            // eprintln!("{:#}", glsl.vertex);
+            let uniform_bindings = reflection.meta.create_binding_map(|param| {
+                UniformOffset::new(
+                    Self::reflect_uniform_location(program, param),
+                    param.offset(),
+                )
+            });
 
             filters.push(FilterPass {
                 reflection,
@@ -312,28 +280,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         filter: FilterMode,
         wrap_mode: WrapMode,
     ) -> (VecDeque<Framebuffer>, Box<[InputTexture]>) {
-        let mut required_images = 0;
-
-        for pass in filters {
-            // If a shader uses history size, but not history, we still need to keep the texture.
-            let texture_count = pass
-                .reflection
-                .meta
-                .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-            let texture_size_count = pass
-                .reflection
-                .meta
-                .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-
-            required_images = std::cmp::max(required_images, texture_count);
-            required_images = std::cmp::max(required_images, texture_size_count);
-        }
+        let mut required_images =
+            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
         if required_images <= 1 {
@@ -475,7 +423,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
-            
+
             pass.draw(
                 index,
                 &self.common,

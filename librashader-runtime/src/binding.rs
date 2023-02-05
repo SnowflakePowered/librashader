@@ -2,8 +2,10 @@ use crate::uniforms::{BindUniform, NoUniformBinder, UniformStorage};
 use librashader_common::Size;
 use librashader_preprocess::ShaderParameter;
 use librashader_reflect::reflect::semantics::{
-    MemberOffset, Semantic, TextureBinding, TextureSemantics, UniformBinding, UniqueSemantics,
+    BindingMeta, MemberOffset, Semantic, TextureBinding, TextureSemantics, UniformBinding,
+    UniformMeta, UniqueSemantics,
 };
+use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 use std::hash::BuildHasher;
 use std::ops::{Deref, DerefMut};
@@ -264,5 +266,67 @@ where
                 uniform_storage.bind_vec4(offset.offset(), lut.size(), offset.context());
             }
         }
+    }
+}
+
+/// Trait for objects that can be used to create a binding map.
+pub trait BindingUtil {
+    /// Create the uniform binding map with the given reflection information.
+    fn create_binding_map<T>(
+        &self,
+        f: impl Fn(&dyn UniformMeta) -> T,
+    ) -> FxHashMap<UniformBinding, T>;
+
+    /// Calculate the number of required images for history.
+    fn calculate_required_history<'a>(pass_meta: impl Iterator<Item = &'a Self>) -> usize
+    where
+        Self: 'a;
+}
+
+impl BindingUtil for BindingMeta {
+    fn create_binding_map<T>(
+        &self,
+        f: impl Fn(&dyn UniformMeta) -> T,
+    ) -> FxHashMap<UniformBinding, T> {
+        let mut uniform_bindings = FxHashMap::default();
+        for param in self.parameter_meta.values() {
+            uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), f(param));
+        }
+
+        for (semantics, param) in &self.unique_meta {
+            uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), f(param));
+        }
+
+        for (semantics, param) in &self.texture_size_meta {
+            uniform_bindings.insert(UniformBinding::TextureSize(*semantics), f(param));
+        }
+
+        uniform_bindings
+    }
+
+    fn calculate_required_history<'a>(pass_meta: impl Iterator<Item = &'a Self>) -> usize
+    where
+        Self: 'a,
+    {
+        let mut required_images = 0;
+
+        for pass in pass_meta {
+            // If a shader uses history size, but not history, we still need to keep the texture.
+            let texture_count = pass
+                .texture_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+            let texture_size_count = pass
+                .texture_size_meta
+                .iter()
+                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
+                .count();
+
+            required_images = std::cmp::max(required_images, texture_count);
+            required_images = std::cmp::max(required_images, texture_size_count);
+        }
+
+        required_images
     }
 }

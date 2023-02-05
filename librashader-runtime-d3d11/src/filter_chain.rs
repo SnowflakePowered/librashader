@@ -5,7 +5,9 @@ use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
+use librashader_reflect::reflect::semantics::{
+    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding,
+};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
@@ -23,7 +25,8 @@ use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_runtime::binding::TextureInput;
+use librashader_runtime::binding::{BindingUtil, TextureInput};
+use librashader_runtime::quad::{QuadType, IDENTITY_MVP};
 use librashader_runtime::uniforms::UniformStorage;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
@@ -31,7 +34,6 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
-use librashader_runtime::quad::{IDENTITY_MVP, QuadType};
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -284,18 +286,7 @@ impl FilterChainD3D11 {
                     .unwrap_or(0),
             );
 
-            let mut uniform_bindings = FxHashMap::default();
-            for param in reflection.meta.parameter_meta.values() {
-                uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
-            }
-
-            for (semantics, param) in &reflection.meta.unique_meta {
-                uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), param.offset);
-            }
-
-            for (semantics, param) in &reflection.meta.texture_size_meta {
-                uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
-            }
+            let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
             filters.push(FilterPass {
                 reflection,
@@ -319,28 +310,8 @@ impl FilterChainD3D11 {
         context: &ID3D11DeviceContext,
         filters: &Vec<FilterPass>,
     ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<InputTexture>]>)> {
-        let mut required_images = 0;
-
-        for pass in filters {
-            // If a shader uses history size, but not history, we still need to keep the texture.
-            let texture_count = pass
-                .reflection
-                .meta
-                .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-            let texture_size_count = pass
-                .reflection
-                .meta
-                .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-
-            required_images = std::cmp::max(required_images, texture_count);
-            required_images = std::cmp::max(required_images, texture_size_count);
-        }
+        let mut required_images =
+            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
         if required_images <= 1 {
@@ -522,7 +493,7 @@ impl FilterChainD3D11 {
                 &original,
                 &source,
                 RenderTarget::new(target.as_output_framebuffer()?, Some(IDENTITY_MVP)),
-                QuadType::Offscreen
+                QuadType::Offscreen,
             )?;
 
             source = InputTexture {
@@ -554,7 +525,7 @@ impl FilterChainD3D11 {
                 &original,
                 &source,
                 viewport.into(),
-                QuadType::Final
+                QuadType::Final,
             )?;
         }
 

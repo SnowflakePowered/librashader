@@ -1,39 +1,51 @@
-use std::collections::VecDeque;
-use crate::{error, graphics_pipeline, util};
-use crate::descriptor_heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap, RenderTargetHeap};
-use crate::samplers::SamplerSet;
-use crate::luts::LutTexture;
-use librashader_presets::{ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::{DXIL, HLSL};
-use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_runtime::image::{Image, UVDirection};
-use rustc_hash::FxHashMap;
-use std::error::Error;
-use std::path::Path;
-use spirv_cross::hlsl::ShaderModel;
-use windows::core::Interface;
-use windows::w;
-use windows::Win32::Foundation::CloseHandle;
-use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, ID3D12DescriptorHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET};
-use windows::Win32::Graphics::Direct3D::Dxc::{CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler, IDxcLibrary, IDxcUtils, IDxcValidator};
-use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
-use windows::Win32::System::WindowsProgramming::INFINITE;
-use librashader_common::{ImageFormat, Size, Viewport};
-use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::reflect::ReflectShader;
-use librashader_reflect::reflect::semantics::{MAX_BINDINGS_COUNT, ShaderSemantics, TextureSemantics, UniformBinding};
-use librashader_runtime::binding::TextureInput;
-use librashader_runtime::quad::{DEFAULT_MVP, IDENTITY_MVP, QuadType};
-use librashader_runtime::uniforms::UniformStorage;
 use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
+use crate::descriptor_heap::{
+    CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap, ResourceWorkHeap, SamplerWorkHeap,
+};
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
+use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
+use crate::samplers::SamplerSet;
 use crate::texture::{InputTexture, OutputDescriptor, OutputTexture};
+use crate::{error, graphics_pipeline, util};
+use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_presets::{ShaderPreset, TextureConfig};
+use librashader_reflect::back::targets::{DXIL, HLSL};
+use librashader_reflect::back::{CompileReflectShader, CompileShader};
+use librashader_reflect::front::GlslangCompilation;
+use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
+use librashader_reflect::reflect::semantics::{
+    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding, MAX_BINDINGS_COUNT,
+};
+use librashader_reflect::reflect::ReflectShader;
+use librashader_runtime::binding::{BindingUtil, TextureInput};
+use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::quad::{QuadType, DEFAULT_MVP, IDENTITY_MVP};
+use librashader_runtime::uniforms::UniformStorage;
+use rustc_hash::FxHashMap;
+use spirv_cross::hlsl::ShaderModel;
+use std::collections::VecDeque;
+use std::error::Error;
+use std::path::Path;
+use windows::core::Interface;
+use windows::w;
+use windows::Win32::Foundation::CloseHandle;
+use windows::Win32::Graphics::Direct3D::Dxc::{
+    CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler,
+    IDxcLibrary, IDxcUtils, IDxcValidator,
+};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device, ID3D12Fence,
+    ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
+    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
+};
+use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
+use windows::Win32::System::WindowsProgramming::INFINITE;
 
 type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -55,7 +67,7 @@ pub struct FilterChainD3D12 {
     texture_heap: ID3D12DescriptorHeap,
     sampler_heap: ID3D12DescriptorHeap,
 
-    residuals: Vec<OutputDescriptor>
+    residuals: Vec<OutputDescriptor>,
 }
 
 pub(crate) struct FilterCommon {
@@ -95,50 +107,46 @@ impl FilterChainD3D12 {
 
         let shader_copy = preset.shaders.clone();
 
-        let (passes, semantics) = DXIL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
-            preset.shaders,
-            &preset.textures,
-        ).unwrap();
+        let (passes, semantics) =
+            DXIL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+                preset.shaders,
+                &preset.textures,
+            )
+            .unwrap();
 
         let (hlsl_passes, _) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
             shader_copy,
             &preset.textures,
-        ).unwrap();
+        )
+        .unwrap();
 
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
 
         let draw_quad = DrawQuad::new(device)?;
-        let mut staging_heap =
-            D3D12DescriptorHeap::new(device,
-                                                         (MAX_BINDINGS_COUNT as usize) *
-                                                             shader_count + 2048 + lut_count)?;
-        let mut rtv_heap =
-            D3D12DescriptorHeap::new(device,
-                                     (MAX_BINDINGS_COUNT as usize) *
-                                         shader_count + 2048 + lut_count)?;
+        let mut staging_heap = D3D12DescriptorHeap::new(
+            device,
+            (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
+        )?;
+        let mut rtv_heap = D3D12DescriptorHeap::new(
+            device,
+            (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
+        )?;
 
-
-
-        let luts = FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen).unwrap();
+        let luts =
+            FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen)
+                .unwrap();
 
         let root_signature = D3D12RootSignature::new(device)?;
 
-        let (texture_heap, sampler_heap, filters)
-            = FilterChainD3D12::init_passes(device, &root_signature, passes, hlsl_passes, &semantics).unwrap();
-
-
-
+        let (texture_heap, sampler_heap, filters) =
+            FilterChainD3D12::init_passes(device, &root_signature, passes, hlsl_passes, &semantics)
+                .unwrap();
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
-            OwnedImage::new(
-                device,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                false,
-            )
+            OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
 
         // resolve all results
@@ -154,12 +162,7 @@ impl FilterChainD3D12 {
         // // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
         feedback_framebuffers.resize_with(filters.len(), || {
-            OwnedImage::new(
-                device,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                false,
-            )
+            OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
 
         // resolve all results
@@ -200,7 +203,7 @@ impl FilterChainD3D12 {
             history_framebuffers,
             texture_heap,
             sampler_heap,
-            residuals: Vec::new()
+            residuals: Vec::new(),
         })
     }
 
@@ -208,28 +211,8 @@ impl FilterChainD3D12 {
         device: &ID3D12Device,
         filters: &Vec<FilterPass>,
     ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputTexture>]>)> {
-        let mut required_images = 0;
-
-        for pass in filters {
-            // If a shader uses history size, but not history, we still need to keep the texture.
-            let texture_count = pass
-                .reflection
-                .meta
-                .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-            let texture_size_count = pass
-                .reflection
-                .meta
-                .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-
-            required_images = std::cmp::max(required_images, texture_count);
-            required_images = std::cmp::max(required_images, texture_size_count);
-        }
+        let mut required_images =
+            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
         if required_images <= 1 {
@@ -242,12 +225,7 @@ impl FilterChainD3D12 {
         // eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
-            OwnedImage::new(
-                device,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                false,
-            )
+            OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
 
         let framebuffers = framebuffers
@@ -260,14 +238,14 @@ impl FilterChainD3D12 {
         Ok((framebuffers, history_textures.into_boxed_slice()))
     }
 
-
     fn load_luts(
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         textures: &[TextureConfig],
-        mipmap_gen: &D3D12MipmapGen
+        mipmap_gen: &D3D12MipmapGen,
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
-        let mut work_heap: D3D12DescriptorHeap<ResourceWorkHeap> = D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
+        let mut work_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
+            D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
         unsafe {
             // 1 time queue infrastructure for lut uploads
             let command_pool: ID3D12CommandAllocator =
@@ -289,7 +267,6 @@ impl FilterChainD3D12 {
             let mut residuals = Vec::new();
 
             let mut luts = FxHashMap::default();
-
 
             for (index, texture) in textures.iter().enumerate() {
                 let image = Image::load(&texture.path, UVDirection::TopLeft)?;
@@ -324,8 +301,7 @@ impl FilterChainD3D12 {
 
             cmd.Reset(&command_pool, None).unwrap();
 
-            let residuals = mipmap_gen
-                .mipmapping_context(&cmd, &mut work_heap, |context| {
+            let residuals = mipmap_gen.mipmapping_context(&cmd, &mut work_heap, |context| {
                 for lut in luts.values() {
                     lut.generate_mipmaps(context).unwrap()
                 }
@@ -350,54 +326,48 @@ impl FilterChainD3D12 {
         }
     }
 
-    fn init_passes(device: &ID3D12Device,
-                   root_signature: &D3D12RootSignature,
-                   passes: Vec<DxilShaderPassMeta>,
-                   hlsl_passes: Vec<HlslShaderPassMeta>,
-                   semantics: &ShaderSemantics,)
-                   -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
-        let validator: IDxcValidator = unsafe {
-            DxcCreateInstance(&CLSID_DxcValidator)?
-        };
+    fn init_passes(
+        device: &ID3D12Device,
+        root_signature: &D3D12RootSignature,
+        passes: Vec<DxilShaderPassMeta>,
+        hlsl_passes: Vec<HlslShaderPassMeta>,
+        semantics: &ShaderSemantics,
+    ) -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
+        let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
 
-        let library: IDxcUtils = unsafe {
-            DxcCreateInstance(&CLSID_DxcLibrary)?
-        };
+        let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
 
-        let compiler: IDxcCompiler = unsafe {
-            DxcCreateInstance(&CLSID_DxcCompiler)?
-        };
+        let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
 
         let mut filters = Vec::new();
         let shader_count = passes.len();
-        let work_heap =
-            D3D12DescriptorHeap::<ResourceWorkHeap>::new(device,
-                                                         (MAX_BINDINGS_COUNT as usize) *
-                                                             shader_count)?;
-        let (work_heaps, texture_heap_handle) = unsafe {
-            work_heap.suballocate(MAX_BINDINGS_COUNT as usize)
-        };
-
+        let work_heap = D3D12DescriptorHeap::<ResourceWorkHeap>::new(
+            device,
+            (MAX_BINDINGS_COUNT as usize) * shader_count,
+        )?;
+        let (work_heaps, texture_heap_handle) =
+            unsafe { work_heap.suballocate(MAX_BINDINGS_COUNT as usize) };
 
         let sampler_work_heap =
-            D3D12DescriptorHeap::new(device,
-                                     (MAX_BINDINGS_COUNT as usize) * shader_count)?;
+            D3D12DescriptorHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
 
-        let (sampler_work_heaps, sampler_heap_handle) = unsafe {
-            sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize)
-        };
+        let (sampler_work_heaps, sampler_heap_handle) =
+            unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize) };
 
-        for (index, ((((config, source, mut dxil), (_, _, mut hlsl)),
-            mut texture_heap), mut sampler_heap))
-            in passes.into_iter()
+        for (
+            index,
+            ((((config, source, mut dxil), (_, _, mut hlsl)), mut texture_heap), mut sampler_heap),
+        ) in passes
+            .into_iter()
             .zip(hlsl_passes)
             .zip(work_heaps)
             .zip(sampler_work_heaps)
-            .enumerate() {
-
+            .enumerate()
+        {
             let dxil_reflection = dxil.reflect(index, semantics)?;
-            let dxil = dxil.compile(Some(librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0))?;
-
+            let dxil = dxil.compile(Some(
+                librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
+            ))?;
 
             let hlsl_reflection = hlsl.reflect(index, semantics)?;
             let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
@@ -408,27 +378,30 @@ impl FilterChainD3D12 {
                 source.format
             } else {
                 ImageFormat::R8G8B8A8Unorm
-            }.into();
+            }
+            .into();
 
             eprintln!("building pipeline for pass {:?}", index);
 
             /// incredibly cursed.
             let (reflection, graphics_pipeline) = if let Ok(graphics_pipeline) =
-                D3D12GraphicsPipeline::new_from_dxil(device,
-                                                     &library,
-                                                     &validator,
-                                                     &dxil,
-                                                     root_signature,
-                                                render_format
+                D3D12GraphicsPipeline::new_from_dxil(
+                    device,
+                    &library,
+                    &validator,
+                    &dxil,
+                    root_signature,
+                    render_format,
                 ) {
                 (dxil_reflection, graphics_pipeline)
             } else {
-                let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(device,
-                                                                             &library,
-                                                     &compiler,
-                                                     &hlsl,
-                                                     root_signature,
-                                                     render_format
+                let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
+                    device,
+                    &library,
+                    &compiler,
+                    &hlsl,
+                    root_signature,
+                    render_format,
                 )?;
                 (hlsl_reflection, graphics_pipeline)
             };
@@ -460,18 +433,7 @@ impl FilterChainD3D12 {
                 None
             };
 
-            let mut uniform_bindings = FxHashMap::default();
-            for param in reflection.meta.parameter_meta.values() {
-                uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
-            }
-
-            for (semantics, param) in &reflection.meta.unique_meta {
-                uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), param.offset);
-            }
-
-            for (semantics, param) in &reflection.meta.texture_size_meta {
-                uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
-            }
+            let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
             let texture_heap = texture_heap.alloc_range()?;
             let sampler_heap = sampler_heap.alloc_range()?;
@@ -487,7 +449,6 @@ impl FilterChainD3D12 {
                 sampler_heap,
                 source,
             })
-
         }
 
         Ok((texture_heap_handle, sampler_heap_handle, filters))
@@ -501,8 +462,7 @@ impl FilterChainD3D12 {
         viewport: &Viewport<OutputTexture>,
         frame_count: usize,
         options: Option<&()>,
-    ) -> error::Result<()>
-    {
+    ) -> error::Result<()> {
         drop(self.residuals.drain(..));
 
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
@@ -521,9 +481,11 @@ impl FilterChainD3D12 {
             .zip(self.feedback_framebuffers.iter())
             .zip(passes.iter())
         {
-            *texture = Some(fbo.create_shader_resource_view(&mut self.staging_heap,
-                                                       pass.config.filter,
-                                                       pass.config.wrap_mode)?);
+            *texture = Some(fbo.create_shader_resource_view(
+                &mut self.staging_heap,
+                pass.config.filter,
+                pass.config.wrap_mode,
+            )?);
         }
 
         for (texture, fbo) in self
@@ -532,11 +494,9 @@ impl FilterChainD3D12 {
             .iter_mut()
             .zip(self.history_framebuffers.iter())
         {
-            *texture = Some(fbo.create_shader_resource_view(&mut self.staging_heap,
-                                                         filter,
-                                                         wrap_mode)?);
+            *texture =
+                Some(fbo.create_shader_resource_view(&mut self.staging_heap, filter, wrap_mode)?);
         }
-
 
         let original = input;
         let mut source = unsafe { original.clone() };
@@ -576,18 +536,22 @@ impl FilterChainD3D12 {
 
             // refresh inputs
             self.common.feedback_textures[index] = Some(
-                self.feedback_framebuffers[index]
-                    .create_shader_resource_view(&mut self.staging_heap, pass.config.filter, pass.config.wrap_mode)?,
+                self.feedback_framebuffers[index].create_shader_resource_view(
+                    &mut self.staging_heap,
+                    pass.config.filter,
+                    pass.config.wrap_mode,
+                )?,
             );
-            self.common.output_textures[index] = Some(
-                self.output_framebuffers[index]
-                    .create_shader_resource_view(&mut self.staging_heap, pass.config.filter, pass.config.wrap_mode)?,
-            );
+            self.common.output_textures[index] =
+                Some(self.output_framebuffers[index].create_shader_resource_view(
+                    &mut self.staging_heap,
+                    pass.config.filter,
+                    pass.config.wrap_mode,
+                )?);
         }
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
-
 
         unsafe {
             let heaps = [self.texture_heap.clone(), self.sampler_heap.clone()];
@@ -595,14 +559,15 @@ impl FilterChainD3D12 {
             cmd.SetGraphicsRootSignature(&self.common.root_signature.handle);
         }
         for (index, pass) in pass.iter_mut().enumerate() {
-
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             let target = &self.output_framebuffers[index];
-            util::d3d12_resource_transition(&cmd,
-                                            &target.handle,
-                                            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                                            D3D12_RESOURCE_STATE_RENDER_TARGET);
+            util::d3d12_resource_transition(
+                &cmd,
+                &target.handle,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+            );
             let size = target.size;
             let view = target.create_render_target_view(&mut self.rtv_heap)?;
 
@@ -610,7 +575,10 @@ impl FilterChainD3D12 {
                 x: 0.0,
                 y: 0.0,
                 mvp: DEFAULT_MVP,
-                output: OutputTexture { descriptor: view.descriptor, size },
+                output: OutputTexture {
+                    descriptor: view.descriptor,
+                    size,
+                },
             };
 
             pass.draw(
@@ -627,13 +595,15 @@ impl FilterChainD3D12 {
                 &original,
                 &source,
                 &out,
-                QuadType::Offscreen
+                QuadType::Offscreen,
             )?;
 
-            util::d3d12_resource_transition(&cmd,
-                                            &target.handle,
-                                            D3D12_RESOURCE_STATE_RENDER_TARGET,
-                                            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            util::d3d12_resource_transition(
+                &cmd,
+                &target.handle,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            );
             // let target_handle = target.create_shader_resource_view(
             //     &mut self.staging_heap,
             //     pass.config.filter,
@@ -670,12 +640,11 @@ impl FilterChainD3D12 {
                 &original,
                 &source,
                 &out,
-                QuadType::Final
+                QuadType::Final,
             )?;
         }
 
         // todo: history
         Ok(())
     }
-
 }

@@ -20,15 +20,18 @@ use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_reflect::reflect::semantics::{ShaderSemantics, TextureSemantics, UniformBinding};
+use librashader_reflect::reflect::semantics::{
+    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding,
+};
 use librashader_reflect::reflect::ReflectShader;
+use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::quad::{QuadType, DEFAULT_MVP, IDENTITY_MVP};
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
-use librashader_runtime::quad::{DEFAULT_MVP, IDENTITY_MVP, QuadType};
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
@@ -238,9 +241,7 @@ impl FilterChainVulkan {
             passes,
             &semantics,
             frames_in_flight,
-            options
-                .map(|o| o.use_render_pass)
-                .unwrap_or(false),
+            options.map(|o| o.use_render_pass).unwrap_or(false),
         )?;
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
@@ -336,19 +337,7 @@ impl FilterChainVulkan {
                     .unwrap_or(0),
             );
 
-            let mut uniform_bindings = FxHashMap::default();
-
-            for param in reflection.meta.parameter_meta.values() {
-                uniform_bindings.insert(UniformBinding::Parameter(param.id.clone()), param.offset);
-            }
-
-            for (semantics, param) in &reflection.meta.unique_meta {
-                uniform_bindings.insert(UniformBinding::SemanticVariable(*semantics), param.offset);
-            }
-
-            for (semantics, param) in &reflection.meta.texture_size_meta {
-                uniform_bindings.insert(UniformBinding::TextureSize(*semantics), param.offset);
-            }
+            let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
             let render_pass_format = if !use_render_pass {
                 vk::Format::UNDEFINED
@@ -456,28 +445,8 @@ impl FilterChainVulkan {
         vulkan: &VulkanObjects,
         filters: &[FilterPass],
     ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputImage>]>)> {
-        let mut required_images = 0;
-
-        for pass in filters {
-            // If a shader uses history size, but not history, we still need to keep the texture.
-            let texture_count = pass
-                .reflection
-                .meta
-                .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-            let texture_size_count = pass
-                .reflection
-                .meta
-                .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-
-            required_images = std::cmp::max(required_images, texture_count);
-            required_images = std::cmp::max(required_images, texture_size_count);
-        }
+        let mut required_images =
+            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
         if required_images <= 1 {
@@ -738,7 +707,7 @@ impl FilterChainVulkan {
                 &original,
                 &source,
                 &out,
-                QuadType::Offscreen
+                QuadType::Offscreen,
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
@@ -776,7 +745,7 @@ impl FilterChainVulkan {
                 &original,
                 &source,
                 &out,
-                QuadType::Final
+                QuadType::Final,
             )?;
 
             intermediates.dispose_outputs(out.output);
