@@ -102,15 +102,20 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * All caveats from the OpenGL 3.3+ section should be considered.
     * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
     * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For GPUs released within the last 5 years, this may improve performance.
-  * Direct3D 11
-    * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
-    * HDR10 support is not part of the shader runtime and is not supported.
   * Vulkan 1.3+
     * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html) by default.
       This extension must be enabled at device creation. Explicit render passes can be used by configuring filter chain options, but may have reduced performance 
       compared to dynamic rendering.
     * UBOs use multiple discontiguous buffers. This may be improved in the future by switching to VMA rather than manually handling allocations.
-
+  * Direct3D 11
+    * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
+    * HDR10 support is not part of the shader runtime and is not supported.
+  * Direct3D 12
+    * The Direct3D 12 runtime uses [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes). This feature has been available since Windows 10 version 1809,
+      which was released in late 2018.
+    * For maximum compatibility with shaders, a shader compile pipeline based on [`spirv-to-dxil`](https://github.com/SnowflakePowered/spirv-to-dxil-rs) is used, with the SPIRV-Cross HLSL pipeline used as a fallback. 
+      This brings shader compatibility beyond what the RetroArch Direct3D 12 runtime provides. The HLSL pipeline fallback may be removed in the future as`spirv-to-dxil` improves.
+    
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
 
