@@ -1,14 +1,13 @@
 use crate::error;
 use crate::error::assume_d3d12_init;
 use librashader_reflect::reflect::semantics::BindingStage;
-use std::ffi::CStr;
+
 use std::mem::ManuallyDrop;
 use std::u64;
 use windows::core::{Interface, PCSTR, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
-    DxcValidatorFlags_Default, DxcValidatorFlags_InPlaceEdit, DxcValidatorFlags_ModuleOnly,
-    DxcValidatorFlags_ValidMask, IDxcBlob, IDxcBlobUtf8, IDxcCompiler, IDxcLibrary, IDxcUtils,
-    IDxcValidator, DXC_CP, DXC_CP_UTF8,
+    DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcBlobUtf8, IDxcCompiler, IDxcUtils, IDxcValidator,
+    DXC_CP, DXC_CP_UTF8,
 };
 use windows::Win32::Graphics::Direct3D::Fxc::{
     D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION,
@@ -202,8 +201,8 @@ pub fn dxc_compile_shader(
                 let buf =
                     std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
                 let str = std::str::from_utf8_unchecked(buf);
-                if str.len() != 0 {
-                    eprintln!("{}", str);
+                if !str.is_empty() {
+                    eprintln!("{str}");
                 }
             }
         }
@@ -235,8 +234,8 @@ pub fn dxc_validate_shader(
                 let buf =
                     std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
                 let str = std::str::from_utf8_unchecked(buf);
-                if str.len() != 0 {
-                    eprintln!("{}", str);
+                if !str.is_empty() {
+                    eprintln!("{str}");
                 }
             }
         }

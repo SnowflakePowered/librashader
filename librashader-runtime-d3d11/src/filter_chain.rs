@@ -5,9 +5,7 @@ use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{
-    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding,
-};
+use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
@@ -93,7 +91,7 @@ impl FilterChainD3D11 {
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
 
-        let use_deferred_context = options.map(|f| f.use_deferred_context).unwrap_or(false);
+        let use_deferred_context = options.map_or(false, |f| f.use_deferred_context);
 
         let samplers = SamplerSet::new(device)?;
 
@@ -274,16 +272,11 @@ impl FilterChainD3D11 {
             };
 
             let uniform_storage = UniformStorage::new(
-                reflection
-                    .ubo
-                    .as_ref()
-                    .map(|ubo| ubo.size as usize)
-                    .unwrap_or(0),
+                reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
                 reflection
                     .push_constant
                     .as_ref()
-                    .map(|push| push.size as usize)
-                    .unwrap_or(0),
+                    .map_or(0, |push| push.size as usize),
             );
 
             let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
@@ -310,7 +303,7 @@ impl FilterChainD3D11 {
         context: &ID3D11DeviceContext,
         filters: &Vec<FilterPass>,
     ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<InputTexture>]>)> {
-        let mut required_images =
+        let required_images =
             BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
@@ -409,7 +402,7 @@ impl FilterChainD3D11 {
             return Ok(());
         }
 
-        let frame_direction = options.map(|f| f.frame_direction).unwrap_or(1);
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
@@ -450,8 +443,7 @@ impl FilterChainD3D11 {
         while let Some((index, pass)) = iterator.next() {
             let should_mipmap = iterator
                 .peek()
-                .map(|(_, p)| p.config.mipmap_input)
-                .unwrap_or(false);
+                .map_or(false, |(_, p)| p.config.mipmap_input);
 
             let next_size = self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),

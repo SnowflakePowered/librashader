@@ -1,6 +1,6 @@
 use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::descriptor_heap::{
-    CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap, ResourceWorkHeap, SamplerWorkHeap,
+    CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap, ResourceWorkHeap,
 };
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OwnedImage;
@@ -12,20 +12,19 @@ use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputTexture, OutputDescriptor, OutputTexture};
-use crate::{error, graphics_pipeline, util};
+use crate::{error, util};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_reflect::reflect::semantics::{
-    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding, MAX_BINDINGS_COUNT,
-};
+use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, MAX_BINDINGS_COUNT};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::image::{Image, UVDirection};
-use librashader_runtime::quad::{QuadType, DEFAULT_MVP, IDENTITY_MVP};
+use librashader_runtime::quad::{QuadType, DEFAULT_MVP};
+use librashader_runtime::scaling::MipmapSize;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::ShaderModel;
@@ -37,19 +36,17 @@ use windows::w;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler,
-    IDxcLibrary, IDxcUtils, IDxcValidator,
+    IDxcUtils, IDxcValidator,
 };
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device, ID3D12Fence,
     ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST,
-    D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
-use librashader_runtime::scaling::MipmapSize;
 
 type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -135,7 +132,7 @@ impl FilterChainD3D12 {
             device,
             (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
         )?;
-        let mut rtv_heap = D3D12DescriptorHeap::new(
+        let rtv_heap = D3D12DescriptorHeap::new(
             device,
             (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
         )?;
@@ -188,7 +185,7 @@ impl FilterChainD3D12 {
         let (history_framebuffers, history_textures) =
             FilterChainD3D12::init_history(device, &filters)?;
 
-        let mut mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
+        let mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
             D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
         Ok(FilterChainD3D12 {
             common: FilterCommon {
@@ -228,7 +225,7 @@ impl FilterChainD3D12 {
         device: &ID3D12Device,
         filters: &Vec<FilterPass>,
     ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputTexture>]>)> {
-        let mut required_images =
+        let required_images =
             BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
@@ -401,7 +398,7 @@ impl FilterChainD3D12 {
             }
             .into();
 
-            eprintln!("building pipeline for pass {:?}", index);
+            eprintln!("building pipeline for pass {index:?}");
 
             /// incredibly cursed.
             let (reflection, graphics_pipeline) = if !force_hlsl &&
@@ -416,7 +413,7 @@ impl FilterChainD3D12 {
                 ) {
                 (dxil_reflection, graphics_pipeline)
             } else {
-                eprintln!("falling back to hlsl for {:?}", index);
+                eprintln!("falling back to hlsl for {index:?}");
                 let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
                     device,
                     &library,
@@ -429,16 +426,11 @@ impl FilterChainD3D12 {
             };
 
             let uniform_storage = UniformStorage::new(
-                reflection
-                    .ubo
-                    .as_ref()
-                    .map(|ubo| ubo.size as usize)
-                    .unwrap_or(0),
+                reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
                 reflection
                     .push_constant
                     .as_ref()
-                    .map(|push| push.size as usize)
-                    .unwrap_or(0),
+                    .map_or(0, |push| push.size as usize),
             );
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
@@ -505,10 +497,10 @@ impl FilterChainD3D12 {
     pub fn frame(
         &mut self,
         cmd: &ID3D12GraphicsCommandList,
-        mut input: InputTexture,
+        input: InputTexture,
         viewport: &Viewport<OutputTexture>,
         frame_count: usize,
-        options: Option<&()>,
+        _options: Option<&()>,
     ) -> error::Result<()> {
         drop(self.residuals.drain(..));
 
@@ -560,8 +552,7 @@ impl FilterChainD3D12 {
         while let Some((index, pass)) = iterator.next() {
             let should_mipmap = iterator
                 .peek()
-                .map(|(_, p)| p.config.mipmap_input)
-                .unwrap_or(false);
+                .map_or(false, |(_, p)| p.config.mipmap_input);
 
             let next_size = self.output_framebuffers[index].scale(
                 pass.config.scaling.clone(),
@@ -612,18 +603,25 @@ impl FilterChainD3D12 {
             if pass.config.mipmap_input && !self.disable_mipmaps {
                 unsafe {
                     // this is so bad.
-                    self.common.mipmap_gen.mipmapping_context(cmd, &mut self.mipmap_heap, |ctx| {
-                        ctx.generate_mipmaps(&source.resource,
-                                             source.size().calculate_miplevels() as u16, source.size,
-                                             source.format.into())?;
-                        Ok::<(), Box<dyn Error>>(())
-                    })?;
+                    self.common.mipmap_gen.mipmapping_context(
+                        cmd,
+                        &mut self.mipmap_heap,
+                        |ctx| {
+                            ctx.generate_mipmaps(
+                                &source.resource,
+                                source.size().calculate_miplevels() as u16,
+                                source.size,
+                                source.format,
+                            )?;
+                            Ok::<(), Box<dyn Error>>(())
+                        },
+                    )?;
                 }
             }
 
             let target = &self.output_framebuffers[index];
             util::d3d12_resource_transition(
-                &cmd,
+                cmd,
                 &target.handle,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -659,7 +657,7 @@ impl FilterChainD3D12 {
             )?;
 
             util::d3d12_resource_transition(
-                &cmd,
+                cmd,
                 &target.handle,
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
@@ -705,7 +703,7 @@ impl FilterChainD3D12 {
             )?;
         }
 
-        self.push_history(&cmd, &original)?;
+        self.push_history(cmd, &original)?;
 
         Ok(())
     }

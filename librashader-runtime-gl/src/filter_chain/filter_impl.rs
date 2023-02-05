@@ -16,9 +16,7 @@ use librashader_reflect::back::cross::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{
-    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding, UniformMeta,
-};
+use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, UniformMeta};
 
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
@@ -100,9 +98,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
 
-        let version = options
-            .map(|o| gl_u16_to_version(o.gl_version))
-            .unwrap_or_else(gl_get_version);
+        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.gl_version));
 
         // initialize passes
         let filters = Self::init_passes(version, passes, &semantics)?;
@@ -240,16 +236,11 @@ impl<T: GLInterface> FilterChainImpl<T> {
             };
 
             let uniform_storage = GlUniformStorage::new(
-                reflection
-                    .ubo
-                    .as_ref()
-                    .map(|ubo| ubo.size as usize)
-                    .unwrap_or(0),
+                reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
                 reflection
                     .push_constant
                     .as_ref()
-                    .map(|push| push.size as usize)
-                    .unwrap_or(0),
+                    .map_or(0, |push| push.size as usize),
             );
 
             let uniform_bindings = reflection.meta.create_binding_map(|param| {
@@ -280,7 +271,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         filter: FilterMode,
         wrap_mode: WrapMode,
     ) -> (VecDeque<Framebuffer>, Box<[InputTexture]>) {
-        let mut required_images =
+        let required_images =
             BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
@@ -346,7 +337,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if passes.is_empty() {
             return Ok(());
         }
-        let frame_direction = options.map(|f| f.frame_direction).unwrap_or(1);
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
@@ -393,8 +384,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         while let Some((index, pass)) = iterator.next() {
             let should_mipmap = iterator
                 .peek()
-                .map(|(_, p)| p.config.mipmap_input)
-                .unwrap_or(false);
+                .map_or(false, |(_, p)| p.config.mipmap_input);
 
             let next_size = self.output_framebuffers[index].scale::<T::FramebufferInterface>(
                 pass.config.scaling.clone(),

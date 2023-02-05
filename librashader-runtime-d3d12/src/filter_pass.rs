@@ -1,13 +1,11 @@
 use crate::buffer::D3D12ConstantBuffer;
-use crate::descriptor_heap::{
-    D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap,
-};
+use crate::descriptor_heap::{D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap};
+use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::D3D12GraphicsPipeline;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputTexture, OutputTexture};
-use crate::{error, util};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -21,10 +19,10 @@ use std::ops::Deref;
 use windows::core::Interface;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4,
-    D3D12_RENDER_PASS_BEGINNING_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD,
-    D3D12_RENDER_PASS_ENDING_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
-    D3D12_RENDER_PASS_FLAG_NONE, D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT,
+    ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4, D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD, D3D12_RENDER_PASS_ENDING_ACCESS,
+    D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE, D3D12_RENDER_PASS_FLAG_NONE,
+    D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT,
 };
 
 pub(crate) struct FilterPass {

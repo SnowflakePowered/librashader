@@ -5,9 +5,7 @@ use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::BindingStage;
 use windows::Win32::Foundation::BOOL;
-use windows::Win32::Graphics::Direct3D::Dxc::{
-    IDxcBlob, IDxcCompiler, IDxcLibrary, IDxcUtils, IDxcValidator,
-};
+use windows::Win32::Graphics::Direct3D::Dxc::{IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator};
 use windows::Win32::Graphics::Direct3D12::{
     D3D12SerializeRootSignature, ID3D12Device, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_BLEND_DESC, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD, D3D12_BLEND_SRC_ALPHA,

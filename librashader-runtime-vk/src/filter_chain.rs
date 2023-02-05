@@ -20,9 +20,7 @@ use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_reflect::reflect::semantics::{
-    BindingMeta, ShaderSemantics, TextureSemantics, UniformBinding,
-};
+use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, UVDirection};
@@ -230,7 +228,7 @@ impl FilterChainVulkan {
         >(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into()?;
 
-        let mut frames_in_flight = options.map(|o| o.frames_in_flight).unwrap_or(0);
+        let mut frames_in_flight = options.map_or(0, |o| o.frames_in_flight);
         if frames_in_flight == 0 {
             frames_in_flight = 3;
         }
@@ -241,7 +239,7 @@ impl FilterChainVulkan {
             passes,
             &semantics,
             frames_in_flight,
-            options.map(|o| o.use_render_pass).unwrap_or(false),
+            options.map_or(false, |o| o.use_render_pass),
         )?;
 
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
@@ -318,11 +316,7 @@ impl FilterChainVulkan {
             let reflection = reflect.reflect(index, semantics)?;
             let spirv_words = reflect.compile(None)?;
 
-            let ubo_size = reflection
-                .ubo
-                .as_ref()
-                .map(|ubo| ubo.size as usize)
-                .unwrap_or(0);
+            let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
             let uniform_storage = UniformStorage::new_with_storage(
                 RawVulkanBuffer::new(
                     &vulkan.device,
@@ -333,8 +327,7 @@ impl FilterChainVulkan {
                 reflection
                     .push_constant
                     .as_ref()
-                    .map(|push| push.size as usize)
-                    .unwrap_or(0),
+                    .map_or(0, |push| push.size as usize),
             );
 
             let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
@@ -445,7 +438,7 @@ impl FilterChainVulkan {
         vulkan: &VulkanObjects,
         filters: &[FilterPass],
     ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputImage>]>)> {
-        let mut required_images =
+        let required_images =
             BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
 
         // not using frame history;
@@ -625,8 +618,7 @@ impl FilterChainVulkan {
         while let Some((index, pass)) = iterator.next() {
             let should_mipmap = iterator
                 .peek()
-                .map(|(_, p)| p.config.mipmap_input)
-                .unwrap_or(false);
+                .map_or(false, |(_, p)| p.config.mipmap_input);
 
             // needs a barrier to SHADER_READ_ONLY_OPTIMAL otherwise any non-filled in output framebuffers
             // (like the final one which is just held there and not ever written to, but needs to be
@@ -678,7 +670,7 @@ impl FilterChainVulkan {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        let frame_direction = options.map(|f| f.frame_direction).unwrap_or(1);
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];

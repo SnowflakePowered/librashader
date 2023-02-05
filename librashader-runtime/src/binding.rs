@@ -243,10 +243,7 @@ where
         {
             let id = id.as_str();
 
-            let default = parameter_defaults
-                .get(id)
-                .map(|f| f.initial)
-                .unwrap_or(0f32);
+            let default = parameter_defaults.get(id).map_or(0f32, |f| f.initial);
 
             let value = *runtime_parameters.get(id).unwrap_or(&default);
 

@@ -78,17 +78,15 @@ impl D3D12Buffer {
     }
 
     pub fn map(&mut self, range: Option<Range<usize>>) -> error::Result<D3D12BufferMapHandle> {
-        let (range, size) = range
-            .map(|range| {
-                (
-                    D3D12_RANGE {
-                        Begin: range.start,
-                        End: range.end,
-                    },
-                    range.end - range.start,
-                )
-            })
-            .unwrap_or((D3D12_RANGE { Begin: 0, End: 0 }, self.size));
+        let (range, size) = range.map_or((D3D12_RANGE { Begin: 0, End: 0 }, self.size), |range| {
+            (
+                D3D12_RANGE {
+                    Begin: range.start,
+                    End: range.end,
+                },
+                range.end - range.start,
+            )
+        });
 
         unsafe {
             let mut ptr = std::ptr::null_mut();

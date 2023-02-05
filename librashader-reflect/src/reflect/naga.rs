@@ -1,10 +1,9 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 use crate::front::GlslangCompilation;
 use crate::front::NagaCompilation;
-use crate::reflect::helper::SemanticErrorBlame;
-use crate::reflect::semantics::MAX_BINDINGS_COUNT;
+
 use naga::front::spv::Options;
-use naga::{Arena, GlobalVariable, Handle, Module, ResourceBinding, StructMember, Type, TypeInner};
+use naga::{GlobalVariable, Module, StructMember, Type, TypeInner};
 use std::convert::Infallible;
 
 #[derive(Debug)]
@@ -94,7 +93,7 @@ impl NagaReflect {
                     u32::MAX,
                 ))
             }
-            (Some(vert), Some(frag)) => {
+            (Some(_vert), Some(_frag)) => {
                 todo!();
             }
         };
@@ -115,7 +114,7 @@ mod test {
         let compilation = crate::front::GlslangCompilation::try_from(&result).unwrap();
 
         let mut loader = rspirv::dr::Loader::new();
-        rspirv::binary::parse_words(&compilation.vertex.as_binary(), &mut loader).unwrap();
+        rspirv::binary::parse_words(compilation.vertex.as_binary(), &mut loader).unwrap();
         let module = loader.module();
 
         let outputs: Vec<&Instruction> = module
@@ -124,6 +123,6 @@ mod test {
             .filter(|i| i.class.opcode == Op::Variable)
             .collect();
 
-        println!("{:#?}", outputs);
+        println!("{outputs:#?}");
     }
 }

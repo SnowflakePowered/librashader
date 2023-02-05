@@ -70,7 +70,7 @@ impl CompileShader<DXIL> for WriteSpirV {
             ValidatorVersion::None,
             config.clone(),
         )
-        .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
+        .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
         let fragment = spirv_to_dxil::spirv_to_dxil(
             &self.fragment,
@@ -81,7 +81,7 @@ impl CompileShader<DXIL> for WriteSpirV {
             ValidatorVersion::None,
             config,
         )
-        .map_err(|s| ShaderCompileError::SpirvToDxilCompileError(s))?;
+        .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
         Ok(ShaderCompilerOutput {
             vertex,

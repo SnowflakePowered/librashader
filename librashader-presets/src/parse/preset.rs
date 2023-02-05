@@ -38,15 +38,14 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
         .collect();
 
     let mut shaders = Vec::new();
-    let shader_count = remove_if(&mut values, |v| matches!(*v, Value::ShaderCount(_)))
-        .map(|value| {
+    let shader_count =
+        remove_if(&mut values, |v| matches!(*v, Value::ShaderCount(_))).map_or(0, |value| {
             if let Value::ShaderCount(count) = value {
                 count
             } else {
                 unreachable!("value should be of type shader_count")
             }
-        })
-        .unwrap_or(0);
+        });
 
     #[cfg(feature = "parse_legacy_glsl")]
     let feedback_pass = remove_if(&mut values, |v| matches!(*v, Value::FeedbackPass(_)))
