@@ -46,6 +46,7 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
+use crate::options::FilterChainOptionsD3D12;
 
 type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -89,7 +90,7 @@ impl FilterChainD3D12 {
     pub fn load_from_path(
         device: &ID3D12Device,
         path: impl AsRef<Path>,
-        options: Option<&()>,
+        options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
@@ -100,7 +101,7 @@ impl FilterChainD3D12 {
     pub fn load_from_preset(
         device: &ID3D12Device,
         preset: ShaderPreset,
-        _options: Option<&()>,
+        options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         let shader_count = preset.shaders.len();
         let lut_count = preset.textures.len();
@@ -140,7 +141,8 @@ impl FilterChainD3D12 {
         let root_signature = D3D12RootSignature::new(device)?;
 
         let (texture_heap, sampler_heap, filters) =
-            FilterChainD3D12::init_passes(device, &root_signature, passes, hlsl_passes, &semantics)
+            FilterChainD3D12::init_passes(device, &root_signature, passes, hlsl_passes, &semantics,
+                                          options.map_or(false, |o| o.force_hlsl_pipeline))
                 .unwrap();
 
         // initialize output framebuffers
@@ -332,6 +334,7 @@ impl FilterChainD3D12 {
         passes: Vec<DxilShaderPassMeta>,
         hlsl_passes: Vec<HlslShaderPassMeta>,
         semantics: &ShaderSemantics,
+        force_hlsl: bool,
     ) -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
         let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
 
@@ -356,7 +359,8 @@ impl FilterChainD3D12 {
 
         for (
             index,
-            ((((config, source, mut dxil), (_, _, mut hlsl)), mut texture_heap), mut sampler_heap),
+            ((((config, source, mut dxil), (_, _, mut hlsl)),
+                mut texture_heap), mut sampler_heap),
         ) in passes
             .into_iter()
             .zip(hlsl_passes)
@@ -384,7 +388,8 @@ impl FilterChainD3D12 {
             eprintln!("building pipeline for pass {:?}", index);
 
             /// incredibly cursed.
-            let (reflection, graphics_pipeline) = if let Ok(graphics_pipeline) =
+            let (reflection, graphics_pipeline) = if !force_hlsl &&
+                let Ok(graphics_pipeline) =
                 D3D12GraphicsPipeline::new_from_dxil(
                     device,
                     &library,
@@ -395,6 +400,7 @@ impl FilterChainD3D12 {
                 ) {
                 (dxil_reflection, graphics_pipeline)
             } else {
+                eprintln!("falling back to hlsl for {:?}", index);
                 let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
                     device,
                     &library,
