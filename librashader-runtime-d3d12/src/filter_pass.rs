@@ -20,7 +20,6 @@ use rustc_hash::FxHashMap;
 use std::ops::Deref;
 use windows::core::Interface;
 use windows::Win32::Foundation::RECT;
-use windows::Win32::Graphics::Direct3D11::ID3D11Device;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandList, ID3D12Device, ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4,
     D3D12_RENDER_PASS_BEGINNING_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD,

@@ -49,6 +49,7 @@ use windows::Win32::Graphics::Direct3D12::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
+use librashader_runtime::scaling::MipmapSize;
 
 type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -71,6 +72,9 @@ pub struct FilterChainD3D12 {
     sampler_heap: ID3D12DescriptorHeap,
 
     residuals: Vec<OutputDescriptor>,
+    mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
+
+    disable_mipmaps: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -184,6 +188,8 @@ impl FilterChainD3D12 {
         let (history_framebuffers, history_textures) =
             FilterChainD3D12::init_history(device, &filters)?;
 
+        let mut mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
+            D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
         Ok(FilterChainD3D12 {
             common: FilterCommon {
                 d3d12: device.clone(),
@@ -212,6 +218,8 @@ impl FilterChainD3D12 {
             history_framebuffers,
             texture_heap,
             sampler_heap,
+            mipmap_heap,
+            disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
             residuals: Vec::new(),
         })
     }
@@ -312,8 +320,10 @@ impl FilterChainD3D12 {
 
             let residuals = mipmap_gen.mipmapping_context(&cmd, &mut work_heap, |context| {
                 for lut in luts.values() {
-                    lut.generate_mipmaps(context).unwrap()
+                    lut.generate_mipmaps(context)?;
                 }
+
+                Ok::<(), Box<dyn Error>>(())
             })?;
 
             //
@@ -598,6 +608,19 @@ impl FilterChainD3D12 {
         for (index, pass) in pass.iter_mut().enumerate() {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
+
+            if pass.config.mipmap_input && !self.disable_mipmaps {
+                unsafe {
+                    // this is so bad.
+                    self.common.mipmap_gen.mipmapping_context(cmd, &mut self.mipmap_heap, |ctx| {
+                        ctx.generate_mipmaps(&source.resource,
+                                             source.size().calculate_miplevels() as u16, source.size,
+                                             source.format.into())?;
+                        Ok::<(), Box<dyn Error>>(())
+                    })?;
+                }
+            }
+
             let target = &self.output_framebuffers[index];
             util::d3d12_resource_transition(
                 &cmd,
@@ -641,6 +664,7 @@ impl FilterChainD3D12 {
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             );
+
             // let target_handle = target.create_shader_resource_view(
             //     &mut self.staging_heap,
             //     pass.config.filter,

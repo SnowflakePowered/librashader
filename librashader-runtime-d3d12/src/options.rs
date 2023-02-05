@@ -18,6 +18,10 @@ pub struct FilterChainOptionsD3D12 {
     pub force_hlsl_pipeline: bool,
 
     /// Whether or not to explicitly disable mipmap
-    /// generation regardless of shader preset settings.
+    /// generation for intermediate passes regardless
+    /// of shader preset settings.
+    ///
+    /// Mipmap generation Direct3D may be prohibitively expensive
+    /// on some hardware environments.
     pub force_no_mipmaps: bool,
 }

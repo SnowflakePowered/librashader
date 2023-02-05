@@ -151,14 +151,14 @@ impl D3D12MipmapGen {
     /// Enters a mipmapping compute context.
     /// This is a relatively expensive operation
     /// and should only be done at most a few times per frame.
-    pub fn mipmapping_context<F>(
+    pub fn mipmapping_context<F, E>(
         &self,
         cmd: &ID3D12GraphicsCommandList,
         work_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
         mut f: F,
-    ) -> error::Result<Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>>
+    ) -> Result<Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>, E>
     where
-        F: FnMut(&mut MipmapGenContext),
+        F: FnMut(&mut MipmapGenContext) -> Result<(), E>,
     {
         let heap: ID3D12DescriptorHeap = (&(*work_heap)).into();
         unsafe {
@@ -168,7 +168,7 @@ impl D3D12MipmapGen {
         }
 
         let mut context = MipmapGenContext::new(self, cmd, work_heap);
-        f(&mut context);
+        f(&mut context)?;
         Ok(context.close())
     }
 
