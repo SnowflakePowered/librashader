@@ -1,21 +1,22 @@
 use std::collections::VecDeque;
-use crate::{error, util};
+use crate::{error, graphics_pipeline, util};
 use crate::descriptor_heap::{D3D12DescriptorHeap, CpuStagingHeap, ResourceWorkHeap, SamplerWorkHeap, RenderTargetHeap};
 use crate::samplers::SamplerSet;
 use crate::luts::LutTexture;
 use librashader_presets::{ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::DXIL;
+use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
 use std::error::Error;
 use std::path::Path;
+use spirv_cross::hlsl::ShaderModel;
 use windows::core::Interface;
 use windows::w;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, ID3D12DescriptorHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET};
-use windows::Win32::Graphics::Direct3D::Dxc::{CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcLibrary, IDxcValidator};
+use windows::Win32::Graphics::Direct3D::Dxc::{CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler, IDxcLibrary, IDxcUtils, IDxcValidator};
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -34,7 +35,8 @@ use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::texture::{InputTexture, OutputDescriptor, OutputTexture};
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
+type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
+type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -90,8 +92,16 @@ impl FilterChainD3D12 {
     ) -> error::Result<FilterChainD3D12> {
         let shader_count = preset.shaders.len();
         let lut_count = preset.textures.len();
+
+        let shader_copy = preset.shaders.clone();
+
         let (passes, semantics) = DXIL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
             preset.shaders,
+            &preset.textures,
+        ).unwrap();
+
+        let (hlsl_passes, _) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+            shader_copy,
             &preset.textures,
         ).unwrap();
 
@@ -115,7 +125,7 @@ impl FilterChainD3D12 {
         let root_signature = D3D12RootSignature::new(device)?;
 
         let (texture_heap, sampler_heap, filters)
-            = FilterChainD3D12::init_passes(device, &root_signature, passes, &semantics).unwrap();
+            = FilterChainD3D12::init_passes(device, &root_signature, passes, hlsl_passes, &semantics).unwrap();
 
 
 
@@ -342,15 +352,20 @@ impl FilterChainD3D12 {
 
     fn init_passes(device: &ID3D12Device,
                    root_signature: &D3D12RootSignature,
-                   passes: Vec<ShaderPassMeta>,
+                   passes: Vec<DxilShaderPassMeta>,
+                   hlsl_passes: Vec<HlslShaderPassMeta>,
                    semantics: &ShaderSemantics,)
-        -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
+                   -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
         let validator: IDxcValidator = unsafe {
             DxcCreateInstance(&CLSID_DxcValidator)?
         };
 
-        let dxc: IDxcLibrary = unsafe {
+        let library: IDxcUtils = unsafe {
             DxcCreateInstance(&CLSID_DxcLibrary)?
+        };
+
+        let compiler: IDxcCompiler = unsafe {
+            DxcCreateInstance(&CLSID_DxcCompiler)?
         };
 
         let mut filters = Vec::new();
@@ -372,32 +387,51 @@ impl FilterChainD3D12 {
             sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize)
         };
 
-        for (index, (((config, source, mut reflect),
+        for (index, ((((config, source, mut dxil), (_, _, mut hlsl)),
             mut texture_heap), mut sampler_heap))
             in passes.into_iter()
+            .zip(hlsl_passes)
             .zip(work_heaps)
             .zip(sampler_work_heaps)
             .enumerate() {
 
-            let reflection = reflect.reflect(index, semantics)?;
-            let dxil = reflect.compile(None)?;
+            let dxil_reflection = dxil.reflect(index, semantics)?;
+            let dxil = dxil.compile(Some(librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0))?;
+
+
+            let hlsl_reflection = hlsl.reflect(index, semantics)?;
+            let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
+
+            let render_format = if let Some(format) = config.get_format_override() {
+                format
+            } else if source.format != ImageFormat::Unknown {
+                source.format
+            } else {
+                ImageFormat::R8G8B8A8Unorm
+            }.into();
 
             eprintln!("building pipeline for pass {:?}", index);
 
-            let graphics_pipeline = D3D12GraphicsPipeline::new(device,
-                                                               &dxc,
-                                                               &validator,
-                                                               &dxil,
-                                                               root_signature,
-                                                               if let Some(format) = config.get_format_override() {
-                    format
-                } else if source.format != ImageFormat::Unknown {
-                    source.format
-                } else {
-                    ImageFormat::R8G8B8A8Unorm
-                }.into(),
-                &source
-            )?;
+            /// incredibly cursed.
+            let (reflection, graphics_pipeline) = if let Ok(graphics_pipeline) =
+                D3D12GraphicsPipeline::new_from_dxil(device,
+                                                     &library,
+                                                     &validator,
+                                                     &dxil,
+                                                     root_signature,
+                                                render_format
+                ) {
+                (dxil_reflection, graphics_pipeline)
+            } else {
+                let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(device,
+                                                                             &library,
+                                                     &compiler,
+                                                     &hlsl,
+                                                     root_signature,
+                                                     render_format
+                )?;
+                (hlsl_reflection, graphics_pipeline)
+            };
 
             let uniform_storage = UniformStorage::new(
                 reflection

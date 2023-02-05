@@ -1,9 +1,12 @@
 
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D12::{D3D12_BLEND_DESC, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD, D3D12_BLEND_SRC_ALPHA, D3D12_COLOR_WRITE_ENABLE_ALL, D3D12_CULL_MODE_NONE, D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, D3D12_FILL_MODE_SOLID, D3D12_GRAPHICS_PIPELINE_STATE_DESC, D3D12_INPUT_LAYOUT_DESC, D3D12_LOGIC_OP_NOOP, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, D3D12_RASTERIZER_DESC, D3D12_RENDER_TARGET_BLEND_DESC, D3D12_ROOT_DESCRIPTOR, D3D12_ROOT_DESCRIPTOR_TABLE, D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER_0, D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, D3D12_SHADER_BYTECODE, D3D12_SHADER_VISIBILITY_ALL, D3D12_SHADER_VISIBILITY_PIXEL, D3D12SerializeRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, ID3D12Device, ID3D12PipelineState, ID3D12RootSignature};
+use windows::Win32::Graphics::Direct3D::Dxc::{IDxcBlob, IDxcCompiler, IDxcLibrary, IDxcUtils, IDxcValidator};
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_UNKNOWN, DXGI_SAMPLE_DESC};
 use librashader_reflect::back::cross::CrossHlslContext;
+use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
+use librashader_reflect::reflect::semantics::BindingStage;
 use crate::{error, util};
 use crate::quad_render::DrawQuad;
 
@@ -112,25 +115,13 @@ impl D3D12RootSignature {
     }
 }
 impl D3D12GraphicsPipeline {
-    pub fn new(device: &ID3D12Device,
-               library: &IDxcLibrary,
-               validator: &IDxcValidator,
-               shader_assembly: &ShaderCompilerOutput<DxilObject, (Vec<u32>, Vec<u32>)>,
-               root_signature: &D3D12RootSignature,
-               render_format: DXGI_FORMAT,
-               source: &ShaderSource,
+    fn new_from_blobs(
+        device: &ID3D12Device,
+        vertex_dxil: IDxcBlob,
+        fragment_dxil: IDxcBlob,
+        root_signature: &D3D12RootSignature,
+        render_format: DXGI_FORMAT,
     ) -> error::Result<D3D12GraphicsPipeline> {
-        if shader_assembly.vertex.requires_runtime_data() {
-            panic!("vertex needs rt data??")
-        }
-        if shader_assembly.fragment.requires_runtime_data() {
-            panic!("fragment needs rt data??")
-        }
-        let vertex_dxil =
-            util::dxc_validate_shader(library, validator, &shader_assembly.vertex)?;
-        let fragment_dxil =
-            util::dxc_validate_shader(library, validator, &shader_assembly.fragment)?;
-
         let input_element = DrawQuad::get_spirv_cross_vbo_desc();
 
         let pipeline_state: ID3D12PipelineState = unsafe {
@@ -206,5 +197,44 @@ impl D3D12GraphicsPipeline {
         Ok(D3D12GraphicsPipeline {
             handle: pipeline_state,
         })
+    }
+
+    pub fn new_from_dxil(device: &ID3D12Device,
+               library: &IDxcUtils,
+               validator: &IDxcValidator,
+               shader_assembly: &ShaderCompilerOutput<DxilObject, ()>,
+               root_signature: &D3D12RootSignature,
+               render_format: DXGI_FORMAT,
+    ) -> error::Result<D3D12GraphicsPipeline> {
+        if shader_assembly.vertex.requires_runtime_data() {
+            panic!("vertex needs rt data??")
+        }
+        if shader_assembly.fragment.requires_runtime_data() {
+            panic!("fragment needs rt data??")
+        }
+        let vertex_dxil =
+            util::dxc_validate_shader(library, validator, &shader_assembly.vertex)?;
+        let fragment_dxil =
+            util::dxc_validate_shader(library, validator, &shader_assembly.fragment)?;
+
+        Self::new_from_blobs(device, vertex_dxil, fragment_dxil, root_signature, render_format)
+    }
+
+    pub fn new_from_hlsl(device: &ID3D12Device,
+                         library: &IDxcUtils,
+                         dxc: &IDxcCompiler,
+                         shader_assembly: &ShaderCompilerOutput<String, CrossHlslContext>,
+                         root_signature: &D3D12RootSignature,
+                         render_format: DXGI_FORMAT,
+    ) -> error::Result<D3D12GraphicsPipeline> {
+        unsafe {
+
+            let vertex_dxil = util::dxc_compile_shader(library, dxc,  &shader_assembly.vertex, BindingStage::VERTEX)?;
+            let fragment_dxil =
+                util::dxc_compile_shader(library, dxc,&shader_assembly.fragment, BindingStage::FRAGMENT)?;
+
+            Self::new_from_blobs(device, vertex_dxil, fragment_dxil, root_signature, render_format)
+        }
+
     }
 }
