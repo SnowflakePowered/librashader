@@ -7,6 +7,7 @@ use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
+use crate::options::FilterChainOptionsD3D12;
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
@@ -41,12 +42,13 @@ use windows::Win32::Graphics::Direct3D::Dxc::{
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device, ID3D12Fence,
     ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST,
+    D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
 };
+use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
-use crate::options::FilterChainOptionsD3D12;
 
 type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -140,10 +142,15 @@ impl FilterChainD3D12 {
 
         let root_signature = D3D12RootSignature::new(device)?;
 
-        let (texture_heap, sampler_heap, filters) =
-            FilterChainD3D12::init_passes(device, &root_signature, passes, hlsl_passes, &semantics,
-                                          options.map_or(false, |o| o.force_hlsl_pipeline))
-                .unwrap();
+        let (texture_heap, sampler_heap, filters) = FilterChainD3D12::init_passes(
+            device,
+            &root_signature,
+            passes,
+            hlsl_passes,
+            &semantics,
+            options.map_or(false, |o| o.force_hlsl_pipeline),
+        )
+        .unwrap();
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
@@ -359,8 +366,7 @@ impl FilterChainD3D12 {
 
         for (
             index,
-            ((((config, source, mut dxil), (_, _, mut hlsl)),
-                mut texture_heap), mut sampler_heap),
+            ((((config, source, mut dxil), (_, _, mut hlsl)), mut texture_heap), mut sampler_heap),
         ) in passes
             .into_iter()
             .zip(hlsl_passes)
@@ -458,6 +464,31 @@ impl FilterChainD3D12 {
         }
 
         Ok((texture_heap_handle, sampler_heap_handle, filters))
+    }
+
+    fn push_history(
+        &mut self,
+        cmd: &ID3D12GraphicsCommandList,
+        input: &InputTexture,
+    ) -> error::Result<()> {
+        if let Some(mut back) = self.history_framebuffers.pop_back() {
+            if back.size != input.size
+                || (input.format != DXGI_FORMAT_UNKNOWN && input.format != back.format.into())
+            {
+                // eprintln!("[history] resizing");
+                // old back will get dropped.. do we need to defer?
+                let _old_back = std::mem::replace(
+                    &mut back,
+                    OwnedImage::new(&self.common.d3d12, input.size, input.format.into(), false)?,
+                );
+            }
+            unsafe {
+                back.copy_from(cmd, input)?;
+            }
+            self.history_framebuffers.push_front(back);
+        }
+
+        Ok(())
     }
 
     /// Process a frame with the input image.
@@ -650,7 +681,8 @@ impl FilterChainD3D12 {
             )?;
         }
 
-        // todo: history
+        self.push_history(&cmd, &original)?;
+
         Ok(())
     }
 }

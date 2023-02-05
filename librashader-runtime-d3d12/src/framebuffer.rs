@@ -1,24 +1,27 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
-use crate::error;
 use crate::error::assume_d3d12_init;
 use crate::texture::{InputTexture, OutputTexture};
 use crate::util::d3d12_get_closest_format;
+use crate::{error, util};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-    D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
-    D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
-    D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D,
-    D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES,
-    D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN, D3D12_RENDER_TARGET_VIEW_DESC,
-    D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-    D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RTV_DIMENSION_TEXTURE2D,
-    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
-    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV,
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX,
+    D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP,
+    D3D12_FORMAT_SUPPORT1_RENDER_TARGET, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE,
+    D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE,
+    D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN,
+    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC,
+    D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST,
+    D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC,
+    D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV,
+    D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0,
+    D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
@@ -26,7 +29,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 pub(crate) struct OwnedImage {
     pub(crate) handle: ID3D12Resource,
     pub(crate) size: Size<u32>,
-    format: ImageFormat,
+    pub(crate) format: ImageFormat,
     device: ID3D12Device,
     max_mipmap: u16,
 }
@@ -103,6 +106,72 @@ impl OwnedImage {
         }
     }
 
+    /// SAFETY: self must fit the source image
+    /// source must be in D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+    pub unsafe fn copy_from(
+        &self,
+        cmd: &ID3D12GraphicsCommandList,
+        input: &InputTexture,
+    ) -> error::Result<()> {
+        util::d3d12_resource_transition(
+            cmd,
+            &input.resource,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+        );
+
+        util::d3d12_resource_transition(
+            cmd,
+            &self.handle,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+        );
+        unsafe {
+            cmd.CopyTextureRegion(
+                &D3D12_TEXTURE_COPY_LOCATION {
+                    pResource: windows::core::ManuallyDrop::new(&self.handle),
+                    Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                    Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                        SubresourceIndex: 0,
+                    },
+                },
+                0,
+                0,
+                0,
+                &D3D12_TEXTURE_COPY_LOCATION {
+                    pResource: windows::core::ManuallyDrop::new(&input.resource),
+                    Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                    Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                        SubresourceIndex: 0,
+                    },
+                },
+                Some(&D3D12_BOX {
+                    left: 0,
+                    top: 0,
+                    front: 0,
+                    right: input.size.width,
+                    bottom: input.size.height,
+                    back: 1,
+                }),
+            );
+        }
+
+        util::d3d12_resource_transition(
+            cmd,
+            &input.resource,
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        );
+        util::d3d12_resource_transition(
+            cmd,
+            &self.handle,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        );
+
+        Ok(())
+    }
+
     pub(crate) fn create_shader_resource_view(
         &self,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
@@ -132,6 +201,7 @@ impl OwnedImage {
         }
 
         Ok(InputTexture::new(
+            self.handle.clone(),
             descriptor,
             self.size,
             self.format,

@@ -25,4 +25,6 @@ pub mod ringbuffer;
 
 /// Generic implementation of semantics binding.
 pub mod binding;
+
+/// VBO helper utilities
 pub mod quad;

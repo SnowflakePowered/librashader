@@ -11,12 +11,12 @@ mod graphics_pipeline;
 mod hello_triangle;
 mod luts;
 mod mipmap;
+mod options;
 mod quad_render;
 mod render_target;
 mod samplers;
 mod texture;
 mod util;
-mod options;
 
 #[cfg(test)]
 mod tests {
@@ -28,8 +28,8 @@ mod tests {
         let sample = hello_triangle::d3d12_hello_triangle::Sample::new(
             // "../test/slang-shaders/crt/crt-lottes.slangp",
             // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-            "../test/slang-shaders/crt/crt-royale.slangp",
-
+            // "../test/slang-shaders/crt/crt-royale.slangp",
+            "../test/slang-shaders/vhs/VHSPro.slangp",
             &SampleCommandLine {
                 use_warp_device: false,
             },

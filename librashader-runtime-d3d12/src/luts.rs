@@ -183,6 +183,7 @@ impl LutTexture {
         }
 
         let view = InputTexture::new(
+            resource.clone(),
             descriptor,
             source.size,
             ImageFormat::R8G8B8A8Unorm,

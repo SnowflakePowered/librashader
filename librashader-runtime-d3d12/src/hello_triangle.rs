@@ -618,6 +618,7 @@ pub mod d3d12_hello_triangle {
                 .frame(
                     command_list,
                     InputTexture::new_from_raw(
+                        resources.framebuffer.clone(),
                         framebuffer,
                         Size::new(
                             resources.viewport.Width as u32,
