@@ -38,7 +38,8 @@ loads the librashader (`librashader.so` or `librashader.dll`) implementation in 
 
 ### Building
 
-For Rust projects, simply add the crate to your `Cargo.toml`
+For Rust projects, simply add the crate to your `Cargo.toml`. Python may also be required to build some dependent libraries.
+
 ```
 cargo add librashader
 ```

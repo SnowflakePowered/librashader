@@ -1687,9 +1687,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-to-dxil-sys"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59c84aff6e149d1e6b6dfe178360a9ee5250c92abc691210e5db093a98d8f357"
+checksum = "2a5fb60ed3db4f27a7cf2a1a17f08d1bd4db3b6d76e419b6e8763b9f39fecd85"
 dependencies = [
  "bindgen",
  "cmake",
