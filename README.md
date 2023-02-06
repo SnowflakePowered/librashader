@@ -37,11 +37,14 @@ The librashader C API is best used by linking statically with `librashader_ld`, 
 loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. 
 
 ### Building
-Some downstream dependencies require some Python dependencies to build.
+
+The [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) is required to build librashader. Some additional Python dependencies
+are also required to build downstream dependencies.
 
 ```
 pip install meson ninja mako
 ```
+---
 
 For Rust projects, simply add the crate to your `Cargo.toml`. 
 
