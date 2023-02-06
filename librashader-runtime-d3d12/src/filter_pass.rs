@@ -142,7 +142,6 @@ impl FilterPass {
         output: &RenderTarget,
         vbo_type: QuadType,
     ) -> error::Result<()> {
-        parent.draw_quad.bind_vertices(cmd, vbo_type);
         unsafe {
             cmd.SetPipelineState(&self.pipeline.handle);
         }
@@ -212,8 +211,7 @@ impl FilterPass {
                 bottom: output.output.size.height as i32,
             }]);
 
-            // todo put this in drawquad
-            cmd.DrawInstanced(4, 1, 0, 0)
+            parent.draw_quad.draw_quad(&cmd, vbo_type)
         }
 
         unsafe { cmd.EndRenderPass() }

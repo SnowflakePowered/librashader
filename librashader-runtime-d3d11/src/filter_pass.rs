@@ -159,7 +159,6 @@ impl FilterPass {
             }
         }
         unsafe {
-            parent.draw_quad.bind_vertices(vbo_type);
             context.IASetInputLayout(&self.vertex_layout);
             context.VSSetShader(&self.vertex_shader, None);
             context.PSSetShader(&self.pixel_shader, None);
@@ -243,10 +242,7 @@ impl FilterPass {
             context.RSSetViewports(Some(&[output.output.viewport]))
         }
 
-        unsafe {
-            // must be under primitive topology trianglestrip with quad
-            context.Draw(4, 0);
-        }
+        parent.draw_quad.draw_quad(context, vbo_type);
 
         unsafe {
             // unbind resources.

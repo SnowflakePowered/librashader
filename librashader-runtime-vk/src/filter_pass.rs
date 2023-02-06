@@ -172,7 +172,7 @@ impl FilterPass {
                 );
             }
 
-            parent.draw_quad.bind_vbo(cmd, vbo_type);
+            // parent.draw_quad.bind_vbo(cmd, vbo_type);
 
             parent.device.cmd_set_scissor(
                 cmd,
@@ -189,7 +189,7 @@ impl FilterPass {
             parent
                 .device
                 .cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
-            parent.device.cmd_draw(cmd, 4, 1, 0, 0);
+            parent.draw_quad.draw_quad(cmd, vbo_type);
             self.graphics_pipeline.end_rendering(&parent.device, cmd);
         }
         Ok(residual)

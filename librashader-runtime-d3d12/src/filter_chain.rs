@@ -604,6 +604,9 @@ impl FilterChainD3D12 {
             cmd.SetGraphicsRootSignature(&self.common.root_signature.handle);
             self.common.mipmap_gen.pin_root_signature(cmd);
         }
+
+        self.common.draw_quad.bind_vertices_for_frame(cmd);
+
         for (index, pass) in pass.iter_mut().enumerate() {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;

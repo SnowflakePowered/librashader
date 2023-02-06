@@ -670,6 +670,7 @@ impl FilterChainVulkan {
 
         let frame_direction = options.map_or(1, |f| f.frame_direction);
 
+        self.common.draw_quad.bind_vbo_for_frame(cmd);
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             source.filter_mode = pass.config.filter;

@@ -17,7 +17,7 @@ use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedFramebuffer;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
-use crate::quad_render::DrawQuad;
+use crate::draw_quad::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
@@ -471,6 +471,8 @@ impl FilterChainD3D11 {
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
+
+        self.common.draw_quad.bind_vbo_for_frame();
 
         for (index, pass) in pass.iter_mut().enumerate() {
             source.filter = pass.config.filter;

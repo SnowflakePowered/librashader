@@ -15,7 +15,7 @@ mod filter_pass;
 mod framebuffer;
 pub mod options;
 mod parameters;
-mod quad_render;
+mod draw_quad;
 mod render_target;
 mod samplers;
 mod texture;
@@ -37,8 +37,9 @@ mod tests {
     // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
     // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
     // "../test/null.slangp",
+    const FILTER_PATH: &str = "../test/slang-shaders/scalefx/scalefx-9x.slangp";
 
-    const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
+    // const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
     const IMAGE_PATH: &str = "../test/finalfightlong.png";
     #[test]
     fn triangle_d3d11_args() {

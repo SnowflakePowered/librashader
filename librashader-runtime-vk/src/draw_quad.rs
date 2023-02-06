@@ -55,19 +55,25 @@ impl DrawQuad {
         })
     }
 
-    pub fn bind_vbo(&self, cmd: vk::CommandBuffer, vbo: QuadType) {
-        let offset = match vbo {
-            QuadType::Offscreen => 0,
-            QuadType::Final => std::mem::size_of::<[f32; 16]>(),
-        };
-
+    pub fn bind_vbo_for_frame(&self, cmd: vk::CommandBuffer) {
         unsafe {
             self.device.cmd_bind_vertex_buffers(
                 cmd,
                 0,
                 &[self.buffer.handle],
-                &[offset as vk::DeviceSize],
+                &[0 as vk::DeviceSize],
             )
+        }
+    }
+
+    pub fn draw_quad(&self, cmd: vk::CommandBuffer, vbo: QuadType) {
+        let offset = match vbo {
+            QuadType::Offscreen => 0,
+            QuadType::Final => 4,
+        };
+
+        unsafe {
+            self.device.cmd_draw(cmd, 4, 1, offset, 0);
         }
     }
 }

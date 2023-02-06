@@ -1,3 +1,4 @@
+use array_concat::concat_arrays;
 use crate::error;
 use crate::error::assume_d3d11_init;
 use bytemuck::offset_of;
@@ -21,7 +22,7 @@ struct D3D11Vertex {
 
 const CLEAR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
-static OFFSCREEN_VBO_DATA: &[D3D11Vertex; 4] = &[
+const OFFSCREEN_VBO_DATA: [D3D11Vertex; 4] = [
     D3D11Vertex {
         position: [-1.0, -1.0],
         texcoord: [0.0, 1.0],
@@ -44,7 +45,7 @@ static OFFSCREEN_VBO_DATA: &[D3D11Vertex; 4] = &[
     },
 ];
 
-static FINAL_VBO_DATA: &[D3D11Vertex; 4] = &[
+const FINAL_VBO_DATA: [D3D11Vertex; 4] = [
     D3D11Vertex {
         position: [0.0, 0.0],
         texcoord: [0.0, 1.0],
@@ -67,21 +68,21 @@ static FINAL_VBO_DATA: &[D3D11Vertex; 4] = &[
     },
 ];
 
+static VBO_DATA: &[D3D11Vertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
+
 pub(crate) struct DrawQuad {
-    final_vbo: ID3D11Buffer,
     context: ID3D11DeviceContext,
-    offset: u32,
     stride: u32,
-    offscreen_vbo: ID3D11Buffer,
+    vbo: ID3D11Buffer,
 }
 
 impl DrawQuad {
     pub fn new(device: &ID3D11Device, context: &ID3D11DeviceContext) -> error::Result<DrawQuad> {
         unsafe {
-            let mut final_vbo = None;
+            let mut vbo = None;
             device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
-                    ByteWidth: std::mem::size_of::<[D3D11Vertex; 4]>() as u32,
+                    ByteWidth: 2 * std::mem::size_of::<[D3D11Vertex; 4]>() as u32,
                     Usage: D3D11_USAGE_IMMUTABLE,
                     BindFlags: D3D11_BIND_VERTEX_BUFFER,
                     CPUAccessFlags: Default::default(),
@@ -89,59 +90,45 @@ impl DrawQuad {
                     StructureByteStride: 0,
                 },
                 Some(&D3D11_SUBRESOURCE_DATA {
-                    pSysMem: FINAL_VBO_DATA.as_ptr().cast(),
+                    pSysMem: VBO_DATA.as_ptr().cast(),
                     SysMemPitch: 0,
                     SysMemSlicePitch: 0,
                 }),
-                Some(&mut final_vbo),
+                Some(&mut vbo),
             )?;
-            assume_d3d11_init!(final_vbo, "CreateBuffer");
-
-            let mut offscreen_vbo = None;
-            device.CreateBuffer(
-                &D3D11_BUFFER_DESC {
-                    ByteWidth: std::mem::size_of::<[D3D11Vertex; 4]>() as u32,
-                    Usage: D3D11_USAGE_IMMUTABLE,
-                    BindFlags: D3D11_BIND_VERTEX_BUFFER,
-                    CPUAccessFlags: Default::default(),
-                    MiscFlags: Default::default(),
-                    StructureByteStride: 0,
-                },
-                Some(&D3D11_SUBRESOURCE_DATA {
-                    pSysMem: OFFSCREEN_VBO_DATA.as_ptr().cast(),
-                    SysMemPitch: 0,
-                    SysMemSlicePitch: 0,
-                }),
-                Some(&mut offscreen_vbo),
-            )?;
-            assume_d3d11_init!(offscreen_vbo, "CreateBuffer");
+            assume_d3d11_init!(vbo, "CreateBuffer");
 
             Ok(DrawQuad {
-                final_vbo,
-                offscreen_vbo,
+                vbo,
                 context: context.clone(),
-                offset: 0,
                 stride: std::mem::size_of::<D3D11Vertex>() as u32,
             })
         }
     }
 
-    pub fn bind_vertices(&self, vbo_type: QuadType) {
+    pub fn bind_vbo_for_frame(&self) {
         unsafe {
             self.context
                 .IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-            let buffer = match vbo_type {
-                QuadType::Offscreen => &self.offscreen_vbo,
-                QuadType::Final => &self.final_vbo,
-            };
 
             self.context.IASetVertexBuffers(
                 0,
                 1,
-                Some(&Some(buffer.clone())),
+                Some(&Some(self.vbo.clone())),
                 Some(&self.stride),
-                Some(&self.offset),
+                Some(&0),
             );
+        }
+    }
+
+    pub fn draw_quad(&self, context: &ID3D11DeviceContext, vbo_type: QuadType) {
+        let offset = match vbo_type {
+            QuadType::Offscreen => 0,
+            QuadType::Final => 4,
+        };
+
+        unsafe {
+            context.Draw(4, offset);
         }
     }
 
