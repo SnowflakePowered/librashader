@@ -30,8 +30,8 @@ static GENERATE_MIPS_SRC: &[u8] = b"
 \"            DENY_GEOMETRY_SHADER_ROOT_ACCESS |\" \\
 \"            DENY_HULL_SHADER_ROOT_ACCESS     |\" \\
 \"            DENY_PIXEL_SHADER_ROOT_ACCESS ),\" \\
-\"DescriptorTable ( SRV(t0, flags=DATA_VOLATILE) ),\" \\
-\"DescriptorTable ( UAV(u0, flags=DATA_VOLATILE) ),\" \\
+\"DescriptorTable ( SRV(t0, flags=DATA_VOLATILE|DESCRIPTORS_VOLATILE) ),\" \\
+\"DescriptorTable ( UAV(u0, flags=DATA_VOLATILE|DESCRIPTORS_VOLATILE) ),\" \\
 \"RootConstants(num32BitConstants=3, b0),\" \\
 \"StaticSampler(s0,\"\\
 \"           filter =   FILTER_MIN_MAG_LINEAR_MIP_POINT,\"\\
@@ -66,6 +66,8 @@ pub struct D3D12MipmapGen {
     device: ID3D12Device,
     root_signature: ID3D12RootSignature,
     pipeline: ID3D12PipelineState,
+    own_heaps: bool,
+    root_index_offset: usize,
 }
 
 #[derive(Copy, Clone, Zeroable, Pod)]
@@ -121,7 +123,7 @@ impl<'a> MipmapGenContext<'a> {
 }
 
 impl D3D12MipmapGen {
-    pub fn new(device: &ID3D12Device) -> error::Result<D3D12MipmapGen> {
+    pub fn new(device: &ID3D12Device, own_heaps: bool) -> error::Result<D3D12MipmapGen> {
         unsafe {
             let blob = fxc_compile_shader(GENERATE_MIPS_SRC, b"main\0", b"cs_5_1\0")?;
             let blob =
@@ -144,13 +146,29 @@ impl D3D12MipmapGen {
                 device: device.clone(),
                 root_signature,
                 pipeline,
+                own_heaps,
+                root_index_offset: 0
             })
         }
     }
 
+    /// If own_heap is false, this sets the compute root signature.
+    /// Otherwise, this does nothing and the root signature is set upon entering a
+    /// Mipmapping Context
+    pub fn pin_root_signature(&self, cmd: &ID3D12GraphicsCommandList) {
+        if !self.own_heaps {
+            unsafe {
+                cmd.SetComputeRootSignature(&self.root_signature);
+            }
+        }
+    }
+
     /// Enters a mipmapping compute context.
-    /// This is a relatively expensive operation
+    /// This is a relatively expensive operation if set_heap is true,
     /// and should only be done at most a few times per frame.
+    ///
+    /// If own_heap is false, then you must ensure that the compute root signature
+    /// is already bound before entering the context.
     pub fn mipmapping_context<F, E>(
         &self,
         cmd: &ID3D12GraphicsCommandList,
@@ -162,9 +180,12 @@ impl D3D12MipmapGen {
     {
         let heap: ID3D12DescriptorHeap = (&(*work_heap)).into();
         unsafe {
-            cmd.SetComputeRootSignature(&self.root_signature);
             cmd.SetPipelineState(&self.pipeline);
-            cmd.SetDescriptorHeaps(&[heap]);
+
+            if self.own_heaps {
+                cmd.SetComputeRootSignature(&self.root_signature);
+                cmd.SetDescriptorHeaps(&[heap]);
+            }
         }
 
         let mut context = MipmapGenContext::new(self, cmd, work_heap);
@@ -290,6 +311,14 @@ impl D3D12MipmapGen {
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 i,
+            );
+
+            util::d3d12_resource_transition_subresource(
+                cmd,
+                resource,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                i - 1,
             );
         }
 

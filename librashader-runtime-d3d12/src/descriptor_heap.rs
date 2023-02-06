@@ -7,13 +7,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::error::FilterChainError;
-use windows::Win32::Graphics::Direct3D12::{
-    ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC,
-    D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-    D3D12_DESCRIPTOR_HEAP_TYPE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-    D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-    D3D12_GPU_DESCRIPTOR_HANDLE,
-};
+use windows::Win32::Graphics::Direct3D12::{ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, D3D12_DESCRIPTOR_HEAP_TYPE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_GPU_DESCRIPTOR_HANDLE, ID3D12Resource};
 
 #[const_trait]
 pub trait D3D12HeapType {
@@ -169,6 +163,12 @@ impl<T: D3D12HeapType> D3D12DescriptorHeap<T> {
 }
 
 impl<T> D3D12DescriptorHeap<T> {
+    /// Gets a cloned handle to the inner heap
+    pub fn handle(&self) -> ID3D12DescriptorHeap {
+        let inner = self.0.borrow();
+        inner.heap.clone()
+    }
+
     pub unsafe fn new_with_desc(
         device: &ID3D12Device,
         desc: D3D12_DESCRIPTOR_HEAP_DESC,
@@ -210,7 +210,8 @@ impl<T> D3D12DescriptorHeap<T> {
     pub unsafe fn suballocate(
         self,
         size: usize,
-    ) -> (Vec<D3D12DescriptorHeap<T>>, ID3D12DescriptorHeap) {
+        reserved: usize,
+    ) -> (Vec<D3D12DescriptorHeap<T>>, Option<D3D12DescriptorHeap<T>>, ID3D12DescriptorHeap) {
         // has to be called right after creation.
         assert_eq!(
             Rc::strong_count(&self.0),
@@ -222,9 +223,11 @@ impl<T> D3D12DescriptorHeap<T> {
             .expect("[d3d12] undefined behaviour to suballocate a descriptor heap with live descriptors.")
             .into_inner();
 
+        let num_descriptors = inner.num_descriptors - reserved;
+
         // number of suballocated heaps
-        let num_heaps = inner.num_descriptors / size;
-        let remainder = inner.num_descriptors % size;
+        let num_heaps = num_descriptors / size;
+        let remainder = num_descriptors % size;
 
         assert_eq!(
             remainder, 0,
@@ -259,6 +262,28 @@ impl<T> D3D12DescriptorHeap<T> {
             start += size;
         }
 
+        let mut reserved_heap = None;
+        if reserved != 0 {
+            assert_eq!(reserved, inner.num_descriptors - start, "The input heap could not fit the number of requested reserved descriptors.");
+            let new_cpu_start = root_cpu_ptr + (start * inner.handle_size);
+            let new_gpu_start = root_gpu_ptr.map(|r| D3D12_GPU_DESCRIPTOR_HANDLE {
+                ptr: r + (start as u64 * inner.handle_size as u64),
+            });
+
+            reserved_heap = Some(D3D12DescriptorHeapInner {
+                device: inner.device.clone(),
+                heap: inner.heap.clone(),
+                ty: inner.ty,
+                cpu_start: D3D12_CPU_DESCRIPTOR_HANDLE { ptr: new_cpu_start },
+                gpu_start: new_gpu_start,
+                handle_size: inner.handle_size,
+                start: 0,
+                num_descriptors: reserved,
+                map: bitvec![0; reserved].into_boxed_bitslice(),
+            });
+        }
+
+
         (
             heaps
                 .into_iter()
@@ -266,6 +291,9 @@ impl<T> D3D12DescriptorHeap<T> {
                     D3D12DescriptorHeap(Rc::new(RefCell::new(inner)), PhantomData::default())
                 })
                 .collect(),
+            reserved_heap.map(|inner| {
+                D3D12DescriptorHeap(Rc::new(RefCell::new(inner)), PhantomData::default())
+            }),
             inner.heap,
         )
     }

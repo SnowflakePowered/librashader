@@ -47,6 +47,10 @@ use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleO
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
 use rayon::prelude::*;
+use librashader_runtime::scaling::MipmapSize;
+
+const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 1024;
+
 type DxilShaderPassMeta =
     ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
 type HlslShaderPassMeta =
@@ -66,7 +70,7 @@ pub struct FilterChainD3D12 {
     staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
-    texture_heap: ID3D12DescriptorHeap,
+    work_heap: ID3D12DescriptorHeap,
     sampler_heap: ID3D12DescriptorHeap,
 
     residuals: Vec<OutputDescriptor>,
@@ -123,7 +127,7 @@ impl FilterChainD3D12 {
         )?;
 
         let samplers = SamplerSet::new(device)?;
-        let mipmap_gen = D3D12MipmapGen::new(device)?;
+        let mipmap_gen = D3D12MipmapGen::new(device, false)?;
 
         let draw_quad = DrawQuad::new(device)?;
         let mut staging_heap = D3D12DescriptorHeap::new(
@@ -136,11 +140,11 @@ impl FilterChainD3D12 {
         )?;
 
         let luts =
-            FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen)?;
+            FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures)?;
 
         let root_signature = D3D12RootSignature::new(device)?;
 
-        let (texture_heap, sampler_heap, filters) = FilterChainD3D12::init_passes(
+        let (texture_heap, sampler_heap, filters, mipmap_heap) = FilterChainD3D12::init_passes(
             device,
             &root_signature,
             passes,
@@ -181,8 +185,6 @@ impl FilterChainD3D12 {
         let (history_framebuffers, history_textures) =
             FilterChainD3D12::init_history(device, &filters)?;
 
-        let mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
-            D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
         Ok(FilterChainD3D12 {
             common: FilterCommon {
                 d3d12: device.clone(),
@@ -209,7 +211,7 @@ impl FilterChainD3D12 {
             output_framebuffers: output_framebuffers.into_boxed_slice(),
             feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
             history_framebuffers,
-            texture_heap,
+            work_heap: texture_heap,
             sampler_heap,
             mipmap_heap,
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
@@ -252,8 +254,9 @@ impl FilterChainD3D12 {
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         textures: &[TextureConfig],
-        mipmap_gen: &D3D12MipmapGen,
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
+        // use separate mipgen to load luts.
+        let mipmap_gen = D3D12MipmapGen::new(device, true)?;
         let mut work_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
             D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
         unsafe {
@@ -339,20 +342,20 @@ impl FilterChainD3D12 {
         hlsl_passes: Vec<HlslShaderPassMeta>,
         semantics: &ShaderSemantics,
         force_hlsl: bool,
-    ) -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
+    ) -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>, D3D12DescriptorHeap<ResourceWorkHeap>)> {
         let shader_count = passes.len();
         let work_heap = D3D12DescriptorHeap::<ResourceWorkHeap>::new(
             device,
-            (MAX_BINDINGS_COUNT as usize) * shader_count,
+            (MAX_BINDINGS_COUNT as usize) * shader_count + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
         )?;
-        let (work_heaps, texture_heap_handle) =
-            unsafe { work_heap.suballocate(MAX_BINDINGS_COUNT as usize) };
+        let (work_heaps, mipmap_heap, texture_heap_handle) =
+            unsafe { work_heap.suballocate(MAX_BINDINGS_COUNT as usize,  MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS) };
 
         let sampler_work_heap =
             D3D12DescriptorHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
 
-        let (sampler_work_heaps, sampler_heap_handle) =
-            unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize) };
+        let (sampler_work_heaps, _,  sampler_heap_handle) =
+            unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize, 0) };
 
         let filters: Vec<error::Result<_>> = passes.into_par_iter()
             .zip(hlsl_passes)
@@ -468,7 +471,8 @@ impl FilterChainD3D12 {
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
 
-        Ok((texture_heap_handle, sampler_heap_handle, filters))
+        // Panic SAFETY: mipmap_heap is always 1024 descriptors.
+        Ok((texture_heap_handle, sampler_heap_handle, filters, mipmap_heap.unwrap()))
     }
 
     fn push_history(
@@ -595,32 +599,32 @@ impl FilterChainD3D12 {
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
         unsafe {
-            let heaps = [self.texture_heap.clone(), self.sampler_heap.clone()];
+            let heaps = [self.work_heap.clone(), self.sampler_heap.clone()];
             cmd.SetDescriptorHeaps(&heaps);
             cmd.SetGraphicsRootSignature(&self.common.root_signature.handle);
+            self.common.mipmap_gen.pin_root_signature(cmd);
         }
         for (index, pass) in pass.iter_mut().enumerate() {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
-            // if pass.config.mipmap_input && !self.disable_mipmaps {
-            //     unsafe {
-            //         // this is so bad.
-            //         self.common.mipmap_gen.mipmapping_context(
-            //             cmd,
-            //             &mut self.mipmap_heap,
-            //             |ctx| {
-            //                 ctx.generate_mipmaps(
-            //                     &source.resource,
-            //                     source.size().calculate_miplevels() as u16,
-            //                     source.size,
-            //                     source.format,
-            //                 )?;
-            //                 Ok::<(), FilterChainError>(())
-            //             },
-            //         )?;
-            //     }
-            // }
+            if pass.config.mipmap_input && !self.disable_mipmaps {
+                unsafe {
+                    self.common.mipmap_gen.mipmapping_context(
+                        cmd,
+                        &mut self.mipmap_heap,
+                        |ctx| {
+                            ctx.generate_mipmaps(
+                                &source.resource,
+                                source.size().calculate_miplevels() as u16,
+                                source.size,
+                                source.format,
+                            )?;
+                            Ok::<(), FilterChainError>(())
+                        },
+                    )?;
+                }
+            }
 
             let target = &self.output_framebuffers[index];
             util::d3d12_resource_transition(
@@ -666,11 +670,6 @@ impl FilterChainD3D12 {
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             );
 
-            // let target_handle = target.create_shader_resource_view(
-            //     &mut self.staging_heap,
-            //     pass.config.filter,
-            //     pass.config.wrap_mode,
-            // )?;
             self.residuals.push(out.output.descriptor);
             source = self.common.output_textures[index].as_ref().unwrap().clone()
         }
