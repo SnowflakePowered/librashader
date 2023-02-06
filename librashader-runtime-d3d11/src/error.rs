@@ -1,4 +1,4 @@
-//! Direct3D11 shader runtime errors.
+//! Direct3D 11 shader runtime errors.
 //!
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
@@ -43,5 +43,5 @@ macro_rules! assume_d3d11_init {
 /// Macro for unwrapping result of a D3D function.
 pub(crate) use assume_d3d11_init;
 
-/// Result type for Direct3D11 filter chains.
+/// Result type for Direct3D 11 filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;

@@ -15,10 +15,14 @@
 //! called with appropriate input and output parameters to draw a frame with the shader effect applied.
 //!
 //! ## Runtimes
-//! Currently available runtimes are Vulkan 1.3+, OpenGL 3.3+ and 4.6 (with DSA), and Direct3D 11.
-//! Work on the Direct3D 12 runtime is in progress. The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
+//! Currently available runtimes are Vulkan, OpenGL 3.3+ and 4.6 (with DSA), Direct3D 11, and Direct3D 12.
+//!
+//! The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
 //! by default, unless [`FilterChainOptions::render_pass_format`](crate::runtime::vk::FilterChainOptions) is explicitly set. Note that dynamic rendering
-//! will being the best performance.
+//! will bring the best performance.
+//!
+//! The Direct3D 12 runtime requires support for [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes), which
+//! have been available since Windows 10, version 1809.
 //!
 //! | **API**     | **Status** | **`librashader` feature** |
 //! |-------------|------------|---------------------------|
@@ -26,9 +30,10 @@
 //! | OpenGL 4.6  | ✔         | `gl`                     |
 //! | Vulkan      | ✔         | `vk`                     |
 //! | Direct3D 11  | ✔         | `d3d11`                  |
-//! | Direct3D 12  | 🚧         | `d3d12`                  |
+//! | Direct3D 12  | ✔         | `d3d12`                  |
 //! | OpenGL 2    | ❌         |                          |
-//! | DirectX 9   | ❌         |                          |
+//! | Direct3D 9   | ❌         |                          |
+//! | Direct3D 10   | ❌         |                          |
 //! | Metal       | ❌         |                          |
 //!
 //! ## C API
@@ -126,6 +131,7 @@ pub mod reflect {
     pub mod targets {
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
+        pub use librashader_reflect::back::targets::DXIL;
         pub use librashader_reflect::back::targets::SPIRV;
     }
 
@@ -142,8 +148,11 @@ pub mod reflect {
     pub mod cross {
         pub use librashader_reflect::front::GlslangCompilation;
 
-        /// The version of GLSL to compile to.
+        /// The version of GLSL to target.
         pub use spirv_cross::glsl::Version as GlslVersion;
+
+        /// The HLSL Shader Model to target.
+        pub use spirv_cross::hlsl::ShaderModel as HlslVersion;
 
         pub use librashader_reflect::back::cross::CrossGlslContext;
 
@@ -229,6 +238,28 @@ pub mod runtime {
         /// This is internal to librashader-capi and is exempt from semantic versioning.
         pub mod capi {
             pub use librashader_runtime_d3d11::*;
+        }
+    }
+
+    #[cfg(all(target_os = "windows", feature = "d3d12"))]
+    #[doc(cfg(all(target_os = "windows", feature = "d3d12")))]
+    /// Shader runtime for Direct3D 12.
+    pub mod d3d12 {
+        pub use librashader_runtime_d3d12::{
+            error,
+            options::{
+                FilterChainOptionsD3D12 as FilterChainOptions, FrameOptionsD3D12 as FrameOptions,
+            },
+            D3D12InputImage, D3D12OutputView, FilterChainD3D12 as FilterChain,
+        };
+
+        #[doc(hidden)]
+        #[cfg(feature = "internal")]
+        /// Re-exports names to deal with C API conflicts.
+        ///
+        /// This is internal to librashader-capi and is exempt from semantic versioning.
+        pub mod capi {
+            pub use librashader_runtime_d3d12::*;
         }
     }
 

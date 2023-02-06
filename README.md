@@ -10,19 +10,21 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 ![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg)
 
 ## Supported Render APIs
-librashader supports OpenGL 3, OpenGL 4.6, Vulkan, DirectX 11, and DirectX 12.  Older versions
-of DirectX and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
+librashader supports OpenGL 3, OpenGL 4.6, Vulkan, Direct3D 11, and Direct3D 12.  Older versions
+of Direct3D and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
 
 | **API**     | **Status** | **`librashader` feature** |
 |-------------|------------|---------------------------|
 | OpenGL 3.3+ | ✔          | `gl`                      |
 | OpenGL 4.6  | ✔          | `gl`                      |
-| Vulkan 1.3+ | ✔         | `vk`                      |
-| Direct3D11  | ✔          | `d3d11`                   |
-| Direct3D12  | 🚧         | `d3d12`                   |
+| Vulkan      | ✔          | `vk`                      |
+| Direct3D 11 | ✔          | `d3d11`                   |
+| Direct3D 12 | ✔          | `d3d12`                   |
 | OpenGL 2    | ❌          |                           |
-| DirectX 9   | ❌          |                           |
+| Direct3D 9  | ❌          |                           |
+| Direct3D 10 | ❌          |                           |
 | Metal       | ❌          |                           |
+
 
 ✔ = Render API is supported &mdash; 🚧 =  Support is in progress &mdash; ❌ Render API is not supported
 ## Usage
@@ -73,18 +75,17 @@ CMake package is highly recommended.
 ### Examples
 
 The following Rust examples show how to use each librashader runtime.
-* [Vulkan](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-vk/src/lib.rs#L40)
-* [OpenGL](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-gl/src/lib.rs#L34)
-* [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/src/lib.rs#L33)
+* [Vulkan](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-vk/src/lib.rs)
+* [OpenGL](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-gl/src/lib.rs)
+* [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/src/lib.rs)
+* [Direct3D 12](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d12/src/lib.rs)
 
 Some basic examples on using the C API are also provided in the [librashader-capi-tests](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/librashader-capi-tests)
 directory.
 
 ## Compatibility
 
-librashader implements the entire RetroArch shader pipeline and is highly compatible with existing shaders,
-but there are some deliberate differences in design choices that may potentially cause incompatiblities with certain
-shaders.
+librashader implements the entire RetroArch shader pipeline and is highly compatible with existing shaders.
 
 Please report an issue if you run into a shader that works in RetroArch, but not under librashader.
 
@@ -92,6 +93,8 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * Unlike RetroArch, librashader does not have full knowledge of the entire rendering state and is designed to be pluggable
     at any point in your render pipeline. Instead, filter chains terminate at a caller-provided output surface and viewport. 
     It is the caller's responsibility to blit the surface back to the backbuffer.
+* Shaders are compiled in parallel where possible. This should noticeably decrease preset compile times. Note that parallel compilation
+  is not available to OpenGL.
 * Runtime-specific differences
   * OpenGL
     * Copying of in-flight framebuffer contents to history is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.
@@ -119,11 +122,6 @@ Please report an issue if you run into a shader that works in RetroArch, but not
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
 
-Compatibility issues may arise with framebuffer copies for original history, but I have not found any yet; 
-if it does end up that this results in actual rendering differences I may change the implementation to be more in line
-with RetroArch's copy implementation. However, since the Vulkan runtime already uses `vkCmdCopyImage` it is likely that it will
-not cause issues.
-
 ### Writing a librashader Runtime
 
 If you wish to contribute a runtime implementation not already available, see the [librashader-runtime](https://docs.rs/librashader-runtime/latest/librashader_runtime/)
@@ -137,7 +135,7 @@ the runtime.
 The core parts of librashader such as the preprocessor, the preset parser, 
 the reflection library, and the runtimes, are all licensed under the Mozilla Public License version 2.0.
 
-The librashader C API, i.e. its headers and definitions, *not its implementation in `librashader_capi`*,
+The librashader C API, i.e. its headers and definitions, *not its implementation in `librashader-capi`*,
 are more permissively licensed, and may allow you to use librashader in your permissively 
 licensed or proprietary project.
 

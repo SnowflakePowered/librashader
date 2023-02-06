@@ -3,7 +3,7 @@
 #![feature(type_alias_impl_trait)]
 mod buffer;
 mod descriptor_heap;
-mod error;
+pub mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
@@ -11,7 +11,7 @@ mod graphics_pipeline;
 mod hello_triangle;
 mod luts;
 mod mipmap;
-mod options;
+pub mod options;
 mod parameters;
 mod quad_render;
 mod render_target;
@@ -19,6 +19,7 @@ mod samplers;
 mod texture;
 mod util;
 
+pub use filter_chain::FilterChainD3D12;
 pub use texture::D3D12InputImage;
 pub use texture::D3D12OutputView;
 

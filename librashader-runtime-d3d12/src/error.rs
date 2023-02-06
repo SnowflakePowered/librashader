@@ -1,3 +1,5 @@
+//! Direct3D 12 shader runtime errors.
+//!
 use thiserror::Error;
 
 /// Cumulative error type for Direct3D12 filter chains.
@@ -23,6 +25,7 @@ pub enum FilterChainError {
     DescriptorHeapOverflow,
 }
 
+/// Result type for Direct3D 12 filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;
 
 macro_rules! assume_d3d12_init {

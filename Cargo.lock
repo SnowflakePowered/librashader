@@ -802,6 +802,7 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "librashader-runtime-d3d11",
+ "librashader-runtime-d3d12",
  "librashader-runtime-gl",
  "librashader-runtime-vk",
  "librashader-spirv-cross",
@@ -907,7 +908,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.1.0-beta.8"
+version = "0.1.0-beta.10"
 dependencies = [
  "array-concat",
  "array-init",

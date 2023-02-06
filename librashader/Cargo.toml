@@ -19,23 +19,23 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-
 librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-beta.10", features = ["standalone"] }
 librashader-runtime  = { path = "../librashader-runtime", version = "0.1.0-beta.10" }
 librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.1.0-beta.10", optional = true }
+librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = "0.1.0-beta.10", optional = true }
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.1.0-beta.10", optional = true }
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.1.0-beta.10", optional = true }
 
 ash = { version = "0.37.1+1.3.235", optional = true }
-spirv_cross = { package = "librashader-spirv-cross", version = "0.23", features = ["glsl"], optional = true }
+spirv_cross = { package = "librashader-spirv-cross", version = "0.23", features = ["glsl", "hlsl"], optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.44.0"
-features = [
-    "Win32_Graphics_Direct3D11",
-]
 optional = true
 
 [features]
-default = ["gl", "d3d11", "vk", "reflect", "preprocess", "presets" ]
+default = ["gl", "d3d11", "d3d12", "vk", "reflect", "preprocess", "presets" ]
 gl = [ "runtime", "librashader-common/opengl", "librashader-runtime-gl", "spirv_cross" ]
-d3d11 = [ "runtime", "librashader-common/d3d11", "librashader-runtime-d3d11", "windows" ]
+d3d11 = [ "runtime", "librashader-common/d3d11", "librashader-runtime-d3d11", "windows/Win32_Graphics_Direct3D11" ]
+d3d12 = [ "runtime", "librashader-common/d3d11", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
+
 vk = ["runtime", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
 runtime = []
 reflect = []

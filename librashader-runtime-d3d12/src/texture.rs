@@ -4,6 +4,7 @@ use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
+/// An image for use as shader resource view.
 pub struct D3D12InputImage {
     pub resource: ID3D12Resource,
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
@@ -41,6 +42,10 @@ impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for OutputDescriptor {
     }
 }
 
+
+/// An image view for use as a render target.
+///
+/// Can be created from a CPU descriptor handle, and a size.
 #[derive(Clone)]
 pub struct D3D12OutputView {
     pub(crate) descriptor: OutputDescriptor,

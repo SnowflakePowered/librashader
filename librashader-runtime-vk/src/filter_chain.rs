@@ -523,8 +523,8 @@ impl FilterChainVulkan {
     }
     /// Records shader rendering commands to the provided command buffer.
     ///
-    /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL`.
-    /// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL`.
+    /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
+    /// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
     ///
     /// librashader **will not** create a pipeline barrier for the final pass. The output image will
     /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition

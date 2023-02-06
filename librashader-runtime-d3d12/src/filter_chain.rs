@@ -61,6 +61,7 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
+/// A Direct3D 12 filter chain.
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Vec<FilterPass>,
@@ -513,7 +514,14 @@ impl FilterChainD3D12 {
         Ok(())
     }
 
-    /// Process a frame with the input image.
+    /// Records shader rendering commands to the provided command list.
+    ///
+    /// * The input image must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state.
+    /// * The output image must be in `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state.
+    ///
+    /// librashader **will not** create a resource barrier for the final pass. The output image will
+    /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
+    /// the output image to the final resource state.
     pub fn frame(
         &mut self,
         cmd: &ID3D12GraphicsCommandList,

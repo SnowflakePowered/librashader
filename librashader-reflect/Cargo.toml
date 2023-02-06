@@ -30,7 +30,7 @@ bytemuck = "1.13.0"
 rspirv = { version = "0.11.0+1.5.4", optional = true }
 
 [features]
-default = ["dxil", "unstable-naga"]
+default = ["dxil"]
 unstable-naga = [ "naga", "rspirv" ]
 standalone = ["shaderc/build-from-source"]
 dxil = ["spirv-to-dxil"]
