@@ -6,7 +6,8 @@
 pub struct FrameOptionsD3D11 {
     /// Whether or not to clear the history buffers.
     pub clear_history: bool,
-    /// The direction of the frame. 1 should be vertical.
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
     pub frame_direction: i32,
 }
 

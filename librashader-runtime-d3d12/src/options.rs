@@ -6,7 +6,8 @@
 pub struct FrameOptionsD3D12 {
     /// Whether or not to clear the history buffers.
     pub clear_history: bool,
-    /// The direction of the frame. 1 should be vertical.
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
     pub frame_direction: i32,
 }
 
@@ -14,14 +15,11 @@ pub struct FrameOptionsD3D12 {
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct FilterChainOptionsD3D12 {
-    /// Force the HLSL shader pipeline. This may reduce shader compatibility
+    /// Force the HLSL shader pipeline. This may reduce shader compatibility.
     pub force_hlsl_pipeline: bool,
 
     /// Whether or not to explicitly disable mipmap
     /// generation for intermediate passes regardless
     /// of shader preset settings.
-    ///
-    /// Mipmap generation Direct3D may be prohibitively expensive
-    /// on some hardware environments.
     pub force_no_mipmaps: bool,
 }
