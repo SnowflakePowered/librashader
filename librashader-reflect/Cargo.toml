@@ -36,3 +36,6 @@ standalone = ["shaderc/build-from-source"]
 dxil = ["spirv-to-dxil"]
 
 [dev-dependencies]
+
+[package.metadata.docs.rs]
+features = ["spirv-to-dxil/included-bindings"]
