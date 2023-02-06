@@ -123,10 +123,10 @@ impl<'a> MipmapGenContext<'a> {
 impl D3D12MipmapGen {
     pub fn new(device: &ID3D12Device) -> error::Result<D3D12MipmapGen> {
         unsafe {
-            let blob = fxc_compile_shader(GENERATE_MIPS_SRC, b"main\0", b"cs_5_1\0").unwrap();
+            let blob = fxc_compile_shader(GENERATE_MIPS_SRC, b"main\0", b"cs_5_1\0")?;
             let blob =
                 std::slice::from_raw_parts(blob.GetBufferPointer().cast(), blob.GetBufferSize());
-            let root_signature: ID3D12RootSignature = device.CreateRootSignature(0, blob).unwrap();
+            let root_signature: ID3D12RootSignature = device.CreateRootSignature(0, blob)?;
 
             let desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
                 pRootSignature: windows::core::ManuallyDrop::new(&root_signature),

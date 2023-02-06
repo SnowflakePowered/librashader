@@ -197,7 +197,7 @@ pub fn dxc_compile_shader(
 
         if let Ok(buf) = result.GetErrorBuffer() {
             unsafe {
-                let buf: IDxcBlobUtf8 = buf.cast().unwrap();
+                let buf: IDxcBlobUtf8 = buf.cast()?;
                 let buf =
                     std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
                 let str = std::str::from_utf8_unchecked(buf);
@@ -225,12 +225,11 @@ pub fn dxc_validate_shader(
 
     unsafe {
         let result = validator
-            .Validate(&blob, DxcValidatorFlags_InPlaceEdit)
-            .unwrap();
+            .Validate(&blob, DxcValidatorFlags_InPlaceEdit)?;
 
         if let Ok(buf) = result.GetErrorBuffer() {
             unsafe {
-                let buf: IDxcBlobUtf8 = buf.cast().unwrap();
+                let buf: IDxcBlobUtf8 = buf.cast()?;
                 let buf =
                     std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
                 let str = std::str::from_utf8_unchecked(buf);

@@ -20,6 +20,8 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_SHADER_VISIBILITY_ALL, D3D12_SHADER_VISIBILITY_PIXEL, D3D_ROOT_SIGNATURE_VERSION_1,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_UNKNOWN, DXGI_SAMPLE_DESC};
+use crate::error::assume_d3d12_init;
+use crate::error::FilterChainError::Direct3DOperationError;
 
 pub struct D3D12GraphicsPipeline {
     pub(crate) handle: ID3D12PipelineState,
@@ -108,8 +110,7 @@ impl D3D12RootSignature {
                 None,
             )?;
 
-            // SAFETY: if D3D12SerializeRootSignature succeeds then blob is Some
-            let rs_blob = rs_blob.unwrap();
+            assume_d3d12_init!(rs_blob, "D3D12SerializeRootSignature");
             let blob = std::slice::from_raw_parts(
                 rs_blob.GetBufferPointer().cast(),
                 rs_blob.GetBufferSize(),
@@ -215,10 +216,10 @@ impl D3D12GraphicsPipeline {
         render_format: DXGI_FORMAT,
     ) -> error::Result<D3D12GraphicsPipeline> {
         if shader_assembly.vertex.requires_runtime_data() {
-            panic!("vertex needs rt data??")
+            return Err(Direct3DOperationError("Compiled DXIL Vertex shader needs unexpected runtime data"))
         }
         if shader_assembly.fragment.requires_runtime_data() {
-            panic!("fragment needs rt data??")
+            return Err(Direct3DOperationError("Compiled DXIL fragment shader needs unexpected runtime data"))
         }
         let vertex_dxil = util::dxc_validate_shader(library, validator, &shader_assembly.vertex)?;
         let fragment_dxil =

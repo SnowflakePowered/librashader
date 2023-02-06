@@ -47,6 +47,7 @@ use windows::Win32::Graphics::Direct3D12::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
+use crate::error::FilterChainError;
 
 type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
 type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
@@ -112,20 +113,18 @@ impl FilterChainD3D12 {
         let shader_copy = preset.shaders.clone();
 
         let (passes, semantics) =
-            DXIL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+            DXIL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
                 preset.shaders,
                 &preset.textures,
-            )
-            .unwrap();
+            )?;
 
-        let (hlsl_passes, _) = HLSL::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+        let (hlsl_passes, _) = HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
             shader_copy,
             &preset.textures,
-        )
-        .unwrap();
+        )?;
 
         let samplers = SamplerSet::new(device)?;
-        let mipmap_gen = D3D12MipmapGen::new(device).unwrap();
+        let mipmap_gen = D3D12MipmapGen::new(device)?;
 
         let draw_quad = DrawQuad::new(device)?;
         let mut staging_heap = D3D12DescriptorHeap::new(
@@ -138,8 +137,7 @@ impl FilterChainD3D12 {
         )?;
 
         let luts =
-            FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen)
-                .unwrap();
+            FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures, &mipmap_gen)?;
 
         let root_signature = D3D12RootSignature::new(device)?;
 
@@ -150,8 +148,7 @@ impl FilterChainD3D12 {
             hlsl_passes,
             &semantics,
             options.map_or(false, |o| o.force_hlsl_pipeline),
-        )
-        .unwrap();
+        )?;
 
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
@@ -305,22 +302,20 @@ impl FilterChainD3D12 {
 
             // Wait until finished
             if unsafe { fence.GetCompletedValue() } < 1 {
-                unsafe { fence.SetEventOnCompletion(1, fence_event) }
-                    .ok()
-                    .unwrap();
+                unsafe { fence.SetEventOnCompletion(1, fence_event)? };
 
                 unsafe { WaitForSingleObject(fence_event, INFINITE) };
                 unsafe { ResetEvent(fence_event) };
             }
 
-            cmd.Reset(&command_pool, None).unwrap();
+            cmd.Reset(&command_pool, None)?;
 
             let residuals = mipmap_gen.mipmapping_context(&cmd, &mut work_heap, |context| {
                 for lut in luts.values() {
                     lut.generate_mipmaps(context)?;
                 }
 
-                Ok::<(), Box<dyn Error>>(())
+                Ok::<(), FilterChainError>(())
             })?;
 
             //
@@ -329,9 +324,7 @@ impl FilterChainD3D12 {
             queue.Signal(&fence, 2)?;
             //
             if unsafe { fence.GetCompletedValue() } < 2 {
-                unsafe { fence.SetEventOnCompletion(2, fence_event) }
-                    .ok()
-                    .unwrap();
+                unsafe { fence.SetEventOnCompletion(2, fence_event)? }
 
                 unsafe { WaitForSingleObject(fence_event, INFINITE) };
                 unsafe { CloseHandle(fence_event) };
@@ -600,24 +593,24 @@ impl FilterChainD3D12 {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
-            if pass.config.mipmap_input && !self.disable_mipmaps {
-                unsafe {
-                    // this is so bad.
-                    self.common.mipmap_gen.mipmapping_context(
-                        cmd,
-                        &mut self.mipmap_heap,
-                        |ctx| {
-                            ctx.generate_mipmaps(
-                                &source.resource,
-                                source.size().calculate_miplevels() as u16,
-                                source.size,
-                                source.format,
-                            )?;
-                            Ok::<(), Box<dyn Error>>(())
-                        },
-                    )?;
-                }
-            }
+            // if pass.config.mipmap_input && !self.disable_mipmaps {
+            //     unsafe {
+            //         // this is so bad.
+            //         self.common.mipmap_gen.mipmapping_context(
+            //             cmd,
+            //             &mut self.mipmap_heap,
+            //             |ctx| {
+            //                 ctx.generate_mipmaps(
+            //                     &source.resource,
+            //                     source.size().calculate_miplevels() as u16,
+            //                     source.size,
+            //                     source.format,
+            //                 )?;
+            //                 Ok::<(), FilterChainError>(())
+            //             },
+            //         )?;
+            //     }
+            // }
 
             let target = &self.output_framebuffers[index];
             util::d3d12_resource_transition(

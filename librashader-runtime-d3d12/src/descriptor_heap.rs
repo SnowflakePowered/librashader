@@ -11,6 +11,7 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
     D3D12_GPU_DESCRIPTOR_HANDLE,
 };
+use crate::error::FilterChainError;
 
 #[const_trait]
 pub trait D3D12HeapType {
@@ -132,6 +133,7 @@ impl<T: D3D12ShaderVisibleHeapType> AsRef<D3D12_GPU_DESCRIPTOR_HANDLE>
     for D3D12DescriptorHeapSlotInner<T>
 {
     fn as_ref(&self) -> &D3D12_GPU_DESCRIPTOR_HANDLE {
+        /// SAFETY: D3D12ShaderVisibleHeapType must have a GPU handle.
         self.gpu_handle.as_ref().unwrap()
     }
 }
@@ -298,7 +300,7 @@ impl<T> D3D12DescriptorHeap<T> {
             }
         }
 
-        todo!("error need to fail");
+        Err(FilterChainError::DescriptorHeapOverflow)
     }
 
     pub fn alloc_range<const NUM_DESC: usize>(
