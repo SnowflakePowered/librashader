@@ -362,11 +362,18 @@ impl FilterChainD3D12 {
         let filters: Vec<error::Result<_>> = passes.into_par_iter()
             .zip(hlsl_passes)
             .enumerate()
-            .map(|(index, ((config, source, mut dxil),
+            .map_init(
+                || {
+                    let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
+                    let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
+                    let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
+                    Ok::<_, FilterChainError>((validator, library, compiler))
+                },
+                |dxc, (index, ((config, source, mut dxil),
                           (_, _, mut hlsl)))| {
-                let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
-                let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
-                let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
+                let Ok((validator, library, compiler)) = dxc else {
+                    return Err(FilterChainError::Direct3DOperationError("Could not initialize DXC for thread"));
+                };
 
                 let dxil_reflection = dxil.reflect(index, semantics)?;
                 let dxil = dxil.compile(Some(
@@ -446,6 +453,7 @@ impl FilterChainD3D12 {
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
 
+        /// Need to take care of the heaps in a single thread because [;16] is not sized..?
         let filters: Vec<error::Result<FilterPass>> = filters
             .into_iter()
             .zip(work_heaps)
