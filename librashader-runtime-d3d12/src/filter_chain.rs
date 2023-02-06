@@ -25,15 +25,12 @@ use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::image::{Image, UVDirection};
 use librashader_runtime::quad::{QuadType, DEFAULT_MVP};
-use librashader_runtime::scaling::MipmapSize;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::ShaderModel;
 use std::collections::VecDeque;
-use std::error::Error;
 use std::path::Path;
 use windows::core::Interface;
-use windows::w;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler,
@@ -272,8 +269,6 @@ impl FilterChainD3D12 {
                     Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
                     NodeMask: 0,
                 })?;
-
-            queue.SetName(w!("LutQueue"))?;
 
             let fence_event = unsafe { CreateEventA(None, false, false, None)? };
             let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;

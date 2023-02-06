@@ -39,7 +39,6 @@ impl LutTexture {
         wrap_mode: WrapMode,
         mipmap: bool,
     ) -> error::Result<(LutTexture, ID3D12Resource)> {
-        // todo: d3d12:800
         let miplevels = source.size.calculate_miplevels() as u16;
         let mut desc = D3D12_RESOURCE_DESC {
             Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,

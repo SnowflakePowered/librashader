@@ -3,7 +3,6 @@ use crate::error;
 use bytemuck::{offset_of, Pod, Zeroable};
 use librashader_runtime::quad::QuadType;
 use windows::core::PCSTR;
-use windows::w;
 use windows::Win32::Graphics::Direct3D::D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource,
@@ -66,9 +65,6 @@ impl DrawQuad {
         };
 
         let buffer = buffer.into_raw();
-        unsafe {
-            buffer.SetName(w!("drawquad"))?;
-        }
         Ok(DrawQuad { buffer, view })
     }
 

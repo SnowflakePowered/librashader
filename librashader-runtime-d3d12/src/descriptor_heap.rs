@@ -3,6 +3,8 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
+use bitvec::{bits, bitvec};
+use bitvec::boxed::BitBox;
 
 use crate::error::FilterChainError;
 use windows::Win32::Graphics::Direct3D12::{
@@ -154,13 +156,7 @@ struct D3D12DescriptorHeapInner {
     handle_size: usize,
     start: usize,
     num_descriptors: usize,
-    // Bit flag representation of available handles in the heap.
-    //
-    //  0 - Occupied
-    //  1 - free
-
-    // todo: actually use a bitset here.
-    map: Box<[bool]>,
+    map: BitBox,
 }
 
 pub struct D3D12DescriptorHeap<T>(Rc<RefCell<D3D12DescriptorHeapInner>>, PhantomData<T>);
@@ -197,7 +193,7 @@ impl<T> D3D12DescriptorHeap<T> {
                     handle_size: device.GetDescriptorHandleIncrementSize(desc.Type) as usize,
                     start: 0,
                     num_descriptors: desc.NumDescriptors as usize,
-                    map: vec![false; desc.NumDescriptors as usize].into_boxed_slice(),
+                    map: bitvec![0; desc.NumDescriptors as usize].into_boxed_bitslice()
                 })),
                 PhantomData::default(),
             ))
@@ -257,7 +253,7 @@ impl<T> D3D12DescriptorHeap<T> {
                 handle_size: inner.handle_size,
                 start: 0,
                 num_descriptors: size,
-                map: vec![false; size].into_boxed_slice(),
+                map: bitvec![0; size].into_boxed_bitslice()
             });
 
             start += size;
@@ -280,7 +276,7 @@ impl<T> D3D12DescriptorHeap<T> {
         let mut inner = self.0.borrow_mut();
         for i in inner.start..inner.num_descriptors {
             if !inner.map[i] {
-                inner.map[i] = true;
+                inner.map.set(i, true);
                 handle.ptr = inner.cpu_start.ptr + (i * inner.handle_size);
                 inner.start = i + 1;
 
@@ -314,7 +310,7 @@ impl<T> D3D12DescriptorHeap<T> {
 impl<T> Drop for D3D12DescriptorHeapSlotInner<T> {
     fn drop(&mut self) {
         let mut inner = self.heap.borrow_mut();
-        inner.map[self.slot] = false;
+        inner.map.set(self.slot, false);
         if inner.start > self.slot {
             inner.start = self.slot
         }

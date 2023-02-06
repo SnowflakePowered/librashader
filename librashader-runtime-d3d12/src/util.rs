@@ -4,14 +4,13 @@ use librashader_reflect::reflect::semantics::BindingStage;
 
 use std::mem::ManuallyDrop;
 use std::u64;
+use widestring::u16cstr;
 use windows::core::{Interface, PCSTR, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
     DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcBlobUtf8, IDxcCompiler, IDxcUtils, IDxcValidator,
     DXC_CP, DXC_CP_UTF8,
 };
-use windows::Win32::Graphics::Direct3D::Fxc::{
-    D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION,
-};
+use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION};
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
@@ -132,7 +131,6 @@ pub fn d3d12_get_closest_format(
 }
 
 pub fn fxc_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
-    // todo: compile with dxc
     unsafe {
         let mut blob = None;
         D3DCompile(
@@ -143,12 +141,11 @@ pub fn fxc_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             None,
             PCSTR(entry.as_ptr()),
             PCSTR(version.as_ptr()),
-            D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
-            // if cfg!(feature = "debug-shader") {
-            //     D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-            // } else {
-            //     D3DCOMPILE_OPTIMIZATION_LEVEL3
-            // },
+            if cfg!(feature = "debug-shader") {
+                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+            } else {
+                D3DCOMPILE_OPTIMIZATION_LEVEL3
+            },
             0,
             &mut blob,
             None,
@@ -165,9 +162,6 @@ pub fn dxc_compile_shader(
     source: &String,
     profile: BindingStage,
 ) -> error::Result<IDxcBlob> {
-    // todo: compile with dxc
-    // let mut source = source.to_vec();
-
     let include = unsafe { library.CreateDefaultIncludeHandler()? };
 
     let blob = unsafe {
@@ -179,17 +173,17 @@ pub fn dxc_compile_shader(
     };
 
     let profile = if profile == BindingStage::FRAGMENT {
-        windows::w!("ps_6_0")
+        u16cstr!("ps_6_0")
     } else {
-        windows::w!("vs_6_0")
+        u16cstr!("vs_6_0")
     };
 
     unsafe {
         let result = compiler.Compile(
             &blob,
             PCWSTR::null(),
-            windows::w!("main"),
-            profile,
+            PCWSTR(u16cstr!("main").as_ptr()),
+            PCWSTR(profile.as_ptr()),
             None,
             &[],
             &include,
@@ -205,9 +199,6 @@ pub fn dxc_validate_shader(
     validator: &IDxcValidator,
     source: &[u8],
 ) -> error::Result<IDxcBlob> {
-    // todo: compile with dxc
-    // let mut source = source.to_vec();
-
     let blob =
         unsafe { library.CreateBlob(source.as_ptr().cast(), source.len() as u32, DXC_CP(0))? };
 
