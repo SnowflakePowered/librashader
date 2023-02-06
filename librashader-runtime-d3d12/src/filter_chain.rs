@@ -49,8 +49,9 @@ use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleO
 use windows::Win32::System::WindowsProgramming::INFINITE;
 use crate::error::FilterChainError;
 
-type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation>>;
-type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation>>;
+use rayon::prelude::*;
+type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
+type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -343,13 +344,6 @@ impl FilterChainD3D12 {
         semantics: &ShaderSemantics,
         force_hlsl: bool,
     ) -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>)> {
-        let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
-
-        let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
-
-        let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
-
-        let mut filters = Vec::new();
         let shader_count = passes.len();
         let work_heap = D3D12DescriptorHeap::<ResourceWorkHeap>::new(
             device,
@@ -364,99 +358,129 @@ impl FilterChainD3D12 {
         let (sampler_work_heaps, sampler_heap_handle) =
             unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize) };
 
-        for (
-            index,
-            ((((config, source, mut dxil), (_, _, mut hlsl)), mut texture_heap), mut sampler_heap),
-        ) in passes
-            .into_iter()
+        let filters: Vec<error::Result<_>> = passes.into_par_iter()
             .zip(hlsl_passes)
+            .enumerate()
+            .map(|(
+                      index,
+                      ((config, source, mut dxil),
+                          (_, _, mut hlsl)), )|{
+                let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
+                let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
+                let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
+
+                let dxil_reflection = dxil.reflect(index, semantics)?;
+                let dxil = dxil.compile(Some(
+                    librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
+                ))?;
+
+                let hlsl_reflection = hlsl.reflect(index, semantics)?;
+                let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
+
+                let render_format = if let Some(format) = config.get_format_override() {
+                    format
+                } else if source.format != ImageFormat::Unknown {
+                    source.format
+                } else {
+                    ImageFormat::R8G8B8A8Unorm
+                }
+                    .into();
+
+                eprintln!("building pipeline for pass {index:?}");
+
+                /// incredibly cursed.
+                let (reflection, graphics_pipeline) = if !force_hlsl &&
+                    let Ok(graphics_pipeline) =
+                        D3D12GraphicsPipeline::new_from_dxil(
+                            device,
+                            &library,
+                            &validator,
+                            &dxil,
+                            root_signature,
+                            render_format,
+                        ) {
+                    (dxil_reflection, graphics_pipeline)
+                } else {
+                    eprintln!("falling back to hlsl for {index:?}");
+                    let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
+                        device,
+                        &library,
+                        &compiler,
+                        &hlsl,
+                        root_signature,
+                        render_format,
+                    )?;
+                    (hlsl_reflection, graphics_pipeline)
+                };
+
+                let uniform_storage = UniformStorage::new(
+                    reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
+                    reflection
+                        .push_constant
+                        .as_ref()
+                        .map_or(0, |push| push.size as usize),
+                );
+
+                let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
+                    let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, ubo.size as usize)?);
+                    Some(buffer)
+                } else {
+                    None
+                };
+
+                let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
+                    let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, push.size as usize)?);
+                    Some(buffer)
+                } else {
+                    None
+                };
+
+                let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
+
+                Ok((reflection,
+                    uniform_bindings,
+                    uniform_storage,
+                    push_cbuffer,
+                    ubo_cbuffer,
+                    graphics_pipeline,
+                    config.clone(),
+                    source))
+
+            }).collect();
+
+        let filters: error::Result<Vec<_>> = filters.into_iter().collect();
+        let filters = filters?;
+
+        let filters: Vec<error::Result<FilterPass>> = filters.into_iter()
             .zip(work_heaps)
             .zip(sampler_work_heaps)
-            .enumerate()
-        {
-            let dxil_reflection = dxil.reflect(index, semantics)?;
-            let dxil = dxil.compile(Some(
-                librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
-            ))?;
-
-            let hlsl_reflection = hlsl.reflect(index, semantics)?;
-            let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
-
-            let render_format = if let Some(format) = config.get_format_override() {
-                format
-            } else if source.format != ImageFormat::Unknown {
-                source.format
-            } else {
-                ImageFormat::R8G8B8A8Unorm
-            }
-            .into();
-
-            eprintln!("building pipeline for pass {index:?}");
-
-            /// incredibly cursed.
-            let (reflection, graphics_pipeline) = if !force_hlsl &&
-                let Ok(graphics_pipeline) =
-                D3D12GraphicsPipeline::new_from_dxil(
-                    device,
-                    &library,
-                    &validator,
-                    &dxil,
-                    root_signature,
-                    render_format,
-                ) {
-                (dxil_reflection, graphics_pipeline)
-            } else {
-                eprintln!("falling back to hlsl for {index:?}");
-                let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
-                    device,
-                    &library,
-                    &compiler,
-                    &hlsl,
-                    root_signature,
-                    render_format,
-                )?;
-                (hlsl_reflection, graphics_pipeline)
-            };
-
-            let uniform_storage = UniformStorage::new(
-                reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
-                reflection
-                    .push_constant
-                    .as_ref()
-                    .map_or(0, |push| push.size as usize),
-            );
-
-            let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
-                let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, ubo.size as usize)?);
-                Some(buffer)
-            } else {
-                None
-            };
-
-            let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
-                let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, push.size as usize)?);
-                Some(buffer)
-            } else {
-                None
-            };
-
-            let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
-
-            let texture_heap = texture_heap.alloc_range()?;
-            let sampler_heap = sampler_heap.alloc_range()?;
-            filters.push(FilterPass {
-                reflection,
+            .map(|(((reflection,
                 uniform_bindings,
                 uniform_storage,
                 push_cbuffer,
                 ubo_cbuffer,
-                pipeline: graphics_pipeline,
-                config: config.clone(),
-                texture_heap,
-                sampler_heap,
-                source,
+                pipeline,
+                config,
+                source), mut texture_heap), mut sampler_heap)| {
+
+                let texture_heap = texture_heap.alloc_range()?;
+                let sampler_heap = sampler_heap.alloc_range()?;
+                Ok(FilterPass {
+                    reflection,
+                    uniform_bindings,
+                    uniform_storage,
+                    push_cbuffer,
+                    ubo_cbuffer,
+                    pipeline,
+                    config,
+                    texture_heap,
+                    sampler_heap,
+                    source,
+                })
             })
-        }
+            .collect();
+        let filters: error::Result<Vec<_>> = filters.into_iter().collect();
+        let filters = filters?;
 
         Ok((texture_heap_handle, sampler_heap_handle, filters))
     }
