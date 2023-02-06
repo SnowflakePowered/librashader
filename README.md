@@ -126,7 +126,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * The Direct3D 12 runtime uses [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes). This feature has been available since Windows 10 version 1809,
       which was released in late 2018.
     * For maximum compatibility with shaders, a shader compile pipeline based on [`spirv-to-dxil`](https://github.com/SnowflakePowered/spirv-to-dxil-rs) is used, with the SPIRV-Cross HLSL pipeline used as a fallback. 
-      This brings shader compatibility beyond what the RetroArch Direct3D 12 runtime provides. The HLSL pipeline fallback may be removed in the future as`spirv-to-dxil` improves.
+      This brings shader compatibility beyond what the RetroArch Direct3D 12 runtime provides. The HLSL pipeline fallback may be removed in the future as `spirv-to-dxil` improves.
     
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
