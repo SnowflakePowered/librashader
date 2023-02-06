@@ -20,7 +20,30 @@ struct D3D12Vertex {
 
 const CLEAR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
-static QUAD_VBO_DATA: &[D3D12Vertex; 4] = &[
+static OFFSCREEN_VBO_DATA: &[D3D12Vertex; 4] = &[
+    D3D12Vertex {
+        position: [-1.0, -1.0],
+        texcoord: [0.0, 1.0],
+        color: CLEAR,
+    },
+    D3D12Vertex {
+        position: [-1.0, 1.0],
+        texcoord: [0.0, 0.0],
+        color: CLEAR,
+    },
+    D3D12Vertex {
+        position: [1.0, -1.0],
+        texcoord: [1.0, 1.0],
+        color: CLEAR,
+    },
+    D3D12Vertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 0.0],
+        color: CLEAR,
+    },
+];
+
+static FINAL_VBO_DATA: &[D3D12Vertex; 4] = &[
     D3D12Vertex {
         position: [0.0, 0.0],
         texcoord: [0.0, 1.0],
@@ -44,34 +67,57 @@ static QUAD_VBO_DATA: &[D3D12Vertex; 4] = &[
 ];
 
 pub(crate) struct DrawQuad {
-    buffer: ID3D12Resource,
-    view: D3D12_VERTEX_BUFFER_VIEW,
+    offscreen_buffer: ID3D12Resource,
+    offscreen_view: D3D12_VERTEX_BUFFER_VIEW,
+    final_buffer: ID3D12Resource,
+    final_view: D3D12_VERTEX_BUFFER_VIEW,
 }
 
 impl DrawQuad {
     pub fn new(device: &ID3D12Device) -> error::Result<DrawQuad> {
         let stride = std::mem::size_of::<D3D12Vertex>() as u32;
         let size = std::mem::size_of::<[D3D12Vertex; 4]>() as u32;
-        let mut buffer = D3D12Buffer::new(device, size as usize)?;
-        buffer
+        let mut offscreen_buffer = D3D12Buffer::new(device, size as usize)?;
+        offscreen_buffer
             .map(None)?
             .slice
-            .copy_from_slice(bytemuck::cast_slice(QUAD_VBO_DATA));
+            .copy_from_slice(bytemuck::cast_slice(OFFSCREEN_VBO_DATA));
 
-        let view = D3D12_VERTEX_BUFFER_VIEW {
-            BufferLocation: buffer.gpu_address(),
+        let offscreen_view = D3D12_VERTEX_BUFFER_VIEW {
+            BufferLocation: offscreen_buffer.gpu_address(),
             SizeInBytes: size,
             StrideInBytes: stride,
         };
 
-        let buffer = buffer.into_raw();
-        Ok(DrawQuad { buffer, view })
+        let offscreen_buffer = offscreen_buffer.into_raw();
+
+        let mut final_buffer = D3D12Buffer::new(device, size as usize)?;
+        final_buffer
+            .map(None)?
+            .slice
+            .copy_from_slice(bytemuck::cast_slice(FINAL_VBO_DATA));
+
+        let final_view = D3D12_VERTEX_BUFFER_VIEW {
+            BufferLocation: final_buffer.gpu_address(),
+            SizeInBytes: size,
+            StrideInBytes: stride,
+        };
+
+        let final_buffer = final_buffer.into_raw();
+
+        Ok(DrawQuad { offscreen_buffer, offscreen_view, final_buffer, final_view })
     }
 
-    pub fn bind_vertices(&self, cmd: &ID3D12GraphicsCommandList, _vbo_type: QuadType) {
+    pub fn bind_vertices(&self, cmd: &ID3D12GraphicsCommandList, vbo_type: QuadType) {
         unsafe {
             cmd.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-            cmd.IASetVertexBuffers(0, Some(&[self.view]));
+
+            let view = match vbo_type {
+                QuadType::Offscreen => [self.offscreen_view],
+                QuadType::Final => [self.final_view],
+            };
+
+            cmd.IASetVertexBuffers(0, Some(&view));
         }
     }
 

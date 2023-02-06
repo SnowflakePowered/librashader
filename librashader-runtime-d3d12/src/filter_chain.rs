@@ -24,7 +24,7 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, MAX_
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::image::{Image, UVDirection};
-use librashader_runtime::quad::{QuadType, DEFAULT_MVP};
+use librashader_runtime::quad::{QuadType, DEFAULT_MVP, IDENTITY_MVP};
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::ShaderModel;
@@ -639,7 +639,7 @@ impl FilterChainD3D12 {
             let out = RenderTarget {
                 x: 0.0,
                 y: 0.0,
-                mvp: DEFAULT_MVP,
+                mvp: IDENTITY_MVP,
                 output: OutputTexture {
                     descriptor: view.descriptor,
                     size,
