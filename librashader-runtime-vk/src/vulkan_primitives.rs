@@ -134,6 +134,10 @@ impl<'a> Drop for VulkanBufferMapHandle<'a> {
     }
 }
 
+/// SAFETY: Creating the pointer should be safe in multithreaded contexts.
+///
+/// Mutation is guarded by DerefMut<Target=[u8]>
+unsafe impl Send for RawVulkanBuffer {}
 pub struct RawVulkanBuffer {
     buffer: ManuallyDrop<VulkanBuffer>,
     ptr: NonNull<c_void>,

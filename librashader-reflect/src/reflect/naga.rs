@@ -23,16 +23,16 @@ impl TryFrom<NagaCompilation> for NagaReflect {
     }
 }
 
-impl TryFrom<GlslangCompilation> for NagaReflect {
+impl TryFrom<&GlslangCompilation> for NagaReflect {
     type Error = ShaderReflectError;
 
-    fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
+    fn try_from(value: &GlslangCompilation) -> Result<Self, Self::Error> {
         let ops = Options::default();
         let vertex =
-            naga::front::spv::Parser::new(value.vertex.as_binary().to_vec().into_iter(), &ops)
+            naga::front::spv::Parser::new(value.vertex.clone().into_iter(), &ops)
                 .parse()?;
         let fragment =
-            naga::front::spv::Parser::new(value.fragment.as_binary().to_vec().into_iter(), &ops)
+            naga::front::spv::Parser::new(value.fragment.clone().into_iter(), &ops)
                 .parse()?;
         Ok(NagaReflect { vertex, fragment })
     }

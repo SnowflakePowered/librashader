@@ -38,7 +38,7 @@ mod tests {
     // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
     // "../test/null.slangp",
 
-    const FILTER_PATH: &str = "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp";
+    const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
     const IMAGE_PATH: &str = "../test/finalfightlong.png";
     #[test]
     fn triangle_d3d11_args() {
@@ -84,7 +84,8 @@ mod tests {
                 force_no_mipmaps: false,
             }),
             // replace below with 'None' for the triangle
-            None,
+            // None,
+            Some(Image::load(IMAGE_PATH, UVDirection::TopLeft).unwrap())
         )
         .unwrap();
         // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(

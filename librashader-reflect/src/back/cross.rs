@@ -30,7 +30,7 @@ impl FromCompilation<GlslangCompilation> for GLSL {
         compile: GlslangCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: GlslReflect::try_from(compile)?,
+            backend: GlslReflect::try_from(&compile)?,
         })
     }
 }
@@ -52,7 +52,7 @@ impl FromCompilation<GlslangCompilation> for HLSL {
         compile: GlslangCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: HlslReflect::try_from(compile)?,
+            backend: HlslReflect::try_from(&compile)?,
         })
     }
 }

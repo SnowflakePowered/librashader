@@ -24,9 +24,9 @@ impl FromCompilation<GlslangCompilation> for DXIL {
     fn from_compilation(
         compile: GlslangCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
-        let vertex = compile.vertex.as_binary().to_vec();
-        let fragment = compile.fragment.as_binary().to_vec();
-        let reflect = GlslReflect::try_from(compile)?;
+        let reflect = GlslReflect::try_from(&compile)?;
+        let vertex = compile.vertex;
+        let fragment = compile.fragment;
         Ok(CompilerBackend {
             // we can just reuse WriteSpirV as the backend.
             backend: WriteSpirV {

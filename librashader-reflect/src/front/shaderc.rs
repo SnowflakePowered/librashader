@@ -1,11 +1,11 @@
 use crate::error::ShaderCompileError;
 use librashader_preprocess::ShaderSource;
-use shaderc::{CompilationArtifact, CompileOptions, Limit, ShaderKind};
+use shaderc::{CompileOptions, Limit, ShaderKind};
 
 /// A reflectable shader compilation via glslang (shaderc).
 pub struct GlslangCompilation {
-    pub(crate) vertex: CompilationArtifact,
-    pub(crate) fragment: CompilationArtifact,
+    pub(crate) vertex: Vec<u32>,
+    pub(crate) fragment: Vec<u32>,
 }
 
 impl GlslangCompilation {
@@ -137,6 +137,11 @@ pub(crate) fn compile_spirv(
         "main",
         Some(&options),
     )?;
+
+    // shaderc has a GIL so Send is unsafe.
+    let vertex = Vec::from(vertex.as_binary());
+    let fragment = Vec::from(fragment.as_binary());
+
     Ok(GlslangCompilation { vertex, fragment })
 }
 

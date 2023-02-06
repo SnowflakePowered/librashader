@@ -7,7 +7,7 @@ use crate::reflect::semantics::{
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{align_uniform_size, ReflectShader};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
@@ -17,6 +17,9 @@ use crate::back::cross::{CrossGlslContext, CrossHlslContext, HlslVersion};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
+
+// This is "probably" OK.
+unsafe impl<T: Send + spirv_cross::spirv::Target> Send for CrossReflect<T> {}
 
 pub(crate) struct CrossReflect<T>
 where
@@ -110,7 +113,7 @@ impl ValidateTypeSemantics<Type> for TextureSemantics {
     }
 }
 
-impl<T> TryFrom<GlslangCompilation> for CrossReflect<T>
+impl<T> TryFrom<&GlslangCompilation> for CrossReflect<T>
 where
     T: spirv_cross::spirv::Target,
     Ast<T>: spirv_cross::spirv::Compile<T>,
@@ -118,9 +121,9 @@ where
 {
     type Error = ShaderReflectError;
 
-    fn try_from(value: GlslangCompilation) -> Result<Self, Self::Error> {
-        let vertex_module = Module::from_words(value.vertex.as_binary());
-        let fragment_module = Module::from_words(value.fragment.as_binary());
+    fn try_from(value: &GlslangCompilation) -> Result<Self, Self::Error> {
+        let vertex_module = Module::from_words(&value.vertex);
+        let fragment_module = Module::from_words(&value.fragment);
 
         let vertex = Ast::parse(&vertex_module)?;
         let fragment = Ast::parse(&fragment_module)?;
@@ -878,7 +881,7 @@ mod test {
             );
         }
         let spirv = GlslangCompilation::compile(&result).unwrap();
-        let mut reflect = CrossReflect::<glsl::Target>::try_from(spirv).unwrap();
+        let mut reflect = CrossReflect::<glsl::Target>::try_from(&spirv).unwrap();
         let _shader_reflection = reflect
             .reflect(
                 0,

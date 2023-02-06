@@ -34,7 +34,6 @@ pub struct ConstantBufferBinding {
 // slang_process.cpp 141
 pub struct FilterPass {
     pub reflection: ShaderReflection,
-    pub compiled: ShaderCompilerOutput<String, CrossHlslContext>,
     pub vertex_shader: ID3D11VertexShader,
     pub vertex_layout: ID3D11InputLayout,
     pub pixel_shader: ID3D11PixelShader,

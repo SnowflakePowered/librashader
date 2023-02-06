@@ -31,6 +31,7 @@ use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
+use rayon::prelude::*;
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
     pub(crate) device: Arc<ash::Device>,
@@ -39,7 +40,7 @@ pub struct VulkanObjects {
     pipeline_cache: vk::PipelineCache,
 }
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation>>;
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
 
 /// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]
@@ -308,69 +309,66 @@ impl FilterChainVulkan {
         frames_in_flight: u32,
         use_render_pass: bool,
     ) -> error::Result<Box<[FilterPass]>> {
-        let mut filters = Vec::new();
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
 
-        // initialize passes
-        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
-            let reflection = reflect.reflect(index, semantics)?;
-            let spirv_words = reflect.compile(None)?;
+        let filters: Vec<error::Result<FilterPass>> = passes.into_par_iter()
+            .enumerate()
+            .map(|(index, (config, source, mut reflect))| {
+                let reflection = reflect.reflect(index, semantics)?;
+                let spirv_words = reflect.compile(None)?;
 
-            let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
-            let uniform_storage = UniformStorage::new_with_storage(
-                RawVulkanBuffer::new(
+                let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
+                let uniform_storage = UniformStorage::new_with_storage(
+                    RawVulkanBuffer::new(
+                        &vulkan.device,
+                        &vulkan.memory_properties,
+                        vk::BufferUsageFlags::UNIFORM_BUFFER,
+                        ubo_size,
+                    )?,
+                    reflection
+                        .push_constant
+                        .as_ref()
+                        .map_or(0, |push| push.size as usize),
+                );
+
+                let uniform_bindings = reflection.meta
+                    .create_binding_map(|param| param.offset());
+
+                let render_pass_format = if !use_render_pass {
+                    vk::Format::UNDEFINED
+                } else if let Some(format) = config.get_format_override() {
+                    format.into()
+                } else if source.format != ImageFormat::Unknown {
+                    source.format.into()
+                } else {
+                    ImageFormat::R8G8B8A8Unorm.into()
+                };
+
+                let graphics_pipeline = VulkanGraphicsPipeline::new(
                     &vulkan.device,
-                    &vulkan.memory_properties,
-                    vk::BufferUsageFlags::UNIFORM_BUFFER,
-                    ubo_size,
-                )?,
-                reflection
-                    .push_constant
-                    .as_ref()
-                    .map_or(0, |push| push.size as usize),
-            );
+                    &vulkan.pipeline_cache,
+                    &spirv_words,
+                    &reflection,
+                    frames_in_flight,
+                    render_pass_format,
+                )?;
 
-            let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
+                Ok(FilterPass {
+                    device: vulkan.device.clone(),
+                    reflection,
+                    // compiled: spirv_words,
+                    uniform_storage,
+                    uniform_bindings,
+                    source,
+                    config,
+                    graphics_pipeline,
+                    // ubo_ring,
+                    frames_in_flight,
+                })
+            }).collect();
 
-            let render_pass_format = if !use_render_pass {
-                vk::Format::UNDEFINED
-            } else if let Some(format) = config.get_format_override() {
-                format.into()
-            } else if source.format != ImageFormat::Unknown {
-                source.format.into()
-            } else {
-                ImageFormat::R8G8B8A8Unorm.into()
-            };
-
-            let graphics_pipeline = VulkanGraphicsPipeline::new(
-                &vulkan.device,
-                &vulkan.pipeline_cache,
-                &spirv_words,
-                &reflection,
-                frames_in_flight,
-                render_pass_format,
-            )?;
-
-            // let ubo_ring = VkUboRing::new(
-            //     &vulkan.device,
-            //     &vulkan.memory_properties,
-            //     frames_in_flight as usize,
-            //     ubo_size,
-            // )?;
-            filters.push(FilterPass {
-                device: vulkan.device.clone(),
-                reflection,
-                // compiled: spirv_words,
-                uniform_storage,
-                uniform_bindings,
-                source,
-                config,
-                graphics_pipeline,
-                // ubo_ring,
-                frames_in_flight,
-            });
-        }
-
+        let filters: error::Result<Vec<FilterPass>> = filters.into_iter().collect();
+        let filters = filters?;
         Ok(filters.into_boxed_slice())
     }
 
