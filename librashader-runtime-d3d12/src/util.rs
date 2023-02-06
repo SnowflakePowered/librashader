@@ -195,18 +195,6 @@ pub fn dxc_compile_shader(
             &include,
         )?;
 
-        if let Ok(buf) = result.GetErrorBuffer() {
-            unsafe {
-                let buf: IDxcBlobUtf8 = buf.cast()?;
-                let buf =
-                    std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
-                let str = std::str::from_utf8_unchecked(buf);
-                if !str.is_empty() {
-                    eprintln!("{str}");
-                }
-            }
-        }
-
         let result = result.GetResult()?;
         Ok(result)
     }
@@ -224,20 +212,7 @@ pub fn dxc_validate_shader(
         unsafe { library.CreateBlob(source.as_ptr().cast(), source.len() as u32, DXC_CP(0))? };
 
     unsafe {
-        let result = validator
-            .Validate(&blob, DxcValidatorFlags_InPlaceEdit)?;
-
-        if let Ok(buf) = result.GetErrorBuffer() {
-            unsafe {
-                let buf: IDxcBlobUtf8 = buf.cast()?;
-                let buf =
-                    std::slice::from_raw_parts(buf.GetBufferPointer().cast(), buf.GetBufferSize());
-                let str = std::str::from_utf8_unchecked(buf);
-                if !str.is_empty() {
-                    eprintln!("{str}");
-                }
-            }
-        }
+        let _result = validator.Validate(&blob, DxcValidatorFlags_InPlaceEdit)?;
         Ok(IDxcBlob::from(blob))
     }
 }

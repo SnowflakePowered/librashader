@@ -2,6 +2,7 @@ use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
 use crate::descriptor_heap::{
     CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap, ResourceWorkHeap,
 };
+use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
@@ -47,11 +48,12 @@ use windows::Win32::Graphics::Direct3D12::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
-use crate::error::FilterChainError;
 
 use rayon::prelude::*;
-type DxilShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
-type HlslShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+type DxilShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
+type HlslShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -113,11 +115,10 @@ impl FilterChainD3D12 {
 
         let shader_copy = preset.shaders.clone();
 
-        let (passes, semantics) =
-            DXIL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?;
+        let (passes, semantics) = DXIL::compile_preset_passes::<
+            GlslangCompilation,
+            FilterChainError,
+        >(preset.shaders, &preset.textures)?;
 
         let (hlsl_passes, _) = HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
             shader_copy,
@@ -361,10 +362,8 @@ impl FilterChainD3D12 {
         let filters: Vec<error::Result<_>> = passes.into_par_iter()
             .zip(hlsl_passes)
             .enumerate()
-            .map(|(
-                      index,
-                      ((config, source, mut dxil),
-                          (_, _, mut hlsl)), )|{
+            .map(|(index, ((config, source, mut dxil),
+                          (_, _, mut hlsl)))| {
                 let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
                 let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
                 let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
@@ -383,10 +382,7 @@ impl FilterChainD3D12 {
                     source.format
                 } else {
                     ImageFormat::R8G8B8A8Unorm
-                }
-                    .into();
-
-                eprintln!("building pipeline for pass {index:?}");
+                }.into();
 
                 /// incredibly cursed.
                 let (reflection, graphics_pipeline) = if !force_hlsl &&
@@ -401,7 +397,6 @@ impl FilterChainD3D12 {
                         ) {
                     (dxil_reflection, graphics_pipeline)
                 } else {
-                    eprintln!("falling back to hlsl for {index:?}");
                     let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
                         device,
                         &library,
@@ -451,33 +446,43 @@ impl FilterChainD3D12 {
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
 
-        let filters: Vec<error::Result<FilterPass>> = filters.into_iter()
+        let filters: Vec<error::Result<FilterPass>> = filters
+            .into_iter()
             .zip(work_heaps)
             .zip(sampler_work_heaps)
-            .map(|(((reflection,
-                uniform_bindings,
-                uniform_storage,
-                push_cbuffer,
-                ubo_cbuffer,
-                pipeline,
-                config,
-                source), mut texture_heap), mut sampler_heap)| {
-
-                let texture_heap = texture_heap.alloc_range()?;
-                let sampler_heap = sampler_heap.alloc_range()?;
-                Ok(FilterPass {
-                    reflection,
-                    uniform_bindings,
-                    uniform_storage,
-                    push_cbuffer,
-                    ubo_cbuffer,
-                    pipeline,
-                    config,
-                    texture_heap,
-                    sampler_heap,
-                    source,
-                })
-            })
+            .map(
+                |(
+                    (
+                        (
+                            reflection,
+                            uniform_bindings,
+                            uniform_storage,
+                            push_cbuffer,
+                            ubo_cbuffer,
+                            pipeline,
+                            config,
+                            source,
+                        ),
+                        mut texture_heap,
+                    ),
+                    mut sampler_heap,
+                )| {
+                    let texture_heap = texture_heap.alloc_range()?;
+                    let sampler_heap = sampler_heap.alloc_range()?;
+                    Ok(FilterPass {
+                        reflection,
+                        uniform_bindings,
+                        uniform_storage,
+                        push_cbuffer,
+                        ubo_cbuffer,
+                        pipeline,
+                        config,
+                        texture_heap,
+                        sampler_heap,
+                        source,
+                    })
+                },
+            )
             .collect();
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
