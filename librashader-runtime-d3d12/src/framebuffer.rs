@@ -1,12 +1,13 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
 use crate::error::assume_d3d12_init;
-use crate::texture::{InputTexture, OutputTexture};
+use crate::texture::{D3D12OutputView, InputTexture};
 use crate::util::d3d12_get_closest_format;
 use crate::{error, util};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 use std::ops::Deref;
+use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX,
     D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
@@ -17,10 +18,11 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
     D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
     D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RTV_DIMENSION_TEXTURE2D,
-    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
-    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION,
-    D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC,
+    D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV,
+    D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0,
+    D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
@@ -32,6 +34,8 @@ pub(crate) struct OwnedImage {
     device: ID3D12Device,
     max_mipmap: u16,
 }
+
+static CLEAR: &[f32; 4] = &[0.0, 0.0, 0.0, 0.0];
 
 impl OwnedImage {
     pub fn new(
@@ -171,6 +175,42 @@ impl OwnedImage {
         Ok(())
     }
 
+    pub fn clear(
+        &self,
+        cmd: &ID3D12GraphicsCommandList,
+        heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
+    ) -> error::Result<()> {
+        util::d3d12_resource_transition(
+            cmd,
+            &self.handle,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+        );
+
+        let rtv = self.create_render_target_view(heap)?;
+
+        let rect = RECT {
+            left: 0,
+            top: 0,
+            right: self.size.width as i32,
+            bottom: self.size.height as i32,
+        };
+
+        unsafe {
+            // more efficient if we don't pass the rect but
+            cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR.as_ptr(), &[rect])
+        }
+
+        util::d3d12_resource_transition(
+            cmd,
+            &self.handle,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        );
+
+        Ok(())
+    }
+
     pub(crate) fn create_shader_resource_view(
         &self,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
@@ -204,15 +244,15 @@ impl OwnedImage {
             descriptor,
             self.size,
             self.format,
-            wrap_mode,
             filter,
+            wrap_mode,
         ))
     }
 
     pub(crate) fn create_render_target_view(
         &self,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
-    ) -> error::Result<OutputTexture> {
+    ) -> error::Result<D3D12OutputView> {
         let descriptor = heap.alloc_slot()?;
 
         unsafe {
@@ -234,7 +274,7 @@ impl OwnedImage {
             );
         }
 
-        Ok(OutputTexture::new(descriptor, self.size))
+        Ok(D3D12OutputView::new(descriptor, self.size))
     }
 
     pub fn scale(

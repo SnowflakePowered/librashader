@@ -240,8 +240,8 @@ pub mod d3d12_hello_triangle {
     use super::*;
     use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
     use crate::filter_chain::FilterChainD3D12;
-    use crate::texture::{InputTexture, OutputTexture};
-    use librashader_common::{FilterMode, Size, Viewport, WrapMode};
+    use crate::texture::{D3D12InputImage, D3D12OutputView};
+    use librashader_common::{Size, Viewport};
     use std::ops::Deref;
     use std::path::Path;
 
@@ -617,22 +617,20 @@ pub mod d3d12_hello_triangle {
             filter
                 .frame(
                     command_list,
-                    InputTexture::new_from_raw(
-                        resources.framebuffer.clone(),
-                        framebuffer,
-                        Size::new(
+                    D3D12InputImage {
+                        resource: resources.framebuffer.clone(),
+                        descriptor: framebuffer,
+                        size: Size::new(
                             resources.viewport.Width as u32,
                             resources.viewport.Height as u32,
                         ),
-                        DXGI_FORMAT_R8G8B8A8_UNORM,
-                        WrapMode::ClampToEdge,
-                        FilterMode::Linear,
-                    ),
+                        format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                    },
                     &Viewport {
                         x: 0.0,
                         y: 0.0,
                         mvp: None,
-                        output: OutputTexture::new_from_raw(
+                        output: D3D12OutputView::new_from_raw(
                             rtv_handle,
                             Size::new(
                                 resources.viewport.Width as u32,

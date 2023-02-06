@@ -1,11 +1,14 @@
-use array_concat::concat_arrays;
 use crate::buffer::D3D12Buffer;
 use crate::error;
+use array_concat::concat_arrays;
 use bytemuck::{offset_of, Pod, Zeroable};
 use librashader_runtime::quad::QuadType;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, D3D12_INPUT_ELEMENT_DESC, D3D12_VERTEX_BUFFER_VIEW, ID3D12GraphicsCommandList4};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4, ID3D12Resource,
+    D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, D3D12_INPUT_ELEMENT_DESC, D3D12_VERTEX_BUFFER_VIEW,
+};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
 
 #[repr(C)]
@@ -105,9 +108,7 @@ impl DrawQuad {
             QuadType::Final => 4,
         };
 
-        unsafe {
-            cmd.DrawInstanced(4, 1, offset, 0)
-        }
+        unsafe { cmd.DrawInstanced(4, 1, offset, 0) }
     }
 
     pub fn get_spirv_cross_vbo_desc() -> [D3D12_INPUT_ELEMENT_DESC; 2] {

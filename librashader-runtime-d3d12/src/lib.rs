@@ -12,11 +12,15 @@ mod hello_triangle;
 mod luts;
 mod mipmap;
 mod options;
+mod parameters;
 mod quad_render;
 mod render_target;
 mod samplers;
 mod texture;
 mod util;
+
+pub use texture::D3D12InputImage;
+pub use texture::D3D12OutputView;
 
 #[cfg(test)]
 mod tests {

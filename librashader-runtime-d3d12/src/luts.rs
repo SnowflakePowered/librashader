@@ -185,8 +185,8 @@ impl LutTexture {
             descriptor,
             source.size,
             ImageFormat::R8G8B8A8Unorm,
-            wrap_mode,
             filter,
+            wrap_mode,
         );
         Ok((
             LutTexture {

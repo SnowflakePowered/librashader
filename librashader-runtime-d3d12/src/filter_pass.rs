@@ -5,7 +5,7 @@ use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::D3D12GraphicsPipeline;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
-use crate::texture::{InputTexture, OutputTexture};
+use crate::texture::{D3D12OutputView, InputTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -136,7 +136,7 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport<OutputTexture>,
+        viewport: &Viewport<D3D12OutputView>,
         original: &InputTexture,
         source: &InputTexture,
         output: &RenderTarget,

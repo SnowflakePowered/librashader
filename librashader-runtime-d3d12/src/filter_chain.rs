@@ -8,11 +8,11 @@ use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
-use crate::options::FilterChainOptionsD3D12;
+use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
 use crate::quad_render::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
-use crate::texture::{InputTexture, OutputDescriptor, OutputTexture};
+use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPreset, TextureConfig};
@@ -46,8 +46,8 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
-use rayon::prelude::*;
 use librashader_runtime::scaling::MipmapSize;
+use rayon::prelude::*;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 1024;
 
@@ -139,8 +139,7 @@ impl FilterChainD3D12 {
             (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
         )?;
 
-        let luts =
-            FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures)?;
+        let luts = FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures)?;
 
         let root_signature = D3D12RootSignature::new(device)?;
 
@@ -342,19 +341,28 @@ impl FilterChainD3D12 {
         hlsl_passes: Vec<HlslShaderPassMeta>,
         semantics: &ShaderSemantics,
         force_hlsl: bool,
-    ) -> error::Result<(ID3D12DescriptorHeap, ID3D12DescriptorHeap, Vec<FilterPass>, D3D12DescriptorHeap<ResourceWorkHeap>)> {
+    ) -> error::Result<(
+        ID3D12DescriptorHeap,
+        ID3D12DescriptorHeap,
+        Vec<FilterPass>,
+        D3D12DescriptorHeap<ResourceWorkHeap>,
+    )> {
         let shader_count = passes.len();
         let work_heap = D3D12DescriptorHeap::<ResourceWorkHeap>::new(
             device,
             (MAX_BINDINGS_COUNT as usize) * shader_count + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
         )?;
-        let (work_heaps, mipmap_heap, texture_heap_handle) =
-            unsafe { work_heap.suballocate(MAX_BINDINGS_COUNT as usize,  MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS) };
+        let (work_heaps, mipmap_heap, texture_heap_handle) = unsafe {
+            work_heap.suballocate(
+                MAX_BINDINGS_COUNT as usize,
+                MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
+            )
+        };
 
         let sampler_work_heap =
             D3D12DescriptorHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
 
-        let (sampler_work_heaps, _,  sampler_heap_handle) =
+        let (sampler_work_heaps, _, sampler_heap_handle) =
             unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize, 0) };
 
         let filters: Vec<error::Result<_>> = passes.into_par_iter()
@@ -472,7 +480,12 @@ impl FilterChainD3D12 {
         let filters = filters?;
 
         // Panic SAFETY: mipmap_heap is always 1024 descriptors.
-        Ok((texture_heap_handle, sampler_heap_handle, filters, mipmap_heap.unwrap()))
+        Ok((
+            texture_heap_handle,
+            sampler_heap_handle,
+            filters,
+            mipmap_heap.unwrap(),
+        ))
     }
 
     fn push_history(
@@ -504,12 +517,30 @@ impl FilterChainD3D12 {
     pub fn frame(
         &mut self,
         cmd: &ID3D12GraphicsCommandList,
-        input: InputTexture,
-        viewport: &Viewport<OutputTexture>,
+        input: D3D12InputImage,
+        viewport: &Viewport<D3D12OutputView>,
         frame_count: usize,
-        _options: Option<&()>,
+        options: Option<&FrameOptionsD3D12>,
     ) -> error::Result<()> {
         drop(self.residuals.drain(..));
+
+        if let Some(options) = options {
+            if options.clear_history {
+                for framebuffer in &mut self.history_framebuffers {
+                    framebuffer.clear(cmd, &mut self.rtv_heap)?;
+                }
+            }
+        }
+
+        // limit number of passes to those enabled.
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let passes = &mut self.passes[0..max];
+
+        if passes.is_empty() {
+            return Ok(());
+        }
+
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
 
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
@@ -544,7 +575,7 @@ impl FilterChainD3D12 {
                 Some(fbo.create_shader_resource_view(&mut self.staging_heap, filter, wrap_mode)?);
         }
 
-        let original = input;
+        let original = unsafe { InputTexture::new_from_raw(input, filter, wrap_mode) };
         let mut source = unsafe { original.clone() };
 
         // swap output and feedback **before** recording command buffers
@@ -643,7 +674,7 @@ impl FilterChainD3D12 {
                 x: 0.0,
                 y: 0.0,
                 mvp: IDENTITY_MVP,
-                output: OutputTexture {
+                output: D3D12OutputView {
                     descriptor: view.descriptor,
                     size,
                 },
@@ -658,7 +689,7 @@ impl FilterChainD3D12 {
                 } else {
                     frame_count
                 } as u32,
-                1,
+                frame_direction,
                 viewport,
                 &original,
                 &source,
@@ -699,7 +730,7 @@ impl FilterChainD3D12 {
                 } else {
                     frame_count
                 } as u32,
-                1,
+                frame_direction,
                 viewport,
                 &original,
                 &source,

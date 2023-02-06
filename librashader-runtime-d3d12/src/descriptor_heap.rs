@@ -7,7 +7,13 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::error::FilterChainError;
-use windows::Win32::Graphics::Direct3D12::{ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, D3D12_DESCRIPTOR_HEAP_TYPE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_GPU_DESCRIPTOR_HANDLE, ID3D12Resource};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12DescriptorHeap, ID3D12Device, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DESCRIPTOR_HEAP_DESC,
+    D3D12_DESCRIPTOR_HEAP_FLAG_NONE, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+    D3D12_DESCRIPTOR_HEAP_TYPE, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+    D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
+    D3D12_GPU_DESCRIPTOR_HANDLE,
+};
 
 #[const_trait]
 pub trait D3D12HeapType {
@@ -129,7 +135,7 @@ impl<T: D3D12ShaderVisibleHeapType> AsRef<D3D12_GPU_DESCRIPTOR_HANDLE>
     for D3D12DescriptorHeapSlotInner<T>
 {
     fn as_ref(&self) -> &D3D12_GPU_DESCRIPTOR_HANDLE {
-        /// SAFETY: D3D12ShaderVisibleHeapType must have a GPU handle.
+        // SAFETY: D3D12ShaderVisibleHeapType must have a GPU handle.
         self.gpu_handle.as_ref().unwrap()
     }
 }
@@ -211,7 +217,11 @@ impl<T> D3D12DescriptorHeap<T> {
         self,
         size: usize,
         reserved: usize,
-    ) -> (Vec<D3D12DescriptorHeap<T>>, Option<D3D12DescriptorHeap<T>>, ID3D12DescriptorHeap) {
+    ) -> (
+        Vec<D3D12DescriptorHeap<T>>,
+        Option<D3D12DescriptorHeap<T>>,
+        ID3D12DescriptorHeap,
+    ) {
         // has to be called right after creation.
         assert_eq!(
             Rc::strong_count(&self.0),
@@ -264,7 +274,11 @@ impl<T> D3D12DescriptorHeap<T> {
 
         let mut reserved_heap = None;
         if reserved != 0 {
-            assert_eq!(reserved, inner.num_descriptors - start, "The input heap could not fit the number of requested reserved descriptors.");
+            assert_eq!(
+                reserved,
+                inner.num_descriptors - start,
+                "The input heap could not fit the number of requested reserved descriptors."
+            );
             let new_cpu_start = root_cpu_ptr + (start * inner.handle_size);
             let new_gpu_start = root_gpu_ptr.map(|r| D3D12_GPU_DESCRIPTOR_HANDLE {
                 ptr: r + (start as u64 * inner.handle_size as u64),
@@ -282,7 +296,6 @@ impl<T> D3D12DescriptorHeap<T> {
                 map: bitvec![0; reserved].into_boxed_bitslice(),
             });
         }
-
 
         (
             heaps

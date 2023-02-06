@@ -4,6 +4,13 @@ use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
+pub struct D3D12InputImage {
+    pub resource: ID3D12Resource,
+    pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    pub size: Size<u32>,
+    pub format: DXGI_FORMAT,
+}
+
 #[derive(Clone)]
 pub(crate) enum InputDescriptor {
     Owned(D3D12DescriptorHeapSlot<CpuStagingHeap>),
@@ -35,27 +42,27 @@ impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for OutputDescriptor {
 }
 
 #[derive(Clone)]
-pub struct OutputTexture {
+pub struct D3D12OutputView {
     pub(crate) descriptor: OutputDescriptor,
     pub(crate) size: Size<u32>,
 }
 
-impl OutputTexture {
-    pub fn new(
+impl D3D12OutputView {
+    pub(crate) fn new(
         handle: D3D12DescriptorHeapSlot<RenderTargetHeap>,
         size: Size<u32>,
-    ) -> OutputTexture {
+    ) -> D3D12OutputView {
         let descriptor = OutputDescriptor::Owned(handle);
-        OutputTexture { descriptor, size }
+        D3D12OutputView { descriptor, size }
     }
 
     // unsafe since the lifetime of the handle has to survive
     pub unsafe fn new_from_raw(
         handle: D3D12_CPU_DESCRIPTOR_HANDLE,
         size: Size<u32>,
-    ) -> OutputTexture {
+    ) -> D3D12OutputView {
         let descriptor = OutputDescriptor::Raw(handle);
-        OutputTexture { descriptor, size }
+        D3D12OutputView { descriptor, size }
     }
 }
 
@@ -75,8 +82,8 @@ impl InputTexture {
         handle: D3D12DescriptorHeapSlot<CpuStagingHeap>,
         size: Size<u32>,
         format: ImageFormat,
-        wrap_mode: WrapMode,
         filter: FilterMode,
+        wrap_mode: WrapMode,
     ) -> InputTexture {
         let srv = InputDescriptor::Owned(handle);
         InputTexture {
@@ -91,19 +98,15 @@ impl InputTexture {
 
     // unsafe since the lifetime of the handle has to survive
     pub unsafe fn new_from_raw(
-        resource: ID3D12Resource,
-        handle: D3D12_CPU_DESCRIPTOR_HANDLE,
-        size: Size<u32>,
-        format: DXGI_FORMAT,
-        wrap_mode: WrapMode,
+        image: D3D12InputImage,
         filter: FilterMode,
+        wrap_mode: WrapMode,
     ) -> InputTexture {
-        let srv = InputDescriptor::Raw(handle);
         InputTexture {
-            resource,
-            descriptor: srv,
-            size,
-            format,
+            resource: image.resource,
+            descriptor: InputDescriptor::Raw(image.descriptor),
+            size: image.size,
+            format: image.format,
             wrap_mode,
             filter,
         }

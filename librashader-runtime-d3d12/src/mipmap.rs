@@ -147,7 +147,7 @@ impl D3D12MipmapGen {
                 root_signature,
                 pipeline,
                 own_heaps,
-                root_index_offset: 0
+                root_index_offset: 0,
             })
         }
     }
