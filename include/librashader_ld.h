@@ -151,6 +151,47 @@ libra_error_t __librashader__noop_gl_filter_chain_get_active_pass_count(
 }
 #endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
+libra_error_t __librashader__noop_vk_filter_chain_create(
+    struct libra_device_vk_t vulkan, libra_shader_preset_t *preset,
+    const struct filter_chain_vk_opt_t *options, libra_vk_filter_chain_t *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_frame(
+    libra_vk_filter_chain_t *chain, VkCommandBuffer command_buffer,
+    size_t frame_count, struct libra_image_vk_t image,
+    struct libra_viewport_t viewport, struct libra_image_vk_t out,
+    const float *mvp, const struct frame_vk_opt_t *opt) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_free(
+    libra_vk_filter_chain_t *chain) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_set_param(
+    libra_vk_filter_chain_t *chain, const char *param_name, float value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_get_param(
+    libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_set_active_pass_count(
+    libra_vk_filter_chain_t *chain, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
+    libra_vk_filter_chain_t *chain, uint32_t *out) {
+    return NULL;
+}
+#endif
+
 #if defined(LIBRA_RUNTIME_D3D11)
 libra_error_t __librashader__noop_d3d11_filter_chain_create(
     libra_shader_preset_t *preset,
@@ -191,51 +232,51 @@ libra_error_t __librashader__noop_d3d11_filter_chain_get_active_pass_count(
     libra_d3d11_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
-
 #endif
 
-#if defined(LIBRA_RUNTIME_VULKAN)
-libra_error_t __librashader__noop_vk_filter_chain_create(
-    struct libra_device_vk_t vulkan, libra_shader_preset_t *preset,
-    const struct filter_chain_vk_opt_t *options, libra_vk_filter_chain_t *out) {
+
+#if defined(LIBRA_RUNTIME_D3D12)
+libra_error_t __librashader__noop_d3d12_filter_chain_create(
+    libra_shader_preset_t *preset,
+    const struct filter_chain_d3d12_opt_t *options, const ID3D12Device *device,
+    libra_d3d12_filter_chain_t *out) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_vk_filter_chain_frame(
-    libra_vk_filter_chain_t *chain, VkCommandBuffer command_buffer,
-    size_t frame_count, struct libra_image_vk_t image,
-    struct libra_viewport_t viewport, struct libra_image_vk_t out,
-    const float *mvp, const struct frame_vk_opt_t *opt) {
+libra_error_t __librashader__noop_d3d12_filter_chain_frame(
+    libra_d3d12_filter_chain_t *chain,
+    const ID3D12GraphicsCommandList *command_list, size_t frame_count,
+    struct libra_source_image_d3d12_t image, struct libra_viewport_t viewport,
+    D3D12_CPU_DESCRIPTOR_HANDLE out, const float *mvp,
+    const struct frame_d3d12_opt_t *opt) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_vk_filter_chain_free(
-    libra_vk_filter_chain_t *chain) {
+libra_error_t __librashader__noop_d3d12_filter_chain_free(
+    libra_d3d12_filter_chain_t *chain) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_vk_filter_chain_set_param(
-    libra_vk_filter_chain_t *chain, const char *param_name, float value) {
+libra_error_t __librashader__noop_d3d12_filter_chain_set_param(
+    libra_d3d12_filter_chain_t *chain, const char *param_name, float value) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_vk_filter_chain_get_param(
-    libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
+libra_error_t __librashader__noop_d3d12_filter_chain_get_param(
+    libra_d3d12_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_vk_filter_chain_set_active_pass_count(
-    libra_vk_filter_chain_t *chain, uint32_t value) {
+libra_error_t __librashader__noop_d3d12_filter_chain_set_active_pass_count(
+    libra_d3d12_filter_chain_t *chain, uint32_t value) {
     return NULL;
 }
 
-libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
-    libra_vk_filter_chain_t *chain, uint32_t *out) {
+libra_error_t __librashader__noop_d3d12_filter_chain_get_active_pass_count(
+    libra_d3d12_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
-
 #endif
-
 typedef struct libra_instance_t {
     /// Load a preset.
     ///
@@ -446,76 +487,6 @@ typedef struct libra_instance_t {
     PFN_libra_gl_filter_chain_set_param gl_filter_chain_set_param;
 #endif
 
-#if defined(LIBRA_RUNTIME_D3D11)
-    /// Create the filter chain given the shader preset.
-    ///
-    /// The shader preset is immediately invalidated and must be recreated after
-    /// the filter chain is created.
-    ///
-    /// ## Safety:
-    /// - `preset` must be either null, or valid and aligned.
-    /// - `options` must be either null, or valid and aligned.
-    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
-    PFN_libra_d3d11_filter_chain_create d3d11_filter_chain_create;
-
-    /// Draw a frame with the given parameters for the given filter chain.
-    ///
-    /// ## Safety
-    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is
-    /// null or invalid, this
-    ///    function will return an error.
-    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to
-    /// 16 consecutive `float`
-    ///    values for the model view projection matrix.
-    /// - `opt` may be null, or if it is not null, must be an aligned pointer to
-    /// a valid `frame_gl_opt_t`
-    ///    struct.
-    PFN_libra_d3d11_filter_chain_frame d3d11_filter_chain_frame;
-
-    
-    /// Free a D3D11 filter chain.
-    ///
-    /// The resulting value in `chain` then becomes null.
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an
-    /// initialized `libra_d3d11_filter_chain_t`.
-    PFN_libra_d3d11_filter_chain_free d3d11_filter_chain_free;
-
-    /// Gets the number of active passes for this chain.
-    ///
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an
-    /// initialized `libra_d3d11_filter_chain_t`.
-    PFN_libra_d3d11_filter_chain_get_active_pass_count
-        d3d11_filter_chain_get_active_pass_count;
-
-    /// Sets the number of active passes for this chain.
-    ///
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an
-    /// initialized `libra_d3d11_filter_chain_t`.
-    PFN_libra_d3d11_filter_chain_set_active_pass_count
-        d3d11_filter_chain_set_active_pass_count;
-
-    /// Gets a parameter for the filter chain.
-    ///
-    /// If the parameter does not exist, returns an error.
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an
-    /// initialized `libra_d3d11_filter_chain_t`.
-    /// - `param_name` must be either null or a null terminated string.
-    PFN_libra_d3d11_filter_chain_get_param d3d11_filter_chain_get_param;
-
-    /// Sets a parameter for the filter chain.
-    ///
-    /// If the parameter does not exist, returns an error.
-    /// ## Safety
-    /// - `chain` must be either null or a valid and aligned pointer to an
-    /// initialized `libra_d3d11_filter_chain_t`.
-    /// - `param_name` must be either null or a null terminated string.
-    PFN_libra_d3d11_filter_chain_set_param d3d11_filter_chain_set_param;
-#endif
-
 #if defined(LIBRA_RUNTIME_VULKAN)
     /// Create the filter chain given the shader preset.
     ///
@@ -597,7 +568,148 @@ typedef struct libra_instance_t {
     /// - `param_name` must be either null or a null terminated string.
     PFN_libra_vk_filter_chain_set_param vk_filter_chain_set_param;
 #endif
+
+#if defined(LIBRA_RUNTIME_D3D11)
+    /// Create the filter chain given the shader preset.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    PFN_libra_d3d11_filter_chain_create d3d11_filter_chain_create;
+
+    /// Draw a frame with the given parameters for the given filter chain.
+    ///
+    /// ## Safety
+    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is
+    /// null or invalid, this
+    ///    function will return an error.
+    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to
+    /// 16 consecutive `float`
+    ///    values for the model view projection matrix.
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to
+    /// a valid `frame_d3d11_opt_t`
+    ///    struct.
+    PFN_libra_d3d11_filter_chain_frame d3d11_filter_chain_frame;
+
+    /// Free a D3D11 filter chain.
+    ///
+    /// The resulting value in `chain` then becomes null.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d11_filter_chain_t`.
+    PFN_libra_d3d11_filter_chain_free d3d11_filter_chain_free;
+
+    /// Gets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d11_filter_chain_t`.
+    PFN_libra_d3d11_filter_chain_get_active_pass_count
+        d3d11_filter_chain_get_active_pass_count;
+
+    /// Sets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d11_filter_chain_t`.
+    PFN_libra_d3d11_filter_chain_set_active_pass_count
+        d3d11_filter_chain_set_active_pass_count;
+
+    /// Gets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d11_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    PFN_libra_d3d11_filter_chain_get_param d3d11_filter_chain_get_param;
+
+    /// Sets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d11_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    PFN_libra_d3d11_filter_chain_set_param d3d11_filter_chain_set_param;
+#endif
+
+
+#if defined(LIBRA_RUNTIME_D3D12)
+    /// Create the filter chain given the shader preset.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    PFN_libra_d3d12_filter_chain_create d3d12_filter_chain_create;
+
+    /// Draw a frame with the given parameters for the given filter chain.
+    ///
+    /// ## Safety
+    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is
+    /// null or invalid, this
+    ///    function will return an error.
+    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to
+    /// 16 consecutive `float`
+    ///    values for the model view projection matrix.
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to
+    /// a valid `frame_d3d12_opt_t`
+    ///    struct.
+    PFN_libra_d3d12_filter_chain_frame d3d12_filter_chain_frame;
+
+    /// Free a D3D11 filter chain.
+    ///
+    /// The resulting value in `chain` then becomes null.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d12_filter_chain_t`.
+    PFN_libra_d3d12_filter_chain_free d3d12_filter_chain_free;
+
+    /// Gets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d12_filter_chain_t`.
+    PFN_libra_d3d12_filter_chain_get_active_pass_count
+        d3d12_filter_chain_get_active_pass_count;
+
+    /// Sets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d12_filter_chain_t`.
+    PFN_libra_d3d12_filter_chain_set_active_pass_count
+        d3d12_filter_chain_set_active_pass_count;
+
+    /// Gets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d12_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    PFN_libra_d3d12_filter_chain_get_param d3d12_filter_chain_get_param;
+
+    /// Sets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_d3d12_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    PFN_libra_d3d12_filter_chain_set_param d3d12_filter_chain_set_param;
+#endif
 } libra_instance_t;
+
+
 
 libra_instance_t __librashader_make_null_instance() {
     return libra_instance_t {
@@ -632,6 +744,20 @@ libra_instance_t __librashader_make_null_instance() {
             __librashader__noop_gl_filter_chain_set_param,
 #endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
+        .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
+        .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
+        .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
+        .vk_filter_chain_get_active_pass_count =
+            __librashader__noop_vk_filter_chain_get_active_pass_count,
+        .vk_filter_chain_set_active_pass_count =
+            __librashader__noop_vk_filter_chain_set_active_pass_count,
+        .vk_filter_chain_get_param =
+            __librashader__noop_vk_filter_chain_get_param,
+        .vk_filter_chain_set_param =
+            __librashader__noop_vk_filter_chain_set_param,
+#endif
+
 #if defined(LIBRA_RUNTIME_D3D11)
         .d3d11_filter_chain_create =
             __librashader__noop_d3d11_filter_chain_create,
@@ -648,19 +774,21 @@ libra_instance_t __librashader_make_null_instance() {
             __librashader__noop_d3d11_filter_chain_set_param,
 #endif
 
-#if defined(LIBRA_RUNTIME_VULKAN)
-        .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
-        .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
-        .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
-        .vk_filter_chain_get_active_pass_count =
-            __librashader__noop_vk_filter_chain_get_active_pass_count,
-        .vk_filter_chain_set_active_pass_count =
-            __librashader__noop_vk_filter_chain_set_active_pass_count,
-        .vk_filter_chain_get_param =
-            __librashader__noop_vk_filter_chain_get_param,
-        .vk_filter_chain_set_param =
-            __librashader__noop_vk_filter_chain_set_param,
-#endif
+#if defined(LIBRA_RUNTIME_D3D12)
+        .d3d12_filter_chain_create =
+            __librashader__noop_d3d12_filter_chain_create,
+        .d3d12_filter_chain_frame =
+            __librashader__noop_d3d12_filter_chain_frame,
+        .d3d12_filter_chain_free = __librashader__noop_d3d12_filter_chain_free,
+        .d3d12_filter_chain_get_active_pass_count =
+            __librashader__noop_d3d12_filter_chain_get_active_pass_count,
+        .d3d12_filter_chain_set_active_pass_count =
+            __librashader__noop_d3d12_filter_chain_set_active_pass_count,
+        .d3d12_filter_chain_get_param =
+            __librashader__noop_d3d12_filter_chain_get_param,
+        .d3d12_filter_chain_set_param =
+            __librashader__noop_d3d12_filter_chain_set_param,
+#endif             
     };
 }
 
@@ -718,22 +846,6 @@ libra_instance_t librashader_load_instance() {
 
 #endif
 
-#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                d3d11_filter_chain_create);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                d3d11_filter_chain_frame);
-    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_free);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                d3d11_filter_chain_get_param);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                d3d11_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                d3d11_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                d3d11_filter_chain_set_active_pass_count);
-#endif
-
 #if defined(LIBRA_RUNTIME_VULKAN)
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_create);
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_frame);
@@ -748,6 +860,29 @@ libra_instance_t librashader_load_instance() {
                                 vk_filter_chain_set_active_pass_count);
 #endif
 
+#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_frame);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        d3d11_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        d3d11_filter_chain_set_active_pass_count);
+#endif
+
+#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12)
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_frame);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        d3d12_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        d3d12_filter_chain_set_active_pass_count);
+#endif
     return instance;
 }
 #else

@@ -14,11 +14,18 @@ pub type libra_error_t = Option<NonNull<LibrashaderError>>;
 #[doc(cfg(feature = "runtime-opengl"))]
 pub type libra_gl_filter_chain_t = Option<NonNull<librashader::runtime::gl::capi::FilterChainGL>>;
 
-/// A handle to a Direct3D11 filter chain.
+/// A handle to a Direct3D 11 filter chain.
 #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
 #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
 pub type libra_d3d11_filter_chain_t =
     Option<NonNull<librashader::runtime::d3d11::capi::FilterChainD3D11>>;
+
+/// A handle to a Direct3D 12 filter chain.
+#[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
+#[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
+pub type libra_d3d12_filter_chain_t =
+Option<NonNull<librashader::runtime::d3d12::capi::FilterChainD3D12>>;
+
 
 /// A handle to a Vulkan filter chain.
 #[cfg(feature = "runtime-vulkan")]

@@ -33,6 +33,10 @@ pub enum LibrashaderError {
     #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
+    #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
+    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
+    #[error("There was an error in the D3D12 filter chain.")]
+    D3D12FilterError(#[from] librashader::runtime::d3d12::error::FilterChainError),
     #[cfg(feature = "runtime-vulkan")]
     #[doc(cfg(feature = "runtime-vulkan"))]
     #[error("There was an error in the Vulkan filter chain.")]
@@ -183,6 +187,8 @@ impl LibrashaderError {
             LibrashaderError::OpenGlFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
             LibrashaderError::D3D11FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
+            #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
+            LibrashaderError::D3D12FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-vulkan")]
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
         }
@@ -210,14 +216,6 @@ macro_rules! assert_non_null {
         }
     };
 }
-
-// macro_rules! assert_some {
-//     ($value:ident) => {
-//         if $value.is_none() {
-//             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
-//         }
-//     };
-// }
 
 macro_rules! assert_some_ptr {
     ($value:ident) => {

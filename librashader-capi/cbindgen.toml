@@ -48,12 +48,21 @@ typedef void* VkPhysicalDevice;
 typedef void* VkInstance;
 typedef void* VkCommandBuffer;
 #endif
+#if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12)
+#include <d3d12.h>
+#else
+typedef void ID3D12GraphicsCommandList;
+typedef void ID3D12Device;
+typedef void ID3D12Resource;
+typedef void D3D12_CPU_DESCRIPTOR_HANDLE;
+#endif
 """
 
 [defines]
 "feature = runtime-opengl" = "LIBRA_RUNTIME_OPENGL"
-"feature = runtime-d3d11" = "LIBRA_RUNTIME_D3D11"
 "feature = runtime-vulkan" = "LIBRA_RUNTIME_VULKAN"
+"feature = runtime-d3d11" = "LIBRA_RUNTIME_D3D11"
+"feature = runtime-d3d12" = "LIBRA_RUNTIME_D3D12"
 
 [parse]
 parse_deps = true
@@ -62,8 +71,9 @@ include = ["librashader",
     "librashader-preprocess",
     "librashader-reflect",
     "librashader-runtime-gl",
-    "librashader-runtime-d3d11",
     "librashader-runtime-vk",
+    "librashader-runtime-d3d11",
+    "librashader-runtime-d3d12",
 ]
 expand = ["librashader-capi"]
 
@@ -101,6 +111,15 @@ include = [
     "PFN_libra_gl_filter_chain_get_active_pass_count",
     "PFN_libra_gl_filter_chain_free",
 
+    # vulkan
+    "PFN_libra_vk_filter_chain_create",
+    "PFN_libra_vk_filter_chain_frame",
+    "PFN_libra_vk_filter_chain_set_param",
+    "PFN_libra_vk_filter_chain_get_param",
+    "PFN_libra_vk_filter_chain_set_active_pass_count",
+    "PFN_libra_vk_filter_chain_get_active_pass_count",
+    "PFN_libra_vk_filter_chain_free",
+
     # d3d11
     "PFN_libra_d3d11_filter_chain_create",
     "PFN_libra_d3d11_filter_chain_frame",
@@ -110,14 +129,15 @@ include = [
     "PFN_libra_d3d11_filter_chain_get_active_pass_count",
     "PFN_libra_d3d11_filter_chain_free",
 
-    # vulkan
-    "PFN_libra_vk_filter_chain_create",
-    "PFN_libra_vk_filter_chain_frame",
-    "PFN_libra_vk_filter_chain_set_param",
-    "PFN_libra_vk_filter_chain_get_param",
-    "PFN_libra_vk_filter_chain_set_active_pass_count",
-    "PFN_libra_vk_filter_chain_get_active_pass_count",
-    "PFN_libra_vk_filter_chain_free",
+
+    # d3d11
+    "PFN_libra_d3d12_filter_chain_create",
+    "PFN_libra_d3d12_filter_chain_frame",
+    "PFN_libra_d3d12_filter_chain_set_param",
+    "PFN_libra_d3d12_filter_chain_get_param",
+    "PFN_libra_d3d12_filter_chain_set_active_pass_count",
+    "PFN_libra_d3d12_filter_chain_get_active_pass_count",
+    "PFN_libra_d3d12_filter_chain_free",
 ]
 
 [export.rename]
@@ -126,12 +146,15 @@ include = [
 "FilterChainGL" = "_filter_chain_gl"
 "FilterChainOptionsGL" = "filter_chain_gl_opt_t"
 "FrameOptionsGL" = "frame_gl_opt_t"
-"FilterChainD3D11" = "_filter_chain_d3d11"
-"FilterChainOptionsD3D11" = "filter_chain_d3d11_opt_t"
-"FrameOptionsD3D11" = "frame_d3d11_opt_t"
 "FilterChainVulkan" = "_filter_chain_vk"
 "FilterChainOptionsVulkan" = "filter_chain_vk_opt_t"
 "FrameOptionsVulkan" = "frame_vk_opt_t"
+"FilterChainD3D11" = "_filter_chain_d3d11"
+"FilterChainOptionsD3D11" = "filter_chain_d3d11_opt_t"
+"FrameOptionsD3D11" = "frame_d3d11_opt_t"
+"FilterChainD3D12" = "_filter_chain_d3d12"
+"FilterChainOptionsD3D12" = "filter_chain_d3d12_opt_t"
+"FrameOptionsD3D12" = "frame_d3d12_opt_t"
 
 # vulkan renames
 "PhysicalDevice" = "VkPhysicalDevice"
@@ -145,3 +168,8 @@ include = [
 "ID3D11Device" = "const ID3D11Device *"
 "ID3D11RenderTargetView" = "const ID3D11RenderTargetView *"
 "ID3D11ShaderResourceView" = "const ID3D11ShaderResourceView *"
+
+#hack to get proper pointer indirection for COM pointers
+"ID3D12Device" = "const ID3D12Device *"
+"ID3D12Resource" = "const ID3D12Resource *"
+"ID3D12GraphicsCommandList" = "const ID3D12GraphicsCommandList *"

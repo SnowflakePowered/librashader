@@ -1,3 +1,5 @@
+#![cfg(target_os = "windows")]
+
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]

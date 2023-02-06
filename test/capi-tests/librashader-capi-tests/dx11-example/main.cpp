@@ -14,6 +14,7 @@
 
 #include <assert.h>
 #define LIBRA_RUNTIME_D3D11
+#define LIBRA_RUNTIME_D3D12
 
 #include "../../../../include/librashader.h"
 #include "../../../../include/librashader_ld.h"

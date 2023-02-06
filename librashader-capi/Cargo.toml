@@ -15,9 +15,10 @@ description = "RetroArch shaders for all."
 crate-type = [ "cdylib", "staticlib" ]
 
 [features]
-default = ["runtime-opengl", "runtime-d3d11", "runtime-vulkan"]
+default = ["runtime-opengl", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan"]
 runtime-opengl = ["gl", "librashader/gl"]
-runtime-d3d11 = ["windows", "librashader/d3d11"]
+runtime-d3d11 = ["windows", "librashader/d3d11", "windows/Win32_Graphics_Direct3D11"]
+runtime-d3d12 = ["windows", "librashader/d3d12", "windows/Win32_Graphics_Direct3D12"]
 runtime-vulkan = ["ash", "librashader/vk"]
 
 [dependencies]
@@ -31,9 +32,6 @@ spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.44.0"
-features = [
-    "Win32_Graphics_Direct3D11",
-]
 optional = true
 
 [package.metadata.cargo-post.dependencies]

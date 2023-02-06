@@ -37,8 +37,13 @@ The librashader C API is best used by linking statically with `librashader_ld`, 
 loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. 
 
 ### Building
+Some downstream dependencies require some Python dependencies to build.
 
-For Rust projects, simply add the crate to your `Cargo.toml`. Python may also be required to build some dependent libraries.
+```
+pip install meson ninja mako
+```
+
+For Rust projects, simply add the crate to your `Cargo.toml`. 
 
 ```
 cargo add librashader
@@ -106,7 +111,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     * All caveats from the OpenGL 3.3+ section should be considered.
     * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
     * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For GPUs released within the last 5 years, this may improve performance.
-  * Vulkan 1.3+
+  * Vulkan
     * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html) by default.
       This extension must be enabled at device creation. Explicit render passes can be used by configuring filter chain options, but may have reduced performance 
       compared to dynamic rendering.
