@@ -25,7 +25,6 @@ pub enum FilterChainError {
 
 pub type Result<T> = std::result::Result<T, FilterChainError>;
 
-// todo: make this return error
 macro_rules! assume_d3d12_init {
     ($value:ident, $call:literal) => {
         let $value = $value.ok_or($crate::error::FilterChainError::Direct3DOperationError(

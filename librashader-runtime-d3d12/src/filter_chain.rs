@@ -437,7 +437,7 @@ impl FilterChainD3D12 {
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
 
-        /// Need to take care of the heaps in a single thread because [;16] is not sized..?
+        // Need to take care of the heaps in a single thread because [;16] is not sized..?
         let filters: Vec<error::Result<FilterPass>> = filters
             .into_iter()
             .zip(work_heaps)
