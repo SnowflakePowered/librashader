@@ -37,9 +37,10 @@ pub trait UniformStorageAccess {
     fn push_slice(&self) -> &[u8];
 }
 
-impl<T, H, S> UniformStorageAccess for UniformStorage<T, H, S>
+impl<T, H, U, P> UniformStorageAccess for UniformStorage<T, H, U, P>
 where
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
 {
     fn ubo_pointer(&self) -> *const u8 {
         self.ubo.as_ptr()
@@ -68,23 +69,30 @@ impl<T> BindUniform<Option<()>, T> for NoUniformBinder {
 }
 
 /// A helper to bind uniform variables to UBO or Push Constant Buffers.
-pub struct UniformStorage<H = NoUniformBinder, C = Option<()>, S = Box<[u8]>>
+pub struct UniformStorage<H = NoUniformBinder, C = Option<()>, U = Box<[u8]>, P = Box<[u8]>>
 where
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
 {
-    ubo: S,
-    push: Box<[u8]>,
+    ubo: U,
+    push: P,
     _h: PhantomData<H>,
     _c: PhantomData<C>,
 }
 
-impl<H, C, S> UniformStorage<H, C, S>
+impl<H, C, U, P> UniformStorage<H, C, U, P>
 where
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
 {
     /// Access the backing storage for the UBO.
-    pub fn inner_ubo(&self) -> &S {
+    pub fn inner_ubo(&self) -> &U {
         &self.ubo
+    }
+
+    /// Access the backing storage for the Push storage.
+    pub fn inner_push(&self) -> &P {
+        &self.push
     }
 
     pub(crate) fn buffer(&mut self, ty: UniformMemberBlock) -> &mut [u8] {
@@ -95,10 +103,11 @@ where
     }
 }
 
-impl<H, C, S> UniformStorage<H, C, S>
+impl<H, C, U, P> UniformStorage<H, C, U, P>
 where
     C: Copy,
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
 {
     #[inline(always)]
     fn write_scalar_inner<T: UniformScalar>(buffer: &mut [u8], value: T) {
@@ -125,7 +134,23 @@ where
     }
 
     /// Create a new `UniformStorage` with the given backing storage
-    pub fn new_with_storage(storage: S, push_size: usize) -> UniformStorage<H, C, S> {
+    pub fn new_with_storage(ubo: U, push: P) -> UniformStorage<H, C, U, P> {
+        UniformStorage {
+            ubo,
+            push,
+            _h: Default::default(),
+            _c: Default::default(),
+        }
+    }
+}
+
+impl<H, C, U> UniformStorage<H, C, U, Box<[u8]>>
+    where
+        C: Copy,
+        U: Deref<Target = [u8]> + DerefMut,
+{
+    /// Create a new `UniformStorage` with the given backing storage
+    pub fn new_with_ubo_storage(storage: U, push_size: usize) -> UniformStorage<H, C, U, Box<[u8]>> {
         UniformStorage {
             ubo: storage,
             push: vec![0u8; push_size].into_boxed_slice(),
@@ -135,7 +160,7 @@ where
     }
 }
 
-impl<H, C> UniformStorage<H, C, Box<[u8]>> {
+impl<H, C> UniformStorage<H, C, Box<[u8]>, Box<[u8]>> {
     /// Create a new `UniformStorage` with the given size for UBO and Push Constant Buffer sizes.
     pub fn new(ubo_size: usize, push_size: usize) -> UniformStorage<H, C, Box<[u8]>> {
         UniformStorage {
@@ -147,10 +172,11 @@ impl<H, C> UniformStorage<H, C, Box<[u8]>> {
     }
 }
 
-impl<H, C, S> UniformStorage<H, C, S>
+impl<H, C, U, P> UniformStorage<H, C, U, P>
 where
     C: Copy,
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 4]>,
 {
     #[inline(always)]
@@ -178,10 +204,11 @@ where
     }
 }
 
-impl<H, C, S> UniformStorage<H, C, S>
+impl<H, C, U, P> UniformStorage<H, C, U, P>
 where
     C: Copy,
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 16]>,
 {
     #[inline(always)]

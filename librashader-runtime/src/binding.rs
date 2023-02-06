@@ -50,10 +50,11 @@ where
 }
 
 /// Trait that abstracts binding of semantics to shader uniforms.
-pub trait BindSemantics<H = NoUniformBinder, C = Option<()>, S = Box<[u8]>>
+pub trait BindSemantics<H = NoUniformBinder, C = Option<()>, U = Box<[u8]>, P = Box<[u8]>>
 where
     C: Copy,
-    S: Deref<Target = [u8]> + DerefMut,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
     H: BindUniform<C, f32>,
     H: BindUniform<C, u32>,
     H: BindUniform<C, i32>,
@@ -89,7 +90,7 @@ where
     fn bind_semantics<'a>(
         device: &Self::DeviceContext,
         sampler_set: &Self::SamplerSet,
-        uniform_storage: &mut UniformStorage<H, C, S>,
+        uniform_storage: &mut UniformStorage<H, C, U, P>,
         descriptor_set: &mut Self::DescriptorSet<'a>,
         mvp: &[f32; 16],
         frame_count: u32,

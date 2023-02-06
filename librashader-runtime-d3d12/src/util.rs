@@ -7,10 +7,12 @@ use std::u64;
 use widestring::u16cstr;
 use windows::core::{Interface, PCSTR, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
-    DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcBlobUtf8, IDxcCompiler, IDxcUtils, IDxcValidator,
-    DXC_CP, DXC_CP_UTF8,
+    DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
+    DXC_CP_UTF8,
 };
-use windows::Win32::Graphics::Direct3D::Fxc::{D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION};
+use windows::Win32::Graphics::Direct3D::Fxc::{
+    D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION,
+};
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_FEATURE_DATA_FORMAT_SUPPORT,

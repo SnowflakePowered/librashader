@@ -318,7 +318,7 @@ impl FilterChainVulkan {
                 let spirv_words = reflect.compile(None)?;
 
                 let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
-                let uniform_storage = UniformStorage::new_with_storage(
+                let uniform_storage = UniformStorage::new_with_ubo_storage(
                     RawVulkanBuffer::new(
                         &vulkan.device,
                         &vulkan.memory_properties,

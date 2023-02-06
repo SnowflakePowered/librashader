@@ -1,4 +1,4 @@
-use crate::buffer::{D3D12Buffer, D3D12ConstantBuffer};
+use crate::buffer::{D3D12Buffer, RawD3D12Buffer};
 use crate::descriptor_heap::{
     CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap, ResourceWorkHeap,
 };
@@ -391,8 +391,8 @@ impl FilterChainD3D12 {
                     let Ok(graphics_pipeline) =
                         D3D12GraphicsPipeline::new_from_dxil(
                             device,
-                            &library,
-                            &validator,
+                            library,
+                            validator,
                             &dxil,
                             root_signature,
                             render_format,
@@ -401,8 +401,8 @@ impl FilterChainD3D12 {
                 } else {
                     let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
                         device,
-                        &library,
-                        &compiler,
+                        library,
+                        compiler,
                         &hlsl,
                         root_signature,
                         render_format,
@@ -410,37 +410,26 @@ impl FilterChainD3D12 {
                     (hlsl_reflection, graphics_pipeline)
                 };
 
-                let uniform_storage = UniformStorage::new(
-                    reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
-                    reflection
+                    // minimum size here has to be 1 byte.
+                    let ubo_size = reflection.ubo.as_ref().map_or(1, |ubo| ubo.size as usize);
+                    let push_size = reflection
                         .push_constant
                         .as_ref()
-                        .map_or(0, |push| push.size as usize),
+                        .map_or(1, |push| push.size as usize);
+
+                    let uniform_storage = UniformStorage::new_with_storage(
+                    RawD3D12Buffer::new(D3D12Buffer::new(device, ubo_size)?)?,
+                    RawD3D12Buffer::new(D3D12Buffer::new(device, push_size)?)?
                 );
 
-                let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
-                    let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, ubo.size as usize)?);
-                    Some(buffer)
-                } else {
-                    None
-                };
-
-                let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
-                    let buffer = D3D12ConstantBuffer::new(D3D12Buffer::new(device, push.size as usize)?);
-                    Some(buffer)
-                } else {
-                    None
-                };
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
                 Ok((reflection,
                     uniform_bindings,
                     uniform_storage,
-                    push_cbuffer,
-                    ubo_cbuffer,
                     graphics_pipeline,
-                    config.clone(),
+                    config,
                     source))
 
             }).collect();
@@ -456,16 +445,7 @@ impl FilterChainD3D12 {
             .map(
                 |(
                     (
-                        (
-                            reflection,
-                            uniform_bindings,
-                            uniform_storage,
-                            push_cbuffer,
-                            ubo_cbuffer,
-                            pipeline,
-                            config,
-                            source,
-                        ),
+                        (reflection, uniform_bindings, uniform_storage, pipeline, config, source),
                         mut texture_heap,
                     ),
                     mut sampler_heap,
@@ -476,8 +456,6 @@ impl FilterChainD3D12 {
                         reflection,
                         uniform_bindings,
                         uniform_storage,
-                        push_cbuffer,
-                        ubo_cbuffer,
                         pipeline,
                         config,
                         texture_heap,

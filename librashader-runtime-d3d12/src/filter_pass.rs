@@ -1,4 +1,4 @@
-use crate::buffer::D3D12ConstantBuffer;
+use crate::buffer::RawD3D12Buffer;
 use crate::descriptor_heap::{D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerWorkHeap};
 use crate::error;
 use crate::filter_chain::FilterCommon;
@@ -13,7 +13,7 @@ use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, Unif
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::quad::QuadType;
-use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
+use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use rustc_hash::FxHashMap;
 use std::ops::Deref;
 use windows::core::Interface;
@@ -30,9 +30,8 @@ pub(crate) struct FilterPass {
     pub(crate) reflection: ShaderReflection,
     pub(crate) config: ShaderPassConfig,
     pub(crate) uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
-    pub uniform_storage: UniformStorage,
-    pub(crate) push_cbuffer: Option<D3D12ConstantBuffer>,
-    pub(crate) ubo_cbuffer: Option<D3D12ConstantBuffer>,
+    pub uniform_storage:
+        UniformStorage<NoUniformBinder, Option<()>, RawD3D12Buffer, RawD3D12Buffer>,
     pub(crate) texture_heap: [D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16],
     pub(crate) sampler_heap: [D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16],
     pub source: ShaderSource,
@@ -44,7 +43,7 @@ impl TextureInput for InputTexture {
     }
 }
 
-impl BindSemantics for FilterPass {
+impl BindSemantics<NoUniformBinder, Option<()>, RawD3D12Buffer, RawD3D12Buffer> for FilterPass {
     type InputTexture = InputTexture;
     type SamplerSet = SamplerSet;
     type DescriptorSet<'a> = (
@@ -160,33 +159,16 @@ impl FilterPass {
             source,
         );
 
-        // todo: write directly to persistently bound cbuffer.
         if let Some(ubo) = &self.reflection.ubo
-            && let Some(cbuffer) = &mut self.ubo_cbuffer
             && ubo.size != 0
         {
-            {
-                let guard = cbuffer.buffer.map(None)?;
-                guard.slice.copy_from_slice(self.uniform_storage.ubo_slice());
-            }
-
-            unsafe {
-                cmd.SetGraphicsRootConstantBufferView(2, cbuffer.desc.BufferLocation)
-            }
+            self.uniform_storage.inner_ubo().bind_cbv(2, cmd);
         }
 
         if let Some(push) = &self.reflection.push_constant
-            && let Some(cbuffer) = &mut self.push_cbuffer
             && push.size != 0
         {
-            {
-                let guard = cbuffer.buffer.map(None)?;
-                guard.slice.copy_from_slice(self.uniform_storage.push_slice());
-            }
-
-            unsafe {
-                cmd.SetGraphicsRootConstantBufferView(3, cbuffer.desc.BufferLocation)
-            }
+            self.uniform_storage.inner_push().bind_cbv(3, cmd);
         }
 
         unsafe {

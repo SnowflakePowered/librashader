@@ -1,18 +1,16 @@
 use crate::error;
 use crate::error::assume_d3d12_init;
-use std::ops::Range;
+use std::ffi::c_void;
+use std::mem::ManuallyDrop;
+use std::ops::{Deref, DerefMut, Range};
+use std::ptr::NonNull;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12Resource, D3D12_CONSTANT_BUFFER_VIEW_DESC, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
     D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_UNKNOWN,
     D3D12_RANGE, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER,
     D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
-
-pub struct D3D12ConstantBuffer {
-    pub buffer: D3D12Buffer,
-    pub desc: D3D12_CONSTANT_BUFFER_VIEW_DESC,
-}
 
 pub struct D3D12Buffer {
     handle: ID3D12Resource,
@@ -100,15 +98,56 @@ impl D3D12Buffer {
     }
 }
 
-impl D3D12ConstantBuffer {
-    pub fn new(buffer: D3D12Buffer) -> D3D12ConstantBuffer {
-        unsafe {
-            let desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {
-                BufferLocation: buffer.handle.GetGPUVirtualAddress(),
-                SizeInBytes: buffer.size as u32,
-            };
+/// SAFETY: Creating the pointer should be safe in multithreaded contexts.
+///
+/// Mutation is guarded by DerefMut<Target=[u8]>
+unsafe impl Send for RawD3D12Buffer {}
+pub struct RawD3D12Buffer {
+    buffer: ManuallyDrop<D3D12Buffer>,
+    ptr: NonNull<c_void>,
+}
 
-            D3D12ConstantBuffer { buffer, desc }
+impl RawD3D12Buffer {
+    pub fn new(buffer: D3D12Buffer) -> error::Result<Self> {
+        let buffer = ManuallyDrop::new(buffer);
+        let range = D3D12_RANGE { Begin: 0, End: 0 };
+        let mut ptr = std::ptr::null_mut();
+        unsafe {
+            buffer.handle.Map(0, Some(&range), Some(&mut ptr))?;
         }
+
+        // panic-safety: If Map returns Ok then ptr is not null
+        assert!(!ptr.is_null());
+
+        let ptr = unsafe { NonNull::new_unchecked(ptr) };
+
+        Ok(RawD3D12Buffer { buffer, ptr })
+    }
+
+    pub fn bind_cbv(&self, index: u32, cmd: &ID3D12GraphicsCommandList) {
+        unsafe { cmd.SetGraphicsRootConstantBufferView(index, self.buffer.gpu_address()) }
+    }
+}
+
+impl Drop for RawD3D12Buffer {
+    fn drop(&mut self) {
+        unsafe {
+            self.buffer.handle.Unmap(0, None);
+            ManuallyDrop::drop(&mut self.buffer);
+        }
+    }
+}
+
+impl Deref for RawD3D12Buffer {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { std::slice::from_raw_parts(self.ptr.as_ptr().cast(), self.buffer.size) }
+    }
+}
+
+impl DerefMut for RawD3D12Buffer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { std::slice::from_raw_parts_mut(self.ptr.as_ptr().cast(), self.buffer.size) }
     }
 }

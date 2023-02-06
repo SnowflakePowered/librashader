@@ -1,10 +1,10 @@
 use crate::error;
+use bitvec::bitvec;
+use bitvec::boxed::BitBox;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
-use bitvec::{bits, bitvec};
-use bitvec::boxed::BitBox;
 
 use crate::error::FilterChainError;
 use windows::Win32::Graphics::Direct3D12::{
@@ -193,7 +193,7 @@ impl<T> D3D12DescriptorHeap<T> {
                     handle_size: device.GetDescriptorHandleIncrementSize(desc.Type) as usize,
                     start: 0,
                     num_descriptors: desc.NumDescriptors as usize,
-                    map: bitvec![0; desc.NumDescriptors as usize].into_boxed_bitslice()
+                    map: bitvec![0; desc.NumDescriptors as usize].into_boxed_bitslice(),
                 })),
                 PhantomData::default(),
             ))
@@ -253,7 +253,7 @@ impl<T> D3D12DescriptorHeap<T> {
                 handle_size: inner.handle_size,
                 start: 0,
                 num_descriptors: size,
-                map: bitvec![0; size].into_boxed_bitslice()
+                map: bitvec![0; size].into_boxed_bitslice(),
             });
 
             start += size;

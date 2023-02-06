@@ -1,4 +1,3 @@
-use std::error::Error;
 use thiserror::Error;
 
 /// Cumulative error type for Direct3D12 filter chains.
