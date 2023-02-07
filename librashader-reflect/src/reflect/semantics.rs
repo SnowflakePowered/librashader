@@ -191,8 +191,7 @@ pub struct PushReflection {
 
 /// The offset of a uniform member.
 ///
-/// A uniform can be bound to **either** the UBO, or as a Push Constant. Binding
-/// the same variable name to both locations will result in indeterminate results.
+/// A uniform can be bound to both the UBO, or as a Push Constant.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct MemberOffset {
     /// The offset of the uniform member within the UBO.
