@@ -44,6 +44,10 @@ are also required to build downstream dependencies.
 ```
 pip install meson ninja mako
 ```
+
+[CMake 3.8](https://cmake.org/) or later is also required.
+
+
 ---
 
 For Rust projects, simply add the crate to your `Cargo.toml`. 
