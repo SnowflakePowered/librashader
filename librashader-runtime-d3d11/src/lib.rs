@@ -40,7 +40,7 @@ mod tests {
     // "../test/null.slangp",
     // const FILTER_PATH: &str = "../test/slang-shaders/scalefx/scalefx-9x.slangp";
 
-    const FILTER_PATH: &str = "../test/slang-shaders/crt/zfast-crt.slangp";
+    const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
     const IMAGE_PATH: &str = "../test/finalfightlong.png";
     // #[test]
     // fn triangle_d3d11_args() {

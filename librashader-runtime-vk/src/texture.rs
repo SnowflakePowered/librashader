@@ -5,9 +5,10 @@ use crate::{error, util};
 use ash::vk;
 use std::sync::Arc;
 
+use crate::error::FilterChainError;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleableFramebuffer, ViewportSize};
 
 pub struct OwnedImage {
     pub device: Arc<ash::Device>,
@@ -19,6 +20,7 @@ pub struct OwnedImage {
     pub levels: u32,
 }
 
+#[derive(Copy, Clone)]
 pub struct OwnedImageLayout {
     pub(crate) dst_layout: vk::ImageLayout,
     pub(crate) dst_access: vk::AccessFlags,
@@ -531,5 +533,29 @@ pub struct InputImage {
 impl AsRef<InputImage> for InputImage {
     fn as_ref(&self) -> &InputImage {
         self
+    }
+}
+
+impl<T> ScaleableFramebuffer<T> for OwnedImage {
+    type Error = FilterChainError;
+    type Context = Option<OwnedImageLayout>;
+
+    fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ImageFormat,
+        viewport_size: &Size<u32>,
+        source_size: &Size<u32>,
+        should_mipmap: bool,
+        context: Self::Context,
+    ) -> Result<Size<u32>, Self::Error> {
+        self.scale(
+            scaling,
+            format,
+            viewport_size,
+            source_size,
+            should_mipmap,
+            context,
+        )
     }
 }

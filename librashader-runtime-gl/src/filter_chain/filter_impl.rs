@@ -21,6 +21,8 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, Unif
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
+use librashader_runtime::filter_pass::FilterPassMeta;
+use librashader_runtime::scaling::scale_framebuffers;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
@@ -378,32 +380,14 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         let mut source = original;
 
-        let mut source_size = source.image.size;
         // rescale render buffers to ensure all bindings are valid.
-        let mut iterator = passes.iter_mut().enumerate().peekable();
-        while let Some((index, pass)) = iterator.next() {
-            let should_mipmap = iterator
-                .peek()
-                .map_or(false, |(_, p)| p.config.mipmap_input);
-
-            let next_size = self.output_framebuffers[index].scale::<T::FramebufferInterface>(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                viewport,
-                &source_size,
-                should_mipmap,
-            )?;
-
-            self.feedback_framebuffers[index].scale::<T::FramebufferInterface>(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                viewport,
-                &source_size,
-                should_mipmap,
-            )?;
-
-            source_size = next_size
-        }
+        scale_framebuffers::<T::FramebufferInterface, _, _, _>(
+            source.image.size,
+            viewport.output.size,
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+            &passes,
+        )?;
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);

@@ -1,10 +1,11 @@
-use crate::error::Result;
+use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::InputTexture;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_presets::Scale2D;
+use librashader_runtime::scaling::ScaleableFramebuffer;
 
 /// A handle to an OpenGL FBO and its backing texture with format and size information.
 ///
@@ -50,7 +51,7 @@ impl Framebuffer {
         &mut self,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport<&Framebuffer>,
+        viewport: &Size<u32>,
         source_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
@@ -90,5 +91,22 @@ impl Drop for Framebuffer {
                 gl::DeleteTextures(1, &self.image);
             }
         }
+    }
+}
+//
+impl<T: FramebufferInterface> ScaleableFramebuffer<T> for Framebuffer {
+    type Error = FilterChainError;
+    type Context = ();
+
+    fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ImageFormat,
+        viewport_size: &Size<u32>,
+        source_size: &Size<u32>,
+        should_mipmap: bool,
+        _context: Self::Context,
+    ) -> Result<Size<u32>> {
+        self.scale::<T>(scaling, format, viewport_size, source_size, should_mipmap)
     }
 }

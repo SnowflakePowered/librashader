@@ -8,6 +8,7 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
+use librashader_runtime::filter_pass::FilterPassMeta;
 use rustc_hash::FxHashMap;
 
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
@@ -147,18 +148,17 @@ impl<T: GLInterface> FilterPass<T> {
     }
 }
 
-impl<T: GLInterface> FilterPass<T> {
-    pub fn get_format(&self) -> ImageFormat {
-        let fb_format = self.source.format;
-        if let Some(format) = self.config.get_format_override() {
-            format
-        } else if fb_format == ImageFormat::Unknown {
-            ImageFormat::R8G8B8A8Unorm
-        } else {
-            fb_format
-        }
+impl<T: GLInterface> FilterPassMeta for FilterPass<T> {
+    fn source_format(&self) -> ImageFormat {
+        self.source.format
     }
 
+    fn config(&self) -> &ShaderPassConfig {
+        &self.config
+    }
+}
+
+impl<T: GLInterface> FilterPass<T> {
     // framecount should be pre-modded
     fn build_semantics(
         &mut self,

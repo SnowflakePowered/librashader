@@ -41,7 +41,7 @@ pub trait FramebufferInterface {
         fb: &mut Framebuffer,
         scaling: Scale2D,
         format: ImageFormat,
-        viewport: &Viewport<&Framebuffer>,
+        viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>>;

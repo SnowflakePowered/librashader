@@ -10,6 +10,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 
 use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
@@ -80,19 +81,18 @@ impl BindSemantics for FilterPass {
     }
 }
 
-// slang_process.cpp 229
-impl FilterPass {
-    pub fn get_format(&self) -> ImageFormat {
-        let fb_format = self.source.format;
-        if let Some(format) = self.config.get_format_override() {
-            format
-        } else if fb_format == ImageFormat::Unknown {
-            ImageFormat::R8G8B8A8Unorm
-        } else {
-            fb_format
-        }
+impl FilterPassMeta for FilterPass {
+    fn source_format(&self) -> ImageFormat {
+        self.source.format
     }
 
+    fn config(&self) -> &ShaderPassConfig {
+        &self.config
+    }
+}
+
+// slang_process.cpp 229
+impl FilterPass {
     // framecount should be pre-modded
     fn build_semantics<'a>(
         &mut self,

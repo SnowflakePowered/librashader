@@ -45,7 +45,7 @@ mod tests {
         dbg!("finished");
         let filter = FilterChainVulkan::load_from_path(
             &base,
-            "../test/slang-shaders/border/gameboy-player/gameboy-player-crt-royale.slangp",
+            "../test/slang-shaders/crt/crt-royale.slangp",
             // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__2__ADV-NO-REFLECT.slangp",
             // "../test/basic.slangp",
             Some(&FilterChainOptionsVulkan {

@@ -12,6 +12,7 @@ use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use rustc_hash::FxHashMap;
@@ -74,18 +75,17 @@ impl BindSemantics<NoUniformBinder, Option<()>, RawD3D12Buffer, RawD3D12Buffer> 
     }
 }
 
-impl FilterPass {
-    pub fn get_format(&self) -> ImageFormat {
-        let fb_format = self.source.format;
-        if let Some(format) = self.config.get_format_override() {
-            format
-        } else if fb_format == ImageFormat::Unknown {
-            ImageFormat::R8G8B8A8Unorm
-        } else {
-            fb_format
-        }
+impl FilterPassMeta for FilterPass {
+    fn source_format(&self) -> ImageFormat {
+        self.source.format
     }
 
+    fn config(&self) -> &ShaderPassConfig {
+        &self.config
+    }
+}
+
+impl FilterPass {
     // framecount should be pre-modded
     fn build_semantics<'a>(
         &mut self,

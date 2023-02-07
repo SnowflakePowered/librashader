@@ -46,7 +46,8 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
-use librashader_runtime::scaling::MipmapSize;
+use librashader_runtime::filter_pass::FilterPassMeta;
+use librashader_runtime::scaling::{scale_framebuffers_with_context_callback, MipmapSize};
 use rayon::prelude::*;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 1024;
@@ -593,46 +594,29 @@ impl FilterChainD3D12 {
         );
 
         // rescale render buffers to ensure all bindings are valid.
-        let mut source_size = source.size();
-        let mut iterator = passes.iter_mut().enumerate().peekable();
-        while let Some((index, pass)) = iterator.next() {
-            let should_mipmap = iterator
-                .peek()
-                .map_or(false, |(_, p)| p.config.mipmap_input);
-
-            let next_size = self.output_framebuffers[index].scale(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                &viewport.output.size,
-                &source_size,
-                should_mipmap,
-            )?;
-
-            self.feedback_framebuffers[index].scale(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                &viewport.output.size,
-                &source_size,
-                should_mipmap,
-            )?;
-
-            source_size = next_size;
-
-            // refresh inputs
-            self.common.feedback_textures[index] = Some(
-                self.feedback_framebuffers[index].create_shader_resource_view(
-                    &mut self.staging_heap,
-                    pass.config.filter,
-                    pass.config.wrap_mode,
-                )?,
-            );
-            self.common.output_textures[index] =
-                Some(self.output_framebuffers[index].create_shader_resource_view(
+        scale_framebuffers_with_context_callback::<(), _, _, _, _>(
+            source.size(),
+            viewport.output.size,
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+            &passes,
+            (),
+            |index: usize, pass: &FilterPass, output: &OwnedImage, feedback: &OwnedImage| {
+                // refresh inputs
+                self.common.feedback_textures[index] = Some(feedback.create_shader_resource_view(
                     &mut self.staging_heap,
                     pass.config.filter,
                     pass.config.wrap_mode,
                 )?);
-        }
+                self.common.output_textures[index] = Some(output.create_shader_resource_view(
+                    &mut self.staging_heap,
+                    pass.config.filter,
+                    pass.config.wrap_mode,
+                )?);
+
+                Ok(())
+            },
+        )?;
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);

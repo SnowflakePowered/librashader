@@ -31,7 +31,10 @@ use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
+use librashader_runtime::filter_pass::FilterPassMeta;
+use librashader_runtime::scaling::scale_framebuffers_with_context_callback;
 use rayon::prelude::*;
+
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
     pub(crate) device: Arc<ash::Device>,
@@ -613,59 +616,28 @@ impl FilterChainVulkan {
         );
 
         // rescale render buffers to ensure all bindings are valid.
-        let mut source_size = source.image.size;
-        let mut iterator = passes.iter_mut().enumerate().peekable();
-        while let Some((index, pass)) = iterator.next() {
-            let should_mipmap = iterator
-                .peek()
-                .map_or(false, |(_, p)| p.config.mipmap_input);
-
-            // needs a barrier to SHADER_READ_ONLY_OPTIMAL otherwise any non-filled in output framebuffers
-            // (like the final one which is just held there and not ever written to, but needs to be
-            // there for indexing) will always stay in UNDEFINED.
-            //
-            // since scaling is hopefully a rare occurrence (since it's tested for if the output size
-            // requires changing) it should be ok.
-            let next_size = self.output_framebuffers[index].scale(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                &viewport.output.size,
-                &source_size,
-                should_mipmap,
-                Some(OwnedImageLayout {
-                    dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                    dst_access: vk::AccessFlags::SHADER_READ,
-                    src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
-                    dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
-                    cmd,
-                }),
-            )?;
-
-            self.feedback_framebuffers[index].scale(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                &viewport.output.size,
-                &source_size,
-                should_mipmap,
-                Some(OwnedImageLayout {
-                    dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                    dst_access: vk::AccessFlags::SHADER_READ,
-                    src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
-                    dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
-                    cmd,
-                }),
-            )?;
-
-            source_size = next_size;
-            // refresh inputs
-            self.common.feedback_inputs[index] = Some(
-                self.feedback_framebuffers[index]
-                    .as_input(pass.config.filter, pass.config.wrap_mode),
-            );
-            self.common.output_inputs[index] = Some(
-                self.output_framebuffers[index].as_input(pass.config.filter, pass.config.wrap_mode),
-            );
-        }
+        scale_framebuffers_with_context_callback::<(), _, _, _, _>(
+            source.image.size,
+            viewport.output.size,
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+            &passes,
+            Some(OwnedImageLayout {
+                dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                dst_access: vk::AccessFlags::SHADER_READ,
+                src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
+                dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
+                cmd,
+            }),
+            |index: usize, pass: &FilterPass, output: &OwnedImage, feedback: &OwnedImage| {
+                // refresh inputs
+                self.common.feedback_inputs[index] =
+                    Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode));
+                self.common.output_inputs[index] =
+                    Some(output.as_input(pass.config.filter, pass.config.wrap_mode));
+                Ok(())
+            },
+        )?;
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);

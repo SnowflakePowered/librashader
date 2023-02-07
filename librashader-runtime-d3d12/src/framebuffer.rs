@@ -1,11 +1,11 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
-use crate::error::assume_d3d12_init;
+use crate::error::{assume_d3d12_init, FilterChainError};
 use crate::texture::{D3D12OutputView, InputTexture};
 use crate::util::d3d12_get_closest_format;
 use crate::{error, util};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleableFramebuffer, ViewportSize};
 use std::ops::Deref;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
@@ -303,5 +303,22 @@ impl OwnedImage {
             std::mem::swap(self, &mut new);
         }
         Ok(size)
+    }
+}
+
+impl<T> ScaleableFramebuffer<T> for OwnedImage {
+    type Error = FilterChainError;
+    type Context = ();
+
+    fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ImageFormat,
+        viewport_size: &Size<u32>,
+        source_size: &Size<u32>,
+        should_mipmap: bool,
+        _context: Self::Context,
+    ) -> Result<Size<u32>, Self::Error> {
+        self.scale(scaling, format, viewport_size, source_size, should_mipmap)
     }
 }

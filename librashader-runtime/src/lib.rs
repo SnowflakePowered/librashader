@@ -28,3 +28,5 @@ pub mod binding;
 
 /// VBO helper utilities
 pub mod quad;
+
+pub mod filter_pass;

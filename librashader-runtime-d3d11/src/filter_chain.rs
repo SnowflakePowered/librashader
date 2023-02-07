@@ -25,7 +25,9 @@ use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
+use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::{QuadType, IDENTITY_MVP};
+use librashader_runtime::scaling::{scale_framebuffers, scale_framebuffers_with_context_callback};
 use librashader_runtime::uniforms::UniformStorage;
 use rayon::prelude::*;
 use windows::Win32::Graphics::Direct3D11::{
@@ -445,33 +447,15 @@ impl FilterChainD3D11 {
         };
 
         let mut source = original.clone();
-        let mut iterator = passes.iter_mut().enumerate().peekable();
 
         // rescale render buffers to ensure all bindings are valid.
-        let mut source_size = source.size();
-        while let Some((index, pass)) = iterator.next() {
-            let should_mipmap = iterator
-                .peek()
-                .map_or(false, |(_, p)| p.config.mipmap_input);
-
-            let next_size = self.output_framebuffers[index].scale(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                &viewport.output.size,
-                &source_size,
-                should_mipmap,
-            )?;
-
-            self.feedback_framebuffers[index].scale(
-                pass.config.scaling.clone(),
-                pass.get_format(),
-                &viewport.output.size,
-                &source_size,
-                should_mipmap,
-            )?;
-
-            source_size = next_size;
-        }
+        scale_framebuffers::<(), _, _, _>(
+            source.size(),
+            viewport.output.size,
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+            &passes,
+        )?;
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
