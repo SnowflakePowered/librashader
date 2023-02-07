@@ -34,7 +34,7 @@ optional = true
 default = ["gl", "d3d11", "d3d12", "vk", "reflect", "preprocess", "presets" ]
 gl = [ "runtime", "librashader-common/opengl", "librashader-runtime-gl", "spirv_cross" ]
 d3d11 = [ "runtime", "librashader-common/d3d11", "librashader-runtime-d3d11", "windows/Win32_Graphics_Direct3D11" ]
-d3d12 = [ "runtime", "librashader-common/d3d11", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
+d3d12 = [ "runtime", "librashader-reflect/dxil", "librashader-common/d3d12", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
 
 vk = ["runtime", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
 runtime = []
