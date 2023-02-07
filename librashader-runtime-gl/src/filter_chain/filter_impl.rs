@@ -21,7 +21,6 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, Unif
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::scaling::scale_framebuffers;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
@@ -319,7 +318,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
     pub fn frame(
         &mut self,
-        count: usize,
+        frame_count: usize,
         viewport: &Viewport<&Framebuffer>,
         input: &GLImage,
         options: Option<&FrameOptionsGL>,
@@ -386,7 +385,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
-            &passes,
+            passes,
         )?;
 
         let passes_len = passes.len();
@@ -401,11 +400,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             pass.draw(
                 index,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    count % pass.config.frame_count_mod as usize
-                } else {
-                    count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,
@@ -428,11 +423,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             pass.draw(
                 passes_len - 1,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    count % pass.config.frame_count_mod as usize
-                } else {
-                    count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,

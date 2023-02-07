@@ -112,6 +112,7 @@ pub trait ScaleableFramebuffer<T> {
 }
 
 /// Scale framebuffers according to the pass configs, source and viewport size.
+#[inline(always)]
 pub fn scale_framebuffers<T, F, E, P>(
     source_size: Size<u32>,
     viewport_size: Size<u32>,
@@ -136,6 +137,7 @@ where
 
 /// Scale framebuffers according to the pass configs, source and viewport size
 /// passing a context into the scale function and a callback for each framebuffer rescale.
+#[inline(always)]
 pub fn scale_framebuffers_with_context_callback<T, F, E, C, P>(
     source_size: Size<u32>,
     viewport_size: Size<u32>,
@@ -178,7 +180,7 @@ where
 
         target_size = next_size;
 
-        callback(index, &pass, &output[index], &feedback[index])?;
+        callback(index, pass, &output[index], &feedback[index])?;
     }
 
     Ok(())

@@ -32,6 +32,7 @@ pub struct ShaderPassConfig {
 impl ShaderPassConfig {
     /// If the framebuffer expects a different format than what was defined in the
     /// shader source, returns such format.
+    #[inline(always)]
     pub fn get_format_override(&self) -> Option<ImageFormat> {
         if self.srgb_framebuffer {
             return Some(ImageFormat::R8G8B8A8Srgb);
@@ -39,6 +40,15 @@ impl ShaderPassConfig {
             return Some(ImageFormat::R16G16B16A16Sfloat);
         }
         None
+    }
+
+    #[inline(always)]
+    pub fn get_frame_count(&self, count: usize) -> u32 {
+        (if self.frame_count_mod > 0 {
+            count % self.frame_count_mod as usize
+        } else {
+            count
+        }) as u32
     }
 }
 

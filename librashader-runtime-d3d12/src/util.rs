@@ -232,7 +232,7 @@ pub fn d3d12_get_resource_transition_subresource(
     after: D3D12_RESOURCE_STATES,
     subresource: u32,
 ) -> D3D12_RESOURCE_BARRIER {
-    let barrier = D3D12_RESOURCE_BARRIER {
+    D3D12_RESOURCE_BARRIER {
         Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
         Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
         Anonymous: D3D12_RESOURCE_BARRIER_0 {
@@ -243,9 +243,7 @@ pub fn d3d12_get_resource_transition_subresource(
                 StateAfter: after,
             }),
         },
-    };
-
-    barrier
+    }
 }
 
 #[inline(always)]

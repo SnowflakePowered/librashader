@@ -90,12 +90,12 @@ impl D3D11State {
             let saved_rs = context.RSGetState().ok();
 
             D3D11StateSaveGuard {
-                ctx: &context,
+                ctx: context,
                 saved_blend,
                 saved_blend_factor,
                 saved_blend_mask,
                 saved_rs,
-                state: &self,
+                state: self,
             }
         };
 

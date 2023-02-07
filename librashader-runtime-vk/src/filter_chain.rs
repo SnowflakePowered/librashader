@@ -8,7 +8,6 @@ use crate::queue_selection::get_graphics_queue;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
-// use crate::ubo_ring::VkUboRing;
 use crate::vulkan_primitives::RawVulkanBuffer;
 use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
@@ -31,7 +30,6 @@ use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
-use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::scaling::scale_framebuffers_with_context_callback;
 use rayon::prelude::*;
 
@@ -539,10 +537,10 @@ impl FilterChainVulkan {
         input: &VulkanImage,
         viewport: &Viewport<VulkanImage>,
         cmd: vk::CommandBuffer,
-        count: usize,
+        frame_count: usize,
         options: Option<&FrameOptionsVulkan>,
     ) -> error::Result<()> {
-        let intermediates = &mut self.residuals[count % self.residuals.len()];
+        let intermediates = &mut self.residuals[frame_count % self.residuals.len()];
         intermediates.dispose();
 
         // limit number of passes to those enabled.
@@ -621,7 +619,7 @@ impl FilterChainVulkan {
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
-            &passes,
+            passes,
             Some(OwnedImageLayout {
                 dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 dst_access: vk::AccessFlags::SHADER_READ,
@@ -662,11 +660,7 @@ impl FilterChainVulkan {
                 cmd,
                 index,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    count % pass.config.frame_count_mod as usize
-                } else {
-                    count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,
@@ -704,8 +698,8 @@ impl FilterChainVulkan {
                 cmd,
                 passes_len - 1,
                 &self.common,
-                count as u32,
-                0,
+                pass.config.get_frame_count(frame_count),
+                frame_direction,
                 viewport,
                 &original,
                 &source,
@@ -717,7 +711,7 @@ impl FilterChainVulkan {
             intermediates.dispose_framebuffers(residual_fb);
         }
 
-        self.push_history(input, cmd, count)?;
+        self.push_history(input, cmd, frame_count)?;
         Ok(())
     }
 }

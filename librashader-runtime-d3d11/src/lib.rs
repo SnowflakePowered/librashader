@@ -31,7 +31,6 @@ mod tests {
     use super::*;
     use crate::options::FilterChainOptionsD3D11;
     use librashader_runtime::image::{Image, UVDirection};
-    use std::env;
 
     // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
     // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",

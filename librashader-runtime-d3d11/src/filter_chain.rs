@@ -25,9 +25,8 @@ use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
-use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::{QuadType, IDENTITY_MVP};
-use librashader_runtime::scaling::{scale_framebuffers, scale_framebuffers_with_context_callback};
+use librashader_runtime::scaling::scale_framebuffers;
 use librashader_runtime::uniforms::UniformStorage;
 use rayon::prelude::*;
 use windows::Win32::Graphics::Direct3D11::{
@@ -299,7 +298,7 @@ impl FilterChainD3D11 {
                     uniform_buffer: ubo_cbuffer,
                     push_buffer: push_cbuffer,
                     source,
-                    config: config.clone(),
+                    config,
                 })
             })
             .collect();
@@ -454,7 +453,7 @@ impl FilterChainD3D11 {
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
-            &passes,
+            passes,
         )?;
 
         let passes_len = passes.len();
@@ -473,11 +472,7 @@ impl FilterChainD3D11 {
             pass.draw(
                 index,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    frame_count % pass.config.frame_count_mod as usize
-                } else {
-                    frame_count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,
@@ -505,16 +500,12 @@ impl FilterChainD3D11 {
             pass.draw(
                 passes_len - 1,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    frame_count % pass.config.frame_count_mod as usize
-                } else {
-                    frame_count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,
                 &source,
-                viewport.into(),
+                RenderTarget::from(viewport),
                 QuadType::Final,
             )?;
         }

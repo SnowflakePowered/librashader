@@ -46,7 +46,6 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
-use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::scaling::{scale_framebuffers_with_context_callback, MipmapSize};
 use rayon::prelude::*;
 
@@ -531,7 +530,7 @@ impl FilterChainD3D12 {
         frame_count: usize,
         options: Option<&FrameOptionsD3D12>,
     ) -> error::Result<()> {
-        drop(self.residuals.drain(..));
+        self.residuals.clear();
 
         if let Some(options) = options {
             if options.clear_history {
@@ -585,7 +584,7 @@ impl FilterChainD3D12 {
         }
 
         let original = unsafe { InputTexture::new_from_raw(input, filter, wrap_mode) };
-        let mut source = unsafe { original.clone() };
+        let mut source = original.clone();
 
         // swap output and feedback **before** recording command buffers
         std::mem::swap(
@@ -599,7 +598,7 @@ impl FilterChainD3D12 {
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
-            &passes,
+            passes,
             (),
             |index: usize, pass: &FilterPass, output: &OwnedImage, feedback: &OwnedImage| {
                 // refresh inputs
@@ -676,11 +675,7 @@ impl FilterChainD3D12 {
                 cmd,
                 index,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    frame_count % pass.config.frame_count_mod as usize
-                } else {
-                    frame_count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,
@@ -717,11 +712,7 @@ impl FilterChainD3D12 {
                 cmd,
                 passes_len - 1,
                 &self.common,
-                if pass.config.frame_count_mod > 0 {
-                    frame_count % pass.config.frame_count_mod as usize
-                } else {
-                    frame_count
-                } as u32,
+                pass.config.get_frame_count(frame_count),
                 frame_direction,
                 viewport,
                 &original,

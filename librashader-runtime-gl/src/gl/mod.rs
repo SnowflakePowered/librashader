@@ -9,7 +9,7 @@ use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 pub use framebuffer::Framebuffer;
 use gl::types::{GLenum, GLuint};
-use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, TextureConfig};
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_runtime::uniforms::UniformStorageAccess;

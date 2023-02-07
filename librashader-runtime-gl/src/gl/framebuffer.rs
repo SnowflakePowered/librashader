@@ -3,7 +3,7 @@ use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::InputTexture;
 use gl::types::{GLenum, GLuint};
-use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
+use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::ScaleableFramebuffer;
 

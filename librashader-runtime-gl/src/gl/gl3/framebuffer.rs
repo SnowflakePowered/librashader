@@ -3,7 +3,7 @@ use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::Framebuffer;
 use crate::gl::FramebufferInterface;
 use gl::types::{GLenum, GLint, GLsizei};
-use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 
