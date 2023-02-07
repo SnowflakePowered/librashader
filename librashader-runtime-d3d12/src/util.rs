@@ -226,15 +226,13 @@ pub fn d3d12_resource_transition(
     );
 }
 
-#[inline(always)]
-pub fn d3d12_resource_transition_subresource(
-    cmd: &ID3D12GraphicsCommandList,
+pub fn d3d12_get_resource_transition_subresource(
     resource: &ID3D12Resource,
     before: D3D12_RESOURCE_STATES,
     after: D3D12_RESOURCE_STATES,
     subresource: u32,
-) {
-    let barrier = [D3D12_RESOURCE_BARRIER {
+) -> D3D12_RESOURCE_BARRIER {
+    let barrier = D3D12_RESOURCE_BARRIER {
         Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
         Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
         Anonymous: D3D12_RESOURCE_BARRIER_0 {
@@ -245,8 +243,25 @@ pub fn d3d12_resource_transition_subresource(
                 StateAfter: after,
             }),
         },
-    }];
+    };
 
+    barrier
+}
+
+#[inline(always)]
+pub fn d3d12_resource_transition_subresource(
+    cmd: &ID3D12GraphicsCommandList,
+    resource: &ID3D12Resource,
+    before: D3D12_RESOURCE_STATES,
+    after: D3D12_RESOURCE_STATES,
+    subresource: u32,
+) {
+    let barrier = [d3d12_get_resource_transition_subresource(
+        resource,
+        before,
+        after,
+        subresource,
+    )];
     unsafe { cmd.ResourceBarrier(&barrier) }
 }
 

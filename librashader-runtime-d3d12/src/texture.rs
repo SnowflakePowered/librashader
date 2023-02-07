@@ -42,7 +42,6 @@ impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for OutputDescriptor {
     }
 }
 
-
 /// An image view for use as a render target.
 ///
 /// Can be created from a CPU descriptor handle, and a size.
