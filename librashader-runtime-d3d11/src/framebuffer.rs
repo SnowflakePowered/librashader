@@ -237,7 +237,7 @@ fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_
         },
         Usage: D3D11_USAGE_DEFAULT,
         BindFlags: D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
-        CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
+        CPUAccessFlags: D3D11_CPU_ACCESS_FLAG(0),
         MiscFlags: D3D11_RESOURCE_MISC_GENERATE_MIPS,
     }
 }
