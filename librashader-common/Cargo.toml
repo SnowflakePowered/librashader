@@ -3,7 +3,7 @@ name = "librashader-common"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.1.0-beta.13"
+version = "0.1.0-beta.14"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
