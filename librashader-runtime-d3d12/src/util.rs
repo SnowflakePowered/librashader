@@ -186,7 +186,7 @@ pub fn dxc_compile_shader(
             PCWSTR::null(),
             PCWSTR(u16cstr!("main").as_ptr()),
             PCWSTR(profile.as_ptr()),
-            None,
+            Some(&[PCWSTR(u16cstr!("-HV 2016").as_ptr())]),
             &[],
             &include,
         )?;

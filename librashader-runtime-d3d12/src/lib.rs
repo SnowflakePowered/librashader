@@ -34,8 +34,8 @@ mod tests {
     fn triangle_d3d12() {
         let sample = hello_triangle::d3d12_hello_triangle::Sample::new(
             // "../test/slang-shaders/crt/crt-lottes.slangp",
-            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-            // "../test/slang-shaders/crt/crt-royale.slangp",
+            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/slang-shaders/crt/crt-royale.slangp",
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             &SampleCommandLine {
                 use_warp_device: false,
