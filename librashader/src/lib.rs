@@ -265,7 +265,7 @@ pub mod runtime {
 
     #[cfg(feature = "vk")]
     #[doc(cfg(feature = "vk"))]
-    /// Shader runtime for Vulkan 1.3+.
+    /// Shader runtime for Vulkan.
     pub mod vk {
         pub use librashader_runtime_vk::{
             error,
