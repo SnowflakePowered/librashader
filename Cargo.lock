@@ -751,7 +751,6 @@ dependencies = [
  "librashader-runtime-d3d12",
  "librashader-runtime-gl",
  "librashader-runtime-vk",
- "librashader-spirv-cross",
  "windows",
 ]
 
@@ -1014,9 +1013,9 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "262d2840e72dbe250e8cf2f522d080988dfca624c4112c096238a4845f591707"
+checksum = "5eafe22a23b797c9bc227c6c896419b26b5bb88fa903417a3adaed08778850d5"
 dependencies = [
  "bit-set",
  "bitflags",

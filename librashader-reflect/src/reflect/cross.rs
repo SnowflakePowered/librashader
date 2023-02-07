@@ -9,11 +9,10 @@ use crate::reflect::semantics::{
 use crate::reflect::{align_uniform_size, ReflectShader};
 use std::ops::Deref;
 
-use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{glsl, hlsl, ErrorCode};
 
-use crate::back::cross::{CrossGlslContext, CrossHlslContext, HlslVersion};
+use crate::back::cross::{CrossGlslContext, CrossHlslContext, HlslShaderModel};
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
@@ -826,14 +825,14 @@ impl CompileShader<GLSL> for CrossReflect<glsl::Target> {
 }
 
 impl CompileShader<HLSL> for CrossReflect<hlsl::Target> {
-    type Options = Option<HlslVersion>;
+    type Options = Option<HlslShaderModel>;
     type Context = CrossHlslContext;
 
     fn compile(
         mut self,
         options: Self::Options,
     ) -> Result<ShaderCompilerOutput<String, CrossHlslContext>, ShaderCompileError> {
-        let sm = options.unwrap_or(ShaderModel::V5_0);
+        let sm = options.unwrap_or(HlslShaderModel::V5_0);
         let mut options = hlsl::CompilerOptions::default();
         options.shader_model = sm;
 

@@ -5,11 +5,11 @@ use crate::front::GlslangCompilation;
 use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect};
 use crate::reflect::ReflectShader;
 
-/// The GLSL version to use.
-pub type GlslVersion = spirv_cross::glsl::Version;
+/// The GLSL version to target.
+pub use spirv_cross::glsl::Version as GlslVersion;
 
-/// The HLSL shader model version to use
-pub type HlslVersion = spirv_cross::hlsl::ShaderModel;
+/// The HLSL shader model version to target.
+pub use spirv_cross::hlsl::ShaderModel as HlslShaderModel;
 
 /// The context for a GLSL compilation via spirv-cross.
 pub struct CrossGlslContext {
@@ -43,7 +43,7 @@ pub struct CrossHlslContext {
 
 impl FromCompilation<GlslangCompilation> for HLSL {
     type Target = HLSL;
-    type Options = Option<HlslVersion>;
+    type Options = Option<HlslShaderModel>;
     type Context = CrossHlslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;

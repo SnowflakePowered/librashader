@@ -3,10 +3,10 @@ use gl::types::{GLint, GLsizeiptr, GLuint};
 
 #[rustfmt::skip]
 static QUAD_VBO_DATA: &[f32; 16] = &[
-    0.0f32, 0.0f32, 0.0f32, 0.0f32,
-    1.0f32, 0.0f32, 1.0f32, 0.0f32,
-    0.0f32, 1.0f32, 0.0f32, 1.0f32,
-    1.0f32, 1.0f32, 1.0f32, 1.0f32,
+    0.0, 0.0, 0.0, 0.0,
+    1.0, 0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0, 1.0,
+    1.0, 1.0, 1.0, 1.0,
 ];
 
 pub struct Gl46DrawQuad {

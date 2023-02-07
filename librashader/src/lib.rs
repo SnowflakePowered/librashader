@@ -145,14 +145,18 @@ pub mod reflect {
     };
 
     /// Reflection via SPIRV-Cross.
+    #[cfg(feature = "reflect-cross")]
+    #[doc(cfg(feature = "reflect-cross"))]
     pub mod cross {
         pub use librashader_reflect::front::GlslangCompilation;
 
         /// The version of GLSL to target.
-        pub use spirv_cross::glsl::Version as GlslVersion;
+        ///
+        pub use librashader_reflect::back::cross::GlslVersion;
 
         /// The HLSL Shader Model to target.
-        pub use spirv_cross::hlsl::ShaderModel as HlslVersion;
+        ///
+        pub use librashader_reflect::back::cross::HlslShaderModel;
 
         pub use librashader_reflect::back::cross::CrossGlslContext;
 
@@ -164,6 +168,8 @@ pub mod reflect {
     }
 
     /// DXIL reflection via spirv-to-dxil.
+    #[cfg(feature = "reflect-dxil")]
+    #[doc(cfg(feature = "reflect-dxil"))]
     pub mod dxil {
         /// The maximum shader model to use when compiling the DXIL blob.
         pub use librashader_reflect::back::dxil::ShaderModel;
@@ -194,13 +200,13 @@ pub mod runtime {
     pub use librashader_common::{Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
 
-    #[cfg(feature = "gl")]
-    #[doc(cfg(feature = "gl"))]
+    #[cfg(feature = "runtime-gl")]
+    #[doc(cfg(feature = "runtime-gl"))]
     /// Shader runtime for OpenGL 3.3+.
     ///
     /// DSA support requires OpenGL 4.6.
     ///
-    /// Note that the OpenGL runtime requires `gl` to be
+    /// The OpenGL runtime requires `gl` to be
     /// initialized with [`gl::load_with`](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
     pub mod gl {
         pub use librashader_runtime_gl::{
@@ -219,8 +225,8 @@ pub mod runtime {
         }
     }
 
-    #[cfg(all(target_os = "windows", feature = "d3d11"))]
-    #[doc(cfg(all(target_os = "windows", feature = "d3d11")))]
+    #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::{
@@ -241,8 +247,8 @@ pub mod runtime {
         }
     }
 
-    #[cfg(all(target_os = "windows", feature = "d3d12"))]
-    #[doc(cfg(all(target_os = "windows", feature = "d3d12")))]
+    #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
+    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
     /// Shader runtime for Direct3D 12.
     pub mod d3d12 {
         pub use librashader_runtime_d3d12::{
@@ -263,8 +269,8 @@ pub mod runtime {
         }
     }
 
-    #[cfg(feature = "vk")]
-    #[doc(cfg(feature = "vk"))]
+    #[cfg(feature = "runtime-vk")]
+    #[doc(cfg(feature = "runtime-vk"))]
     /// Shader runtime for Vulkan.
     pub mod vk {
         pub use librashader_runtime_vk::{
