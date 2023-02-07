@@ -40,7 +40,8 @@ pub struct VulkanObjects {
     pipeline_cache: vk::PipelineCache,
 }
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
 
 /// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]
@@ -311,7 +312,8 @@ impl FilterChainVulkan {
     ) -> error::Result<Box<[FilterPass]>> {
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
 
-        let filters: Vec<error::Result<FilterPass>> = passes.into_par_iter()
+        let filters: Vec<error::Result<FilterPass>> = passes
+            .into_par_iter()
             .enumerate()
             .map(|(index, (config, source, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
@@ -331,8 +333,7 @@ impl FilterChainVulkan {
                         .map_or(0, |push| push.size as usize),
                 );
 
-                let uniform_bindings = reflection.meta
-                    .create_binding_map(|param| param.offset());
+                let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
                 let render_pass_format = if !use_render_pass {
                     vk::Format::UNDEFINED
@@ -365,7 +366,8 @@ impl FilterChainVulkan {
                     // ubo_ring,
                     frames_in_flight,
                 })
-            }).collect();
+            })
+            .collect();
 
         let filters: error::Result<Vec<FilterPass>> = filters.into_iter().collect();
         let filters = filters?;

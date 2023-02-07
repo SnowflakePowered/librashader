@@ -145,12 +145,15 @@ where
 }
 
 impl<H, C, U> UniformStorage<H, C, U, Box<[u8]>>
-    where
-        C: Copy,
-        U: Deref<Target = [u8]> + DerefMut,
+where
+    C: Copy,
+    U: Deref<Target = [u8]> + DerefMut,
 {
     /// Create a new `UniformStorage` with the given backing storage
-    pub fn new_with_ubo_storage(storage: U, push_size: usize) -> UniformStorage<H, C, U, Box<[u8]>> {
+    pub fn new_with_ubo_storage(
+        storage: U,
+        push_size: usize,
+    ) -> UniformStorage<H, C, U, Box<[u8]>> {
         UniformStorage {
             ubo: storage,
             push: vec![0u8; push_size].into_boxed_slice(),

@@ -6,14 +6,16 @@ use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 use std::slice;
-use windows::Win32::Graphics::Direct3D12::{D3D12_CPU_DESCRIPTOR_HANDLE, ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE,
+};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
 pub use librashader::runtime::d3d12::capi::options::FilterChainOptionsD3D12;
 pub use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
 
-use librashader::runtime::{FilterChainParameters, Size, Viewport};
 use librashader::runtime::d3d12::{D3D12InputImage, D3D12OutputView};
+use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Direct3D 11 parameters for the source image.
 #[repr(C)]

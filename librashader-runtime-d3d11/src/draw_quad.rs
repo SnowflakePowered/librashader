@@ -1,6 +1,6 @@
-use array_concat::concat_arrays;
 use crate::error;
 use crate::error::assume_d3d11_init;
+use array_concat::concat_arrays;
 use bytemuck::offset_of;
 use librashader_runtime::quad::QuadType;
 use windows::core::PCSTR;

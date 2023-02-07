@@ -29,11 +29,9 @@ impl TryFrom<&GlslangCompilation> for NagaReflect {
     fn try_from(value: &GlslangCompilation) -> Result<Self, Self::Error> {
         let ops = Options::default();
         let vertex =
-            naga::front::spv::Parser::new(value.vertex.clone().into_iter(), &ops)
-                .parse()?;
+            naga::front::spv::Parser::new(value.vertex.clone().into_iter(), &ops).parse()?;
         let fragment =
-            naga::front::spv::Parser::new(value.fragment.clone().into_iter(), &ops)
-                .parse()?;
+            naga::front::spv::Parser::new(value.fragment.clone().into_iter(), &ops).parse()?;
         Ok(NagaReflect { vertex, fragment })
     }
 }

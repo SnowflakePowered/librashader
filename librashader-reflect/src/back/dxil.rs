@@ -2,7 +2,9 @@ use crate::back::spirv::WriteSpirV;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 pub use spirv_to_dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
-use spirv_to_dxil::{PushConstantBufferConfig, RuntimeConfig, RuntimeDataBufferConfig, ShaderStage, ValidatorVersion};
+use spirv_to_dxil::{
+    PushConstantBufferConfig, RuntimeConfig, RuntimeDataBufferConfig, ShaderStage, ValidatorVersion,
+};
 
 use crate::back::targets::{OutputTarget, DXIL};
 use crate::error::{ShaderCompileError, ShaderReflectError};

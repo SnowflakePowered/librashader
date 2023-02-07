@@ -24,8 +24,7 @@ pub type libra_d3d11_filter_chain_t =
 #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
 #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
 pub type libra_d3d12_filter_chain_t =
-Option<NonNull<librashader::runtime::d3d12::capi::FilterChainD3D12>>;
-
+    Option<NonNull<librashader::runtime::d3d12::capi::FilterChainD3D12>>;
 
 /// A handle to a Vulkan filter chain.
 #[cfg(feature = "runtime-vulkan")]

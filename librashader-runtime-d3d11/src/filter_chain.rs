@@ -13,11 +13,11 @@ use std::collections::VecDeque;
 
 use std::path::Path;
 
+use crate::draw_quad::DrawQuad;
 use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedFramebuffer;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
-use crate::draw_quad::DrawQuad;
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
@@ -26,20 +26,21 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::quad::{QuadType, IDENTITY_MVP};
 use librashader_runtime::uniforms::UniformStorage;
+use rayon::prelude::*;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
     D3D11_CPU_ACCESS_WRITE, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS,
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
-use rayon::prelude::*;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
 
 /// A Direct3D 11 filter chain.
 pub struct FilterChainD3D11 {
@@ -222,35 +223,35 @@ impl FilterChainD3D11 {
         semantics: &ShaderSemantics,
     ) -> error::Result<Vec<FilterPass>> {
         // access to ID3D11Device is thread safe.
-        let filters: Vec<error::Result<FilterPass>> =
-            passes.into_par_iter()
-                .enumerate()
-                .map(|(index, (config, source, mut reflect)) | {
-                    let reflection = reflect.reflect(index, semantics)?;
-                    let hlsl = reflect.compile(None)?;
+        let filters: Vec<error::Result<FilterPass>> = passes
+            .into_par_iter()
+            .enumerate()
+            .map(|(index, (config, source, mut reflect))| {
+                let reflection = reflect.reflect(index, semantics)?;
+                let hlsl = reflect.compile(None)?;
 
-                    let vertex_dxbc =
-                        util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
-                    let vs = d3d11_compile_bound_shader(
-                        device,
-                        &vertex_dxbc,
-                        None,
-                        ID3D11Device::CreateVertexShader,
-                    )?;
+                let vertex_dxbc =
+                    util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
+                let vs = d3d11_compile_bound_shader(
+                    device,
+                    &vertex_dxbc,
+                    None,
+                    ID3D11Device::CreateVertexShader,
+                )?;
 
-                    let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
-                    let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
+                let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
+                let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
 
-                    let fragment_dxbc =
-                        util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
-                    let ps = d3d11_compile_bound_shader(
-                        device,
-                        &fragment_dxbc,
-                        None,
-                        ID3D11Device::CreatePixelShader,
-                    )?;
+                let fragment_dxbc =
+                    util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
+                let ps = d3d11_compile_bound_shader(
+                    device,
+                    &fragment_dxbc,
+                    None,
+                    ID3D11Device::CreatePixelShader,
+                )?;
 
-                    let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
+                let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
                         let buffer = FilterChainD3D11::create_constant_buffer(device, ubo.size)?;
                         Some(ConstantBufferBinding {
                             binding: ubo.binding,
@@ -262,7 +263,7 @@ impl FilterChainD3D11 {
                         None
                     };
 
-                    let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
+                let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
                         let buffer = FilterChainD3D11::create_constant_buffer(device, push.size)?;
                         Some(ConstantBufferBinding {
                             binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
@@ -274,29 +275,30 @@ impl FilterChainD3D11 {
                         None
                     };
 
-                    let uniform_storage = UniformStorage::new(
-                        reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
-                        reflection
-                            .push_constant
-                            .as_ref()
-                            .map_or(0, |push| push.size as usize),
-                    );
+                let uniform_storage = UniformStorage::new(
+                    reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
+                    reflection
+                        .push_constant
+                        .as_ref()
+                        .map_or(0, |push| push.size as usize),
+                );
 
-                    let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
+                let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
-                    Ok(FilterPass {
-                        reflection,
-                        vertex_shader: vs,
-                        vertex_layout: vao,
-                        pixel_shader: ps,
-                        uniform_bindings,
-                        uniform_storage,
-                        uniform_buffer: ubo_cbuffer,
-                        push_buffer: push_cbuffer,
-                        source,
-                        config: config.clone(),
-                    })
-                }).collect();
+                Ok(FilterPass {
+                    reflection,
+                    vertex_shader: vs,
+                    vertex_layout: vao,
+                    pixel_shader: ps,
+                    uniform_bindings,
+                    uniform_storage,
+                    uniform_buffer: ubo_cbuffer,
+                    push_buffer: push_cbuffer,
+                    source,
+                    config: config.clone(),
+                })
+            })
+            .collect();
 
         let filters: error::Result<Vec<FilterPass>> = filters.into_iter().collect();
         let filters = filters?;

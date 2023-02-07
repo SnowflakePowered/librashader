@@ -9,13 +9,13 @@
 #[cfg(test)]
 mod hello_triangle;
 
+mod draw_quad;
 pub mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
 pub mod options;
 mod parameters;
-mod draw_quad;
 mod render_target;
 mod samplers;
 mod texture;
@@ -86,7 +86,7 @@ mod tests {
             }),
             // replace below with 'None' for the triangle
             // None,
-            Some(Image::load(IMAGE_PATH, UVDirection::TopLeft).unwrap())
+            Some(Image::load(IMAGE_PATH, UVDirection::TopLeft).unwrap()),
         )
         .unwrap();
         // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(

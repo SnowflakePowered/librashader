@@ -261,21 +261,22 @@ impl D3D12MipmapGen {
 
             let mipmap_params = bytemuck::bytes_of(&mipmap_params);
 
-            util::d3d12_resource_transition_subresource(
-                cmd,
-                resource,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                i - 1,
-            );
+            let barriers = [
+                util::d3d12_get_resource_transition_subresource(
+                    resource,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                    i - 1,
+                ),
+                util::d3d12_get_resource_transition_subresource(
+                    resource,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                    i,
+                ),
+            ];
 
-            util::d3d12_resource_transition_subresource(
-                cmd,
-                resource,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                i,
-            );
+            cmd.ResourceBarrier(&barriers);
 
             cmd.SetComputeRootDescriptorTable(1, *heap_slots[i as usize].deref().as_ref());
             cmd.SetComputeRoot32BitConstants(
@@ -297,29 +298,27 @@ impl D3D12MipmapGen {
                 pResource: windows::core::ManuallyDrop::new(resource),
             });
 
-            let barrier = [D3D12_RESOURCE_BARRIER {
-                Type: D3D12_RESOURCE_BARRIER_TYPE_UAV,
-                Anonymous: D3D12_RESOURCE_BARRIER_0 { UAV: uav_barrier },
-                ..Default::default()
-            }];
+            let barriers = [
+                D3D12_RESOURCE_BARRIER {
+                    Type: D3D12_RESOURCE_BARRIER_TYPE_UAV,
+                    Anonymous: D3D12_RESOURCE_BARRIER_0 { UAV: uav_barrier },
+                    ..Default::default()
+                },
+                util::d3d12_get_resource_transition_subresource(
+                    resource,
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    i,
+                ),
+                util::d3d12_get_resource_transition_subresource(
+                    resource,
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    i - 1,
+                ),
+            ];
 
-            cmd.ResourceBarrier(&barrier);
-
-            util::d3d12_resource_transition_subresource(
-                cmd,
-                resource,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                i,
-            );
-
-            util::d3d12_resource_transition_subresource(
-                cmd,
-                resource,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                i - 1,
-            );
+            cmd.ResourceBarrier(&barriers);
         }
 
         Ok(heap_slots)
