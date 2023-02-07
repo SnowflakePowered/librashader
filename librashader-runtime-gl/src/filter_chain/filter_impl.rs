@@ -3,7 +3,7 @@ use crate::error::FilterChainError;
 use crate::filter_pass::{FilterPass, UniformOffset};
 use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
-use crate::render_target::RenderTarget;
+use crate::render_target::{RenderTarget, GL_MVP_DEFAULT};
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
@@ -426,7 +426,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(target, None, 0, 0),
+                RenderTarget::new(target, viewport.mvp.unwrap_or(GL_MVP_DEFAULT), 0, 0),
             );
 
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
@@ -453,7 +453,12 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                viewport.into(),
+                RenderTarget::new(
+                    viewport.output,
+                    viewport.mvp.unwrap_or(GL_MVP_DEFAULT),
+                    viewport.x as i32,
+                    viewport.y as i32,
+                ),
             );
             self.common.output_textures[passes_len - 1] = viewport
                 .output
