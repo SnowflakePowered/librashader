@@ -2,7 +2,7 @@ use crate::back::spirv::WriteSpirV;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 pub use spirv_to_dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
-use spirv_to_dxil::{ConstantBufferConfig, RuntimeConfig, ShaderStage, ValidatorVersion};
+use spirv_to_dxil::{PushConstantBufferConfig, RuntimeConfig, RuntimeDataBufferConfig, ShaderStage, ValidatorVersion};
 
 use crate::back::targets::{OutputTarget, DXIL};
 use crate::error::{ShaderCompileError, ShaderReflectError};
@@ -49,11 +49,11 @@ impl CompileShader<DXIL> for WriteSpirV {
         let sm = options.unwrap_or(ShaderModel::ShaderModel6_0);
 
         let config = RuntimeConfig {
-            runtime_data_cbv: ConstantBufferConfig {
+            runtime_data_cbv: RuntimeDataBufferConfig {
                 register_space: 0,
                 base_shader_register: u32::MAX,
             },
-            push_constant_cbv: ConstantBufferConfig {
+            push_constant_cbv: PushConstantBufferConfig {
                 register_space: 0,
                 base_shader_register: 1,
             },
@@ -68,7 +68,7 @@ impl CompileShader<DXIL> for WriteSpirV {
             ShaderStage::Vertex,
             sm,
             ValidatorVersion::None,
-            config.clone(),
+            &config,
         )
         .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
@@ -79,7 +79,7 @@ impl CompileShader<DXIL> for WriteSpirV {
             ShaderStage::Fragment,
             sm,
             ValidatorVersion::None,
-            config,
+            &config,
         )
         .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 

@@ -7,7 +7,7 @@ use crate::reflect::semantics::{
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{align_uniform_size, ReflectShader};
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 use spirv_cross::hlsl::ShaderModel;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};

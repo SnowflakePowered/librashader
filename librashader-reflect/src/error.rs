@@ -25,7 +25,7 @@ pub enum ShaderCompileError {
     /// Error when transpiling from spirv-to-dxil
     #[cfg(feature = "dxil")]
     #[error("spirv-to-dxil")]
-    SpirvToDxilCompileError(String),
+    SpirvToDxilCompileError(#[from] spirv_to_dxil::SpirvToDxilError),
 }
 
 /// The error kind encountered when reflecting shader semantics.

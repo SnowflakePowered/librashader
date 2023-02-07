@@ -5,7 +5,7 @@ use librashader_reflect::reflect::semantics::BindingStage;
 use std::mem::ManuallyDrop;
 use std::u64;
 use widestring::u16cstr;
-use windows::core::{Interface, PCSTR, PCWSTR};
+use windows::core::{PCSTR, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
     DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
     DXC_CP_UTF8,

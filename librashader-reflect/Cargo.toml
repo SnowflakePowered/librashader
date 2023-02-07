@@ -23,7 +23,7 @@ librashader-common = { path = "../librashader-common", version = "0.1.0-beta.12"
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-beta.12" }
 librashader-presets = { path = "../librashader-presets", version = "0.1.0-beta.12" }
 
-spirv-to-dxil = { version = "0.2", optional = true }
+spirv-to-dxil = { version = "0.3", optional = true }
 naga = { version = "0.10.0", features = ["glsl-in", "spv-in", "spv-out", "glsl-out", "wgsl-out"], optional = true }
 
 bytemuck = "1.13.0"
@@ -34,8 +34,3 @@ default = ["dxil"]
 unstable-naga = [ "naga", "rspirv" ]
 standalone = ["shaderc/build-from-source"]
 dxil = ["spirv-to-dxil"]
-
-[dev-dependencies]
-
-[package.metadata.docs.rs]
-features = ["spirv-to-dxil/included-bindings"]

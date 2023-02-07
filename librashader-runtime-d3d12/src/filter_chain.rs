@@ -398,7 +398,7 @@ impl FilterChainD3D12 {
                     ImageFormat::R8G8B8A8Unorm
                 }.into();
 
-                /// incredibly cursed.
+                // incredibly cursed.
                 let (reflection, graphics_pipeline) = if !force_hlsl &&
                     let Ok(graphics_pipeline) =
                         D3D12GraphicsPipeline::new_from_dxil(

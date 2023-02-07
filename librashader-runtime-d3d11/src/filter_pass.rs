@@ -3,8 +3,6 @@ use crate::texture::InputTexture;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::cross::CrossHlslContext;
-use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
