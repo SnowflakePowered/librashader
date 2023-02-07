@@ -17,6 +17,7 @@ use crate::draw_quad::DrawQuad;
 use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedFramebuffer;
+use crate::graphics_pipeline::D3D11State;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
@@ -45,10 +46,11 @@ type ShaderPassMeta =
 /// A Direct3D 11 filter chain.
 pub struct FilterChainD3D11 {
     pub(crate) common: FilterCommon,
-    pub(crate) passes: Vec<FilterPass>,
-    pub(crate) output_framebuffers: Box<[OwnedFramebuffer]>,
-    pub(crate) feedback_framebuffers: Box<[OwnedFramebuffer]>,
-    pub(crate) history_framebuffers: VecDeque<OwnedFramebuffer>,
+    passes: Vec<FilterPass>,
+    output_framebuffers: Box<[OwnedFramebuffer]>,
+    feedback_framebuffers: Box<[OwnedFramebuffer]>,
+    history_framebuffers: VecDeque<OwnedFramebuffer>,
+    state: D3D11State,
 }
 
 pub(crate) struct Direct3D11 {
@@ -162,8 +164,7 @@ impl FilterChainD3D11 {
             FilterChainD3D11::init_history(device, &current_context, &filters)?;
 
         let draw_quad = DrawQuad::new(device, &current_context)?;
-
-        // todo: make vbo: d3d11.c 1376
+        let state = D3D11State::new(device)?;
         Ok(FilterChainD3D11 {
             passes: filters,
             output_framebuffers: output_framebuffers.into_boxed_slice(),
@@ -192,6 +193,7 @@ impl FilterChainD3D11 {
                 history_textures,
                 draw_quad,
             },
+            state,
         })
     }
 }
@@ -474,6 +476,9 @@ impl FilterChainD3D11 {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
+        let state_guard = self
+            .state
+            .enter_filter_state(&self.common.d3d11.current_context);
         self.common.draw_quad.bind_vbo_for_frame();
 
         for (index, pass) in pass.iter_mut().enumerate() {
@@ -535,6 +540,7 @@ impl FilterChainD3D11 {
             &mut self.feedback_framebuffers,
         );
 
+        drop(state_guard);
         self.push_history(&input)?;
 
         if self.common.d3d11.context_is_deferred {

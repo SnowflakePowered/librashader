@@ -14,6 +14,7 @@ pub mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
+mod graphics_pipeline;
 pub mod options;
 mod parameters;
 mod render_target;
@@ -35,11 +36,11 @@ mod tests {
     // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
     // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",
     // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
-    const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
+    // const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
     // "../test/null.slangp",
     // const FILTER_PATH: &str = "../test/slang-shaders/scalefx/scalefx-9x.slangp";
 
-    // const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
+    const FILTER_PATH: &str = "../test/slang-shaders/crt/zfast-crt.slangp";
     const IMAGE_PATH: &str = "../test/finalfightlong.png";
     // #[test]
     // fn triangle_d3d11_args() {
