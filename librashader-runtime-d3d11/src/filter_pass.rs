@@ -82,7 +82,7 @@ impl BindSemantics for FilterPass {
 }
 
 impl FilterPassMeta for FilterPass {
-    fn source_format(&self) -> ImageFormat {
+    fn framebuffer_format(&self) -> ImageFormat {
         self.source.format
     }
 

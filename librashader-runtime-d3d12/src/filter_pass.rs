@@ -76,7 +76,7 @@ impl BindSemantics<NoUniformBinder, Option<()>, RawD3D12Buffer, RawD3D12Buffer> 
 }
 
 impl FilterPassMeta for FilterPass {
-    fn source_format(&self) -> ImageFormat {
+    fn framebuffer_format(&self) -> ImageFormat {
         self.source.format
     }
 

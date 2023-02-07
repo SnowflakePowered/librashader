@@ -149,7 +149,7 @@ impl<T: GLInterface> FilterPass<T> {
 }
 
 impl<T: GLInterface> FilterPassMeta for FilterPass<T> {
-    fn source_format(&self) -> ImageFormat {
+    fn framebuffer_format(&self) -> ImageFormat {
         self.source.format
     }
 

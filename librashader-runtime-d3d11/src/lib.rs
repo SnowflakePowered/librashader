@@ -37,9 +37,9 @@ mod tests {
     // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
     // const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
     // "../test/null.slangp",
-    // const FILTER_PATH: &str = "../test/slang-shaders/scalefx/scalefx-9x.slangp";
+    const FILTER_PATH: &str = "../test/slang-shaders/scalefx/scalefx-9x.slangp";
 
-    const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
+    // const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
     const IMAGE_PATH: &str = "../test/finalfightlong.png";
     // #[test]
     // fn triangle_d3d11_args() {
