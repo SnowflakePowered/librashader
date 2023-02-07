@@ -31,8 +31,9 @@ use librashader_runtime::uniforms::UniformStorage;
 use rayon::prelude::*;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
-    D3D11_CPU_ACCESS_WRITE, D3D11_RESOURCE_MISC_FLAG, D3D11_RESOURCE_MISC_GENERATE_MIPS,
-    D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
+    D3D11_CPU_ACCESS_WRITE, D3D11_CREATE_DEVICE_SINGLETHREADED, D3D11_RESOURCE_MISC_FLAG,
+    D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
+    D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
 
@@ -225,83 +226,89 @@ impl FilterChainD3D11 {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
     ) -> error::Result<Vec<FilterPass>> {
-        // access to ID3D11Device is thread safe.
-        let filters: Vec<error::Result<FilterPass>> = passes
-            .into_par_iter()
-            .enumerate()
-            .map(|(index, (config, source, mut reflect))| {
-                let reflection = reflect.reflect(index, semantics)?;
-                let hlsl = reflect.compile(None)?;
+        let device_is_singlethreaded =
+            unsafe { (device.GetCreationFlags() & D3D11_CREATE_DEVICE_SINGLETHREADED.0) == 1 };
 
-                let vertex_dxbc =
-                    util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
-                let vs = d3d11_compile_bound_shader(
-                    device,
-                    &vertex_dxbc,
-                    None,
-                    ID3D11Device::CreateVertexShader,
-                )?;
+        let builder_fn = |(index, (config, source, mut reflect)): (usize, ShaderPassMeta)| {
+            let reflection = reflect.reflect(index, semantics)?;
+            let hlsl = reflect.compile(None)?;
 
-                let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
-                let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
+            let vertex_dxbc =
+                util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
+            let vs = d3d11_compile_bound_shader(
+                device,
+                &vertex_dxbc,
+                None,
+                ID3D11Device::CreateVertexShader,
+            )?;
 
-                let fragment_dxbc =
-                    util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
-                let ps = d3d11_compile_bound_shader(
-                    device,
-                    &fragment_dxbc,
-                    None,
-                    ID3D11Device::CreatePixelShader,
-                )?;
+            let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
+            let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
 
-                let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
-                        let buffer = FilterChainD3D11::create_constant_buffer(device, ubo.size)?;
-                        Some(ConstantBufferBinding {
-                            binding: ubo.binding,
-                            size: ubo.size,
-                            stage_mask: ubo.stage_mask,
-                            buffer,
-                        })
-                    } else {
-                        None
-                    };
+            let fragment_dxbc =
+                util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
+            let ps = d3d11_compile_bound_shader(
+                device,
+                &fragment_dxbc,
+                None,
+                ID3D11Device::CreatePixelShader,
+            )?;
 
-                let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
-                        let buffer = FilterChainD3D11::create_constant_buffer(device, push.size)?;
-                        Some(ConstantBufferBinding {
-                            binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
-                            size: push.size,
-                            stage_mask: push.stage_mask,
-                            buffer,
-                        })
-                    } else {
-                        None
-                    };
-
-                let uniform_storage = UniformStorage::new(
-                    reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
-                    reflection
-                        .push_constant
-                        .as_ref()
-                        .map_or(0, |push| push.size as usize),
-                );
-
-                let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
-
-                Ok(FilterPass {
-                    reflection,
-                    vertex_shader: vs,
-                    vertex_layout: vao,
-                    pixel_shader: ps,
-                    uniform_bindings,
-                    uniform_storage,
-                    uniform_buffer: ubo_cbuffer,
-                    push_buffer: push_cbuffer,
-                    source,
-                    config,
+            let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
+                let buffer = FilterChainD3D11::create_constant_buffer(device, ubo.size)?;
+                Some(ConstantBufferBinding {
+                    binding: ubo.binding,
+                    size: ubo.size,
+                    stage_mask: ubo.stage_mask,
+                    buffer,
                 })
+            } else {
+                None
+            };
+
+            let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
+                let buffer = FilterChainD3D11::create_constant_buffer(device, push.size)?;
+                Some(ConstantBufferBinding {
+                    binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
+                    size: push.size,
+                    stage_mask: push.stage_mask,
+                    buffer,
+                })
+            } else {
+                None
+            };
+
+            let uniform_storage = UniformStorage::new(
+                reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize),
+                reflection
+                    .push_constant
+                    .as_ref()
+                    .map_or(0, |push| push.size as usize),
+            );
+
+            let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
+
+            Ok(FilterPass {
+                reflection,
+                vertex_shader: vs,
+                vertex_layout: vao,
+                pixel_shader: ps,
+                uniform_bindings,
+                uniform_storage,
+                uniform_buffer: ubo_cbuffer,
+                push_buffer: push_cbuffer,
+                source,
+                config,
             })
-            .collect();
+        };
+
+        let filters: Vec<error::Result<FilterPass>> = if device_is_singlethreaded {
+            // D3D11Device is not thread safe
+            passes.into_iter().enumerate().map(builder_fn).collect()
+        } else {
+            // D3D11Device is thread safe
+            passes.into_par_iter().enumerate().map(builder_fn).collect()
+        };
 
         let filters: error::Result<Vec<FilterPass>> = filters.into_iter().collect();
         let filters = filters?;
