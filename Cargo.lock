@@ -789,7 +789,9 @@ name = "librashader-preprocess"
 version = "0.1.0-beta.16"
 dependencies = [
  "encoding_rs",
+ "glob",
  "librashader-common",
+ "librashader-presets",
  "nom",
  "rustc-hash",
  "thiserror",
