@@ -38,15 +38,12 @@ loads the librashader (`librashader.so` or `librashader.dll`) implementation in 
 
 ### Building
 
-The [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) is required to build librashader. Some additional Python dependencies
-are also required to build downstream dependencies.
+librashader requires the following build time dependencies
 
-```
-pip install meson ninja mako
-```
-
-[CMake 3.8](https://cmake.org/) or later is also required.
-
+* The [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/)
+* [Meson](https://mesonbuild.com/)
+* [CMake 3.8 or later](https://cmake.org/)
+* [Python 3.6 or later](https://www.python.org/)
 
 ---
 
