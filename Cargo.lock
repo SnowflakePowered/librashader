@@ -748,9 +748,9 @@ name = "librashader"
 version = "0.1.0-beta.19"
 dependencies = [
  "ash",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-runtime-d3d11",
@@ -776,15 +776,6 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0-beta.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3aadd673bb1827a07d627f6ccc5937060a713168578220e68815cac4d4e67fe3"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "librashader-common"
 version = "0.1.0-beta.19"
 dependencies = [
  "ash",
@@ -799,8 +790,8 @@ version = "0.1.0-beta.19"
 dependencies = [
  "encoding_rs",
  "glob",
- "librashader-common 0.1.0-beta.19",
- "librashader-presets 0.1.0-beta.16",
+ "librashader-common",
+ "librashader-presets",
  "nom",
  "rayon",
  "rustc-hash",
@@ -809,23 +800,10 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0-beta.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b898f8adfa451e1a6b3d17c8c30b2e0273a5fbe1e88050379c930f750cb7342c"
-dependencies = [
- "librashader-common 0.1.0-beta.18",
- "nom",
- "nom_locate",
- "num-traits",
- "thiserror",
-]
-
-[[package]]
-name = "librashader-presets"
 version = "0.1.0-beta.19"
 dependencies = [
  "glob",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "nom",
  "nom_locate",
  "num-traits",
@@ -838,9 +816,9 @@ version = "0.1.0-beta.19"
 dependencies = [
  "bitflags",
  "bytemuck",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-spirv-cross",
  "naga",
  "rspirv",
@@ -856,9 +834,9 @@ version = "0.1.0-beta.19"
 dependencies = [
  "bytemuck",
  "image",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-reflect",
  "num-traits",
  "rustc-hash",
@@ -871,9 +849,9 @@ dependencies = [
  "array-concat",
  "bytemuck",
  "gfx-maths",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -892,9 +870,9 @@ dependencies = [
  "bitvec",
  "bytemuck",
  "gfx-maths",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -912,9 +890,9 @@ dependencies = [
  "bytemuck",
  "gl",
  "glfw 0.47.0",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -930,9 +908,9 @@ dependencies = [
  "ash-window",
  "bytemuck",
  "glfw 0.49.1",
- "librashader-common 0.1.0-beta.19",
+ "librashader-common",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.19",
+ "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",

@@ -1,4 +1,5 @@
 pub mod cross;
+#[cfg(feature = "dxil")]
 pub mod dxil;
 mod spirv;
 pub mod targets;
