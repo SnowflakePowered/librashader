@@ -745,7 +745,7 @@ dependencies = [
 
 [[package]]
 name = "librashader"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "ash",
  "librashader-common",
@@ -762,7 +762,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-capi"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "ash",
  "gl",
@@ -776,7 +776,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "ash",
  "gl",
@@ -786,7 +786,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "encoding_rs",
  "librashader-common",
@@ -797,7 +797,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "glob",
  "librashader-common",
@@ -809,7 +809,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -827,7 +827,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "bytemuck",
  "image",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -860,7 +860,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "array-concat",
  "array-init",
@@ -882,7 +882,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "bytemuck",
  "gl",
@@ -899,7 +899,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.1.0-beta.15"
+version = "0.1.0-beta.16"
 dependencies = [
  "ash",
  "ash-window",
