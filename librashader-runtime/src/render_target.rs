@@ -3,14 +3,19 @@ use librashader_common::Viewport;
 use num_traits::{zero, AsPrimitive, Num};
 use std::borrow::Borrow;
 
+/// An internal render target to which pass colour attachments are made.
 #[derive(Debug, Clone)]
 pub struct RenderTarget<'a, T, C = f32>
 where
     C: Num,
 {
-    pub mvp: &'a [f32; 16],
+    /// The x-coordinate of the viewport to render to.
     pub x: C,
+    /// The y-coordinate of the viewport to render to.
     pub y: C,
+    /// The MVP to pass to the shader for this render pass.
+    pub mvp: &'a [f32; 16],
+    /// The output surface for the pass.
     pub output: &'a T,
 }
 
