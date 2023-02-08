@@ -5,6 +5,7 @@ use librashader_presets::{Scale2D, ScaleFactor, ScaleType, Scaling};
 use num_traits::AsPrimitive;
 use std::ops::Mul;
 
+/// Trait for size scaling relative to the viewport.
 pub trait ViewportSize<T>
 where
     T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
@@ -28,10 +29,12 @@ where
     }
 }
 
+/// Trait for size scaling relating to mipmap generation.
 pub trait MipmapSize<T> {
     /// Calculate the number of mipmap levels for a given size.
     fn calculate_miplevels(self) -> T;
 
+    /// Scale the size according to the given mipmap level.
     fn scale_mipmap(self, miplevel: T) -> Size<T>;
 }
 
