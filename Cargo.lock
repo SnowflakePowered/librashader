@@ -793,6 +793,7 @@ dependencies = [
  "librashader-common",
  "librashader-presets",
  "nom",
+ "rayon",
  "rustc-hash",
  "thiserror",
 ]

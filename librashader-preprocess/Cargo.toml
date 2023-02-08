@@ -25,3 +25,4 @@ line_directives = []
 [dev-dependencies]
 glob = "0.3.1"
 librashader-presets = { version = "0.1.0-beta.16", path = "../librashader-presets"}
+rayon = "1.6.1"

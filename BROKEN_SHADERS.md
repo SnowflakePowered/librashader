@@ -5,7 +5,7 @@ The following shaders are known to be broken due to various issues.
 
 This list is updated as of [slang-shaders@`356678e`](https://github.com/libretro/slang-shaders/commit/356678ec53ca940a53fa509eff0b65bb63a403bb)
 
-## Parsing errors
+## Broken due to parsing errors
 librashader's preset parser is somewhat stricter than RetroArch in what it accepts. All shaders and textures in a preset must 
 resolve to a fully canonical path to properly parse. The following shaders have broken paths.
 
@@ -40,3 +40,9 @@ librashader's parser is fuzzed with slang-shaders and will accept invalid keys l
 to account for shader presets that use these invalid constructs. No known shader presets fail to parse due to syntax errors 
 that haven't already been accounted for.
 
+## Broken due to preprocessing errors
+
+The preprocessor resolves `#include` pragmas in each `.slang` shader and recursively flattens files into a single compute unit.
+
+* `misc/shaders/glass.slang`: Missing `misc/include/img/param_floats.h`.
+  * Looks like this was moved too deep, it references `../include/img/param_floats.h`, but the shader lives in the `misc/shaders/` folder.
