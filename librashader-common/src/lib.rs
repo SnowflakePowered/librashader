@@ -99,6 +99,18 @@ impl FromStr for WrapMode {
     }
 }
 
+impl FromStr for FilterMode {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "linear" => FilterMode::Linear,
+            "nearest" => FilterMode::Nearest,
+            _ => FilterMode::Nearest,
+        })
+    }
+}
+
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
 /// The wrapping (address) mode for a texture sampler.

@@ -60,7 +60,7 @@ fn extract_from_quotes(input: Span) -> IResult<Span, Span> {
 }
 
 fn multiline_comment(i: Span) -> IResult<Span, Span> {
-    delimited(tag("/*"), is_not("*/"), tag("*/"))(i)
+    delimited(tag("/*"), take_until("*/"), tag("*/"))(i)
 }
 
 fn single_comment(i: Span) -> IResult<Span, Span> {
@@ -97,7 +97,6 @@ fn parse_key_value(input: Span) -> IResult<Span, Token> {
     let (_, value) =
         take_until::<_, _, nom::error::Error<Span>>("#")(value).unwrap_or((input, value));
     let (_, (_, value)) = map_res(not_line_ending, optional_quotes)(value)?;
-
     Ok((input, Token { key, value }))
 }
 

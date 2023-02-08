@@ -66,7 +66,11 @@ impl Value {
 }
 
 fn from_int(input: Span) -> Result<i32, ParsePresetError> {
-    i32::from_str(input.trim())
+    // Presets like to commit ✨CRIMES✨ and end their lines with a ";".
+    // It's too hard to put this in the lexer because we can't tell between
+    // semicolon crimes or a valid param/texture name listing.
+    let to_parse = input.trim().trim_end_matches(";");
+    i32::from_str(to_parse)
         .map_err(|_| ParsePresetError::ParserError {
             offset: input.location_offset(),
             row: input.location_line(),
@@ -74,7 +78,8 @@ fn from_int(input: Span) -> Result<i32, ParsePresetError> {
             kind: ParseErrorKind::Int,
         })
         .or_else(|e| {
-            let result = f32::from_str(input.trim()).map_err(|_| e)?;
+            // An even more egregious ✨CRIME✨ is using a float as a shader index.
+            let result = f32::from_str(to_parse).map_err(|_| e)?;
             let result = result
                 .trunc()
                 .to_i32()
@@ -89,7 +94,10 @@ fn from_int(input: Span) -> Result<i32, ParsePresetError> {
 }
 
 fn from_ul(input: Span) -> Result<u32, ParsePresetError> {
-    u32::from_str(input.trim()).map_err(|_| ParsePresetError::ParserError {
+    // Presets like to commit ✨CRIMES✨ and end their lines with a ";".
+    // It's too hard to put this in the lexer because we can't tell between
+    // semicolon crimes or a valid param/texture name listing.
+    u32::from_str(input.trim().trim_end_matches(";")).map_err(|_| ParsePresetError::ParserError {
         offset: input.location_offset(),
         row: input.location_line(),
         col: input.get_column(),
@@ -98,14 +106,14 @@ fn from_ul(input: Span) -> Result<u32, ParsePresetError> {
 }
 
 fn from_float(input: Span) -> Result<f32, ParsePresetError> {
-    f32::from_str(input.trim()).map_err(|_| {
-        eprintln!("{input:?}");
-        ParsePresetError::ParserError {
-            offset: input.location_offset(),
-            row: input.location_line(),
-            col: input.get_column(),
-            kind: ParseErrorKind::Float,
-        }
+    // Presets like to commit ✨CRIMES✨ and end their lines with a ";".
+    // It's too hard to put this in the lexer because we can't tell between
+    // semicolon crimes or a valid param/texture name listing.
+    f32::from_str(input.trim().trim_end_matches(";")).map_err(|_| ParsePresetError::ParserError {
+        offset: input.location_offset(),
+        row: input.location_line(),
+        col: input.get_column(),
+        kind: ParseErrorKind::Float,
     })
 }
 
@@ -140,44 +148,52 @@ fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>
 pub const SHADER_MAX_REFERENCE_DEPTH: usize = 16;
 
 fn load_child_reference_strings(
-    mut root_references: Vec<PathBuf>,
+    root_references: Vec<PathBuf>,
     root_path: impl AsRef<Path>,
 ) -> Result<Vec<(PathBuf, String)>, ParsePresetError> {
     let root_path = root_path.as_ref();
+
     let mut reference_depth = 0;
     let mut reference_strings: Vec<(PathBuf, String)> = Vec::new();
-    while let Some(reference_path) = root_references.pop() {
+    let mut root_references = vec![(root_path.to_path_buf(), root_references)];
+    while let Some((reference_root, referenced_paths)) = root_references.pop() {
         if reference_depth > SHADER_MAX_REFERENCE_DEPTH {
             return Err(ParsePresetError::ExceededReferenceDepth);
         }
+        // enter the current root
         reference_depth += 1;
-        let mut root_path = root_path.to_path_buf();
-        root_path.push(reference_path);
-        let mut reference_root = root_path
+        // canonicalize current root
+        let reference_root = reference_root
             .canonicalize()
-            .map_err(|e| ParsePresetError::IOError(root_path, e))?;
+            .map_err(|e| ParsePresetError::IOError(reference_root.to_path_buf(), e))?;
 
-        let mut reference_contents = String::new();
-        File::open(&reference_root)
-            .map_err(|e| ParsePresetError::IOError(reference_root.clone(), e))?
-            .read_to_string(&mut reference_contents)
-            .map_err(|e| ParsePresetError::IOError(reference_root.clone(), e))?;
+        // resolve all referenced paths against root
+        // println!("Resolving {referenced_paths:?} against {reference_root:?}.");
 
-        let mut new_tokens = do_lex(&reference_contents)?;
-        let mut new_references: Vec<PathBuf> = new_tokens
-            .drain_filter(|token| *token.key.fragment() == "#reference")
-            .map(|value| PathBuf::from(*value.value.fragment()))
-            .collect();
+        for path in referenced_paths {
+            let mut path = reference_root
+                .join(path.clone())
+                .canonicalize()
+                .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
+            // println!("Opening {:?}", path);
+            let mut reference_contents = String::new();
+            File::open(&path)
+                .map_err(|e| ParsePresetError::IOError(path.clone(), e))?
+                .read_to_string(&mut reference_contents)
+                .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
 
-        root_references.append(&mut new_references);
+            let mut new_tokens = do_lex(&reference_contents)?;
+            let new_references: Vec<PathBuf> = new_tokens
+                .drain_filter(|token| *token.key.fragment() == "#reference")
+                .map(|value| PathBuf::from(*value.value.fragment()))
+                .collect();
 
-        // return the relative root that shader and texture paths are to be resolved against.
-        if !reference_root.is_dir() {
-            reference_root.pop();
+            path.pop();
+            reference_strings.push((path.clone(), reference_contents));
+            if !new_references.is_empty() {
+                root_references.push((path, new_references));
+            }
         }
-
-        // trim end space
-        reference_strings.push((reference_root, reference_contents));
     }
 
     Ok(reference_strings)
@@ -294,41 +310,54 @@ pub fn parse_values(
         }
     }
 
-    let mut tokens: Vec<Token> = all_tokens
+    let mut tokens: Vec<(&Path, Token)> = all_tokens
         .into_iter()
-        .flat_map(|(_, token)| token)
+        .flat_map(|(p, token)| token.into_iter().map(move |t| (p, t)))
         .collect();
 
     for (texture, path) in textures {
-        let mipmap = remove_if(&mut tokens, |t| {
+        let mipmap = remove_if(&mut tokens, |(_, t)| {
             t.key.starts_with(*texture)
                 && t.key.ends_with("_mipmap")
                 && t.key.len() == texture.len() + "_mipmap".len()
         })
-        .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+        .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
 
-        let linear = remove_if(&mut tokens, |t| {
+        let linear = remove_if(&mut tokens, |(_, t)| {
             t.key.starts_with(*texture)
                 && t.key.ends_with("_linear")
                 && t.key.len() == texture.len() + "_linear".len()
         })
-        .map_or_else(|| Ok(false), |v| from_bool(v.value))?;
+        .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
 
-        let wrap_mode = remove_if(&mut tokens, |t| {
+        let wrap_mode = remove_if(&mut tokens, |(_, t)| {
             t.key.starts_with(*texture)
-                && t.key.ends_with("_wrap_mode")
-                && t.key.len() == texture.len() + "_wrap_mode".len()
+                && (t.key.ends_with("_wrap_mode") || t.key.ends_with("_repeat_mode"))
+                && (t.key.len() == texture.len() + "_wrap_mode".len()
+                    || t.key.len() == texture.len() + "_repeat_mode".len())
         })
         // NOPANIC: infallible
-        .map_or_else(WrapMode::default, |v| WrapMode::from_str(&v.value).unwrap());
+        .map_or_else(WrapMode::default, |(_, v)| {
+            WrapMode::from_str(&v.value).unwrap()
+        });
+
+        // This really isn't supported but crt-torridgristle uses this syntax.
+        // Again, don't know how this works in RA but RA's parser isn't as strict as ours.
+        let filter = remove_if(&mut tokens, |(_, t)| {
+            t.key.starts_with("filter_")
+                && t.key.ends_with(*texture)
+                && t.key.len() == "filter_".len() + texture.len()
+        })
+        // NOPANIC: infallible
+        .map_or(None, |(_, v)| Some(FilterMode::from_str(&v.value).unwrap()));
 
         values.push(Value::Texture {
             name: texture.to_string(),
-            filter_mode: if linear {
+            filter_mode: filter.unwrap_or(if linear {
                 FilterMode::Linear
             } else {
                 FilterMode::Nearest
-            },
+            }),
             wrap_mode,
             mipmap,
             path,
@@ -336,10 +365,15 @@ pub fn parse_values(
     }
 
     let mut rest_tokens = Vec::new();
-    // no more textures left in the token tree
-    for token in tokens {
+    // hopefully no more textures left in the token tree
+    for (p, token) in tokens {
         if parameter_names.contains(token.key.fragment()) {
-            let param_val = from_float(token.value)?;
+            let param_val = from_float(token.value)
+                // This is literally just to work around BEAM_PROFILE in crt-hyllian-sinc-glow.slangp
+                // which has ""0'.000000". This somehow works in RA because it defaults to 0, probably.
+                // This hack is only used for **known** parameter names. If we tried this for undeclared
+                // params (god help me), it would be pretty bad because we lose texture path fallback.
+                .unwrap_or(0.0);
             values.push(Value::Parameter(
                 token.key.fragment().to_string(),
                 param_val,
@@ -370,6 +404,13 @@ pub fn parse_values(
         }
 
         if let Ok((_, idx)) = parse_indexed_key("wrap_mode", token.key) {
+            let wrap_mode = WrapMode::from_str(&token.value).unwrap();
+            values.push(Value::WrapMode(idx, wrap_mode));
+            continue;
+        }
+
+        // crt-geom uses repeat_mode...
+        if let Ok((_, idx)) = parse_indexed_key("repeat_mode", token.key) {
             let wrap_mode = WrapMode::from_str(&token.value).unwrap();
             values.push(Value::WrapMode(idx, wrap_mode));
             continue;
@@ -407,6 +448,13 @@ pub fn parse_values(
             continue;
         }
 
+        // vector-glow-alt-render.slangp uses "mipmap" for pass 1, but "mipmap_input" for everything else.
+        if let Ok((_, idx)) = parse_indexed_key("mipmap", token.key) {
+            let enabled = from_bool(token.value)?;
+            values.push(Value::MipmapInput(idx, enabled));
+            continue;
+        }
+
         if let Ok((_, idx)) = parse_indexed_key("alias", token.key) {
             values.push(Value::Alias(idx, token.value.to_string()));
             continue;
@@ -426,12 +474,11 @@ pub fn parse_values(
             values.push(Value::ScaleTypeY(idx, scale_type));
             continue;
         }
-        rest_tokens.push(token)
+        rest_tokens.push((p, token))
     }
 
-    // todo: handle rest_tokens (scale needs to know abs or float),
-
-    for token in rest_tokens {
+    let mut undeclared_textures = Vec::new();
+    for (path, token) in &rest_tokens {
         if let Ok((_, idx)) = parse_indexed_key("scale", token.key) {
             let scale = if values.iter().any(|t| matches!(*t, Value::ScaleType(match_idx, ScaleType::Absolute) if match_idx == idx)) {
                 let scale = from_int(token.value)?;
@@ -470,11 +517,67 @@ pub fn parse_values(
         }
 
         // handle undeclared parameters after parsing everything else as a last resort.
-        let param_val = from_float(token.value)?;
-        values.push(Value::Parameter(
-            token.key.fragment().to_string(),
-            param_val,
-        ));
+        if let Ok(param_val) = from_float(token.value) {
+            values.push(Value::Parameter(
+                token.key.fragment().to_string(),
+                param_val,
+            ));
+        }
+        // very last resort, assume undeclared texture (must have extension)
+        else if Path::new(token.value.fragment()).extension().is_some()
+            && ["_mipmap", "_linear", "_wrap_mode", "_repeat_mode"]
+                .iter()
+                .all(|k| !token.key.ends_with(k))
+        {
+            let mut relative_path = path.to_path_buf();
+            relative_path.push(*token.value.fragment());
+            relative_path
+                .canonicalize()
+                .map_err(|e| ParsePresetError::IOError(relative_path.clone(), e))?;
+            undeclared_textures.push((token.key, relative_path));
+        }
+
+        // we tried our best
+    }
+
+    // Since there are undeclared textures we need to deal with potential mipmap information.
+    for (texture, path) in undeclared_textures {
+        let mipmap = remove_if(&mut rest_tokens, |(_, t)| {
+            t.key.starts_with(*texture)
+                && t.key.ends_with("_mipmap")
+                && t.key.len() == texture.len() + "_mipmap".len()
+        })
+        .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
+
+        let linear = remove_if(&mut rest_tokens, |(_, t)| {
+            t.key.starts_with(*texture)
+                && t.key.ends_with("_linear")
+                && t.key.len() == texture.len() + "_linear".len()
+        })
+        .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
+
+        let wrap_mode = remove_if(&mut rest_tokens, |(_, t)| {
+            t.key.starts_with(*texture)
+                && (t.key.ends_with("_wrap_mode") || t.key.ends_with("_repeat_mode"))
+                && (t.key.len() == texture.len() + "_wrap_mode".len()
+                    || t.key.len() == texture.len() + "_repeat_mode".len())
+        })
+        // NOPANIC: infallible
+        .map_or_else(WrapMode::default, |(_, v)| {
+            WrapMode::from_str(&v.value).unwrap()
+        });
+
+        values.push(Value::Texture {
+            name: texture.to_string(),
+            filter_mode: if linear {
+                FilterMode::Linear
+            } else {
+                FilterMode::Nearest
+            },
+            wrap_mode,
+            mipmap,
+            path,
+        })
     }
 
     // all tokens should be ok to process now.

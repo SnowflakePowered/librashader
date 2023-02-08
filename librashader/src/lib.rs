@@ -49,6 +49,11 @@
 /// Shader presets contain shader and texture parameters, and the order in which to apply a set of
 /// shaders in a filter chain. A librashader runtime takes a resulting [`ShaderPreset`](crate::presets::ShaderPreset)
 /// as input to create a filter chain.
+///
+/// librashader's preset parser has been tested against all presets in the [slang-shaders](https://github.com/libretro/slang-shaders) repository
+/// to generally good compatibility. However, the preset parser requires all referenced paths to resolve to a canonical, existing path relative
+/// to the preset file. The handful of shaders that fail to parse due to this or other reasons are
+/// listed at [`BROKEN_SHADERS.md`](https://github.com/SnowflakePowered/librashader/blob/master/BROKEN_SHADERS.md).
 pub mod presets {
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
     pub use librashader_presets::*;
