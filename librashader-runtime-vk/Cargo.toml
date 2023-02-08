@@ -3,7 +3,7 @@ name = "librashader-runtime-vk"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.1.0-beta.16"
+version = "0.1.0-beta.18"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -14,11 +14,11 @@ description = "RetroArch shaders for all."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-librashader-common = { path = "../librashader-common", features = ["vulkan"], version = "0.1.0-beta.16" }
-librashader-presets = { path = "../librashader-presets", version = "0.1.0-beta.16" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-beta.16" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-beta.16", features = []   }
-librashader-runtime = { path = "../librashader-runtime" , version = "0.1.0-beta.16" }
+librashader-common = { path = "../librashader-common", features = ["vulkan"], version = "0.1.0-beta.18" }
+librashader-presets = { path = "../librashader-presets", version = "0.1.0-beta.18" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-beta.18" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-beta.18", features = []   }
+librashader-runtime = { path = "../librashader-runtime" , version = "0.1.0-beta.18" }
 spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
 rustc-hash = "1.1.0"
 bytemuck = "1.12.3"
