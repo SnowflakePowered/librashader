@@ -745,12 +745,12 @@ dependencies = [
 
 [[package]]
 name = "librashader"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "ash",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-runtime-d3d11",
@@ -762,7 +762,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-capi"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "ash",
  "gl",
@@ -785,7 +785,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "ash",
  "gl",
@@ -795,11 +795,11 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "encoding_rs",
  "glob",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-presets 0.1.0-beta.19",
  "nom",
  "rayon",
@@ -822,10 +822,10 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "glob",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "nom",
  "nom_locate",
  "num-traits",
@@ -834,13 +834,13 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "bitflags",
  "bytemuck",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-spirv-cross",
  "naga",
  "rspirv",
@@ -852,13 +852,13 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "bytemuck",
  "image",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-reflect",
  "num-traits",
  "rustc-hash",
@@ -866,14 +866,14 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "array-concat",
  "bytemuck",
  "gfx-maths",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -885,16 +885,16 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "array-concat",
  "array-init",
  "bitvec",
  "bytemuck",
  "gfx-maths",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -907,14 +907,14 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "bytemuck",
  "gl",
  "glfw 0.47.0",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -924,15 +924,15 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.1.0-beta.21"
+version = "0.1.0-rc.1"
 dependencies = [
  "ash",
  "ash-window",
  "bytemuck",
  "glfw 0.49.1",
- "librashader-common 0.1.0-beta.21",
+ "librashader-common 0.1.0-rc.1",
  "librashader-preprocess",
- "librashader-presets 0.1.0-beta.21",
+ "librashader-presets 0.1.0-rc.1",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
