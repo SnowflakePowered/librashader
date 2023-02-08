@@ -4,7 +4,7 @@ use crate::texture::D3D11InputView;
 use crate::util::d3d11_get_closest_format;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ScaleableFramebuffer, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::D3D_SRV_DIMENSION_TEXTURE2D;
 use windows::Win32::Graphics::Direct3D11::{
@@ -252,7 +252,7 @@ pub const fn default_viewport(size: Size<u32>) -> D3D11_VIEWPORT {
     }
 }
 
-impl<T> ScaleableFramebuffer<T> for OwnedFramebuffer {
+impl ScaleFramebuffer for OwnedFramebuffer {
     type Error = FilterChainError;
     type Context = ();
 
@@ -263,7 +263,7 @@ impl<T> ScaleableFramebuffer<T> for OwnedFramebuffer {
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         should_mipmap: bool,
-        _context: Self::Context,
+        _context: &Self::Context,
     ) -> Result<Size<u32>, Self::Error> {
         self.scale(scaling, format, viewport_size, source_size, should_mipmap)
     }

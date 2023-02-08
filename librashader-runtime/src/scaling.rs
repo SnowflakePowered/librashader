@@ -96,9 +96,9 @@ where
 }
 
 /// Trait for owned framebuffer objects that can be scaled.
-pub trait ScaleableFramebuffer<T> {
+pub trait ScaleFramebuffer<T = ()> {
     type Error;
-    type Context: Copy;
+    type Context;
     /// Scale the framebuffer according to the provided parameters, returning the new size.
     fn scale(
         &mut self,
@@ -107,49 +107,76 @@ pub trait ScaleableFramebuffer<T> {
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         should_mipmap: bool,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Size<u32>, Self::Error>;
-}
 
-/// Scale framebuffers according to the pass configs, source and viewport size.
-#[inline(always)]
-pub fn scale_framebuffers<T, F, E, P>(
-    source_size: Size<u32>,
-    viewport_size: Size<u32>,
-    output: &mut [F],
-    feedback: &mut [F],
-    passes: &[P],
-) -> Result<(), E>
-where
-    F: ScaleableFramebuffer<T, Context = (), Error = E>,
-    P: FilterPassMeta,
-{
-    scale_framebuffers_with_context_callback(
-        source_size,
-        viewport_size,
-        output,
-        feedback,
-        passes,
-        (),
-        |_, _, _, _| Ok(()),
-    )
+    /// Scale framebuffers with default context.
+    #[inline(always)]
+    fn scale_framebuffers<P>(
+        source_size: Size<u32>,
+        viewport_size: Size<u32>,
+        output: &mut [Self],
+        feedback: &mut [Self],
+        passes: &[P],
+        callback: Option<&mut dyn FnMut(usize, &P, &Self, &Self) -> Result<(), Self::Error>>,
+    ) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        Self::Context: Default,
+        P: FilterPassMeta,
+    {
+        scale_framebuffers_with_context_callback::<T, Self, Self::Error, Self::Context, _>(
+            source_size,
+            viewport_size,
+            output,
+            feedback,
+            passes,
+            &Self::Context::default(),
+            callback,
+        )
+    }
+
+    /// Scale framebuffers with user provided context.
+    #[inline(always)]
+    fn scale_framebuffers_with_context<P>(
+        source_size: Size<u32>,
+        viewport_size: Size<u32>,
+        output: &mut [Self],
+        feedback: &mut [Self],
+        passes: &[P],
+        context: &Self::Context,
+        callback: Option<&mut dyn FnMut(usize, &P, &Self, &Self) -> Result<(), Self::Error>>,
+    ) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        P: FilterPassMeta,
+    {
+        scale_framebuffers_with_context_callback::<T, Self, Self::Error, Self::Context, _>(
+            source_size,
+            viewport_size,
+            output,
+            feedback,
+            passes,
+            context,
+            callback,
+        )
+    }
 }
 
 /// Scale framebuffers according to the pass configs, source and viewport size
 /// passing a context into the scale function and a callback for each framebuffer rescale.
 #[inline(always)]
-pub fn scale_framebuffers_with_context_callback<T, F, E, C, P>(
+fn scale_framebuffers_with_context_callback<T, F, E, C, P>(
     source_size: Size<u32>,
     viewport_size: Size<u32>,
     output: &mut [F],
     feedback: &mut [F],
     passes: &[P],
-    context: C,
-    mut callback: impl FnMut(usize, &P, &F, &F) -> Result<(), E>,
+    context: &C,
+    mut callback: Option<&mut dyn FnMut(usize, &P, &F, &F) -> Result<(), E>>,
 ) -> Result<(), E>
 where
-    F: ScaleableFramebuffer<T, Context = C, Error = E>,
-    C: Copy,
+    F: ScaleFramebuffer<T, Context = C, Error = E>,
     P: FilterPassMeta,
 {
     assert_eq!(output.len(), feedback.len());
@@ -180,7 +207,9 @@ where
 
         target_size = next_size;
 
-        callback(index, pass, &output[index], &feedback[index])?;
+        if let Some(callback) = callback.as_mut() {
+            callback(index, pass, &output[index], &feedback[index])?;
+        }
     }
 
     Ok(())

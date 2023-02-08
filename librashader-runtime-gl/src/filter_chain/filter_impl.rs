@@ -21,7 +21,7 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, Unif
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::scaling::scale_framebuffers;
+use librashader_runtime::scaling::ScaleFramebuffer;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
@@ -380,12 +380,13 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let mut source = original;
 
         // rescale render buffers to ensure all bindings are valid.
-        scale_framebuffers::<T::FramebufferInterface, _, _, _>(
+        <Framebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_framebuffers(
             source.image.size,
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
+            None,
         )?;
 
         let passes_len = passes.len();

@@ -30,7 +30,7 @@ use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
-use librashader_runtime::scaling::scale_framebuffers_with_context_callback;
+use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 
 /// A Vulkan device and metadata that is required by the shader runtime.
@@ -614,27 +614,30 @@ impl FilterChainVulkan {
         );
 
         // rescale render buffers to ensure all bindings are valid.
-        scale_framebuffers_with_context_callback::<(), _, _, _, _>(
+        OwnedImage::scale_framebuffers_with_context(
             source.image.size,
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
-            Some(OwnedImageLayout {
+            &Some(OwnedImageLayout {
                 dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 dst_access: vk::AccessFlags::SHADER_READ,
                 src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
                 dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
                 cmd,
             }),
-            |index: usize, pass: &FilterPass, output: &OwnedImage, feedback: &OwnedImage| {
+            Some(&mut |index: usize,
+                       pass: &FilterPass,
+                       output: &OwnedImage,
+                       feedback: &OwnedImage| {
                 // refresh inputs
                 self.common.feedback_inputs[index] =
                     Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode));
                 self.common.output_inputs[index] =
                     Some(output.as_input(pass.config.filter, pass.config.wrap_mode));
                 Ok(())
-            },
+            }),
         )?;
 
         let passes_len = passes.len();

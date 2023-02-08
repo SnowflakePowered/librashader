@@ -26,7 +26,7 @@ use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::quad::{QuadType, IDENTITY_MVP};
-use librashader_runtime::scaling::scale_framebuffers;
+use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
 use rayon::prelude::*;
 use windows::Win32::Graphics::Direct3D11::{
@@ -455,12 +455,13 @@ impl FilterChainD3D11 {
         let mut source = original.clone();
 
         // rescale render buffers to ensure all bindings are valid.
-        scale_framebuffers::<(), _, _, _>(
+        OwnedFramebuffer::scale_framebuffers(
             source.size(),
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
+            None,
         )?;
 
         let passes_len = passes.len();

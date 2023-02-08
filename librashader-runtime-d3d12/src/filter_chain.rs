@@ -46,7 +46,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
-use librashader_runtime::scaling::{scale_framebuffers_with_context_callback, MipmapSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer};
 use rayon::prelude::*;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 1024;
@@ -593,14 +593,13 @@ impl FilterChainD3D12 {
         );
 
         // rescale render buffers to ensure all bindings are valid.
-        scale_framebuffers_with_context_callback::<(), _, _, _, _>(
+        OwnedImage::scale_framebuffers(
             source.size(),
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
-            (),
-            |index: usize, pass: &FilterPass, output: &OwnedImage, feedback: &OwnedImage| {
+            Some(&mut |index, pass, output, feedback| {
                 // refresh inputs
                 self.common.feedback_textures[index] = Some(feedback.create_shader_resource_view(
                     &mut self.staging_heap,
@@ -614,7 +613,7 @@ impl FilterChainD3D12 {
                 )?);
 
                 Ok(())
-            },
+            }),
         )?;
 
         let passes_len = passes.len();

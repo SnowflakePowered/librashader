@@ -26,7 +26,8 @@ pub mod ringbuffer;
 /// Generic implementation of semantics binding.
 pub mod binding;
 
-/// VBO helper utilities
+/// VBO helper utilities.
 pub mod quad;
 
+/// Filter pass helpers and common traits.
 pub mod filter_pass;

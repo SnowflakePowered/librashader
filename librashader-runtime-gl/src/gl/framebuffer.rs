@@ -5,7 +5,7 @@ use crate::texture::InputTexture;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::ScaleableFramebuffer;
+use librashader_runtime::scaling::ScaleFramebuffer;
 
 /// A handle to an OpenGL FBO and its backing texture with format and size information.
 ///
@@ -94,7 +94,7 @@ impl Drop for Framebuffer {
     }
 }
 //
-impl<T: FramebufferInterface> ScaleableFramebuffer<T> for Framebuffer {
+impl<T: FramebufferInterface> ScaleFramebuffer<T> for Framebuffer {
     type Error = FilterChainError;
     type Context = ();
 
@@ -105,7 +105,7 @@ impl<T: FramebufferInterface> ScaleableFramebuffer<T> for Framebuffer {
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         should_mipmap: bool,
-        _context: Self::Context,
+        _context: &Self::Context,
     ) -> Result<Size<u32>> {
         self.scale::<T>(scaling, format, viewport_size, source_size, should_mipmap)
     }

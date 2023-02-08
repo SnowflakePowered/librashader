@@ -5,7 +5,7 @@ use crate::util::d3d12_get_closest_format;
 use crate::{error, util};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ScaleableFramebuffer, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use std::ops::Deref;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
@@ -306,7 +306,7 @@ impl OwnedImage {
     }
 }
 
-impl<T> ScaleableFramebuffer<T> for OwnedImage {
+impl ScaleFramebuffer for OwnedImage {
     type Error = FilterChainError;
     type Context = ();
 
@@ -317,7 +317,7 @@ impl<T> ScaleableFramebuffer<T> for OwnedImage {
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         should_mipmap: bool,
-        _context: Self::Context,
+        _context: &Self::Context,
     ) -> Result<Size<u32>, Self::Error> {
         self.scale(scaling, format, viewport_size, source_size, should_mipmap)
     }

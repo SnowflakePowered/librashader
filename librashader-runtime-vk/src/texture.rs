@@ -8,7 +8,7 @@ use std::sync::Arc;
 use crate::error::FilterChainError;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ScaleableFramebuffer, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 
 pub struct OwnedImage {
     pub device: Arc<ash::Device>,
@@ -20,7 +20,7 @@ pub struct OwnedImage {
     pub levels: u32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct OwnedImageLayout {
     pub(crate) dst_layout: vk::ImageLayout,
     pub(crate) dst_access: vk::AccessFlags,
@@ -536,7 +536,7 @@ impl AsRef<InputImage> for InputImage {
     }
 }
 
-impl<T> ScaleableFramebuffer<T> for OwnedImage {
+impl ScaleFramebuffer for OwnedImage {
     type Error = FilterChainError;
     type Context = Option<OwnedImageLayout>;
 
@@ -547,7 +547,7 @@ impl<T> ScaleableFramebuffer<T> for OwnedImage {
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         should_mipmap: bool,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Size<u32>, Self::Error> {
         self.scale(
             scaling,
@@ -555,7 +555,7 @@ impl<T> ScaleableFramebuffer<T> for OwnedImage {
             viewport_size,
             source_size,
             should_mipmap,
-            context,
+            context.clone(),
         )
     }
 }
