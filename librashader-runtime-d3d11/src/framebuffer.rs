@@ -1,8 +1,8 @@
-use crate::error;
 use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::texture::D3D11InputView;
 use crate::util::d3d11_get_closest_format;
-use librashader_common::{ImageFormat, Size};
+use crate::{error, D3D11OutputView};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use windows::core::Interface;
@@ -163,11 +163,11 @@ impl OwnedFramebuffer {
         Ok(rtv)
     }
 
-    pub fn as_output_framebuffer(&self) -> error::Result<OutputFramebuffer> {
-        Ok(OutputFramebuffer {
-            rtv: self.create_render_target_view()?,
+    pub fn as_output(&self) -> error::Result<D3D11OutputView> {
+        let rtv = self.create_render_target_view()?;
+        Ok(D3D11OutputView {
+            handle: rtv,
             size: self.size,
-            viewport: default_viewport(self.size),
         })
     }
 
@@ -221,7 +221,15 @@ impl OwnedFramebuffer {
 pub(crate) struct OutputFramebuffer {
     pub rtv: ID3D11RenderTargetView,
     pub size: Size<u32>,
-    pub viewport: D3D11_VIEWPORT,
+}
+
+impl<'a> From<&Viewport<'a, D3D11OutputView>> for OutputFramebuffer {
+    fn from(value: &Viewport<'a, D3D11OutputView>) -> Self {
+        OutputFramebuffer {
+            rtv: value.output.handle.clone(),
+            size: value.output.size,
+        }
+    }
 }
 
 fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_TEXTURE2D_DESC {

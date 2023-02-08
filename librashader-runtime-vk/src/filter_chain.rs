@@ -5,7 +5,6 @@ use crate::framebuffer::OutputImage;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
-use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
 use crate::vulkan_primitives::RawVulkanBuffer;
@@ -23,13 +22,14 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, UVDirection};
-use librashader_runtime::quad::{QuadType, DEFAULT_MVP, IDENTITY_MVP};
+use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
+use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 
@@ -652,12 +652,8 @@ impl FilterChainVulkan {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let out = RenderTarget {
-                x: 0.0,
-                y: 0.0,
-                mvp: IDENTITY_MVP,
-                output: OutputImage::new(&self.vulkan, target.image.clone())?,
-            };
+            let output_image = OutputImage::new(&self.vulkan, target.image.clone())?;
+            let out = RenderTarget::identity(&output_image);
 
             let residual_fb = pass.draw(
                 cmd,
@@ -679,7 +675,7 @@ impl FilterChainVulkan {
             }
 
             source = self.common.output_inputs[index].clone().unwrap();
-            intermediates.dispose_outputs(out.output);
+            intermediates.dispose_outputs(output_image);
             intermediates.dispose_framebuffers(residual_fb);
         }
 
@@ -690,12 +686,8 @@ impl FilterChainVulkan {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let out = RenderTarget {
-                x: viewport.x,
-                y: viewport.y,
-                mvp: viewport.mvp.unwrap_or(DEFAULT_MVP),
-                output: OutputImage::new(&self.vulkan, viewport.output.clone())?,
-            };
+            let output_image = OutputImage::new(&self.vulkan, viewport.output.clone())?;
+            let out = RenderTarget::viewport_with_output(&output_image, viewport);
 
             let residual_fb = pass.draw(
                 cmd,
@@ -710,7 +702,7 @@ impl FilterChainVulkan {
                 QuadType::Final,
             )?;
 
-            intermediates.dispose_outputs(out.output);
+            intermediates.dispose_outputs(output_image);
             intermediates.dispose_framebuffers(residual_fb);
         }
 

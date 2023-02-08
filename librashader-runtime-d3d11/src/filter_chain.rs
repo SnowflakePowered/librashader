@@ -19,13 +19,13 @@ use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedFramebuffer;
 use crate::graphics_pipeline::D3D11State;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
-use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
-use librashader_runtime::quad::{QuadType, IDENTITY_MVP};
+use librashader_runtime::quad::QuadType;
+use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
 use rayon::prelude::*;
@@ -485,7 +485,7 @@ impl FilterChainD3D11 {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(target.as_output_framebuffer()?, Some(IDENTITY_MVP)),
+                RenderTarget::identity(&target.as_output()?),
                 QuadType::Offscreen,
             )?;
 
@@ -513,7 +513,7 @@ impl FilterChainD3D11 {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::from(viewport),
+                RenderTarget::viewport(viewport),
                 QuadType::Final,
             )?;
         }

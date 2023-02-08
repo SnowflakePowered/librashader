@@ -16,7 +16,6 @@ mod hello_triangle;
 mod luts;
 mod parameters;
 mod queue_selection;
-mod render_target;
 mod samplers;
 mod texture;
 mod util;
@@ -45,8 +44,8 @@ mod tests {
         dbg!("finished");
         let filter = FilterChainVulkan::load_from_path(
             &base,
-            "../test/slang-shaders/crt/crt-royale.slangp",
-            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__2__ADV-NO-REFLECT.slangp",
+            // "../test/slang-shaders/crt/crt-royale.slangp",
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__2__ADV-NO-REFLECT.slangp",
             // "../test/basic.slangp",
             Some(&FilterChainOptionsVulkan {
                 frames_in_flight: 3,

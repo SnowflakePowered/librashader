@@ -1,11 +1,12 @@
 use crate::{error, util};
 use ash::vk;
 
+use crate::framebuffer::OutputImage;
 use crate::render_pass::VulkanRenderPass;
-use crate::render_target::RenderTarget;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
+use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
 
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
@@ -326,7 +327,7 @@ impl VulkanGraphicsPipeline {
     pub(crate) fn begin_rendering(
         &self,
         device: &ash::Device,
-        output: &RenderTarget,
+        output: &RenderTarget<OutputImage>,
         cmd: vk::CommandBuffer,
     ) -> error::Result<Option<vk::Framebuffer>> {
         if let Some(render_pass) = &self.render_pass {

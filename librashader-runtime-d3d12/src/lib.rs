@@ -2,6 +2,7 @@
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
+
 mod buffer;
 mod descriptor_heap;
 pub mod error;
@@ -15,7 +16,6 @@ mod mipmap;
 pub mod options;
 mod parameters;
 mod quad_render;
-mod render_target;
 mod samplers;
 mod texture;
 mod util;

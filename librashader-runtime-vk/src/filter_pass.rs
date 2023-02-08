@@ -1,5 +1,5 @@
 use crate::filter_chain::FilterCommon;
-use crate::render_target::RenderTarget;
+use crate::framebuffer::OutputImage;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use crate::vulkan_primitives::RawVulkanBuffer;
@@ -16,6 +16,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
+use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
@@ -95,7 +96,7 @@ impl FilterPass {
         viewport: &Viewport<VulkanImage>,
         original: &InputImage,
         source: &InputImage,
-        output: &RenderTarget,
+        output: &RenderTarget<OutputImage>,
         vbo_type: QuadType,
     ) -> error::Result<Option<vk::Framebuffer>> {
         let mut descriptor = self.graphics_pipeline.layout.descriptor_sets

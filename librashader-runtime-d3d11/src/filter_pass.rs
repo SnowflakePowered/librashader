@@ -12,13 +12,13 @@ use rustc_hash::FxHashMap;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
+use librashader_runtime::render_target::RenderTarget;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAPPED_SUBRESOURCE,
-    D3D11_MAP_WRITE_DISCARD,
+    D3D11_MAP_WRITE_DISCARD, D3D11_VIEWPORT,
 };
 
-use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::{error, D3D11OutputView};
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
@@ -144,7 +144,7 @@ impl FilterPass {
         viewport: &Viewport<D3D11OutputView>,
         original: &InputTexture,
         source: &InputTexture,
-        output: RenderTarget,
+        output: RenderTarget<D3D11OutputView>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         let _device = &parent.d3d11.device;
@@ -236,8 +236,15 @@ impl FilterPass {
             context.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
             context.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
 
-            context.OMSetRenderTargets(Some(&[output.output.rtv.clone()]), None);
-            context.RSSetViewports(Some(&[output.output.viewport]))
+            context.OMSetRenderTargets(Some(&[output.output.handle.clone()]), None);
+            context.RSSetViewports(Some(&[D3D11_VIEWPORT {
+                TopLeftX: output.x,
+                TopLeftY: output.y,
+                Width: output.output.size.width as f32,
+                Height: output.output.size.height as f32,
+                MinDepth: 0.0,
+                MaxDepth: 1.0,
+            }]))
         }
 
         parent.draw_quad.draw_quad(context, vbo_type);

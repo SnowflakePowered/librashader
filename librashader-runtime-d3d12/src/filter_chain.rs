@@ -10,7 +10,6 @@ use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
 use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
 use crate::quad_render::DrawQuad;
-use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
@@ -24,7 +23,7 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, MAX_
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::image::{Image, UVDirection};
-use librashader_runtime::quad::{QuadType, DEFAULT_MVP, IDENTITY_MVP};
+use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::ShaderModel;
@@ -46,6 +45,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
+use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer};
 use rayon::prelude::*;
 
@@ -657,18 +657,9 @@ impl FilterChainD3D12 {
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
             );
-            let size = target.size;
-            let view = target.create_render_target_view(&mut self.rtv_heap)?;
 
-            let out = RenderTarget {
-                x: 0.0,
-                y: 0.0,
-                mvp: IDENTITY_MVP,
-                output: D3D12OutputView {
-                    descriptor: view.descriptor,
-                    size,
-                },
-            };
+            let view = target.create_render_target_view(&mut self.rtv_heap)?;
+            let out = RenderTarget::identity(&view);
 
             pass.draw(
                 cmd,
@@ -690,7 +681,7 @@ impl FilterChainD3D12 {
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             );
 
-            self.residuals.push(out.output.descriptor);
+            self.residuals.push(view.descriptor);
             source = self.common.output_textures[index].as_ref().unwrap().clone()
         }
 
@@ -700,12 +691,7 @@ impl FilterChainD3D12 {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
-            let out = RenderTarget {
-                x: 0.0,
-                y: 0.0,
-                mvp: DEFAULT_MVP,
-                output: viewport.output.clone(),
-            };
+            let out = RenderTarget::viewport(viewport);
 
             pass.draw(
                 cmd,

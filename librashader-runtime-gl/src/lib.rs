@@ -12,7 +12,6 @@ mod binding;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
-mod render_target;
 mod util;
 
 mod gl;

@@ -31,3 +31,6 @@ pub mod quad;
 
 /// Filter pass helpers and common traits.
 pub mod filter_pass;
+
+/// Common types for render targets.
+pub mod render_target;

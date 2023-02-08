@@ -1,4 +1,4 @@
-use gl::types::{GLsizei, GLuint};
+use gl::types::{GLint, GLsizei, GLuint};
 use librashader_reflect::back::cross::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
@@ -9,12 +9,12 @@ use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
 use librashader_runtime::filter_pass::FilterPassMeta;
+use librashader_runtime::render_target::RenderTarget;
 use rustc_hash::FxHashMap;
 
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::gl::{BindTexture, GLInterface, UboRing};
-use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::Framebuffer;
 
@@ -87,9 +87,9 @@ impl<T: GLInterface> FilterPass<T> {
         viewport: &Viewport<&Framebuffer>,
         original: &InputTexture,
         source: &InputTexture,
-        output: RenderTarget,
+        output: RenderTarget<Framebuffer, GLint>,
     ) {
-        let framebuffer = output.framebuffer;
+        let framebuffer = output.output;
 
         if self.config.mipmap_input && !parent.disable_mipmaps {
             T::BindTexture::gen_mipmaps(source);

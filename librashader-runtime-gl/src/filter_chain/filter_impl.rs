@@ -3,7 +3,6 @@ use crate::error::FilterChainError;
 use crate::filter_pass::{FilterPass, UniformOffset};
 use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
-use crate::render_target::{RenderTarget, GL_MVP_DEFAULT};
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
@@ -21,10 +20,19 @@ use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, Unif
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
+use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rustc_hash::FxHashMap;
 use spirv_cross::spirv::Decoration;
 use std::collections::VecDeque;
+
+#[rustfmt::skip]
+pub static GL_MVP_DEFAULT: &[f32; 16] = &[
+    2f32, 0.0, 0.0, 0.0,
+    0.0, 2.0, 0.0, 0.0,
+    0.0, 0.0, 2.0, 0.0,
+    -1.0, -1.0, 0.0, 1.0,
+];
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -406,7 +414,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(target, viewport.mvp.unwrap_or(GL_MVP_DEFAULT), 0, 0),
+                RenderTarget::offscreen(target, viewport.mvp.unwrap_or(GL_MVP_DEFAULT)),
             );
 
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
@@ -429,12 +437,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::new(
-                    viewport.output,
-                    viewport.mvp.unwrap_or(GL_MVP_DEFAULT),
-                    viewport.x as i32,
-                    viewport.y as i32,
-                ),
+                RenderTarget::viewport(viewport),
             );
             self.common.output_textures[passes_len - 1] = viewport
                 .output

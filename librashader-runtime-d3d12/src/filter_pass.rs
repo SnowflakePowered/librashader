@@ -3,7 +3,6 @@ use crate::descriptor_heap::{D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerW
 use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::D3D12GraphicsPipeline;
-use crate::render_target::RenderTarget;
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12OutputView, InputTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -14,6 +13,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
+use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use rustc_hash::FxHashMap;
 use std::ops::Deref;
@@ -139,7 +139,7 @@ impl FilterPass {
         viewport: &Viewport<D3D12OutputView>,
         original: &InputTexture,
         source: &InputTexture,
-        output: &RenderTarget,
+        output: &RenderTarget<D3D12OutputView>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         unsafe {

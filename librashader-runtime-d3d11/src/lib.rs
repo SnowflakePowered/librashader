@@ -17,7 +17,6 @@ mod framebuffer;
 mod graphics_pipeline;
 pub mod options;
 mod parameters;
-mod render_target;
 mod samplers;
 mod texture;
 mod util;
@@ -35,9 +34,10 @@ mod tests {
     // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
     // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",
     // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
-    // const FILTER_PATH: &str = "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
+    const FILTER_PATH: &str =
+        "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
     // "../test/null.slangp",
-    const FILTER_PATH: &str = "../test/slang-shaders/scalefx/scalefx-9x.slangp";
+    // const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
 
     // const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
     const IMAGE_PATH: &str = "../test/finalfightlong.png";
