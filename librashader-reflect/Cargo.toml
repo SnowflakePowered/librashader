@@ -30,8 +30,8 @@ naga = { version = "0.11.0", features = ["glsl-in", "spv-in", "spv-out", "glsl-o
 rspirv = { version = "0.11.0+1.5.4", optional = true }
 
 [features]
-default = ["cross", "dxil"]
+default = ["cross"]
 unstable-naga = [ "naga", "rspirv" ]
 standalone = ["shaderc/build-from-source"]
-dxil = ["spirv-to-dxil"]
+dxil = ["cross", "spirv-to-dxil"]
 cross = [ "spirv_cross", "spirv_cross/glsl", "spirv_cross/hlsl" ]
