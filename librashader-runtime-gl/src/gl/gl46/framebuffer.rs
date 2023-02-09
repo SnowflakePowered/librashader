@@ -155,8 +155,6 @@ impl FramebufferInterface for Gl46Framebuffer {
             if status != gl::FRAMEBUFFER_COMPLETE {
                 match status {
                     gl::FRAMEBUFFER_UNSUPPORTED => {
-                        eprintln!("unsupported fbo");
-
                         gl::NamedFramebufferTexture(fb.handle, gl::COLOR_ATTACHMENT0, 0, 0);
                         gl::DeleteTextures(1, &fb.image);
                         gl::CreateTextures(gl::TEXTURE_2D, 1, &mut fb.image);

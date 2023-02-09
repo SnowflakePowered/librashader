@@ -209,8 +209,6 @@ impl FramebufferInterface for Gl3Framebuffer {
             if status != gl::FRAMEBUFFER_COMPLETE {
                 match status {
                     gl::FRAMEBUFFER_UNSUPPORTED => {
-                        eprintln!("unsupported fbo");
-
                         gl::FramebufferTexture2D(
                             gl::FRAMEBUFFER,
                             gl::COLOR_ATTACHMENT0,
