@@ -1,6 +1,11 @@
-use crate::{error, util};
+use crate::error;
+use crate::error::FilterChainError;
 use ash::vk;
+use gpu_allocator::vulkan::{Allocation, AllocationCreateDesc, AllocationScheme, Allocator};
+use gpu_allocator::MemoryLocation;
 use librashader_runtime::uniforms::UniformStorageAccess;
+use parking_lot::RwLock;
+
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
@@ -8,32 +13,46 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 pub struct VulkanImageMemory {
-    pub handle: vk::DeviceMemory,
+    allocation: Option<Allocation>,
+    allocator: Arc<RwLock<Allocator>>,
     device: Arc<ash::Device>,
 }
 
 impl VulkanImageMemory {
     pub fn new(
         device: &Arc<ash::Device>,
-        alloc: &vk::MemoryAllocateInfo,
+        allocator: &Arc<RwLock<Allocator>>,
+        requirements: vk::MemoryRequirements,
+        image: &vk::Image,
     ) -> error::Result<VulkanImageMemory> {
+        let allocation = allocator.write().allocate(&AllocationCreateDesc {
+            name: "imagemem",
+            requirements,
+            location: MemoryLocation::GpuOnly,
+            linear: false,
+            allocation_scheme: AllocationScheme::DedicatedImage(*image),
+        })?;
+
         unsafe {
+            device.bind_image_memory(*image, allocation.memory(), 0)?;
             Ok(VulkanImageMemory {
-                handle: device.allocate_memory(alloc, None)?,
-                device: device.clone(),
+                allocation: Some(allocation),
+                allocator: Arc::clone(allocator),
+                device: Arc::clone(device),
             })
         }
-    }
-
-    pub fn bind(&self, image: &vk::Image) -> error::Result<()> {
-        unsafe { Ok(self.device.bind_image_memory(*image, self.handle, 0)?) }
     }
 }
 
 impl Drop for VulkanImageMemory {
     fn drop(&mut self) {
         unsafe {
-            self.device.free_memory(self.handle, None);
+            let allocation = self.allocation.take();
+            if let Some(allocation) = allocation {
+                if let Err(e) = self.allocator.write().free(allocation) {
+                    println!("librashader-runtime-vk: [warn] failed to deallocate image buffer {e}")
+                }
+            }
         }
     }
 }
@@ -41,19 +60,15 @@ impl Drop for VulkanImageMemory {
 pub struct VulkanBuffer {
     pub handle: vk::Buffer,
     device: Arc<ash::Device>,
-    memory: vk::DeviceMemory,
+    memory: Option<Allocation>,
+    allocator: Arc<RwLock<Allocator>>,
     size: vk::DeviceSize,
-}
-
-pub struct VulkanBufferMapHandle<'a> {
-    buffer: &'a mut VulkanBuffer,
-    ptr: *mut c_void,
 }
 
 impl VulkanBuffer {
     pub fn new(
         device: &Arc<ash::Device>,
-        mem_props: &vk::PhysicalDeviceMemoryProperties,
+        allocator: &Arc<RwLock<Allocator>>,
         usage: vk::BufferUsageFlags,
         size: usize,
     ) -> error::Result<VulkanBuffer> {
@@ -66,71 +81,54 @@ impl VulkanBuffer {
             let buffer = device.create_buffer(&buffer_info, None)?;
 
             let memory_reqs = device.get_buffer_memory_requirements(buffer);
-            let alloc_info = vk::MemoryAllocateInfo::builder()
-                .allocation_size(memory_reqs.size)
-                .memory_type_index(util::find_vulkan_memory_type(
-                    mem_props,
-                    memory_reqs.memory_type_bits,
-                    vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT,
-                )?)
-                .build();
 
-            let alloc = device.allocate_memory(&alloc_info, None)?;
-            device.bind_buffer_memory(buffer, alloc, 0)?;
+            let alloc = allocator.write().allocate(&AllocationCreateDesc {
+                name: "buffer",
+                requirements: memory_reqs,
+                location: MemoryLocation::CpuToGpu,
+                linear: true,
+                allocation_scheme: AllocationScheme::DedicatedBuffer(buffer),
+            })?;
+
+            // let alloc = device.allocate_memory(&alloc_info, None)?;
+            device.bind_buffer_memory(buffer, alloc.memory(), 0)?;
 
             Ok(VulkanBuffer {
                 handle: buffer,
-                memory: alloc,
+                memory: Some(alloc),
+                allocator: Arc::clone(allocator),
                 size: size as vk::DeviceSize,
                 device: device.clone(),
             })
         }
     }
 
-    pub fn map(&mut self) -> error::Result<VulkanBufferMapHandle> {
-        let dst = unsafe {
-            self.device
-                .map_memory(self.memory, 0, self.size, vk::MemoryMapFlags::empty())?
+    pub fn as_mut_slice(&mut self) -> error::Result<&mut [u8]> {
+        let Some(allocation) = self.memory.as_mut() else {
+            return Err(FilterChainError::AllocationDoesNotExist)
         };
-
-        Ok(VulkanBufferMapHandle {
-            buffer: self,
-            ptr: dst,
-        })
+        let Some(allocation) = allocation.mapped_slice_mut() else {
+            return Err(FilterChainError::AllocationDoesNotExist)
+        };
+        Ok(allocation)
     }
 }
 
 impl Drop for VulkanBuffer {
     fn drop(&mut self) {
         unsafe {
-            if self.memory != vk::DeviceMemory::null() {
-                self.device.free_memory(self.memory, None);
+            if let Some(allocation) = self.memory.take() {
+                if let Err(e) = self.allocator.write().free(allocation) {
+                    println!(
+                        "librashader-runtime-vk: [warn] failed to deallocate buffer memory {e}"
+                    )
+                }
             }
 
             if self.handle != vk::Buffer::null() {
                 self.device.destroy_buffer(self.handle, None);
             }
         }
-    }
-}
-
-impl<'a> VulkanBufferMapHandle<'a> {
-    pub unsafe fn copy_from(&mut self, offset: usize, src: &[u8]) {
-        let mut align = ash::util::Align::new(
-            self.ptr
-                .map_addr(|original| original.wrapping_add(offset))
-                .cast(),
-            std::mem::align_of::<u8>() as u64,
-            self.buffer.size,
-        );
-
-        align.copy_from_slice(src);
-    }
-}
-
-impl<'a> Drop for VulkanBufferMapHandle<'a> {
-    fn drop(&mut self) {
-        unsafe { self.buffer.device.unmap_memory(self.buffer.memory) }
     }
 }
 
@@ -146,18 +144,17 @@ pub struct RawVulkanBuffer {
 impl RawVulkanBuffer {
     pub fn new(
         device: &Arc<ash::Device>,
-        mem_props: &vk::PhysicalDeviceMemoryProperties,
+        allocator: &Arc<RwLock<Allocator>>,
         usage: vk::BufferUsageFlags,
         size: usize,
     ) -> error::Result<Self> {
-        let buffer = ManuallyDrop::new(VulkanBuffer::new(device, mem_props, usage, size)?);
-        let ptr = unsafe {
-            NonNull::new_unchecked(device.map_memory(
-                buffer.memory,
-                0,
-                buffer.size,
-                vk::MemoryMapFlags::empty(),
-            )?)
+        let buffer = ManuallyDrop::new(VulkanBuffer::new(device, allocator, usage, size)?);
+
+        let Some(ptr) = buffer.memory
+            .as_ref()
+            .map(|m| m.mapped_ptr())
+            .flatten() else {
+            return Err(FilterChainError::AllocationDoesNotExist)
         };
 
         Ok(RawVulkanBuffer { buffer, ptr })
@@ -193,12 +190,7 @@ impl RawVulkanBuffer {
 impl Drop for RawVulkanBuffer {
     fn drop(&mut self) {
         unsafe {
-            self.buffer.device.unmap_memory(self.buffer.memory);
-            self.ptr = NonNull::dangling();
-            if self.buffer.memory != vk::DeviceMemory::null() {
-                self.buffer.device.free_memory(self.buffer.memory, None);
-            }
-
+            ManuallyDrop::drop(&mut self.buffer);
             if self.buffer.handle != vk::Buffer::null() {
                 self.buffer.device.destroy_buffer(self.buffer.handle, None);
             }

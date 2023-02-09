@@ -1,9 +1,9 @@
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::OutputImage;
 use crate::graphics_pipeline::VulkanGraphicsPipeline;
+use crate::memory::RawVulkanBuffer;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
-use crate::vulkan_primitives::RawVulkanBuffer;
 use crate::{error, VulkanImage};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};

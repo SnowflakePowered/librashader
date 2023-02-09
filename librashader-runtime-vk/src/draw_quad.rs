@@ -1,7 +1,9 @@
 use crate::error;
-use crate::vulkan_primitives::VulkanBuffer;
+use crate::memory::VulkanBuffer;
 use ash::vk;
+use gpu_allocator::vulkan::Allocator;
 use librashader_runtime::quad::QuadType;
+use parking_lot::RwLock;
 use std::sync::Arc;
 
 #[rustfmt::skip]
@@ -30,25 +32,23 @@ pub struct DrawQuad {
 impl DrawQuad {
     pub fn new(
         device: &Arc<ash::Device>,
-        mem_props: &vk::PhysicalDeviceMemoryProperties,
+        allocator: &Arc<RwLock<Allocator>>,
     ) -> error::Result<DrawQuad> {
         let mut buffer = VulkanBuffer::new(
             device,
-            mem_props,
+            allocator,
             vk::BufferUsageFlags::VERTEX_BUFFER,
             2 * std::mem::size_of::<[f32; 16]>(),
         )?;
 
         {
-            let mut map = buffer.map()?;
-            unsafe {
-                map.copy_from(0, bytemuck::cast_slice(VBO_OFFSCREEN));
-                map.copy_from(
-                    std::mem::size_of::<[f32; 16]>(),
-                    bytemuck::cast_slice(VBO_DEFAULT_FINAL),
-                );
-            }
+            let slice = buffer.as_mut_slice()?;
+            slice[0..std::mem::size_of::<[f32; 16]>()]
+                .copy_from_slice(bytemuck::cast_slice(VBO_OFFSCREEN));
+            slice[std::mem::size_of::<[f32; 16]>()..]
+                .copy_from_slice(bytemuck::cast_slice(VBO_DEFAULT_FINAL));
         }
+
         Ok(DrawQuad {
             buffer,
             device: device.clone(),

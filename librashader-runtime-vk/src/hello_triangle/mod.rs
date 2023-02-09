@@ -22,6 +22,7 @@ use ash::vk;
 
 use librashader_common::Viewport;
 
+use crate::options::FrameOptionsVulkan;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
@@ -256,7 +257,10 @@ impl VulkanWindow {
                     },
                     cmd,
                     frame,
-                    None,
+                    Some(&FrameOptionsVulkan {
+                        clear_history: frame == 0,
+                        frame_direction: 0,
+                    }),
                 )
                 .unwrap();
 

@@ -1,7 +1,6 @@
 use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::vulkan_base::VulkanBase;
-use crate::util::find_vulkan_memory_type;
-use crate::vulkan_primitives::VulkanImageMemory;
+use crate::memory::VulkanImageMemory;
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Extent3D;
@@ -95,33 +94,9 @@ impl VulkanSwapchain {
                 let image = base.device.create_image(&create_info, None)?;
                 let mem_reqs = unsafe { base.device.get_image_memory_requirements(image) };
 
-                // base.debug
-                //     .loader
-                //     .set_debug_utils_object_name(
-                //         base.device.handle(),
-                //         &vk::DebugUtilsObjectNameInfoEXT::builder()
-                //             .object_handle(image.as_raw())
-                //             .object_name(CStr::from_bytes_with_nul_unchecked(b"RenderImage\0"))
-                //             .object_type(vk::ObjectType::IMAGE)
-                //             .build(),
-                //     )
-                //     .expect("could not set object name");
-
-                let alloc_info = vk::MemoryAllocateInfo::builder()
-                    .allocation_size(mem_reqs.size)
-                    .memory_type_index(
-                        find_vulkan_memory_type(
-                            &base.mem_props,
-                            mem_reqs.memory_type_bits,
-                            vk::MemoryPropertyFlags::DEVICE_LOCAL,
-                        )
-                        .unwrap(),
-                    )
-                    .build();
-
-                // todo: optimize by reusing existing memory.
-                let memory = VulkanImageMemory::new(&base.device, &alloc_info).unwrap();
-                memory.bind(&image).unwrap();
+                let memory =
+                    VulkanImageMemory::new(&base.device, &base.allocator, mem_reqs, &image)
+                        .unwrap();
 
                 render_images.push((image, memory))
             }

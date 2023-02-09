@@ -15,12 +15,12 @@ mod graphics_pipeline;
 #[cfg(test)]
 mod hello_triangle;
 mod luts;
+mod memory;
 mod parameters;
 mod queue_selection;
 mod samplers;
 mod texture;
 mod util;
-mod vulkan_primitives;
 
 pub use filter_chain::FilterChainVulkan;
 pub use filter_chain::VulkanInstance;

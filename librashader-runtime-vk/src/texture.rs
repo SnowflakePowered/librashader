@@ -1,8 +1,9 @@
 use crate::filter_chain::VulkanObjects;
-use crate::util::find_vulkan_memory_type;
-use crate::vulkan_primitives::VulkanImageMemory;
+use crate::memory::VulkanImageMemory;
 use crate::{error, util};
 use ash::vk;
+use gpu_allocator::vulkan::Allocator;
+use parking_lot::RwLock;
 use std::sync::Arc;
 
 use crate::error::FilterChainError;
@@ -12,7 +13,7 @@ use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 
 pub struct OwnedImage {
     pub device: Arc<ash::Device>,
-    pub mem_props: vk::PhysicalDeviceMemoryProperties,
+    pub allocator: Arc<RwLock<Allocator>>,
     pub image_view: vk::ImageView,
     pub image: VulkanImage,
     pub memory: VulkanImageMemory,
@@ -32,7 +33,7 @@ pub struct OwnedImageLayout {
 impl OwnedImage {
     fn new_internal(
         device: Arc<ash::Device>,
-        mem_props: vk::PhysicalDeviceMemoryProperties,
+        alloc: &Arc<RwLock<Allocator>>,
         size: Size<u32>,
         mut format: ImageFormat,
         max_miplevels: u32,
@@ -63,19 +64,7 @@ impl OwnedImage {
         let image = unsafe { device.create_image(&image_create_info, None)? };
         let mem_reqs = unsafe { device.get_image_memory_requirements(image) };
 
-        let alloc_info = vk::MemoryAllocateInfo::builder()
-            .allocation_size(mem_reqs.size)
-            .memory_type_index(find_vulkan_memory_type(
-                &mem_props,
-                mem_reqs.memory_type_bits,
-                vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            )?)
-            .build();
-
-        // todo: optimize by reusing existing memory.
-        let memory = VulkanImageMemory::new(&device, &alloc_info)?;
-        memory.bind(&image)?;
-
+        let memory = VulkanImageMemory::new(&device, alloc, mem_reqs, &image)?;
         let image_subresource = vk::ImageSubresourceRange::builder()
             .base_mip_level(0)
             .base_array_layer(0)
@@ -103,7 +92,7 @@ impl OwnedImage {
 
         Ok(OwnedImage {
             device,
-            mem_props,
+            allocator: Arc::clone(alloc),
             image_view,
             image: VulkanImage {
                 image,
@@ -124,7 +113,7 @@ impl OwnedImage {
     ) -> error::Result<OwnedImage> {
         Self::new_internal(
             vulkan.device.clone(),
-            vulkan.memory_properties,
+            &vulkan.alloc,
             size,
             format,
             max_miplevels,
@@ -150,7 +139,7 @@ impl OwnedImage {
 
             let new = OwnedImage::new_internal(
                 self.device.clone(),
-                self.mem_props,
+                &self.allocator,
                 size,
                 if format == ImageFormat::Unknown {
                     ImageFormat::R8G8B8A8Unorm

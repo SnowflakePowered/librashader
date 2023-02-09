@@ -5,7 +5,10 @@ use crate::filter_chain::VulkanObjects;
 
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 
+use crate::util;
 use ash::prelude::VkResult;
+use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
+use parking_lot::RwLock;
 use std::ffi::CStr;
 use std::sync::Arc;
 
@@ -20,6 +23,7 @@ pub struct VulkanBase {
     // pub debug: VulkanDebug,
     pub physical_device: vk::PhysicalDevice,
     pub mem_props: vk::PhysicalDeviceMemoryProperties,
+    pub allocator: Arc<RwLock<Allocator>>,
 }
 
 impl VulkanBase {
@@ -61,6 +65,10 @@ impl VulkanBase {
         let mem_props = unsafe { instance.get_physical_device_memory_properties(physical_device) };
         dbg!("got memprops");
 
+        let alloc =
+            util::create_allocator(device.clone(), instance.clone(), physical_device.clone())
+                .expect("could not create allocator");
+
         Ok(VulkanBase {
             entry,
             instance,
@@ -69,6 +77,7 @@ impl VulkanBase {
             physical_device,
             mem_props,
             // debug,
+            allocator: alloc,
         })
     }
 
@@ -161,10 +170,8 @@ impl TryFrom<&VulkanBase> for VulkanObjects {
     type Error = FilterChainError;
 
     fn try_from(value: &VulkanBase) -> Result<Self, Self::Error> {
-        VulkanObjects::try_from((
-            value.physical_device,
-            value.instance.clone(),
-            value.device.clone(),
-        ))
+        let device = (*value.device).clone();
+
+        VulkanObjects::try_from((value.physical_device, value.instance.clone(), device))
     }
 }

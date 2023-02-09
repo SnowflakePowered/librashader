@@ -1,6 +1,6 @@
 use crate::filter_chain::VulkanObjects;
+use crate::memory::{VulkanBuffer, VulkanImageMemory};
 use crate::texture::{InputImage, VulkanImage};
-use crate::vulkan_primitives::{VulkanBuffer, VulkanImageMemory};
 use crate::{error, util};
 use ash::vk;
 use librashader_presets::TextureConfig;
@@ -46,20 +46,13 @@ impl LutTexture {
 
         let memory = unsafe {
             let mem_reqs = vulkan.device.get_image_memory_requirements(texture);
-            let mem_type = util::find_vulkan_memory_type(
-                &vulkan.memory_properties,
-                mem_reqs.memory_type_bits,
-                vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            )?;
-            VulkanImageMemory::new(
-                &vulkan.device,
-                &vk::MemoryAllocateInfo::builder()
-                    .memory_type_index(mem_type)
-                    .allocation_size(mem_reqs.size),
-            )?
+            // let mem_type = util::find_vulkan_memory_type(
+            //     &vulkan.memory_properties,
+            //     mem_reqs.memory_type_bits,
+            //     vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            // )?;
+            VulkanImageMemory::new(&vulkan.device, &vulkan.alloc, mem_reqs, &texture)?
         };
-
-        memory.bind(&texture)?;
 
         let image_subresource = vk::ImageSubresourceRange::builder()
             .level_count(image_info.mip_levels)
@@ -86,14 +79,12 @@ impl LutTexture {
 
         let mut staging = VulkanBuffer::new(
             &vulkan.device,
-            &vulkan.memory_properties,
+            &vulkan.alloc,
             vk::BufferUsageFlags::TRANSFER_SRC,
             image.bytes.len(),
         )?;
-        unsafe {
-            let mut handle = staging.map()?;
-            handle.copy_from(0, &image.bytes)
-        }
+
+        staging.as_mut_slice()?.copy_from_slice(&image.bytes);
 
         unsafe {
             util::vulkan_image_layout_transition_levels(

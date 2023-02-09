@@ -4,15 +4,16 @@ use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputImage;
 use crate::graphics_pipeline::VulkanGraphicsPipeline;
 use crate::luts::LutTexture;
+use crate::memory::RawVulkanBuffer;
 use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
-use crate::vulkan_primitives::RawVulkanBuffer;
 use crate::{error, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
 
+use gpu_allocator::vulkan::Allocator;
 use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -24,6 +25,7 @@ use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
+use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
@@ -36,9 +38,10 @@ use rayon::prelude::*;
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
     pub(crate) device: Arc<ash::Device>,
-    pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
+    pub(crate) alloc: Arc<RwLock<Allocator>>,
     queue: vk::Queue,
     pipeline_cache: vk::PipelineCache,
+    // pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
 }
 
 type ShaderPassMeta =
@@ -75,26 +78,28 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
                 device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
 
             let queue = get_graphics_queue(&instance, &device, vulkan.physical_device);
-            let memory_properties =
-                instance.get_physical_device_memory_properties(vulkan.physical_device);
+
+            // let memory_properties =
+            //     instance.get_physical_device_memory_properties(vulkan.physical_device);
+
+            let alloc = util::create_allocator(device.clone(), instance, vulkan.physical_device)?;
 
             Ok(VulkanObjects {
                 device: Arc::new(device),
+                alloc,
                 queue,
                 pipeline_cache,
-                memory_properties,
+                // memory_properties,
                 // debug,
             })
         }
     }
 }
 
-impl TryFrom<(vk::PhysicalDevice, ash::Instance, Arc<ash::Device>)> for VulkanObjects {
+impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects {
     type Error = FilterChainError;
 
-    fn try_from(
-        value: (vk::PhysicalDevice, ash::Instance, Arc<ash::Device>),
-    ) -> error::Result<Self> {
+    fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
         unsafe {
             let device = value.2;
 
@@ -103,13 +108,16 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, Arc<ash::Device>)> for VulkanOb
 
             let queue = get_graphics_queue(&value.1, &device, value.0);
 
-            let memory_properties = value.1.get_physical_device_memory_properties(value.0);
+            // let memory_properties = value.1.get_physical_device_memory_properties(value.0);
+
+            let alloc = util::create_allocator(device.clone(), value.1, value.0)?;
 
             Ok(VulkanObjects {
-                device,
+                alloc,
+                device: Arc::new(device),
                 queue,
                 pipeline_cache,
-                memory_properties,
+                // memory_properties,
                 // debug: value.3,
             })
         }
@@ -288,7 +296,7 @@ impl FilterChainVulkan {
                         .map(|param| (param.name, param.value))
                         .collect(),
                 },
-                draw_quad: DrawQuad::new(&device.device, &device.memory_properties)?,
+                draw_quad: DrawQuad::new(&device.device, &device.alloc)?,
                 device: device.device.clone(),
                 output_inputs: output_textures.into_boxed_slice(),
                 feedback_inputs: feedback_textures.into_boxed_slice(),
@@ -324,7 +332,7 @@ impl FilterChainVulkan {
                 let uniform_storage = UniformStorage::new_with_ubo_storage(
                     RawVulkanBuffer::new(
                         &vulkan.device,
-                        &vulkan.memory_properties,
+                        &vulkan.alloc,
                         vk::BufferUsageFlags::UNIFORM_BUFFER,
                         ubo_size,
                     )?,

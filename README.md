@@ -121,7 +121,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html) by default.
     This extension must be enabled at device creation. Explicit render passes can be used by configuring filter chain options, but may have reduced performance 
     compared to dynamic rendering.
-  * UBOs use multiple discontiguous buffers. This may be improved in the future by switching to VMA rather than manually handling allocations.
+  * Allocations within the runtime are done through [gpu-allocator](https://github.com/Traverse-Research/gpu-allocator) rather than handled manually.
 * Direct3D 11
   * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
 * Direct3D 12

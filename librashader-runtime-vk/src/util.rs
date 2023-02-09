@@ -1,4 +1,8 @@
 use ash::vk;
+use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
+use gpu_allocator::AllocatorDebugSettings;
+use parking_lot::RwLock;
+use std::sync::Arc;
 
 use crate::error;
 use crate::error::FilterChainError;
@@ -17,6 +21,7 @@ pub fn binding_stage_to_vulkan_stage(stage_mask: BindingStage) -> vk::ShaderStag
     mask
 }
 
+#[allow(unused)]
 pub fn find_vulkan_memory_type(
     props: &vk::PhysicalDeviceMemoryProperties,
     device_reqs: u32,
@@ -80,4 +85,19 @@ pub unsafe fn vulkan_image_layout_transition_levels(
         &[],
         &[barrier],
     )
+}
+
+pub fn create_allocator(
+    device: ash::Device,
+    instance: ash::Instance,
+    physical_device: vk::PhysicalDevice,
+) -> error::Result<Arc<RwLock<Allocator>>> {
+    let alloc = Allocator::new(&AllocatorCreateDesc {
+        instance,
+        device,
+        physical_device,
+        debug_settings: Default::default(),
+        buffer_device_address: false,
+    })?;
+    Ok(Arc::new(RwLock::new(alloc)))
 }
