@@ -8,6 +8,7 @@ use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
+use std::sync::Arc;
 
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
@@ -177,19 +178,21 @@ pub struct VulkanGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     pub pipeline: vk::Pipeline,
     pub render_pass: Option<VulkanRenderPass>,
+    device: Arc<ash::Device>,
+    vertex: VulkanShaderModule,
+    fragment: VulkanShaderModule,
+    cache: vk::PipelineCache,
 }
 
 impl VulkanGraphicsPipeline {
-    pub fn new(
+    fn create_pipeline(
         device: &ash::Device,
         cache: &vk::PipelineCache,
-        shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
-        reflection: &ShaderReflection,
-        replicas: u32,
-        render_pass_format: vk::Format,
-    ) -> error::Result<VulkanGraphicsPipeline> {
-        let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
-
+        pipeline_layout: &PipelineLayoutObjects,
+        vertex_module: &VulkanShaderModule,
+        fragment_module: &VulkanShaderModule,
+        render_pass: Option<&VulkanRenderPass>,
+    ) -> error::Result<vk::Pipeline> {
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::builder()
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP)
             .build();
@@ -262,16 +265,6 @@ impl VulkanGraphicsPipeline {
             .dynamic_states(&states)
             .build();
 
-        let vertex_info = vk::ShaderModuleCreateInfo::builder()
-            .code(shader_assembly.vertex.as_ref())
-            .build();
-        let fragment_info = vk::ShaderModuleCreateInfo::builder()
-            .code(shader_assembly.fragment.as_ref())
-            .build();
-
-        let vertex_module = VulkanShaderModule::new(device, &vertex_info)?;
-        let fragment_module = VulkanShaderModule::new(device, &fragment_info)?;
-
         let shader_stages = [
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::VERTEX)
@@ -297,32 +290,93 @@ impl VulkanGraphicsPipeline {
             .dynamic_state(&dynamic_state)
             .layout(pipeline_layout.layout);
 
+        if let Some(render_pass) = render_pass {
+            pipeline_info = pipeline_info.render_pass(render_pass.handle)
+        }
+
+        let pipeline_info = [pipeline_info.build()];
+
+        let pipeline = unsafe {
+            // panic_safety: if this is successful this should return 1 pipelines.
+            device
+                .create_graphics_pipelines(*cache, &pipeline_info, None)
+                .map_err(|e| e.1)
+                .unwrap()[0]
+        };
+
+        Ok(pipeline)
+    }
+
+    pub fn new(
+        device: &Arc<ash::Device>,
+        cache: &vk::PipelineCache,
+        shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
+        reflection: &ShaderReflection,
+        replicas: u32,
+        render_pass_format: vk::Format,
+    ) -> error::Result<VulkanGraphicsPipeline> {
+        let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
+
+        let vertex_info = vk::ShaderModuleCreateInfo::builder()
+            .code(shader_assembly.vertex.as_ref())
+            .build();
+        let fragment_info = vk::ShaderModuleCreateInfo::builder()
+            .code(shader_assembly.fragment.as_ref())
+            .build();
+
+        let vertex_module = VulkanShaderModule::new(device, &vertex_info)?;
+        let fragment_module = VulkanShaderModule::new(device, &fragment_info)?;
+
         let mut render_pass = None;
         if render_pass_format != vk::Format::UNDEFINED {
             render_pass = Some(VulkanRenderPass::create_render_pass(
                 device,
                 render_pass_format,
             )?);
-            pipeline_info = pipeline_info.render_pass(render_pass.as_ref().unwrap().handle)
         }
 
-        let pipeline_info = pipeline_info.build();
-
-        let pipeline = unsafe {
-            // panic_safety: if this is successful this should return 1 pipelines.
-            device
-                .create_graphics_pipelines(*cache, &[pipeline_info], None)
-                .map_err(|e| e.1)
-                .unwrap()[0]
-        };
+        let pipeline = Self::create_pipeline(
+            &device,
+            &cache,
+            &pipeline_layout,
+            &vertex_module,
+            &fragment_module,
+            render_pass.as_ref(),
+        )?;
 
         Ok(VulkanGraphicsPipeline {
+            device: Arc::clone(device),
             layout: pipeline_layout,
             pipeline,
             render_pass,
+            vertex: vertex_module,
+            fragment: fragment_module,
+            cache: *cache,
         })
     }
 
+    pub(crate) fn recompile(&mut self, format: vk::Format) -> error::Result<()> {
+        let mut new_renderpass = if self.render_pass.is_some() {
+            Some(VulkanRenderPass::create_render_pass(&self.device, format)?)
+        } else {
+            None
+        };
+
+        let mut new_pipeline = Self::create_pipeline(
+            &self.device,
+            &self.cache,
+            &self.layout,
+            &self.vertex,
+            &self.fragment,
+            new_renderpass.as_ref(),
+        )?;
+
+        std::mem::swap(&mut self.render_pass, &mut new_renderpass);
+        std::mem::swap(&mut self.pipeline, &mut new_pipeline);
+
+        unsafe { self.device.destroy_pipeline(new_pipeline, None) }
+        Ok(())
+    }
     #[inline(always)]
     pub(crate) fn begin_rendering(
         &self,

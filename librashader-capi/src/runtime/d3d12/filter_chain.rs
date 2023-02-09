@@ -17,7 +17,7 @@ pub use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
 use librashader::runtime::d3d12::{D3D12InputImage, D3D12OutputView};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
-/// Direct3D 11 parameters for the source image.
+/// Direct3D 12 parameters for the source image.
 #[repr(C)]
 pub struct libra_source_image_d3d12_t {
     /// The resource containing the image.
@@ -30,6 +30,15 @@ pub struct libra_source_image_d3d12_t {
     pub width: u32,
     /// The height of the source image.
     pub height: u32,
+}
+
+/// Direct3D 12 parameters for the output image.
+#[repr(C)]
+pub struct libra_output_image_d3d12_t {
+    /// A CPU descriptor handle to a shader resource view of the image.
+    pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    /// The format of the image.
+    pub format: DXGI_FORMAT,
 }
 
 impl TryFrom<libra_source_image_d3d12_t> for D3D12InputImage {
@@ -111,7 +120,7 @@ extern_fn! {
         frame_count: usize,
         image: libra_source_image_d3d12_t,
         viewport: libra_viewport_t,
-        out: D3D12_CPU_DESCRIPTOR_HANDLE,
+        out: libra_output_image_d3d12_t,
         mvp: *const f32,
         opt: *const FrameOptionsD3D12
     ) mut |chain| {
@@ -132,7 +141,7 @@ extern_fn! {
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
-            output: unsafe { D3D12OutputView::new_from_raw(out, Size::new(viewport.width, viewport.height)) },
+            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(viewport.width, viewport.height), out.format) },
             mvp,
         };
 

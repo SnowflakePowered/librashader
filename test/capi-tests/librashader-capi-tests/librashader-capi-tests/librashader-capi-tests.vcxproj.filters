@@ -27,7 +27,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\..\..\target\debug\librashader.lib" />
-  </ItemGroup>
 </Project>

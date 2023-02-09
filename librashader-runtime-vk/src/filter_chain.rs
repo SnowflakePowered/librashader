@@ -2,13 +2,13 @@ use crate::draw_quad::DrawQuad;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputImage;
+use crate::graphics_pipeline::VulkanGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
 use crate::vulkan_primitives::RawVulkanBuffer;
-use crate::vulkan_state::VulkanGraphicsPipeline;
 use crate::{error, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -682,6 +682,12 @@ impl FilterChainVulkan {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
+            if let Some(format) = pass.graphics_pipeline.render_pass.as_ref().map(|r| r.format)
+                && format != viewport.output.format {
+                // need to recompile
+                pass.graphics_pipeline.recompile(viewport.output.format)?;
+            }
+
             source.filter_mode = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;

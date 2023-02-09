@@ -281,7 +281,11 @@ impl OwnedImage {
             );
         }
 
-        Ok(D3D12OutputView::new(descriptor, self.size))
+        Ok(D3D12OutputView::new(
+            descriptor,
+            self.size,
+            self.format.into(),
+        ))
     }
 
     pub fn scale(

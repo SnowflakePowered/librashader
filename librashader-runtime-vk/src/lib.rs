@@ -11,6 +11,7 @@ mod draw_quad;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
+mod graphics_pipeline;
 #[cfg(test)]
 mod hello_triangle;
 mod luts;
@@ -20,7 +21,6 @@ mod samplers;
 mod texture;
 mod util;
 mod vulkan_primitives;
-mod vulkan_state;
 
 pub use filter_chain::FilterChainVulkan;
 pub use filter_chain::VulkanInstance;
@@ -41,7 +41,6 @@ mod tests {
     fn triangle_vk() {
         let entry = unsafe { ash::Entry::load().unwrap() };
         let base = VulkanBase::new(entry).unwrap();
-        dbg!("finished");
         let filter = FilterChainVulkan::load_from_path(
             &base,
             // "../test/slang-shaders/crt/crt-royale.slangp",
@@ -50,7 +49,7 @@ mod tests {
             Some(&FilterChainOptionsVulkan {
                 frames_in_flight: 3,
                 force_no_mipmaps: false,
-                use_render_pass: false,
+                use_render_pass: true,
             }),
         )
         .unwrap();

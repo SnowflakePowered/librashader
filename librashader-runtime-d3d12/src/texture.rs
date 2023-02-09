@@ -49,24 +49,35 @@ impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for OutputDescriptor {
 pub struct D3D12OutputView {
     pub(crate) descriptor: OutputDescriptor,
     pub(crate) size: Size<u32>,
+    pub(crate) format: DXGI_FORMAT,
 }
 
 impl D3D12OutputView {
     pub(crate) fn new(
         handle: D3D12DescriptorHeapSlot<RenderTargetHeap>,
         size: Size<u32>,
+        format: DXGI_FORMAT,
     ) -> D3D12OutputView {
         let descriptor = OutputDescriptor::Owned(handle);
-        D3D12OutputView { descriptor, size }
+        D3D12OutputView {
+            descriptor,
+            size,
+            format,
+        }
     }
 
     // unsafe since the lifetime of the handle has to survive
     pub unsafe fn new_from_raw(
         handle: D3D12_CPU_DESCRIPTOR_HANDLE,
         size: Size<u32>,
+        format: DXGI_FORMAT,
     ) -> D3D12OutputView {
         let descriptor = OutputDescriptor::Raw(handle);
-        D3D12OutputView { descriptor, size }
+        D3D12OutputView {
+            descriptor,
+            size,
+            format,
+        }
     }
 }
 

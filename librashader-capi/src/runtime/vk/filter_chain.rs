@@ -23,7 +23,7 @@ pub type libra_PFN_vkGetInstanceProcAddr =
 
 /// Vulkan parameters for the source image.
 #[repr(C)]
-pub struct libra_image_vk_t {
+pub struct libra_source_image_vk_t {
     /// A raw `VkImage` handle to the source image.
     pub handle: vk::Image,
     /// The `VkFormat` of the source image.
@@ -32,6 +32,15 @@ pub struct libra_image_vk_t {
     pub width: u32,
     /// The height of the source image.
     pub height: u32,
+}
+
+/// Vulkan parameters for the output image.
+#[repr(C)]
+pub struct libra_output_image_vk_t {
+    /// A raw `VkImage` handle to the output image.
+    pub handle: vk::Image,
+    /// The `VkFormat` of the output image.
+    pub format: vk::Format,
 }
 
 /// Handles required to instantiate vulkan
@@ -50,8 +59,8 @@ pub struct libra_device_vk_t {
     pub entry: vk::PFN_vkGetInstanceProcAddr,
 }
 
-impl From<libra_image_vk_t> for VulkanImage {
-    fn from(value: libra_image_vk_t) -> Self {
+impl From<libra_source_image_vk_t> for VulkanImage {
+    fn from(value: libra_source_image_vk_t) -> Self {
         VulkanImage {
             size: Size::new(value.width, value.height),
             image: value.handle,
@@ -134,15 +143,19 @@ extern_fn! {
         chain: *mut libra_vk_filter_chain_t,
         command_buffer: vk::CommandBuffer,
         frame_count: usize,
-        image: libra_image_vk_t,
+        image: libra_source_image_vk_t,
         viewport: libra_viewport_t,
-        out: libra_image_vk_t,
+        out: libra_output_image_vk_t,
         mvp: *const f32,
         opt: *const FrameOptionsVulkan
     ) mut |chain| {
         assert_some_ptr!(mut chain);
         let image: VulkanImage = image.into();
-        let output = out.into();
+        let output = VulkanImage {
+            image: out.handle,
+            size: Size::new(viewport.width, viewport.height),
+            format: out.format
+        };
         let mvp = if mvp.is_null() {
             None
         } else {

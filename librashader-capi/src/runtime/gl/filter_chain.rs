@@ -31,7 +31,7 @@ pub struct libra_source_image_gl_t {
 
 /// OpenGL parameters for the output framebuffer.
 #[repr(C)]
-pub struct libra_draw_framebuffer_gl_t {
+pub struct libra_output_framebuffer_gl_t {
     /// A framebuffer GLuint to the output framebuffer.
     pub handle: u32,
     /// A texture GLuint to the logical buffer of the output framebuffer.
@@ -125,7 +125,7 @@ extern_fn! {
         frame_count: usize,
         image: libra_source_image_gl_t,
         viewport: libra_viewport_t,
-        out: libra_draw_framebuffer_gl_t,
+        out: libra_output_framebuffer_gl_t,
         mvp: *const f32,
         opt: *const FrameOptionsGL
     ) mut |chain| {

@@ -3,6 +3,11 @@
 
 #include <iostream>
 #include <filesystem>
+#define LIBRA_RUNTIME_VULKAN
+#define LIBRA_RUNTIME_OPENGL
+#define LIBRA_RUNTIME_D3D11
+#define LIBRA_RUNTIME_D3D12
+
 
 #include "../../../../include/librashader_ld.h"
 int main()
@@ -16,11 +21,11 @@ int main()
         "gameboy-player-crt-royale.slangp",
         &preset);
 
-    libra_shader_preset_t preset2;
+   /* libra_shader_preset_t preset2;
     libra_preset_create(
         "../../../slang-shaders/border/gameboy-player/"
         "gameboy-player-crt-royale.slangp",
-        &preset2);
+        &preset2);*/
     
     instance.preset_print(&preset);
     std::cout << "printed\n";

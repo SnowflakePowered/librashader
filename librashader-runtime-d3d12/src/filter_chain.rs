@@ -407,7 +407,7 @@ impl FilterChainD3D12 {
                             validator,
                             &dxil,
                             root_signature,
-                            render_format,
+                            render_format
                         ) {
                     (dxil_reflection, graphics_pipeline)
                 } else {
@@ -688,6 +688,15 @@ impl FilterChainD3D12 {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
+            if pass.pipeline.format != viewport.output.format {
+                // eprintln!("recompiling final pipeline");
+                pass.pipeline.recompile(
+                    viewport.output.format,
+                    &self.common.root_signature,
+                    &self.common.d3d12,
+                )?;
+            }
+
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 

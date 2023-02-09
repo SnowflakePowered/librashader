@@ -63,17 +63,17 @@ typedef void D3D12_CPU_DESCRIPTOR_HANDLE;
 /// Error codes for librashader error types.
 enum LIBRA_ERRNO
 #ifdef __cplusplus
-    : int32_t
+  : int32_t
 #endif // __cplusplus
-{
-    LIBRA_ERRNO_UNKNOWN_ERROR = 0,
-    LIBRA_ERRNO_INVALID_PARAMETER = 1,
-    LIBRA_ERRNO_INVALID_STRING = 2,
-    LIBRA_ERRNO_PRESET_ERROR = 3,
-    LIBRA_ERRNO_PREPROCESS_ERROR = 4,
-    LIBRA_ERRNO_SHADER_PARAMETER_ERROR = 5,
-    LIBRA_ERRNO_REFLECT_ERROR = 6,
-    LIBRA_ERRNO_RUNTIME_ERROR = 7,
+ {
+  LIBRA_ERRNO_UNKNOWN_ERROR = 0,
+  LIBRA_ERRNO_INVALID_PARAMETER = 1,
+  LIBRA_ERRNO_INVALID_STRING = 2,
+  LIBRA_ERRNO_PRESET_ERROR = 3,
+  LIBRA_ERRNO_PREPROCESS_ERROR = 4,
+  LIBRA_ERRNO_SHADER_PARAMETER_ERROR = 5,
+  LIBRA_ERRNO_REFLECT_ERROR = 6,
+  LIBRA_ERRNO_RUNTIME_ERROR = 7,
 };
 #ifndef __cplusplus
 typedef int32_t LIBRA_ERRNO;
@@ -108,29 +108,29 @@ typedef struct _shader_preset *libra_shader_preset_t;
 
 /// A preset parameter.
 typedef struct libra_preset_param_t {
-    /// The name of the parameter
-    const char *name;
-    /// The description of the parameter.
-    const char *description;
-    /// The initial value the parameter is set to.
-    float initial;
-    /// The minimum value that the parameter can be set to.
-    float minimum;
-    /// The maximum value that the parameter can be set to.
-    float maximum;
-    /// The step by which this parameter can be incremented or decremented.
-    float step;
+  /// The name of the parameter
+  const char *name;
+  /// The description of the parameter.
+  const char *description;
+  /// The initial value the parameter is set to.
+  float initial;
+  /// The minimum value that the parameter can be set to.
+  float minimum;
+  /// The maximum value that the parameter can be set to.
+  float maximum;
+  /// The step by which this parameter can be incremented or decremented.
+  float step;
 } libra_preset_param_t;
 
 /// A list of preset parameters.
 typedef struct libra_preset_param_list_t {
-    /// A pointer to the parameter
-    const struct libra_preset_param_t *parameters;
-    /// The number of parameters in the list.
-    uint64_t length;
-    /// For internal use only.
-    /// Changing this causes immediate undefined behaviour on freeing this parameter list.
-    uint64_t _internal_alloc;
+  /// A pointer to the parameter
+  const struct libra_preset_param_t *parameters;
+  /// The number of parameters in the list.
+  uint64_t length;
+  /// For internal use only.
+  /// Changing this causes immediate undefined behaviour on freeing this parameter list.
+  uint64_t _internal_alloc;
 } libra_preset_param_list_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -140,12 +140,12 @@ typedef const void *(*libra_gl_loader_t)(const char*);
 
 /// Options for filter chain creation.
 typedef struct filter_chain_gl_opt_t {
-    /// The GLSL version. Should be at least `330`.
-    uint16_t gl_version;
-    /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
-    bool use_dsa;
-    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
-    bool force_no_mipmaps;
+  /// The GLSL version. Should be at least `330`.
+  uint16_t gl_version;
+  /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
+  bool use_dsa;
+  /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
+  bool force_no_mipmaps;
 } filter_chain_gl_opt_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -169,35 +169,35 @@ typedef struct libra_source_image_gl_t {
 
 /// Defines the output viewport for a rendered frame.
 typedef struct libra_viewport_t {
-    /// The x offset in the viewport framebuffer to begin rendering from.
-    float x;
-    /// The y offset in the viewport framebuffer to begin rendering from.
-    float y;
-    /// The width of the viewport framebuffer.
-    uint32_t width;
-    /// The height of the viewport framebuffer.
-    uint32_t height;
+  /// The x offset in the viewport framebuffer to begin rendering from.
+  float x;
+  /// The y offset in the viewport framebuffer to begin rendering from.
+  float y;
+  /// The width of the viewport framebuffer.
+  uint32_t width;
+  /// The height of the viewport framebuffer.
+  uint32_t height;
 } libra_viewport_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the output framebuffer.
-typedef struct libra_draw_framebuffer_gl_t {
+typedef struct libra_output_framebuffer_gl_t {
   /// A framebuffer GLuint to the output framebuffer.
   uint32_t handle;
   /// A texture GLuint to the logical buffer of the output framebuffer.
   uint32_t texture;
   /// The format of the output framebuffer.
   uint32_t format;
-} libra_draw_framebuffer_gl_t;
+} libra_output_framebuffer_gl_t;
 #endif
 
 /// Options for each OpenGL shader frame.
 typedef struct frame_gl_opt_t {
-    /// Whether or not to clear the history buffers.
-    bool clear_history;
-    /// The direction of rendering.
-    /// -1 indicates that the frames are played in reverse order.
-    int32_t frame_direction;
+  /// Whether or not to clear the history buffers.
+  bool clear_history;
+  /// The direction of rendering.
+  /// -1 indicates that the frames are played in reverse order.
+  int32_t frame_direction;
 } frame_gl_opt_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -219,13 +219,13 @@ typedef struct libra_device_vk_t {
 
 /// Options for filter chain creation.
 typedef struct filter_chain_vk_opt_t {
-    /// The number of frames in flight to keep. If zero, defaults to three.
-    uint32_t frames_in_flight;
-    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
-    bool force_no_mipmaps;
-    /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
-    /// because render-pass mode will create new framebuffers per pass.
-    bool use_render_pass;
+  /// The number of frames in flight to keep. If zero, defaults to three.
+  uint32_t frames_in_flight;
+  /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
+  bool force_no_mipmaps;
+  /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
+  /// because render-pass mode will create new framebuffers per pass.
+  bool use_render_pass;
 } filter_chain_vk_opt_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -235,7 +235,7 @@ typedef struct _filter_chain_vk *libra_vk_filter_chain_t;
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 /// Vulkan parameters for the source image.
-typedef struct libra_image_vk_t {
+typedef struct libra_source_image_vk_t {
   /// A raw `VkImage` handle to the source image.
   VkImage handle;
   /// The `VkFormat` of the source image.
@@ -244,28 +244,38 @@ typedef struct libra_image_vk_t {
   uint32_t width;
   /// The height of the source image.
   uint32_t height;
-} libra_image_vk_t;
+} libra_source_image_vk_t;
+#endif
+
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Vulkan parameters for the output image.
+typedef struct libra_output_image_vk_t {
+  /// A raw `VkImage` handle to the output image.
+  VkImage handle;
+  /// The `VkFormat` of the output image.
+  VkFormat format;
+} libra_output_image_vk_t;
 #endif
 
 /// Options for each Vulkan shader frame.
 typedef struct frame_vk_opt_t {
-    /// Whether or not to clear the history buffers.
-    bool clear_history;
-    /// The direction of rendering.
-    /// -1 indicates that the frames are played in reverse order.
-    int32_t frame_direction;
+  /// Whether or not to clear the history buffers.
+  bool clear_history;
+  /// The direction of rendering.
+  /// -1 indicates that the frames are played in reverse order.
+  int32_t frame_direction;
 } frame_vk_opt_t;
 
 /// Options for Direct3D11 filter chain creation.
 typedef struct filter_chain_d3d11_opt_t {
-    /// Use a deferred context to record shader rendering state.
-    ///
-    /// The deferred context will be executed on the immediate context
-    /// with `RenderContextState = true`.
-    bool use_deferred_context;
-    /// Whether or not to explicitly disable mipmap
-    /// generation regardless of shader preset settings.
-    bool force_no_mipmaps;
+  /// Use a deferred context to record shader rendering state.
+  ///
+  /// The deferred context will be executed on the immediate context
+  /// with `RenderContextState = true`.
+  bool use_deferred_context;
+  /// Whether or not to explicitly disable mipmap
+  /// generation regardless of shader preset settings.
+  bool force_no_mipmaps;
 } filter_chain_d3d11_opt_t;
 
 #if defined(LIBRA_RUNTIME_D3D11)
@@ -287,21 +297,21 @@ typedef struct libra_source_image_d3d11_t {
 
 /// Options for each Direct3D11 shader frame.
 typedef struct frame_d3d11_opt_t {
-    /// Whether or not to clear the history buffers.
-    bool clear_history;
-    /// The direction of rendering.
-    /// -1 indicates that the frames are played in reverse order.
-    int32_t frame_direction;
+  /// Whether or not to clear the history buffers.
+  bool clear_history;
+  /// The direction of rendering.
+  /// -1 indicates that the frames are played in reverse order.
+  int32_t frame_direction;
 } frame_d3d11_opt_t;
 
 /// Options for Direct3D11 filter chain creation.
 typedef struct filter_chain_d3d12_opt_t {
-    /// Force the HLSL shader pipeline. This may reduce shader compatibility.
-    bool force_hlsl_pipeline;
-    /// Whether or not to explicitly disable mipmap
-    /// generation for intermediate passes regardless
-    /// of shader preset settings.
-    bool force_no_mipmaps;
+  /// Force the HLSL shader pipeline. This may reduce shader compatibility.
+  bool force_hlsl_pipeline;
+  /// Whether or not to explicitly disable mipmap
+  /// generation for intermediate passes regardless
+  /// of shader preset settings.
+  bool force_no_mipmaps;
 } filter_chain_d3d12_opt_t;
 
 #if defined(LIBRA_RUNTIME_D3D12)
@@ -310,7 +320,7 @@ typedef struct _filter_chain_d3d12 *libra_d3d12_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D12)
-/// Direct3D 11 parameters for the source image.
+/// Direct3D 12 parameters for the source image.
 typedef struct libra_source_image_d3d12_t {
   /// The resource containing the image.
   const ID3D12Resource * resource;
@@ -325,13 +335,23 @@ typedef struct libra_source_image_d3d12_t {
 } libra_source_image_d3d12_t;
 #endif
 
+#if defined(LIBRA_RUNTIME_D3D12)
+/// Direct3D 12 parameters for the output image.
+typedef struct libra_output_image_d3d12_t {
+  /// A CPU descriptor handle to a shader resource view of the image.
+  D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
+  /// The format of the image.
+  DXGI_FORMAT format;
+} libra_output_image_d3d12_t;
+#endif
+
 /// Options for each Direct3D11 shader frame.
 typedef struct frame_d3d12_opt_t {
-    /// Whether or not to clear the history buffers.
-    bool clear_history;
-    /// The direction of rendering.
-    /// -1 indicates that the frames are played in reverse order.
-    int32_t frame_direction;
+  /// Whether or not to clear the history buffers.
+  bool clear_history;
+  /// The direction of rendering.
+  /// -1 indicates that the frames are played in reverse order.
+  int32_t frame_direction;
 } frame_d3d12_opt_t;
 
 /// Function pointer definition for
@@ -403,7 +423,7 @@ typedef libra_error_t (*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t
                                                          size_t frame_count,
                                                          struct libra_source_image_gl_t image,
                                                          struct libra_viewport_t viewport,
-                                                         struct libra_draw_framebuffer_gl_t out,
+                                                         struct libra_output_framebuffer_gl_t out,
                                                          const float *mvp,
                                                          const struct frame_gl_opt_t *opt);
 #endif
@@ -459,9 +479,9 @@ typedef libra_error_t (*PFN_libra_vk_filter_chain_create)(struct libra_device_vk
 typedef libra_error_t (*PFN_libra_vk_filter_chain_frame)(libra_vk_filter_chain_t *chain,
                                                          VkCommandBuffer command_buffer,
                                                          size_t frame_count,
-                                                         struct libra_image_vk_t image,
+                                                         struct libra_source_image_vk_t image,
                                                          struct libra_viewport_t viewport,
-                                                         struct libra_image_vk_t out,
+                                                         struct libra_output_image_vk_t out,
                                                          const float *mvp,
                                                          const struct frame_vk_opt_t *opt);
 #endif
@@ -576,7 +596,7 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_frame)(libra_d3d12_filter_c
                                                             size_t frame_count,
                                                             struct libra_source_image_d3d12_t image,
                                                             struct libra_viewport_t viewport,
-                                                            D3D12_CPU_DESCRIPTOR_HANDLE out,
+                                                            struct libra_output_image_d3d12_t out,
                                                             const float *mvp,
                                                             const struct frame_d3d12_opt_t *opt);
 #endif
@@ -777,7 +797,7 @@ libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
                                           size_t frame_count,
                                           struct libra_source_image_gl_t image,
                                           struct libra_viewport_t viewport,
-                                          struct libra_draw_framebuffer_gl_t out,
+                                          struct libra_output_framebuffer_gl_t out,
                                           const float *mvp,
                                           const struct frame_gl_opt_t *opt);
 #endif
@@ -870,9 +890,9 @@ libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
 libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
                                           VkCommandBuffer command_buffer,
                                           size_t frame_count,
-                                          struct libra_image_vk_t image,
+                                          struct libra_source_image_vk_t image,
                                           struct libra_viewport_t viewport,
-                                          struct libra_image_vk_t out,
+                                          struct libra_output_image_vk_t out,
                                           const float *mvp,
                                           const struct frame_vk_opt_t *opt);
 #endif
@@ -1053,7 +1073,7 @@ libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
                                              size_t frame_count,
                                              struct libra_source_image_d3d12_t image,
                                              struct libra_viewport_t viewport,
-                                             D3D12_CPU_DESCRIPTOR_HANDLE out,
+                                             struct libra_output_image_d3d12_t out,
                                              const float *mvp,
                                              const struct frame_d3d12_opt_t *opt);
 #endif

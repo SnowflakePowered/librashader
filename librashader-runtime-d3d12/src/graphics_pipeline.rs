@@ -7,7 +7,9 @@ use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::BindingStage;
 use windows::Win32::Foundation::BOOL;
-use windows::Win32::Graphics::Direct3D::Dxc::{IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator};
+use windows::Win32::Graphics::Direct3D::Dxc::{
+    CLSID_DxcLibrary, DxcCreateInstance, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
+};
 use windows::Win32::Graphics::Direct3D12::{
     D3D12SerializeVersionedRootSignature, ID3D12Device, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_BLEND_DESC, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD, D3D12_BLEND_SRC_ALPHA,
@@ -29,6 +31,9 @@ use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_FORMAT_UNKNOWN, D
 
 pub struct D3D12GraphicsPipeline {
     pub(crate) handle: ID3D12PipelineState,
+    pub(crate) format: DXGI_FORMAT,
+    vertex: Vec<u8>,
+    fragment: Vec<u8>,
 }
 
 const D3D12_SLANG_ROOT_PARAMETERS: &[D3D12_ROOT_PARAMETER1; 4] = &[
@@ -218,9 +223,49 @@ impl D3D12GraphicsPipeline {
             device.CreateGraphicsPipelineState(&pipeline_desc)?
         };
 
-        Ok(D3D12GraphicsPipeline {
-            handle: pipeline_state,
-        })
+        unsafe {
+            let vertex = Vec::from(std::slice::from_raw_parts(
+                vertex_dxil.GetBufferPointer().cast(),
+                vertex_dxil.GetBufferSize(),
+            ));
+            let fragment = Vec::from(std::slice::from_raw_parts(
+                fragment_dxil.GetBufferPointer().cast(),
+                fragment_dxil.GetBufferSize(),
+            ));
+            Ok(D3D12GraphicsPipeline {
+                handle: pipeline_state,
+                format: render_format,
+                vertex,
+                fragment,
+            })
+        }
+    }
+
+    pub fn recompile(
+        &mut self,
+        format: DXGI_FORMAT,
+        root_sig: &D3D12RootSignature,
+        device: &ID3D12Device,
+    ) -> error::Result<()> {
+        let (vertex, fragment) = unsafe {
+            let library: IDxcUtils = DxcCreateInstance(&CLSID_DxcLibrary)?;
+            let vertex = library.CreateBlobFromPinned(
+                self.vertex.as_ptr().cast(),
+                self.vertex.len() as u32,
+                DXC_CP(0),
+            )?;
+            let fragment = library.CreateBlobFromPinned(
+                self.fragment.as_ptr().cast(),
+                self.fragment.len() as u32,
+                DXC_CP(0),
+            )?;
+            (vertex, fragment)
+        };
+        let mut new_pipeline =
+            Self::new_from_blobs(device, vertex.into(), fragment.into(), root_sig, format)?;
+
+        std::mem::swap(self, &mut new_pipeline);
+        Ok(())
     }
 
     pub fn new_from_dxil(
