@@ -129,6 +129,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     which was released in late 2018.
   * For maximum compatibility with shaders, a shader compile pipeline based on [`spirv-to-dxil`](https://github.com/SnowflakePowered/spirv-to-dxil-rs) is used, with the SPIRV-Cross HLSL pipeline used as a fallback. 
     This brings shader compatibility beyond what the RetroArch Direct3D 12 runtime provides. The HLSL pipeline fallback may be removed in the future as `spirv-to-dxil` improves.
+
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
 
