@@ -18,6 +18,8 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
+static CLEAR: &[f32; 4] = &[0.0f32, 0.0, 0.0, 0.0];
+
 #[derive(Debug, Clone)]
 pub(crate) struct OwnedFramebuffer {
     render: ID3D11Texture2D,
@@ -95,6 +97,14 @@ impl OwnedFramebuffer {
             )?;
         }
         Ok(size)
+    }
+
+    pub fn clear(&mut self) -> error::Result<()> {
+        let rtv = self.create_render_target_view()?;
+        unsafe {
+            self.context.ClearRenderTargetView(&rtv, CLEAR.as_ptr());
+        }
+        Ok(())
     }
 
     pub fn init(&mut self, size: Size<u32>, format: ImageFormat) -> error::Result<()> {

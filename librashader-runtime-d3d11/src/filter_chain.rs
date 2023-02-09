@@ -410,7 +410,7 @@ impl FilterChainD3D11 {
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &mut self.history_framebuffers {
-                    framebuffer.init(Size::new(1, 1), ImageFormat::R8G8B8A8Unorm)?;
+                    framebuffer.clear()?;
                 }
             }
         }
