@@ -3,7 +3,6 @@ use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
 use crate::texture::InputTexture;
 use gl::types::{GLsizei, GLuint};
-use librashader_common::Size;
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
@@ -71,7 +70,6 @@ impl LoadLut for Gl46LutLoad {
                         handle,
                         format: gl::RGBA8,
                         size: image.size,
-                        padded_size: Size::default(),
                     },
                     filter: texture.filter_mode,
                     mip_filter: texture.filter_mode,

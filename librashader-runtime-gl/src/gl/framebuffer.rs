@@ -68,7 +68,6 @@ impl Framebuffer {
                 handle: self.image,
                 format: self.format,
                 size: self.size,
-                padded_size: Default::default(),
             },
             filter,
             mip_filter: filter,

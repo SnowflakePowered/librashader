@@ -49,7 +49,6 @@ impl From<libra_source_image_gl_t> for GLImage {
             handle: value.handle,
             format: value.format,
             size: Size::new(value.width, value.height),
-            padded_size: Size::default(),
         }
     }
 }

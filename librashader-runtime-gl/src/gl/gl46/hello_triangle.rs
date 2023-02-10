@@ -510,7 +510,6 @@ void main()
                 width: fb_width as u32,
                 height: fb_height as u32,
             },
-            padded_size: Default::default(),
         };
 
         filter

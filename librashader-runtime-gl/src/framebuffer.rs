@@ -12,6 +12,4 @@ pub struct GLImage {
     pub format: GLenum,
     /// The size of the texture.
     pub size: Size<u32>,
-    /// The padded size of the texture. Currently unused and can be ignored.
-    pub padded_size: Size<u32>,
 }
