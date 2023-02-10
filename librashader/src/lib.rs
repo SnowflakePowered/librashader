@@ -18,7 +18,7 @@
 //! Currently available runtimes are Vulkan, OpenGL 3.3+ and 4.6 (with DSA), Direct3D 11, and Direct3D 12.
 //!
 //! The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
-//! by default, unless [`FilterChainOptions::render_pass_format`](crate::runtime::vk::FilterChainOptions) is explicitly set. Note that dynamic rendering
+//! by default, unless [`FilterChainOptions::use_render_pass`](crate::runtime::vk::FilterChainOptions) is explicitly set. Note that dynamic rendering
 //! will bring the best performance.
 //!
 //! The Direct3D 12 runtime requires support for [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes), which
