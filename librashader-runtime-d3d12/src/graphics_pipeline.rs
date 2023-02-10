@@ -307,27 +307,21 @@ impl D3D12GraphicsPipeline {
         root_signature: &D3D12RootSignature,
         render_format: DXGI_FORMAT,
     ) -> error::Result<D3D12GraphicsPipeline> {
-        unsafe {
-            let vertex_dxil = util::dxc_compile_shader(
-                library,
-                dxc,
-                &shader_assembly.vertex,
-                BindingStage::VERTEX,
-            )?;
-            let fragment_dxil = util::dxc_compile_shader(
-                library,
-                dxc,
-                &shader_assembly.fragment,
-                BindingStage::FRAGMENT,
-            )?;
+        let vertex_dxil =
+            util::dxc_compile_shader(library, dxc, &shader_assembly.vertex, BindingStage::VERTEX)?;
+        let fragment_dxil = util::dxc_compile_shader(
+            library,
+            dxc,
+            &shader_assembly.fragment,
+            BindingStage::FRAGMENT,
+        )?;
 
-            Self::new_from_blobs(
-                device,
-                vertex_dxil,
-                fragment_dxil,
-                root_signature,
-                render_format,
-            )
-        }
+        Self::new_from_blobs(
+            device,
+            vertex_dxil,
+            fragment_dxil,
+            root_signature,
+            render_format,
+        )
     }
 }

@@ -1,3 +1,4 @@
+#![cfg(test)]
 use std::ffi::CStr;
 use windows::{
     core::*, Win32::Foundation::*, Win32::Graphics::Direct3D::Fxc::*, Win32::Graphics::Direct3D::*,
@@ -54,18 +55,6 @@ pub trait DXSample {
 #[derive(Clone)]
 pub struct SampleCommandLine {
     pub use_warp_device: bool,
-}
-
-fn build_command_line() -> SampleCommandLine {
-    let mut use_warp_device = false;
-
-    for arg in std::env::args() {
-        if arg.eq_ignore_ascii_case("-warp") || arg.eq_ignore_ascii_case("/warp") {
-            use_warp_device = true;
-        }
-    }
-
-    SampleCommandLine { use_warp_device }
 }
 
 fn run_sample<S>(mut sample: S) -> Result<()>
@@ -938,7 +927,7 @@ pub mod d3d12_hello_triangle {
     }
 }
 
-pub fn main<S: DXSample>(sample: S) -> Result<()> {
+pub(crate) fn main<S: DXSample>(sample: S) -> Result<()> {
     run_sample(sample)?;
 
     Ok(())

@@ -67,7 +67,6 @@ pub struct D3D12MipmapGen {
     root_signature: ID3D12RootSignature,
     pipeline: ID3D12PipelineState,
     own_heaps: bool,
-    root_index_offset: usize,
 }
 
 #[derive(Copy, Clone, Zeroable, Pod)]
@@ -147,7 +146,6 @@ impl D3D12MipmapGen {
                 root_signature,
                 pipeline,
                 own_heaps,
-                root_index_offset: 0,
             })
         }
     }
@@ -169,6 +167,10 @@ impl D3D12MipmapGen {
     ///
     /// If own_heap is false, then you must ensure that the compute root signature
     /// is already bound before entering the context.
+    ///
+    /// The list of returned descriptors must be kept around until the command list has been
+    /// submitted.
+    #[must_use]
     pub fn mipmapping_context<F, E>(
         &self,
         cmd: &ID3D12GraphicsCommandList,

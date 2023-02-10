@@ -10,7 +10,7 @@ use windows::Win32::Graphics::Direct3D12::{
 
 pub struct SamplerSet {
     samplers: FxHashMap<(WrapMode, FilterMode), D3D12DescriptorHeapSlot<SamplerPaletteHeap>>,
-    heap: D3D12DescriptorHeap<SamplerPaletteHeap>,
+    _heap: D3D12DescriptorHeap<SamplerPaletteHeap>,
 }
 
 impl SamplerSet {
@@ -73,6 +73,9 @@ impl SamplerSet {
             }
         }
 
-        Ok(SamplerSet { samplers, heap })
+        Ok(SamplerSet {
+            samplers,
+            _heap: heap,
+        })
     }
 }

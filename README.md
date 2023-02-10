@@ -106,7 +106,9 @@ Please report an issue if you run into a shader that works in RetroArch, but not
 * Shaders are compiled in parallel where possible. This should noticeably decrease preset compile times. 
   Parallel shader compilation is not available to OpenGL. 
 * HDR10 support is not part of any shader runtime and is not supported by librashader.
-
+* For performance reasons, mipmaps are never generated for the input texture. In theory, this means that 
+  presets with `mipmap_input0 = "true"` will not get a mipmapped input. In practice, no known shader presets set 
+  `mipmap_input0 = "true"`. 
 ### Runtime specific differences
 * OpenGL
   * Copying of in-flight framebuffer contents to history is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.

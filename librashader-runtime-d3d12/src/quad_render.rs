@@ -70,7 +70,7 @@ const FINAL_VBO_DATA: [D3D12Vertex; 4] = [
 static VBO_DATA: &[D3D12Vertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub(crate) struct DrawQuad {
-    buffer: ID3D12Resource,
+    _buffer: ID3D12Resource,
     view: D3D12_VERTEX_BUFFER_VIEW,
 }
 
@@ -91,7 +91,10 @@ impl DrawQuad {
         };
 
         let buffer = buffer.into_raw();
-        Ok(DrawQuad { buffer, view })
+        Ok(DrawQuad {
+            _buffer: buffer,
+            view,
+        })
     }
 
     pub fn bind_vertices_for_frame(&self, cmd: &ID3D12GraphicsCommandList) {

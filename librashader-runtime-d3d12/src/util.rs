@@ -287,19 +287,18 @@ pub fn d3d12_update_subresources(
         let mut num_rows = vec![0; num_subresources as usize];
         let mut row_sizes_in_bytes = vec![0; num_subresources as usize];
         let mut required_size = 0;
+
         // texture upload
-        unsafe {
-            device.GetCopyableFootprints(
-                &destination_desc,
-                first_subresouce,
-                num_subresources,
-                intermediate_offset,
-                Some(layouts.as_mut_ptr()),
-                Some(num_rows.as_mut_ptr()),
-                Some(row_sizes_in_bytes.as_mut_ptr()),
-                Some(&mut required_size),
-            );
-        }
+        device.GetCopyableFootprints(
+            &destination_desc,
+            first_subresouce,
+            num_subresources,
+            intermediate_offset,
+            Some(layouts.as_mut_ptr()),
+            Some(num_rows.as_mut_ptr()),
+            Some(row_sizes_in_bytes.as_mut_ptr()),
+            Some(&mut required_size),
+        );
 
         update_subresources(
             cmd,

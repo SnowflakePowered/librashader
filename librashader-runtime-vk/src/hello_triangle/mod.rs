@@ -1,3 +1,5 @@
+#![cfg(test)]
+#![allow(unused_variables)]
 mod command;
 mod debug;
 mod framebuffer;
@@ -6,7 +8,7 @@ mod pipeline;
 mod surface;
 mod swapchain;
 mod syncobjects;
-pub mod vulkan_base;
+pub(crate) mod vulkan_base;
 
 use crate::filter_chain::FilterChainVulkan;
 use crate::hello_triangle::command::VulkanCommandPool;
@@ -391,7 +393,7 @@ pub fn find_memorytype_index(
 }
 
 pub struct VulkanDraw {
-    surface: VulkanSurface,
+    _surface: VulkanSurface,
     base: VulkanBase,
     pub swapchain: VulkanSwapchain,
     pub pipeline: VulkanPipeline,
@@ -435,7 +437,7 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
     let sync = SyncObjects::new(&vulkan.device, MAX_FRAMES_IN_FLIGHT).unwrap();
 
     let vulkan = VulkanDraw {
-        surface,
+        _surface: surface,
         swapchain,
         base: vulkan,
         pipeline,

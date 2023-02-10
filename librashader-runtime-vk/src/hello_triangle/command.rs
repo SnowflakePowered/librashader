@@ -5,8 +5,8 @@ use ash::vk;
 use std::sync::Arc;
 
 pub struct VulkanCommandPool {
-    pool: vk::CommandPool,
-    device: Arc<ash::Device>,
+    _pool: vk::CommandPool,
+    _device: Arc<ash::Device>,
     pub buffers: Vec<vk::CommandBuffer>,
 }
 
@@ -29,8 +29,8 @@ impl VulkanCommandPool {
 
             let buffers = base.device.allocate_command_buffers(&buffer_info)?;
             Ok(VulkanCommandPool {
-                pool,
-                device: base.device.clone(),
+                _pool: pool,
+                _device: base.device.clone(),
                 buffers,
             })
         }

@@ -1,6 +1,6 @@
 use ash::vk;
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
-use gpu_allocator::AllocatorDebugSettings;
+
 use parking_lot::RwLock;
 use std::sync::Arc;
 

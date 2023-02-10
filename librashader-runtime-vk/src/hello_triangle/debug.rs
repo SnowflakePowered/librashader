@@ -8,6 +8,7 @@ pub struct VulkanDebug {
     messenger: DebugUtilsMessengerEXT,
 }
 
+#[allow(dead_code)]
 impl VulkanDebug {
     pub fn new(
         entry: &ash::Entry,

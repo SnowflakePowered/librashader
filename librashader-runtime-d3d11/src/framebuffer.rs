@@ -2,7 +2,7 @@ use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::texture::D3D11InputView;
 use crate::util::d3d11_get_closest_format;
 use crate::{error, D3D11OutputView};
-use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use windows::core::Interface;
@@ -14,7 +14,7 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_FORMAT_SUPPORT_TEXTURE2D, D3D11_RENDER_TARGET_VIEW_DESC, D3D11_RENDER_TARGET_VIEW_DESC_0,
     D3D11_RESOURCE_MISC_GENERATE_MIPS, D3D11_RTV_DIMENSION_TEXTURE2D,
     D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_RTV,
-    D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_VIEWPORT,
+    D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
@@ -227,20 +227,6 @@ impl OwnedFramebuffer {
         Ok(())
     }
 }
-#[derive(Debug, Clone)]
-pub(crate) struct OutputFramebuffer {
-    pub rtv: ID3D11RenderTargetView,
-    pub size: Size<u32>,
-}
-
-impl<'a> From<&Viewport<'a, D3D11OutputView>> for OutputFramebuffer {
-    fn from(value: &Viewport<'a, D3D11OutputView>) -> Self {
-        OutputFramebuffer {
-            rtv: value.output.handle.clone(),
-            size: value.output.size,
-        }
-    }
-}
 
 fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_TEXTURE2D_DESC {
     D3D11_TEXTURE2D_DESC {
@@ -257,16 +243,6 @@ fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_
         BindFlags: D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
         CPUAccessFlags: D3D11_CPU_ACCESS_FLAG(0),
         MiscFlags: D3D11_RESOURCE_MISC_GENERATE_MIPS,
-    }
-}
-pub const fn default_viewport(size: Size<u32>) -> D3D11_VIEWPORT {
-    D3D11_VIEWPORT {
-        TopLeftX: 0.0,
-        TopLeftY: 0.0,
-        Width: size.width as f32,
-        Height: size.height as f32,
-        MinDepth: 0.0,
-        MaxDepth: 1.0,
     }
 }
 

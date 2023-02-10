@@ -156,29 +156,27 @@ impl LutTexture {
         }
         assume_d3d12_init!(upload, "CreateCommittedResource");
 
-        unsafe {
-            let subresource = [D3D12_SUBRESOURCE_DATA {
-                pData: source.bytes.as_ptr().cast(),
-                RowPitch: 4 * source.size.width as isize,
-                SlicePitch: (4 * source.size.width * source.size.height) as isize,
-            }];
+        let subresource = [D3D12_SUBRESOURCE_DATA {
+            pData: source.bytes.as_ptr().cast(),
+            RowPitch: 4 * source.size.width as isize,
+            SlicePitch: (4 * source.size.width * source.size.height) as isize,
+        }];
 
-            d3d12_resource_transition(
-                cmd,
-                &resource,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                D3D12_RESOURCE_STATE_COPY_DEST,
-            );
+        d3d12_resource_transition(
+            cmd,
+            &resource,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+        );
 
-            d3d12_update_subresources(cmd, &resource, &upload, 0, 0, 1, &subresource)?;
+        d3d12_update_subresources(cmd, &resource, &upload, 0, 0, 1, &subresource)?;
 
-            d3d12_resource_transition(
-                cmd,
-                &resource,
-                D3D12_RESOURCE_STATE_COPY_DEST,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            )
-        }
+        d3d12_resource_transition(
+            cmd,
+            &resource,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        );
 
         let view = InputTexture::new(
             resource.clone(),

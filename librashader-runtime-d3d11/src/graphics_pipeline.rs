@@ -19,7 +19,7 @@ pub struct D3D11StateSaveGuard<'a> {
     saved_blend_factor: [f32; 4],
     saved_blend_mask: u32,
     saved_rs: Option<ID3D11RasterizerState>,
-    state: &'a D3D11State,
+    _state: &'a D3D11State,
 }
 
 impl D3D11State {
@@ -95,7 +95,7 @@ impl D3D11State {
                 saved_blend_factor,
                 saved_blend_mask,
                 saved_rs,
-                state: self,
+                _state: self,
             }
         };
 

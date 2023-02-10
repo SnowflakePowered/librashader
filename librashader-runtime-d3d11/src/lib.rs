@@ -84,7 +84,7 @@ mod tests {
             FILTER_PATH,
             Some(&FilterChainOptionsD3D11 {
                 use_deferred_context: false,
-                force_no_mipmaps: true,
+                force_no_mipmaps: false,
             }),
             // replace below with 'None' for the triangle
             // None,

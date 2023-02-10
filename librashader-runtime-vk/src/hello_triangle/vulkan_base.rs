@@ -7,7 +7,7 @@ use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_dev
 
 use crate::util;
 use ash::prelude::VkResult;
-use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
+use gpu_allocator::vulkan::Allocator;
 use parking_lot::RwLock;
 use std::ffi::CStr;
 use std::sync::Arc;
@@ -44,7 +44,7 @@ impl VulkanBase {
             ash::extensions::ext::DebugUtils::name().as_ptr(),
         ];
 
-        let layers = unsafe { [KHRONOS_VALIDATION.as_ptr().cast()] };
+        let layers = [KHRONOS_VALIDATION.as_ptr().cast()];
 
         let create_info = vk::InstanceCreateInfo::builder()
             .application_info(&app_info)
@@ -125,6 +125,7 @@ impl VulkanBase {
     }
 }
 
+#[allow(unused)]
 unsafe extern "system" fn vulkan_debug_callback(
     _message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
     _message_type: vk::DebugUtilsMessageTypeFlagsEXT,

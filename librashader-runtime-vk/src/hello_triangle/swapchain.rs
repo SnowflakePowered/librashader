@@ -12,7 +12,7 @@ pub struct VulkanSwapchain {
     pub loader: ash::extensions::khr::Swapchain,
     pub format: vk::SurfaceFormatKHR,
     pub extent: vk::Extent2D,
-    mode: vk::PresentModeKHR,
+    pub mode: vk::PresentModeKHR,
     pub swapchain_images: Vec<vk::Image>,
     pub swapchain_image_views: Vec<vk::ImageView>,
 
@@ -92,7 +92,7 @@ impl VulkanSwapchain {
 
             unsafe {
                 let image = base.device.create_image(&create_info, None)?;
-                let mem_reqs = unsafe { base.device.get_image_memory_requirements(image) };
+                let mem_reqs = base.device.get_image_memory_requirements(image);
 
                 let memory =
                     VulkanImageMemory::new(&base.device, &base.allocator, mem_reqs, &image)

@@ -15,7 +15,6 @@ use std::sync::Arc;
 pub struct VulkanImageMemory {
     allocation: Option<Allocation>,
     allocator: Arc<RwLock<Allocator>>,
-    device: Arc<ash::Device>,
 }
 
 impl VulkanImageMemory {
@@ -38,7 +37,6 @@ impl VulkanImageMemory {
             Ok(VulkanImageMemory {
                 allocation: Some(allocation),
                 allocator: Arc::clone(allocator),
-                device: Arc::clone(device),
             })
         }
     }
@@ -46,12 +44,10 @@ impl VulkanImageMemory {
 
 impl Drop for VulkanImageMemory {
     fn drop(&mut self) {
-        unsafe {
-            let allocation = self.allocation.take();
-            if let Some(allocation) = allocation {
-                if let Err(e) = self.allocator.write().free(allocation) {
-                    println!("librashader-runtime-vk: [warn] failed to deallocate image buffer {e}")
-                }
+        let allocation = self.allocation.take();
+        if let Some(allocation) = allocation {
+            if let Err(e) = self.allocator.write().free(allocation) {
+                println!("librashader-runtime-vk: [warn] failed to deallocate image buffer {e}")
             }
         }
     }

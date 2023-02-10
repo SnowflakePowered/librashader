@@ -44,69 +44,67 @@ impl OwnedImage {
         format: ImageFormat,
         mipmap: bool,
     ) -> error::Result<OwnedImage> {
-        unsafe {
-            let miplevels = if mipmap {
-                size.calculate_miplevels()
-            } else {
-                1
-            };
-            let mut desc = D3D12_RESOURCE_DESC {
-                Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-                Alignment: 0,
-                Width: size.width as u64,
-                Height: size.height,
-                DepthOrArraySize: 1,
-                MipLevels: miplevels as u16,
-                Format: format.into(),
-                SampleDesc: DXGI_SAMPLE_DESC {
-                    Count: 1,
-                    Quality: 0,
-                },
-                Layout: Default::default(),
-                Flags: D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
-            };
+        let miplevels = if mipmap {
+            size.calculate_miplevels()
+        } else {
+            1
+        };
+        let mut desc = D3D12_RESOURCE_DESC {
+            Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+            Alignment: 0,
+            Width: size.width as u64,
+            Height: size.height,
+            DepthOrArraySize: 1,
+            MipLevels: miplevels as u16,
+            Format: format.into(),
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
+            Layout: Default::default(),
+            Flags: D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+        };
 
-            let mut format_support = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
-                Format: desc.Format,
-                Support1: D3D12_FORMAT_SUPPORT1_TEXTURE2D
-                    | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE
-                    | D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
-                ..Default::default()
-            };
+        let mut format_support = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+            Format: desc.Format,
+            Support1: D3D12_FORMAT_SUPPORT1_TEXTURE2D
+                | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE
+                | D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
+            ..Default::default()
+        };
 
-            if mipmap {
-                desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-                format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
-            }
-
-            desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
-            let mut resource: Option<ID3D12Resource> = None;
-            unsafe {
-                device.CreateCommittedResource(
-                    &D3D12_HEAP_PROPERTIES {
-                        Type: D3D12_HEAP_TYPE_DEFAULT,
-                        CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                        MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
-                        CreationNodeMask: 1,
-                        VisibleNodeMask: 1,
-                    },
-                    D3D12_HEAP_FLAG_NONE,
-                    &desc,
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                    None,
-                    &mut resource,
-                )?;
-            }
-            assume_d3d12_init!(resource, "CreateCommittedResource");
-
-            Ok(OwnedImage {
-                handle: resource,
-                size,
-                format,
-                device: device.clone(),
-                max_mipmap: miplevels as u16,
-            })
+        if mipmap {
+            desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
         }
+
+        desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
+        let mut resource: Option<ID3D12Resource> = None;
+        unsafe {
+            device.CreateCommittedResource(
+                &D3D12_HEAP_PROPERTIES {
+                    Type: D3D12_HEAP_TYPE_DEFAULT,
+                    CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                    MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
+                    CreationNodeMask: 1,
+                    VisibleNodeMask: 1,
+                },
+                D3D12_HEAP_FLAG_NONE,
+                &desc,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                None,
+                &mut resource,
+            )?;
+        }
+        assume_d3d12_init!(resource, "CreateCommittedResource");
+
+        Ok(OwnedImage {
+            handle: resource,
+            size,
+            format,
+            device: device.clone(),
+            max_mipmap: miplevels as u16,
+        })
     }
 
     /// SAFETY: self must fit the source image

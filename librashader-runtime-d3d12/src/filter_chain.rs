@@ -47,7 +47,7 @@ use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleO
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
 use librashader_runtime::render_target::RenderTarget;
-use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer};
+use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 1024;
@@ -310,7 +310,7 @@ impl FilterChainD3D12 {
                     NodeMask: 0,
                 })?;
 
-            let fence_event = unsafe { CreateEventA(None, false, false, None)? };
+            let fence_event = CreateEventA(None, false, false, None)?;
             let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
             let mut residuals = Vec::new();
 
@@ -338,11 +338,10 @@ impl FilterChainD3D12 {
             queue.Signal(&fence, 1)?;
 
             // Wait until finished
-            if unsafe { fence.GetCompletedValue() } < 1 {
-                unsafe { fence.SetEventOnCompletion(1, fence_event)? };
-
-                unsafe { WaitForSingleObject(fence_event, INFINITE) };
-                unsafe { ResetEvent(fence_event) };
+            if fence.GetCompletedValue() < 1 {
+                fence.SetEventOnCompletion(1, fence_event)?;
+                WaitForSingleObject(fence_event, INFINITE);
+                ResetEvent(fence_event);
             }
 
             cmd.Reset(&command_pool, None)?;
@@ -360,11 +359,10 @@ impl FilterChainD3D12 {
             queue.ExecuteCommandLists(&[cmd.cast()?]);
             queue.Signal(&fence, 2)?;
             //
-            if unsafe { fence.GetCompletedValue() } < 2 {
-                unsafe { fence.SetEventOnCompletion(2, fence_event)? }
-
-                unsafe { WaitForSingleObject(fence_event, INFINITE) };
-                unsafe { CloseHandle(fence_event) };
+            if fence.GetCompletedValue() < 2 {
+                fence.SetEventOnCompletion(2, fence_event)?;
+                WaitForSingleObject(fence_event, INFINITE);
+                CloseHandle(fence_event);
             }
 
             drop(residuals);
@@ -701,21 +699,19 @@ impl FilterChainD3D12 {
             );
 
             if target.max_mipmap > 1 && !self.disable_mipmaps {
-                let residuals = unsafe {
-                    self.common.mipmap_gen.mipmapping_context(
-                        cmd,
-                        &mut self.mipmap_heap,
-                        |ctx| {
-                            ctx.generate_mipmaps(
-                                &target.handle,
-                                target.max_mipmap,
-                                target.size,
-                                target.format.into(),
-                            )?;
-                            Ok::<(), FilterChainError>(())
-                        },
-                    )?
-                };
+                let residuals = self.common.mipmap_gen.mipmapping_context(
+                    cmd,
+                    &mut self.mipmap_heap,
+                    |ctx| {
+                        ctx.generate_mipmaps(
+                            &target.handle,
+                            target.max_mipmap,
+                            target.size,
+                            target.format.into(),
+                        )?;
+                        Ok::<(), FilterChainError>(())
+                    },
+                )?;
 
                 self.residuals.dispose_mipmap_handles(residuals);
             }

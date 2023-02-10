@@ -84,11 +84,11 @@ pub trait DXSample {
 }
 
 #[inline]
-pub fn LOWORD(l: usize) -> u32 {
+pub fn loword(l: usize) -> u32 {
     (l & 0xffff) as u32
 }
 #[inline]
-pub fn HIWORD(l: usize) -> u32 {
+pub fn hiword(l: usize) -> u32 {
     ((l >> 16) & 0xffff) as u32
 }
 
@@ -179,7 +179,7 @@ fn sample_wndproc<S: DXSample>(sample: &mut S, message: u32, wparam: WPARAM) -> 
             true
         }
         WM_SIZE => {
-            sample.resize(LOWORD(wparam.0), HIWORD(wparam.0)).unwrap();
+            sample.resize(loword(wparam.0), hiword(wparam.0)).unwrap();
             true
         }
         _ => false,
