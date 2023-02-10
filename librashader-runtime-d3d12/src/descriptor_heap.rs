@@ -337,7 +337,9 @@ impl<T> D3D12DescriptorHeap<T> {
             }
         }
 
-        Err(FilterChainError::DescriptorHeapOverflow)
+        Err(FilterChainError::DescriptorHeapOverflow(
+            inner.num_descriptors,
+        ))
     }
 
     pub fn alloc_range<const NUM_DESC: usize>(

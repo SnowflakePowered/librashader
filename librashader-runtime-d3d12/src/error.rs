@@ -22,7 +22,7 @@ pub enum FilterChainError {
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
     #[error("heap overflow")]
-    DescriptorHeapOverflow,
+    DescriptorHeapOverflow(usize),
 }
 
 /// Result type for Direct3D 12 filter chains.

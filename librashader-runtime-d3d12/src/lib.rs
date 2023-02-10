@@ -2,6 +2,7 @@
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
+#![feature(int_roundings)]
 
 mod buffer;
 mod descriptor_heap;
@@ -33,6 +34,7 @@ mod tests {
     fn triangle_d3d12() {
         let sample = hello_triangle::d3d12_hello_triangle::Sample::new(
             // "../test/slang-shaders/crt/crt-lottes.slangp",
+            // "../test/basic.slangp",
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp",
             // "../test/slang-shaders/crt/crt-royale.slangp",
             // "../test/slang-shaders/vhs/VHSPro.slangp",

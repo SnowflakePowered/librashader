@@ -1,6 +1,7 @@
 use crate::buffer::{D3D12Buffer, RawD3D12Buffer};
 use crate::descriptor_heap::{
-    CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap, ResourceWorkHeap,
+    CpuStagingHeap, D3D12DescriptorHeap, D3D12DescriptorHeapSlot, RenderTargetHeap,
+    ResourceWorkHeap,
 };
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
@@ -74,7 +75,7 @@ pub struct FilterChainD3D12 {
     work_heap: ID3D12DescriptorHeap,
     sampler_heap: ID3D12DescriptorHeap,
 
-    residuals: Vec<OutputDescriptor>,
+    residuals: FrameResiduals,
     mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
 
     disable_mipmaps: bool,
@@ -92,6 +93,42 @@ pub(crate) struct FilterCommon {
     pub mipmap_gen: D3D12MipmapGen,
     pub root_signature: D3D12RootSignature,
     pub draw_quad: DrawQuad,
+}
+
+pub(crate) struct FrameResiduals {
+    outputs: Vec<OutputDescriptor>,
+    mipmaps: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+}
+
+impl FrameResiduals {
+    pub fn new() -> Self {
+        Self {
+            outputs: Vec::new(),
+            mipmaps: Vec::new(),
+        }
+    }
+
+    pub fn dispose_output(&mut self, descriptor: OutputDescriptor) {
+        self.outputs.push(descriptor)
+    }
+
+    pub fn dispose_mipmap_handles(
+        &mut self,
+        handles: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+    ) {
+        self.mipmaps.extend(handles)
+    }
+
+    pub fn dispose(&mut self) {
+        self.outputs.clear();
+        self.mipmaps.clear();
+    }
+}
+
+impl Drop for FrameResiduals {
+    fn drop(&mut self) {
+        self.dispose();
+    }
 }
 
 impl FilterChainD3D12 {
@@ -215,7 +252,7 @@ impl FilterChainD3D12 {
             sampler_heap,
             mipmap_heap,
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
-            residuals: Vec::new(),
+            residuals: FrameResiduals::new(),
         })
     }
 
@@ -530,7 +567,7 @@ impl FilterChainD3D12 {
         frame_count: usize,
         options: Option<&FrameOptionsD3D12>,
     ) -> error::Result<()> {
-        self.residuals.clear();
+        self.residuals.dispose();
 
         if let Some(options) = options {
             if options.clear_history {
@@ -632,24 +669,6 @@ impl FilterChainD3D12 {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
-            if pass.config.mipmap_input && !self.disable_mipmaps {
-                unsafe {
-                    self.common.mipmap_gen.mipmapping_context(
-                        cmd,
-                        &mut self.mipmap_heap,
-                        |ctx| {
-                            ctx.generate_mipmaps(
-                                &source.resource,
-                                source.size().calculate_miplevels() as u16,
-                                source.size,
-                                source.format,
-                            )?;
-                            Ok::<(), FilterChainError>(())
-                        },
-                    )?;
-                }
-            }
-
             let target = &self.output_framebuffers[index];
             util::d3d12_resource_transition(
                 cmd,
@@ -681,7 +700,27 @@ impl FilterChainD3D12 {
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             );
 
-            self.residuals.push(view.descriptor);
+            if target.max_mipmap > 1 && !self.disable_mipmaps {
+                let residuals = unsafe {
+                    self.common.mipmap_gen.mipmapping_context(
+                        cmd,
+                        &mut self.mipmap_heap,
+                        |ctx| {
+                            ctx.generate_mipmaps(
+                                &target.handle,
+                                target.max_mipmap,
+                                target.size,
+                                target.format.into(),
+                            )?;
+                            Ok::<(), FilterChainError>(())
+                        },
+                    )?
+                };
+
+                self.residuals.dispose_mipmap_handles(residuals);
+            }
+
+            self.residuals.dispose_output(view.descriptor);
             source = self.common.output_textures[index].as_ref().unwrap().clone()
         }
 

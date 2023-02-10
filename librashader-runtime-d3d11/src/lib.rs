@@ -35,10 +35,11 @@ mod tests {
     // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
     // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",
     // "../test/slang-shaders/presets/crt-geom-ntsc-upscale-sharp.slangp",
-    const FILTER_PATH: &str =
-        "../test/slang-shaders/handheld/console-border/gbc-lcd-grid-v2.slangp";
+    // const FILTER_PATH: &str =
+    //     "../test/slang-shaders/handheld/console-border/gbc-lcd-grid-v2.slangp";
     // "../test/null.slangp",
-    // const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
+    const FILTER_PATH: &str =
+        "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp";
 
     // const FILTER_PATH: &str = "../test/slang-shaders/crt/crt-royale.slangp";
     const IMAGE_PATH: &str = "../triangle.png";
@@ -83,7 +84,7 @@ mod tests {
             FILTER_PATH,
             Some(&FilterChainOptionsD3D11 {
                 use_deferred_context: false,
-                force_no_mipmaps: false,
+                force_no_mipmaps: true,
             }),
             // replace below with 'None' for the triangle
             // None,

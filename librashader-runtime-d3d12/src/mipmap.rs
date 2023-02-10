@@ -200,7 +200,6 @@ impl D3D12MipmapGen {
         &self,
         cmd: &ID3D12GraphicsCommandList,
         resource: &ID3D12Resource,
-
         miplevels: u16,
         size: Size<u32>,
         format: DXGI_FORMAT,
@@ -287,8 +286,8 @@ impl D3D12MipmapGen {
             );
 
             cmd.Dispatch(
-                std::cmp::max(scaled.width / 8, 1),
-                std::cmp::max(scaled.height / 8, 1),
+                std::cmp::max(scaled.width.div_ceil(8), 1),
+                std::cmp::max(scaled.height.div_ceil(8), 1),
                 1,
             );
 

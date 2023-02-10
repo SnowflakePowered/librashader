@@ -31,8 +31,8 @@ pub(crate) struct OwnedImage {
     pub(crate) handle: ID3D12Resource,
     pub(crate) size: Size<u32>,
     pub(crate) format: ImageFormat,
+    pub(crate) max_mipmap: u16,
     device: ID3D12Device,
-    max_mipmap: u16,
 }
 
 static CLEAR: &[f32; 4] = &[0.0, 0.0, 0.0, 0.0];
