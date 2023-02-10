@@ -492,37 +492,6 @@ impl FilterChainD3D12 {
 
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
-        //
-        // // Need to take care of the heaps in a single thread because [;16] is not sized..?
-        // let filters: Vec<error::Result<FilterPass>> = filters
-        //     .into_iter()
-        //     .zip(work_heaps)
-        //     .zip(sampler_work_heaps)
-        //     .map(
-        //         |(
-        //             (
-        //                 (reflection, uniform_bindings, uniform_storage, pipeline, config, source),
-        //                 mut texture_heap,
-        //             ),
-        //             mut sampler_heap,
-        //         )| {
-        //             let texture_heap = texture_heap.alloc_range()?;
-        //             let sampler_heap = sampler_heap.alloc_range()?;
-        //             Ok(FilterPass {
-        //                 reflection,
-        //                 uniform_bindings,
-        //                 uniform_storage,
-        //                 pipeline,
-        //                 config,
-        //                 texture_heap,
-        //                 sampler_heap,
-        //                 source,
-        //             })
-        //         },
-        //     )
-        //     .collect();
-        // let filters: error::Result<Vec<_>> = filters.into_iter().collect();
-        // let filters = filters?;
 
         // Panic SAFETY: mipmap_heap is always 1024 descriptors.
         Ok((

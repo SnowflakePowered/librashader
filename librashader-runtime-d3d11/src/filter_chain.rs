@@ -56,10 +56,8 @@ pub struct FilterChainD3D11 {
 }
 
 pub(crate) struct Direct3D11 {
-    pub(crate) device: ID3D11Device,
-    pub(crate) current_context: ID3D11DeviceContext,
+    pub(crate) _device: ID3D11Device,
     pub(crate) immediate_context: ID3D11DeviceContext,
-    pub context_is_deferred: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -97,8 +95,6 @@ impl FilterChainD3D11 {
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
 
-        let use_deferred_context = options.map_or(false, |f| f.use_deferred_context);
-
         let samplers = SamplerSet::new(device)?;
 
         // initialize passes
@@ -106,30 +102,10 @@ impl FilterChainD3D11 {
 
         let immediate_context = unsafe { device.GetImmediateContext()? };
 
-        let current_context = if use_deferred_context {
-            // check if device supports deferred contexts
-            if let Err(_) = unsafe { device.CreateDeferredContext(0, None) } {
-                immediate_context.clone()
-            } else {
-                let mut context = None;
-                unsafe { device.CreateDeferredContext(0, Some(&mut context))? };
-                assume_d3d11_init!(context, "CreateDeferredContext");
-                context
-            }
-        } else {
-            immediate_context.clone()
-        };
-
         // initialize output framebuffers
         let mut output_framebuffers = Vec::new();
         output_framebuffers.resize_with(filters.len(), || {
-            OwnedFramebuffer::new(
-                device,
-                &current_context,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                false,
-            )
+            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
 
         // resolve all results
@@ -143,13 +119,7 @@ impl FilterChainD3D11 {
         // // initialize feedback framebuffers
         let mut feedback_framebuffers = Vec::new();
         feedback_framebuffers.resize_with(filters.len(), || {
-            OwnedFramebuffer::new(
-                device,
-                &current_context,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                false,
-            )
+            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
         // resolve all results
         let feedback_framebuffers = feedback_framebuffers
@@ -160,12 +130,12 @@ impl FilterChainD3D11 {
         feedback_textures.resize_with(filters.len(), || None);
 
         // load luts
-        let luts = FilterChainD3D11::load_luts(device, &current_context, &preset.textures)?;
+        let luts = FilterChainD3D11::load_luts(device, &immediate_context, &preset.textures)?;
 
         let (history_framebuffers, history_textures) =
-            FilterChainD3D11::init_history(device, &current_context, &filters)?;
+            FilterChainD3D11::init_history(device, &filters)?;
 
-        let draw_quad = DrawQuad::new(device, &current_context)?;
+        let draw_quad = DrawQuad::new(device)?;
         let state = D3D11State::new(device)?;
         Ok(FilterChainD3D11 {
             passes: filters,
@@ -174,10 +144,8 @@ impl FilterChainD3D11 {
             history_framebuffers,
             common: FilterCommon {
                 d3d11: Direct3D11 {
-                    device: device.clone(),
-                    current_context,
+                    _device: device.clone(),
                     immediate_context,
-                    context_is_deferred: use_deferred_context,
                 },
                 config: FilterMutable {
                     passes_enabled: preset.shader_count as usize,
@@ -317,7 +285,6 @@ impl FilterChainD3D11 {
 
     fn init_history(
         device: &ID3D11Device,
-        context: &ID3D11DeviceContext,
         filters: &Vec<FilterPass>,
     ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<InputTexture>]>)> {
         let required_images =
@@ -334,13 +301,7 @@ impl FilterChainD3D11 {
         // eprintln!("[history] using frame history with {required_images} images");
         let mut framebuffers = VecDeque::with_capacity(required_images);
         framebuffers.resize_with(required_images, || {
-            OwnedFramebuffer::new(
-                device,
-                context,
-                Size::new(1, 1),
-                ImageFormat::R8G8B8A8Unorm,
-                false,
-            )
+            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
         });
 
         let framebuffers = framebuffers
@@ -353,9 +314,13 @@ impl FilterChainD3D11 {
         Ok((framebuffers, history_textures.into_boxed_slice()))
     }
 
-    fn push_history(&mut self, input: &D3D11InputView) -> error::Result<()> {
+    fn push_history(
+        &mut self,
+        ctx: &ID3D11DeviceContext,
+        input: &D3D11InputView,
+    ) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
-            back.copy_from(input)?;
+            back.copy_from(ctx, input)?;
             self.history_framebuffers.push_front(back)
         }
 
@@ -400,17 +365,23 @@ impl FilterChainD3D11 {
     /// Process a frame with the input image.
     pub fn frame(
         &mut self,
+        ctx: Option<&ID3D11DeviceContext>,
         input: D3D11InputView,
         viewport: &Viewport<D3D11OutputView>,
         frame_count: usize,
         options: Option<&FrameOptionsD3D11>,
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+
+        // Need to clone this because pushing history needs a mutable borrow.
+        let immediate_context = &self.common.d3d11.immediate_context.clone();
+        let ctx = ctx.unwrap_or(immediate_context);
+
         let passes = &mut self.passes[0..max];
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &mut self.history_framebuffers {
-                    framebuffer.clear()?;
+                    framebuffer.clear(ctx)?;
                 }
             }
         }
@@ -467,10 +438,8 @@ impl FilterChainD3D11 {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        let state_guard = self
-            .state
-            .enter_filter_state(&self.common.d3d11.current_context);
-        self.common.draw_quad.bind_vbo_for_frame();
+        let state_guard = self.state.enter_filter_state(ctx);
+        self.common.draw_quad.bind_vbo_for_frame(ctx);
 
         for (index, pass) in pass.iter_mut().enumerate() {
             source.filter = pass.config.filter;
@@ -478,6 +447,7 @@ impl FilterChainD3D11 {
             let target = &self.output_framebuffers[index];
             let size = target.size;
             pass.draw(
+                ctx,
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
@@ -506,6 +476,7 @@ impl FilterChainD3D11 {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             pass.draw(
+                &ctx,
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
@@ -524,22 +495,8 @@ impl FilterChainD3D11 {
         );
 
         drop(state_guard);
-        self.push_history(&input)?;
 
-        if self.common.d3d11.context_is_deferred {
-            unsafe {
-                let mut command_list = None;
-                self.common
-                    .d3d11
-                    .current_context
-                    .FinishCommandList(false, Some(&mut command_list))?;
-                assume_d3d11_init!(command_list, "FinishCommandList");
-                self.common
-                    .d3d11
-                    .immediate_context
-                    .ExecuteCommandList(&command_list, true);
-            }
-        }
+        self.push_history(ctx, &input)?;
 
         Ok(())
     }

@@ -195,15 +195,16 @@ libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
 #if defined(LIBRA_RUNTIME_D3D11)
 libra_error_t __librashader__noop_d3d11_filter_chain_create(
     libra_shader_preset_t *preset,
-    const struct filter_chain_d3d11_opt_t *options, const ID3D11Device *device,
+    const struct filter_chain_d3d11_opt_t *options, ID3D11Device *device,
     libra_d3d11_filter_chain_t *out) {
     return NULL;
 }
 
 libra_error_t __librashader__noop_d3d11_filter_chain_frame(
-    libra_d3d11_filter_chain_t *chain, size_t frame_count,
+    libra_d3d11_filter_chain_t *chain,
+    ID3D11DeviceContext *device_context, size_t frame_count,
     struct libra_source_image_d3d11_t image, struct libra_viewport_t viewport,
-    const ID3D11RenderTargetView *out, const float *mvp,
+    ID3D11RenderTargetView *out, const float *mvp,
     const struct frame_d3d11_opt_t *opt) {
     return NULL;
 }
@@ -238,14 +239,14 @@ libra_error_t __librashader__noop_d3d11_filter_chain_get_active_pass_count(
 #if defined(LIBRA_RUNTIME_D3D12)
 libra_error_t __librashader__noop_d3d12_filter_chain_create(
     libra_shader_preset_t *preset,
-    const struct filter_chain_d3d12_opt_t *options, const ID3D12Device *device,
+    const struct filter_chain_d3d12_opt_t *options, ID3D12Device *device,
     libra_d3d12_filter_chain_t *out) {
     return NULL;
 }
 
 libra_error_t __librashader__noop_d3d12_filter_chain_frame(
     libra_d3d12_filter_chain_t *chain,
-    const ID3D12GraphicsCommandList *command_list, size_t frame_count,
+    ID3D12GraphicsCommandList *command_list, size_t frame_count,
     struct libra_source_image_d3d12_t image, struct libra_viewport_t viewport,
     struct libra_output_image_d3d12_t out, const float *mvp,
     const struct frame_d3d12_opt_t *opt) {

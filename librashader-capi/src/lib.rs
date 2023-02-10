@@ -87,4 +87,4 @@ pub type LIBRASHADER_API_VERSION = usize;
 pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 0;
 
 #[allow(dead_code)]
-const fn assert_thread_safe<T: Send + Sync>() { }
+const fn assert_thread_safe<T: Send + Sync>() {}

@@ -10,14 +10,14 @@ use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 use std::slice;
 use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,
+    ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView,
 };
 
 use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
 use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
-use librashader::runtime::{FilterChainParameters, Size, Viewport};
 use crate::LIBRASHADER_API_VERSION;
+use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Direct3D 11 parameters for the source image.
 #[repr(C)]
@@ -49,12 +49,6 @@ impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
 pub struct filter_chain_d3d11_opt_t {
     /// The librashader API version.
     pub version: LIBRASHADER_API_VERSION,
-    /// Use a deferred context to record shader rendering state.
-    ///
-    /// The deferred context will be executed on the immediate context
-    /// with `RenderContextState = true`.
-    pub use_deferred_context: bool,
-
     /// Whether or not to explicitly disable mipmap
     /// generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
@@ -62,7 +56,7 @@ pub struct filter_chain_d3d11_opt_t {
 
 config_struct! {
     impl FilterChainOptionsD3D11 => filter_chain_d3d11_opt_t {
-        0 => [use_deferred_context, force_no_mipmaps];
+        0 => [force_no_mipmaps];
     }
 }
 
@@ -130,8 +124,19 @@ extern_fn! {
     }
 }
 
+// This assert ensures that the bindings of Option<ManuallyDrop<ID3D11DeviceContext>> to ID3D11DeviceContext* is sound.
+const _: () = assert!(
+    std::mem::size_of::<ID3D11DeviceContext>()
+        == std::mem::size_of::<Option<ManuallyDrop<ID3D11DeviceContext>>>()
+);
+
 extern_fn! {
     /// Draw a frame with the given parameters for the given filter chain.
+    ///
+    /// If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
+    /// it will record commands onto the provided context. If the context is deferred, librashader
+    /// will not finalize command lists. The context must otherwise be associated with the `ID3D11Device`
+    //  the filter chain was created with.
     ///
     /// ## Safety
     /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -142,10 +147,16 @@ extern_fn! {
     ///    struct.
     /// - `out` must not be null.
     /// - `image.handle` must not be null.
+    /// - If `device_context` is null, commands will be recorded onto the immediate context of the `ID3D11Device`
+    ///   this filter chain was created with. The context must otherwise be associated with the `ID3D11Device`
+    ///   the filter chain was created with.
     /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
     ///   thread at a time may call this function.
     fn libra_d3d11_filter_chain_frame(
         chain: *mut libra_d3d11_filter_chain_t,
+        // cbindgen can't discover that ID3D11DeviceContext has the niche optimization
+        // so ManuallyDrop<Option<ID3D11DeviceContext>> doesn't generate correct bindings.
+        device_context: Option<ManuallyDrop<ID3D11DeviceContext>>,
         frame_count: usize,
         image: libra_source_image_d3d11_t,
         viewport: libra_viewport_t,
@@ -180,7 +191,7 @@ extern_fn! {
         let opt = opt.map(FromUninit::from_uninit);
 
         let image = image.try_into()?;
-        chain.frame(image, &viewport, frame_count, opt.as_ref())?;
+        chain.frame(device_context.as_deref(), image, &viewport, frame_count, opt.as_ref())?;
     }
 }
 

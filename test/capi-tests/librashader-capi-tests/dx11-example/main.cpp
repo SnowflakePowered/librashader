@@ -404,7 +404,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 
         libra_viewport_t vp = {0, 0, viewport.Width, viewport.Height, };
 
-        libra.d3d11_filter_chain_frame(&filter_chain, frameCount, input, vp,
+        libra.d3d11_filter_chain_frame(&filter_chain, NULL, frameCount, input, vp,
                                        d3d11FrameBufferView, NULL, NULL);
 
         copySrv->Release();

@@ -38,6 +38,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <d3d11.h>
 #else
 typedef void ID3D11Device;
+typedef void ID3D11DeviceContext;
 typedef void ID3D11RenderTargetView;
 typedef void ID3D11ShaderResourceView;
 #endif
@@ -289,11 +290,6 @@ typedef struct frame_vk_opt_t {
 typedef struct filter_chain_d3d11_opt_t {
   /// The librashader API version.
   LIBRASHADER_API_VERSION version;
-  /// Use a deferred context to record shader rendering state.
-  ///
-  /// The deferred context will be executed on the immediate context
-  /// with `RenderContextState = true`.
-  bool use_deferred_context;
   /// Whether or not to explicitly disable mipmap
   /// generation regardless of shader preset settings.
   bool force_no_mipmaps;
@@ -309,7 +305,7 @@ typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
 /// Direct3D 11 parameters for the source image.
 typedef struct libra_source_image_d3d11_t {
   /// A shader resource view into the source image
-  const ID3D11ShaderResourceView * handle;
+  ID3D11ShaderResourceView * handle;
   /// The width of the source image.
   uint32_t width;
   /// The height of the source image.
@@ -353,7 +349,7 @@ typedef struct _filter_chain_d3d12 *libra_d3d12_filter_chain_t;
 /// Direct3D 12 parameters for the source image.
 typedef struct libra_source_image_d3d12_t {
   /// The resource containing the image.
-  const ID3D12Resource * resource;
+  ID3D12Resource * resource;
   /// A CPU descriptor handle to a shader resource view of the image.
   D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
   /// The format of the image.
@@ -561,7 +557,7 @@ typedef libra_error_t (*PFN_libra_vk_filter_chain_free)(libra_vk_filter_chain_t 
 ///libra_d3d11_filter_chain_create
 typedef libra_error_t (*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset_t *preset,
                                                              const struct filter_chain_d3d11_opt_t *options,
-                                                             const ID3D11Device * device,
+                                                             ID3D11Device * device,
                                                              libra_d3d11_filter_chain_t *out);
 #endif
 
@@ -569,10 +565,11 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_create)(libra_shader_preset
 /// Function pointer definition for
 ///libra_d3d11_filter_chain_frame
 typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t *chain,
+                                                            ID3D11DeviceContext * device_context,
                                                             size_t frame_count,
                                                             struct libra_source_image_d3d11_t image,
                                                             struct libra_viewport_t viewport,
-                                                            const ID3D11RenderTargetView * out,
+                                                            ID3D11RenderTargetView * out,
                                                             const float *mvp,
                                                             const struct frame_d3d11_opt_t *opt);
 #endif
@@ -618,7 +615,7 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_free)(libra_d3d11_filter_ch
 ///libra_d3d12_filter_chain_create
 typedef libra_error_t (*PFN_libra_d3d12_filter_chain_create)(libra_shader_preset_t *preset,
                                                              const struct filter_chain_d3d12_opt_t *opt,
-                                                             const ID3D12Device * device,
+                                                             ID3D12Device * device,
                                                              libra_d3d12_filter_chain_t *out);
 #endif
 
@@ -626,7 +623,7 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_create)(libra_shader_preset
 /// Function pointer definition for
 ///libra_d3d12_filter_chain_frame
 typedef libra_error_t (*PFN_libra_d3d12_filter_chain_frame)(libra_d3d12_filter_chain_t *chain,
-                                                            const ID3D12GraphicsCommandList * command_list,
+                                                            ID3D12GraphicsCommandList * command_list,
                                                             size_t frame_count,
                                                             struct libra_source_image_d3d12_t image,
                                                             struct libra_viewport_t viewport,
@@ -918,7 +915,12 @@ libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command buffer.
 ///
-/// librashader will not do any queue submissions.
+/// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
+/// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
+///
+/// librashader **will not** create a pipeline barrier for the final pass. The output image will
+/// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
+/// the output image to the final layout.
 ///
 /// ## Safety
 /// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.
@@ -1005,12 +1007,16 @@ libra_error_t libra_vk_filter_chain_free(libra_vk_filter_chain_t *chain);
 /// - `out` must be aligned, but may be null, invalid, or uninitialized.
 libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t *preset,
                                               const struct filter_chain_d3d11_opt_t *options,
-                                              const ID3D11Device * device,
+                                              ID3D11Device * device,
                                               libra_d3d11_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
 /// Draw a frame with the given parameters for the given filter chain.
+///
+/// If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
+/// it will record commands onto the provided context. If the context is deferred, librashader
+/// will not finalize command lists. The context must otherwise be associated with the `ID3D11Device`
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -1021,13 +1027,17 @@ libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t *preset,
 ///    struct.
 /// - `out` must not be null.
 /// - `image.handle` must not be null.
+/// - If `device_context` is null, commands will be recorded onto the immediate context of the `ID3D11Device`
+///   this filter chain was created with. The context must otherwise be associated with the `ID3D11Device`
+///   the filter chain was created with.
 /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
 ///   thread at a time may call this function.
 libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
+                                             ID3D11DeviceContext * device_context,
                                              size_t frame_count,
                                              struct libra_source_image_d3d11_t image,
                                              struct libra_viewport_t viewport,
-                                             const ID3D11RenderTargetView * out,
+                                             ID3D11RenderTargetView * out,
                                              const float *mvp,
                                              const struct frame_d3d11_opt_t *opt);
 #endif
@@ -1096,13 +1106,20 @@ libra_error_t libra_d3d11_filter_chain_free(libra_d3d11_filter_chain_t *chain);
 /// - `out` must be aligned, but may be null, invalid, or uninitialized.
 libra_error_t libra_d3d12_filter_chain_create(libra_shader_preset_t *preset,
                                               const struct filter_chain_d3d12_opt_t *opt,
-                                              const ID3D12Device * device,
+                                              ID3D12Device * device,
                                               libra_d3d12_filter_chain_t *out);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D12)
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command list.
+///
+/// * The input image must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state.
+/// * The output image must be in `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state.
+///
+/// librashader **will not** create a resource barrier for the final pass. The output image will
+/// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
+/// the output image to the final resource state.
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -1113,11 +1130,12 @@ libra_error_t libra_d3d12_filter_chain_create(libra_shader_preset_t *preset,
 ///    struct.
 /// - `out` must be a descriptor handle to a render target view.
 /// - `image.resource` must not be null.
-/// - `command_list` must not be null.
+/// - `command_list` must be a non-null pointer to a `ID3D12GraphicsCommandList` that is open,
+///    and must be associated with the `ID3D12Device` this filter chain was created with.
 /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
 ///   thread at a time may call this function.
 libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
-                                             const ID3D12GraphicsCommandList * command_list,
+                                             ID3D12GraphicsCommandList * command_list,
                                              size_t frame_count,
                                              struct libra_source_image_d3d12_t image,
                                              struct libra_viewport_t viewport,

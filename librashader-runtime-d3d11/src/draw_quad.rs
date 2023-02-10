@@ -71,13 +71,12 @@ const FINAL_VBO_DATA: [D3D11Vertex; 4] = [
 static VBO_DATA: &[D3D11Vertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub(crate) struct DrawQuad {
-    context: ID3D11DeviceContext,
     stride: u32,
     vbo: ID3D11Buffer,
 }
 
 impl DrawQuad {
-    pub fn new(device: &ID3D11Device, context: &ID3D11DeviceContext) -> error::Result<DrawQuad> {
+    pub fn new(device: &ID3D11Device) -> error::Result<DrawQuad> {
         unsafe {
             let mut vbo = None;
             device.CreateBuffer(
@@ -100,18 +99,16 @@ impl DrawQuad {
 
             Ok(DrawQuad {
                 vbo,
-                context: context.clone(),
                 stride: std::mem::size_of::<D3D11Vertex>() as u32,
             })
         }
     }
 
-    pub fn bind_vbo_for_frame(&self) {
+    pub fn bind_vbo_for_frame(&self, context: &ID3D11DeviceContext) {
         unsafe {
-            self.context
-                .IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+            context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-            self.context.IASetVertexBuffers(
+            context.IASetVertexBuffers(
                 0,
                 1,
                 Some(&Some(self.vbo.clone())),

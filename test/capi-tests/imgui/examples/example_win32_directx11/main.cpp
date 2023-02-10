@@ -19,6 +19,7 @@ static ID3D11RenderTargetView*  g_mainRenderTargetView = NULL;
 static ID3D11Texture2D* g_pBackBuffer = NULL;
 static ID3D11Texture2D* g_pFramebufferCopy = NULL;
 static ID3D11ShaderResourceView* g_framebufferCopySRV = NULL;
+static ID3D11DeviceContext* g_deferredContext = NULL;
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
@@ -70,8 +71,7 @@ int main(int, char**)
 
     libra_d3d11_filter_chain_t filter_chain;
     filter_chain_d3d11_opt_t opt = {
-        .use_deferred_context = true,
-        .force_no_mipmaps = true,
+        .force_no_mipmaps = false,
     };
 
     libra.d3d11_filter_chain_create(&preset, &opt, g_pd3dDevice, &filter_chain);
@@ -187,8 +187,9 @@ int main(int, char**)
             .frame_direction = -1
         };
 
-        libra.d3d11_filter_chain_frame(&filter_chain, frameCount, input, vp,
+        libra.d3d11_filter_chain_frame(&filter_chain, NULL, frameCount, input, vp,
                                        g_mainRenderTargetView, NULL, &frame_opt);
+
 
         g_pSwapChain->Present(1, 0); // Present with vsync
         //g_pSwapChain->Present(0, 0); // Present without vsync
@@ -237,7 +238,9 @@ bool CreateDeviceD3D(HWND hWnd)
         res = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_WARP, NULL, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &featureLevel, &g_pd3dDeviceContext);
     if (res != S_OK)
         return false;
-
+    res = g_pd3dDevice->CreateDeferredContext(0, &g_deferredContext);
+    if (res != S_OK)
+        return false;
     CreateRenderTarget();
     return true;
 }

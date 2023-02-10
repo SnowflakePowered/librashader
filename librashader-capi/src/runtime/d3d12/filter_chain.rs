@@ -16,9 +16,9 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use librashader::runtime::d3d12::capi::options::FilterChainOptionsD3D12;
 use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
 
+use crate::LIBRASHADER_API_VERSION;
 use librashader::runtime::d3d12::{D3D12InputImage, D3D12OutputView};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
-use crate::LIBRASHADER_API_VERSION;
 
 /// Direct3D 12 parameters for the source image.
 #[repr(C)]
@@ -149,6 +149,13 @@ extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command list.
     ///
+    /// * The input image must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state.
+    /// * The output image must be in `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state.
+    ///
+    /// librashader **will not** create a resource barrier for the final pass. The output image will
+    /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
+    /// the output image to the final resource state.
+    ///
     /// ## Safety
     /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
     ///    function will return an error.
@@ -158,7 +165,8 @@ extern_fn! {
     ///    struct.
     /// - `out` must be a descriptor handle to a render target view.
     /// - `image.resource` must not be null.
-    /// - `command_list` must not be null.
+    /// - `command_list` must be a non-null pointer to a `ID3D12GraphicsCommandList` that is open,
+    ///    and must be associated with the `ID3D12Device` this filter chain was created with.
     /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
     ///   thread at a time may call this function.
     fn libra_d3d12_filter_chain_frame(

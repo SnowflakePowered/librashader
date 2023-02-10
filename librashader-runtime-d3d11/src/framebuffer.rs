@@ -26,14 +26,12 @@ pub(crate) struct OwnedFramebuffer {
     pub(crate) size: Size<u32>,
     format: DXGI_FORMAT,
     device: ID3D11Device,
-    context: ID3D11DeviceContext,
     max_mipmap: u32,
 }
 
 impl OwnedFramebuffer {
     pub fn new(
         device: &ID3D11Device,
-        context: &ID3D11DeviceContext,
         size: Size<u32>,
         format: ImageFormat,
         mipmap: bool,
@@ -56,7 +54,6 @@ impl OwnedFramebuffer {
                 size,
                 format,
                 device: device.clone(),
-                context: context.clone(),
                 max_mipmap: if mipmap {
                     size.calculate_miplevels()
                 } else {
@@ -99,10 +96,10 @@ impl OwnedFramebuffer {
         Ok(size)
     }
 
-    pub fn clear(&mut self) -> error::Result<()> {
+    pub fn clear(&mut self, ctx: &ID3D11DeviceContext) -> error::Result<()> {
         let rtv = self.create_render_target_view()?;
         unsafe {
-            self.context.ClearRenderTargetView(&rtv, CLEAR.as_ptr());
+            ctx.ClearRenderTargetView(&rtv, CLEAR.as_ptr());
         }
         Ok(())
     }
@@ -181,7 +178,11 @@ impl OwnedFramebuffer {
         })
     }
 
-    pub fn copy_from(&mut self, image: &D3D11InputView) -> error::Result<()> {
+    pub fn copy_from(
+        &mut self,
+        ctx: &ID3D11DeviceContext,
+        image: &D3D11InputView,
+    ) -> error::Result<()> {
         let original_resource: ID3D11Texture2D = unsafe {
             let resource = image.handle.GetResource()?;
             resource.cast()?
@@ -198,10 +199,8 @@ impl OwnedFramebuffer {
             self.init(image.size, ImageFormat::from(format))?;
         }
 
-        // todo: improve mipmap generation?
-        // will need a staging texture + full so might not be worth it.
         unsafe {
-            self.context.CopySubresourceRegion(
+            ctx.CopySubresourceRegion(
                 &self.render,
                 0,
                 0,
@@ -222,7 +221,7 @@ impl OwnedFramebuffer {
 
         let srvs = self.create_shader_resource_view()?;
         unsafe {
-            self.context.GenerateMips(&srvs);
+            ctx.GenerateMips(&srvs);
         }
         Ok(())
     }

@@ -10,11 +10,11 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
 
+use crate::LIBRASHADER_API_VERSION;
 use librashader::runtime::gl::capi::options::FilterChainOptionsGL;
 use librashader::runtime::gl::capi::options::FrameOptionsGL;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
-use crate::LIBRASHADER_API_VERSION;
 
 /// A GL function loader that librashader needs to be initialized with.
 pub type libra_gl_loader_t = unsafe extern "system" fn(*const c_char) -> *const c_void;

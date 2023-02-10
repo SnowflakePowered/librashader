@@ -14,7 +14,7 @@ use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Buffer, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
+    ID3D11Buffer, ID3D11DeviceContext, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
     ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAPPED_SUBRESOURCE,
     D3D11_MAP_WRITE_DISCARD, D3D11_VIEWPORT,
 };
@@ -137,6 +137,7 @@ impl FilterPass {
 
     pub(crate) fn draw(
         &mut self,
+        ctx: &ID3D11DeviceContext,
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
@@ -147,19 +148,15 @@ impl FilterPass {
         output: RenderTarget<D3D11OutputView>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
-        let _device = &parent.d3d11.device;
-        let context = &parent.d3d11.current_context;
-
         if self.config.mipmap_input && !parent.disable_mipmaps {
             unsafe {
-                context.GenerateMips(&source.view.handle);
-                // context.GenerateMips(&original.view.handle);
+                ctx.GenerateMips(&source.view.handle);
             }
         }
         unsafe {
-            context.IASetInputLayout(&self.vertex_layout);
-            context.VSSetShader(&self.vertex_shader, None);
-            context.PSSetShader(&self.pixel_shader, None);
+            ctx.IASetInputLayout(&self.vertex_layout);
+            ctx.VSSetShader(&self.vertex_shader, None);
+            ctx.PSSetShader(&self.pixel_shader, None);
         }
 
         let mut textures: [Option<ID3D11ShaderResourceView>; 16] = std::array::from_fn(|_| None);
@@ -183,20 +180,20 @@ impl FilterPass {
             // upload uniforms
             unsafe {
                 let mut map = D3D11_MAPPED_SUBRESOURCE::default();
-                context.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut map))?;
+                ctx.Map(&ubo.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut map))?;
                 std::ptr::copy_nonoverlapping(
                     self.uniform_storage.ubo_pointer(),
                     map.pData.cast(),
                     ubo.size as usize,
                 );
-                context.Unmap(&ubo.buffer, 0);
+                ctx.Unmap(&ubo.buffer, 0);
             }
 
             if ubo.stage_mask.contains(BindingStage::VERTEX) {
-                unsafe { context.VSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
+                unsafe { ctx.VSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
             }
             if ubo.stage_mask.contains(BindingStage::FRAGMENT) {
-                unsafe { context.PSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
+                unsafe { ctx.PSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
             }
         }
 
@@ -204,26 +201,26 @@ impl FilterPass {
             // upload push constants
             unsafe {
                 let mut map = D3D11_MAPPED_SUBRESOURCE::default();
-                context.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut map))?;
+                ctx.Map(&push.buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut map))?;
                 std::ptr::copy_nonoverlapping(
                     self.uniform_storage.push_pointer(),
                     map.pData.cast(),
                     push.size as usize,
                 );
-                context.Unmap(&push.buffer, 0);
+                ctx.Unmap(&push.buffer, 0);
             }
 
             if push.stage_mask.contains(BindingStage::VERTEX) {
-                unsafe { context.VSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
+                unsafe { ctx.VSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
             }
             if push.stage_mask.contains(BindingStage::FRAGMENT) {
-                unsafe { context.PSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
+                unsafe { ctx.PSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
             }
         }
 
         unsafe {
             // reset RTVs
-            context.OMSetRenderTargets(None, None);
+            ctx.OMSetRenderTargets(None, None);
         }
 
         unsafe {
@@ -233,11 +230,11 @@ impl FilterPass {
                 std::mem::size_of::<Option<windows::core::IUnknown>>()
                     == std::mem::size_of::<windows::core::IUnknown>()
             );
-            context.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
-            context.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
+            ctx.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
+            ctx.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
 
-            context.OMSetRenderTargets(Some(&[output.output.handle.clone()]), None);
-            context.RSSetViewports(Some(&[D3D11_VIEWPORT {
+            ctx.OMSetRenderTargets(Some(&[output.output.handle.clone()]), None);
+            ctx.RSSetViewports(Some(&[D3D11_VIEWPORT {
                 TopLeftX: output.x,
                 TopLeftY: output.y,
                 Width: output.output.size.width as f32,
@@ -247,12 +244,12 @@ impl FilterPass {
             }]))
         }
 
-        parent.draw_quad.draw_quad(context, vbo_type);
+        parent.draw_quad.draw_quad(ctx, vbo_type);
 
         unsafe {
             // unbind resources.
-            context.PSSetShaderResources(0, Some(std::mem::transmute(NULL_TEXTURES.as_ref())));
-            context.OMSetRenderTargets(None, None);
+            ctx.PSSetShaderResources(0, Some(std::mem::transmute(NULL_TEXTURES.as_ref())));
+            ctx.OMSetRenderTargets(None, None);
         }
         Ok(())
     }

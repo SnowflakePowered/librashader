@@ -55,17 +55,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     baseDeviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1),
                                       reinterpret_cast<void**>(&deviceContext));
 
+    ID3D11DeviceContext* deferredContext;
+    baseDevice->CreateDeferredContext(0, &deferredContext);
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     auto libra = librashader_load_instance();
     libra_shader_preset_t preset;
     auto error = libra.preset_create(
-        "../../../slang-shaders/crt/crt-lottes.slangp",
+        "../../../slang-shaders/crt/crt-royale.slangp",
         &preset);
 
     libra_d3d11_filter_chain_t filter_chain;
     filter_chain_d3d11_opt_t opt = {
-        .use_deferred_context = true,
         .force_no_mipmaps = false,
     };
 
@@ -485,9 +487,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         frame_d3d11_opt_t frame_opt = {.clear_history = false,
                                    .frame_direction = -1};
 
-        libra.d3d11_filter_chain_frame(&filter_chain, frameCount, input, vp,
+        libra.d3d11_filter_chain_frame(&filter_chain, deferredContext, frameCount, input,
+                                       vp,
                                        framebufferRTV, NULL, &frame_opt);
 
+        ID3D11CommandList* commandList;
+        deferredContext->FinishCommandList(false, &commandList);
+        deviceContext->ExecuteCommandList(commandList, true);
         ////////////////////////////////////////////////////////////////////////
         swapChain->Present(1, 0);
         frameCount += 1;

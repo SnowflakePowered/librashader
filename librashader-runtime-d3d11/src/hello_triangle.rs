@@ -280,6 +280,7 @@ pub mod d3d11_hello_triangle {
         pub viewport: D3D11_VIEWPORT,
         pub shader_output: Option<ID3D11Texture2D>,
         pub frame_count: usize,
+        pub deferred_context: ID3D11DeviceContext,
     }
 
     impl Sample {
@@ -387,6 +388,11 @@ pub mod d3d11_hello_triangle {
                     .CreateRenderTargetView(&renderbuffer, None, Some(&mut rtv))?;
                 (renderbuffer, rtv.unwrap())
             };
+
+            let mut context = None;
+            unsafe { self.device.CreateDeferredContext(0, Some(&mut context))? };
+            let context = context.expect("Could not create deferred context");
+
             self.resources = Some(Resources {
                 swapchain,
                 backbuffer_rtv: Some(rtv),
@@ -405,6 +411,7 @@ pub mod d3d11_hello_triangle {
                 triangle_uniform_values: Default::default(),
                 renderbuffer,
                 renderbufffer_rtv: render_rtv,
+                deferred_context: context,
                 viewport: D3D11_VIEWPORT {
                     TopLeftX: 0.0,
                     TopLeftY: 0.0,
@@ -561,6 +568,7 @@ pub mod d3d11_hello_triangle {
                 // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
                 self.filter
                     .frame(
+                        Some(&resources.deferred_context),
                         D3D11InputView {
                             handle: srv,
                             size: Size {
@@ -585,6 +593,12 @@ pub mod d3d11_hello_triangle {
                     )
                     .unwrap();
 
+                let mut command_list = None;
+                resources
+                    .deferred_context
+                    .FinishCommandList(false, Some(&mut command_list))?;
+                let command_list = command_list.unwrap();
+                self.context.ExecuteCommandList(&command_list, false);
                 // self.context.CopyResource(&resources.backbuffer, &backup);
             }
 

@@ -58,7 +58,6 @@ mod tests {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
             filter.as_deref().unwrap_or(FILTER_PATH),
             Some(&FilterChainOptionsD3D11 {
-                use_deferred_context: false,
                 force_no_mipmaps: false,
             }),
             // replace below with 'None' for the triangle
@@ -83,7 +82,6 @@ mod tests {
         let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
             FILTER_PATH,
             Some(&FilterChainOptionsD3D11 {
-                use_deferred_context: false,
                 force_no_mipmaps: false,
             }),
             // replace below with 'None' for the triangle

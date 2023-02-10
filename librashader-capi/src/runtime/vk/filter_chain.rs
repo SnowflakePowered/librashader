@@ -171,7 +171,12 @@ extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command buffer.
     ///
-    /// librashader will not do any queue submissions.
+    /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
+    /// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
+    ///
+    /// librashader **will not** create a pipeline barrier for the final pass. The output image will
+    /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
+    /// the output image to the final layout.
     ///
     /// ## Safety
     /// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.

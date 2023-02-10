@@ -15,12 +15,6 @@ pub struct FrameOptionsD3D11 {
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
 pub struct FilterChainOptionsD3D11 {
-    /// Use a deferred context to record shader rendering state.
-    ///
-    /// The deferred context will be executed on the immediate context
-    /// with `RenderContextState = true`.
-    pub use_deferred_context: bool,
-
     /// Whether or not to explicitly disable mipmap
     /// generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
