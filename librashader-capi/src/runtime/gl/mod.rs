@@ -2,3 +2,4 @@
 
 mod filter_chain;
 pub use filter_chain::*;
+const _: () = crate::assert_thread_safe::<librashader::runtime::gl::FilterChain>();

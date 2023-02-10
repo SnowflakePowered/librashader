@@ -26,16 +26,13 @@
 //!
 //! | **API**     | **Status** | **`librashader` feature** |
 //! |-------------|------------|---------------------------|
-//! | OpenGL 3.3+ | ✔         | `gl`                     |
-//! | OpenGL 4.6  | ✔         | `gl`                     |
+//! | OpenGL 3.3+ | ✔         | `gl`                      |
+//! | OpenGL 4.6  | ✔         | `gl`                      |
 //! | Vulkan      | ✔         | `vk`                     |
-//! | Direct3D 11  | ✔         | `d3d11`                  |
-//! | Direct3D 12  | ✔         | `d3d12`                  |
-//! | OpenGL 2    | ❌         |                          |
-//! | Direct3D 9   | ❌         |                          |
-//! | Direct3D 10   | ❌         |                          |
-//! | Metal       | ❌         |                          |
-//!
+//! | Direct3D 11  | ✔        | `d3d11`                 |
+//! | Direct3D 12  | ✔        | `d3d12`                 |
+//! | Metal       | ❌        |                         |
+//! | WebGPU      | ❌        |                        |
 //! ## C API
 //! For documentation on the librashader C API, see [librashader-capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
 //! or [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).

@@ -403,6 +403,8 @@ impl FilterChainD3D12 {
 
         let filters: Vec<error::Result<_>> = passes.into_par_iter()
             .zip(hlsl_passes)
+            .zip(work_heaps)
+            .zip(sampler_work_heaps)
             .enumerate()
             .map_init(
                 || {
@@ -411,8 +413,8 @@ impl FilterChainD3D12 {
                     let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
                     Ok::<_, FilterChainError>((validator, library, compiler))
                 },
-                |dxc, (index, ((config, source, mut dxil),
-                          (_, _, mut hlsl)))| {
+                |dxc, (index, ((((config, source, mut dxil),
+                          (_, _, mut hlsl)), mut texture_heap), mut sampler_heap))| {
                 let Ok((validator, library, compiler)) = dxc else {
                     return Err(FilterChainError::Direct3DOperationError("Could not initialize DXC for thread"));
                 };
@@ -472,48 +474,55 @@ impl FilterChainD3D12 {
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
-                Ok((reflection,
-                    uniform_bindings,
-                    uniform_storage,
-                    graphics_pipeline,
-                    config,
-                    source))
-
-            }).collect();
-
-        let filters: error::Result<Vec<_>> = filters.into_iter().collect();
-        let filters = filters?;
-
-        // Need to take care of the heaps in a single thread because [;16] is not sized..?
-        let filters: Vec<error::Result<FilterPass>> = filters
-            .into_iter()
-            .zip(work_heaps)
-            .zip(sampler_work_heaps)
-            .map(
-                |(
-                    (
-                        (reflection, uniform_bindings, uniform_storage, pipeline, config, source),
-                        mut texture_heap,
-                    ),
-                    mut sampler_heap,
-                )| {
                     let texture_heap = texture_heap.alloc_range()?;
                     let sampler_heap = sampler_heap.alloc_range()?;
+
                     Ok(FilterPass {
                         reflection,
                         uniform_bindings,
                         uniform_storage,
-                        pipeline,
+                        pipeline: graphics_pipeline,
                         config,
                         texture_heap,
                         sampler_heap,
                         source,
                     })
-                },
-            )
-            .collect();
+
+            }).collect();
+
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
+        //
+        // // Need to take care of the heaps in a single thread because [;16] is not sized..?
+        // let filters: Vec<error::Result<FilterPass>> = filters
+        //     .into_iter()
+        //     .zip(work_heaps)
+        //     .zip(sampler_work_heaps)
+        //     .map(
+        //         |(
+        //             (
+        //                 (reflection, uniform_bindings, uniform_storage, pipeline, config, source),
+        //                 mut texture_heap,
+        //             ),
+        //             mut sampler_heap,
+        //         )| {
+        //             let texture_heap = texture_heap.alloc_range()?;
+        //             let sampler_heap = sampler_heap.alloc_range()?;
+        //             Ok(FilterPass {
+        //                 reflection,
+        //                 uniform_bindings,
+        //                 uniform_storage,
+        //                 pipeline,
+        //                 config,
+        //                 texture_heap,
+        //                 sampler_heap,
+        //                 source,
+        //             })
+        //         },
+        //     )
+        //     .collect();
+        // let filters: error::Result<Vec<_>> = filters.into_iter().collect();
+        // let filters = filters?;
 
         // Panic SAFETY: mipmap_heap is always 1024 descriptors.
         Ok((

@@ -1,10 +1,10 @@
 use crate::error;
 use bitvec::bitvec;
 use bitvec::boxed::BitBox;
-use std::cell::RefCell;
+use parking_lot::RwLock;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::error::FilterChainError;
 use windows::Win32::Graphics::Direct3D12::{
@@ -98,12 +98,12 @@ impl const D3D12HeapType for SamplerWorkHeap {
     }
 }
 
-pub type D3D12DescriptorHeapSlot<T> = Rc<D3D12DescriptorHeapSlotInner<T>>;
+pub type D3D12DescriptorHeapSlot<T> = Arc<D3D12DescriptorHeapSlotInner<T>>;
 
 pub struct D3D12DescriptorHeapSlotInner<T> {
     cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
     gpu_handle: Option<D3D12_GPU_DESCRIPTOR_HANDLE>,
-    heap: Rc<RefCell<D3D12DescriptorHeapInner>>,
+    heap: Arc<RwLock<D3D12DescriptorHeapInner>>,
     slot: usize,
     _pd: PhantomData<T>,
 }
@@ -117,7 +117,7 @@ impl<T> D3D12DescriptorHeapSlotInner<T> {
     /// unsafe because type must match
     pub unsafe fn copy_descriptor(&self, source: D3D12_CPU_DESCRIPTOR_HANDLE) {
         unsafe {
-            let heap = self.heap.deref().borrow();
+            let heap = self.heap.deref().read();
 
             heap.device
                 .CopyDescriptorsSimple(1, self.cpu_handle, source, heap.ty)
@@ -142,7 +142,7 @@ impl<T: D3D12ShaderVisibleHeapType> AsRef<D3D12_GPU_DESCRIPTOR_HANDLE>
 
 impl<T: D3D12ShaderVisibleHeapType> From<&D3D12DescriptorHeap<T>> for ID3D12DescriptorHeap {
     fn from(value: &D3D12DescriptorHeap<T>) -> Self {
-        value.0.borrow().heap.clone()
+        value.0.read().heap.clone()
     }
 }
 
@@ -159,7 +159,7 @@ struct D3D12DescriptorHeapInner {
     map: BitBox,
 }
 
-pub struct D3D12DescriptorHeap<T>(Rc<RefCell<D3D12DescriptorHeapInner>>, PhantomData<T>);
+pub struct D3D12DescriptorHeap<T>(Arc<RwLock<D3D12DescriptorHeapInner>>, PhantomData<T>);
 
 impl<T: D3D12HeapType> D3D12DescriptorHeap<T> {
     pub fn new(device: &ID3D12Device, size: usize) -> error::Result<D3D12DescriptorHeap<T>> {
@@ -171,7 +171,7 @@ impl<T: D3D12HeapType> D3D12DescriptorHeap<T> {
 impl<T> D3D12DescriptorHeap<T> {
     /// Gets a cloned handle to the inner heap
     pub fn handle(&self) -> ID3D12DescriptorHeap {
-        let inner = self.0.borrow();
+        let inner = self.0.read();
         inner.heap.clone()
     }
 
@@ -190,7 +190,7 @@ impl<T> D3D12DescriptorHeap<T> {
             };
 
             Ok(D3D12DescriptorHeap(
-                Rc::new(RefCell::new(D3D12DescriptorHeapInner {
+                Arc::new(RwLock::new(D3D12DescriptorHeapInner {
                     device: device.clone(),
                     heap,
                     ty: desc.Type,
@@ -224,12 +224,12 @@ impl<T> D3D12DescriptorHeap<T> {
     ) {
         // has to be called right after creation.
         assert_eq!(
-            Rc::strong_count(&self.0),
+            Arc::strong_count(&self.0),
             1,
             "D3D12DescriptorHeap::suballocate can only be callled immediately after creation."
         );
 
-        let inner = Rc::try_unwrap(self.0)
+        let inner = Arc::try_unwrap(self.0)
             .expect("[d3d12] undefined behaviour to suballocate a descriptor heap with live descriptors.")
             .into_inner();
 
@@ -301,11 +301,11 @@ impl<T> D3D12DescriptorHeap<T> {
             heaps
                 .into_iter()
                 .map(|inner| {
-                    D3D12DescriptorHeap(Rc::new(RefCell::new(inner)), PhantomData::default())
+                    D3D12DescriptorHeap(Arc::new(RwLock::new(inner)), PhantomData::default())
                 })
                 .collect(),
             reserved_heap.map(|inner| {
-                D3D12DescriptorHeap(Rc::new(RefCell::new(inner)), PhantomData::default())
+                D3D12DescriptorHeap(Arc::new(RwLock::new(inner)), PhantomData::default())
             }),
             inner.heap,
         )
@@ -314,7 +314,7 @@ impl<T> D3D12DescriptorHeap<T> {
     pub fn alloc_slot(&mut self) -> error::Result<D3D12DescriptorHeapSlot<T>> {
         let mut handle = D3D12_CPU_DESCRIPTOR_HANDLE { ptr: 0 };
 
-        let mut inner = self.0.borrow_mut();
+        let mut inner = self.0.write();
         for i in inner.start..inner.num_descriptors {
             if !inner.map[i] {
                 inner.map.set(i, true);
@@ -327,10 +327,10 @@ impl<T> D3D12DescriptorHeap<T> {
                         ptr: (handle.ptr as u64 - inner.cpu_start.ptr as u64) + gpu_start.ptr,
                     });
 
-                return Ok(Rc::new(D3D12DescriptorHeapSlotInner {
+                return Ok(Arc::new(D3D12DescriptorHeapSlotInner {
                     cpu_handle: handle,
                     slot: i,
-                    heap: Rc::clone(&self.0),
+                    heap: Arc::clone(&self.0),
                     gpu_handle,
                     _pd: Default::default(),
                 }));
@@ -352,7 +352,7 @@ impl<T> D3D12DescriptorHeap<T> {
 
 impl<T> Drop for D3D12DescriptorHeapSlotInner<T> {
     fn drop(&mut self) {
-        let mut inner = self.heap.borrow_mut();
+        let mut inner = self.heap.write();
         inner.map.set(self.slot, false);
         if inner.start > self.slot {
             inner.start = self.slot

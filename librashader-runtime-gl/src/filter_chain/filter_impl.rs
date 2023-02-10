@@ -261,7 +261,6 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
             filters.push(FilterPass {
                 reflection,
-                compiled: glsl,
                 program,
                 ubo_location,
                 ubo_ring,

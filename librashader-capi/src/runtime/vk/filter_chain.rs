@@ -10,8 +10,8 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
 
-pub use librashader::runtime::vk::capi::options::FilterChainOptionsVulkan;
-pub use librashader::runtime::vk::capi::options::FrameOptionsVulkan;
+use librashader::runtime::vk::capi::options::FilterChainOptionsVulkan;
+use librashader::runtime::vk::capi::options::FrameOptionsVulkan;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 
@@ -182,6 +182,8 @@ extern_fn! {
     ///    values for the model view projection matrix.
     /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_vk_opt_t`
     ///    struct.
+    /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+    ///   thread at a time may call this function.
     fn libra_vk_filter_chain_frame(
         chain: *mut libra_vk_filter_chain_t,
         command_buffer: vk::CommandBuffer,

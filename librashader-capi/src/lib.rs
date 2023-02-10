@@ -51,6 +51,18 @@
 //! There is a case to be made for skipping error checking for `*_filter_chain_frame` due to performance reasons,
 //! but only if you are certain that the safety invariants are upheld on each call. Failure to check for errors
 //! may result in **undefined behaviour** stemming from failure to uphold safety invariants.
+//!
+//! ## Thread safety
+//!
+//! In general, it is **safe** to create a filter chain instance from a different thread, but drawing filter passes must be
+//! synchronized externally. The exception to filter chain creation are in OpenGL, where creating the filter chain instance
+//! is safe **if and only if** the thread local OpenGL context is initialized to the same context as the drawing thread, and
+//! in Direct3D 11, where filter chain creation is unsafe if the `ID3D11Device` was created with
+//! `D3D11_CREATE_DEVICE_SINGLETHREADED`.
+//!
+//! You must ensure that only thread has access to a created filter pass **before** you call `*_frame`. `*_frame` may only be
+//! called from one thread at a time.
+
 #![allow(non_camel_case_types)]
 #![feature(try_blocks)]
 #![feature(pointer_is_aligned)]
@@ -73,3 +85,6 @@ pub type LIBRASHADER_API_VERSION = usize;
 /// The current version of the librashader API/ABI.
 /// Pass this into `version` for config structs.
 pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 0;
+
+#[allow(dead_code)]
+const fn assert_thread_safe<T: Send + Sync>() { }

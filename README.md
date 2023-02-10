@@ -10,23 +10,21 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 ![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg)
 
 ## Supported Render APIs
-librashader supports OpenGL 3, OpenGL 4.6, Vulkan, Direct3D 11, and Direct3D 12.  Older versions
-of Direct3D and OpenGL, as well as Metal, are not supported (but pull-requests are welcome).
+librashader supports OpenGL 3, OpenGL 4.6, Vulkan, Direct3D 11, and Direct3D 12.  Metal and WebGPU
+are not currently supported (but pull-requests are welcome). librashader does not support legacy render
+APIs such as older versions of OpenGL, or legacy versions of Direct3D.
 
 | **API**     | **Status** | **`librashader` feature** |
-|-------------|------------|---------------------------|
-| OpenGL 3.3+ | ✔          | `gl`                      |
-| OpenGL 4.6  | ✔          | `gl`                      |
-| Vulkan      | ✔          | `vk`                      |
-| Direct3D 11 | ✔          | `d3d11`                   |
-| Direct3D 12 | ✔          | `d3d12`                   |
-| OpenGL 2    | ❌          |                           |
-| Direct3D 9  | ❌          |                           |
-| Direct3D 10 | ❌          |                           |
-| Metal       | ❌          |                           |
+|-------------|------------|--------------------------|
+| OpenGL 3.3+ | ✔          | `gl`                     |
+| OpenGL 4.6  | ✔          | `gl`                     |
+| Vulkan      | ✔          | `vk`                     |
+| Direct3D 11 | ✔          | `d3d11`                  |
+| Direct3D 12 | ✔          | `d3d12`                  |
+| Metal       | ❌          |                         |
+| WebGPU      | ❌          |                         |
 
-
-✔ = Render API is supported &mdash; 🚧 =  Support is in progress &mdash; ❌ Render API is not supported
+✔ = Render API is supported &mdash; ❌ Render API is not supported
 ## Usage
 
 librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class and fully supported.
@@ -68,9 +66,9 @@ is important to ensure that updates to librashader do not break existing consume
 As of `0.1.0-rc.3`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
 release without following semantic versioning.
 
-Linking against `librashader.h` directly is possible, but is not officially supported. You will need to ensure linkage
-parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`. The [corrosion](https://github.com/corrosion-rs/)
-CMake package is highly recommended.
+Linking statically against `librashader.h` is possible, but is not officially supported. You will need to ensure 
+linkage parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`. 
+The [corrosion](https://github.com/corrosion-rs/) CMake package is highly recommended.
 
 ### Examples
 
@@ -152,6 +150,13 @@ static GL_DEFAULT_MVP: &[f32; 16] = &[
     -1.0, -1.0, 0.0, 1.0,
 ];
 ```
+
+### Thread safety
+In general, it is **safe** to create a filter chain instance from a different thread, but drawing filter passes **must be
+externally synchronized**. The exceptions to filter chain creation are in OpenGL, where creating the filter chain instance
+is safe **if and only if** the thread local OpenGL context is initialized to the same context as the drawing thread, and
+in Direct3D 11, where filter chain creation is thread-unsafe if the `ID3D11Device` was created with 
+`D3D11_CREATE_DEVICE_SINGLETHREADED`.
 
 ### Writing a librashader Runtime
 

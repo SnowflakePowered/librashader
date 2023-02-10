@@ -13,8 +13,8 @@ use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11RenderTargetView, ID3D11ShaderResourceView,
 };
 
-pub use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
-pub use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
+use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
+use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
 use crate::LIBRASHADER_API_VERSION;
@@ -142,6 +142,8 @@ extern_fn! {
     ///    struct.
     /// - `out` must not be null.
     /// - `image.handle` must not be null.
+    /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+    ///   thread at a time may call this function.
     fn libra_d3d11_filter_chain_frame(
         chain: *mut libra_d3d11_filter_chain_t,
         frame_count: usize,

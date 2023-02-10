@@ -7,6 +7,8 @@ use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
+const _: () = crate::assert_thread_safe::<ShaderPreset>();
+
 /// A list of preset parameters.
 #[repr(C)]
 pub struct libra_preset_param_list_t {

@@ -13,8 +13,8 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
-pub use librashader::runtime::d3d12::capi::options::FilterChainOptionsD3D12;
-pub use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
+use librashader::runtime::d3d12::capi::options::FilterChainOptionsD3D12;
+use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
 
 use librashader::runtime::d3d12::{D3D12InputImage, D3D12OutputView};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
@@ -159,6 +159,8 @@ extern_fn! {
     /// - `out` must be a descriptor handle to a render target view.
     /// - `image.resource` must not be null.
     /// - `command_list` must not be null.
+    /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+    ///   thread at a time may call this function.
     fn libra_d3d12_filter_chain_frame(
         chain: *mut libra_d3d12_filter_chain_t,
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,

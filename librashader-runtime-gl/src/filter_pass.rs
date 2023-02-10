@@ -1,6 +1,4 @@
 use gl::types::{GLint, GLsizei, GLuint};
-use librashader_reflect::back::cross::CrossGlslContext;
-use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -33,7 +31,6 @@ impl UniformOffset {
 
 pub struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
-    pub compiled: ShaderCompilerOutput<String, CrossGlslContext>,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
     pub ubo_ring: Option<T::UboRing>,

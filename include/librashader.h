@@ -831,6 +831,10 @@ libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
 ///    values for the model view projection matrix.
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
 ///    struct.
+/// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+///   thread at a time may call this function. The thread `libra_gl_filter_chain_frame` is called from
+///   must have its thread-local OpenGL context initialized with the same context used to create
+///   the filter chain.
 libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
                                           size_t frame_count,
                                           struct libra_source_image_gl_t image,
@@ -925,6 +929,8 @@ libra_error_t libra_vk_filter_chain_create(struct libra_device_vk_t vulkan,
 ///    values for the model view projection matrix.
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_vk_opt_t`
 ///    struct.
+/// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+///   thread at a time may call this function.
 libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
                                           VkCommandBuffer command_buffer,
                                           size_t frame_count,
@@ -1015,6 +1021,8 @@ libra_error_t libra_d3d11_filter_chain_create(libra_shader_preset_t *preset,
 ///    struct.
 /// - `out` must not be null.
 /// - `image.handle` must not be null.
+/// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+///   thread at a time may call this function.
 libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
                                              size_t frame_count,
                                              struct libra_source_image_d3d11_t image,
@@ -1106,6 +1114,8 @@ libra_error_t libra_d3d12_filter_chain_create(libra_shader_preset_t *preset,
 /// - `out` must be a descriptor handle to a render target view.
 /// - `image.resource` must not be null.
 /// - `command_list` must not be null.
+/// - You must ensure that only one thread has access to `chain` before you call this function. Only one
+///   thread at a time may call this function.
 libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
                                              const ID3D12GraphicsCommandList * command_list,
                                              size_t frame_count,

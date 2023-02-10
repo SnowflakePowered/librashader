@@ -100,8 +100,10 @@ impl D3D12Buffer {
 
 /// SAFETY: Creating the pointer should be safe in multithreaded contexts.
 ///
-/// Mutation is guarded by DerefMut<Target=[u8]>
+/// Mutation is guarded by DerefMut<Target=[u8]>, so exclusive access is guaranteed.
+/// We do not ever leak the pointer to C.
 unsafe impl Send for RawD3D12Buffer {}
+unsafe impl Sync for RawD3D12Buffer {}
 pub struct RawD3D12Buffer {
     buffer: ManuallyDrop<D3D12Buffer>,
     ptr: NonNull<c_void>,

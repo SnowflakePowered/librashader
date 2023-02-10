@@ -940,6 +940,7 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
+ "parking_lot",
  "rayon",
  "rustc-hash",
  "thiserror",
