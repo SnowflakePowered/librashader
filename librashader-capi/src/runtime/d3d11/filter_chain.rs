@@ -1,4 +1,6 @@
-use crate::ctypes::{libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t};
+use crate::ctypes::{
+    config_struct, libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
@@ -15,6 +17,7 @@ pub use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
 pub use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
+use crate::LIBRASHADER_API_VERSION;
 
 /// Direct3D 11 parameters for the source image.
 #[repr(C)]
@@ -40,6 +43,48 @@ impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
     }
 }
 
+/// Options for Direct3D 11 filter chain creation.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct filter_chain_d3d11_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+    /// Use a deferred context to record shader rendering state.
+    ///
+    /// The deferred context will be executed on the immediate context
+    /// with `RenderContextState = true`.
+    pub use_deferred_context: bool,
+
+    /// Whether or not to explicitly disable mipmap
+    /// generation regardless of shader preset settings.
+    pub force_no_mipmaps: bool,
+}
+
+config_struct! {
+    impl FilterChainOptionsD3D11 => filter_chain_d3d11_opt_t {
+        0 => [use_deferred_context, force_no_mipmaps];
+    }
+}
+
+/// Options for each Direct3D 11 shader frame.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct frame_d3d11_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+    /// Whether or not to clear the history buffers.
+    pub clear_history: bool,
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
+    pub frame_direction: i32,
+}
+
+config_struct! {
+    impl FrameOptionsD3D11 => frame_d3d11_opt_t {
+        0 => [clear_history, frame_direction];
+    }
+}
+
 extern_fn! {
     /// Create the filter chain given the shader preset.
     ///
@@ -53,7 +98,7 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_d3d11_filter_chain_create(
         preset: *mut libra_shader_preset_t,
-        options: *const FilterChainOptionsD3D11,
+        options: *const MaybeUninit<filter_chain_d3d11_opt_t>,
         device: ManuallyDrop<ID3D11Device>,
         out: *mut MaybeUninit<libra_d3d11_filter_chain_t>
     ) {
@@ -67,13 +112,14 @@ extern_fn! {
         let options = if options.is_null() {
             None
         } else {
-            Some(unsafe { &*options })
+            Some(unsafe { options.read() })
         };
 
+        let options = options.map(FromUninit::from_uninit);
         let chain = librashader::runtime::d3d11::capi::FilterChainD3D11::load_from_preset(
             &device,
             *preset,
-            options,
+            options.as_ref(),
         )?;
 
         unsafe {
@@ -103,7 +149,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: ManuallyDrop<ID3D11RenderTargetView>,
         mvp: *const f32,
-        opt: *const FrameOptionsD3D11
+        opt: *const MaybeUninit<frame_d3d11_opt_t>
     ) mut |chain| {
         assert_some_ptr!(mut chain);
 
@@ -128,6 +174,8 @@ extern_fn! {
             },
             mvp,
         };
+
+        let opt = opt.map(FromUninit::from_uninit);
 
         let image = image.try_into()?;
         chain.frame(image, &viewport, frame_count, opt.as_ref())?;

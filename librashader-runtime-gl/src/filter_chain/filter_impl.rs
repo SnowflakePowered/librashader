@@ -107,7 +107,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
 
-        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.gl_version));
+        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.glsl_version));
 
         // initialize passes
         let filters = Self::init_passes(version, passes, &semantics)?;

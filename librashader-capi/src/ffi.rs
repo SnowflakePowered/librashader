@@ -58,7 +58,7 @@ macro_rules! ffi_body {
 }
 
 macro_rules! extern_fn {
-    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) $body:block) => {
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),* $(,)?) $body:block) => {
         ::paste::paste! {
             /// Function pointer definition for
             #[doc = ::std::stringify!($func_name)]
@@ -72,11 +72,11 @@ macro_rules! extern_fn {
         }
     };
 
-    ($(#[$($attrss:tt)*])* raw fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) $body:block) => {
+    ($(#[$($attrss:tt)*])* raw fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),* $(,)?) $body:block) => {
         ::paste::paste! {
             /// Function pointer definition for
             #[doc = ::std::stringify!($func_name)]
-            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)*) -> $crate::ctypes::libra_error_t;
+            pub type [<PFN_ $func_name>] = unsafe extern "C" fn($($arg_name: $arg_ty,)* ) -> $crate::ctypes::libra_error_t;
         }
 
         #[no_mangle]
@@ -86,7 +86,7 @@ macro_rules! extern_fn {
         }
     };
 
-    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) |$($ref_capture:ident),*|; mut |$($mut_capture:ident),*| $body:block) => {
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),* $(,)?) |$($ref_capture:ident),*|; mut |$($mut_capture:ident),*| $body:block) => {
         ::paste::paste! {
             /// Function pointer definition for
             #[doc = ::std::stringify!($func_name)]
@@ -100,7 +100,7 @@ macro_rules! extern_fn {
         }
     };
 
-    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) mut |$($mut_capture:ident),*| $body:block) => {
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),* $(,)?) mut |$($mut_capture:ident),*| $body:block) => {
         ::paste::paste! {
             /// Function pointer definition for
             #[doc = ::std::stringify!($func_name)]
@@ -113,7 +113,7 @@ macro_rules! extern_fn {
             $crate::ffi::ffi_body!(mut |$($mut_capture),*| $body)
         }
     };
-    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),*) |$($ref_capture:ident),*| $body:block) => {
+    ($(#[$($attrss:tt)*])* fn $func_name:ident ($($arg_name:ident : $arg_ty:ty),* $(,)?) |$($ref_capture:ident),*| $body:block) => {
         ::paste::paste! {
             /// Function pointer definition for
              #[doc = ::std::stringify!($func_name)]

@@ -1,4 +1,6 @@
-use crate::ctypes::{libra_gl_filter_chain_t, libra_shader_preset_t, libra_viewport_t};
+use crate::ctypes::{
+    config_struct, libra_gl_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::gl::{Framebuffer, GLImage};
@@ -12,6 +14,7 @@ pub use librashader::runtime::gl::capi::options::FilterChainOptionsGL;
 pub use librashader::runtime::gl::capi::options::FrameOptionsGL;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
+use crate::LIBRASHADER_API_VERSION;
 
 /// A GL function loader that librashader needs to be initialized with.
 pub type libra_gl_loader_t = unsafe extern "system" fn(*const c_char) -> *const c_void;
@@ -51,6 +54,45 @@ impl From<libra_source_image_gl_t> for GLImage {
     }
 }
 
+/// Options for each OpenGL shader frame.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct frame_gl_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+    /// Whether or not to clear the history buffers.
+    pub clear_history: bool,
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
+    pub frame_direction: i32,
+}
+
+config_struct! {
+    impl FrameOptionsGL => frame_gl_opt_t {
+        0 => [clear_history, frame_direction];
+    }
+}
+
+/// Options for filter chain creation.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct filter_chain_gl_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+    /// The GLSL version. Should be at least `330`.
+    pub glsl_version: u16,
+    /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
+    pub use_dsa: bool,
+    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
+    pub force_no_mipmaps: bool,
+}
+
+config_struct! {
+    impl FilterChainOptionsGL => filter_chain_gl_opt_t {
+        0 => [glsl_version, use_dsa, force_no_mipmaps];
+    }
+}
+
 extern_fn! {
     /// Initialize the OpenGL Context for librashader.
     ///
@@ -84,7 +126,7 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_gl_filter_chain_create(
         preset: *mut libra_shader_preset_t,
-        options: *const FilterChainOptionsGL,
+        options: *const MaybeUninit<filter_chain_gl_opt_t>,
         out: *mut MaybeUninit<libra_gl_filter_chain_t>
     ) {
         assert_non_null!(preset);
@@ -97,10 +139,11 @@ extern_fn! {
         let options = if options.is_null() {
             None
         } else {
-            Some(unsafe { &*options })
+            Some(unsafe { options.read() })
         };
 
-        let chain = librashader::runtime::gl::capi::FilterChainGL::load_from_preset(*preset, options)?;
+        let options = options.map(FromUninit::from_uninit);
+        let chain = librashader::runtime::gl::capi::FilterChainGL::load_from_preset(*preset, options.as_ref())?;
 
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
@@ -127,7 +170,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: libra_output_framebuffer_gl_t,
         mvp: *const f32,
-        opt: *const FrameOptionsGL
+        opt: *const MaybeUninit<frame_gl_opt_t>,
     ) mut |chain| {
         assert_some_ptr!(mut chain);
         let image: GLImage = image.into();
@@ -141,6 +184,8 @@ extern_fn! {
         } else {
             Some(unsafe { opt.read() })
         };
+
+        let opt = opt.map(FromUninit::from_uninit);
         let framebuffer = Framebuffer::new_from_raw(out.texture, out.handle, out.format, Size::new(viewport.width, viewport.height), 1);
         let viewport = Viewport {
             x: viewport.x,

@@ -1,6 +1,7 @@
 //! Binding types for the librashader C API.
 use crate::error::LibrashaderError;
 use librashader::presets::ShaderPreset;
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 /// A handle to a shader preset object.
@@ -44,3 +45,45 @@ pub struct libra_viewport_t {
     /// The height of the viewport framebuffer.
     pub height: u32,
 }
+
+pub(crate) trait FromUninit<T>
+where
+    Self: Sized,
+{
+    fn from_uninit(value: MaybeUninit<Self>) -> T;
+}
+
+macro_rules! config_set_field {
+    ($options:ident.$field:ident <- $ptr:ident) => {
+        $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+    };
+}
+
+macro_rules! config_version_set {
+    ($version:literal => [$($field:ident),+ $(,)?] ($options:ident <- $ptr:ident)) => {
+        let version = unsafe { ::std::ptr::addr_of!((*$ptr).version).read() };
+        #[allow(unused_comparisons)]
+        if version >= $version {
+            $($crate::ctypes::config_set_field!($options.$field <- $ptr);)+
+        }
+    }
+}
+
+macro_rules! config_struct {
+    (impl $rust:ty => $capi:ty {$($version:literal => [$($field:ident),+ $(,)?]);+ $(;)?}) => {
+        impl $crate::ctypes::FromUninit<$rust> for $capi {
+            fn from_uninit(value: ::std::mem::MaybeUninit<Self>) -> $rust {
+                let ptr = value.as_ptr();
+                let mut options = <$rust>::default();
+                $(
+                    $crate::ctypes::config_version_set!($version => [$($field),+] (options <- ptr));
+                )+
+                options
+            }
+        }
+    }
+}
+
+pub(crate) use config_set_field;
+pub(crate) use config_struct;
+pub(crate) use config_version_set;

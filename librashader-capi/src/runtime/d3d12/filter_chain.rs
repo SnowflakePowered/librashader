@@ -1,4 +1,6 @@
-use crate::ctypes::{libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_viewport_t};
+use crate::ctypes::{
+    config_struct, libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use std::ffi::c_char;
@@ -16,6 +18,7 @@ pub use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
 
 use librashader::runtime::d3d12::{D3D12InputImage, D3D12OutputView};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
+use crate::LIBRASHADER_API_VERSION;
 
 /// Direct3D 12 parameters for the source image.
 #[repr(C)]
@@ -39,6 +42,47 @@ pub struct libra_output_image_d3d12_t {
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
     /// The format of the image.
     pub format: DXGI_FORMAT,
+}
+
+/// Options for each Direct3D 12 shader frame.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct frame_d3d12_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+    /// Whether or not to clear the history buffers.
+    pub clear_history: bool,
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
+    pub frame_direction: i32,
+}
+
+config_struct! {
+    impl FrameOptionsD3D12 => frame_d3d12_opt_t {
+        0 => [clear_history, frame_direction];
+    }
+}
+
+/// Options for Direct3D11 filter chain creation.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct filter_chain_d3d12_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+
+    /// Force the HLSL shader pipeline. This may reduce shader compatibility.
+    pub force_hlsl_pipeline: bool,
+
+    /// Whether or not to explicitly disable mipmap
+    /// generation for intermediate passes regardless
+    /// of shader preset settings.
+    pub force_no_mipmaps: bool,
+}
+
+config_struct! {
+    impl FilterChainOptionsD3D12 => filter_chain_d3d12_opt_t {
+        0 =>  [force_hlsl_pipeline, force_no_mipmaps];
+    }
 }
 
 impl TryFrom<libra_source_image_d3d12_t> for D3D12InputImage {
@@ -69,7 +113,7 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_d3d12_filter_chain_create(
         preset: *mut libra_shader_preset_t,
-        options: *const FilterChainOptionsD3D12,
+        opt: *const MaybeUninit<filter_chain_d3d12_opt_t>,
         device: ManuallyDrop<ID3D12Device>,
         out: *mut MaybeUninit<libra_d3d12_filter_chain_t>
     ) {
@@ -80,16 +124,17 @@ extern_fn! {
             Box::from_raw(preset.unwrap().as_ptr())
         };
 
-        let options = if options.is_null() {
+        let opt = if opt.is_null() {
             None
         } else {
-            Some(unsafe { &*options })
+            Some(unsafe { opt.read() })
         };
 
+        let opt = opt.map(FromUninit::from_uninit);
         let chain = librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset(
             &device,
             *preset,
-            options,
+            opt.as_ref(),
         )?;
 
         unsafe {
@@ -122,7 +167,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: libra_output_image_d3d12_t,
         mvp: *const f32,
-        opt: *const FrameOptionsD3D12
+        options: *const MaybeUninit<frame_d3d12_opt_t>
     ) mut |chain| {
         assert_some_ptr!(mut chain);
 
@@ -132,12 +177,13 @@ extern_fn! {
             Some(<&[f32; 16]>::try_from(unsafe { slice::from_raw_parts(mvp, 16) }).unwrap())
         };
 
-        let opt = if opt.is_null() {
+        let options = if options.is_null() {
             None
         } else {
-            Some(unsafe { opt.read() })
+            Some(unsafe { options.read() })
         };
 
+        let options = options.map(FromUninit::from_uninit);
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
@@ -146,7 +192,7 @@ extern_fn! {
         };
 
         let image = image.try_into()?;
-        chain.frame(&command_list, image, &viewport, frame_count, opt.as_ref())?;
+        chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;
     }
 }
 

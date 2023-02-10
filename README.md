@@ -62,21 +62,11 @@ cargo post build --release --package librashader-capi
 This will output a `librashader.dll` or `librashader.so` in the target folder.
 
 ### C ABI Compatibility
-The recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
+As the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
 is important to ensure that updates to librashader do not break existing consumers.
 
-Pre-1.0, nothing is guaranteed to be stable, but the following APIs are unlikely to change their ABI unless otherwise indicated.
-
-* `libra_preset_*`
-* `libra_error_*`
-
-The following APIs, mostly runtime, are more likely to change their ABI before a 1.0 release as I experiment with what
-works best.
-
-* `libra_gl_*`
-* `libra_vk_*`
-* `libra_d3d11_*`
-* `libra_d3d12_*`
+As of `0.1.0-rc.3`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
+release without following semantic versioning.
 
 Linking against `librashader.h` directly is possible, but is not officially supported. You will need to ensure linkage
 parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`. The [corrosion](https://github.com/corrosion-rs/)
@@ -109,6 +99,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
 * For performance reasons, mipmaps are never generated for the input texture. In theory, this means that 
   presets with `mipmap_input0 = "true"` will not get a mipmapped input. In practice, no known shader presets set 
   `mipmap_input0 = "true"`. 
+
 ### Runtime specific differences
 * OpenGL
   * Copying of in-flight framebuffer contents to history is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.

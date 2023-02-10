@@ -67,3 +67,9 @@ pub mod presets;
 pub mod reflect;
 
 pub mod runtime;
+
+pub type LIBRASHADER_API_VERSION = usize;
+
+/// The current version of the librashader API/ABI.
+/// Pass this into `version` for config structs.
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 0;

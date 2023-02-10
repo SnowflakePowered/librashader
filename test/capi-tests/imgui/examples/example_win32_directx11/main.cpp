@@ -66,12 +66,12 @@ int main(int, char**)
     auto libra = librashader_load_instance();
     libra_shader_preset_t preset;
     auto error = libra.preset_create(
-        "../../../../../../slang-shaders/crt/crt-royale.slangp", &preset);
+        "../../../../../../slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp", &preset);
 
     libra_d3d11_filter_chain_t filter_chain;
     filter_chain_d3d11_opt_t opt = {
         .use_deferred_context = true,
-        .force_no_mipmaps = false,
+        .force_no_mipmaps = true,
     };
 
     libra.d3d11_filter_chain_create(&preset, &opt, g_pd3dDevice, &filter_chain);
@@ -181,8 +181,11 @@ int main(int, char**)
            framebufferTextureDesc.Width,
            framebufferTextureDesc.Height,
         };
-        frame_d3d11_opt_t frame_opt = {.clear_history = false,
-                                       .frame_direction = -1};
+        frame_d3d11_opt_t frame_opt = {
+            .version = 0,
+            .clear_history = false,
+            .frame_direction = -1
+        };
 
         libra.d3d11_filter_chain_frame(&filter_chain, frameCount, input, vp,
                                        g_mainRenderTargetView, NULL, &frame_opt);

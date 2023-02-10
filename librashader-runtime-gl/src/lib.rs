@@ -37,7 +37,7 @@ mod tests {
         let mut filter = FilterChainGL::load_from_path(
             "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsGL {
-                gl_version: 0,
+                glsl_version: 0,
                 use_dsa: false,
                 force_no_mipmaps: false,
             }),
@@ -54,7 +54,7 @@ mod tests {
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             "../test/slang-shaders/crt/crt-royale.slangp",
             Some(&FilterChainOptionsGL {
-                gl_version: 0,
+                glsl_version: 0,
                 use_dsa: true,
                 force_no_mipmaps: false,
             }),

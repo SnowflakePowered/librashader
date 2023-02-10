@@ -1,4 +1,6 @@
-use crate::ctypes::{libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t};
+use crate::ctypes::{
+    config_struct, libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t, FromUninit,
+};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::vk::{VulkanImage, VulkanInstance};
@@ -80,6 +82,46 @@ impl From<libra_device_vk_t> for VulkanInstance {
     }
 }
 
+/// Options for each OpenGL shader frame.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct frame_vk_opt_t {
+    /// The librashader API version.
+    pub version: usize,
+    /// Whether or not to clear the history buffers.
+    pub clear_history: bool,
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
+    pub frame_direction: i32,
+}
+
+config_struct! {
+    impl FrameOptionsVulkan => frame_vk_opt_t {
+        0 => [clear_history, frame_direction];
+    }
+}
+
+/// Options for filter chain creation.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct filter_chain_vk_opt_t {
+    /// The librashader API version.
+    pub version: usize,
+    /// The number of frames in flight to keep. If zero, defaults to three.
+    pub frames_in_flight: u32,
+    /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
+    pub force_no_mipmaps: bool,
+    /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
+    /// because render-pass mode will create new framebuffers per pass.
+    pub use_render_pass: bool,
+}
+
+config_struct! {
+    impl FilterChainOptionsVulkan => filter_chain_vk_opt_t {
+        0 => [frames_in_flight, force_no_mipmaps, use_render_pass];
+    }
+}
+
 extern_fn! {
     /// Create the filter chain given the shader preset.
     ///
@@ -96,7 +138,7 @@ extern_fn! {
     fn libra_vk_filter_chain_create(
         vulkan: libra_device_vk_t,
         preset: *mut libra_shader_preset_t,
-        options: *const FilterChainOptionsVulkan,
+        options: *const MaybeUninit<filter_chain_vk_opt_t>,
         out: *mut MaybeUninit<libra_vk_filter_chain_t>
     ) {
         assert_non_null!(preset);
@@ -109,12 +151,13 @@ extern_fn! {
         let options = if options.is_null() {
             None
         } else {
-            Some(unsafe { &*options })
+            Some(unsafe { options.read() })
         };
 
         let vulkan: VulkanInstance = vulkan.into();
+        let options = options.map(FromUninit::from_uninit);
 
-        let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(vulkan, *preset, options)?;
+        let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(vulkan, *preset, options.as_ref())?;
 
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
@@ -147,7 +190,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: libra_output_image_vk_t,
         mvp: *const f32,
-        opt: *const FrameOptionsVulkan
+        opt: *const MaybeUninit<frame_vk_opt_t>
     ) mut |chain| {
         assert_some_ptr!(mut chain);
         let image: VulkanImage = image.into();
@@ -166,6 +209,7 @@ extern_fn! {
         } else {
             Some(unsafe { opt.read() })
         };
+        let opt = opt.map(FromUninit::from_uninit);
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,

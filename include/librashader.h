@@ -138,15 +138,21 @@ typedef struct libra_preset_param_list_t {
 typedef const void *(*libra_gl_loader_t)(const char*);
 #endif
 
+typedef size_t LIBRASHADER_API_VERSION;
+
+#if defined(LIBRA_RUNTIME_OPENGL)
 /// Options for filter chain creation.
 typedef struct filter_chain_gl_opt_t {
+  /// The librashader API version.
+  LIBRASHADER_API_VERSION version;
   /// The GLSL version. Should be at least `330`.
-  uint16_t gl_version;
+  uint16_t glsl_version;
   /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
   bool use_dsa;
   /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
   bool force_no_mipmaps;
 } filter_chain_gl_opt_t;
+#endif
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// A handle to a OpenGL filter chain.
@@ -191,14 +197,18 @@ typedef struct libra_output_framebuffer_gl_t {
 } libra_output_framebuffer_gl_t;
 #endif
 
+#if defined(LIBRA_RUNTIME_OPENGL)
 /// Options for each OpenGL shader frame.
 typedef struct frame_gl_opt_t {
+  /// The librashader API version.
+  LIBRASHADER_API_VERSION version;
   /// Whether or not to clear the history buffers.
   bool clear_history;
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
 } frame_gl_opt_t;
+#endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 /// Handles required to instantiate vulkan
@@ -217,8 +227,11 @@ typedef struct libra_device_vk_t {
 } libra_device_vk_t;
 #endif
 
+#if defined(LIBRA_RUNTIME_VULKAN)
 /// Options for filter chain creation.
 typedef struct filter_chain_vk_opt_t {
+  /// The librashader API version.
+  size_t version;
   /// The number of frames in flight to keep. If zero, defaults to three.
   uint32_t frames_in_flight;
   /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
@@ -227,6 +240,7 @@ typedef struct filter_chain_vk_opt_t {
   /// because render-pass mode will create new framebuffers per pass.
   bool use_render_pass;
 } filter_chain_vk_opt_t;
+#endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 /// A handle to a Vulkan filter chain.
@@ -257,17 +271,24 @@ typedef struct libra_output_image_vk_t {
 } libra_output_image_vk_t;
 #endif
 
-/// Options for each Vulkan shader frame.
+#if defined(LIBRA_RUNTIME_VULKAN)
+/// Options for each OpenGL shader frame.
 typedef struct frame_vk_opt_t {
+  /// The librashader API version.
+  size_t version;
   /// Whether or not to clear the history buffers.
   bool clear_history;
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
 } frame_vk_opt_t;
+#endif
 
-/// Options for Direct3D11 filter chain creation.
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Options for Direct3D 11 filter chain creation.
 typedef struct filter_chain_d3d11_opt_t {
+  /// The librashader API version.
+  LIBRASHADER_API_VERSION version;
   /// Use a deferred context to record shader rendering state.
   ///
   /// The deferred context will be executed on the immediate context
@@ -277,6 +298,7 @@ typedef struct filter_chain_d3d11_opt_t {
   /// generation regardless of shader preset settings.
   bool force_no_mipmaps;
 } filter_chain_d3d11_opt_t;
+#endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
 /// A handle to a Direct3D 11 filter chain.
@@ -295,17 +317,24 @@ typedef struct libra_source_image_d3d11_t {
 } libra_source_image_d3d11_t;
 #endif
 
-/// Options for each Direct3D11 shader frame.
+#if defined(LIBRA_RUNTIME_D3D11)
+/// Options for each Direct3D 11 shader frame.
 typedef struct frame_d3d11_opt_t {
+  /// The librashader API version.
+  LIBRASHADER_API_VERSION version;
   /// Whether or not to clear the history buffers.
   bool clear_history;
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
 } frame_d3d11_opt_t;
+#endif
 
+#if defined(LIBRA_RUNTIME_D3D12)
 /// Options for Direct3D11 filter chain creation.
 typedef struct filter_chain_d3d12_opt_t {
+  /// The librashader API version.
+  LIBRASHADER_API_VERSION version;
   /// Force the HLSL shader pipeline. This may reduce shader compatibility.
   bool force_hlsl_pipeline;
   /// Whether or not to explicitly disable mipmap
@@ -313,6 +342,7 @@ typedef struct filter_chain_d3d12_opt_t {
   /// of shader preset settings.
   bool force_no_mipmaps;
 } filter_chain_d3d12_opt_t;
+#endif
 
 #if defined(LIBRA_RUNTIME_D3D12)
 /// A handle to a Direct3D 12 filter chain.
@@ -345,14 +375,18 @@ typedef struct libra_output_image_d3d12_t {
 } libra_output_image_d3d12_t;
 #endif
 
-/// Options for each Direct3D11 shader frame.
+#if defined(LIBRA_RUNTIME_D3D12)
+/// Options for each Direct3D 12 shader frame.
 typedef struct frame_d3d12_opt_t {
+  /// The librashader API version.
+  LIBRASHADER_API_VERSION version;
   /// Whether or not to clear the history buffers.
   bool clear_history;
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
 } frame_d3d12_opt_t;
+#endif
 
 /// Function pointer definition for
 ///libra_preset_create
@@ -583,7 +617,7 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_free)(libra_d3d11_filter_ch
 /// Function pointer definition for
 ///libra_d3d12_filter_chain_create
 typedef libra_error_t (*PFN_libra_d3d12_filter_chain_create)(libra_shader_preset_t *preset,
-                                                             const struct filter_chain_d3d12_opt_t *options,
+                                                             const struct filter_chain_d3d12_opt_t *opt,
                                                              const ID3D12Device * device,
                                                              libra_d3d12_filter_chain_t *out);
 #endif
@@ -598,7 +632,7 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_frame)(libra_d3d12_filter_c
                                                             struct libra_viewport_t viewport,
                                                             struct libra_output_image_d3d12_t out,
                                                             const float *mvp,
-                                                            const struct frame_d3d12_opt_t *opt);
+                                                            const struct frame_d3d12_opt_t *options);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D12)
@@ -636,6 +670,10 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_get_active_pass_count)(libr
 ///libra_d3d12_filter_chain_free
 typedef libra_error_t (*PFN_libra_d3d12_filter_chain_free)(libra_d3d12_filter_chain_t *chain);
 #endif
+
+/// The current version of the librashader API/ABI.
+/// Pass this into `version` for config structs.
+#define LIBRASHADER_CURRENT_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -1049,7 +1087,7 @@ libra_error_t libra_d3d11_filter_chain_free(libra_d3d11_filter_chain_t *chain);
 /// - `device` must not be null.
 /// - `out` must be aligned, but may be null, invalid, or uninitialized.
 libra_error_t libra_d3d12_filter_chain_create(libra_shader_preset_t *preset,
-                                              const struct filter_chain_d3d12_opt_t *options,
+                                              const struct filter_chain_d3d12_opt_t *opt,
                                               const ID3D12Device * device,
                                               libra_d3d12_filter_chain_t *out);
 #endif
@@ -1075,7 +1113,7 @@ libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
                                              struct libra_viewport_t viewport,
                                              struct libra_output_image_d3d12_t out,
                                              const float *mvp,
-                                             const struct frame_d3d12_opt_t *opt);
+                                             const struct frame_d3d12_opt_t *options);
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D12)
