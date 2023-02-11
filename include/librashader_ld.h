@@ -29,12 +29,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // Uncomment the following defines to activate runtimes.
  
-//#define LIBRA_RUNTIME_OPENGL
-//#define LIBRA_RUNTIME_VULKAN
-//
-//#if defined(_WIN32)
-//#define LIBRA_RUNTIME_D3D11
-//#endif
+// #define LIBRA_RUNTIME_OPENGL
+// #define LIBRA_RUNTIME_VULKAN
+
+// #if defined(_WIN32)
+// #define LIBRA_RUNTIME_D3D11
+// #define LIBRA_RUNTIME_D3D12
+// #endif
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -153,8 +154,15 @@ libra_error_t __librashader__noop_gl_filter_chain_get_active_pass_count(
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 libra_error_t __librashader__noop_vk_filter_chain_create(
-    struct libra_device_vk_t vulkan, libra_shader_preset_t *preset,
+    libra_shader_preset_t *preset, struct libra_device_vk_t vulkan, 
     const struct filter_chain_vk_opt_t *options, libra_vk_filter_chain_t *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_vk_filter_chain_create_deferred(
+    libra_shader_preset_t *preset, struct libra_device_vk_t vulkan,
+    VkCommandBuffer command_buffer, const struct filter_chain_vk_opt_t *options, 
+    libra_vk_filter_chain_t *out) {
     return NULL;
 }
 
@@ -194,8 +202,15 @@ libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
 
 #if defined(LIBRA_RUNTIME_D3D11)
 libra_error_t __librashader__noop_d3d11_filter_chain_create(
-    libra_shader_preset_t *preset,
-    const struct filter_chain_d3d11_opt_t *options, ID3D11Device *device,
+    libra_shader_preset_t *preset, ID3D11Device *device,
+    const struct filter_chain_d3d11_opt_t *options, 
+    libra_d3d11_filter_chain_t *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_d3d11_filter_chain_create_deferred(
+    libra_shader_preset_t *preset, ID3D11Device *device, ID3D11DeviceContext *device_context,
+    const struct filter_chain_d3d11_opt_t *options,
     libra_d3d11_filter_chain_t *out) {
     return NULL;
 }
@@ -238,8 +253,16 @@ libra_error_t __librashader__noop_d3d11_filter_chain_get_active_pass_count(
 
 #if defined(LIBRA_RUNTIME_D3D12)
 libra_error_t __librashader__noop_d3d12_filter_chain_create(
-    libra_shader_preset_t *preset,
-    const struct filter_chain_d3d12_opt_t *options, ID3D12Device *device,
+    libra_shader_preset_t *preset, ID3D12Device *device,
+    const struct filter_chain_d3d12_opt_t *options,
+    libra_d3d12_filter_chain_t *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_d3d12_filter_chain_create_deferred(
+    libra_shader_preset_t *preset, ID3D12Device *device,
+    ID3D12GraphicsCommandList *command_list,
+    const struct filter_chain_d3d12_opt_t *options,
     libra_d3d12_filter_chain_t *out) {
     return NULL;
 }
@@ -505,6 +528,30 @@ typedef struct libra_instance_t {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     PFN_libra_vk_filter_chain_create vk_filter_chain_create;
 
+    /// Create the filter chain given the shader preset deferring and GPU-side
+    /// initialization to the caller. This function therefore requires no
+    /// external synchronization of the device queue.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - The handles provided in `vulkan` must be valid for the command buffers
+    /// that
+    ///   `libra_vk_filter_chain_frame` will write to. Namely, the VkDevice must
+    ///   have been
+    ///    created with the `VK_KHR_dynamic_rendering` extension.
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    ///
+    /// The provided command buffer must be ready for recording and contain no
+    /// prior commands. The caller is responsible for ending the command buffer
+    /// and immediately submitting it to a graphics queue. The command buffer
+    /// must be completely executed before calling
+    /// `libra_vk_filter_chain_frame`.
+    PFN_libra_vk_filter_chain_create_deferred vk_filter_chain_create_deferred;
+
     /// Records rendering commands for a frame with the given parameters for the
     /// given filter chain
     /// to the input command buffer.
@@ -582,6 +629,39 @@ typedef struct libra_instance_t {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     PFN_libra_d3d11_filter_chain_create d3d11_filter_chain_create;
 
+    /// Create the filter chain given the shader preset, deferring and GPU-side
+    /// initialization
+    /// to the caller. This function is therefore requires no external
+    /// synchronization of the immediate context, as long as the immediate
+    /// context is not used as the input context, nor of the device, as long as
+    /// the device is not single-threaded only.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `device` must not be null.
+    /// - `device_context` not be null.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    ///
+    /// The provided context must either be immediate, or immediately submitted
+    /// after this function returns, **before drawing frames**, or lookup
+    /// textures will fail to load and the filter chain will be in an invalid
+    /// state.
+    ///
+    /// If the context is deferred, it must be ready for command recording, and
+    /// have no prior commands recorded. No commands shall be recorded after,
+    /// the caller must immediately call
+    /// [`FinishCommandList`](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-finishcommandlist)
+    /// and execute the command list on the immediate context after this
+    /// function returns.
+    ///
+    /// If the context is immediate, then access to the immediate context
+    /// requires external synchronization.
+    PFN_libra_d3d11_filter_chain_create_deferred d3d11_filter_chain_create_deferred;
+
     /// Draw a frame with the given parameters for the given filter chain.
     ///
     /// ## Safety
@@ -651,6 +731,27 @@ typedef struct libra_instance_t {
     /// - `options` must be either null, or valid and aligned.
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     PFN_libra_d3d12_filter_chain_create d3d12_filter_chain_create;
+
+    /// Create the filter chain given the shader preset deferring and GPU-side
+    /// initialization
+    /// to the caller. This function therefore requires no external
+    /// synchronization of the device queue.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `device` must not be null.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    /// - `cmd` must not be null.
+    ///
+    /// The provided command list must be ready for recording and contain no
+    /// prior commands. The caller is responsible for ending the command list
+    /// and immediately submitting it to a graphics queue. The command list must
+    /// be completely executed before calling `libra_d3d12_filter_chain_frame`
+    PFN_libra_d3d12_filter_chain_create_deferred d3d12_filter_chain_create_deferred;
 
     /// Draw a frame with the given parameters for the given filter chain.
     ///
@@ -747,6 +848,7 @@ libra_instance_t __librashader_make_null_instance() {
 
 #if defined(LIBRA_RUNTIME_VULKAN)
         .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
+        .vk_filter_chain_create_deferred = __librashader__noop_vk_filter_chain_create_deferred,
         .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
         .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
         .vk_filter_chain_get_active_pass_count =
@@ -762,6 +864,8 @@ libra_instance_t __librashader_make_null_instance() {
 #if defined(LIBRA_RUNTIME_D3D11)
         .d3d11_filter_chain_create =
             __librashader__noop_d3d11_filter_chain_create,
+        .d3d11_filter_chain_create_deferred =
+            __librashader__noop_d3d11_filter_chain_create_deferred,
         .d3d11_filter_chain_frame =
             __librashader__noop_d3d11_filter_chain_frame,
         .d3d11_filter_chain_free = __librashader__noop_d3d11_filter_chain_free,
@@ -778,6 +882,8 @@ libra_instance_t __librashader_make_null_instance() {
 #if defined(LIBRA_RUNTIME_D3D12)
         .d3d12_filter_chain_create =
             __librashader__noop_d3d12_filter_chain_create,
+        .d3d12_filter_chain_create_deferred =
+            __librashader__noop_d3d12_filter_chain_create_deferred,
         .d3d12_filter_chain_frame =
             __librashader__noop_d3d12_filter_chain_frame,
         .d3d12_filter_chain_free = __librashader__noop_d3d12_filter_chain_free,
@@ -849,6 +955,7 @@ libra_instance_t librashader_load_instance() {
 
 #if defined(LIBRA_RUNTIME_VULKAN)
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_create_deferred);
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_free);
     _LIBRASHADER_ASSIGN(librashader, instance,
@@ -863,6 +970,7 @@ libra_instance_t librashader_load_instance() {
 
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_create_deferred);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_free);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_get_param);
@@ -875,6 +983,7 @@ libra_instance_t librashader_load_instance() {
 
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12)
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_create_deferred);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_free);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_get_param);

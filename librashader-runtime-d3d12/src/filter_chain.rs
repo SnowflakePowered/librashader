@@ -141,19 +141,19 @@ impl Drop for FrameResiduals {
 impl FilterChainD3D12 {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        device: &ID3D12Device,
         path: impl AsRef<Path>,
+        device: &ID3D12Device,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(device, preset, options)
+        Self::load_from_preset(preset, device, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
-        device: &ID3D12Device,
         preset: ShaderPreset,
+        device: &ID3D12Device,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         unsafe {
@@ -173,7 +173,7 @@ impl FilterChainD3D12 {
             let fence_event = CreateEventA(None, false, false, None)?;
             let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
 
-            let filter_chain = Self::load_from_preset_deferred(device, preset, &cmd, options)?;
+            let filter_chain = Self::load_from_preset_deferred(preset, device, &cmd, options)?;
 
             cmd.Close()?;
             queue.ExecuteCommandLists(&[cmd.cast()?]);
@@ -197,8 +197,8 @@ impl FilterChainD3D12 {
     /// The caller is responsible for ending the command list and immediately submitting it to a
     /// graphics queue. The command list must be completely executed before calling [`frame`](Self::frame).
     pub unsafe fn load_from_preset_deferred(
-        device: &ID3D12Device,
         preset: ShaderPreset,
+        device: &ID3D12Device,
         cmd: &ID3D12GraphicsCommandList,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {

@@ -220,8 +220,8 @@ impl Drop for FrameResiduals {
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path<V, E>(
-        vulkan: V,
         path: impl AsRef<Path>,
+        vulkan: V,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan>
     where
@@ -230,13 +230,13 @@ impl FilterChainVulkan {
     {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(vulkan, preset, options)
+        Self::load_from_preset(preset, vulkan, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset<V, E>(
-        vulkan: V,
         preset: ShaderPreset,
+        vulkan: V,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan>
     where
@@ -278,8 +278,8 @@ impl FilterChainVulkan {
 
         let filter_chain = unsafe {
             Self::load_from_preset_deferred::<_, Infallible>(
-                vulkan,
                 preset,
+                vulkan,
                 command_buffer,
                 options,
             )?
@@ -308,8 +308,8 @@ impl FilterChainVulkan {
     /// The caller is responsible for ending the command buffer and immediately submitting it to a
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub unsafe fn load_from_preset_deferred<V, E>(
-        vulkan: V,
         preset: ShaderPreset,
+        vulkan: V,
         cmd: vk::CommandBuffer,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan>

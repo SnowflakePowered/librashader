@@ -136,8 +136,8 @@ extern_fn! {
     /// - `options` must be either null, or valid and aligned.
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_vk_filter_chain_create(
-        vulkan: libra_device_vk_t,
         preset: *mut libra_shader_preset_t,
+        vulkan: libra_device_vk_t,
         options: *const MaybeUninit<filter_chain_vk_opt_t>,
         out: *mut MaybeUninit<libra_vk_filter_chain_t>
     ) {
@@ -157,7 +157,63 @@ extern_fn! {
         let vulkan: VulkanInstance = vulkan.into();
         let options = options.map(FromUninit::from_uninit);
 
-        let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(vulkan, *preset, options.as_ref())?;
+        let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(*preset, vulkan, options.as_ref())?;
+
+        unsafe {
+            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                chain,
+            )))))
+        }
+    }
+}
+
+extern_fn! {
+    /// Create the filter chain given the shader preset deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - The handles provided in `vulkan` must be valid for the command buffers that
+    ///   `libra_vk_filter_chain_frame` will write to. Namely, the VkDevice must have been
+    ///    created with the `VK_KHR_dynamic_rendering` extension.
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    ///
+    /// The provided command buffer must be ready for recording and contain no prior commands.
+    /// The caller is responsible for ending the command buffer and immediately submitting it to a
+    /// graphics queue. The command buffer must be completely executed before calling `libra_vk_filter_chain_frame`.
+    fn libra_vk_filter_chain_create_deferred(
+        preset: *mut libra_shader_preset_t,
+        vulkan: libra_device_vk_t,
+        command_buffer: vk::CommandBuffer,
+        options: *const MaybeUninit<filter_chain_vk_opt_t>,
+        out: *mut MaybeUninit<libra_vk_filter_chain_t>
+    ) {
+        assert_non_null!(preset);
+        let preset = unsafe {
+            let preset_ptr = &mut *preset;
+            let preset = preset_ptr.take();
+            Box::from_raw(preset.unwrap().as_ptr())
+        };
+
+        let options = if options.is_null() {
+            None
+        } else {
+            Some(unsafe { options.read() })
+        };
+
+        let vulkan: VulkanInstance = vulkan.into();
+        let options = options.map(FromUninit::from_uninit);
+
+        let chain = unsafe {
+            librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset_deferred(*preset,
+                vulkan,
+                command_buffer,
+                options.as_ref())?
+        };
 
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(

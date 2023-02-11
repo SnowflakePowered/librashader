@@ -290,7 +290,7 @@ pub mod d3d11_hello_triangle {
             image: Option<Image>,
         ) -> Result<Self> {
             let (dxgi_factory, device, context) = create_device()?;
-            let filter = FilterChainD3D11::load_from_path(&device, filter, filter_options).unwrap();
+            let filter = FilterChainD3D11::load_from_path(filter, &device, filter_options).unwrap();
             let lut = if let Some(image) = image {
                 let lut = LutTexture::new(
                     &device,

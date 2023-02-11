@@ -141,7 +141,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 
     libra_d3d11_filter_chain_t filter_chain;
 
-    libra.d3d11_filter_chain_create(&preset, NULL, d3d11Device,
+    libra.d3d11_filter_chain_create(&preset, d3d11Device, NULL,
                                     &filter_chain);
 
     // Create Swap Chain

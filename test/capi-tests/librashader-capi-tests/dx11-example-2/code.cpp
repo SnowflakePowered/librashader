@@ -71,7 +71,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         .force_no_mipmaps = false,
     };
 
-    libra.d3d11_filter_chain_create(&preset, &opt, device, &filter_chain);
+    libra.d3d11_filter_chain_create(&preset, device, &opt, &filter_chain);
     ///////////////////////////////////////////////////////////////////////////////////////////////
     IDXGIDevice1* dxgiDevice;
 

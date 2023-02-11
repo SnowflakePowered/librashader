@@ -74,7 +74,8 @@ int main(int, char**)
         .force_no_mipmaps = false,
     };
 
-    libra.d3d11_filter_chain_create(&preset, &opt, g_pd3dDevice, &filter_chain);
+    libra.d3d11_filter_chain_create_deferred(
+        &preset, g_pd3dDevice, g_pd3dDeviceContext, & opt, &filter_chain);
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.

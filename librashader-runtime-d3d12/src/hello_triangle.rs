@@ -287,7 +287,7 @@ pub mod d3d12_hello_triangle {
                 }
             }
 
-            let filter = FilterChainD3D12::load_from_path(&device, filter, None).unwrap();
+            let filter = FilterChainD3D12::load_from_path(filter, &device, None).unwrap();
 
             Ok(Sample {
                 dxgi_factory,

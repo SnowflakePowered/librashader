@@ -92,8 +92,8 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_d3d11_filter_chain_create(
         preset: *mut libra_shader_preset_t,
-        options: *const MaybeUninit<filter_chain_d3d11_opt_t>,
         device: ManuallyDrop<ID3D11Device>,
+        options: *const MaybeUninit<filter_chain_d3d11_opt_t>,
         out: *mut MaybeUninit<libra_d3d11_filter_chain_t>
     ) {
         assert_non_null!(preset);
@@ -111,10 +111,73 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         let chain = librashader::runtime::d3d11::capi::FilterChainD3D11::load_from_preset(
-            &device,
             *preset,
+            &device,
             options.as_ref(),
         )?;
+
+        unsafe {
+            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                chain,
+            )))))
+        }
+    }
+}
+
+extern_fn! {
+    /// Create the filter chain given the shader preset, deferring and GPU-side initialization
+    /// to the caller. This function is therefore requires no external synchronization of the
+    /// immediate context, as long as the immediate context is not used as the input context,
+    /// nor of the device, as long as the device is not single-threaded only.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `device` must not be null.
+    /// - `device_context` not be null.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    ///
+    /// The provided context must either be immediate, or immediately submitted after this function
+    /// returns, **before drawing frames**, or lookup textures will fail to load and the filter chain
+    /// will be in an invalid state.
+    ///
+    /// If the context is deferred, it must be ready for command recording, and have no prior commands
+    /// recorded. No commands shall be recorded after, the caller must immediately call [`FinishCommandList`](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-finishcommandlist)
+    /// and execute the command list on the immediate context after this function returns.
+    ///
+    /// If the context is immediate, then access to the immediate context requires external synchronization.
+    fn libra_d3d11_filter_chain_create_deferred(
+        preset: *mut libra_shader_preset_t,
+        device: ManuallyDrop<ID3D11Device>,
+        device_context: ManuallyDrop<ID3D11DeviceContext>,
+        options: *const MaybeUninit<filter_chain_d3d11_opt_t>,
+        out: *mut MaybeUninit<libra_d3d11_filter_chain_t>
+    ) {
+        assert_non_null!(preset);
+        let preset = unsafe {
+            let preset_ptr = &mut *preset;
+            let preset = preset_ptr.take();
+            Box::from_raw(preset.unwrap().as_ptr())
+        };
+
+        let options = if options.is_null() {
+            None
+        } else {
+            Some(unsafe { options.read() })
+        };
+
+        let options = options.map(FromUninit::from_uninit);
+        let chain = unsafe {
+            librashader::runtime::d3d11::capi::FilterChainD3D11::load_from_preset_deferred(
+                *preset,
+                &device,
+                &device_context,
+                options.as_ref(),
+            )?
+        };
 
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
@@ -162,7 +225,7 @@ extern_fn! {
         viewport: libra_viewport_t,
         out: ManuallyDrop<ID3D11RenderTargetView>,
         mvp: *const f32,
-        opt: *const MaybeUninit<frame_d3d11_opt_t>
+        options: *const MaybeUninit<frame_d3d11_opt_t>
     ) mut |chain| {
         assert_some_ptr!(mut chain);
 
@@ -172,10 +235,10 @@ extern_fn! {
             Some(<&[f32; 16]>::try_from(unsafe { slice::from_raw_parts(mvp, 16) }).unwrap())
         };
 
-        let opt = if opt.is_null() {
+        let options = if options.is_null() {
             None
         } else {
-            Some(unsafe { opt.read() })
+            Some(unsafe { options.read() })
         };
 
         let viewport = Viewport {
@@ -188,10 +251,10 @@ extern_fn! {
             mvp,
         };
 
-        let opt = opt.map(FromUninit::from_uninit);
+        let options = options.map(FromUninit::from_uninit);
 
         let image = image.try_into()?;
-        chain.frame(device_context.as_deref(), image, &viewport, frame_count, opt.as_ref())?;
+        chain.frame(device_context.as_deref(), image, &viewport, frame_count, options.as_ref())?;
     }
 }
 

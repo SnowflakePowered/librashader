@@ -76,23 +76,23 @@ pub(crate) struct FilterCommon {
 impl FilterChainD3D11 {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
-        device: &ID3D11Device,
         path: impl AsRef<Path>,
+        device: &ID3D11Device,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(device, preset, options)
+        Self::load_from_preset(preset, device, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
-        device: &ID3D11Device,
         preset: ShaderPreset,
+        device: &ID3D11Device,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
         let immediate_context = unsafe { device.GetImmediateContext()? };
-        unsafe { Self::load_from_preset_deferred(device, preset, &immediate_context, options) }
+        unsafe { Self::load_from_preset_deferred(preset, device, &immediate_context, options) }
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
@@ -111,8 +111,8 @@ impl FilterChainD3D11 {
     ///
     /// If the context is immediate, then access to the immediate context requires external synchronization.
     pub unsafe fn load_from_preset_deferred(
-        device: &ID3D11Device,
         preset: ShaderPreset,
+        device: &ID3D11Device,
         ctx: &ID3D11DeviceContext,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
