@@ -21,10 +21,8 @@ A basic example of using `librashader_ld.h` to load a shader preset.
 
 libra_gl_filter_chain_t load_gl_filter_chain(libra_gl_loader_t opengl, const char *preset_path) {
   libra_instance_t librashader = librashader_load_instance();
-
-  // If the instance ABI version is 0, then either librashader is not found, or 
-  // the ABI is incompatible.
-  if (librashader.instance_abi_version() == 0) {
+  
+  if (!librashader.instance_loaded) {
     std::cout << "Could not load librashader\n";
     return NULL;
   }

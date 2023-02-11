@@ -84,6 +84,7 @@ int32_t __librashader__noop_error_free_string(char **out) { return 1; }
 
 libra_error_t __librashader__noop_preset_create(const char *filename,
                                                 libra_shader_preset_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -119,6 +120,7 @@ libra_error_t __librashader__noop_gl_init_context(libra_gl_loader_t loader) {
 libra_error_t __librashader__noop_gl_filter_chain_create(
     libra_shader_preset_t *preset, const struct filter_chain_gl_opt_t *options,
     libra_gl_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -160,6 +162,7 @@ libra_error_t __librashader__noop_gl_filter_chain_get_active_pass_count(
 libra_error_t __librashader__noop_vk_filter_chain_create(
     libra_shader_preset_t *preset, struct libra_device_vk_t vulkan, 
     const struct filter_chain_vk_opt_t *options, libra_vk_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -167,6 +170,7 @@ libra_error_t __librashader__noop_vk_filter_chain_create_deferred(
     libra_shader_preset_t *preset, struct libra_device_vk_t vulkan,
     VkCommandBuffer command_buffer, const struct filter_chain_vk_opt_t *options, 
     libra_vk_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -209,6 +213,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_create(
     libra_shader_preset_t *preset, ID3D11Device *device,
     const struct filter_chain_d3d11_opt_t *options, 
     libra_d3d11_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -216,6 +221,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_create_deferred(
     libra_shader_preset_t *preset, ID3D11Device *device, ID3D11DeviceContext *device_context,
     const struct filter_chain_d3d11_opt_t *options,
     libra_d3d11_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -260,6 +266,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_create(
     libra_shader_preset_t *preset, ID3D12Device *device,
     const struct filter_chain_d3d12_opt_t *options,
     libra_d3d12_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -268,6 +275,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_create_deferred(
     ID3D12GraphicsCommandList *command_list,
     const struct filter_chain_d3d12_opt_t *options,
     libra_d3d12_filter_chain_t *out) {
+    *out = NULL;
     return NULL;
 }
 
@@ -319,6 +327,10 @@ typedef struct libra_instance_t {
 
     /// Load a preset.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety
     ///  - `filename` must be either null or a valid, aligned pointer to a
     ///  string path to the shader preset.
@@ -451,7 +463,7 @@ typedef struct libra_instance_t {
     /// Initialize the OpenGL Context for librashader.
     ///
     /// ## Safety
-    /// Attempting to create a filter chain will fail.
+    /// Attempting to create a filter chain will fail if the context is not initialized.
     ///
     /// Reinitializing the OpenGL context with a different loader immediately
     /// invalidates previous filter chain objects, and drawing with them causes
@@ -463,6 +475,10 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -532,6 +548,10 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety:
     /// - The handles provided in `vulkan` must be valid for the command buffers
     /// that
@@ -550,6 +570,10 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety:
     /// - The handles provided in `vulkan` must be valid for the command buffers
     /// that
@@ -638,6 +662,10 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -654,6 +682,10 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -741,6 +773,10 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    /// 
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -755,6 +791,9 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
+    /// If this function is not loaded, `out` will unconditionally be set to null. 
+    /// If this function returns an error, the state of `out` is unspecified.
+    /// 
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -824,6 +863,25 @@ typedef struct libra_instance_t {
     /// - `param_name` must be either null or a null terminated string.
     PFN_libra_d3d12_filter_chain_set_param d3d12_filter_chain_set_param;
 #endif
+
+    /// Helper flag for if the librashader instance was loaded.
+    ///
+    /// This flag is not indicative of whether any functions were loaded
+    /// properly or not. The flag is true immediately after the instance
+    /// was created with librashader_load_instance if and only if:
+    /// 
+    /// 1. A librashader library was found in the search path.
+    /// 2. The ABI version of the librashader library in the search path is compatible.
+    /// 
+    /// This flag can only be relied upon when checked immediately after
+    /// librashader_load_instance as there is no protection against mutating
+    /// this flag.
+    /// 
+    /// Regardless of the state of this flag, a librashader instance created
+    /// with librashader_load_instance is always safe to call. An instance
+    /// that fails to load is still valid to call as long as safety invariants
+    /// are maintained. However, an unloaded function will be a no-op.
+    bool instance_loaded;
 } libra_instance_t;
 
 
@@ -913,7 +971,8 @@ libra_instance_t __librashader_make_null_instance() {
             __librashader__noop_d3d12_filter_chain_get_param,
         .d3d12_filter_chain_set_param =
             __librashader__noop_d3d12_filter_chain_set_param,
-#endif             
+#endif
+        .instance_loaded = false,
     };
 }
 
@@ -1019,6 +1078,7 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN(librashader, instance,
                         d3d12_filter_chain_set_active_pass_count);
 #endif
+    instance.instance_loaded = true;
     return instance;
 }
 #else
