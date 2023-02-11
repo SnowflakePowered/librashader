@@ -28,6 +28,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
+use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -218,27 +219,109 @@ impl Drop for FrameResiduals {
 
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(
-        vulkan: impl TryInto<VulkanObjects, Error = FilterChainError>,
+    pub fn load_from_path<V, E>(
+        vulkan: V,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsVulkan>,
-    ) -> error::Result<FilterChainVulkan> {
+    ) -> error::Result<FilterChainVulkan>
+    where
+        V: TryInto<VulkanObjects, Error = E>,
+        FilterChainError: From<E>,
+    {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
         Self::load_from_preset(vulkan, preset, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(
-        vulkan: impl TryInto<VulkanObjects, Error = FilterChainError>,
+    pub fn load_from_preset<V, E>(
+        vulkan: V,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsVulkan>,
-    ) -> error::Result<FilterChainVulkan> {
+    ) -> error::Result<FilterChainVulkan>
+    where
+        V: TryInto<VulkanObjects, Error = E>,
+        FilterChainError: From<E>,
+    {
+        let vulkan = vulkan.try_into().map_err(|e| e.into())?;
+        let device = Arc::clone(&vulkan.device);
+        let queue = vulkan.queue.clone();
+
+        let command_pool = unsafe {
+            device.create_command_pool(
+                &vk::CommandPoolCreateInfo::builder()
+                    .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+                    .build(),
+                None,
+            )?
+        };
+
+        let command_buffer = unsafe {
+            // panic safety: command buffer count = 1
+            device.allocate_command_buffers(
+                &vk::CommandBufferAllocateInfo::builder()
+                    .command_pool(command_pool)
+                    .level(vk::CommandBufferLevel::PRIMARY)
+                    .command_buffer_count(1)
+                    .build(),
+            )?[0]
+        };
+
+        unsafe {
+            device.begin_command_buffer(
+                command_buffer,
+                &vk::CommandBufferBeginInfo::builder()
+                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
+                    .build(),
+            )?
+        }
+
+        let filter_chain = unsafe {
+            Self::load_from_preset_deferred::<_, Infallible>(
+                vulkan,
+                preset,
+                command_buffer,
+                options,
+            )?
+        };
+
+        unsafe {
+            device.end_command_buffer(command_buffer)?;
+
+            let buffers = [command_buffer];
+            let submits = [vk::SubmitInfo::builder().command_buffers(&buffers).build()];
+
+            device.queue_submit(queue, &submits, vk::Fence::null())?;
+            device.queue_wait_idle(queue)?;
+            device.free_command_buffers(command_pool, &buffers);
+            device.destroy_command_pool(command_pool, None);
+        }
+
+        Ok(filter_chain)
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// ## Safety
+    /// The provided command buffer must be ready for recording and contain no prior commands.
+    /// The caller is responsible for ending the command buffer and immediately submitting it to a
+    /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
+    pub unsafe fn load_from_preset_deferred<V, E>(
+        vulkan: V,
+        preset: ShaderPreset,
+        cmd: vk::CommandBuffer,
+        options: Option<&FilterChainOptionsVulkan>,
+    ) -> error::Result<FilterChainVulkan>
+    where
+        V: TryInto<VulkanObjects, Error = E>,
+        FilterChainError: From<E>,
+    {
         let (passes, semantics) = SPIRV::compile_preset_passes::<
             GlslangCompilation,
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
-        let device = vulkan.try_into()?;
+        let device = vulkan.try_into().map_err(From::from)?;
 
         let mut frames_in_flight = options.map_or(0, |o| o.frames_in_flight);
         if frames_in_flight == 0 {
@@ -254,7 +337,7 @@ impl FilterChainVulkan {
             options.map_or(false, |o| o.use_render_pass),
         )?;
 
-        let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
+        let luts = FilterChainVulkan::load_luts(&device, cmd, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
 
         let framebuffer_gen =
@@ -383,66 +466,21 @@ impl FilterChainVulkan {
 
     fn load_luts(
         vulkan: &VulkanObjects,
+        command_buffer: vk::CommandBuffer,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
 
-        let command_pool = unsafe {
-            vulkan.device.create_command_pool(
-                &vk::CommandPoolCreateInfo::builder()
-                    .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-                    .build(),
-                None,
-            )?
-        };
-
-        let command_buffer = unsafe {
-            // panic safety: command buffer count = 1
-            vulkan.device.allocate_command_buffers(
-                &vk::CommandBufferAllocateInfo::builder()
-                    .command_pool(command_pool)
-                    .level(vk::CommandBufferLevel::PRIMARY)
-                    .command_buffer_count(1)
-                    .build(),
-            )?[0]
-        };
-
-        unsafe {
-            vulkan.device.begin_command_buffer(
-                command_buffer,
-                &vk::CommandBufferBeginInfo::builder()
-                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
-                    .build(),
-            )?
-        }
-
         for (index, texture) in textures.iter().enumerate() {
             let image = Image::load(&texture.path, UVDirection::TopLeft)?;
-
             let texture = LutTexture::new(vulkan, command_buffer, image, texture)?;
             luts.insert(index, texture);
-        }
-
-        unsafe {
-            vulkan.device.end_command_buffer(command_buffer)?;
-
-            let buffers = [command_buffer];
-            let submits = [vk::SubmitInfo::builder().command_buffers(&buffers).build()];
-
-            vulkan
-                .device
-                .queue_submit(vulkan.queue, &submits, vk::Fence::null())?;
-            vulkan.device.queue_wait_idle(vulkan.queue)?;
-
-            vulkan.device.free_command_buffers(command_pool, &buffers);
-
-            vulkan.device.destroy_command_pool(command_pool, None);
         }
         Ok(luts)
     }
 
     // image must be in SHADER_READ_OPTIMAL
-    pub fn push_history(
+    fn push_history(
         &mut self,
         input: &VulkanImage,
         cmd: vk::CommandBuffer,

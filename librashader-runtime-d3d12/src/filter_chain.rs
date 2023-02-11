@@ -43,7 +43,7 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
-use windows::Win32::System::Threading::{CreateEventA, ResetEvent, WaitForSingleObject};
+use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -51,7 +51,7 @@ use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 
-const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 1024;
+const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
 
 type DxilShaderPassMeta =
     ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
@@ -99,6 +99,7 @@ pub(crate) struct FilterCommon {
 pub(crate) struct FrameResiduals {
     outputs: Vec<OutputDescriptor>,
     mipmaps: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+    mipmap_luts: Vec<D3D12MipmapGen>,
 }
 
 impl FrameResiduals {
@@ -106,7 +107,12 @@ impl FrameResiduals {
         Self {
             outputs: Vec::new(),
             mipmaps: Vec::new(),
+            mipmap_luts: Vec::new(),
         }
+    }
+
+    pub fn dispose_mipmap_gen(&mut self, mipmap: D3D12MipmapGen) {
+        self.mipmap_luts.push(mipmap)
     }
 
     pub fn dispose_output(&mut self, descriptor: OutputDescriptor) {
@@ -150,6 +156,52 @@ impl FilterChainD3D12 {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
+        unsafe {
+            // 1 time queue infrastructure for lut uploads
+            let command_pool: ID3D12CommandAllocator =
+                device.CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)?;
+            let cmd: ID3D12GraphicsCommandList =
+                device.CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_pool, None)?;
+            let queue: ID3D12CommandQueue =
+                device.CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
+                    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
+                    Priority: 0,
+                    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
+                    NodeMask: 0,
+                })?;
+
+            let fence_event = CreateEventA(None, false, false, None)?;
+            let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
+
+            let filter_chain = Self::load_from_preset_deferred(device, preset, &cmd, options)?;
+
+            cmd.Close()?;
+            queue.ExecuteCommandLists(&[cmd.cast()?]);
+            queue.Signal(&fence, 1)?;
+
+            if fence.GetCompletedValue() < 1 {
+                fence.SetEventOnCompletion(1, fence_event)?;
+                WaitForSingleObject(fence_event, INFINITE);
+                CloseHandle(fence_event);
+            }
+
+            Ok(filter_chain)
+        }
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// ## Safety
+    /// The provided command list must be ready for recording and contain no prior commands.
+    /// The caller is responsible for ending the command list and immediately submitting it to a
+    /// graphics queue. The command list must be completely executed before calling [`frame`](Self::frame).
+    pub unsafe fn load_from_preset_deferred(
+        device: &ID3D12Device,
+        preset: ShaderPreset,
+        cmd: &ID3D12GraphicsCommandList,
+        options: Option<&FilterChainOptionsD3D12>,
+    ) -> error::Result<FilterChainD3D12> {
         let shader_count = preset.shaders.len();
         let lut_count = preset.textures.len();
 
@@ -171,24 +223,37 @@ impl FilterChainD3D12 {
         let draw_quad = DrawQuad::new(device)?;
         let mut staging_heap = D3D12DescriptorHeap::new(
             device,
-            (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
+            (MAX_BINDINGS_COUNT as usize) * shader_count
+                + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
+                + lut_count,
         )?;
         let rtv_heap = D3D12DescriptorHeap::new(
             device,
-            (MAX_BINDINGS_COUNT as usize) * shader_count + 2048 + lut_count,
+            (MAX_BINDINGS_COUNT as usize) * shader_count
+                + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
+                + lut_count,
         )?;
-
-        let luts = FilterChainD3D12::load_luts(device, &mut staging_heap, &preset.textures)?;
 
         let root_signature = D3D12RootSignature::new(device)?;
 
-        let (texture_heap, sampler_heap, filters, mipmap_heap) = FilterChainD3D12::init_passes(
+        let (texture_heap, sampler_heap, filters, mut mipmap_heap) = FilterChainD3D12::init_passes(
             device,
             &root_signature,
             passes,
             hlsl_passes,
             &semantics,
             options.map_or(false, |o| o.force_hlsl_pipeline),
+        )?;
+
+        let mut residuals = FrameResiduals::new();
+
+        let luts = FilterChainD3D12::load_luts(
+            device,
+            cmd,
+            &mut staging_heap,
+            &mut mipmap_heap,
+            &mut residuals,
+            &preset.textures,
         )?;
 
         let framebuffer_gen =
@@ -240,91 +305,50 @@ impl FilterChainD3D12 {
             sampler_heap,
             mipmap_heap,
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
-            residuals: FrameResiduals::new(),
+            residuals,
         })
     }
 
     fn load_luts(
         device: &ID3D12Device,
-        heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
+        cmd: &ID3D12GraphicsCommandList,
+        staging_heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
+        mipmap_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
+        trash: &mut FrameResiduals,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         // use separate mipgen to load luts.
         let mipmap_gen = D3D12MipmapGen::new(device, true)?;
-        let mut work_heap: D3D12DescriptorHeap<ResourceWorkHeap> =
-            D3D12DescriptorHeap::new(device, u16::MAX as usize)?;
-        unsafe {
-            // 1 time queue infrastructure for lut uploads
-            let command_pool: ID3D12CommandAllocator =
-                device.CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)?;
-            let cmd: ID3D12GraphicsCommandList =
-                device.CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_pool, None)?;
-            let queue: ID3D12CommandQueue =
-                device.CreateCommandQueue(&D3D12_COMMAND_QUEUE_DESC {
-                    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
-                    Priority: 0,
-                    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
-                    NodeMask: 0,
-                })?;
 
-            let fence_event = CreateEventA(None, false, false, None)?;
-            let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
-            let mut residuals = Vec::new();
+        let mut luts = FxHashMap::default();
 
-            let mut luts = FxHashMap::default();
+        for (index, texture) in textures.iter().enumerate() {
+            let image = Image::load(&texture.path, UVDirection::TopLeft)?;
 
-            for (index, texture) in textures.iter().enumerate() {
-                let image = Image::load(&texture.path, UVDirection::TopLeft)?;
-
-                let (texture, staging) = LutTexture::new(
-                    device,
-                    heap,
-                    &cmd,
-                    &image,
-                    texture.filter_mode,
-                    texture.wrap_mode,
-                    texture.mipmap,
-                )?;
-                luts.insert(index, texture);
-                residuals.push(staging);
-            }
-
-            cmd.Close()?;
-
-            queue.ExecuteCommandLists(&[cmd.cast()?]);
-            queue.Signal(&fence, 1)?;
-
-            // Wait until finished
-            if fence.GetCompletedValue() < 1 {
-                fence.SetEventOnCompletion(1, fence_event)?;
-                WaitForSingleObject(fence_event, INFINITE);
-                ResetEvent(fence_event);
-            }
-
-            cmd.Reset(&command_pool, None)?;
-
-            let residuals = mipmap_gen.mipmapping_context(&cmd, &mut work_heap, |context| {
-                for lut in luts.values() {
-                    lut.generate_mipmaps(context)?;
-                }
-
-                Ok::<(), FilterChainError>(())
-            })?;
-
-            //
-            cmd.Close()?;
-            queue.ExecuteCommandLists(&[cmd.cast()?]);
-            queue.Signal(&fence, 2)?;
-            //
-            if fence.GetCompletedValue() < 2 {
-                fence.SetEventOnCompletion(2, fence_event)?;
-                WaitForSingleObject(fence_event, INFINITE);
-                CloseHandle(fence_event);
-            }
-
-            drop(residuals);
-            Ok(luts)
+            let texture = LutTexture::new(
+                device,
+                staging_heap,
+                cmd,
+                &image,
+                texture.filter_mode,
+                texture.wrap_mode,
+                texture.mipmap,
+            )?;
+            luts.insert(index, texture);
         }
+
+        let residual_mipmap = mipmap_gen.mipmapping_context(cmd, mipmap_heap, |context| {
+            for lut in luts.values() {
+                lut.generate_mipmaps(context)?;
+            }
+
+            Ok::<(), FilterChainError>(())
+        })?;
+
+        trash.dispose_mipmap_handles(residual_mipmap);
+        trash.dispose_mipmap_gen(mipmap_gen);
+
+        Ok(luts)
     }
 
     fn init_passes(

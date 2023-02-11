@@ -8,10 +8,8 @@ use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 
 pub(crate) struct LutTexture {
-    #[allow(dead_code)]
-    memory: VulkanImageMemory,
-    #[allow(dead_code)]
-    staging: VulkanBuffer,
+    _memory: VulkanImageMemory,
+    _staging: VulkanBuffer,
     pub image: InputImage,
 }
 
@@ -46,11 +44,6 @@ impl LutTexture {
 
         let memory = unsafe {
             let mem_reqs = vulkan.device.get_image_memory_requirements(texture);
-            // let mem_type = util::find_vulkan_memory_type(
-            //     &vulkan.memory_properties,
-            //     mem_reqs.memory_type_bits,
-            //     vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            // )?;
             VulkanImageMemory::new(&vulkan.device, &vulkan.alloc, mem_reqs, &texture)?
         };
 
@@ -223,8 +216,8 @@ impl LutTexture {
         }
 
         Ok(LutTexture {
-            memory,
-            staging,
+            _memory: memory,
+            _staging: staging,
             image: InputImage {
                 image_view: texture_view,
                 image: VulkanImage {

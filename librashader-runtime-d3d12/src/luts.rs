@@ -27,6 +27,7 @@ pub struct LutTexture {
     resource: ID3D12Resource,
     view: InputTexture,
     miplevels: Option<u16>,
+    _staging: ID3D12Resource,
 }
 
 impl LutTexture {
@@ -38,7 +39,7 @@ impl LutTexture {
         filter: FilterMode,
         wrap_mode: WrapMode,
         mipmap: bool,
-    ) -> error::Result<(LutTexture, ID3D12Resource)> {
+    ) -> error::Result<LutTexture> {
         let miplevels = source.size.calculate_miplevels() as u16;
         let mut desc = D3D12_RESOURCE_DESC {
             Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -186,14 +187,12 @@ impl LutTexture {
             filter,
             wrap_mode,
         );
-        Ok((
-            LutTexture {
-                resource,
-                view,
-                miplevels: if mipmap { Some(miplevels) } else { None },
-            },
-            upload,
-        ))
+        Ok(LutTexture {
+            resource,
+            _staging: upload,
+            view,
+            miplevels: if mipmap { Some(miplevels) } else { None },
+        })
     }
 
     pub fn generate_mipmaps(&self, gen_mips: &mut MipmapGenContext) -> error::Result<()> {

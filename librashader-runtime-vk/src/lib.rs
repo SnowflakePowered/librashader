@@ -44,8 +44,8 @@ mod tests {
         let filter = FilterChainVulkan::load_from_path(
             &base,
             // "../test/slang-shaders/crt/crt-royale.slangp",
-            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp",
-            "../test/slang-shaders/test/feedback.slangp",
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp",
+            // "../test/slang-shaders/test/feedback.slancargogp",
             // "../test/basic.slangp",
             Some(&FilterChainOptionsVulkan {
                 frames_in_flight: 3,

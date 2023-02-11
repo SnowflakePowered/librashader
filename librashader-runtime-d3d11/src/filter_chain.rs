@@ -91,6 +91,31 @@ impl FilterChainD3D11 {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
+        let immediate_context = unsafe { device.GetImmediateContext()? };
+        unsafe { Self::load_from_preset_deferred(device, preset, &immediate_context, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
+    /// to the caller. This function is therefore requires no external synchronization of the
+    /// immediate context, as long as the immediate context is not used as the input context,
+    /// nor of the device, as long as the device is not single-threaded only.
+    ///
+    /// ## Safety
+    /// The provided context must either be immediate, or immediately submitted after this function
+    /// returns, **before drawing frames**, or lookup textures will fail to load and the filter chain
+    /// will be in an invalid state.
+    ///
+    /// If the context is deferred, it must be ready for command recording, and have no prior commands
+    /// recorded. No commands shall be recorded after, the caller must immediately call [`FinishCommandList`](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-finishcommandlist)
+    /// and execute the command list on the immediate context after this function returns.
+    ///
+    /// If the context is immediate, then access to the immediate context requires external synchronization.
+    pub unsafe fn load_from_preset_deferred(
+        device: &ID3D11Device,
+        preset: ShaderPreset,
+        ctx: &ID3D11DeviceContext,
+        options: Option<&FilterChainOptionsD3D11>,
+    ) -> error::Result<FilterChainD3D11> {
         let (passes, semantics) = HLSL::compile_preset_passes::<
             GlslangCompilation,
             FilterChainError,
@@ -104,7 +129,7 @@ impl FilterChainD3D11 {
         let immediate_context = unsafe { device.GetImmediateContext()? };
 
         // load luts
-        let luts = FilterChainD3D11::load_luts(device, &immediate_context, &preset.textures)?;
+        let luts = FilterChainD3D11::load_luts(device, &ctx, &preset.textures)?;
 
         let framebuffer_gen =
             || OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false);
