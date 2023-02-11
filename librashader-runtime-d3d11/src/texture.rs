@@ -149,9 +149,6 @@ impl LutTexture {
             )?;
             assume_d3d11_init!(staging, "CreateTexture2D");
 
-            // todo: do format conversion (leverage image crate..?
-            // is this necessary with CopySubresourceRegion)...
-
             context.CopySubresourceRegion(
                 &handle,
                 0,
@@ -191,12 +188,8 @@ impl LutTexture {
                 context.GenerateMips(&srv)
             }
 
-            // let mut subresource = context.Map(staging, 0, D3D11_MAP_WRITE, 0)?;
-            // staging.Upd
-
             Ok(LutTexture {
                 handle,
-                // staging,
                 desc,
                 image: InputTexture {
                     view: D3D11InputView {
