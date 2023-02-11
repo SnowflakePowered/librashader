@@ -3,7 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::gl::{Framebuffer, GLImage};
+use librashader::runtime::gl::{GLFramebuffer, GLImage};
 use std::ffi::CStr;
 use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;
@@ -36,7 +36,7 @@ pub struct libra_source_image_gl_t {
 #[repr(C)]
 pub struct libra_output_framebuffer_gl_t {
     /// A framebuffer GLuint to the output framebuffer.
-    pub handle: u32,
+    pub fbo: u32,
     /// A texture GLuint to the logical buffer of the output framebuffer.
     pub texture: u32,
     /// The format of the output framebuffer.
@@ -189,7 +189,7 @@ extern_fn! {
         };
 
         let opt = opt.map(FromUninit::from_uninit);
-        let framebuffer = Framebuffer::new_from_raw(out.texture, out.handle, out.format, Size::new(viewport.width, viewport.height), 1);
+        let framebuffer = GLFramebuffer::new_from_raw(out.texture, out.fbo, out.format, Size::new(viewport.width, viewport.height), 1);
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,

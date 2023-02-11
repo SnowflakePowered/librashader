@@ -190,7 +190,7 @@ typedef struct libra_viewport_t {
 /// OpenGL parameters for the output framebuffer.
 typedef struct libra_output_framebuffer_gl_t {
   /// A framebuffer GLuint to the output framebuffer.
-  uint32_t handle;
+  uint32_t fbo;
   /// A texture GLuint to the logical buffer of the output framebuffer.
   uint32_t texture;
   /// The format of the output framebuffer.
