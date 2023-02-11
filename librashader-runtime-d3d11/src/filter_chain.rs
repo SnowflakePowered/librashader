@@ -5,7 +5,7 @@ use librashader_presets::{ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics};
+use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, UVDirection};
 use rustc_hash::FxHashMap;
@@ -16,7 +16,7 @@ use std::path::Path;
 use crate::draw_quad::DrawQuad;
 use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
-use crate::framebuffer::OwnedFramebuffer;
+use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::D3D11State;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::samplers::SamplerSet;
@@ -24,6 +24,7 @@ use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
+use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -49,9 +50,9 @@ type ShaderPassMeta =
 pub struct FilterChainD3D11 {
     pub(crate) common: FilterCommon,
     passes: Vec<FilterPass>,
-    output_framebuffers: Box<[OwnedFramebuffer]>,
-    feedback_framebuffers: Box<[OwnedFramebuffer]>,
-    history_framebuffers: VecDeque<OwnedFramebuffer>,
+    output_framebuffers: Box<[OwnedImage]>,
+    feedback_framebuffers: Box<[OwnedImage]>,
+    history_framebuffers: VecDeque<OwnedImage>,
     state: D3D11State,
 }
 
@@ -102,45 +103,34 @@ impl FilterChainD3D11 {
 
         let immediate_context = unsafe { device.GetImmediateContext()? };
 
-        // initialize output framebuffers
-        let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || {
-            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
-        });
-
-        // resolve all results
-        let output_framebuffers = output_framebuffers
-            .into_iter()
-            .collect::<error::Result<Vec<OwnedFramebuffer>>>()?;
-
-        let mut output_textures = Vec::new();
-        output_textures.resize_with(filters.len(), || None);
-        //
-        // // initialize feedback framebuffers
-        let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || {
-            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
-        });
-        // resolve all results
-        let feedback_framebuffers = feedback_framebuffers
-            .into_iter()
-            .collect::<error::Result<Vec<OwnedFramebuffer>>>()?;
-
-        let mut feedback_textures = Vec::new();
-        feedback_textures.resize_with(filters.len(), || None);
-
         // load luts
         let luts = FilterChainD3D11::load_luts(device, &immediate_context, &preset.textures)?;
 
-        let (history_framebuffers, history_textures) =
-            FilterChainD3D11::init_history(device, &filters)?;
+        let framebuffer_gen =
+            || OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false);
+        let input_gen = || None;
+        let framebuffer_init = FramebufferInit::new(
+            filters.iter().map(|f| &f.reflection.meta),
+            &framebuffer_gen,
+            &input_gen,
+        );
+
+        // initialize output framebuffers
+        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
+
+        // initialize feedback framebuffers
+        let (feedback_framebuffers, feedback_textures) =
+            framebuffer_init.init_output_framebuffers()?;
+
+        // initialize history
+        let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         let draw_quad = DrawQuad::new(device)?;
         let state = D3D11State::new(device)?;
         Ok(FilterChainD3D11 {
             passes: filters,
-            output_framebuffers: output_framebuffers.into_boxed_slice(),
-            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
+            output_framebuffers,
+            feedback_framebuffers,
             history_framebuffers,
             common: FilterCommon {
                 d3d11: Direct3D11 {
@@ -158,8 +148,8 @@ impl FilterChainD3D11 {
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
-                output_textures: output_textures.into_boxed_slice(),
-                feedback_textures: feedback_textures.into_boxed_slice(),
+                output_textures,
+                feedback_textures,
                 history_textures,
                 draw_quad,
             },
@@ -283,37 +273,6 @@ impl FilterChainD3D11 {
         Ok(filters)
     }
 
-    fn init_history(
-        device: &ID3D11Device,
-        filters: &Vec<FilterPass>,
-    ) -> error::Result<(VecDeque<OwnedFramebuffer>, Box<[Option<InputTexture>]>)> {
-        let required_images =
-            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
-
-        // not using frame history;
-        if required_images <= 1 {
-            // println!("[history] not using frame history");
-            return Ok((VecDeque::new(), Box::new([])));
-        }
-
-        // history0 is aliased with the original
-
-        // eprintln!("[history] using frame history with {required_images} images");
-        let mut framebuffers = VecDeque::with_capacity(required_images);
-        framebuffers.resize_with(required_images, || {
-            OwnedFramebuffer::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false)
-        });
-
-        let framebuffers = framebuffers
-            .into_iter()
-            .collect::<error::Result<VecDeque<OwnedFramebuffer>>>()?;
-
-        let mut history_textures = Vec::new();
-        history_textures.resize_with(required_images, || None);
-
-        Ok((framebuffers, history_textures.into_boxed_slice()))
-    }
-
     fn push_history(
         &mut self,
         ctx: &ID3D11DeviceContext,
@@ -394,20 +353,6 @@ impl FilterChainD3D11 {
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
-        for ((texture, fbo), pass) in self
-            .common
-            .feedback_textures
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter())
-            .zip(passes.iter())
-        {
-            *texture = Some(InputTexture::from_framebuffer(
-                fbo,
-                pass.config.wrap_mode,
-                pass.config.filter,
-            )?);
-        }
-
         for (texture, fbo) in self
             .common
             .history_textures
@@ -426,7 +371,7 @@ impl FilterChainD3D11 {
         let mut source = original.clone();
 
         // rescale render buffers to ensure all bindings are valid.
-        OwnedFramebuffer::scale_framebuffers(
+        OwnedImage::scale_framebuffers(
             source.size(),
             viewport.output.size,
             &mut self.output_framebuffers,
@@ -434,6 +379,22 @@ impl FilterChainD3D11 {
             passes,
             None,
         )?;
+
+        // Refresh inputs for feedback textures.
+        // Don't need to do this for outputs because they are yet to be bound.
+        for ((texture, fbo), pass) in self
+            .common
+            .feedback_textures
+            .iter_mut()
+            .zip(self.feedback_framebuffers.iter())
+            .zip(passes.iter())
+        {
+            *texture = Some(InputTexture::from_framebuffer(
+                fbo,
+                pass.config.wrap_mode,
+                pass.config.filter,
+            )?);
+        }
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);

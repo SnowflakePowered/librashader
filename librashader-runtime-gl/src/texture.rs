@@ -3,13 +3,14 @@ use crate::framebuffer::GLImage;
 use librashader_common::{FilterMode, WrapMode};
 
 #[derive(Default, Debug, Copy, Clone)]
-pub struct InputTexture {
+pub(crate) struct InputTexture {
     pub image: GLImage,
     pub filter: FilterMode,
     pub mip_filter: FilterMode,
     pub wrap_mode: WrapMode,
 }
 
+/// An OpenGL texture bound as a shader resource.
 impl InputTexture {
     pub fn is_bound(&self) -> bool {
         self.image.handle != 0

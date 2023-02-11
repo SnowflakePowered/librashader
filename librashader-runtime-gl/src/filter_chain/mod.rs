@@ -5,7 +5,7 @@ use crate::error::{FilterChainError, Result};
 use crate::filter_chain::filter_impl::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
-use crate::{Framebuffer, GLImage};
+use crate::{GLFramebuffer, GLImage};
 use librashader_presets::ShaderPreset;
 
 mod filter_impl;
@@ -61,7 +61,7 @@ impl FilterChainGL {
     pub fn frame(
         &mut self,
         input: &GLImage,
-        viewport: &Viewport<&Framebuffer>,
+        viewport: &Viewport<&GLFramebuffer>,
         frame_count: usize,
         options: Option<&FrameOptionsGL>,
     ) -> Result<()> {

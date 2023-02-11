@@ -11,9 +11,9 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 ///
 /// Generally for use as render targets.
 #[derive(Debug)]
-pub struct Framebuffer {
+pub struct GLFramebuffer {
     pub(crate) image: GLuint,
-    pub(crate) handle: GLuint,
+    pub(crate) fbo: GLuint,
     pub(crate) size: Size<u32>,
     pub(crate) format: GLenum,
     pub(crate) max_levels: u32,
@@ -21,7 +21,7 @@ pub struct Framebuffer {
     pub(crate) is_raw: bool,
 }
 
-impl Framebuffer {
+impl GLFramebuffer {
     /// Create a framebuffer from an already initialized texture and framebuffer.
     ///
     /// The framebuffer will not be deleted when this struct is dropped.
@@ -31,14 +31,14 @@ impl Framebuffer {
         format: GLenum,
         size: Size<u32>,
         miplevels: u32,
-    ) -> Framebuffer {
-        Framebuffer {
+    ) -> GLFramebuffer {
+        GLFramebuffer {
             image: texture,
             size,
             format,
             max_levels: miplevels,
             mip_levels: miplevels,
-            handle: fbo,
+            fbo: fbo,
             is_raw: true,
         }
     }
@@ -76,15 +76,15 @@ impl Framebuffer {
     }
 }
 
-impl Drop for Framebuffer {
+impl Drop for GLFramebuffer {
     fn drop(&mut self) {
         if self.is_raw {
             return;
         }
 
         unsafe {
-            if self.handle != 0 {
-                gl::DeleteFramebuffers(1, &self.handle);
+            if self.fbo != 0 {
+                gl::DeleteFramebuffers(1, &self.fbo);
             }
             if self.image != 0 {
                 gl::DeleteTextures(1, &self.image);
@@ -93,7 +93,7 @@ impl Drop for Framebuffer {
     }
 }
 //
-impl<T: FramebufferInterface> ScaleFramebuffer<T> for Framebuffer {
+impl<T: FramebufferInterface> ScaleFramebuffer<T> for GLFramebuffer {
     type Error = FilterChainError;
     type Context = ();
 

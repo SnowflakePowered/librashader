@@ -214,7 +214,7 @@ pub mod runtime {
         pub use librashader_runtime_gl::{
             error,
             options::{FilterChainOptionsGL as FilterChainOptions, FrameOptionsGL as FrameOptions},
-            FilterChainGL as FilterChain, Framebuffer, GLImage,
+            FilterChainGL as FilterChain, GLFramebuffer, GLImage,
         };
 
         #[doc(hidden)]

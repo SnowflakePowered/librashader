@@ -32,6 +32,7 @@ pub struct FilterPass {
     pub graphics_pipeline: VulkanGraphicsPipeline,
     // pub ubo_ring: VkUboRing,
     pub frames_in_flight: u32,
+    pub internal_frame_count: usize,
 }
 
 impl TextureInput for InputImage {
@@ -100,7 +101,7 @@ impl FilterPass {
         vbo_type: QuadType,
     ) -> error::Result<Option<vk::Framebuffer>> {
         let mut descriptor = self.graphics_pipeline.layout.descriptor_sets
-            [(frame_count % self.frames_in_flight) as usize];
+            [self.internal_frame_count % self.frames_in_flight as usize];
 
         self.build_semantics(
             pass_index,
@@ -193,6 +194,7 @@ impl FilterPass {
             parent.draw_quad.draw_quad(cmd, vbo_type);
             self.graphics_pipeline.end_rendering(&parent.device, cmd);
         }
+        self.internal_frame_count += 1;
         Ok(residual)
     }
 
@@ -223,10 +225,10 @@ impl FilterPass {
             source,
             &self.uniform_bindings,
             &self.reflection.meta.texture_meta,
-            parent.output_inputs[0..pass_index]
+            parent.output_textures[0..pass_index]
                 .iter()
                 .map(|o| o.as_ref()),
-            parent.feedback_inputs.iter().map(|o| o.as_ref()),
+            parent.feedback_textures.iter().map(|o| o.as_ref()),
             parent.history_textures.iter().map(|o| o.as_ref()),
             parent.luts.iter().map(|(u, i)| (*u, i.as_ref())),
             &self.source.parameters,

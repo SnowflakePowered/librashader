@@ -1,25 +1,26 @@
 use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::{FilterPass, UniformOffset};
-use crate::gl::{DrawQuad, Framebuffer, FramebufferInterface, GLInterface, LoadLut, UboRing};
+use crate::gl::{DrawQuad, FramebufferInterface, GLFramebuffer, GLInterface, LoadLut, UboRing};
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, util, GLImage};
 use gl::types::{GLint, GLuint};
-use librashader_common::{FilterMode, Viewport, WrapMode};
+use librashader_common::Viewport;
 
 use librashader_presets::ShaderPreset;
 use librashader_reflect::back::cross::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
-use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics, UniformMeta};
+use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
+use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rustc_hash::FxHashMap;
@@ -38,9 +39,9 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass<T>]>,
     draw_quad: T::DrawQuad,
-    output_framebuffers: Box<[Framebuffer]>,
-    feedback_framebuffers: Box<[Framebuffer]>,
-    history_framebuffers: VecDeque<Framebuffer>,
+    output_framebuffers: Box<[GLFramebuffer]>,
+    feedback_framebuffers: Box<[GLFramebuffer]>,
+    history_framebuffers: VecDeque<GLFramebuffer>,
 }
 
 pub(crate) struct FilterCommon {
@@ -120,31 +121,40 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         let samplers = SamplerSet::new();
 
-        // initialize output framebuffers
-        let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || T::FramebufferInterface::new(1));
-        let mut output_textures = Vec::new();
-        output_textures.resize_with(filters.len(), InputTexture::default);
-
-        // initialize feedback framebuffers
-        let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || T::FramebufferInterface::new(1));
-        let mut feedback_textures = Vec::new();
-        feedback_textures.resize_with(filters.len(), InputTexture::default);
-
         // load luts
         let luts = T::LoadLut::load_luts(&preset.textures)?;
 
-        let (history_framebuffers, history_textures) =
-            FilterChainImpl::init_history(&filters, default_filter, default_wrap);
+        let framebuffer_gen = || Ok::<_, FilterChainError>(T::FramebufferInterface::new(1));
+        let input_gen = || InputTexture {
+            image: Default::default(),
+            filter: default_filter,
+            mip_filter: default_filter,
+            wrap_mode: default_wrap,
+        };
+
+        let framebuffer_init = FramebufferInit::new(
+            filters.iter().map(|f| &f.reflection.meta),
+            &framebuffer_gen,
+            &input_gen,
+        );
+
+        // initialize output framebuffers
+        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
+
+        // initialize feedback framebuffers
+        let (feedback_framebuffers, feedback_textures) =
+            framebuffer_init.init_output_framebuffers()?;
+
+        // initialize history
+        let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         // create vertex objects
         let draw_quad = T::DrawQuad::new();
 
         Ok(FilterChainImpl {
             passes: filters,
-            output_framebuffers: output_framebuffers.into_boxed_slice(),
-            feedback_framebuffers: feedback_framebuffers.into_boxed_slice(),
+            output_framebuffers,
+            feedback_framebuffers,
             history_framebuffers,
             draw_quad,
             common: FilterCommon {
@@ -159,8 +169,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
-                output_textures: output_textures.into_boxed_slice(),
-                feedback_textures: feedback_textures.into_boxed_slice(),
+                output_textures,
+                feedback_textures,
                 history_textures,
             },
         })
@@ -274,37 +284,6 @@ impl<T: GLInterface> FilterChainImpl<T> {
         Ok(filters.into_boxed_slice())
     }
 
-    fn init_history(
-        filters: &[FilterPass<T>],
-        filter: FilterMode,
-        wrap_mode: WrapMode,
-    ) -> (VecDeque<Framebuffer>, Box<[InputTexture]>) {
-        let required_images =
-            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
-
-        // not using frame history;
-        if required_images <= 1 {
-            // println!("[history] not using frame history");
-            return (VecDeque::new(), Box::new([]));
-        }
-
-        // history0 is aliased with the original
-
-        // eprintln!("[history] using frame history with {required_images} images");
-        let mut framebuffers = VecDeque::with_capacity(required_images);
-        framebuffers.resize_with(required_images, || T::FramebufferInterface::new(1));
-
-        let mut history_textures = Vec::new();
-        history_textures.resize_with(required_images, || InputTexture {
-            image: Default::default(),
-            filter,
-            mip_filter: filter,
-            wrap_mode,
-        });
-
-        (framebuffers, history_textures.into_boxed_slice())
-    }
-
     fn push_history(&mut self, input: &GLImage) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.size != input.size || (input.format != 0 && input.format != back.format) {
@@ -313,7 +292,6 @@ impl<T: GLInterface> FilterChainImpl<T> {
             }
 
             back.copy_from::<T::FramebufferInterface>(input)?;
-
             self.history_framebuffers.push_front(back)
         }
 
@@ -326,7 +304,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     pub fn frame(
         &mut self,
         frame_count: usize,
-        viewport: &Viewport<&Framebuffer>,
+        viewport: &Viewport<&GLFramebuffer>,
         input: &GLImage,
         options: Option<&FrameOptionsGL>,
     ) -> error::Result<()> {
@@ -364,18 +342,6 @@ impl<T: GLInterface> FilterChainImpl<T> {
             texture.image = fbo.as_texture(filter, wrap_mode).image;
         }
 
-        for ((texture, fbo), pass) in self
-            .common
-            .feedback_textures
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter())
-            .zip(passes.iter())
-        {
-            texture.image = fbo
-                .as_texture(pass.config.filter, pass.config.wrap_mode)
-                .image;
-        }
-
         // shader_gl3: 2067
         let original = InputTexture {
             image: *input,
@@ -387,7 +353,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let mut source = original;
 
         // rescale render buffers to ensure all bindings are valid.
-        <Framebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_framebuffers(
+        <GLFramebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_framebuffers(
             source.image.size,
             viewport.output.size,
             &mut self.output_framebuffers,
@@ -395,6 +361,20 @@ impl<T: GLInterface> FilterChainImpl<T> {
             passes,
             None,
         )?;
+
+        // Refresh inputs for feedback textures.
+        // Don't need to do this for outputs because they are yet to be bound.
+        for ((texture, fbo), pass) in self
+            .common
+            .feedback_textures
+            .iter_mut()
+            .zip(self.feedback_framebuffers.iter())
+            .zip(passes.iter())
+        {
+            texture.image = fbo
+                .as_texture(pass.config.filter, pass.config.wrap_mode)
+                .image;
+        }
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);

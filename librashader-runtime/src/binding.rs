@@ -310,19 +310,21 @@ impl BindingUtil for BindingMeta {
 
         for pass in pass_meta {
             // If a shader uses history size, but not history, we still need to keep the texture.
-            let texture_count = pass
+            let texture_max_index = pass
                 .texture_meta
                 .iter()
                 .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
-            let texture_size_count = pass
+                .map(|(semantic, _)| semantic.index)
+                .fold(0, std::cmp::max);
+            let texture_size_max_index = pass
                 .texture_size_meta
                 .iter()
                 .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .count();
+                .map(|(semantic, _)| semantic.index)
+                .fold(0, std::cmp::max);
 
-            required_images = std::cmp::max(required_images, texture_count);
-            required_images = std::cmp::max(required_images, texture_size_count);
+            required_images = std::cmp::max(required_images, texture_max_index);
+            required_images = std::cmp::max(required_images, texture_size_max_index);
         }
 
         required_images

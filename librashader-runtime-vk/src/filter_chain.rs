@@ -19,7 +19,7 @@ use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_reflect::reflect::semantics::{BindingMeta, ShaderSemantics};
+use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, UVDirection};
@@ -31,6 +31,7 @@ use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
+use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
@@ -145,8 +146,8 @@ pub(crate) struct FilterCommon {
     pub(crate) luts: FxHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
-    pub output_inputs: Box<[Option<InputImage>]>,
-    pub feedback_inputs: Box<[Option<InputImage>]>,
+    pub output_textures: Box<[Option<InputImage>]>,
+    pub feedback_textures: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
     pub config: FilterMutable,
     pub device: Arc<ash::Device>,
@@ -256,28 +257,24 @@ impl FilterChainVulkan {
         let luts = FilterChainVulkan::load_luts(&device, &preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
 
-        let (history_framebuffers, history_textures) =
-            FilterChainVulkan::init_history(&device, &filters)?;
+        let framebuffer_gen =
+            || OwnedImage::new(&device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1);
+        let input_gen = || None;
+        let framebuffer_init = FramebufferInit::new(
+            filters.iter().map(|f| &f.reflection.meta),
+            &framebuffer_gen,
+            &input_gen,
+        );
 
-        let mut output_framebuffers = Vec::new();
-        output_framebuffers.resize_with(filters.len(), || {
-            OwnedImage::new(&device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
-        });
+        // initialize output framebuffers
+        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
 
-        let mut feedback_framebuffers = Vec::new();
-        feedback_framebuffers.resize_with(filters.len(), || {
-            OwnedImage::new(&device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
-        });
+        // initialize feedback framebuffers
+        let (feedback_framebuffers, feedback_textures) =
+            framebuffer_init.init_output_framebuffers()?;
 
-        let output_framebuffers: error::Result<Vec<OwnedImage>> =
-            output_framebuffers.into_iter().collect();
-        let mut output_textures = Vec::new();
-        output_textures.resize_with(filters.len(), || None);
-
-        let feedback_framebuffers: error::Result<Vec<OwnedImage>> =
-            feedback_framebuffers.into_iter().collect();
-        let mut feedback_textures = Vec::new();
-        feedback_textures.resize_with(filters.len(), || None);
+        // initialize history
+        let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         let mut intermediates = Vec::new();
         intermediates.resize_with(frames_in_flight as usize, || {
@@ -298,14 +295,14 @@ impl FilterChainVulkan {
                 },
                 draw_quad: DrawQuad::new(&device.device, &device.alloc)?,
                 device: device.device.clone(),
-                output_inputs: output_textures.into_boxed_slice(),
-                feedback_inputs: feedback_textures.into_boxed_slice(),
+                output_textures,
+                feedback_textures,
                 history_textures,
             },
             passes: filters,
             vulkan: device,
-            output_framebuffers: output_framebuffers?.into_boxed_slice(),
-            feedback_framebuffers: feedback_framebuffers?.into_boxed_slice(),
+            output_framebuffers,
+            feedback_framebuffers,
             history_framebuffers,
             residuals: intermediates.into_boxed_slice(),
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
@@ -374,6 +371,7 @@ impl FilterChainVulkan {
                     graphics_pipeline,
                     // ubo_ring,
                     frames_in_flight,
+                    internal_frame_count: 0,
                 })
             })
             .collect();
@@ -441,36 +439,6 @@ impl FilterChainVulkan {
             vulkan.device.destroy_command_pool(command_pool, None);
         }
         Ok(luts)
-    }
-
-    fn init_history(
-        vulkan: &VulkanObjects,
-        filters: &[FilterPass],
-    ) -> error::Result<(VecDeque<OwnedImage>, Box<[Option<InputImage>]>)> {
-        let required_images =
-            BindingMeta::calculate_required_history(filters.iter().map(|f| &f.reflection.meta));
-
-        // not using frame history;
-        if required_images <= 1 {
-            // println!("[history] not using frame history");
-            return Ok((VecDeque::new(), Box::new([])));
-        }
-
-        // history0 is aliased with the original
-
-        // eprintln!("[history] using frame history with {required_images} images");
-        let mut images = Vec::with_capacity(required_images);
-        images.resize_with(required_images, || {
-            OwnedImage::new(vulkan, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, 1)
-        });
-
-        let images: error::Result<Vec<OwnedImage>> = images.into_iter().collect();
-        let images = VecDeque::from(images?);
-
-        let mut image_views = Vec::new();
-        image_views.resize_with(required_images, || None);
-
-        Ok((images, image_views.into_boxed_slice()))
     }
 
     // image must be in SHADER_READ_OPTIMAL
@@ -640,9 +608,9 @@ impl FilterChainVulkan {
                        output: &OwnedImage,
                        feedback: &OwnedImage| {
                 // refresh inputs
-                self.common.feedback_inputs[index] =
+                self.common.feedback_textures[index] =
                     Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode));
-                self.common.output_inputs[index] =
+                self.common.output_textures[index] =
                     Some(output.as_input(pass.config.filter, pass.config.wrap_mode));
                 Ok(())
             }),
@@ -682,7 +650,7 @@ impl FilterChainVulkan {
                 out.output.end_pass(cmd);
             }
 
-            source = self.common.output_inputs[index].clone().unwrap();
+            source = self.common.output_textures[index].clone().unwrap();
             intermediates.dispose_outputs(output_image);
             intermediates.dispose_framebuffers(residual_fb);
         }

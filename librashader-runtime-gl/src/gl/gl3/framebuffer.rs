@@ -1,6 +1,6 @@
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
-use crate::gl::framebuffer::Framebuffer;
+use crate::gl::framebuffer::GLFramebuffer;
 use crate::gl::FramebufferInterface;
 use gl::types::{GLenum, GLint, GLsizei};
 use librashader_common::{ImageFormat, Size};
@@ -11,7 +11,7 @@ use librashader_runtime::scaling::{MipmapSize, ViewportSize};
 pub struct Gl3Framebuffer;
 
 impl FramebufferInterface for Gl3Framebuffer {
-    fn new(max_levels: u32) -> Framebuffer {
+    fn new(max_levels: u32) -> GLFramebuffer {
         let mut framebuffer = 0;
         unsafe {
             gl::GenFramebuffers(1, &mut framebuffer);
@@ -19,7 +19,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
 
-        Framebuffer {
+        GLFramebuffer {
             image: 0,
             size: Size {
                 width: 1,
@@ -28,13 +28,13 @@ impl FramebufferInterface for Gl3Framebuffer {
             format: 0,
             max_levels,
             mip_levels: 0,
-            handle: framebuffer,
+            fbo: framebuffer,
             is_raw: false,
         }
     }
 
     fn scale(
-        fb: &mut Framebuffer,
+        fb: &mut GLFramebuffer,
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
@@ -66,10 +66,10 @@ impl FramebufferInterface for Gl3Framebuffer {
         }
         Ok(size)
     }
-    fn clear<const REBIND: bool>(fb: &Framebuffer) {
+    fn clear<const REBIND: bool>(fb: &GLFramebuffer) {
         unsafe {
             if REBIND {
-                gl::BindFramebuffer(gl::FRAMEBUFFER, fb.handle);
+                gl::BindFramebuffer(gl::FRAMEBUFFER, fb.fbo);
             }
             gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
@@ -79,14 +79,14 @@ impl FramebufferInterface for Gl3Framebuffer {
             }
         }
     }
-    fn copy_from(fb: &mut Framebuffer, image: &GLImage) -> Result<()> {
+    fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()> {
         // todo: may want to use a shader and draw a quad to be faster.
         if image.size != fb.size || image.format != fb.format {
             Self::init(fb, image.size, image.format)?;
         }
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.fbo);
 
             gl::FramebufferTexture2D(
                 gl::READ_FRAMEBUFFER,
@@ -149,7 +149,7 @@ impl FramebufferInterface for Gl3Framebuffer {
 
         Ok(())
     }
-    fn init(fb: &mut Framebuffer, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
+    fn init(fb: &mut GLFramebuffer, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
         if fb.is_raw {
             return Ok(());
         }
@@ -157,7 +157,7 @@ impl FramebufferInterface for Gl3Framebuffer {
         fb.size = size;
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.fbo);
 
             // reset the framebuffer image
             if fb.image != 0 {

@@ -21,7 +21,7 @@ use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 static CLEAR: &[f32; 4] = &[0.0f32, 0.0, 0.0, 0.0];
 
 #[derive(Debug, Clone)]
-pub(crate) struct OwnedFramebuffer {
+pub(crate) struct OwnedImage {
     render: ID3D11Texture2D,
     pub(crate) size: Size<u32>,
     format: DXGI_FORMAT,
@@ -29,13 +29,13 @@ pub(crate) struct OwnedFramebuffer {
     max_mipmap: u32,
 }
 
-impl OwnedFramebuffer {
+impl OwnedImage {
     pub fn new(
         device: &ID3D11Device,
         size: Size<u32>,
         format: ImageFormat,
         mipmap: bool,
-    ) -> error::Result<OwnedFramebuffer> {
+    ) -> error::Result<OwnedImage> {
         unsafe {
             let format = d3d11_get_closest_format(
                 device,
@@ -49,7 +49,7 @@ impl OwnedFramebuffer {
             device.CreateTexture2D(&desc, None, Some(&mut render))?;
             assume_d3d11_init!(render, "CreateTexture2D");
 
-            Ok(OwnedFramebuffer {
+            Ok(OwnedImage {
                 render,
                 size,
                 format,
@@ -245,7 +245,7 @@ fn default_desc(size: Size<u32>, format: DXGI_FORMAT, mip_levels: u32) -> D3D11_
     }
 }
 
-impl ScaleFramebuffer for OwnedFramebuffer {
+impl ScaleFramebuffer for OwnedImage {
     type Error = FilterChainError;
     type Context = ();
 

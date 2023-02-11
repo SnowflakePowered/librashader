@@ -14,7 +14,7 @@ use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, Variabl
 use crate::filter_chain::FilterCommon;
 use crate::gl::{BindTexture, GLInterface, UboRing};
 use crate::samplers::SamplerSet;
-use crate::Framebuffer;
+use crate::GLFramebuffer;
 
 use crate::texture::InputTexture;
 
@@ -29,7 +29,7 @@ impl UniformOffset {
     }
 }
 
-pub struct FilterPass<T: GLInterface> {
+pub(crate) struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
     pub program: GLuint,
     pub ubo_location: UniformLocation<GLuint>,
@@ -81,10 +81,10 @@ impl<T: GLInterface> FilterPass<T> {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport<&Framebuffer>,
+        viewport: &Viewport<&GLFramebuffer>,
         original: &InputTexture,
         source: &InputTexture,
-        output: RenderTarget<Framebuffer, GLint>,
+        output: RenderTarget<GLFramebuffer, GLint>,
     ) {
         let framebuffer = output.output;
 
@@ -93,7 +93,7 @@ impl<T: GLInterface> FilterPass<T> {
         }
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.handle);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer.fbo);
             gl::UseProgram(self.program);
         }
 
@@ -165,7 +165,7 @@ impl<T: GLInterface> FilterPass<T> {
         frame_count: u32,
         frame_direction: i32,
         fb_size: Size<u32>,
-        viewport: &Viewport<&Framebuffer>,
+        viewport: &Viewport<&GLFramebuffer>,
         original: &InputTexture,
         source: &InputTexture,
     ) {

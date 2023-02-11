@@ -13,7 +13,7 @@ use windows::Win32::Graphics::Direct3D11::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
 use crate::error::{assume_d3d11_init, Result};
-use crate::framebuffer::OwnedFramebuffer;
+use crate::framebuffer::OwnedImage;
 
 /// An image view for use as a shader resource.
 ///
@@ -46,7 +46,7 @@ pub struct InputTexture {
 
 impl InputTexture {
     pub(crate) fn from_framebuffer(
-        fbo: &OwnedFramebuffer,
+        fbo: &OwnedImage,
         wrap_mode: WrapMode,
         filter: FilterMode,
     ) -> Result<Self> {

@@ -568,7 +568,7 @@ pub mod d3d11_hello_triangle {
                 // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
                 self.filter
                     .frame(
-                        Some(&resources.deferred_context),
+                        None,
                         D3D11InputView {
                             handle: srv,
                             size: Size {
@@ -593,12 +593,12 @@ pub mod d3d11_hello_triangle {
                     )
                     .unwrap();
 
-                let mut command_list = None;
-                resources
-                    .deferred_context
-                    .FinishCommandList(false, Some(&mut command_list))?;
-                let command_list = command_list.unwrap();
-                self.context.ExecuteCommandList(&command_list, false);
+                // let mut command_list = None;
+                // resources
+                //     .deferred_context
+                //     .FinishCommandList(false, Some(&mut command_list))?;
+                // let command_list = command_list.unwrap();
+                // self.context.ExecuteCommandList(&command_list, false);
                 // self.context.CopyResource(&resources.backbuffer, &backup);
             }
 

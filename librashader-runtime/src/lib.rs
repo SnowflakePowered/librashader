@@ -34,3 +34,6 @@ pub mod filter_pass;
 
 /// Common types for render targets.
 pub mod render_target;
+
+/// Helpers for handling framebuffers.
+pub mod framebuffer;

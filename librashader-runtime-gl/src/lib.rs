@@ -21,7 +21,7 @@ mod texture;
 pub mod error;
 pub mod options;
 
-pub use crate::gl::Framebuffer;
+pub use crate::gl::GLFramebuffer;
 pub use filter_chain::FilterChainGL;
 pub use framebuffer::GLImage;
 
@@ -52,7 +52,9 @@ mod tests {
         let (glfw, window, events, shader, vao) = gl::gl46::hello_triangle::setup();
         let mut filter = FilterChainGL::load_from_path(
             // "../test/slang-shaders/vhs/VHSPro.slangp",
-            "../test/slang-shaders/crt/crt-royale.slangp",
+            // "../test/slang-shaders/test/history.slangp",
+            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/slang-shaders/test/feedback.slangp",
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: true,
