@@ -1,4 +1,4 @@
-//! The librashader preset C API (`libra_preset_*`).
+//! librashader preset C API (`libra_preset_*`).
 use crate::ctypes::libra_shader_preset_t;
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;

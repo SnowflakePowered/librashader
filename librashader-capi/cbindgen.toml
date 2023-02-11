@@ -87,6 +87,10 @@ prefix_with_name = true
 
 [export]
 include = [
+    # instance
+    "PFN_libra_instance_abi_version",
+    "PFN_libra_instance_api_version",
+
     # preset
     "PFN_libra_preset_create",
     "PFN_libra_preset_free",

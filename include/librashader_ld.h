@@ -64,6 +64,10 @@ typedef void* _LIBRASHADER_IMPL_HANDLE;
 
 #include "librashader.h"
 
+size_t __librashader__noop_instance_abi_version() { return 0; }
+
+size_t __librashader__noop_instance_api_version() { return 0; }
+
 LIBRA_ERRNO __librashader__noop_error_errno(libra_error_t error) {
     return LIBRA_ERRNO_UNKNOWN_ERROR;
 }
@@ -302,6 +306,17 @@ libra_error_t __librashader__noop_d3d12_filter_chain_get_active_pass_count(
 }
 #endif
 typedef struct libra_instance_t {
+    /// Get the supported ABI version of the loaded instance.
+    ///
+    /// The null instance has ABI version 0. Any valid loaded
+    /// instance must have ABI version greater than or equal to 1.
+    PFN_libra_instance_abi_version instance_abi_version;
+   
+    /// Get the supported API version of the loaded instance.
+    ///
+    /// The null instance has API version 0.
+    PFN_libra_instance_api_version instance_api_version;
+
     /// Load a preset.
     ///
     /// ## Safety
@@ -815,6 +830,9 @@ typedef struct libra_instance_t {
 
 libra_instance_t __librashader_make_null_instance() {
     return libra_instance_t {
+        .instance_abi_version = __librashader__noop_instance_abi_version,
+        .instance_api_version = __librashader__noop_instance_api_version,
+
         .preset_create = __librashader__noop_preset_create,
         .preset_free = __librashader__noop_preset_free,
         .preset_set_param = __librashader__noop_preset_set_param,
@@ -918,6 +936,14 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_IMPL_HANDLE librashader = _LIBRASHADER_LOAD;
     libra_instance_t instance = __librashader_make_null_instance();
     if (librashader == 0) {
+        return instance;
+    }
+
+    _LIBRASHADER_ASSIGN(librashader, instance, instance_abi_version);
+    _LIBRASHADER_ASSIGN(librashader, instance, instance_api_version);
+
+    // Ensure ABI matches.
+    if (instance.instance_abi_version() != LIBRASHADER_CURRENT_ABI) {
         return instance;
     }
 

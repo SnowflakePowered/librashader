@@ -1,4 +1,4 @@
-//! The librashader error C API. (`libra_error_*`).
+//! librashader error C API. (`libra_error_*`).
 use std::any::Any;
 use std::ffi::{c_char, CString};
 use std::mem::MaybeUninit;

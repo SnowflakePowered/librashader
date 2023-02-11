@@ -79,12 +79,10 @@ pub mod presets;
 pub mod reflect;
 
 pub mod runtime;
+pub mod version;
 
-pub type LIBRASHADER_API_VERSION = usize;
-
-/// The current version of the librashader API/ABI.
-/// Pass this into `version` for config structs.
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 0;
+pub use version::LIBRASHADER_ABI_VERSION;
+pub use version::LIBRASHADER_API_VERSION;
 
 #[allow(dead_code)]
 const fn assert_thread_safe<T: Send + Sync>() {}

@@ -1,4 +1,4 @@
-//! librashader runtime C APIs
+//! librashader runtime C APIs.
 #[doc(cfg(feature = "runtime-opengl"))]
 #[cfg(feature = "runtime-opengl")]
 pub mod gl;

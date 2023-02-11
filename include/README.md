@@ -20,12 +20,15 @@ A basic example of using `librashader_ld.h` to load a shader preset.
 #include "librashader_ld.h"
 
 libra_gl_filter_chain_t load_gl_filter_chain(libra_gl_loader_t opengl, const char *preset_path) {
-  // Ideally you should not need to check for success. If loading fails, then everything should just no-op.
-
-  // If you want to check for failure, all function pointers are intialized by default to their corresponding
-  // __librashader__noop_* functions in librashader.h. 
   libra_instance_t librashader = librashader_load_instance();
 
+  // If the instance ABI version is 0, then either librashader is not found, or 
+  // the ABI is incompatible.
+  if (librashader.instance_abi_version() == 0) {
+    std::cout << "Could not load librashader\n";
+    return NULL;
+  }
+  
   libra_shader_preset_t preset;
   libra_error_t error = librashader.preset_create(preset_path, &preset);
   if (error != NULL) {

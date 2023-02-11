@@ -139,6 +139,7 @@ typedef struct libra_preset_param_list_t {
 typedef const void *(*libra_gl_loader_t)(const char*);
 #endif
 
+/// API version type alias.
 typedef size_t LIBRASHADER_API_VERSION;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -383,6 +384,14 @@ typedef struct frame_d3d12_opt_t {
   int32_t frame_direction;
 } frame_d3d12_opt_t;
 #endif
+
+typedef size_t LIBRASHADER_ABI_VERSION;
+
+/// Function pointer definition for libra_abi_version
+typedef LIBRASHADER_ABI_VERSION (*PFN_libra_instance_abi_version)(void);
+
+/// Function pointer definition for libra_abi_version
+typedef LIBRASHADER_API_VERSION (*PFN_libra_instance_api_version)(void);
 
 /// Function pointer definition for
 ///libra_preset_create
@@ -698,9 +707,28 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_get_active_pass_count)(libr
 typedef libra_error_t (*PFN_libra_d3d12_filter_chain_free)(libra_d3d12_filter_chain_t *chain);
 #endif
 
-/// The current version of the librashader API/ABI.
+/// The current version of the librashader API.
 /// Pass this into `version` for config structs.
+///
+/// API versions are backwards compatible. It is valid to load
+/// a librashader C API instance for all API versions less than
+/// or equal to LIBRASHADER_CURRENT_VERSION, and subsequent API
+/// versions must remain backwards compatible.
+/// ## API Versions
+/// - API version 0: 0.1.0
 #define LIBRASHADER_CURRENT_VERSION 0
+
+/// The current version of the librashader ABI.
+/// Used by the loader to check ABI compatibility.
+///
+/// ABI version 0 is reserved as a sentinel value.
+///
+/// ABI versions are not backwards compatible. It is not
+/// valid to load a librashader C API instance for any ABI
+/// version not equal to LIBRASHADER_CURRENT_ABI.
+/// ## ABI Versions
+/// - ABI version 1: 0.1.0
+#define LIBRASHADER_CURRENT_ABI 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -1305,6 +1333,12 @@ libra_error_t libra_d3d12_filter_chain_get_active_pass_count(libra_d3d12_filter_
 /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_d3d12_filter_chain_t`.
 libra_error_t libra_d3d12_filter_chain_free(libra_d3d12_filter_chain_t *chain);
 #endif
+
+/// Get the ABI version of the loaded instance.
+LIBRASHADER_ABI_VERSION libra_instance_abi_version(void);
+
+/// Get the API version of the loaded instance.
+LIBRASHADER_API_VERSION libra_instance_api_version(void);
 
 #ifdef __cplusplus
 } // extern "C"

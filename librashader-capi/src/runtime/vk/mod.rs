@@ -1,4 +1,4 @@
-//! C API for the librashader OpenGL Runtime (`libra_gl_*`)
+//! C API for the librashader OpenGL Runtime (`libra_vk_*`).
 
 mod filter_chain;
 pub use filter_chain::*;
