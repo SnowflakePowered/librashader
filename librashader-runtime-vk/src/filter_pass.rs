@@ -117,16 +117,6 @@ impl FilterPass {
         );
 
         if let Some(ubo) = &self.reflection.ubo {
-            // RetroArch uses uses one big buffer for this and handles alignment themselves.
-            // It's simpler here if we just use a buffer for each pass but not ideal.
-            //
-            // May want to switch to something like VMA in the future.
-
-            // VkUboRing is no longer used, we just write directly to the storage now.
-
-            // self.ubo_ring
-            //     .bind_to_descriptor_set(descriptor, ubo.binding, &self.uniform_storage)?;
-
             self.uniform_storage.inner_ubo().bind_to_descriptor_set(
                 descriptor,
                 ubo.binding,
@@ -174,8 +164,6 @@ impl FilterPass {
                 );
             }
 
-            // parent.draw_quad.bind_vbo(cmd, vbo_type);
-
             parent.device.cmd_set_scissor(
                 cmd,
                 0,
@@ -194,7 +182,7 @@ impl FilterPass {
             parent.draw_quad.draw_quad(cmd, vbo_type);
             self.graphics_pipeline.end_rendering(&parent.device, cmd);
         }
-        self.internal_frame_count += 1;
+        self.internal_frame_count = self.internal_frame_count.wrapping_add(1);
         Ok(residual)
     }
 
