@@ -51,13 +51,14 @@ For Rust projects, simply add the crate to your `Cargo.toml`.
 cargo add librashader
 ```
 
-To build the C compatible dynamic library, [cargo-post](https://crates.io/crates/cargo-post) is required.
+To build the C compatible dynamic library, run the build script.
 
 ```
-cargo post build --release --package librashader-capi
+cargo run -p librashader-build-script -- --profile optimized
 ```
 
-This will output a `librashader.dll` or `librashader.so` in the target folder.
+This will output a `librashader.dll` or `librashader.so` in the target folder. Profile can be `debug`, `release`, or 
+`optimized` for full LTO.
 
 ### C ABI Compatibility
 As the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 

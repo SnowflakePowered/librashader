@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        profile: ['dev', 'release', 'optimized']
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -31,10 +32,6 @@ jobs:
         vulkan-query-version: latest
         vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Cross, SPIRV-Headers, SPIRV-Reflect, SPIRV-Tools, Glslang
         vulkan-use-cache: true
-    - name: Setup cargo post
-      uses: baptiste0928/cargo-install@bf6758885262d0e6f61089a9d8c8790d3ac3368f
-      with:
-        crate: cargo-post
     - uses: actions/setup-python@v1
       name: Setup Python
       with:
@@ -42,9 +39,9 @@ jobs:
     - run: pip install meson ninja mako
       name: Install Meson for spirv-to-dxil-sys
     - name: Build dynamic library
-      run: cargo post build --release --package librashader-capi
+      run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }}
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3.1.2
       with:
-        name: build-outputs
+        name: ${{ format('build-outputs-{0}-{1}', matrix.os, matrix.profile) }}
         path: "target/release/librashader.*"

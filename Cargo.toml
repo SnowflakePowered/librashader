@@ -11,6 +11,12 @@ members = [
     "librashader-runtime-gl",
     "librashader-runtime-vk",
     "librashader-capi",
+    "librashader-build-script"
 ]
 
 [workspace.metadata.release]
+
+[profile.optimized]
+inherits = "release"
+lto = true
+codegen-units = 1

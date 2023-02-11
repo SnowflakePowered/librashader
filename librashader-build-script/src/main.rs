@@ -1,7 +1,16 @@
 use std::{env, fs};
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Args {
+    #[arg(long, default_value="debug", global = true)]
+    profile: String,
+}
 
 pub fn main() {
     // Do not update files on docsrs
@@ -9,8 +18,25 @@ pub fn main() {
         return;
     }
 
+    let args = Args::parse();
+
+    let profile = args.profile;
+
+    let crate_dir = Path::new("librashader-capi");
+    println!("Building librashader C API...");
+
+    let mut cmd = Command::new("cargo");
+    cmd.arg("build");
+    cmd.args(["--package", "librashader-capi"]);
+    cmd.arg(format!("--profile={}", if profile == "debug" { "dev" } else { &profile }));
+    Some(cmd.status().expect("Failed to build librashader-capi"));
+
+    let output_dir = PathBuf::from(format!("target/{}", profile))
+        .canonicalize().expect("Could not find output directory.");
+
+    println!("Generating C headers...");
+
     // Create headers.
-    let crate_dir = env::var("CRATE_MANIFEST_DIR").unwrap();
     let mut buf = BufWriter::new(Vec::new());
     cbindgen::generate(crate_dir)
         .expect("Unable to generate bindings")
@@ -18,18 +44,18 @@ pub fn main() {
 
     let bytes = buf.into_inner().expect("Unable to extract bytes");
     let string = String::from_utf8(bytes).expect("Unable to create string");
-    File::create(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join("librashader.h"))
+    File::create(output_dir.join("librashader.h"))
         .expect("Unable to open file")
         .write_all(string.as_bytes())
         .expect("Unable to write bindings.");
 
-
+    println!("Moving artifacts...");
     if cfg!(target_os = "linux") {
         let artifacts = &["liblibrashader_capi.so", "liblibrashader_capi.a"];
         for artifact in artifacts {
             let ext = artifact.strip_prefix("lib").unwrap();
             let ext = ext.replace("_capi", "");
-            fs::rename(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(artifact), PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(ext)).unwrap();
+            fs::rename(output_dir.join(artifact), output_dir.join(ext)).unwrap();
         }
     }
 
@@ -37,7 +63,7 @@ pub fn main() {
         let artifacts = &["librashader_capi.dll", "librashader_capi.lib", "librashader_capi.d", "librashader_capi.dll.exp", "librashader_capi.dll.lib", "librashader_capi.pdb"];
         for artifact in artifacts {
             let ext = artifact.replace("_capi", "");
-            fs::rename(PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(artifact), PathBuf::from(env::var("CRATE_OUT_DIR").unwrap()).join(ext)).unwrap();
+            fs::rename(output_dir.join(artifact), output_dir.join(ext)).unwrap();
         }
     }
 }
