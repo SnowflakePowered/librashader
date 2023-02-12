@@ -36,7 +36,7 @@ mod tests {
             // "../test/slang-shaders/crt/crt-lottes.slangp",
             // "../test/basic.slangp",
             //     "../test/slang-shaders/handheld/console-border/gbc-lcd-grid-v2.slangp",
-            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp",
+            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             // "../test/slang-shaders/test/feedback.slangp",
             // "../test/slang-shaders/test/history.slangp",
             // "../test/slang-shaders/crt/crt-royale.slangp",

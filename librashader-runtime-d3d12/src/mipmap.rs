@@ -1,11 +1,12 @@
 use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, ResourceWorkHeap};
-use crate::util::fxc_compile_shader;
+use crate::util::dxc_compile_shader;
 use crate::{error, util};
 use bytemuck::{Pod, Zeroable};
 use librashader_common::Size;
 use librashader_runtime::scaling::MipmapSize;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
+use widestring::u16cstr;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12DescriptorHeap, ID3D12Device, ID3D12GraphicsCommandList, ID3D12PipelineState,
     ID3D12Resource, ID3D12RootSignature, D3D12_COMPUTE_PIPELINE_STATE_DESC,
@@ -16,6 +17,7 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEX2D_UAV, D3D12_UAV_DIMENSION_TEXTURE2D,
     D3D12_UNORDERED_ACCESS_VIEW_DESC, D3D12_UNORDERED_ACCESS_VIEW_DESC_0,
 };
+use windows::Win32::Graphics::Direct3D::Dxc::{CLSID_DxcCompiler, CLSID_DxcLibrary, DxcCreateInstance};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
 static GENERATE_MIPS_SRC: &[u8] = b"
@@ -124,7 +126,10 @@ impl<'a> MipmapGenContext<'a> {
 impl D3D12MipmapGen {
     pub fn new(device: &ID3D12Device, own_heaps: bool) -> error::Result<D3D12MipmapGen> {
         unsafe {
-            let blob = fxc_compile_shader(GENERATE_MIPS_SRC, b"main\0", b"cs_5_1\0")?;
+            let library = DxcCreateInstance(&CLSID_DxcLibrary)?;
+            let compiler = DxcCreateInstance(&CLSID_DxcCompiler)?;
+
+            let blob = dxc_compile_shader(&library, &compiler, GENERATE_MIPS_SRC, u16cstr!("cs_6_0"))?;
             let blob =
                 std::slice::from_raw_parts(blob.GetBufferPointer().cast(), blob.GetBufferSize());
             let root_signature: ID3D12RootSignature = device.CreateRootSignature(0, blob)?;

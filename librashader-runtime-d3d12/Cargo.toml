@@ -37,14 +37,28 @@ features = [
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D12",
+    "Win32_Graphics_Direct3D_Dxc",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_Security",
+]
+
+[target.'cfg(windows)'.dev-dependencies.windows]
+features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D12",
     "Win32_Graphics_Direct3D_Fxc",
     "Win32_Graphics_Direct3D_Dxc",
     "Win32_Graphics_Gdi",
     "Win32_Security",
     "Win32_System_LibraryLoader",
     "Win32_System_Threading",
-    "Win32_System_WindowsProgramming",
     "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
 ]
 [dev-dependencies]
 gfx-maths = "0.2.8"
+

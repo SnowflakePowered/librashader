@@ -1,19 +1,15 @@
 use crate::error;
 use crate::error::assume_d3d12_init;
-use librashader_reflect::reflect::semantics::BindingStage;
 
 use std::mem::ManuallyDrop;
 use std::u64;
-use widestring::u16cstr;
-use windows::core::{PCSTR, PCWSTR};
+use widestring::{u16cstr, U16CStr};
+use windows::core::PCWSTR;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
     DXC_CP_UTF8,
 };
-use windows::Win32::Graphics::Direct3D::Fxc::{
-    D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION,
-};
-use windows::Win32::Graphics::Direct3D::ID3DBlob;
+
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
     D3D12_FEATURE_FORMAT_SUPPORT, D3D12_MEMCPY_DEST, D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
@@ -132,52 +128,20 @@ pub fn d3d12_get_closest_format(
     DXGI_FORMAT_UNKNOWN
 }
 
-pub fn fxc_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
-    unsafe {
-        let mut blob = None;
-        D3DCompile(
-            source.as_ptr().cast(),
-            source.len(),
-            None,
-            None,
-            None,
-            PCSTR(entry.as_ptr()),
-            PCSTR(version.as_ptr()),
-            if cfg!(feature = "debug-shader") {
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-            } else {
-                D3DCOMPILE_OPTIMIZATION_LEVEL3
-            },
-            0,
-            &mut blob,
-            None,
-        )?;
-
-        assume_d3d12_init!(blob, "D3DCompile");
-        Ok(blob)
-    }
-}
-
 pub fn dxc_compile_shader(
     library: &IDxcUtils,
     compiler: &IDxcCompiler,
-    source: &String,
-    profile: BindingStage,
+    source: impl AsRef<[u8]>,
+    profile: &U16CStr,
 ) -> error::Result<IDxcBlob> {
     let include = unsafe { library.CreateDefaultIncludeHandler()? };
-
+    let source = source.as_ref();
     let blob = unsafe {
         library.CreateBlobFromPinned(
             source.as_ptr().cast(),
-            source.as_bytes().len() as u32,
+            source.len() as u32,
             DXC_CP_UTF8,
         )?
-    };
-
-    let profile = if profile == BindingStage::FRAGMENT {
-        u16cstr!("ps_6_0")
-    } else {
-        u16cstr!("vs_6_0")
     };
 
     unsafe {

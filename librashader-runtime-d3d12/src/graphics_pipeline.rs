@@ -1,3 +1,4 @@
+use widestring::u16cstr;
 use crate::error::assume_d3d12_init;
 use crate::error::FilterChainError::Direct3DOperationError;
 use crate::quad_render::DrawQuad;
@@ -5,7 +6,6 @@ use crate::{error, util};
 use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::BindingStage;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcLibrary, DxcCreateInstance, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
@@ -308,12 +308,12 @@ impl D3D12GraphicsPipeline {
         render_format: DXGI_FORMAT,
     ) -> error::Result<D3D12GraphicsPipeline> {
         let vertex_dxil =
-            util::dxc_compile_shader(library, dxc, &shader_assembly.vertex, BindingStage::VERTEX)?;
+            util::dxc_compile_shader(library, dxc, &shader_assembly.vertex, u16cstr!("vs_6_0"))?;
         let fragment_dxil = util::dxc_compile_shader(
             library,
             dxc,
             &shader_assembly.fragment,
-            BindingStage::FRAGMENT,
+            u16cstr!("ps_6_0")
         )?;
 
         Self::new_from_blobs(

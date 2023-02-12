@@ -30,7 +30,6 @@ mod tests {
     use super::*;
     use crate::options::FilterChainOptionsD3D11;
     use librashader_runtime::image::{Image, UVDirection};
-    use std::env;
 
     // "../test/slang-shaders/scalefx/scalefx-9x.slangp",
     // "../test/slang-shaders/bezel/koko-aio/monitor-bloom.slangp",
@@ -48,7 +47,7 @@ mod tests {
     const IMAGE_PATH: &str = "../triangle.png";
     #[test]
     fn triangle_d3d11_args() {
-        let mut args = env::args();
+        let mut args = std::env::args();
         let _ = args.next();
         let _ = args.next();
         let filter = args.next();
