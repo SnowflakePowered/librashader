@@ -36,10 +36,10 @@ mod tests {
             // "../test/slang-shaders/crt/crt-lottes.slangp",
             // "../test/basic.slangp",
             //     "../test/slang-shaders/handheld/console-border/gbc-lcd-grid-v2.slangp",
-            // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",
             // "../test/slang-shaders/test/feedback.slangp",
             // "../test/slang-shaders/test/history.slangp",
-            "../test/slang-shaders/crt/crt-royale.slangp",
+            // "../test/slang-shaders/crt/crt-royale.slangp",
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             &SampleCommandLine {
                 use_warp_device: false,

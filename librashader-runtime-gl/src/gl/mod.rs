@@ -11,12 +11,21 @@ pub use framebuffer::GLFramebuffer;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, TextureConfig};
+use librashader_reflect::back::cross::CrossGlslContext;
+use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_runtime::uniforms::UniformStorageAccess;
 use rustc_hash::FxHashMap;
 
 pub(crate) trait LoadLut {
     fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, InputTexture>>;
+}
+
+pub(crate) trait CompileProgram {
+    fn compile_program(
+        shader: ShaderCompilerOutput<String, CrossGlslContext>,
+        cache: bool,
+    ) -> Result<(GLuint, UniformLocation<GLuint>)>;
 }
 
 pub(crate) trait DrawQuad {
@@ -61,4 +70,5 @@ pub(crate) trait GLInterface {
     type DrawQuad: DrawQuad;
     type LoadLut: LoadLut;
     type BindTexture: BindTexture;
+    type CompileShader: CompileProgram;
 }

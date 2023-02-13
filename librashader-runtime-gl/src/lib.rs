@@ -35,7 +35,7 @@ mod tests {
     fn triangle_gl() {
         let (glfw, window, events, shader, vao) = gl::gl3::hello_triangle::setup();
         let mut filter = FilterChainGL::load_from_path(
-            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: false,
@@ -54,7 +54,7 @@ mod tests {
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             // "../test/slang-shaders/test/history.slangp",
             // "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-            "../test/slang-shaders/test/feedback.slangp",
+            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: true,

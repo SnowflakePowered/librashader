@@ -10,6 +10,7 @@ members = [
     "librashader-runtime-d3d12",
     "librashader-runtime-gl",
     "librashader-runtime-vk",
+    "librashader-cache",
     "librashader-capi",
     "librashader-build-script"
 ]

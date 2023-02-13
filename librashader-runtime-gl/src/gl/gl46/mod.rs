@@ -4,9 +4,11 @@ mod lut_load;
 mod texture_bind;
 mod ubo_ring;
 
+mod compile_program;
 #[cfg(test)]
 pub mod hello_triangle;
 
+use crate::gl::gl46::compile_program::Gl4CompileProgram;
 use crate::gl::GLInterface;
 use draw_quad::*;
 use framebuffer::*;
@@ -21,4 +23,5 @@ impl GLInterface for DirectStateAccessGL {
     type DrawQuad = Gl46DrawQuad;
     type LoadLut = Gl46LutLoad;
     type BindTexture = Gl46BindTexture;
+    type CompileShader = Gl4CompileProgram;
 }

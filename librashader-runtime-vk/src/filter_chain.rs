@@ -22,7 +22,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::image::{BGRA8, Image, ImageError, UVDirection};
+use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use parking_lot::RwLock;
@@ -32,6 +32,7 @@ use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
 
+use librashader_cache::compilation::CachedCompilation;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -42,7 +43,6 @@ pub struct VulkanObjects {
     pub(crate) device: Arc<ash::Device>,
     pub(crate) alloc: Arc<RwLock<Allocator>>,
     queue: vk::Queue,
-    pipeline_cache: vk::PipelineCache,
     // pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
 }
 
@@ -76,9 +76,6 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
 
             let device = ash::Device::load(instance.fp_v1_0(), vulkan.device);
 
-            let pipeline_cache =
-                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
-
             let queue = get_graphics_queue(&instance, &device, vulkan.physical_device);
 
             // let memory_properties =
@@ -90,7 +87,6 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
                 device: Arc::new(device),
                 alloc,
                 queue,
-                pipeline_cache,
                 // memory_properties,
                 // debug,
             })
@@ -102,27 +98,21 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects
     type Error = FilterChainError;
 
     fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
-        unsafe {
-            let device = value.2;
+        let device = value.2;
 
-            let pipeline_cache =
-                device.create_pipeline_cache(&vk::PipelineCacheCreateInfo::default(), None)?;
+        let queue = get_graphics_queue(&value.1, &device, value.0);
 
-            let queue = get_graphics_queue(&value.1, &device, value.0);
+        // let memory_properties = value.1.get_physical_device_memory_properties(value.0);
 
-            // let memory_properties = value.1.get_physical_device_memory_properties(value.0);
+        let alloc = util::create_allocator(device.clone(), value.1, value.0)?;
 
-            let alloc = util::create_allocator(device.clone(), value.1, value.0)?;
-
-            Ok(VulkanObjects {
-                alloc,
-                device: Arc::new(device),
-                queue,
-                pipeline_cache,
-                // memory_properties,
-                // debug: value.3,
-            })
-        }
+        Ok(VulkanObjects {
+            alloc,
+            device: Arc::new(device),
+            queue,
+            // memory_properties,
+            // debug: value.3,
+        })
     }
 }
 
@@ -318,7 +308,7 @@ impl FilterChainVulkan {
         FilterChainError: From<E>,
     {
         let (passes, semantics) = SPIRV::compile_preset_passes::<
-            GlslangCompilation,
+            CachedCompilation<GlslangCompilation>,
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
         let device = vulkan.try_into().map_err(From::from)?;
@@ -436,7 +426,6 @@ impl FilterChainVulkan {
 
                 let graphics_pipeline = VulkanGraphicsPipeline::new(
                     &vulkan.device,
-                    &vulkan.pipeline_cache,
                     &spirv_words,
                     &reflection,
                     frames_in_flight,
@@ -470,7 +459,8 @@ impl FilterChainVulkan {
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
-        let images = textures.par_iter()
+        let images = textures
+            .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {

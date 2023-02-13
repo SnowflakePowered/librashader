@@ -1,10 +1,10 @@
-use std::collections::VecDeque;
 use crate::error::{ParseErrorKind, ParsePresetError};
 use crate::parse::{remove_if, Span, Token};
 use crate::{ScaleFactor, ScaleType};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
+use std::collections::VecDeque;
 
 use nom::IResult;
 use num_traits::cast::ToPrimitive;

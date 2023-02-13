@@ -22,6 +22,8 @@ use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
+use librashader_cache::cache::cache_object;
+use librashader_cache::compilation::CachedCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -117,7 +119,7 @@ impl FilterChainD3D11 {
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
         let (passes, semantics) = HLSL::compile_preset_passes::<
-            GlslangCompilation,
+            CachedCompilation<GlslangCompilation>,
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
 
@@ -125,6 +127,7 @@ impl FilterChainD3D11 {
 
         // initialize passes
         let filters = FilterChainD3D11::init_passes(device, passes, &semantics)?;
+        println!("passes loded");
 
         let immediate_context = unsafe { device.GetImmediateContext()? };
 
@@ -152,6 +155,7 @@ impl FilterChainD3D11 {
 
         let draw_quad = DrawQuad::new(device)?;
         let state = D3D11State::new(device)?;
+        println!("ready");
         Ok(FilterChainD3D11 {
             passes: filters,
             output_framebuffers,
@@ -216,25 +220,35 @@ impl FilterChainD3D11 {
             let reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(None)?;
 
-            let vertex_dxbc =
-                util::d3d_compile_shader(hlsl.vertex.as_bytes(), b"main\0", b"vs_5_0\0")?;
-            let vs = d3d11_compile_bound_shader(
-                device,
-                &vertex_dxbc,
-                None,
-                ID3D11Device::CreateVertexShader,
+            let (vs, vertex_dxbc) = cache_object(
+                "dxbc",
+                &[hlsl.vertex.as_bytes()],
+                |&[bytes]| util::d3d_compile_shader(bytes, b"main\0", b"vs_5_0\0"),
+                |blob| {
+                    Ok((
+                        d3d11_compile_bound_shader(
+                            device,
+                            &blob,
+                            None,
+                            ID3D11Device::CreateVertexShader,
+                        )?,
+                        blob,
+                    ))
+                },
+                true,
             )?;
 
             let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
             let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
 
-            let fragment_dxbc =
-                util::d3d_compile_shader(hlsl.fragment.as_bytes(), b"main\0", b"ps_5_0\0")?;
-            let ps = d3d11_compile_bound_shader(
-                device,
-                &fragment_dxbc,
-                None,
-                ID3D11Device::CreatePixelShader,
+            let ps = cache_object(
+                "dxbc",
+                &[hlsl.fragment.as_bytes()],
+                |&[bytes]| util::d3d_compile_shader(bytes, b"main\0", b"ps_5_0\0"),
+                |blob| {
+                    d3d11_compile_bound_shader(device, &blob, None, ID3D11Device::CreatePixelShader)
+                },
+                true,
             )?;
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
@@ -317,7 +331,8 @@ impl FilterChainD3D11 {
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
-        let images = textures.par_iter()
+        let images = textures
+            .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image>, ImageError>>()?;
 

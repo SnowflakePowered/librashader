@@ -6,8 +6,8 @@ use gl::types::{GLsizei, GLuint};
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
-use rustc_hash::FxHashMap;
 use rayon::prelude::*;
+use rustc_hash::FxHashMap;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
@@ -23,7 +23,8 @@ impl LoadLut for Gl46LutLoad {
             gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
         }
 
-        let images = textures.par_iter()
+        let images = textures
+            .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::BottomLeft))
             .collect::<std::result::Result<Vec<Image>, ImageError>>()?;
 

@@ -1,14 +1,14 @@
-use std::{env, fs};
+use clap::Parser;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use clap::Parser;
+use std::{env, fs};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
-    #[arg(long, default_value="debug", global = true)]
+    #[arg(long, default_value = "debug", global = true)]
     profile: String,
 }
 
@@ -28,11 +28,15 @@ pub fn main() {
     let mut cmd = Command::new("cargo");
     cmd.arg("build");
     cmd.args(["--package", "librashader-capi"]);
-    cmd.arg(format!("--profile={}", if profile == "debug" { "dev" } else { &profile }));
+    cmd.arg(format!(
+        "--profile={}",
+        if profile == "debug" { "dev" } else { &profile }
+    ));
     Some(cmd.status().expect("Failed to build librashader-capi"));
 
     let output_dir = PathBuf::from(format!("target/{}", profile))
-        .canonicalize().expect("Could not find output directory.");
+        .canonicalize()
+        .expect("Could not find output directory.");
 
     println!("Generating C headers...");
 
@@ -60,7 +64,14 @@ pub fn main() {
     }
 
     if cfg!(target_os = "windows") {
-        let artifacts = &["librashader_capi.dll", "librashader_capi.lib", "librashader_capi.d", "librashader_capi.dll.exp", "librashader_capi.dll.lib", "librashader_capi.pdb"];
+        let artifacts = &[
+            "librashader_capi.dll",
+            "librashader_capi.lib",
+            "librashader_capi.d",
+            "librashader_capi.dll.exp",
+            "librashader_capi.dll.lib",
+            "librashader_capi.pdb",
+        ];
         for artifact in artifacts {
             let ext = artifact.replace("_capi", "");
             fs::rename(output_dir.join(artifact), output_dir.join(ext)).unwrap();

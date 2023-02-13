@@ -43,7 +43,7 @@ mod tests {
         let base = VulkanBase::new(entry).unwrap();
         let filter = FilterChainVulkan::load_from_path(
             // "../test/slang-shaders/crt/crt-royale.slangp",
-            "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp",
+            "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",
             &base,
             // "../test/slang-shaders/test/feedback.slancargogp",
             // "../test/basic.slangp",

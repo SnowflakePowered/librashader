@@ -2,9 +2,11 @@ use crate::error::assume_d3d12_init;
 use crate::error::FilterChainError::Direct3DOperationError;
 use crate::quad_render::DrawQuad;
 use crate::{error, util};
+use librashader_cache::cache::{cache_object, cache_pipeline};
 use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
+use std::ops::Deref;
 use widestring::u16cstr;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::Dxc::{
@@ -13,14 +15,14 @@ use windows::Win32::Graphics::Direct3D::Dxc::{
 use windows::Win32::Graphics::Direct3D12::{
     D3D12SerializeVersionedRootSignature, ID3D12Device, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_BLEND_DESC, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD, D3D12_BLEND_SRC_ALPHA,
-    D3D12_COLOR_WRITE_ENABLE_ALL, D3D12_CULL_MODE_NONE, D3D12_DESCRIPTOR_RANGE1,
-    D3D12_DESCRIPTOR_RANGE_FLAGS, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE,
-    D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-    D3D12_DESCRIPTOR_RANGE_TYPE_SRV, D3D12_FILL_MODE_SOLID, D3D12_GRAPHICS_PIPELINE_STATE_DESC,
-    D3D12_INPUT_LAYOUT_DESC, D3D12_LOGIC_OP_NOOP, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-    D3D12_RASTERIZER_DESC, D3D12_RENDER_TARGET_BLEND_DESC, D3D12_ROOT_DESCRIPTOR1,
-    D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_ROOT_DESCRIPTOR_TABLE1, D3D12_ROOT_PARAMETER1,
-    D3D12_ROOT_PARAMETER1_0, D3D12_ROOT_PARAMETER_TYPE_CBV,
+    D3D12_CACHED_PIPELINE_STATE, D3D12_COLOR_WRITE_ENABLE_ALL, D3D12_CULL_MODE_NONE,
+    D3D12_DESCRIPTOR_RANGE1, D3D12_DESCRIPTOR_RANGE_FLAGS,
+    D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
+    D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, D3D12_FILL_MODE_SOLID,
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC, D3D12_INPUT_LAYOUT_DESC, D3D12_LOGIC_OP_NOOP,
+    D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, D3D12_RASTERIZER_DESC, D3D12_RENDER_TARGET_BLEND_DESC,
+    D3D12_ROOT_DESCRIPTOR1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_ROOT_DESCRIPTOR_TABLE1,
+    D3D12_ROOT_PARAMETER1, D3D12_ROOT_PARAMETER1_0, D3D12_ROOT_PARAMETER_TYPE_CBV,
     D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_ROOT_SIGNATURE_DESC1,
     D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, D3D12_SHADER_BYTECODE,
     D3D12_SHADER_VISIBILITY_ALL, D3D12_SHADER_VISIBILITY_PIXEL,
@@ -144,7 +146,7 @@ impl D3D12RootSignature {
     }
 }
 impl D3D12GraphicsPipeline {
-    fn new_from_blobs(
+    pub fn new_from_blobs(
         device: &ID3D12Device,
         vertex_dxil: IDxcBlob,
         fragment_dxil: IDxcBlob,
@@ -220,7 +222,32 @@ impl D3D12GraphicsPipeline {
                 ..Default::default()
             };
 
-            device.CreateGraphicsPipelineState(&pipeline_desc)?
+            cache_pipeline(
+                "d3d12",
+                &[&vertex_dxil, &fragment_dxil, &render_format.0],
+                |cached: Option<Vec<u8>>| {
+                    if let Some(cached) = cached {
+                        let pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+                            CachedPSO: D3D12_CACHED_PIPELINE_STATE {
+                                pCachedBlob: cached.as_ptr().cast(),
+                                CachedBlobSizeInBytes: cached.len(),
+                            },
+                            pRootSignature: windows::core::ManuallyDrop::new(
+                                &root_signature.handle,
+                            ),
+                            ..pipeline_desc
+                        };
+                        device.CreateGraphicsPipelineState(&pipeline_desc)
+                    } else {
+                        device.CreateGraphicsPipelineState(&pipeline_desc)
+                    }
+                },
+                |pso: &ID3D12PipelineState| {
+                    let cached_pso = pso.GetCachedBlob()?;
+                    Ok(cached_pso)
+                },
+                true,
+            )?
         };
 
         unsafe {
@@ -286,9 +313,22 @@ impl D3D12GraphicsPipeline {
                 "Compiled DXIL fragment shader needs unexpected runtime data",
             ));
         }
-        let vertex_dxil = util::dxc_validate_shader(library, validator, &shader_assembly.vertex)?;
-        let fragment_dxil =
-            util::dxc_validate_shader(library, validator, &shader_assembly.fragment)?;
+
+        let vertex_dxil = cache_object(
+            "dxil",
+            &[shader_assembly.vertex.deref()],
+            |&[source]| util::dxc_validate_shader(library, validator, source),
+            |f| Ok(f),
+            true,
+        )?;
+
+        let fragment_dxil = cache_object(
+            "dxil",
+            &[shader_assembly.fragment.deref()],
+            |&[source]| util::dxc_validate_shader(library, validator, source),
+            |f| Ok(f),
+            true,
+        )?;
 
         Self::new_from_blobs(
             device,
@@ -307,10 +347,21 @@ impl D3D12GraphicsPipeline {
         root_signature: &D3D12RootSignature,
         render_format: DXGI_FORMAT,
     ) -> error::Result<D3D12GraphicsPipeline> {
-        let vertex_dxil =
-            util::dxc_compile_shader(library, dxc, &shader_assembly.vertex, u16cstr!("vs_6_0"))?;
-        let fragment_dxil =
-            util::dxc_compile_shader(library, dxc, &shader_assembly.fragment, u16cstr!("ps_6_0"))?;
+        let vertex_dxil = cache_object(
+            "dxil",
+            &[shader_assembly.vertex.as_bytes()],
+            |&[source]| util::dxc_compile_shader(library, dxc, source, u16cstr!("vs_6_0")),
+            |f| Ok(f),
+            true,
+        )?;
+
+        let fragment_dxil = cache_object(
+            "dxil",
+            &[shader_assembly.fragment.as_bytes()],
+            |&[source]| util::dxc_compile_shader(library, dxc, source, u16cstr!("ps_6_0")),
+            |f| Ok(f),
+            true,
+        )?;
 
         Self::new_from_blobs(
             device,
