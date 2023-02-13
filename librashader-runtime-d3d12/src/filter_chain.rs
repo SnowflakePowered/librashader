@@ -405,9 +405,6 @@ impl FilterChainD3D12 {
                     librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
                 ))?;
 
-                let hlsl_reflection = hlsl.reflect(index, semantics)?;
-                let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
-
                 let render_format = if let Some(format) = config.get_format_override() {
                     format
                 } else if source.format != ImageFormat::Unknown {
@@ -429,6 +426,9 @@ impl FilterChainD3D12 {
                         ) {
                     (dxil_reflection, graphics_pipeline)
                 } else {
+                    let hlsl_reflection = hlsl.reflect(index, semantics)?;
+                    let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
+
                     let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
                         device,
                         library,
