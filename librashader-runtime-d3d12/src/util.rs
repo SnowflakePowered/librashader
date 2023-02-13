@@ -99,16 +99,16 @@ const fn d3d12_format_fallback_list(format: DXGI_FORMAT) -> Option<&'static [DXG
 
 pub fn d3d12_get_closest_format(
     device: &ID3D12Device,
-    format: DXGI_FORMAT,
     format_support: D3D12_FEATURE_DATA_FORMAT_SUPPORT,
 ) -> DXGI_FORMAT {
+    let format = format_support.Format;
     let default_list = [format, DXGI_FORMAT_UNKNOWN];
     let format_support_list = d3d12_format_fallback_list(format).unwrap_or(&default_list);
 
     for supported in format_support_list {
         unsafe {
             let mut support = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
-                Format: format,
+                Format: *supported,
                 ..Default::default()
             };
             if device
@@ -137,11 +137,7 @@ pub fn dxc_compile_shader(
     let include = unsafe { library.CreateDefaultIncludeHandler()? };
     let source = source.as_ref();
     let blob = unsafe {
-        library.CreateBlobFromPinned(
-            source.as_ptr().cast(),
-            source.len() as u32,
-            DXC_CP_UTF8,
-        )?
+        library.CreateBlobFromPinned(source.as_ptr().cast(), source.len() as u32, DXC_CP_UTF8)?
     };
 
     unsafe {

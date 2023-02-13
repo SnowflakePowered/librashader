@@ -68,7 +68,7 @@ impl LutTexture {
             format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
         }
 
-        desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
+        desc.Format = d3d12_get_closest_format(device, format_support);
         let descriptor = heap.alloc_slot()?;
 
         // create handles on GPU
@@ -183,7 +183,7 @@ impl LutTexture {
             resource.clone(),
             descriptor,
             source.size,
-            ImageFormat::R8G8B8A8Unorm,
+            ImageFormat::R8G8B8A8Unorm.into(),
             filter,
             wrap_mode,
         );

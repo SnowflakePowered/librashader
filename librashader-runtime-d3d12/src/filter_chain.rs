@@ -256,8 +256,14 @@ impl FilterChainD3D12 {
             &preset.textures,
         )?;
 
-        let framebuffer_gen =
-            || OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false);
+        let framebuffer_gen = || {
+            OwnedImage::new(
+                device,
+                Size::new(1, 1),
+                ImageFormat::R8G8B8A8Unorm.into(),
+                false,
+            )
+        };
         let input_gen = || None;
         let framebuffer_init = FramebufferInit::new(
             filters.iter().map(|f| &f.reflection.meta),
@@ -496,7 +502,7 @@ impl FilterChainD3D12 {
                 // old back will get dropped.. do we need to defer?
                 let _old_back = std::mem::replace(
                     &mut back,
-                    OwnedImage::new(&self.common.d3d12, input.size, input.format.into(), false)?,
+                    OwnedImage::new(&self.common.d3d12, input.size, input.format, false)?,
                 );
             }
             unsafe {
@@ -627,6 +633,16 @@ impl FilterChainD3D12 {
             source.wrap_mode = pass.config.wrap_mode;
 
             let target = &self.output_framebuffers[index];
+
+            if pass.pipeline.format != target.format {
+                // eprintln!("recompiling final pipeline");
+                pass.pipeline.recompile(
+                    target.format,
+                    &self.common.root_signature,
+                    &self.common.d3d12,
+                )?;
+            }
+
             util::d3d12_resource_transition(
                 cmd,
                 &target.handle,

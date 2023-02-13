@@ -1,5 +1,5 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeapSlot, RenderTargetHeap};
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{FilterMode, Size, WrapMode};
 use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
@@ -96,7 +96,7 @@ impl InputTexture {
         resource: ID3D12Resource,
         handle: D3D12DescriptorHeapSlot<CpuStagingHeap>,
         size: Size<u32>,
-        format: ImageFormat,
+        format: DXGI_FORMAT,
         filter: FilterMode,
         wrap_mode: WrapMode,
     ) -> InputTexture {
@@ -105,7 +105,7 @@ impl InputTexture {
             resource,
             descriptor: srv,
             size,
-            format: format.into(),
+            format,
             wrap_mode,
             filter,
         }

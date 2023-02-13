@@ -13,7 +13,8 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
     D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP,
     D3D12_FORMAT_SUPPORT1_RENDER_TARGET, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE,
-    D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES,
+    D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD,
+    D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES,
     D3D12_HEAP_TYPE_DEFAULT, D3D12_MEMORY_POOL_UNKNOWN, D3D12_RENDER_TARGET_VIEW_DESC,
     D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_DESC,
     D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
@@ -24,13 +25,13 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION,
     D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
-use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
 #[derive(Debug, Clone)]
 pub(crate) struct OwnedImage {
     pub(crate) handle: ID3D12Resource,
     pub(crate) size: Size<u32>,
-    pub(crate) format: ImageFormat,
+    pub(crate) format: DXGI_FORMAT,
     pub(crate) max_mipmap: u16,
     device: ID3D12Device,
 }
@@ -38,10 +39,32 @@ pub(crate) struct OwnedImage {
 static CLEAR: &[f32; 4] = &[0.0, 0.0, 0.0, 0.0];
 
 impl OwnedImage {
+    pub fn get_format_support(
+        device: &ID3D12Device,
+        format: DXGI_FORMAT,
+        mipmap: bool,
+    ) -> DXGI_FORMAT {
+        let mut format_support = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+            Format: format,
+            Support1: D3D12_FORMAT_SUPPORT1_TEXTURE2D
+                | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE
+                | D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
+            ..Default::default()
+        };
+
+        if mipmap {
+            format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
+            format_support.Support2 |=
+                D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD | D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+        }
+
+        d3d12_get_closest_format(device, format_support)
+    }
+
     pub fn new(
         device: &ID3D12Device,
         size: Size<u32>,
-        format: ImageFormat,
+        format: DXGI_FORMAT,
         mipmap: bool,
     ) -> error::Result<OwnedImage> {
         let miplevels = if mipmap {
@@ -76,9 +99,11 @@ impl OwnedImage {
         if mipmap {
             desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
             format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
+            format_support.Support2 |=
+                D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD | D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
         }
 
-        desc.Format = d3d12_get_closest_format(device, desc.Format, format_support);
+        desc.Format = d3d12_get_closest_format(device, format_support);
         let mut resource: Option<ID3D12Resource> = None;
         unsafe {
             device.CreateCommittedResource(
@@ -101,7 +126,7 @@ impl OwnedImage {
         Ok(OwnedImage {
             handle: resource,
             size,
-            format,
+            format: desc.Format,
             device: device.clone(),
             max_mipmap: miplevels as u16,
         })
@@ -295,13 +320,14 @@ impl OwnedImage {
         mipmap: bool,
     ) -> error::Result<Size<u32>> {
         let size = source_size.scale_viewport(scaling, *viewport_size);
+        let format = Self::get_format_support(&self.device, format.into(), mipmap);
+
         if self.size != size
             || (mipmap && self.max_mipmap == 1)
             || (!mipmap && self.max_mipmap != 1)
             || format != self.format
         {
             let mut new = OwnedImage::new(&self.device, size, format, mipmap)?;
-
             std::mem::swap(self, &mut new);
         }
         Ok(size)
