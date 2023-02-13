@@ -2,7 +2,12 @@ use crate::error::ShaderCompileError;
 use librashader_preprocess::ShaderSource;
 use shaderc::{CompileOptions, Limit, ShaderKind};
 
+#[cfg(feature = "serialize")]
+use serde::{Deserialize, Serialize};
+
 /// A reflectable shader compilation via glslang (shaderc).
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct GlslangCompilation {
     pub(crate) vertex: Vec<u32>,
     pub(crate) fragment: Vec<u32>,

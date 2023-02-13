@@ -17,6 +17,8 @@ librashader-presets = { path = "../librashader-presets", version = "0.1.0-rc.3" 
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.0-rc.3" }
 librashader-reflect = { path = "../librashader-reflect", version = "0.1.0-rc.3", features = ["standalone"]   }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.1.0-rc.3" }
+librashader-cache = { path = "../librashader-cache", version = "0.1.0-rc.3" }
+
 spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
 rustc-hash = "1.1.0"
 gl = "0.14.0"

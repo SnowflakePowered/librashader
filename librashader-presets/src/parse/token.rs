@@ -64,7 +64,11 @@ fn multiline_comment(i: Span) -> IResult<Span, Span> {
 }
 
 fn single_comment(i: Span) -> IResult<Span, Span> {
-    delimited(alt((tag("//"), tag("#"))), not_line_ending, alt((line_ending, eof)))(i)
+    delimited(
+        alt((tag("//"), tag("#"))),
+        not_line_ending,
+        alt((line_ending, eof)),
+    )(i)
 }
 
 fn whitespace(i: Span) -> IResult<Span, ()> {
@@ -704,6 +708,4 @@ SHARPEN = 0"#;
 // PRESET END
 // ----------------------------------------------------------------------------------------------------------------
 "#;
-
 }
-

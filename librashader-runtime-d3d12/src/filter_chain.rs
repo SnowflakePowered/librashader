@@ -46,6 +46,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
+use librashader_cache::compilation::CachedCompilation;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -208,14 +209,14 @@ impl FilterChainD3D12 {
         let shader_copy = preset.shaders.clone();
 
         let (passes, semantics) = DXIL::compile_preset_passes::<
-            GlslangCompilation,
+            CachedCompilation<GlslangCompilation>,
             FilterChainError,
         >(preset.shaders, &preset.textures)?;
 
-        let (hlsl_passes, _) = HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-            shader_copy,
-            &preset.textures,
-        )?;
+        let (hlsl_passes, _) = HLSL::compile_preset_passes::<
+            CachedCompilation<GlslangCompilation>,
+            FilterChainError,
+        >(shader_copy, &preset.textures)?;
 
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device, false)?;
@@ -327,7 +328,8 @@ impl FilterChainD3D12 {
         let mipmap_gen = D3D12MipmapGen::new(device, true)?;
 
         let mut luts = FxHashMap::default();
-        let images = textures.par_iter()
+        let images = textures
+            .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image>, ImageError>>()?;
 
@@ -419,6 +421,7 @@ impl FilterChainD3D12 {
                 } else {
                     ImageFormat::R8G8B8A8Unorm
                 }.into();
+
 
                 // incredibly cursed.
                 let (reflection, graphics_pipeline) = if !force_hlsl &&

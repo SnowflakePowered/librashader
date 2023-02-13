@@ -1,3 +1,4 @@
+mod compile_program;
 mod draw_quad;
 mod framebuffer;
 #[cfg(test)]
@@ -7,6 +8,7 @@ mod texture_bind;
 mod ubo_ring;
 
 use crate::gl::GLInterface;
+use compile_program::*;
 use draw_quad::*;
 use framebuffer::*;
 use lut_load::*;
@@ -20,4 +22,5 @@ impl GLInterface for CompatibilityGL {
     type DrawQuad = Gl3DrawQuad;
     type LoadLut = Gl3LutLoad;
     type BindTexture = Gl3BindTexture;
+    type CompileShader = Gl3CompileProgram;
 }

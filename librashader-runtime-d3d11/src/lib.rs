@@ -38,7 +38,7 @@ mod tests {
     //     "../test/slang-shaders/handheld/console-border/gbc-lcd-grid-v2.slangp";
     // "../test/null.slangp",
     const FILTER_PATH: &str =
-        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp";
+        "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID].slangp";
 
     // const FILTER_PATH: &str = "../test/slang-shaders/test/history.slangp";
     // const FILTER_PATH: &str = "../test/slang-shaders/test/feedback.slangp";

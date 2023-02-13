@@ -1,8 +1,10 @@
 use crate::{error, util};
 use ash::vk;
 
+use crate::error::FilterChainError;
 use crate::framebuffer::OutputImage;
 use crate::render_pass::VulkanRenderPass;
+use librashader_cache::cache::cache_pipeline;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
@@ -308,7 +310,6 @@ impl VulkanGraphicsPipeline {
 
     pub fn new(
         device: &Arc<ash::Device>,
-        cache: &vk::PipelineCache,
         shader_assembly: &ShaderCompilerOutput<Vec<u32>>,
         reflection: &ShaderReflection,
         replicas: u32,
@@ -334,13 +335,30 @@ impl VulkanGraphicsPipeline {
             )?);
         }
 
-        let pipeline = Self::create_pipeline(
-            &device,
-            &cache,
-            &pipeline_layout,
-            &vertex_module,
-            &fragment_module,
-            render_pass.as_ref(),
+        let (pipeline, pipeline_cache) = cache_pipeline(
+            "vulkan",
+            &[&shader_assembly.vertex, &shader_assembly.fragment],
+            |pipeline_data| {
+                let mut cache_info = vk::PipelineCacheCreateInfo::builder();
+                if let Some(pipeline_data) = pipeline_data.as_ref() {
+                    cache_info = cache_info.initial_data(pipeline_data);
+                }
+                let cache_info = cache_info.build();
+
+                let pipeline_cache = unsafe { device.create_pipeline_cache(&cache_info, None)? };
+
+                let pipeline = Self::create_pipeline(
+                    &device,
+                    &pipeline_cache,
+                    &pipeline_layout,
+                    &vertex_module,
+                    &fragment_module,
+                    render_pass.as_ref(),
+                )?;
+                Ok::<_, FilterChainError>((pipeline, pipeline_cache))
+            },
+            |(_pipeline, cache)| unsafe { Ok(device.get_pipeline_cache_data(*cache)?) },
+            true,
         )?;
 
         Ok(VulkanGraphicsPipeline {
@@ -350,7 +368,7 @@ impl VulkanGraphicsPipeline {
             render_pass,
             vertex: vertex_module,
             fragment: fragment_module,
-            cache: *cache,
+            cache: pipeline_cache,
         })
     }
 
@@ -373,7 +391,11 @@ impl VulkanGraphicsPipeline {
         std::mem::swap(&mut self.render_pass, &mut new_renderpass);
         std::mem::swap(&mut self.pipeline, &mut new_pipeline);
 
-        unsafe { self.device.destroy_pipeline(new_pipeline, None) }
+        unsafe {
+            if new_pipeline != vk::Pipeline::null() {
+                self.device.destroy_pipeline(new_pipeline, None)
+            }
+        }
         Ok(())
     }
     #[inline(always)]
@@ -448,6 +470,20 @@ impl VulkanGraphicsPipeline {
                 device.cmd_end_rendering(cmd);
             } else {
                 device.cmd_end_render_pass(cmd)
+            }
+        }
+    }
+}
+
+impl Drop for VulkanGraphicsPipeline {
+    fn drop(&mut self) {
+        unsafe {
+            if self.pipeline != vk::Pipeline::null() {
+                self.device.destroy_pipeline(self.pipeline, None)
+            }
+
+            if self.cache != vk::PipelineCache::null() {
+                self.device.destroy_pipeline_cache(self.cache, None)
             }
         }
     }
