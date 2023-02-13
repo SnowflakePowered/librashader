@@ -154,12 +154,16 @@ static GL_DEFAULT_MVP: &[f32; 16] = &[
 
 ### Thread safety
 In general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
-**externally synchronization** of the filter chain object. Additionally, filter chain creation requires external synchronization
-of the graphics devices queue where applicable, as loading LUT textures requires submission of commands to the graphics queue,
-unless the `filter_chain_create_deferred` methods are used.
+**external synchronization** of the filter chain object. 
+
+Filter chains can be created from any thread, but requires external synchronization of the graphics device queue where applicable 
+(in Direct3D 11, the immediate context is considered the graphics device queue), as loading LUTs requires command submission to the GPU. 
+Initialization of GPU resources may be deferred asynchronously using the `filter_chain_create_deferred` functions, but the caller is responsible for 
+submitting the recorded commands to the graphics device queue, and **ensuring that the work is complete** before drawing shader pass frames. 
 
 OpenGL has an additional restriction where creating the filter chain instance in a different thread is safe **if and only if** 
-the thread local OpenGL context is initialized to the same context as the drawing thread. 
+the thread local OpenGL context is initialized to the same context as the drawing thread. Support for deferral of GPU resource initialization
+is not available to OpenGL.
 
 ### Writing a librashader Runtime
 
