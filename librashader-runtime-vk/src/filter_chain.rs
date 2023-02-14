@@ -22,7 +22,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::image::{BGRA8, Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use parking_lot::RwLock;
@@ -470,9 +470,10 @@ impl FilterChainVulkan {
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
-
-        for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path, UVDirection::TopLeft)?;
+        let images = textures.par_iter()
+            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
+            .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
+        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
             let texture = LutTexture::new(vulkan, command_buffer, image, texture)?;
             luts.insert(index, texture);
         }

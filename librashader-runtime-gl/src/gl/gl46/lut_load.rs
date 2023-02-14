@@ -4,9 +4,10 @@ use crate::gl::LoadLut;
 use crate::texture::InputTexture;
 use gl::types::{GLsizei, GLuint};
 use librashader_presets::TextureConfig;
-use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
 use rustc_hash::FxHashMap;
+use rayon::prelude::*;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
@@ -22,8 +23,11 @@ impl LoadLut for Gl46LutLoad {
             gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
         }
 
-        for (index, texture) in textures.iter().enumerate() {
-            let image: Image = Image::load(&texture.path, UVDirection::BottomLeft)?;
+        let images = textures.par_iter()
+            .map(|texture| Image::load(&texture.path, UVDirection::BottomLeft))
+            .collect::<std::result::Result<Vec<Image>, ImageError>>()?;
+
+        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
             let levels = if texture.mipmap {
                 image.size.calculate_miplevels()
             } else {

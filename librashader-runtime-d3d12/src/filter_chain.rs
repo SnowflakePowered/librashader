@@ -23,7 +23,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::{ShaderSemantics, MAX_BINDINGS_COUNT};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
-use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
@@ -327,10 +327,11 @@ impl FilterChainD3D12 {
         let mipmap_gen = D3D12MipmapGen::new(device, true)?;
 
         let mut luts = FxHashMap::default();
+        let images = textures.par_iter()
+            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
+            .collect::<Result<Vec<Image>, ImageError>>()?;
 
-        for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path, UVDirection::TopLeft)?;
-
+        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
             let texture = LutTexture::new(
                 device,
                 staging_heap,

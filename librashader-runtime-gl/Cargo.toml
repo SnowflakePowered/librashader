@@ -22,6 +22,7 @@ rustc-hash = "1.1.0"
 gl = "0.14.0"
 bytemuck = "1.12.3"
 thiserror = "1.0.37"
+rayon = "1.6.1"
 
 [dev-dependencies]
 glfw = "0.47.0"

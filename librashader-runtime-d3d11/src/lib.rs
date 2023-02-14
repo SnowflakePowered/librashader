@@ -38,7 +38,7 @@ mod tests {
     //     "../test/slang-shaders/handheld/console-border/gbc-lcd-grid-v2.slangp";
     // "../test/null.slangp",
     const FILTER_PATH: &str =
-        "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp";
+        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp";
 
     // const FILTER_PATH: &str = "../test/slang-shaders/test/history.slangp";
     // const FILTER_PATH: &str = "../test/slang-shaders/test/feedback.slangp";

@@ -7,7 +7,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
-use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::image::{Image, ImageError, UVDirection};
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 
@@ -317,9 +317,11 @@ impl FilterChainD3D11 {
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
+        let images = textures.par_iter()
+            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
+            .collect::<Result<Vec<Image>, ImageError>>()?;
 
-        for (index, texture) in textures.iter().enumerate() {
-            let image = Image::load(&texture.path, UVDirection::TopLeft)?;
+        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
             let desc = D3D11_TEXTURE2D_DESC {
                 Width: image.size.width,
                 Height: image.size.height,

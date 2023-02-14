@@ -1138,6 +1138,7 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
+ "rayon",
  "rustc-hash",
  "thiserror",
 ]
