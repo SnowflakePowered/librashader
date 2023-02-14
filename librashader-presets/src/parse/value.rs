@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::error::{ParseErrorKind, ParsePresetError};
 use crate::parse::{remove_if, Span, Token};
 use crate::{ScaleFactor, ScaleType};
@@ -154,9 +155,11 @@ fn load_child_reference_strings(
     let root_path = root_path.as_ref();
 
     let mut reference_depth = 0;
-    let mut reference_strings: Vec<(PathBuf, String)> = Vec::new();
-    let mut root_references = vec![(root_path.to_path_buf(), root_references)];
-    while let Some((reference_root, referenced_paths)) = root_references.pop() {
+    let mut reference_strings: VecDeque<(PathBuf, String)> = VecDeque::new();
+    let root_references = vec![(root_path.to_path_buf(), root_references)];
+    let mut root_references = VecDeque::from(root_references);
+    // search needs to be depth first to allow for overrides.
+    while let Some((reference_root, referenced_paths)) = root_references.pop_front() {
         if reference_depth > SHADER_MAX_REFERENCE_DEPTH {
             return Err(ParsePresetError::ExceededReferenceDepth);
         }
@@ -189,14 +192,14 @@ fn load_child_reference_strings(
                 .collect();
 
             path.pop();
-            reference_strings.push((path.clone(), reference_contents));
+            reference_strings.push_front((path.clone(), reference_contents));
             if !new_references.is_empty() {
-                root_references.push((path, new_references));
+                root_references.push_front((path, new_references));
             }
         }
     }
 
-    Ok(reference_strings)
+    Ok(reference_strings.into())
 }
 
 pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetError> {
@@ -236,14 +239,17 @@ pub fn parse_values(
     // unfortunately we need to lex twice because there's no way to know the references ahead of time.
     let child_strings = load_child_reference_strings(references, &root_path)?;
     let mut all_tokens: Vec<(&Path, Vec<Token>)> = Vec::new();
-    all_tokens.push((root_path.as_path(), tokens));
 
     for (path, string) in child_strings.iter() {
+        // lex the child tokens
         let mut tokens = do_lex(string.as_ref())?;
         tokens.retain(|token| *token.key.fragment() != "#reference");
         all_tokens.push((path.as_path(), tokens))
     }
 
+    // load depth first, so all child tokens are first.
+    // Later tokens take precedence.
+    all_tokens.push((root_path.as_path(), tokens));
     // collect all possible parameter names.
     let mut parameter_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
