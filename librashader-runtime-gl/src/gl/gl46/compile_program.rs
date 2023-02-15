@@ -47,7 +47,7 @@ impl CompileProgram for Gl4CompileProgram {
     ) -> crate::error::Result<(GLuint, UniformLocation<GLuint>)> {
         let vertex_resources = glsl.context.artifact.vertex.get_shader_resources()?;
 
-        let program = librashader_cache::cache::cache_object(
+        let program = librashader_cache::cache_shader_object(
             "opengl4",
             &[glsl.vertex.as_str(), glsl.fragment.as_str()],
             |&[vertex, fragment]| unsafe {
@@ -120,7 +120,7 @@ impl CompileProgram for Gl4CompileProgram {
                 }
                 return Ok(program);
             },
-            cache,
+            !cache,
         )?;
 
         let ubo_location = unsafe {

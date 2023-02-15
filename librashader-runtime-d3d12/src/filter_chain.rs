@@ -46,7 +46,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
 use windows::Win32::System::WindowsProgramming::INFINITE;
 
-use librashader_cache::compilation::CachedCompilation;
+use librashader_cache::CachedCompilation;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;

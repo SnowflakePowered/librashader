@@ -2,7 +2,7 @@ use crate::error::assume_d3d12_init;
 use crate::error::FilterChainError::Direct3DOperationError;
 use crate::quad_render::DrawQuad;
 use crate::{error, util};
-use librashader_cache::cache::{cache_object, cache_pipeline};
+use librashader_cache::{cache_shader_object, cache_pipeline};
 use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
@@ -248,7 +248,7 @@ impl D3D12GraphicsPipeline {
                     let cached_pso = pso.GetCachedBlob()?;
                     Ok(cached_pso)
                 },
-                !disable_cache,
+                disable_cache,
             )?
         };
 
@@ -324,20 +324,20 @@ impl D3D12GraphicsPipeline {
             ));
         }
 
-        let vertex_dxil = cache_object(
+        let vertex_dxil = cache_shader_object(
             "dxil",
             &[shader_assembly.vertex.deref()],
             |&[source]| util::dxc_validate_shader(library, validator, source),
             |f| Ok(f),
-            !disable_cache,
+            disable_cache,
         )?;
 
-        let fragment_dxil = cache_object(
+        let fragment_dxil = cache_shader_object(
             "dxil",
             &[shader_assembly.fragment.deref()],
             |&[source]| util::dxc_validate_shader(library, validator, source),
             |f| Ok(f),
-            !disable_cache,
+            disable_cache,
         )?;
 
         Self::new_from_blobs(
@@ -359,20 +359,20 @@ impl D3D12GraphicsPipeline {
         render_format: DXGI_FORMAT,
         disable_cache: bool,
     ) -> error::Result<D3D12GraphicsPipeline> {
-        let vertex_dxil = cache_object(
+        let vertex_dxil = cache_shader_object(
             "dxil",
             &[shader_assembly.vertex.as_bytes()],
             |&[source]| util::dxc_compile_shader(library, dxc, source, u16cstr!("vs_6_0")),
             |f| Ok(f),
-            !disable_cache,
+            disable_cache,
         )?;
 
-        let fragment_dxil = cache_object(
+        let fragment_dxil = cache_shader_object(
             "dxil",
             &[shader_assembly.fragment.as_bytes()],
             |&[source]| util::dxc_compile_shader(library, dxc, source, u16cstr!("ps_6_0")),
             |f| Ok(f),
-            !disable_cache,
+            disable_cache,
         )?;
 
         Self::new_from_blobs(

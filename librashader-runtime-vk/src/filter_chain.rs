@@ -32,7 +32,7 @@ use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
 
-use librashader_cache::compilation::CachedCompilation;
+use librashader_cache::CachedCompilation;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -442,7 +442,7 @@ impl FilterChainVulkan {
                     &reflection,
                     frames_in_flight,
                     render_pass_format,
-                    !disable_cache,
+                    disable_cache,
                 )?;
 
                 Ok(FilterPass {

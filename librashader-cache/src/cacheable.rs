@@ -1,3 +1,4 @@
+/// Trait for objects that are cacheable.
 pub trait Cacheable {
     fn from_bytes(bytes: &[u8]) -> Option<Self>
     where

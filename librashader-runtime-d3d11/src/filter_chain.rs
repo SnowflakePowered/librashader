@@ -22,8 +22,8 @@ use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
-use librashader_cache::cache::cache_object;
-use librashader_cache::compilation::CachedCompilation;
+use librashader_cache::cache_shader_object;
+use librashader_cache::CachedCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -230,7 +230,7 @@ impl FilterChainD3D11 {
             let reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(None)?;
 
-            let (vs, vertex_dxbc) = cache_object(
+            let (vs, vertex_dxbc) = cache_shader_object(
                 "dxbc",
                 &[hlsl.vertex.as_bytes()],
                 |&[bytes]| util::d3d_compile_shader(bytes, b"main\0", b"vs_5_0\0"),
@@ -245,20 +245,20 @@ impl FilterChainD3D11 {
                         blob,
                     ))
                 },
-                !disable_cache,
+                disable_cache,
             )?;
 
             let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
             let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
 
-            let ps = cache_object(
+            let ps = cache_shader_object(
                 "dxbc",
                 &[hlsl.fragment.as_bytes()],
                 |&[bytes]| util::d3d_compile_shader(bytes, b"main\0", b"ps_5_0\0"),
                 |blob| {
                     d3d11_compile_bound_shader(device, &blob, None, ID3D11Device::CreatePixelShader)
                 },
-                !disable_cache,
+                disable_cache,
             )?;
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
