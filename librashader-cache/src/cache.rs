@@ -1,5 +1,5 @@
-use crate::key::CacheKey;
 use crate::cacheable::Cacheable;
+use crate::key::CacheKey;
 use platform_dirs::AppDirs;
 use rusqlite::{params, Connection, DatabaseName};
 use std::error::Error;

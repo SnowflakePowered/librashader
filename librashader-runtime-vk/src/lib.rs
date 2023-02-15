@@ -51,6 +51,7 @@ mod tests {
                 frames_in_flight: 3,
                 force_no_mipmaps: false,
                 use_render_pass: true,
+                disable_cache: false,
             }),
         )
         .unwrap();

@@ -118,15 +118,24 @@ impl FilterChainD3D11 {
         ctx: &ID3D11DeviceContext,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
-        let (passes, semantics) = HLSL::compile_preset_passes::<
-            CachedCompilation<GlslangCompilation>,
-            FilterChainError,
-        >(preset.shaders, &preset.textures)?;
+        let disable_cache = options.map_or(false, |o| o.disable_cache);
+
+        let (passes, semantics) = if !disable_cache {
+            HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        } else {
+            HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        };
 
         let samplers = SamplerSet::new(device)?;
 
         // initialize passes
-        let filters = FilterChainD3D11::init_passes(device, passes, &semantics)?;
+        let filters = FilterChainD3D11::init_passes(device, passes, &semantics, disable_cache)?;
         println!("passes loded");
 
         let immediate_context = unsafe { device.GetImmediateContext()? };
@@ -212,6 +221,7 @@ impl FilterChainD3D11 {
         device: &ID3D11Device,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
+        disable_cache: bool,
     ) -> error::Result<Vec<FilterPass>> {
         let device_is_singlethreaded =
             unsafe { (device.GetCreationFlags() & D3D11_CREATE_DEVICE_SINGLETHREADED.0) == 1 };
@@ -235,7 +245,7 @@ impl FilterChainD3D11 {
                         blob,
                     ))
                 },
-                true,
+                !disable_cache,
             )?;
 
             let ia_desc = DrawQuad::get_spirv_cross_vbo_desc();
@@ -248,7 +258,7 @@ impl FilterChainD3D11 {
                 |blob| {
                     d3d11_compile_bound_shader(device, &blob, None, ID3D11Device::CreatePixelShader)
                 },
-                true,
+                !disable_cache,
             )?;
 
             let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {

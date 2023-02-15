@@ -207,16 +207,31 @@ impl FilterChainD3D12 {
         let lut_count = preset.textures.len();
 
         let shader_copy = preset.shaders.clone();
+        let disable_cache = options.map_or(false, |o| o.disable_cache);
 
-        let (passes, semantics) = DXIL::compile_preset_passes::<
-            CachedCompilation<GlslangCompilation>,
-            FilterChainError,
-        >(preset.shaders, &preset.textures)?;
+        let (passes, semantics) = if !disable_cache {
+            DXIL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        } else {
+            DXIL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        };
 
-        let (hlsl_passes, _) = HLSL::compile_preset_passes::<
-            CachedCompilation<GlslangCompilation>,
-            FilterChainError,
-        >(shader_copy, &preset.textures)?;
+        let (hlsl_passes, _) = if !disable_cache {
+            HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+                shader_copy,
+                &preset.textures,
+            )?
+        } else {
+            HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
+                shader_copy,
+                &preset.textures,
+            )?
+        };
 
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device, false)?;
@@ -244,6 +259,7 @@ impl FilterChainD3D12 {
             hlsl_passes,
             &semantics,
             options.map_or(false, |o| o.force_hlsl_pipeline),
+            disable_cache,
         )?;
 
         let mut residuals = FrameResiduals::new();
@@ -367,6 +383,7 @@ impl FilterChainD3D12 {
         hlsl_passes: Vec<HlslShaderPassMeta>,
         semantics: &ShaderSemantics,
         force_hlsl: bool,
+        disable_cache: bool,
     ) -> error::Result<(
         ID3D12DescriptorHeap,
         ID3D12DescriptorHeap,
@@ -432,7 +449,8 @@ impl FilterChainD3D12 {
                             validator,
                             &dxil,
                             root_signature,
-                            render_format
+                            render_format,
+                            disable_cache
                         ) {
                     (dxil_reflection, graphics_pipeline)
                 } else {
@@ -446,6 +464,7 @@ impl FilterChainD3D12 {
                         &hlsl,
                         root_signature,
                         render_format,
+                        disable_cache
                     )?;
                     (hlsl_reflection, graphics_pipeline)
                 };
@@ -458,8 +477,8 @@ impl FilterChainD3D12 {
                         .map_or(1, |push| push.size as usize);
 
                     let uniform_storage = UniformStorage::new_with_storage(
-                    RawD3D12Buffer::new(D3D12Buffer::new(device, ubo_size)?)?,
-                    RawD3D12Buffer::new(D3D12Buffer::new(device, push_size)?)?
+                        RawD3D12Buffer::new(D3D12Buffer::new(device, ubo_size)?)?,
+                        RawD3D12Buffer::new(D3D12Buffer::new(device, push_size)?)?
                 );
 
 

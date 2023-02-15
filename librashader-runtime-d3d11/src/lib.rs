@@ -61,6 +61,7 @@ mod tests {
             filter.as_deref().unwrap_or(FILTER_PATH),
             Some(&FilterChainOptionsD3D11 {
                 force_no_mipmaps: false,
+                disable_cache: false,
             }),
             // replace below with 'None' for the triangle
             Some(image),
@@ -85,6 +86,7 @@ mod tests {
             FILTER_PATH,
             Some(&FilterChainOptionsD3D11 {
                 force_no_mipmaps: false,
+                disable_cache: false,
             }),
             // replace below with 'None' for the triangle
             // None,

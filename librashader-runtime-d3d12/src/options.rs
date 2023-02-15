@@ -22,4 +22,8 @@ pub struct FilterChainOptionsD3D12 {
     /// generation for intermediate passes regardless
     /// of shader preset settings.
     pub force_no_mipmaps: bool,
+
+    /// Disable the shader object cache. Shaders will be
+    /// recompiled rather than loaded from the cache.
+    pub disable_cache: bool,
 }
