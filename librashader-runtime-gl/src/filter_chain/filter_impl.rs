@@ -19,7 +19,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
-use librashader_cache::compilation::CachedCompilation;
+use librashader_cache::CachedCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;

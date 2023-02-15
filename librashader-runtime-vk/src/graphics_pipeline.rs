@@ -4,7 +4,7 @@ use ash::vk;
 use crate::error::FilterChainError;
 use crate::framebuffer::OutputImage;
 use crate::render_pass::VulkanRenderPass;
-use librashader_cache::cache::cache_pipeline;
+use librashader_cache::cache_pipeline;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
 use librashader_reflect::reflect::ShaderReflection;
@@ -314,7 +314,7 @@ impl VulkanGraphicsPipeline {
         reflection: &ShaderReflection,
         replicas: u32,
         render_pass_format: vk::Format,
-        cache_objects: bool,
+        bypass_cache: bool,
     ) -> error::Result<VulkanGraphicsPipeline> {
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
@@ -359,7 +359,7 @@ impl VulkanGraphicsPipeline {
                 Ok::<_, FilterChainError>((pipeline, pipeline_cache))
             },
             |(_pipeline, cache)| unsafe { Ok(device.get_pipeline_cache_data(*cache)?) },
-            cache_objects,
+            bypass_cache,
         )?;
 
         Ok(VulkanGraphicsPipeline {

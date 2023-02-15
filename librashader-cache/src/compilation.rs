@@ -1,3 +1,4 @@
+//!  Cache helpers for `ShaderCompilation` objects to cache compiled SPIRV.
 use crate::cache::{get_blob, get_cache, set_blob};
 use librashader_preprocess::ShaderSource;
 use librashader_reflect::back::targets::{DXIL, GLSL, HLSL, SPIRV};

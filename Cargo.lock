@@ -1164,15 +1164,6 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0-rc.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ff30c28bf8007f8061a3e429378a5d3682e61d15fe81825c9e5076a3091e349"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "librashader-common"
 version = "0.1.0-rc.3"
 dependencies = [
  "ash",
@@ -1182,13 +1173,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-common"
+version = "0.1.0-rc.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e22634fcfd3d0307db6d31366bb6bdd4422ec18a889a18ebe5572e47f366989"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "librashader-preprocess"
 version = "0.1.0-rc.3"
 dependencies = [
  "encoding_rs",
  "glob",
  "librashader-common 0.1.0-rc.3",
- "librashader-presets 0.1.0-rc.2",
+ "librashader-presets 0.1.0-rc.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom",
  "rayon",
  "rustc-hash",
@@ -1197,11 +1197,10 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0-rc.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de7bfd6903b4c52db1d220cb67d9e618ba87922300893586b2cf360b7591bde6"
+version = "0.1.0-rc.3"
 dependencies = [
- "librashader-common 0.1.0-rc.2",
+ "glob",
+ "librashader-common 0.1.0-rc.3",
  "nom",
  "nom_locate",
  "num-traits",
@@ -1211,9 +1210,10 @@ dependencies = [
 [[package]]
 name = "librashader-presets"
 version = "0.1.0-rc.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ba84e8b4fdb76114d56f0ad2118e2cfbdde0666dd95e657afa4803c6f19bfee"
 dependencies = [
- "glob",
- "librashader-common 0.1.0-rc.3",
+ "librashader-common 0.1.0-rc.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom",
  "nom_locate",
  "num-traits",

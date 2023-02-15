@@ -5,7 +5,7 @@ use rusqlite::{params, Connection, DatabaseName};
 use std::error::Error;
 use std::path::PathBuf;
 
-pub fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
+pub(crate) fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
     let cache_dir =
         if let Some(cache_dir) = AppDirs::new(Some("librashader"), false).map(|a| a.cache_dir) {
             cache_dir
@@ -20,7 +20,7 @@ pub fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
     Ok(cache_dir)
 }
 
-pub fn get_cache() -> Result<Connection, Box<dyn Error>> {
+pub(crate) fn get_cache() -> Result<Connection, Box<dyn Error>> {
     let cache_dir = get_cache_dir()?;
     let mut conn = Connection::open(&cache_dir.join("librashader.db"))?;
 
@@ -62,55 +62,29 @@ pub(crate) fn set_blob(conn: &Connection, index: &str, key: &[u8], value: &[u8])
     }
 }
 
-pub fn get_cached_blob<T, H, const KEY_SIZE: usize>(
-    index: &str,
-    key: &[H; KEY_SIZE],
-    transform: impl FnOnce(Vec<u8>) -> T,
-) -> Option<T>
-where
-    H: CacheKey,
-{
-    let cache = get_cache();
-
-    let Ok(cache) = cache else {
-        return None
-    };
-
-    let key = {
-        let mut hasher = blake3::Hasher::new();
-        for subkeys in key {
-            hasher.update(subkeys.hash_bytes());
-        }
-        let hash = hasher.finalize();
-        hash
-    };
-
-    let Ok(blob) = get_blob(&cache, index, key.as_bytes()) else {
-        return None;
-    };
-
-    Some(transform(blob))
-}
-
-pub fn cache_object<E, T, R, H, const KEY_SIZE: usize>(
+/// Cache a shader object (usually bytecode) created by the keyed objects.
+///
+/// - `factory` is the function that compiles the values passed as keys to a shader object.
+/// - `load` tries to load a compiled shader object to a driver-specialized result.
+pub fn cache_shader_object<E, T, R, H, const KEY_SIZE: usize>(
     index: &str,
     keys: &[H; KEY_SIZE],
     factory: impl FnOnce(&[H; KEY_SIZE]) -> Result<T, E>,
-    attempt: impl Fn(T) -> Result<R, E>,
-    do_cache: bool,
+    load: impl Fn(T) -> Result<R, E>,
+    bypass_cache: bool,
 ) -> Result<R, E>
 where
     H: CacheKey,
     T: Cacheable,
 {
-    if !do_cache {
-        return Ok(attempt(factory(keys)?)?);
+    if bypass_cache {
+        return Ok(load(factory(keys)?)?);
     }
 
     let cache = get_cache();
 
     let Ok(cache) = cache else {
-        return Ok(attempt(factory(keys)?)?);
+        return Ok(load(factory(keys)?)?);
     };
 
     let hashkey = {
@@ -124,7 +98,7 @@ where
 
     'attempt: {
         if let Ok(blob) = get_blob(&cache, index, hashkey.as_bytes()) {
-            let cached = T::from_bytes(&blob).map(&attempt);
+            let cached = T::from_bytes(&blob).map(&load);
 
             match cached {
                 None => break 'attempt,
@@ -139,27 +113,34 @@ where
     if let Some(slice) = T::to_bytes(&blob) {
         set_blob(&cache, index, hashkey.as_bytes(), &slice);
     }
-    Ok(attempt(blob)?)
+    Ok(load(blob)?)
 }
 
+/// Cache a pipeline state object.
+///
+/// Keys are not used to create the object and are only used to uniquely identify the pipeline state.
+///
+/// - `restore_pipeline` tries to restore the pipeline with either a cached binary pipeline state
+///    cache, or create a new pipeline if no cached value is available.
+/// - `fetch_pipeline_state` fetches the new pipeline state cache after the pipeline was created.
 pub fn cache_pipeline<E, T, R, const KEY_SIZE: usize>(
     index: &str,
     keys: &[&dyn CacheKey; KEY_SIZE],
-    attempt: impl Fn(Option<Vec<u8>>) -> Result<R, E>,
-    factory: impl FnOnce(&R) -> Result<T, E>,
-    do_cache: bool,
+    restore_pipeline: impl Fn(Option<Vec<u8>>) -> Result<R, E>,
+    fetch_pipeline_state: impl FnOnce(&R) -> Result<T, E>,
+    bypass_cache: bool,
 ) -> Result<R, E>
 where
     T: Cacheable,
 {
-    if !do_cache {
-        return Ok(attempt(None)?);
+    if bypass_cache {
+        return Ok(restore_pipeline(None)?);
     }
 
     let cache = get_cache();
 
     let Ok(cache) = cache else {
-        return Ok(attempt(None)?);
+        return Ok(restore_pipeline(None)?);
     };
 
     let hashkey = {
@@ -173,7 +154,7 @@ where
 
     let pipeline = 'attempt: {
         if let Ok(blob) = get_blob(&cache, index, hashkey.as_bytes()) {
-            let cached = attempt(Some(blob));
+            let cached = restore_pipeline(Some(blob));
             match cached {
                 Ok(res) => {
                     break 'attempt res;
@@ -182,11 +163,11 @@ where
             }
         }
 
-        attempt(None)?
+        restore_pipeline(None)?
     };
 
     // update the pso every time just in case.
-    if let Ok(state) = factory(&pipeline) {
+    if let Ok(state) = fetch_pipeline_state(&pipeline) {
         if let Some(slice) = T::to_bytes(&state) {
             set_blob(&cache, index, hashkey.as_bytes(), &slice);
         }

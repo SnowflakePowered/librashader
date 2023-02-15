@@ -2,20 +2,18 @@
 //!
 //! This crate is exempt from semantic versioning guarantees and is an implementation
 //! detail of librashader runtimes.
-#![feature(try_blocks)]
-#![feature(once_cell)]
-pub mod cache;
-pub mod compilation;
-pub mod error;
+mod cache;
+mod compilation;
 
 mod key;
 mod cacheable;
 
-#[cfg(test)]
-mod tests {}
-
 pub use cacheable::Cacheable;
 pub use key::CacheKey;
+
+pub use compilation::CachedCompilation;
+pub use cache::cache_pipeline;
+pub use cache::cache_shader_object;
 
 #[cfg(all(target_os = "windows", feature = "d3d"))]
 mod d3d;
