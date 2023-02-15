@@ -114,11 +114,14 @@ pub struct filter_chain_vk_opt_t {
     /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
     /// because render-pass mode will create new framebuffers per pass.
     pub use_render_pass: bool,
+    /// Disable the shader object cache. Shaders will be
+    /// recompiled rather than loaded from the cache.
+    pub disable_cache: bool,
 }
 
 config_struct! {
     impl FilterChainOptionsVulkan => filter_chain_vk_opt_t {
-        0 => [frames_in_flight, force_no_mipmaps, use_render_pass];
+        0 => [frames_in_flight, force_no_mipmaps, use_render_pass, disable_cache];
     }
 }
 

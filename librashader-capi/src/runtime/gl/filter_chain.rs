@@ -81,14 +81,19 @@ pub struct filter_chain_gl_opt_t {
     /// The GLSL version. Should be at least `330`.
     pub glsl_version: u16,
     /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
+    /// Using the shader cache requires this option, so this option will implicitly
+    /// disables the shader cache if false.
     pub use_dsa: bool,
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
+    /// Disable the shader object cache. Shaders will be
+    /// recompiled rather than loaded from the cache.
+    pub disable_cache: bool,
 }
 
 config_struct! {
     impl FilterChainOptionsGL => filter_chain_gl_opt_t {
-        0 => [glsl_version, use_dsa, force_no_mipmaps];
+        0 => [glsl_version, use_dsa, force_no_mipmaps, disable_cache];
     }
 }
 

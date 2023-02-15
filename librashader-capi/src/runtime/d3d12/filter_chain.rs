@@ -77,11 +77,15 @@ pub struct filter_chain_d3d12_opt_t {
     /// generation for intermediate passes regardless
     /// of shader preset settings.
     pub force_no_mipmaps: bool,
+
+    /// Disable the shader object cache. Shaders will be
+    /// recompiled rather than loaded from the cache.
+    pub disable_cache: bool,
 }
 
 config_struct! {
     impl FilterChainOptionsD3D12 => filter_chain_d3d12_opt_t {
-        0 =>  [force_hlsl_pipeline, force_no_mipmaps];
+        0 =>  [force_hlsl_pipeline, force_no_mipmaps, disable_cache];
     }
 }
 

@@ -150,9 +150,14 @@ typedef struct filter_chain_gl_opt_t {
   /// The GLSL version. Should be at least `330`.
   uint16_t glsl_version;
   /// Whether or not to use the Direct State Access APIs. Only available on OpenGL 4.5+.
+  /// Using the shader cache requires this option, so this option will implicitly
+  /// disables the shader cache if false.
   bool use_dsa;
   /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
   bool force_no_mipmaps;
+  /// Disable the shader object cache. Shaders will be
+  /// recompiled rather than loaded from the cache.
+  bool disable_cache;
 } filter_chain_gl_opt_t;
 #endif
 
@@ -241,6 +246,9 @@ typedef struct filter_chain_vk_opt_t {
   /// Use explicit render pass objects It is recommended if possible to use dynamic rendering,
   /// because render-pass mode will create new framebuffers per pass.
   bool use_render_pass;
+  /// Disable the shader object cache. Shaders will be
+  /// recompiled rather than loaded from the cache.
+  bool disable_cache;
 } filter_chain_vk_opt_t;
 #endif
 
@@ -294,6 +302,9 @@ typedef struct filter_chain_d3d11_opt_t {
   /// Whether or not to explicitly disable mipmap
   /// generation regardless of shader preset settings.
   bool force_no_mipmaps;
+  /// Disable the shader object cache. Shaders will be
+  /// recompiled rather than loaded from the cache.
+  bool disable_cache;
 } filter_chain_d3d11_opt_t;
 #endif
 
@@ -338,6 +349,9 @@ typedef struct filter_chain_d3d12_opt_t {
   /// generation for intermediate passes regardless
   /// of shader preset settings.
   bool force_no_mipmaps;
+  /// Disable the shader object cache. Shaders will be
+  /// recompiled rather than loaded from the cache.
+  bool disable_cache;
 } filter_chain_d3d12_opt_t;
 #endif
 
@@ -727,6 +741,7 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_free)(libra_d3d12_filter_ch
 /// valid to load a librashader C API instance for any ABI
 /// version not equal to LIBRASHADER_CURRENT_ABI.
 /// ## ABI Versions
+/// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
 #define LIBRASHADER_CURRENT_ABI 1
 
