@@ -97,8 +97,9 @@ Please report an issue if you run into a shader that works in RetroArch, but not
 * HDR10 support is not part of any shader runtime and is not supported by librashader.
 * For performance reasons, mipmaps are never generated for the input texture. In theory, this means that 
   presets with `mipmap_input0 = "true"` will not get a mipmapped input. In practice, no known shader presets set 
-  `mipmap_input0 = "true"`. 
-
+  `mipmap_input0 = "true"`.
+* The preset parser is a substantially stricter implementation that the one in RetroArch. Not all shader presets may be
+  compatible. If you find this is the case, please file an issue so a workaround can be added.
 ### Runtime specific differences
 * OpenGL
   * Copying of in-flight framebuffer contents to history is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.
