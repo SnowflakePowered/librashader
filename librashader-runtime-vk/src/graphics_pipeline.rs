@@ -314,6 +314,7 @@ impl VulkanGraphicsPipeline {
         reflection: &ShaderReflection,
         replicas: u32,
         render_pass_format: vk::Format,
+        cache_objects: bool,
     ) -> error::Result<VulkanGraphicsPipeline> {
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
@@ -358,7 +359,7 @@ impl VulkanGraphicsPipeline {
                 Ok::<_, FilterChainError>((pipeline, pipeline_cache))
             },
             |(_pipeline, cache)| unsafe { Ok(device.get_pipeline_cache_data(*cache)?) },
-            true,
+            cache_objects,
         )?;
 
         Ok(VulkanGraphicsPipeline {

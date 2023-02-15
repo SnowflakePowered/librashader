@@ -40,6 +40,7 @@ mod tests {
                 glsl_version: 0,
                 use_dsa: false,
                 force_no_mipmaps: false,
+                disable_cache: false,
             }),
         )
         // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
@@ -59,6 +60,7 @@ mod tests {
                 glsl_version: 0,
                 use_dsa: true,
                 force_no_mipmaps: false,
+                disable_cache: false,
             }),
         )
         // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)

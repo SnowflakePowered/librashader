@@ -19,6 +19,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
+use librashader_cache::compilation::CachedCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
@@ -104,15 +105,24 @@ impl<T: GLInterface> FilterChainImpl<T> {
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
-        let (passes, semantics) = GLSL::compile_preset_passes::<
-            GlslangCompilation,
-            FilterChainError,
-        >(preset.shaders, &preset.textures)?;
+        let disable_cache = options.map_or(false, |o| o.disable_cache);
+
+        let (passes, semantics) = if !disable_cache {
+            GLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        } else {
+            GLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        };
 
         let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.glsl_version));
 
         // initialize passes
-        let filters = Self::init_passes(version, passes, &semantics)?;
+        let filters = Self::init_passes(version, passes, &semantics, disable_cache)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         let default_wrap = filters
@@ -181,6 +191,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         version: GlslVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
+        disable_cache: bool,
     ) -> error::Result<Box<[FilterPass<T>]>> {
         let mut filters = Vec::new();
 
@@ -189,7 +200,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let reflection = reflect.reflect(index, semantics)?;
             let glsl = reflect.compile(version)?;
 
-            let (program, ubo_location) = T::CompileShader::compile_program(glsl, true)?;
+            let (program, ubo_location) = T::CompileShader::compile_program(glsl, !disable_cache)?;
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
                 let ring = UboRing::new(ubo.size);

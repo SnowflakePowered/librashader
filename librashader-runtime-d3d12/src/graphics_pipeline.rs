@@ -36,6 +36,7 @@ pub struct D3D12GraphicsPipeline {
     pub(crate) format: DXGI_FORMAT,
     vertex: Vec<u8>,
     fragment: Vec<u8>,
+    cache_disabled: bool,
 }
 
 const D3D12_SLANG_ROOT_PARAMETERS: &[D3D12_ROOT_PARAMETER1; 4] = &[
@@ -152,6 +153,7 @@ impl D3D12GraphicsPipeline {
         fragment_dxil: IDxcBlob,
         root_signature: &D3D12RootSignature,
         render_format: DXGI_FORMAT,
+        disable_cache: bool,
     ) -> error::Result<D3D12GraphicsPipeline> {
         let input_element = DrawQuad::get_spirv_cross_vbo_desc();
 
@@ -246,7 +248,7 @@ impl D3D12GraphicsPipeline {
                     let cached_pso = pso.GetCachedBlob()?;
                     Ok(cached_pso)
                 },
-                true,
+                !disable_cache,
             )?
         };
 
@@ -264,6 +266,7 @@ impl D3D12GraphicsPipeline {
                 format: render_format,
                 vertex,
                 fragment,
+                cache_disabled: disable_cache,
             })
         }
     }
@@ -288,8 +291,14 @@ impl D3D12GraphicsPipeline {
             )?;
             (vertex, fragment)
         };
-        let mut new_pipeline =
-            Self::new_from_blobs(device, vertex.into(), fragment.into(), root_sig, format)?;
+        let mut new_pipeline = Self::new_from_blobs(
+            device,
+            vertex.into(),
+            fragment.into(),
+            root_sig,
+            format,
+            self.cache_disabled,
+        )?;
 
         std::mem::swap(self, &mut new_pipeline);
         Ok(())
@@ -302,6 +311,7 @@ impl D3D12GraphicsPipeline {
         shader_assembly: &ShaderCompilerOutput<DxilObject, ()>,
         root_signature: &D3D12RootSignature,
         render_format: DXGI_FORMAT,
+        disable_cache: bool,
     ) -> error::Result<D3D12GraphicsPipeline> {
         if shader_assembly.vertex.requires_runtime_data() {
             return Err(Direct3DOperationError(
@@ -319,7 +329,7 @@ impl D3D12GraphicsPipeline {
             &[shader_assembly.vertex.deref()],
             |&[source]| util::dxc_validate_shader(library, validator, source),
             |f| Ok(f),
-            true,
+            !disable_cache,
         )?;
 
         let fragment_dxil = cache_object(
@@ -327,7 +337,7 @@ impl D3D12GraphicsPipeline {
             &[shader_assembly.fragment.deref()],
             |&[source]| util::dxc_validate_shader(library, validator, source),
             |f| Ok(f),
-            true,
+            !disable_cache,
         )?;
 
         Self::new_from_blobs(
@@ -336,6 +346,7 @@ impl D3D12GraphicsPipeline {
             fragment_dxil,
             root_signature,
             render_format,
+            disable_cache,
         )
     }
 
@@ -346,13 +357,14 @@ impl D3D12GraphicsPipeline {
         shader_assembly: &ShaderCompilerOutput<String, CrossHlslContext>,
         root_signature: &D3D12RootSignature,
         render_format: DXGI_FORMAT,
+        disable_cache: bool,
     ) -> error::Result<D3D12GraphicsPipeline> {
         let vertex_dxil = cache_object(
             "dxil",
             &[shader_assembly.vertex.as_bytes()],
             |&[source]| util::dxc_compile_shader(library, dxc, source, u16cstr!("vs_6_0")),
             |f| Ok(f),
-            true,
+            !disable_cache,
         )?;
 
         let fragment_dxil = cache_object(
@@ -360,7 +372,7 @@ impl D3D12GraphicsPipeline {
             &[shader_assembly.fragment.as_bytes()],
             |&[source]| util::dxc_compile_shader(library, dxc, source, u16cstr!("ps_6_0")),
             |f| Ok(f),
-            true,
+            !disable_cache,
         )?;
 
         Self::new_from_blobs(
@@ -369,6 +381,7 @@ impl D3D12GraphicsPipeline {
             fragment_dxil,
             root_signature,
             render_format,
+            disable_cache,
         )
     }
 }

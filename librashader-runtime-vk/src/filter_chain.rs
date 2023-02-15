@@ -307,10 +307,20 @@ impl FilterChainVulkan {
         V: TryInto<VulkanObjects, Error = E>,
         FilterChainError: From<E>,
     {
-        let (passes, semantics) = SPIRV::compile_preset_passes::<
-            CachedCompilation<GlslangCompilation>,
-            FilterChainError,
-        >(preset.shaders, &preset.textures)?;
+        let disable_cache = options.map_or(false, |o| o.disable_cache);
+
+        let (passes, semantics) = if !disable_cache {
+            SPIRV::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        } else {
+            SPIRV::compile_preset_passes::<GlslangCompilation, FilterChainError>(
+                preset.shaders,
+                &preset.textures,
+            )?
+        };
+
         let device = vulkan.try_into().map_err(From::from)?;
 
         let mut frames_in_flight = options.map_or(0, |o| o.frames_in_flight);
@@ -325,6 +335,7 @@ impl FilterChainVulkan {
             &semantics,
             frames_in_flight,
             options.map_or(false, |o| o.use_render_pass),
+            disable_cache,
         )?;
 
         let luts = FilterChainVulkan::load_luts(&device, cmd, &preset.textures)?;
@@ -388,6 +399,7 @@ impl FilterChainVulkan {
         semantics: &ShaderSemantics,
         frames_in_flight: u32,
         use_render_pass: bool,
+        disable_cache: bool,
     ) -> error::Result<Box<[FilterPass]>> {
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
 
@@ -430,6 +442,7 @@ impl FilterChainVulkan {
                     &reflection,
                     frames_in_flight,
                     render_pass_format,
+                    !disable_cache,
                 )?;
 
                 Ok(FilterPass {

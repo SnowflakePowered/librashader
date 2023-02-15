@@ -1,7 +1,7 @@
 //! Cache implementations for D3D blob types that need to live
 //! here because of the orphan rule.
 
-use crate::{Cacheable, CacheKey};
+use crate::{CacheKey, Cacheable};
 
 impl CacheKey for windows::Win32::Graphics::Direct3D::ID3DBlob {
     fn hash_bytes(&self) -> &[u8] {
@@ -14,7 +14,6 @@ impl CacheKey for windows::Win32::Graphics::Direct3D::Dxc::IDxcBlob {
         unsafe { std::slice::from_raw_parts(self.GetBufferPointer().cast(), self.GetBufferSize()) }
     }
 }
-
 
 impl Cacheable for windows::Win32::Graphics::Direct3D::ID3DBlob {
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
