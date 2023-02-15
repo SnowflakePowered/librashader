@@ -300,8 +300,7 @@ impl VulkanGraphicsPipeline {
             // panic_safety: if this is successful this should return 1 pipelines.
             device
                 .create_graphics_pipelines(*cache, &pipeline_info, None)
-                .map_err(|e| e.1)
-                .unwrap()[0]
+                .map_err(|e| e.1)?[0]
         };
 
         Ok(pipeline)
