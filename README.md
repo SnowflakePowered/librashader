@@ -64,7 +64,7 @@ This will output a `librashader.dll` or `librashader.so` in the target folder. P
 As the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
 is important to ensure that updates to librashader do not break existing consumers.
 
-As of `0.1.0-rc.3`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
+As of `0.1.0-rc.4`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
 release without following semantic versioning.
 
 Linking statically against `librashader.h` is possible, but is not officially supported. You will need to ensure 

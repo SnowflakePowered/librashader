@@ -52,11 +52,14 @@ pub struct filter_chain_d3d11_opt_t {
     /// Whether or not to explicitly disable mipmap
     /// generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
+    /// Disable the shader object cache. Shaders will be
+    /// recompiled rather than loaded from the cache.
+    pub disable_cache: bool,
 }
 
 config_struct! {
     impl FilterChainOptionsD3D11 => filter_chain_d3d11_opt_t {
-        0 => [force_no_mipmaps];
+        0 => [force_no_mipmaps, disable_cache];
     }
 }
 
