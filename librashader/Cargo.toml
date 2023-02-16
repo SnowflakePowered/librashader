@@ -23,7 +23,7 @@ librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = 
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.1.0-rc.5", optional = true }
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.1.0-rc.5", optional = true }
 
-librashader-cache = { path = "../librashader-cache", version = "0.1.0-rc.5", default-features = false }
+librashader-cache = { path = "../librashader-cache", version = "0.1.0-rc.5" }
 
 ash = { version = "0.37.1+1.3.235", optional = true }
 
@@ -52,13 +52,14 @@ runtime-all = ["runtime-gl", "runtime-d3d11", "runtime-d3d12", "runtime-vk"]
 reflect-all = ["reflect-cross", "reflect-dxil"]
 
 # enable all features by default
-default = [ "runtime-all", "reflect-all", "preprocess", "presets" ]
+default = [ "full" ]
 internal = []
-cache = ["librashader-cache/cache"]
 
+full = ["runtime-all", "reflect-all", "preprocess", "presets"]
+
+# cache hack
 docsrs = ["librashader-cache/docsrs"]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
-no-default-features = true
 features = [ "librashader-cache/docsrs" ]

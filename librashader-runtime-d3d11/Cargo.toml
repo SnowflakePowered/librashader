@@ -57,7 +57,9 @@ features = [
 
 [[test]]
 name = "triangle"
-required-features = ["librashader-cache/cache"]
 
 [dev-dependencies]
 gfx-maths = "0.2.8"
+
+[package.metadata.docs.rs]
+features = ["librashader-cache/docsrs"]

@@ -31,4 +31,6 @@ glfw = "0.47.0"
 
 [[test]]
 name = "triangle"
-required-features = ["librashader-cache/cache"]
+
+[package.metadata.docs.rs]
+features = ["librashader-cache/docsrs"]

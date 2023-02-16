@@ -22,7 +22,3 @@ pub use cache::cache_shader_object;
 
 #[cfg(all(target_os = "windows", feature = "d3d"))]
 mod d3d;
-
-
-#[cfg(not(feature = "cache"))]
-mod docsrs;

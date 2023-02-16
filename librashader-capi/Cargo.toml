@@ -15,7 +15,7 @@ description = "RetroArch shaders for all."
 crate-type = [ "cdylib", "staticlib" ]
 
 [features]
-default = ["runtime-all", "librashader/cache" ]
+default = ["runtime-all" ]
 runtime-all = ["runtime-opengl", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan"]
 runtime-opengl = ["gl", "librashader/runtime-gl"]
 runtime-d3d11 = ["windows", "librashader/runtime-d3d11", "windows/Win32_Graphics_Direct3D11"]
@@ -35,9 +35,6 @@ spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
 version = "0.44.0"
 optional = true
 
-[package.metadata.cargo-post.dependencies]
-
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
-no-default-features = true
-features = ["runtime-all", "librashader/docsrs"]
+features = ["librashader/docsrs"]

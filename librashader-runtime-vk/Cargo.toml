@@ -40,4 +40,6 @@ ash-window = "0.12.0"
 
 [[test]]
 name = "triangle"
-required-features = ["librashader-cache/cache"]
+
+[package.metadata.docs.rs]
+features = ["librashader-cache/docsrs"]
