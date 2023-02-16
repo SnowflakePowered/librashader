@@ -356,16 +356,18 @@ unsafe fn memcpy_subresource(
     num_rows: u32,
     num_slices: u32,
 ) {
-    for z in 0..num_slices as usize {
-        let dest_slice = dest.pData.add(dest.SlicePitch * z);
-        let src_slice = src.pData.offset(src.SlicePitch * z as isize);
+    unsafe {
+        for z in 0..num_slices as usize {
+            let dest_slice = dest.pData.add(dest.SlicePitch * z);
+            let src_slice = src.pData.offset(src.SlicePitch * z as isize);
 
-        for y in 0..num_rows as usize {
-            std::ptr::copy_nonoverlapping(
-                src_slice.offset(src.RowPitch * y as isize),
-                dest_slice.add(dest.RowPitch * y),
-                row_sizes_in_bytes as usize,
-            );
+            for y in 0..num_rows as usize {
+                std::ptr::copy_nonoverlapping(
+                    src_slice.offset(src.RowPitch * y as isize),
+                    dest_slice.add(dest.RowPitch * y),
+                    row_sizes_in_bytes as usize,
+                );
+            }
         }
     }
 }

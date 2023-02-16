@@ -141,18 +141,19 @@ impl Drop for FrameResiduals {
 
 impl FilterChainD3D12 {
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(
+    pub unsafe fn load_from_path(
         path: impl AsRef<Path>,
         device: &ID3D12Device,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset, device, options)
+
+        unsafe { Self::load_from_preset(preset, device, options) }
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(
+    pub unsafe fn load_from_preset(
         preset: ShaderPreset,
         device: &ID3D12Device,
         options: Option<&FilterChainOptionsD3D12>,
@@ -545,7 +546,7 @@ impl FilterChainD3D12 {
     /// librashader **will not** create a resource barrier for the final pass. The output image will
     /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
     /// the output image to the final resource state.
-    pub fn frame(
+    pub unsafe fn frame(
         &mut self,
         cmd: &ID3D12GraphicsCommandList,
         input: D3D12InputImage,

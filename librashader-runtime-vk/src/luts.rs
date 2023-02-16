@@ -37,8 +37,7 @@ impl LutTexture {
                     | vk::ImageUsageFlags::TRANSFER_SRC
                     | vk::ImageUsageFlags::TRANSFER_DST,
             )
-            .initial_layout(vk::ImageLayout::UNDEFINED)
-            ;
+            .initial_layout(vk::ImageLayout::UNDEFINED);
 
         let texture = unsafe { vulkan.device.create_image(&image_info, None)? };
 
@@ -50,23 +49,20 @@ impl LutTexture {
         let image_subresource = vk::ImageSubresourceRange::builder()
             .level_count(image_info.mip_levels)
             .layer_count(1)
-            .aspect_mask(vk::ImageAspectFlags::COLOR)
-            ;
+            .aspect_mask(vk::ImageAspectFlags::COLOR);
 
         let swizzle_components = vk::ComponentMapping::builder()
             .r(vk::ComponentSwizzle::R)
             .g(vk::ComponentSwizzle::G)
             .b(vk::ComponentSwizzle::B)
-            .a(vk::ComponentSwizzle::A)
-            ;
+            .a(vk::ComponentSwizzle::A);
 
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(vk::Format::B8G8R8A8_UNORM)
             .image(texture)
             .subresource_range(*image_subresource)
-            .components(*swizzle_components)
-            ;
+            .components(*swizzle_components);
 
         let texture_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
 
@@ -105,8 +101,7 @@ impl LutTexture {
                         .aspect_mask(vk::ImageAspectFlags::COLOR)
                         .mip_level(0)
                         .base_array_layer(0)
-                        .layer_count(1)
-                    ,
+                        .layer_count(1),
                 )
                 .image_extent(image.size.into());
 
@@ -149,22 +144,19 @@ impl LutTexture {
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .mip_level(level - 1)
                 .base_array_layer(0)
-                .layer_count(1)
-                ;
+                .layer_count(1);
 
             let dst_subresource = vk::ImageSubresourceLayers::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .mip_level(level)
                 .base_array_layer(0)
-                .layer_count(1)
-                ;
+                .layer_count(1);
 
             let image_blit = vk::ImageBlit::builder()
                 .src_subresource(*src_subresource)
                 .src_offsets(src_offsets)
                 .dst_subresource(*dst_subresource)
-                .dst_offsets(dst_offsets)
-                ;
+                .dst_offsets(dst_offsets);
 
             unsafe {
                 util::vulkan_image_layout_transition_levels(

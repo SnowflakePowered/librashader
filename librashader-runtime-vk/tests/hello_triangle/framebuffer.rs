@@ -19,8 +19,7 @@ impl VulkanFramebuffer {
             .attachments(attachments)
             .width(width)
             .height(height)
-            .layers(1)
-            ;
+            .layers(1);
 
         unsafe {
             let framebuffer = device.create_framebuffer(&framebuffer_info, None)?;

@@ -19,14 +19,10 @@ impl SyncObjects {
                     .push(device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?);
                 render_finished
                     .push(device.create_semaphore(&vk::SemaphoreCreateInfo::default(), None)?);
-                in_flight.push(
-                    device.create_fence(
-                        &vk::FenceCreateInfo::builder()
-                            .flags(vk::FenceCreateFlags::SIGNALED)
-                            ,
-                        None,
-                    )?,
-                )
+                in_flight.push(device.create_fence(
+                    &vk::FenceCreateInfo::builder().flags(vk::FenceCreateFlags::SIGNALED),
+                    None,
+                )?)
             }
 
             Ok(SyncObjects {

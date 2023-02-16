@@ -77,18 +77,19 @@ pub(crate) struct FilterCommon {
 
 impl FilterChainD3D11 {
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(
+    pub unsafe fn load_from_path(
         path: impl AsRef<Path>,
         device: &ID3D11Device,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset, device, options)
+
+        unsafe { Self::load_from_preset(preset, device, options) }
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(
+    pub unsafe fn load_from_preset(
         preset: ShaderPreset,
         device: &ID3D11Device,
         options: Option<&FilterChainOptionsD3D11>,
@@ -374,7 +375,7 @@ impl FilterChainD3D11 {
     }
 
     /// Process a frame with the input image.
-    pub fn frame(
+    pub unsafe fn frame(
         &mut self,
         ctx: Option<&ID3D11DeviceContext>,
         input: D3D11InputView,

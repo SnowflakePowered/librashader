@@ -4,7 +4,6 @@ use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-
 use librashader_reflect::reflect::semantics::BindingStage;
 
 pub fn binding_stage_to_vulkan_stage(stage_mask: BindingStage) -> vk::ShaderStageFlags {
@@ -72,6 +71,7 @@ pub fn create_allocator(
         physical_device,
         debug_settings: Default::default(),
         buffer_device_address: false,
-    }).unwrap();
+    })
+    .unwrap();
     Arc::new(RwLock::new(alloc))
 }

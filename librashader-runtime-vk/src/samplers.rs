@@ -29,8 +29,7 @@ impl VulkanSampler {
             .mipmap_mode(mipmap.into())
             .address_mode_u(wrap.into())
             .address_mode_v(wrap.into())
-            .address_mode_w(wrap.into())
-            ;
+            .address_mode_w(wrap.into());
 
         let sampler = unsafe { device.create_sampler(&create_info, None)? };
 

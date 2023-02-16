@@ -217,7 +217,7 @@ impl D3D12MipmapGen {
     ) -> error::Result<Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>> {
         // create views for mipmap generation
         let srv = work_heap.alloc_slot()?;
-        {
+        unsafe {
             let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format,
                 ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
@@ -250,16 +250,20 @@ impl D3D12MipmapGen {
                 },
             };
 
-            self.device.CreateUnorderedAccessView(
-                resource,
-                None,
-                Some(&desc),
-                *descriptor.deref().as_ref(),
-            );
+            unsafe {
+                self.device.CreateUnorderedAccessView(
+                    resource,
+                    None,
+                    Some(&desc),
+                    *descriptor.deref().as_ref(),
+                );
+            }
             heap_slots.push(descriptor);
         }
 
-        cmd.SetComputeRootDescriptorTable(0, *heap_slots[0].deref().as_ref());
+        unsafe {
+            cmd.SetComputeRootDescriptorTable(0, *heap_slots[0].deref().as_ref());
+        }
 
         for i in 1..miplevels as u32 {
             let scaled = size.scale_mipmap(i);
@@ -285,21 +289,23 @@ impl D3D12MipmapGen {
                 ),
             ];
 
-            cmd.ResourceBarrier(&barriers);
+            unsafe {
+                cmd.ResourceBarrier(&barriers);
 
-            cmd.SetComputeRootDescriptorTable(1, *heap_slots[i as usize].deref().as_ref());
-            cmd.SetComputeRoot32BitConstants(
-                2,
-                (std::mem::size_of::<MipConstants>() / std::mem::size_of::<u32>()) as u32,
-                mipmap_params.as_ptr().cast(),
-                0,
-            );
+                cmd.SetComputeRootDescriptorTable(1, *heap_slots[i as usize].deref().as_ref());
+                cmd.SetComputeRoot32BitConstants(
+                    2,
+                    (std::mem::size_of::<MipConstants>() / std::mem::size_of::<u32>()) as u32,
+                    mipmap_params.as_ptr().cast(),
+                    0,
+                );
 
-            cmd.Dispatch(
-                std::cmp::max(scaled.width.div_ceil(8), 1),
-                std::cmp::max(scaled.height.div_ceil(8), 1),
-                1,
-            );
+                cmd.Dispatch(
+                    std::cmp::max(scaled.width.div_ceil(8), 1),
+                    std::cmp::max(scaled.height.div_ceil(8), 1),
+                    1,
+                );
+            }
 
             // todo: handle manuallyDrop properly.
 
@@ -327,7 +333,9 @@ impl D3D12MipmapGen {
                 ),
             ];
 
-            cmd.ResourceBarrier(&barriers);
+            unsafe {
+                cmd.ResourceBarrier(&barriers);
+            }
         }
 
         Ok(heap_slots)

@@ -22,20 +22,22 @@ pub struct FilterChainGL {
 
 impl FilterChainGL {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset(
+    pub unsafe fn load_from_preset(
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         let result = catch_unwind(|| {
             if let Some(options) = options && options.use_dsa {
                 return Ok(Self {
-                    filter: FilterChainDispatch::DirectStateAccess(FilterChainImpl::load_from_preset(preset, Some(options))?)
+                    filter: FilterChainDispatch::DirectStateAccess(unsafe {
+                        FilterChainImpl::load_from_preset(preset, Some(options))?
+                    })
                 })
             }
             Ok(Self {
-                filter: FilterChainDispatch::Compatibility(FilterChainImpl::load_from_preset(
-                    preset, options,
-                )?),
+                filter: FilterChainDispatch::Compatibility(unsafe {
+                    FilterChainImpl::load_from_preset(preset, options)?
+                }),
             })
         });
         match result {
@@ -45,20 +47,20 @@ impl FilterChainGL {
     }
 
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path(
+    pub unsafe fn load_from_path(
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset, options)
+        unsafe { Self::load_from_preset(preset, options) }
     }
 
     /// Process a frame with the input image.
     ///
     /// When this frame returns, `GL_FRAMEBUFFER` is bound to 0 if not using Direct State Access.
     /// Otherwise, it is untouched.
-    pub fn frame(
+    pub unsafe fn frame(
         &mut self,
         input: &GLImage,
         viewport: &Viewport<&GLFramebuffer>,
@@ -66,10 +68,12 @@ impl FilterChainGL {
         options: Option<&FrameOptionsGL>,
     ) -> Result<()> {
         match &mut self.filter {
-            FilterChainDispatch::DirectStateAccess(p) => {
+            FilterChainDispatch::DirectStateAccess(p) => unsafe {
                 p.frame(frame_count, viewport, input, options)
-            }
-            FilterChainDispatch::Compatibility(p) => p.frame(frame_count, viewport, input, options),
+            },
+            FilterChainDispatch::Compatibility(p) => unsafe {
+                p.frame(frame_count, viewport, input, options)
+            },
         }
     }
 }

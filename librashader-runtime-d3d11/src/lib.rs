@@ -1,4 +1,5 @@
 #![cfg(target_os = "windows")]
+#![deny(unsafe_op_in_unsafe_fn)]
 //! librashader Direct3D 11 runtime
 //!
 //! This crate should not be used directly.

@@ -153,8 +153,7 @@ impl VulkanPipeline {
         let vertex_stage_info = vk::PipelineShaderStageCreateInfo::builder()
             .module(vertex_shader_info.module)
             .stage(vk::ShaderStageFlags::VERTEX)
-            .name(ENTRY_POINT)
-            ;
+            .name(ENTRY_POINT);
 
         let mut frag_spv_file =
             Cursor::new(&include_bytes!("../../shader/triangle_simple/frag.spv")[..]);
@@ -164,18 +163,15 @@ impl VulkanPipeline {
         let frag_stage_info = vk::PipelineShaderStageCreateInfo::builder()
             .module(frag_shader_info.module)
             .stage(vk::ShaderStageFlags::FRAGMENT)
-            .name(ENTRY_POINT)
-            ;
+            .name(ENTRY_POINT);
 
         let vertex_input_state_info = vk::PipelineVertexInputStateCreateInfo::builder()
             .vertex_attribute_descriptions(&[])
-            .vertex_binding_descriptions(&[])
-            ;
+            .vertex_binding_descriptions(&[]);
 
         let vertex_input_assembly_state_info = vk::PipelineInputAssemblyStateCreateInfo::builder()
             .primitive_restart_enable(false)
-            .topology(vk::PrimitiveTopology::TRIANGLE_LIST)
-            ;
+            .topology(vk::PrimitiveTopology::TRIANGLE_LIST);
 
         let viewports = [vk::Viewport {
             x: 0.0,
@@ -198,9 +194,7 @@ impl VulkanPipeline {
             .unwrap();
 
         let states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-        let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder()
-            .dynamic_states(&states)
-            ;
+        let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder().dynamic_states(&states);
 
         let viewport_state_info = vk::PipelineViewportStateCreateInfo::builder()
             .scissors(&scissors)
@@ -213,14 +207,12 @@ impl VulkanPipeline {
             .polygon_mode(vk::PolygonMode::FILL)
             .line_width(1.0f32)
             .cull_mode(vk::CullModeFlags::BACK)
-            .front_face(vk::FrontFace::CLOCKWISE)
-            ;
+            .front_face(vk::FrontFace::CLOCKWISE);
 
         let multisample = vk::PipelineMultisampleStateCreateInfo::builder()
             .rasterization_samples(vk::SampleCountFlags::TYPE_1)
             .min_sample_shading(1.0f32)
-            .sample_shading_enable(false)
-            ;
+            .sample_shading_enable(false);
 
         let color_blend_attachment = [*vk::PipelineColorBlendAttachmentState::builder()
             .blend_enable(false)
@@ -230,8 +222,7 @@ impl VulkanPipeline {
             .color_blend_op(vk::BlendOp::ADD)
             .src_alpha_blend_factor(vk::BlendFactor::ONE)
             .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
-            .alpha_blend_op(vk::BlendOp::ADD)
-            ];
+            .alpha_blend_op(vk::BlendOp::ADD)];
 
         let color_blend_state = vk::PipelineColorBlendStateCreateInfo::builder()
             .logic_op(vk::LogicOp::COPY)
@@ -291,11 +282,7 @@ impl VulkanPipeline {
 
         let graphics_pipelines = base
             .device
-            .create_graphics_pipelines(
-                vk::PipelineCache::null(),
-                &graphic_pipeline_info,
-                None,
-            )
+            .create_graphics_pipelines(vk::PipelineCache::null(), &graphic_pipeline_info, None)
             .expect("Unable to create graphics pipeline");
 
         let graphic_pipeline = graphics_pipelines[0];

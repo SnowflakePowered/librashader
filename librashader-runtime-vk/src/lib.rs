@@ -2,7 +2,7 @@
 //!
 //! This crate should not be used directly.
 //! See [`librashader::runtime::vk`](https://docs.rs/librashader/latest/librashader/runtime/vk/index.html) instead.
-
+#![deny(unsafe_op_in_unsafe_fn)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
 #![feature(strict_provenance)]
@@ -28,4 +28,3 @@ pub use texture::VulkanImage;
 pub mod error;
 pub mod options;
 mod render_pass;
-

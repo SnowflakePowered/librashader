@@ -1,6 +1,6 @@
+use crate::hello_triangle::memory::VulkanImageMemory;
 use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::vulkan_base::VulkanBase;
-use crate::hello_triangle::memory::VulkanImageMemory;
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Extent3D;
@@ -57,8 +57,7 @@ impl VulkanSwapchain {
             .clipped(true)
             .image_array_layers(1)
             // todo: switch to IMAGE_USAGE_TRANSFER_DST
-            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
-            ;
+            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT);
 
         let loader = ash::extensions::khr::Swapchain::new(&base.instance, &base.device);
 
@@ -121,8 +120,7 @@ impl VulkanSwapchain {
                         base_array_layer: 0,
                         layer_count: 1,
                     })
-                    .image(*image)
-                    ;
+                    .image(*image);
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
                 // unsafe {
@@ -176,8 +174,7 @@ impl VulkanSwapchain {
                         base_array_layer: 0,
                         layer_count: 1,
                     })
-                    .image(*image)
-                    ;
+                    .image(*image);
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
                 // unsafe {

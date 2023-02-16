@@ -101,7 +101,7 @@ type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<GLSL, Glslang
 
 impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub(crate) fn load_from_preset(
+    pub(crate) unsafe fn load_from_preset(
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
@@ -256,7 +256,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     /// Process a frame with the input image.
     ///
     /// When this frame returns, GL_FRAMEBUFFER is bound to 0.
-    pub fn frame(
+    pub unsafe fn frame(
         &mut self,
         frame_count: usize,
         viewport: &Viewport<&GLFramebuffer>,

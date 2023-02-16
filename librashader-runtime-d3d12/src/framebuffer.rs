@@ -154,9 +154,9 @@ impl OwnedImage {
             ),
         ];
 
-        cmd.ResourceBarrier(&barriers);
-
         unsafe {
+            cmd.ResourceBarrier(&barriers);
+
             cmd.CopyTextureRegion(
                 &D3D12_TEXTURE_COPY_LOCATION {
                     pResource: windows::core::ManuallyDrop::new(&self.handle),
@@ -200,8 +200,10 @@ impl OwnedImage {
                 D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
             ),
         ];
-        cmd.ResourceBarrier(&barriers);
 
+        unsafe {
+            cmd.ResourceBarrier(&barriers);
+        }
         Ok(())
     }
 
@@ -227,7 +229,7 @@ impl OwnedImage {
         };
 
         unsafe {
-            // more efficient if we don't pass the rect but
+            // todo: more efficient if we don't pass the rect but.. waiting on windows-rs updates
             cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR.as_ptr(), &[rect])
         }
 

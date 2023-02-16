@@ -1,8 +1,7 @@
 mod hello_triangle;
 
-
-use librashader_runtime_gl::FilterChainGL;
 use librashader_runtime_gl::options::FilterChainOptionsGL;
+use librashader_runtime_gl::FilterChainGL;
 
 #[test]
 fn triangle_gl() {
@@ -16,9 +15,9 @@ fn triangle_gl() {
             disable_cache: false,
         }),
     )
-        // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
-        .unwrap();
-   hello_triangle::gl3::do_loop(glfw, window, events, shader, vao, &mut filter);
+    // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
+    .unwrap();
+    hello_triangle::gl3::do_loop(glfw, window, events, shader, vao, &mut filter);
 }
 
 #[test]
@@ -36,7 +35,7 @@ fn triangle_gl46() {
             disable_cache: false,
         }),
     )
-        // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
-        .unwrap();
+    // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
+    .unwrap();
     hello_triangle::gl46::do_loop(glfw, window, events, shader, vao, &mut filter);
 }

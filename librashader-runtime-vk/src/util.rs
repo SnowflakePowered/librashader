@@ -76,15 +76,18 @@ pub unsafe fn vulkan_image_layout_transition_levels(
     barrier.subresource_range.base_array_layer = 0;
     barrier.subresource_range.level_count = levels;
     barrier.subresource_range.layer_count = vk::REMAINING_ARRAY_LAYERS;
-    device.cmd_pipeline_barrier(
-        cmd,
-        src_stage,
-        dst_stage,
-        vk::DependencyFlags::empty(),
-        &[],
-        &[],
-        &[barrier],
-    )
+
+    unsafe {
+        device.cmd_pipeline_barrier(
+            cmd,
+            src_stage,
+            dst_stage,
+            vk::DependencyFlags::empty(),
+            &[],
+            &[],
+            &[barrier],
+        )
+    }
 }
 
 pub fn create_allocator(

@@ -4,12 +4,12 @@ use gpu_allocator::MemoryLocation;
 use librashader_runtime::uniforms::UniformStorageAccess;
 use parking_lot::RwLock;
 
+use ash::prelude::VkResult;
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::sync::Arc;
-use ash::prelude::VkResult;
 
 pub struct VulkanImageMemory {
     allocation: Option<Allocation>,
@@ -23,13 +23,16 @@ impl VulkanImageMemory {
         requirements: vk::MemoryRequirements,
         image: &vk::Image,
     ) -> VkResult<VulkanImageMemory> {
-        let allocation = allocator.write().allocate(&AllocationCreateDesc {
-            name: "imagemem",
-            requirements,
-            location: MemoryLocation::GpuOnly,
-            linear: false,
-            allocation_scheme: AllocationScheme::DedicatedImage(*image),
-        }).unwrap();
+        let allocation = allocator
+            .write()
+            .allocate(&AllocationCreateDesc {
+                name: "imagemem",
+                requirements,
+                location: MemoryLocation::GpuOnly,
+                linear: false,
+                allocation_scheme: AllocationScheme::DedicatedImage(*image),
+            })
+            .unwrap();
 
         unsafe {
             device.bind_image_memory(*image, allocation.memory(), 0)?;

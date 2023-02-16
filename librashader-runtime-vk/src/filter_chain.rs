@@ -209,7 +209,7 @@ impl Drop for FrameResiduals {
 
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
-    pub fn load_from_path<V, E>(
+    pub unsafe fn load_from_path<V, E>(
         path: impl AsRef<Path>,
         vulkan: V,
         options: Option<&FilterChainOptionsVulkan>,
@@ -220,11 +220,12 @@ impl FilterChainVulkan {
     {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
-        Self::load_from_preset(preset, vulkan, options)
+
+        unsafe { Self::load_from_preset(preset, vulkan, options) }
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub fn load_from_preset<V, E>(
+    pub unsafe fn load_from_preset<V, E>(
         preset: ShaderPreset,
         vulkan: V,
         options: Option<&FilterChainOptionsVulkan>,
@@ -240,8 +241,7 @@ impl FilterChainVulkan {
         let command_pool = unsafe {
             device.create_command_pool(
                 &vk::CommandPoolCreateInfo::builder()
-                    .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-                    ,
+                    .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER),
                 None,
             )?
         };
@@ -252,8 +252,7 @@ impl FilterChainVulkan {
                 &vk::CommandBufferAllocateInfo::builder()
                     .command_pool(command_pool)
                     .level(vk::CommandBufferLevel::PRIMARY)
-                    .command_buffer_count(1)
-                    ,
+                    .command_buffer_count(1),
             )?[0]
         };
 
@@ -261,8 +260,7 @@ impl FilterChainVulkan {
             device.begin_command_buffer(
                 command_buffer,
                 &vk::CommandBufferBeginInfo::builder()
-                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
-                    ,
+                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT),
             )?
         }
 
@@ -279,8 +277,7 @@ impl FilterChainVulkan {
             device.end_command_buffer(command_buffer)?;
 
             let buffers = [command_buffer];
-            let submit_info = vk::SubmitInfo::builder()
-                .command_buffers(&buffers);
+            let submit_info = vk::SubmitInfo::builder().command_buffers(&buffers);
 
             device.queue_submit(queue, &[*submit_info], vk::Fence::null())?;
             device.queue_wait_idle(queue)?;
@@ -551,7 +548,7 @@ impl FilterChainVulkan {
     /// librashader **will not** create a pipeline barrier for the final pass. The output image will
     /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
     /// the output image to the final layout.
-    pub fn frame(
+    pub unsafe fn frame(
         &mut self,
         input: &VulkanImage,
         viewport: &Viewport<VulkanImage>,
@@ -587,15 +584,14 @@ impl FilterChainVulkan {
                     *vk::ImageSubresourceRange::builder()
                         .aspect_mask(vk::ImageAspectFlags::COLOR)
                         .level_count(1)
-                        .layer_count(1)
-
+                        .layer_count(1),
                 )
                 .components(
                     *vk::ComponentMapping::builder()
                         .r(vk::ComponentSwizzle::R)
                         .g(vk::ComponentSwizzle::G)
                         .b(vk::ComponentSwizzle::B)
-                        .a(vk::ComponentSwizzle::A)
+                        .a(vk::ComponentSwizzle::A),
                 );
 
             self.vulkan.device.create_image_view(&create_info, None)?

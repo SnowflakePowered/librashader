@@ -4,18 +4,19 @@ use crate::key::CacheKey;
 pub(crate) mod internal {
     use platform_dirs::AppDirs;
     use rusqlite::{Connection, DatabaseName};
-    use std::path::PathBuf;
     use std::error::Error;
+    use std::path::PathBuf;
 
     pub(crate) fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
-        let cache_dir =
-            if let Some(cache_dir) = AppDirs::new(Some("librashader"), false).map(|a| a.cache_dir) {
-                cache_dir
-            } else {
-                let mut current_dir = std::env::current_dir()?;
-                current_dir.push("librashader");
-                current_dir
-            };
+        let cache_dir = if let Some(cache_dir) =
+            AppDirs::new(Some("librashader"), false).map(|a| a.cache_dir)
+        {
+            cache_dir
+        } else {
+            let mut current_dir = std::env::current_dir()?;
+            current_dir.push("librashader");
+            current_dir
+        };
 
         std::fs::create_dir_all(&cache_dir)?;
 

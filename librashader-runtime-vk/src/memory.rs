@@ -72,8 +72,7 @@ impl VulkanBuffer {
             let buffer_info = vk::BufferCreateInfo::builder()
                 .size(size as vk::DeviceSize)
                 .usage(usage)
-                .sharing_mode(vk::SharingMode::EXCLUSIVE)
-                ;
+                .sharing_mode(vk::SharingMode::EXCLUSIVE);
             let buffer = device.create_buffer(&buffer_info, None)?;
 
             let memory_reqs = device.get_buffer_memory_requirements(buffer);
@@ -176,10 +175,11 @@ impl RawVulkanBuffer {
                 .dst_set(descriptor_set)
                 .dst_binding(binding)
                 .dst_array_element(0)
-                .buffer_info(&buffer_info)
-                ;
+                .buffer_info(&buffer_info);
 
-            self.buffer.device.update_descriptor_sets(&[*write_info], &[])
+            self.buffer
+                .device
+                .update_descriptor_sets(&[*write_info], &[])
         }
         Ok(())
     }

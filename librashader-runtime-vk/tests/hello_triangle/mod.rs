@@ -3,32 +3,32 @@
 mod command;
 mod debug;
 mod framebuffer;
+mod memory;
 mod physicaldevice;
 mod pipeline;
 mod surface;
 mod swapchain;
 mod syncobjects;
 mod util;
-mod memory;
 
 pub(crate) mod vulkan_base;
 
-use librashader_runtime_vk::{FilterChainVulkan, VulkanImage};
+use ash::vk;
 use command::VulkanCommandPool;
 use framebuffer::VulkanFramebuffer;
+use librashader_runtime_vk::{FilterChainVulkan, VulkanImage};
 use pipeline::VulkanPipeline;
 use surface::VulkanSurface;
 use swapchain::VulkanSwapchain;
 use syncobjects::SyncObjects;
 use vulkan_base::VulkanBase;
-use ash::vk;
 
 use librashader_common::Viewport;
 
+use librashader_runtime_vk::options::FrameOptionsVulkan;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use librashader_runtime_vk::options::FrameOptionsVulkan;
 
 // Constants
 const WINDOW_TITLE: &str = "librashader Vulkan";
@@ -101,8 +101,7 @@ impl VulkanWindow {
                 extent: vulkan.swapchain.extent,
                 ..Default::default()
             })
-            .clear_values(&clear_values)
-            ;
+            .clear_values(&clear_values);
 
         vulkan.base.device.cmd_begin_render_pass(
             cmd,
@@ -349,8 +348,7 @@ impl VulkanWindow {
                 .wait_dst_stage_mask(&stage_mask)
                 .wait_semaphores(&image_available)
                 .signal_semaphores(&render_finished)
-                .command_buffers(&cmd)
-                ];
+                .command_buffers(&cmd)];
 
             vulkan
                 .base
@@ -363,8 +361,7 @@ impl VulkanWindow {
             let present_info = vk::PresentInfoKHR::builder()
                 .wait_semaphores(&render_finished)
                 .swapchains(&swapchain)
-                .image_indices(&swapchain_index)
-                ;
+                .image_indices(&swapchain_index);
 
             vulkan
                 .swapchain

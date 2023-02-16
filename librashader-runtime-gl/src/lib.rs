@@ -2,7 +2,7 @@
 //!
 //! This crate should not be used directly.
 //! See [`librashader::runtime::gl`](https://docs.rs/librashader/latest/librashader/runtime/gl/index.html) instead.
-
+#![deny(unsafe_op_in_unsafe_fn)]
 #![feature(strict_provenance)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
@@ -24,4 +24,3 @@ pub mod options;
 pub use crate::gl::GLFramebuffer;
 pub use filter_chain::FilterChainGL;
 pub use framebuffer::GLImage;
-

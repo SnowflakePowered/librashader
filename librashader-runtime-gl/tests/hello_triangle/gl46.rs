@@ -7,7 +7,7 @@ use glfw::{Context, Glfw, Window, WindowEvent};
 use gl::types::{GLchar, GLenum, GLint, GLsizei, GLuint};
 use librashader_common::{Size, Viewport};
 
-use librashader_runtime_gl::{FilterChainGL, GLImage, GLFramebuffer};
+use librashader_runtime_gl::{FilterChainGL, GLFramebuffer, GLImage};
 
 const WIDTH: u32 = 800;
 const HEIGHT: u32 = 600;

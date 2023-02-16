@@ -5,16 +5,19 @@ use crate::error::FilterChainError;
 use librashader_reflect::back::cross::GlslVersion;
 
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GLuint> {
-    let shader = gl::CreateShader(stage);
-    gl::ShaderSource(
-        shader,
-        1,
-        &source.as_bytes().as_ptr().cast(),
-        std::ptr::null(),
-    );
-    gl::CompileShader(shader);
-    let mut compile_status = 0;
-    gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
+    let (shader, compile_status) = unsafe {
+        let shader = gl::CreateShader(stage);
+        gl::ShaderSource(
+            shader,
+            1,
+            &source.as_bytes().as_ptr().cast(),
+            std::ptr::null(),
+        );
+        gl::CompileShader(shader);
+        let mut compile_status = 0;
+        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
+        (shader, compile_status)
+    };
 
     if compile_status == 0 {
         Err(FilterChainError::GlCompileError)

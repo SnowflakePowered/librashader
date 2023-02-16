@@ -147,9 +147,10 @@ extern_fn! {
         };
 
         let options = options.map(FromUninit::from_uninit);
-        let chain = librashader::runtime::gl::capi::FilterChainGL::load_from_preset(*preset, options.as_ref())?;
 
         unsafe {
+            let chain = librashader::runtime::gl::capi::FilterChainGL::load_from_preset(*preset, options.as_ref())?;
+
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
             )))))
@@ -201,7 +202,10 @@ extern_fn! {
             output: &framebuffer,
             mvp,
         };
-        chain.frame(&image, &viewport, frame_count, opt.as_ref())?;
+
+        unsafe {
+            chain.frame(&image, &viewport, frame_count, opt.as_ref())?;
+        }
     }
 }
 

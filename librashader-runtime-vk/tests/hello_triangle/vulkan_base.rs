@@ -2,14 +2,14 @@ use ash::vk;
 
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 
+use crate::hello_triangle::util;
 use ash::prelude::VkResult;
 use gpu_allocator::vulkan::Allocator;
+use librashader_runtime_vk::error::FilterChainError;
+use librashader_runtime_vk::VulkanObjects;
 use parking_lot::RwLock;
 use std::ffi::CStr;
 use std::sync::Arc;
-use librashader_runtime_vk::error::FilterChainError;
-use librashader_runtime_vk::VulkanObjects;
-use crate::hello_triangle::util;
 
 const WINDOW_TITLE: &[u8] = b"librashader Vulkan\0";
 const KHRONOS_VALIDATION: &[u8] = b"VK_LAYER_KHRONOS_validation\0";
@@ -32,8 +32,7 @@ impl VulkanBase {
             .engine_name(unsafe { CStr::from_bytes_with_nul_unchecked(WINDOW_TITLE) })
             .engine_version(0)
             .application_version(0)
-            .api_version(vk::make_api_version(0, 1, 3, 0))
-            ;
+            .api_version(vk::make_api_version(0, 1, 3, 0));
 
         dbg!("entry");
         // todo: make this xplat
@@ -48,8 +47,7 @@ impl VulkanBase {
         let create_info = vk::InstanceCreateInfo::builder()
             .application_info(&app_info)
             .enabled_layer_names(&layers)
-            .enabled_extension_names(&extensions)
-            ;
+            .enabled_extension_names(&extensions);
 
         let instance = unsafe { entry.create_instance(&create_info, None)? };
 
@@ -88,14 +86,12 @@ impl VulkanBase {
         let indices = find_queue_family(instance, *physical_device);
         let queue_info = [*vk::DeviceQueueCreateInfo::builder()
             .queue_family_index(indices.graphics_family())
-            .queue_priorities(&[1.0f32])
-            ];
+            .queue_priorities(&[1.0f32])];
 
         // let physical_device_features = vk::PhysicalDeviceFeatures::default();
 
-        let mut physical_device_features = vk::PhysicalDeviceVulkan13Features::builder()
-            .dynamic_rendering(true)
-            ;
+        let mut physical_device_features =
+            vk::PhysicalDeviceVulkan13Features::builder().dynamic_rendering(true);
 
         // let mut physical_device_features =
         //     vk::PhysicalDeviceFeatures2::builder().push_next(&mut physical_device_features)

@@ -60,8 +60,7 @@ impl BindSemantics<NoUniformBinder, Option<()>, RawVulkanBuffer> for FilterPass 
         let image_info = vk::DescriptorImageInfo::builder()
             .sampler(sampler.handle)
             .image_view(texture.image_view)
-            .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-            ;
+            .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL);
 
         let image_info = [*image_info];
         let write_desc = vk::WriteDescriptorSet::builder()

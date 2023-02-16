@@ -58,8 +58,7 @@ impl OwnedImage {
                     | vk::ImageUsageFlags::TRANSFER_SRC,
             )
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
-            .initial_layout(vk::ImageLayout::UNDEFINED)
-            ;
+            .initial_layout(vk::ImageLayout::UNDEFINED);
 
         let image = unsafe { device.create_image(&image_create_info, None)? };
         let mem_reqs = unsafe { device.get_image_memory_requirements(image) };
@@ -70,23 +69,20 @@ impl OwnedImage {
             .base_array_layer(0)
             .level_count(image_create_info.mip_levels)
             .layer_count(1)
-            .aspect_mask(vk::ImageAspectFlags::COLOR)
-            ;
+            .aspect_mask(vk::ImageAspectFlags::COLOR);
 
         let swizzle_components = vk::ComponentMapping::builder()
             .r(vk::ComponentSwizzle::R)
             .g(vk::ComponentSwizzle::G)
             .b(vk::ComponentSwizzle::B)
-            .a(vk::ComponentSwizzle::A)
-            ;
+            .a(vk::ComponentSwizzle::A);
 
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(format.into())
             .image(image)
             .subresource_range(*image_subresource)
-            .components(*swizzle_components)
-            ;
+            .components(*swizzle_components);
 
         let image_view = unsafe { device.create_image_view(&view_info, None)? };
 
@@ -199,8 +195,7 @@ impl OwnedImage {
                 level_count: 1,
                 base_array_layer: 0,
                 layer_count: vk::REMAINING_ARRAY_LAYERS,
-            })
-            ;
+            });
 
         let mipchain_barrier = vk::ImageMemoryBarrier::builder()
             .src_access_mask(vk::AccessFlags::empty())
@@ -216,8 +211,7 @@ impl OwnedImage {
                 base_array_layer: 0,
                 level_count: vk::REMAINING_MIP_LEVELS,
                 layer_count: vk::REMAINING_ARRAY_LAYERS,
-            })
-            ;
+            });
 
         unsafe {
             self.device.cmd_pipeline_barrier(
@@ -247,8 +241,7 @@ impl OwnedImage {
                             base_array_layer: 0,
                             level_count: 1,
                             layer_count: vk::REMAINING_ARRAY_LAYERS,
-                        })
-                        ;
+                        });
 
                     self.device.cmd_pipeline_barrier(
                         cmd,
@@ -286,15 +279,13 @@ impl OwnedImage {
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(level - 1)
                     .base_array_layer(0)
-                    .layer_count(1)
-                    ;
+                    .layer_count(1);
 
                 let dst_subresource = vk::ImageSubresourceLayers::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(level)
                     .base_array_layer(0)
-                    .layer_count(1)
-                    ;
+                    .layer_count(1);
 
                 let image_blit = vk::ImageBlit::builder()
                     .src_subresource(*src_subresource)
@@ -329,8 +320,7 @@ impl OwnedImage {
                     level_count: self.levels - 1,
                     base_array_layer: 0,
                     layer_count: vk::REMAINING_ARRAY_LAYERS,
-                })
-                ;
+                });
 
             let mipchain_barrier = vk::ImageMemoryBarrier::builder()
                 .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
@@ -346,8 +336,7 @@ impl OwnedImage {
                     base_array_layer: 0,
                     level_count: 1,
                     layer_count: vk::REMAINING_ARRAY_LAYERS,
-                })
-                ;
+                });
 
             // next past waits for ALL_GRAPHICS, use dependency chain and FRAGMENT_SHADER dst stage
             // to ensure that next pass doesn't start until mipchain is complete.
@@ -376,21 +365,18 @@ impl OwnedImage {
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(0)
                     .base_array_layer(0)
-                    .layer_count(1)
-                    ,
+                    .layer_count(1),
             )
             .dst_subresource(
                 *vk::ImageSubresourceLayers::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(0)
                     .base_array_layer(0)
-                    .layer_count(1)
-                    ,
+                    .layer_count(1),
             )
             .src_offset(Default::default())
             .dst_offset(Default::default())
-            .extent(source.size.into())
-            ;
+            .extent(source.size.into());
 
         unsafe {
             util::vulkan_image_layout_transition_levels(
@@ -461,8 +447,7 @@ impl OwnedImage {
                     .base_mip_level(0)
                     .level_count(1)
                     .base_array_layer(0)
-                    .layer_count(1)
-                    ],
+                    .layer_count(1)],
             );
 
             util::vulkan_image_layout_transition_levels(

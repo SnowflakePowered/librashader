@@ -1,8 +1,8 @@
 mod hello_triangle;
 
-use librashader_runtime_vk::FilterChainVulkan;
 use hello_triangle::vulkan_base::VulkanBase;
 use librashader_runtime_vk::options::FilterChainOptionsVulkan;
+use librashader_runtime_vk::FilterChainVulkan;
 
 #[test]
 fn triangle_vk() {

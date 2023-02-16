@@ -97,7 +97,10 @@ struct D3D12DescriptorHeapInner {
 pub struct D3D12DescriptorHeap<T>(Arc<RwLock<D3D12DescriptorHeapInner>>, PhantomData<T>);
 
 impl<T: D3D12HeapType> D3D12DescriptorHeap<T> {
-    pub fn new(device: &ID3D12Device, size: usize) -> Result<D3D12DescriptorHeap<T>, windows::core::Error> {
+    pub fn new(
+        device: &ID3D12Device,
+        size: usize,
+    ) -> Result<D3D12DescriptorHeap<T>, windows::core::Error> {
         let desc = T::get_desc(size);
         unsafe { D3D12DescriptorHeap::new_with_desc(device, desc) }
     }
@@ -140,7 +143,6 @@ impl<T> D3D12DescriptorHeap<T> {
             ))
         }
     }
-
 
     pub fn alloc_slot(&mut self) -> D3D12DescriptorHeapSlot<T> {
         let mut handle = D3D12_CPU_DESCRIPTOR_HANDLE { ptr: 0 };

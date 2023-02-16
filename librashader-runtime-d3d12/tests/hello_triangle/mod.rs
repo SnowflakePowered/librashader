@@ -9,7 +9,6 @@ use windows::{
 
 mod descriptor_heap;
 
-
 static SHADER: &[u8] = b"struct PSInput
 {
     float4 position : SV_POSITION;
@@ -230,11 +229,11 @@ unsafe extern "system" fn debug_log(
 
 pub mod d3d12_hello_triangle {
     use super::*;
+    use crate::hello_triangle::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
     use librashader_common::{Size, Viewport};
+    use librashader_runtime_d3d12::{D3D12InputImage, D3D12OutputView, FilterChainD3D12};
     use std::ops::Deref;
     use std::path::Path;
-    use librashader_runtime_d3d12::{FilterChainD3D12, D3D12InputImage, D3D12OutputView};
-    use crate::hello_triangle::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
 
     const FRAME_COUNT: u32 = 2;
 

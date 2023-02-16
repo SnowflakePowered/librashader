@@ -38,7 +38,7 @@ fn triangle_d3d11_args() {
         // replace below with 'None' for the triangle
         Some(image),
     )
-        .unwrap();
+    .unwrap();
     // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
     //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
     //     Some(&FilterChainOptions {
@@ -64,7 +64,7 @@ fn triangle_d3d11() {
         // None,
         Some(Image::load(IMAGE_PATH, UVDirection::TopLeft).unwrap()),
     )
-        .unwrap();
+    .unwrap();
     // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
     //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
     //     Some(&FilterChainOptions {

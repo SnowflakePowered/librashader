@@ -135,13 +135,13 @@ extern_fn! {
         };
 
         let options = options.map(FromUninit::from_uninit);
-        let chain = librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset(
-            *preset,
-            &device,
-            options.as_ref(),
-        )?;
-
         unsafe {
+            let chain = librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset(
+                *preset,
+                &device,
+                options.as_ref(),
+            )?;
+
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
             )))))
@@ -187,16 +187,14 @@ extern_fn! {
         };
 
         let options = options.map(FromUninit::from_uninit);
-        let chain = unsafe {
-            librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset_deferred(
+        unsafe {
+            let chain = librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset_deferred(
                 *preset,
                 &device,
                 &command_list,
                 options.as_ref(),
-            )?
-        };
+            )?;
 
-        unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
             )))))
@@ -261,7 +259,9 @@ extern_fn! {
         };
 
         let image = image.try_into()?;
-        chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;
+        unsafe {
+            chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;
+        }
     }
 }
 

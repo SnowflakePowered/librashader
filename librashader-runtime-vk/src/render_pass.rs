@@ -37,8 +37,7 @@ impl VulkanRenderPass {
         let renderpass_info = vk::RenderPassCreateInfo::builder()
             .flags(vk::RenderPassCreateFlags::empty())
             .attachments(&attachment)
-            .subpasses(&subpass)
-            ;
+            .subpasses(&subpass);
 
         unsafe {
             let rp = device.create_render_pass(&renderpass_info, None)?;

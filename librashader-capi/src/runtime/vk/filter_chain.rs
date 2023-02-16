@@ -160,9 +160,9 @@ extern_fn! {
         let vulkan: VulkanInstance = vulkan.into();
         let options = options.map(FromUninit::from_uninit);
 
-        let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(*preset, vulkan, options.as_ref())?;
-
         unsafe {
+            let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(*preset, vulkan, options.as_ref())?;
+
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
             )))))
@@ -211,14 +211,12 @@ extern_fn! {
         let vulkan: VulkanInstance = vulkan.into();
         let options = options.map(FromUninit::from_uninit);
 
-        let chain = unsafe {
-            librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset_deferred(*preset,
+        unsafe {
+            let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset_deferred(*preset,
                 vulkan,
                 command_buffer,
-                options.as_ref())?
-        };
+                options.as_ref())?;
 
-        unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
             )))))
@@ -282,7 +280,10 @@ extern_fn! {
             output,
             mvp,
         };
-        chain.frame(&image, &viewport, command_buffer, frame_count, opt.as_ref())?;
+
+        unsafe {
+            chain.frame(&image, &viewport, command_buffer, frame_count, opt.as_ref())?;
+        }
     }
 }
 
