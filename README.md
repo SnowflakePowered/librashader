@@ -1,6 +1,6 @@
 # librashader
 
-![Mega Bezel SMOOTH-ADV](https://user-images.githubusercontent.com/1000503/212806508-11e6942d-ac48-4659-bd61-1e50259d92b2.png)
+![Mega Bezel SMOOTH-ADV](shader_triangle.png)
 
 <small>*Mega Bezel SMOOTH-ADV on DirectX 11*</small>
 
