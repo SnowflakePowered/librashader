@@ -5,8 +5,6 @@ mod texture_bind;
 mod ubo_ring;
 
 mod compile_program;
-#[cfg(test)]
-pub mod hello_triangle;
 
 use crate::gl::gl46::compile_program::Gl4CompileProgram;
 use crate::gl::GLInterface;

@@ -28,3 +28,7 @@ rayon = "1.6.1"
 
 [dev-dependencies]
 glfw = "0.47.0"
+
+[[test]]
+name = "triangle"
+required-features = ["librashader-cache/sqlite-bundled"]

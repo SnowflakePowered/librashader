@@ -2,6 +2,8 @@ const WIDTH: i32 = 800;
 const HEIGHT: i32 = 600;
 const TITLE: &str = "librashader DirectX 11";
 
+mod texture;
+
 use windows::{
     core::*, Win32::Foundation::*, Win32::Graphics::Direct3D::Fxc::*, Win32::Graphics::Direct3D::*,
     Win32::Graphics::Direct3D11::*, Win32::Graphics::Dxgi::Common::*, Win32::Graphics::Dxgi::*,
@@ -240,15 +242,15 @@ pub mod d3d11_hello_triangle {
     use super::*;
     use std::path::Path;
 
-    use crate::filter_chain::FilterChainD3D11;
 
-    use crate::options::FilterChainOptionsD3D11;
-    use crate::texture::{D3D11InputView, LutTexture};
-    use crate::D3D11OutputView;
+    use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
+    use librashader_runtime_d3d11::{D3D11InputView, D3D11OutputView};
+    use texture::ExampleTexture;
     use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
     use librashader_runtime::image::Image;
     use std::slice;
     use std::time::Instant;
+    use librashader_runtime_d3d11::FilterChainD3D11;
 
     pub struct Sample {
         pub dxgi_factory: IDXGIFactory4,
@@ -292,7 +294,7 @@ pub mod d3d11_hello_triangle {
             let (dxgi_factory, device, context) = create_device()?;
             let filter = FilterChainD3D11::load_from_path(filter, &device, filter_options).unwrap();
             let lut = if let Some(image) = image {
-                let lut = LutTexture::new(
+                let lut = ExampleTexture::new(
                     &device,
                     &context,
                     &image,

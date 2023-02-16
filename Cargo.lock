@@ -180,7 +180,6 @@ dependencies = [
  "cfg-if",
  "constant_time_eq",
  "digest",
- "rayon",
 ]
 
 [[package]]
@@ -1112,6 +1111,7 @@ name = "librashader"
 version = "0.1.0-rc.5"
 dependencies = [
  "ash",
+ "librashader-cache",
  "librashader-common 0.1.0-rc.5",
  "librashader-preprocess",
  "librashader-presets 0.1.0-rc.5",

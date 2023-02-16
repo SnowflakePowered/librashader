@@ -8,26 +8,27 @@ mod pipeline;
 mod surface;
 mod swapchain;
 mod syncobjects;
+mod util;
+mod memory;
+
 pub(crate) mod vulkan_base;
 
-use crate::filter_chain::FilterChainVulkan;
-use crate::hello_triangle::command::VulkanCommandPool;
-use crate::hello_triangle::framebuffer::VulkanFramebuffer;
-use crate::hello_triangle::pipeline::VulkanPipeline;
-use crate::hello_triangle::surface::VulkanSurface;
-use crate::hello_triangle::swapchain::VulkanSwapchain;
-use crate::hello_triangle::syncobjects::SyncObjects;
-use crate::hello_triangle::vulkan_base::VulkanBase;
-use crate::texture::VulkanImage;
-use crate::util;
+use librashader_runtime_vk::{FilterChainVulkan, VulkanImage};
+use command::VulkanCommandPool;
+use framebuffer::VulkanFramebuffer;
+use pipeline::VulkanPipeline;
+use surface::VulkanSurface;
+use swapchain::VulkanSwapchain;
+use syncobjects::SyncObjects;
+use vulkan_base::VulkanBase;
 use ash::vk;
 
 use librashader_common::Viewport;
 
-use crate::options::FrameOptionsVulkan;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
+use librashader_runtime_vk::options::FrameOptionsVulkan;
 
 // Constants
 const WINDOW_TITLE: &str = "librashader Vulkan";

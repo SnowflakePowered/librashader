@@ -62,6 +62,10 @@ features = [
     "Win32_System_Threading",
     "Win32_System_WindowsProgramming",
 ]
+
+[[test]]
+name = "triangle"
+required-features = ["librashader-cache/sqlite-bundled"]
+
 [dev-dependencies]
 gfx-maths = "0.2.8"
-

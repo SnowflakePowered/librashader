@@ -1,6 +1,6 @@
 use crate::hello_triangle::surface::VulkanSurface;
 use crate::hello_triangle::vulkan_base::VulkanBase;
-use crate::memory::VulkanImageMemory;
+use crate::hello_triangle::memory::VulkanImageMemory;
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Extent3D;

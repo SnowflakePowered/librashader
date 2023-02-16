@@ -36,3 +36,8 @@ glfw = "0.49.0"
 winit = "0.27.5"
 raw-window-handle = "0.5"
 ash-window = "0.12.0"
+
+
+[[test]]
+name = "triangle"
+required-features = ["librashader-cache/sqlite-bundled"]

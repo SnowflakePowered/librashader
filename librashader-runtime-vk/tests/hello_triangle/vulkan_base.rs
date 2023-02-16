@@ -1,16 +1,15 @@
 use ash::vk;
 
-use crate::error::FilterChainError;
-use crate::filter_chain::VulkanObjects;
-
 use crate::hello_triangle::physicaldevice::{find_queue_family, pick_physical_device};
 
-use crate::util;
 use ash::prelude::VkResult;
 use gpu_allocator::vulkan::Allocator;
 use parking_lot::RwLock;
 use std::ffi::CStr;
 use std::sync::Arc;
+use librashader_runtime_vk::error::FilterChainError;
+use librashader_runtime_vk::VulkanObjects;
+use crate::hello_triangle::util;
 
 const WINDOW_TITLE: &[u8] = b"librashader Vulkan\0";
 const KHRONOS_VALIDATION: &[u8] = b"VK_LAYER_KHRONOS_validation\0";
@@ -66,8 +65,7 @@ impl VulkanBase {
         dbg!("got memprops");
 
         let alloc =
-            util::create_allocator(device.clone(), instance.clone(), physical_device.clone())
-                .expect("could not create allocator");
+            util::create_allocator(device.clone(), instance.clone(), physical_device.clone());
 
         Ok(VulkanBase {
             entry,

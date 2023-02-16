@@ -1,5 +1,4 @@
 //!  Cache helpers for `ShaderCompilation` objects to cache compiled SPIRV.
-use crate::cache::{get_blob, get_cache, set_blob};
 use librashader_preprocess::ShaderSource;
 use librashader_reflect::back::targets::{DXIL, GLSL, HLSL, SPIRV};
 use librashader_reflect::back::{CompilerBackend, FromCompilation};
@@ -10,11 +9,12 @@ pub struct CachedCompilation<T> {
     compilation: T,
 }
 
+#[cfg(not(feature = "docsrs"))]
 impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
     ShaderCompilation for CachedCompilation<T>
 {
     fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
-        let cache = get_cache();
+        let cache = crate::cache::internal::get_cache();
 
         let Ok(cache) = cache else {
             return Ok(CachedCompilation {
@@ -31,7 +31,7 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
         };
 
         let compilation = 'cached: {
-            if let Ok(cached) = get_blob(&cache, "spirv", key.as_bytes()) {
+            if let Ok(cached) = crate::cache::internal::get_blob(&cache, "spirv", key.as_bytes()) {
                 let decoded =
                     bincode::serde::decode_from_slice(&cached, bincode::config::standard())
                         .map(|(compilation, _)| CachedCompilation { compilation })
@@ -50,10 +50,19 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
         if let Ok(updated) =
             bincode::serde::encode_to_vec(&compilation.compilation, bincode::config::standard())
         {
-            set_blob(&cache, "spirv", key.as_bytes(), &updated)
+            crate::cache::internal::set_blob(&cache, "spirv", key.as_bytes(), &updated)
         }
 
         Ok(compilation)
+    }
+}
+
+#[cfg(feature = "docsrs")]
+impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
+ShaderCompilation for CachedCompilation<T>
+{
+    fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
+        T::compile(source)
     }
 }
 

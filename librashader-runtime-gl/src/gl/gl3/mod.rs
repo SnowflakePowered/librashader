@@ -1,8 +1,6 @@
 mod compile_program;
 mod draw_quad;
 mod framebuffer;
-#[cfg(test)]
-pub mod hello_triangle;
 mod lut_load;
 mod texture_bind;
 mod ubo_ring;
