@@ -1,14 +1,9 @@
 use ash::vk;
 use gpu_allocator::vulkan::{Allocation, AllocationCreateDesc, AllocationScheme, Allocator};
 use gpu_allocator::MemoryLocation;
-use librashader_runtime::uniforms::UniformStorageAccess;
 use parking_lot::RwLock;
 
 use ash::prelude::VkResult;
-use std::ffi::c_void;
-use std::mem::ManuallyDrop;
-use std::ops::{Deref, DerefMut};
-use std::ptr::NonNull;
 use std::sync::Arc;
 
 pub struct VulkanImageMemory {

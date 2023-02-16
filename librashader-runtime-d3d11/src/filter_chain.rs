@@ -137,7 +137,6 @@ impl FilterChainD3D11 {
 
         // initialize passes
         let filters = FilterChainD3D11::init_passes(device, passes, &semantics, disable_cache)?;
-        println!("passes loded");
 
         let immediate_context = unsafe { device.GetImmediateContext()? };
 
@@ -165,7 +164,6 @@ impl FilterChainD3D11 {
 
         let draw_quad = DrawQuad::new(device)?;
         let state = D3D11State::new(device)?;
-        println!("ready");
         Ok(FilterChainD3D11 {
             passes: filters,
             output_framebuffers,

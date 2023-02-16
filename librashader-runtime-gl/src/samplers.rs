@@ -8,9 +8,13 @@ pub struct SamplerSet {
 }
 
 impl SamplerSet {
+    #[inline(always)]
     pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> GLuint {
-        // eprintln!("{wrap}, {filter}, {mip}");
-        *self.samplers.get(&(wrap, filter, mipmap)).unwrap()
+        // SAFETY: the sampler set is complete for the matrix
+        // wrap x filter x mipmap
+        unsafe {
+            *self.samplers.get(&(wrap, filter, mipmap)).unwrap_unchecked()
+        }
     }
 
     fn make_sampler(sampler: GLuint, wrap: WrapMode, filter: FilterMode, mip: FilterMode) {
@@ -36,62 +40,29 @@ impl SamplerSet {
             WrapMode::MirroredRepeat,
         ];
         for wrap_mode in wrap_modes {
-            unsafe {
-                let mut linear_linear = 0;
-                let mut linear_nearest = 0;
+            for filter_mode in &[FilterMode::Linear, FilterMode::Nearest] {
+                for mip_filter in &[FilterMode::Linear, FilterMode::Nearest] {
+                    let mut sampler = 0;
+                    unsafe {
+                        gl::GenSamplers(1, &mut sampler);
+                        SamplerSet::make_sampler(
+                            sampler,
+                            *wrap_mode,
+                            *filter_mode,
+                            *mip_filter,
+                        );
 
-                let mut nearest_nearest = 0;
-                let mut nearest_linear = 0;
-                gl::GenSamplers(1, &mut linear_linear);
-                gl::GenSamplers(1, &mut linear_nearest);
-                gl::GenSamplers(1, &mut nearest_linear);
-                gl::GenSamplers(1, &mut nearest_nearest);
-
-                SamplerSet::make_sampler(
-                    linear_linear,
-                    *wrap_mode,
-                    FilterMode::Linear,
-                    FilterMode::Linear,
-                );
-                SamplerSet::make_sampler(
-                    linear_nearest,
-                    *wrap_mode,
-                    FilterMode::Linear,
-                    FilterMode::Nearest,
-                );
-                SamplerSet::make_sampler(
-                    nearest_linear,
-                    *wrap_mode,
-                    FilterMode::Nearest,
-                    FilterMode::Linear,
-                );
-                SamplerSet::make_sampler(
-                    nearest_nearest,
-                    *wrap_mode,
-                    FilterMode::Nearest,
-                    FilterMode::Nearest,
-                );
-
-                samplers.insert(
-                    (*wrap_mode, FilterMode::Linear, FilterMode::Linear),
-                    linear_linear,
-                );
-                samplers.insert(
-                    (*wrap_mode, FilterMode::Linear, FilterMode::Nearest),
-                    linear_nearest,
-                );
-
-                samplers.insert(
-                    (*wrap_mode, FilterMode::Nearest, FilterMode::Nearest),
-                    nearest_nearest,
-                );
-                samplers.insert(
-                    (*wrap_mode, FilterMode::Nearest, FilterMode::Linear),
-                    nearest_linear,
-                );
+                        samplers.insert(
+                            (*wrap_mode, *filter_mode, *mip_filter),
+                            sampler,
+                        );
+                    }
+                }
             }
         }
 
+        // assert all samplers were created.
+        assert_eq!(samplers.len(), wrap_modes.len() * 2 * 2);
         SamplerSet { samplers }
     }
 }

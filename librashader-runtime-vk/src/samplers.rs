@@ -56,9 +56,14 @@ pub struct SamplerSet {
 }
 
 impl SamplerSet {
+    #[inline(always)]
     pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> &VulkanSampler {
         // eprintln!("{wrap}, {filter}, {mip}");
-        self.samplers.get(&(wrap, filter, mipmap)).unwrap()
+        // SAFETY: the sampler set is complete for the matrix
+        // wrap x filter x mipmap
+        unsafe {
+            self.samplers.get(&(wrap, filter, mipmap)).unwrap_unchecked()
+        }
     }
 
     pub fn new(device: &Arc<ash::Device>) -> error::Result<SamplerSet> {
@@ -70,25 +75,18 @@ impl SamplerSet {
             WrapMode::MirroredRepeat,
         ];
         for wrap_mode in wrap_modes {
-            samplers.insert(
-                (*wrap_mode, FilterMode::Linear, FilterMode::Linear),
-                VulkanSampler::new(device, *wrap_mode, FilterMode::Linear, FilterMode::Linear)?,
-            );
-            samplers.insert(
-                (*wrap_mode, FilterMode::Linear, FilterMode::Nearest),
-                VulkanSampler::new(device, *wrap_mode, FilterMode::Linear, FilterMode::Nearest)?,
-            );
-
-            samplers.insert(
-                (*wrap_mode, FilterMode::Nearest, FilterMode::Nearest),
-                VulkanSampler::new(device, *wrap_mode, FilterMode::Nearest, FilterMode::Nearest)?,
-            );
-            samplers.insert(
-                (*wrap_mode, FilterMode::Nearest, FilterMode::Linear),
-                VulkanSampler::new(device, *wrap_mode, FilterMode::Nearest, FilterMode::Linear)?,
-            );
+            for filter_mode in &[FilterMode::Linear, FilterMode::Nearest] {
+                for mipmap_filter in &[FilterMode::Linear, FilterMode::Nearest] {
+                    samplers.insert(
+                        (*wrap_mode, *filter_mode, *mipmap_filter),
+                        VulkanSampler::new(device, *wrap_mode, *filter_mode, *mipmap_filter)?,
+                    );
+                }
+            }
         }
 
+        // assert all samplers were created.
+        assert_eq!(samplers.len(), wrap_modes.len() * 2 * 2);
         Ok(SamplerSet { samplers })
     }
 }

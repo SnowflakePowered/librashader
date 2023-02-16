@@ -509,9 +509,11 @@ void main()
             },
         };
 
-        filter
-            .frame(&rendered, &viewport, framecount, None)
-            .unwrap();
+        unsafe {
+            filter
+                .frame(&rendered, &viewport, framecount, None)
+                .unwrap();
+        }
 
         unsafe {
             // texture is done now.

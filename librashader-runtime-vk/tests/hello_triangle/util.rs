@@ -4,21 +4,6 @@ use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-use librashader_reflect::reflect::semantics::BindingStage;
-
-pub fn binding_stage_to_vulkan_stage(stage_mask: BindingStage) -> vk::ShaderStageFlags {
-    let mut mask = vk::ShaderStageFlags::default();
-    if stage_mask.contains(BindingStage::VERTEX) {
-        mask |= vk::ShaderStageFlags::VERTEX;
-    }
-
-    if stage_mask.contains(BindingStage::FRAGMENT) {
-        mask |= vk::ShaderStageFlags::FRAGMENT;
-    }
-
-    mask
-}
-
 #[inline(always)]
 pub unsafe fn vulkan_image_layout_transition_levels(
     device: &ash::Device,
