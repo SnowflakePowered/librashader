@@ -30,7 +30,7 @@ impl VulkanSampler {
             .address_mode_u(wrap.into())
             .address_mode_v(wrap.into())
             .address_mode_w(wrap.into())
-            .build();
+            ;
 
         let sampler = unsafe { device.create_sampler(&create_info, None)? };
 

@@ -241,7 +241,7 @@ impl FilterChainVulkan {
             device.create_command_pool(
                 &vk::CommandPoolCreateInfo::builder()
                     .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-                    .build(),
+                    ,
                 None,
             )?
         };
@@ -253,7 +253,7 @@ impl FilterChainVulkan {
                     .command_pool(command_pool)
                     .level(vk::CommandBufferLevel::PRIMARY)
                     .command_buffer_count(1)
-                    .build(),
+                    ,
             )?[0]
         };
 
@@ -262,7 +262,7 @@ impl FilterChainVulkan {
                 command_buffer,
                 &vk::CommandBufferBeginInfo::builder()
                     .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
-                    .build(),
+                    ,
             )?
         }
 
@@ -279,9 +279,10 @@ impl FilterChainVulkan {
             device.end_command_buffer(command_buffer)?;
 
             let buffers = [command_buffer];
-            let submits = [vk::SubmitInfo::builder().command_buffers(&buffers).build()];
+            let submit_info = vk::SubmitInfo::builder()
+                .command_buffers(&buffers);
 
-            device.queue_submit(queue, &submits, vk::Fence::null())?;
+            device.queue_submit(queue, &[*submit_info], vk::Fence::null())?;
             device.queue_wait_idle(queue)?;
             device.free_command_buffers(command_pool, &buffers);
             device.destroy_command_pool(command_pool, None);
@@ -583,21 +584,19 @@ impl FilterChainVulkan {
                 .format(input.format)
                 .view_type(vk::ImageViewType::TYPE_2D)
                 .subresource_range(
-                    vk::ImageSubresourceRange::builder()
+                    *vk::ImageSubresourceRange::builder()
                         .aspect_mask(vk::ImageAspectFlags::COLOR)
                         .level_count(1)
                         .layer_count(1)
-                        .build(),
+
                 )
                 .components(
-                    vk::ComponentMapping::builder()
+                    *vk::ComponentMapping::builder()
                         .r(vk::ComponentSwizzle::R)
                         .g(vk::ComponentSwizzle::G)
                         .b(vk::ComponentSwizzle::B)
                         .a(vk::ComponentSwizzle::A)
-                        .build(),
-                )
-                .build();
+                );
 
             self.vulkan.device.create_image_view(&create_info, None)?
         };

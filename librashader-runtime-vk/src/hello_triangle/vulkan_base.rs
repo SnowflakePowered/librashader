@@ -34,7 +34,7 @@ impl VulkanBase {
             .engine_version(0)
             .application_version(0)
             .api_version(vk::make_api_version(0, 1, 3, 0))
-            .build();
+            ;
 
         dbg!("entry");
         // todo: make this xplat
@@ -50,7 +50,7 @@ impl VulkanBase {
             .application_info(&app_info)
             .enabled_layer_names(&layers)
             .enabled_extension_names(&extensions)
-            .build();
+            ;
 
         let instance = unsafe { entry.create_instance(&create_info, None)? };
 
@@ -88,20 +88,20 @@ impl VulkanBase {
         let _debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
 
         let indices = find_queue_family(instance, *physical_device);
-        let queue_info = [vk::DeviceQueueCreateInfo::builder()
+        let queue_info = [*vk::DeviceQueueCreateInfo::builder()
             .queue_family_index(indices.graphics_family())
             .queue_priorities(&[1.0f32])
-            .build()];
+            ];
 
         // let physical_device_features = vk::PhysicalDeviceFeatures::default();
 
         let mut physical_device_features = vk::PhysicalDeviceVulkan13Features::builder()
             .dynamic_rendering(true)
-            .build();
+            ;
 
         // let mut physical_device_features =
         //     vk::PhysicalDeviceFeatures2::builder().push_next(&mut physical_device_features)
-        //         .build();
+        //         ;
 
         let extensions = [
             ash::extensions::khr::Swapchain::name().as_ptr(),
@@ -114,7 +114,7 @@ impl VulkanBase {
             .enabled_extension_names(&extensions)
             .push_next(&mut physical_device_features)
             // .enabled_features(&physical_device_features)
-            .build();
+            ;
 
         let device =
             unsafe { instance.create_device(*physical_device, &device_create_info, None)? };

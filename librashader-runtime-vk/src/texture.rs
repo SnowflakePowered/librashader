@@ -59,7 +59,7 @@ impl OwnedImage {
             )
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .initial_layout(vk::ImageLayout::UNDEFINED)
-            .build();
+            ;
 
         let image = unsafe { device.create_image(&image_create_info, None)? };
         let mem_reqs = unsafe { device.get_image_memory_requirements(image) };
@@ -71,22 +71,22 @@ impl OwnedImage {
             .level_count(image_create_info.mip_levels)
             .layer_count(1)
             .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .build();
+            ;
 
         let swizzle_components = vk::ComponentMapping::builder()
             .r(vk::ComponentSwizzle::R)
             .g(vk::ComponentSwizzle::G)
             .b(vk::ComponentSwizzle::B)
             .a(vk::ComponentSwizzle::A)
-            .build();
+            ;
 
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(format.into())
             .image(image)
-            .subresource_range(image_subresource)
-            .components(swizzle_components)
-            .build();
+            .subresource_range(*image_subresource)
+            .components(*swizzle_components)
+            ;
 
         let image_view = unsafe { device.create_image_view(&view_info, None)? };
 
@@ -200,7 +200,7 @@ impl OwnedImage {
                 base_array_layer: 0,
                 layer_count: vk::REMAINING_ARRAY_LAYERS,
             })
-            .build();
+            ;
 
         let mipchain_barrier = vk::ImageMemoryBarrier::builder()
             .src_access_mask(vk::AccessFlags::empty())
@@ -217,7 +217,7 @@ impl OwnedImage {
                 level_count: vk::REMAINING_MIP_LEVELS,
                 layer_count: vk::REMAINING_ARRAY_LAYERS,
             })
-            .build();
+            ;
 
         unsafe {
             self.device.cmd_pipeline_barrier(
@@ -227,7 +227,7 @@ impl OwnedImage {
                 vk::DependencyFlags::empty(),
                 &[],
                 &[],
-                &[input_barrier, mipchain_barrier],
+                &[*input_barrier, *mipchain_barrier],
             );
 
             for level in 1..self.levels {
@@ -248,7 +248,7 @@ impl OwnedImage {
                             level_count: 1,
                             layer_count: vk::REMAINING_ARRAY_LAYERS,
                         })
-                        .build();
+                        ;
 
                     self.device.cmd_pipeline_barrier(
                         cmd,
@@ -257,7 +257,7 @@ impl OwnedImage {
                         vk::DependencyFlags::empty(),
                         &[],
                         &[],
-                        &[next_barrier],
+                        &[*next_barrier],
                     );
                 }
 
@@ -287,21 +287,20 @@ impl OwnedImage {
                     .mip_level(level - 1)
                     .base_array_layer(0)
                     .layer_count(1)
-                    .build();
+                    ;
 
                 let dst_subresource = vk::ImageSubresourceLayers::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(level)
                     .base_array_layer(0)
                     .layer_count(1)
-                    .build();
+                    ;
 
-                let image_blit = [vk::ImageBlit::builder()
-                    .src_subresource(src_subresource)
+                let image_blit = vk::ImageBlit::builder()
+                    .src_subresource(*src_subresource)
                     .src_offsets(src_offsets)
-                    .dst_subresource(dst_subresource)
-                    .dst_offsets(dst_offsets)
-                    .build()];
+                    .dst_subresource(*dst_subresource)
+                    .dst_offsets(dst_offsets);
 
                 self.device.cmd_blit_image(
                     cmd,
@@ -309,7 +308,7 @@ impl OwnedImage {
                     vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
                     self.image.image,
                     vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                    &image_blit,
+                    &[*image_blit],
                     vk::Filter::LINEAR,
                 );
             }
@@ -331,7 +330,7 @@ impl OwnedImage {
                     base_array_layer: 0,
                     layer_count: vk::REMAINING_ARRAY_LAYERS,
                 })
-                .build();
+                ;
 
             let mipchain_barrier = vk::ImageMemoryBarrier::builder()
                 .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
@@ -348,7 +347,7 @@ impl OwnedImage {
                     level_count: 1,
                     layer_count: vk::REMAINING_ARRAY_LAYERS,
                 })
-                .build();
+                ;
 
             // next past waits for ALL_GRAPHICS, use dependency chain and FRAGMENT_SHADER dst stage
             // to ensure that next pass doesn't start until mipchain is complete.
@@ -359,7 +358,7 @@ impl OwnedImage {
                 vk::DependencyFlags::empty(),
                 &[],
                 &[],
-                &[input_barrier, mipchain_barrier],
+                &[*input_barrier, *mipchain_barrier],
             );
         }
     }
@@ -373,25 +372,25 @@ impl OwnedImage {
     ) {
         let region = vk::ImageCopy::builder()
             .src_subresource(
-                vk::ImageSubresourceLayers::builder()
+                *vk::ImageSubresourceLayers::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(0)
                     .base_array_layer(0)
                     .layer_count(1)
-                    .build(),
+                    ,
             )
             .dst_subresource(
-                vk::ImageSubresourceLayers::builder()
+                *vk::ImageSubresourceLayers::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .mip_level(0)
                     .base_array_layer(0)
                     .layer_count(1)
-                    .build(),
+                    ,
             )
             .src_offset(Default::default())
             .dst_offset(Default::default())
             .extent(source.size.into())
-            .build();
+            ;
 
         unsafe {
             util::vulkan_image_layout_transition_levels(
@@ -415,7 +414,7 @@ impl OwnedImage {
                 source_layout,
                 self.image.image,
                 vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                &[region],
+                &[*region],
             );
             util::vulkan_image_layout_transition_levels(
                 &self.device,
@@ -457,13 +456,13 @@ impl OwnedImage {
                 &vk::ClearColorValue {
                     float32: [0.0, 0.0, 0.0, 0.0],
                 },
-                &[vk::ImageSubresourceRange::builder()
+                &[*vk::ImageSubresourceRange::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .base_mip_level(0)
                     .level_count(1)
                     .base_array_layer(0)
                     .layer_count(1)
-                    .build()],
+                    ],
             );
 
             util::vulkan_image_layout_transition_levels(

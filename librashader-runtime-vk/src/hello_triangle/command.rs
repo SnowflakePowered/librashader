@@ -17,7 +17,7 @@ impl VulkanCommandPool {
         let create_info = vk::CommandPoolCreateInfo::builder()
             .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
             .queue_family_index(indices.graphics_family())
-            .build();
+            ;
 
         unsafe {
             let pool = base.device.create_command_pool(&create_info, None)?;
@@ -25,7 +25,7 @@ impl VulkanCommandPool {
                 .command_pool(pool)
                 .level(vk::CommandBufferLevel::PRIMARY)
                 .command_buffer_count(frames_in_flight)
-                .build();
+                ;
 
             let buffers = base.device.allocate_command_buffers(&buffer_info)?;
             Ok(VulkanCommandPool {

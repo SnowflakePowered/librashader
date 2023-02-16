@@ -154,7 +154,7 @@ impl VulkanPipeline {
             .module(vertex_shader_info.module)
             .stage(vk::ShaderStageFlags::VERTEX)
             .name(ENTRY_POINT)
-            .build();
+            ;
 
         let mut frag_spv_file =
             Cursor::new(&include_bytes!("../../shader/triangle_simple/frag.spv")[..]);
@@ -165,17 +165,17 @@ impl VulkanPipeline {
             .module(frag_shader_info.module)
             .stage(vk::ShaderStageFlags::FRAGMENT)
             .name(ENTRY_POINT)
-            .build();
+            ;
 
         let vertex_input_state_info = vk::PipelineVertexInputStateCreateInfo::builder()
             .vertex_attribute_descriptions(&[])
             .vertex_binding_descriptions(&[])
-            .build();
+            ;
 
         let vertex_input_assembly_state_info = vk::PipelineInputAssemblyStateCreateInfo::builder()
             .primitive_restart_enable(false)
             .topology(vk::PrimitiveTopology::TRIANGLE_LIST)
-            .build();
+            ;
 
         let viewports = [vk::Viewport {
             x: 0.0,
@@ -200,7 +200,7 @@ impl VulkanPipeline {
         let states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
         let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder()
             .dynamic_states(&states)
-            .build();
+            ;
 
         let viewport_state_info = vk::PipelineViewportStateCreateInfo::builder()
             .scissors(&scissors)
@@ -214,15 +214,15 @@ impl VulkanPipeline {
             .line_width(1.0f32)
             .cull_mode(vk::CullModeFlags::BACK)
             .front_face(vk::FrontFace::CLOCKWISE)
-            .build();
+            ;
 
         let multisample = vk::PipelineMultisampleStateCreateInfo::builder()
             .rasterization_samples(vk::SampleCountFlags::TYPE_1)
             .min_sample_shading(1.0f32)
             .sample_shading_enable(false)
-            .build();
+            ;
 
-        let color_blend_attachment = [vk::PipelineColorBlendAttachmentState::builder()
+        let color_blend_attachment = [*vk::PipelineColorBlendAttachmentState::builder()
             .blend_enable(false)
             .color_write_mask(vk::ColorComponentFlags::RGBA)
             .src_color_blend_factor(vk::BlendFactor::ONE)
@@ -231,18 +231,8 @@ impl VulkanPipeline {
             .src_alpha_blend_factor(vk::BlendFactor::ONE)
             .dst_alpha_blend_factor(vk::BlendFactor::ZERO)
             .alpha_blend_op(vk::BlendOp::ADD)
-            .build()];
-        //
-        // let color_blend_attachment_states = [vk::PipelineColorBlendAttachmentState {
-        //     blend_enable: 0,
-        //     src_color_blend_factor: vk::BlendFactor::SRC_COLOR,
-        //     dst_color_blend_factor: vk::BlendFactor::ONE_MINUS_DST_COLOR,
-        //     color_blend_op: vk::BlendOp::ADD,
-        //     src_alpha_blend_factor: vk::BlendFactor::ZERO,
-        //     dst_alpha_blend_factor: vk::BlendFactor::ZERO,
-        //     alpha_blend_op: vk::BlendOp::ADD,
-        //     color_write_mask: vk::ColorComponentFlags::RGBA,
-        // }];
+            ];
+
         let color_blend_state = vk::PipelineColorBlendStateCreateInfo::builder()
             .logic_op(vk::LogicOp::COPY)
             .attachments(&color_blend_attachment);
@@ -285,7 +275,7 @@ impl VulkanPipeline {
             .create_render_pass(&renderpass_create_info, None)
             .unwrap();
 
-        let infos = [vertex_stage_info, frag_stage_info];
+        let infos = [*vertex_stage_info, *frag_stage_info];
         let graphic_pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
             .stages(&infos)
             .vertex_input_state(&vertex_input_state_info)
@@ -297,12 +287,13 @@ impl VulkanPipeline {
             .dynamic_state(&dynamic_state)
             .layout(pipeline_layout)
             .render_pass(renderpass);
+        let graphic_pipeline_info = [*graphic_pipeline_info];
 
         let graphics_pipelines = base
             .device
             .create_graphics_pipelines(
                 vk::PipelineCache::null(),
-                &[graphic_pipeline_info.build()],
+                &graphic_pipeline_info,
                 None,
             )
             .expect("Unable to create graphics pipeline");
@@ -324,7 +315,7 @@ pub struct ShaderModule {
 
 impl ShaderModule {
     pub fn new(device: &ash::Device, spirv: Vec<u32>) -> VkResult<ShaderModule> {
-        let create_info = vk::ShaderModuleCreateInfo::builder().code(&spirv).build();
+        let create_info = vk::ShaderModuleCreateInfo::builder().code(&spirv);
 
         let module = unsafe { device.create_shader_module(&create_info, None)? };
 

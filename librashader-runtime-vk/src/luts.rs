@@ -38,7 +38,7 @@ impl LutTexture {
                     | vk::ImageUsageFlags::TRANSFER_DST,
             )
             .initial_layout(vk::ImageLayout::UNDEFINED)
-            .build();
+            ;
 
         let texture = unsafe { vulkan.device.create_image(&image_info, None)? };
 
@@ -51,22 +51,22 @@ impl LutTexture {
             .level_count(image_info.mip_levels)
             .layer_count(1)
             .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .build();
+            ;
 
         let swizzle_components = vk::ComponentMapping::builder()
             .r(vk::ComponentSwizzle::R)
             .g(vk::ComponentSwizzle::G)
             .b(vk::ComponentSwizzle::B)
             .a(vk::ComponentSwizzle::A)
-            .build();
+            ;
 
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(vk::Format::B8G8R8A8_UNORM)
             .image(texture)
-            .subresource_range(image_subresource)
-            .components(swizzle_components)
-            .build();
+            .subresource_range(*image_subresource)
+            .components(*swizzle_components)
+            ;
 
         let texture_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
 
@@ -99,6 +99,17 @@ impl LutTexture {
                 vk::QUEUE_FAMILY_IGNORED,
             );
 
+            let builder = vk::BufferImageCopy::builder()
+                .image_subresource(
+                    *vk::ImageSubresourceLayers::builder()
+                        .aspect_mask(vk::ImageAspectFlags::COLOR)
+                        .mip_level(0)
+                        .base_array_layer(0)
+                        .layer_count(1)
+                    ,
+                )
+                .image_extent(image.size.into());
+
             vulkan.device.cmd_copy_buffer_to_image(
                 cmd,
                 staging.handle,
@@ -108,17 +119,7 @@ impl LutTexture {
                 } else {
                     vk::ImageLayout::TRANSFER_DST_OPTIMAL
                 },
-                &[vk::BufferImageCopy::builder()
-                    .image_subresource(
-                        vk::ImageSubresourceLayers::builder()
-                            .aspect_mask(vk::ImageAspectFlags::COLOR)
-                            .mip_level(0)
-                            .base_array_layer(0)
-                            .layer_count(1)
-                            .build(),
-                    )
-                    .image_extent(image.size.into())
-                    .build()],
+                &[*builder],
             )
         }
 
@@ -149,21 +150,21 @@ impl LutTexture {
                 .mip_level(level - 1)
                 .base_array_layer(0)
                 .layer_count(1)
-                .build();
+                ;
 
             let dst_subresource = vk::ImageSubresourceLayers::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .mip_level(level)
                 .base_array_layer(0)
                 .layer_count(1)
-                .build();
+                ;
 
-            let image_blit = [vk::ImageBlit::builder()
-                .src_subresource(src_subresource)
+            let image_blit = vk::ImageBlit::builder()
+                .src_subresource(*src_subresource)
                 .src_offsets(src_offsets)
-                .dst_subresource(dst_subresource)
+                .dst_subresource(*dst_subresource)
                 .dst_offsets(dst_offsets)
-                .build()];
+                ;
 
             unsafe {
                 util::vulkan_image_layout_transition_levels(
@@ -188,7 +189,7 @@ impl LutTexture {
                     vk::ImageLayout::GENERAL,
                     texture,
                     vk::ImageLayout::GENERAL,
-                    &image_blit,
+                    &[*image_blit],
                     config.filter_mode.into(),
                 );
             }

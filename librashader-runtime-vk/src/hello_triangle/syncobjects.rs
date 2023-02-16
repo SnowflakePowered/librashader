@@ -23,7 +23,7 @@ impl SyncObjects {
                     device.create_fence(
                         &vk::FenceCreateInfo::builder()
                             .flags(vk::FenceCreateFlags::SIGNALED)
-                            .build(),
+                            ,
                         None,
                     )?,
                 )

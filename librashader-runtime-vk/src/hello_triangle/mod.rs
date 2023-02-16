@@ -101,7 +101,7 @@ impl VulkanWindow {
                 ..Default::default()
             })
             .clear_values(&clear_values)
-            .build();
+            ;
 
         vulkan.base.device.cmd_begin_render_pass(
             cmd,
@@ -287,7 +287,7 @@ impl VulkanWindow {
             // let blit_subresource = vk::ImageSubresourceLayers::builder()
             //     .layer_count(1)
             //     .aspect_mask(vk::ImageAspectFlags::COLOR)
-            //     .build();
+            //     ;
             //
             // let src_offsets = [
             //     vk::Offset3D { x: 0, y: 0, z: 0 },
@@ -344,12 +344,12 @@ impl VulkanWindow {
 
             let stage_mask = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
             let cmd = [cmd];
-            let submit_info = [vk::SubmitInfo::builder()
+            let submit_info = [*vk::SubmitInfo::builder()
                 .wait_dst_stage_mask(&stage_mask)
                 .wait_semaphores(&image_available)
                 .signal_semaphores(&render_finished)
                 .command_buffers(&cmd)
-                .build()];
+                ];
 
             vulkan
                 .base
@@ -363,7 +363,7 @@ impl VulkanWindow {
                 .wait_semaphores(&render_finished)
                 .swapchains(&swapchain)
                 .image_indices(&swapchain_index)
-                .build();
+                ;
 
             vulkan
                 .swapchain

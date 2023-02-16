@@ -21,22 +21,22 @@ impl OutputImage {
             .level_count(1)
             .layer_count(1)
             .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .build();
+            ;
 
         let swizzle_components = vk::ComponentMapping::builder()
             .r(vk::ComponentSwizzle::R)
             .g(vk::ComponentSwizzle::G)
             .b(vk::ComponentSwizzle::B)
             .a(vk::ComponentSwizzle::A)
-            .build();
+            ;
 
         let view_info = vk::ImageViewCreateInfo::builder()
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(image.format)
             .image(image.image)
-            .subresource_range(image_subresource)
-            .components(swizzle_components)
-            .build();
+            .subresource_range(*image_subresource)
+            .components(*swizzle_components)
+            ;
 
         let image_view = unsafe { vulkan.device.create_image_view(&view_info, None)? };
 

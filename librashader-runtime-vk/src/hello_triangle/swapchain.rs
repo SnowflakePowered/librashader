@@ -58,7 +58,7 @@ impl VulkanSwapchain {
             .image_array_layers(1)
             // todo: switch to IMAGE_USAGE_TRANSFER_DST
             .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
-            .build();
+            ;
 
         let loader = ash::extensions::khr::Swapchain::new(&base.instance, &base.device);
 
@@ -122,7 +122,7 @@ impl VulkanSwapchain {
                         layer_count: 1,
                     })
                     .image(*image)
-                    .build();
+                    ;
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
                 // unsafe {
@@ -136,7 +136,7 @@ impl VulkanSwapchain {
                 //                     b"SwapchainImage\0",
                 //                 ))
                 //                 .object_type(vk::ObjectType::IMAGE)
-                //                 .build(),
+                //                 ,
                 //         )
                 //         .expect("could not set object name");
                 //     base.debug
@@ -149,7 +149,7 @@ impl VulkanSwapchain {
                 //                     b"SwapchainImageView\0",
                 //                 ))
                 //                 .object_type(vk::ObjectType::IMAGE_VIEW)
-                //                 .build(),
+                //                 ,
                 //         )
                 //         .expect("could not set object name");
                 // }
@@ -177,7 +177,7 @@ impl VulkanSwapchain {
                         layer_count: 1,
                     })
                     .image(*image)
-                    .build();
+                    ;
 
                 let view = unsafe { base.device.create_image_view(&create_info, None)? };
                 // unsafe {
@@ -191,7 +191,7 @@ impl VulkanSwapchain {
                 //                     b"RenderImageView\0",
                 //                 ))
                 //                 .object_type(vk::ObjectType::IMAGE_VIEW)
-                //                 .build(),
+                //                 ,
                 //         )
                 //         .expect("could not set object name");
                 // }

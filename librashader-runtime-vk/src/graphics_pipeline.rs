@@ -11,6 +11,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
 use std::sync::Arc;
+use ash::vk::PushConstantRange;
 
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
@@ -77,8 +78,7 @@ impl PipelineDescriptors {
         unsafe {
             let layout = device.create_descriptor_set_layout(
                 &vk::DescriptorSetLayoutCreateInfo::builder()
-                    .bindings(self.bindings())
-                    .build(),
+                    .bindings(self.bindings()),
                 None,
             )?;
             Ok(layout)
@@ -108,25 +108,39 @@ impl PipelineLayoutObjects {
         let pipeline_create_info =
             vk::PipelineLayoutCreateInfo::builder().set_layouts(&descriptor_set_layout);
 
-        let pipeline_create_info = if let Some(push_constant) = &reflection.push_constant {
-            let stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
-            let push_constant_range = [vk::PushConstantRange::builder()
-                .stage_flags(stage_mask)
-                .size(push_constant.size)
-                .build()];
-            pipeline_create_info
-                .push_constant_ranges(&push_constant_range)
-                .build()
-        } else {
-            pipeline_create_info.build()
-        };
+        let push_constant_range = reflection.push_constant.as_ref()
+            .map(|push_constant| {
+                let stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
+                [*vk::PushConstantRange::builder()
+                    .stage_flags(stage_mask)
+                    .size(push_constant.size)]
+            });
+
+        let push_constant_range: &[PushConstantRange] = push_constant_range
+            .as_ref()
+            .map_or(&[], |o| o);
+
+        let pipeline_create_info = pipeline_create_info
+            .push_constant_ranges(push_constant_range);
+
+        // let pipeline_create_info = if let Some(push_constant) = &reflection.push_constant {
+        //     let stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
+        //     let push_constant_range = vk::PushConstantRange::builder()
+        //         .stage_flags(stage_mask)
+        //         .size(push_constant.size);
+        //     let push_constant_range = [*push_constant_range];
+        //     pipeline_create_info
+        //         .push_constant_ranges(&push_constant_range)
+        // } else {
+        //     pipeline_create_info
+        // };
 
         let layout = unsafe { device.create_pipeline_layout(&pipeline_create_info, None)? };
 
         let pool_info = vk::DescriptorPoolCreateInfo::builder()
             .max_sets(replicas)
             .pool_sizes(&descriptors.pool_sizes)
-            .build();
+            ;
 
         let pool = unsafe { device.create_descriptor_pool(&pool_info, None)? };
 
@@ -134,7 +148,7 @@ impl PipelineLayoutObjects {
         let alloc_info = vk::DescriptorSetAllocateInfo::builder()
             .descriptor_pool(pool)
             .set_layouts(&descriptor_set_layout)
-            .build();
+            ;
 
         for _ in 0..replicas {
             let set = unsafe { device.allocate_descriptor_sets(&alloc_info)? };
@@ -197,7 +211,7 @@ impl VulkanGraphicsPipeline {
     ) -> error::Result<vk::Pipeline> {
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::builder()
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP)
-            .build();
+            ;
 
         let vao_state = [
             vk::VertexInputAttributeDescription {
@@ -214,16 +228,16 @@ impl VulkanGraphicsPipeline {
             },
         ];
 
-        let input_binding = [vk::VertexInputBindingDescription::builder()
+        let input_binding = vk::VertexInputBindingDescription::builder()
             .binding(0)
             .stride(4 * std::mem::size_of::<f32>() as u32)
-            .input_rate(vk::VertexInputRate::VERTEX)
-            .build()];
+            .input_rate(vk::VertexInputRate::VERTEX);
 
+        let input_binding = [*input_binding];
         let pipeline_input_state = vk::PipelineVertexInputStateCreateInfo::builder()
             .vertex_binding_descriptions(&input_binding)
             .vertex_attribute_descriptions(&vao_state)
-            .build();
+            ;
 
         let raster_state = vk::PipelineRasterizationStateCreateInfo::builder()
             .polygon_mode(vk::PolygonMode::FILL)
@@ -233,21 +247,21 @@ impl VulkanGraphicsPipeline {
             .rasterizer_discard_enable(false)
             .depth_bias_enable(false)
             .line_width(1.0)
-            .build();
+            ;
 
-        let attachments = [vk::PipelineColorBlendAttachmentState::builder()
+        let attachments = vk::PipelineColorBlendAttachmentState::builder()
             .blend_enable(false)
-            .color_write_mask(vk::ColorComponentFlags::from_raw(0xf))
-            .build()];
+            .color_write_mask(vk::ColorComponentFlags::from_raw(0xf));
 
+        let attachments = [*attachments];
         let blend_state = vk::PipelineColorBlendStateCreateInfo::builder()
             .attachments(&attachments)
-            .build();
+            ;
 
         let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
             .viewport_count(1)
             .scissor_count(1)
-            .build();
+            ;
 
         let depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo::builder()
             .depth_test_enable(false)
@@ -256,30 +270,31 @@ impl VulkanGraphicsPipeline {
             .depth_bounds_test_enable(false)
             .min_depth_bounds(1.0)
             .max_depth_bounds(1.0)
-            .build();
+            ;
 
         let multisample_state = vk::PipelineMultisampleStateCreateInfo::builder()
             .rasterization_samples(vk::SampleCountFlags::TYPE_1)
-            .build();
+            ;
 
         let states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
         let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder()
             .dynamic_states(&states)
-            .build();
+            ;
 
         let shader_stages = [
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::VERTEX)
                 .name(ENTRY_POINT)
                 .module(vertex_module.shader)
-                .build(),
+                ,
             vk::PipelineShaderStageCreateInfo::builder()
                 .stage(vk::ShaderStageFlags::FRAGMENT)
                 .name(ENTRY_POINT)
                 .module(fragment_module.shader)
-                .build(),
+                ,
         ];
 
+        let shader_stages = [*shader_stages[0], *shader_stages[1]];
         let mut pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
             .stages(&shader_stages)
             .vertex_input_state(&pipeline_input_state)
@@ -296,12 +311,11 @@ impl VulkanGraphicsPipeline {
             pipeline_info = pipeline_info.render_pass(render_pass.handle)
         }
 
-        let pipeline_info = [pipeline_info.build()];
 
         let pipeline = unsafe {
             // panic_safety: if this is successful this should return 1 pipelines.
             device
-                .create_graphics_pipelines(*cache, &pipeline_info, None)
+                .create_graphics_pipelines(*cache, &[*pipeline_info], None)
                 .map_err(|e| e.1)?[0]
         };
 
@@ -320,10 +334,10 @@ impl VulkanGraphicsPipeline {
 
         let vertex_info = vk::ShaderModuleCreateInfo::builder()
             .code(shader_assembly.vertex.as_ref())
-            .build();
+            ;
         let fragment_info = vk::ShaderModuleCreateInfo::builder()
             .code(shader_assembly.fragment.as_ref())
-            .build();
+            ;
 
         let vertex_module = VulkanShaderModule::new(device, &vertex_info)?;
         let fragment_module = VulkanShaderModule::new(device, &fragment_info)?;
@@ -344,7 +358,7 @@ impl VulkanGraphicsPipeline {
                 if let Some(pipeline_data) = pipeline_data.as_ref() {
                     cache_info = cache_info.initial_data(pipeline_data);
                 }
-                let cache_info = cache_info.build();
+                let cache_info = cache_info;
 
                 let pipeline_cache = unsafe { device.create_pipeline_cache(&cache_info, None)? };
 
@@ -416,7 +430,7 @@ impl VulkanGraphicsPipeline {
                         .width(output.output.size.width)
                         .height(output.output.size.height)
                         .layers(1)
-                        .build(),
+                        ,
                     None,
                 )?
             };
@@ -436,18 +450,18 @@ impl VulkanGraphicsPipeline {
                     offset: vk::Offset2D { x: 0, y: 0 },
                     extent: output.output.size.into(),
                 })
-                .build();
+                ;
             unsafe {
                 device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
             }
             Ok(Some(framebuffer))
         } else {
-            let attachments = [vk::RenderingAttachmentInfo::builder()
+            let attachments = vk::RenderingAttachmentInfo::builder()
                 .load_op(vk::AttachmentLoadOp::DONT_CARE)
                 .store_op(vk::AttachmentStoreOp::STORE)
                 .image_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-                .image_view(output.output.image_view)
-                .build()];
+                .image_view(output.output.image_view);
+            let attachments = [*attachments];
 
             let rendering_info = vk::RenderingInfo::builder()
                 .layer_count(1)
@@ -456,7 +470,7 @@ impl VulkanGraphicsPipeline {
                     extent: output.output.size.into(),
                 })
                 .color_attachments(&attachments)
-                .build();
+                ;
 
             unsafe {
                 device.cmd_begin_rendering(cmd, &rendering_info);
