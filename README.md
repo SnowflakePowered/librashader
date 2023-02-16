@@ -74,10 +74,10 @@ The [corrosion](https://github.com/corrosion-rs/) CMake package is highly recomm
 ### Examples
 
 The following Rust examples show how to use each librashader runtime.
-* [Vulkan](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-vk/src/lib.rs)
-* [OpenGL](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-gl/src/lib.rs)
-* [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/src/lib.rs)
-* [Direct3D 12](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d12/src/lib.rs)
+* [Vulkan](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-vk/tests/triangle.rs)
+* [OpenGL](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-gl/tests/triangle.rs)
+* [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/tests/triangle.rs)
+* [Direct3D 12](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d12/tests/triangle.rs)
 
 Some basic examples on using the C API are also provided in the [librashader-capi-tests](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/librashader-capi-tests)
 directory.
