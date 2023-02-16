@@ -25,6 +25,7 @@ APIs such as older versions of OpenGL, or legacy versions of Direct3D.
 | WebGPU      | ❌          |                         |
 
 ✔ = Render API is supported &mdash; ❌ Render API is not supported
+
 ## Usage
 
 librashader provides both a Rust API under the `librashader` crate, and a C API. Both APIs are first-class and fully supported.
@@ -33,6 +34,58 @@ of the internals if you wish to use parts of librashader piecemeal.
 
 The librashader C API is best used by including `librashader_ld.h` in your project, which implements a loader that dynamically
 loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. 
+
+
+### C ABI Compatibility
+As the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability
+is important to ensure that updates to librashader do not break existing consumers.
+
+As of `0.1.0-rc.4`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
+release without following semantic versioning.
+
+Linking statically against `librashader.h` is possible, but is not officially supported. You will need to ensure
+linkage parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`.
+The [corrosion](https://github.com/corrosion-rs/) CMake package is highly recommended.
+
+### Thread safety
+In general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
+**external synchronization** of the filter chain object.
+
+Filter chains can be created from any thread, but requires external synchronization of the graphics device queue where applicable
+(in Direct3D 11, the immediate context is considered the graphics device queue), as loading LUTs requires command submission to the GPU.
+Initialization of GPU resources may be deferred asynchronously using the `filter_chain_create_deferred` functions, but the caller is responsible for
+submitting the recorded commands to the graphics device queue, and **ensuring that the work is complete** before drawing shader pass frames.
+
+OpenGL has an additional restriction where creating the filter chain instance in a different thread is safe **if and only if**
+the thread local OpenGL context is initialized to the same context as the drawing thread. Support for deferral of GPU resource initialization
+is not available to OpenGL.
+
+### Quad vertices and rotations
+All runtimes except OpenGL render with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
+Quad VBO with range `[0, 1]` and the following projection matrix by default.
+
+```rust
+static DEFAULT_MVP: &[f32; 16] = &[
+  2.0, 0.0, 0.0, 0.0,
+  0.0, 2.0, 0.0, 0.0,
+  0.0, 0.0, 0.0, 0.0,
+  -1.0, -1.0, 0.0, 1.0,
+];
+```
+
+As with RetroArch, a rotation on this MVP will be applied only on the final pass for these runtimes. This is the only way to
+pass orientation information to shaders.
+
+The OpenGL runtime uses a VBO for range `[0, 1]` for all passes and the following MVP for all passes.
+
+```rust 
+static GL_DEFAULT_MVP: &[f32; 16] = &[
+    2.0, 0.0, 0.0, 0.0,
+    0.0, 2.0, 0.0, 0.0,
+    0.0, 0.0, 2.0, 0.0,
+    -1.0, -1.0, 0.0, 1.0,
+];
+```
 
 ### Building
 
@@ -60,18 +113,16 @@ cargo run -p librashader-build-script -- --profile optimized
 This will output a `librashader.dll` or `librashader.so` in the target folder. Profile can be `debug`, `release`, or 
 `optimized` for full LTO.
 
-### C ABI Compatibility
-As the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability 
-is important to ensure that updates to librashader do not break existing consumers.
+### Writing a librashader Runtime
 
-As of `0.1.0-rc.4`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
-release without following semantic versioning.
+If you wish to contribute a runtime implementation not already available, see the [librashader-runtime](https://docs.rs/librashader-runtime/latest/librashader_runtime/)
+crate for helpers and shared logic used across all librashader runtime implementations. Using these helpers and traits will
+ensure that your runtime has consistent behaviour for uniform and texture semantics bindings with the existing librashader runtimes.
 
-Linking statically against `librashader.h` is possible, but is not officially supported. You will need to ensure 
-linkage parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`. 
-The [corrosion](https://github.com/corrosion-rs/) CMake package is highly recommended.
+These types should not be exposed to the end user in the runtime's public API, and should be kept internal to the implementation of
+the runtime.
 
-### Examples
+## Examples
 
 The following Rust examples show how to use each librashader runtime.
 * [Vulkan](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-vk/tests/triangle.rs)
@@ -126,54 +177,38 @@ Please report an issue if you run into a shader that works in RetroArch, but not
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
 
-### Quad vertices and rotations
-All runtimes except OpenGL render with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
-Quad VBO with range `[0, 1]` and the following projection matrix by default.
+## Versioning
+[![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader)
+![C ABI](https://img.shields.io/badge/ABI%20version-1-yellowgreen)
+![C API](https://img.shields.io/badge/API%20version-0-blue)
 
-```rust
-static DEFAULT_MVP: &[f32; 16] = &[
-  2.0, 0.0, 0.0, 0.0,
-  0.0, 2.0, 0.0, 0.0,
-  0.0, 0.0, 0.0, 0.0,
-  -1.0, -1.0, 0.0, 1.0,
-];
-```
 
-As with RetroArch, a rotation on this MVP will be applied only on the final pass for these runtimes. This is the only way to
-pass orientation information to shaders.
+librashader typically follows [Semantic Versioning](https://semver.org/) with respect to the Rust API, where a minor version
+number bump indicates a 'breaking change' during `0.x.y`, and a non-'breaking change' after `1.x.y`. However, a
+"breaking change" that results in a version number bump does not correspond to a break in the C API after version 0.1.0. 
 
-The OpenGL runtime uses a VBO for range `[0, 1]` for all passes and the following MVP for all passes. 
+The C API is instead versioned separately with two monotonically increasing version numbers exported to the librashader
+C headers
 
-```rust 
-static GL_DEFAULT_MVP: &[f32; 16] = &[
-    2.0, 0.0, 0.0, 0.0,
-    0.0, 2.0, 0.0, 0.0,
-    0.0, 0.0, 2.0, 0.0,
-    -1.0, -1.0, 0.0, 1.0,
-];
-```
+- [`LIBRASHADER_CURRENT_VERSION`](https://github.com/SnowflakePowered/librashader/blob/f8de1fa2ee75270e5655284edf39ea070d6ec6f5/librashader-capi/src/version.rs#L16) specifies the *API* version exported by the librashader implementation.
+- [`LIBRASHADER_CURRENT_ABI`](https://github.com/SnowflakePowered/librashader/blob/f8de1fa2ee75270e5655284edf39ea070d6ec6f5/librashader-capi/src/version.rs#L29) specifies the *ABI* version exported by the librashader implementation.
 
-### Thread safety
-In general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
-**external synchronization** of the filter chain object. 
+An increase in `LIBRASHADER_CURRENT_VERSION` is guaranteed to be **backwards compatible for the same `LIBRASHADER_CURRENT_ABI`**.
+It somewhat corresponds to a "minor" version in semantic versioning terminology, except that it is always monotonically increasing.
+Backwards-compatible additions to the C API will result in an increase to `LIBRASHADER_CURRENT_VERSION`.
 
-Filter chains can be created from any thread, but requires external synchronization of the graphics device queue where applicable 
-(in Direct3D 11, the immediate context is considered the graphics device queue), as loading LUTs requires command submission to the GPU. 
-Initialization of GPU resources may be deferred asynchronously using the `filter_chain_create_deferred` functions, but the caller is responsible for 
-submitting the recorded commands to the graphics device queue, and **ensuring that the work is complete** before drawing shader pass frames. 
+APIs introduced after a certain `LIBRASHADER_CURRENT_VERSION` **may or may not** be available to prior versions. In particular, new features enabled by 
+filter or frame option structs **require `LIBRASHADER_CURRENT_VERSION` be the greater than or equal** to the version in which the option was
+introduced, or a default value will be passed, which may or may not enable the feature depending on backwards compatibility for
+that particular feature. 
 
-OpenGL has an additional restriction where creating the filter chain instance in a different thread is safe **if and only if** 
-the thread local OpenGL context is initialized to the same context as the drawing thread. Support for deferral of GPU resource initialization
-is not available to OpenGL.
+Any change to `LIBRASHADER_CURRENT_ABI` indicates a **breaking change** for the C **ABI**. For safety reasons, `librashader_ld.h`
+will check to ensure that `LIBRASHADER_CURRENT_ABI` matches that of the loaded librashader binary. If it does not match, 
+librashader will not load. A value of `0` for `LIBRASHADER_CURRENT_ABI` indicates the "null" instance where every operation
+is a no-op, which occurs if no librashader binary could be found.
 
-### Writing a librashader Runtime
-
-If you wish to contribute a runtime implementation not already available, see the [librashader-runtime](https://docs.rs/librashader-runtime/latest/librashader_runtime/)
-crate for helpers and shared logic used across all librashader runtime implementations. Using these helpers and traits will
-ensure that your runtime has consistent behaviour for uniform and texture semantics bindings with the existing librashader runtimes.
-
-These types should not be exposed to the end user in the runtime's public API, and should be kept internal to the implementation of 
-the runtime.
+The above does not apply to releases of librashader prior to `0.1.0`, which were allowed to break API and ABI compatibility
+in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VERSION` or `LIBRASHADER_CURRENT_ABI`.
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
