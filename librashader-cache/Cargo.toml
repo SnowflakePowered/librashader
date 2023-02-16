@@ -39,3 +39,4 @@ docsrs = ["blake3/pure"]
 
 [package.metadata.docs.rs]
 features = ["docsrs"]
+no-default-features = true
