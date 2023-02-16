@@ -1,4 +1,3 @@
-use std::iter::Filter;
 use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, SamplerPaletteHeap};
 use crate::error;
 use librashader_common::{FilterMode, WrapMode};

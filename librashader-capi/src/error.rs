@@ -223,14 +223,14 @@ macro_rules! assert_some_ptr {
             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
 
-        let $value = unsafe { $value.as_ref().unwrap().as_ref() };
+        let $value = unsafe { $value.as_ref().unwrap_unchecked().as_ref() };
     };
     (mut $value:ident) => {
         if $value.is_none() {
             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
 
-        let $value = unsafe { $value.as_mut().unwrap().as_mut() };
+        let $value = unsafe { $value.as_mut().unwrap_unchecked().as_mut() };
     };
 }
 
