@@ -57,7 +57,7 @@ features = [
 
 [[test]]
 name = "triangle"
-required-features = ["librashader-cache/sqlite-bundled"]
+required-features = ["librashader-cache/cache"]
 
 [dev-dependencies]
 gfx-maths = "0.2.8"

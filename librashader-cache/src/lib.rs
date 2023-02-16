@@ -24,5 +24,5 @@ pub use cache::cache_shader_object;
 mod d3d;
 
 
-#[cfg(feature = "docsrs")]
+#[cfg(not(feature = "cache"))]
 mod docsrs;

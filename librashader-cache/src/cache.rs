@@ -1,7 +1,7 @@
 use crate::cacheable::Cacheable;
 use crate::key::CacheKey;
 
-#[cfg(not(feature = "docsrs"))]
+#[cfg(feature = "cache")]
 pub(crate) mod internal {
     use platform_dirs::AppDirs;
     use rusqlite::{Connection, DatabaseName};
@@ -67,7 +67,7 @@ pub(crate) mod internal {
 }
 
 
-#[cfg(not(feature = "docsrs"))]
+#[cfg(feature = "cache")]
 /// Cache a shader object (usually bytecode) created by the keyed objects.
 ///
 /// - `factory` is the function that compiles the values passed as keys to a shader object.
@@ -122,7 +122,7 @@ where
     Ok(load(blob)?)
 }
 
-#[cfg(not(feature = "docsrs"))]
+#[cfg(feature = "cache")]
 /// Cache a pipeline state object.
 ///
 /// Keys are not used to create the object and are only used to uniquely identify the pipeline state.
@@ -183,8 +183,8 @@ where
     Ok(pipeline)
 }
 
-#[cfg(feature = "docsrs")]
+#[cfg(not(feature = "cache"))]
 pub use crate::docsrs::cache_pipeline;
 
-#[cfg(feature = "docsrs")]
+#[cfg(not(feature = "cache"))]
 pub use crate::docsrs::cache_shader_object;

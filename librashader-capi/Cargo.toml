@@ -15,7 +15,8 @@ description = "RetroArch shaders for all."
 crate-type = [ "cdylib", "staticlib" ]
 
 [features]
-default = ["runtime-opengl", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan"]
+default = ["runtime-all", "librashader/cache" ]
+runtime-all = ["runtime-opengl", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan"]
 runtime-opengl = ["gl", "librashader/runtime-gl"]
 runtime-d3d11 = ["windows", "librashader/runtime-d3d11", "windows/Win32_Graphics_Direct3D11"]
 runtime-d3d12 = ["windows", "librashader/runtime-d3d12", "windows/Win32_Graphics_Direct3D12"]
@@ -38,3 +39,5 @@ optional = true
 
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
+default-features = false
+features = ["runtime-all", "librashader/docsrs"]

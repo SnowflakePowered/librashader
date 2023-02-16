@@ -1,3 +1,4 @@
+use crate::{CacheKey, Cacheable};
 /// Cache a pipeline state object.
 ///
 /// Keys are not used to create the object and are only used to uniquely identify the pipeline state.
@@ -5,6 +6,7 @@
 /// - `restore_pipeline` tries to restore the pipeline with either a cached binary pipeline state
 ///    cache, or create a new pipeline if no cached value is available.
 /// - `fetch_pipeline_state` fetches the new pipeline state cache after the pipeline was created.
+#[allow(unused_variables)]
 pub fn cache_pipeline<E, T, R, const KEY_SIZE: usize>(
     index: &str,
     keys: &[&dyn CacheKey; KEY_SIZE],
@@ -15,6 +17,7 @@ pub fn cache_pipeline<E, T, R, const KEY_SIZE: usize>(
     where
         T: Cacheable,
 {
+    eprintln!("[librashader:warn] Cache support was not built, you must rebuild librashader with the cache feature.");
     return Ok(restore_pipeline(None)?);
 }
 
@@ -22,6 +25,7 @@ pub fn cache_pipeline<E, T, R, const KEY_SIZE: usize>(
 ///
 /// - `factory` is the function that compiles the values passed as keys to a shader object.
 /// - `load` tries to load a compiled shader object to a driver-specialized result.
+#[allow(unused_variables)]
 pub fn cache_shader_object<E, T, R, H, const KEY_SIZE: usize>(
     index: &str,
     keys: &[H; KEY_SIZE],
@@ -33,5 +37,6 @@ pub fn cache_shader_object<E, T, R, H, const KEY_SIZE: usize>(
         H: CacheKey,
         T: Cacheable,
 {
+    eprintln!("[librashader:warn] Cache support was not built, you must rebuild librashader with the cache feature.");
     return Ok(load(factory(keys)?)?);
 }

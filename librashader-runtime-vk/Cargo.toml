@@ -40,4 +40,4 @@ ash-window = "0.12.0"
 
 [[test]]
 name = "triangle"
-required-features = ["librashader-cache/sqlite-bundled"]
+required-features = ["librashader-cache/cache"]

@@ -9,7 +9,7 @@ pub struct CachedCompilation<T> {
     compilation: T,
 }
 
-#[cfg(not(feature = "docsrs"))]
+#[cfg(feature = "cache")]
 impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
     ShaderCompilation for CachedCompilation<T>
 {
@@ -57,12 +57,14 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
     }
 }
 
-#[cfg(feature = "docsrs")]
+#[cfg(not(feature = "cache"))]
 impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
 ShaderCompilation for CachedCompilation<T>
 {
     fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
-        T::compile(source)
+        Ok(CachedCompilation {
+            compilation: T::compile(source)?
+        })
     }
 }
 
