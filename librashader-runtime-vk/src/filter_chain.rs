@@ -142,6 +142,7 @@ pub(crate) struct FilterCommon {
     pub history_textures: Box<[Option<InputImage>]>,
     pub config: FilterMutable,
     pub device: Arc<ash::Device>,
+    pub(crate) internal_frame_count: usize,
 }
 
 /// Contains residual intermediate `VkImageView` and `VkImage` objects created
@@ -380,6 +381,7 @@ impl FilterChainVulkan {
                 output_textures,
                 feedback_textures,
                 history_textures,
+                internal_frame_count: 0,
             },
             passes: filters,
             vulkan: device,
@@ -454,7 +456,6 @@ impl FilterChainVulkan {
                     graphics_pipeline,
                     // ubo_ring,
                     frames_in_flight,
-                    internal_frame_count: 0,
                 })
             })
             .collect();
@@ -482,12 +483,7 @@ impl FilterChainVulkan {
     }
 
     // image must be in SHADER_READ_OPTIMAL
-    fn push_history(
-        &mut self,
-        input: &VulkanImage,
-        cmd: vk::CommandBuffer,
-        count: usize,
-    ) -> error::Result<()> {
+    fn push_history(&mut self, input: &VulkanImage, cmd: vk::CommandBuffer) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.image.size != input.size
                 || (input.format != vk::Format::UNDEFINED && input.format != back.image.format)
@@ -498,7 +494,8 @@ impl FilterChainVulkan {
                     &mut back,
                     OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?,
                 );
-                self.residuals[count % self.residuals.len()].dispose_owned(old_back);
+                self.residuals[self.common.internal_frame_count % self.residuals.len()]
+                    .dispose_owned(old_back);
             }
 
             unsafe {
@@ -556,7 +553,8 @@ impl FilterChainVulkan {
         frame_count: usize,
         options: Option<&FrameOptionsVulkan>,
     ) -> error::Result<()> {
-        let intermediates = &mut self.residuals[frame_count % self.residuals.len()];
+        let intermediates =
+            &mut self.residuals[self.common.internal_frame_count % self.residuals.len()];
         intermediates.dispose();
 
         // limit number of passes to those enabled.
@@ -725,7 +723,8 @@ impl FilterChainVulkan {
             intermediates.dispose_framebuffers(residual_fb);
         }
 
-        self.push_history(input, cmd, frame_count)?;
+        self.push_history(input, cmd)?;
+        self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
 }

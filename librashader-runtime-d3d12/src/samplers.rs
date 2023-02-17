@@ -22,9 +22,7 @@ impl SamplerSet {
     ) -> &D3D12DescriptorHeapSlot<SamplerPaletteHeap> {
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter
-        unsafe {
-            self.samplers.get(&(wrap, filter)).unwrap_unchecked()
-        }
+        unsafe { self.samplers.get(&(wrap, filter)).unwrap_unchecked() }
     }
     pub fn new(device: &ID3D12Device) -> error::Result<SamplerSet> {
         let mut samplers = FxHashMap::default();

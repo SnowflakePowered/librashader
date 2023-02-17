@@ -14,9 +14,7 @@ impl SamplerSet {
     pub fn get(&self, wrap: WrapMode, filter: FilterMode) -> &ID3D11SamplerState {
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter
-        unsafe {
-            self.samplers.get(&(wrap, filter)).unwrap_unchecked()
-        }
+        unsafe { self.samplers.get(&(wrap, filter)).unwrap_unchecked() }
     }
 
     pub fn new(device: &ID3D11Device) -> Result<SamplerSet> {

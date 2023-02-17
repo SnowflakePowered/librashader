@@ -62,7 +62,9 @@ impl SamplerSet {
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
         unsafe {
-            self.samplers.get(&(wrap, filter, mipmap)).unwrap_unchecked()
+            self.samplers
+                .get(&(wrap, filter, mipmap))
+                .unwrap_unchecked()
         }
     }
 

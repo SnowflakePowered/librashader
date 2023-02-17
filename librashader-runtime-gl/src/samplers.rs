@@ -13,7 +13,10 @@ impl SamplerSet {
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
         unsafe {
-            *self.samplers.get(&(wrap, filter, mipmap)).unwrap_unchecked()
+            *self
+                .samplers
+                .get(&(wrap, filter, mipmap))
+                .unwrap_unchecked()
         }
     }
 
@@ -45,17 +48,9 @@ impl SamplerSet {
                     let mut sampler = 0;
                     unsafe {
                         gl::GenSamplers(1, &mut sampler);
-                        SamplerSet::make_sampler(
-                            sampler,
-                            *wrap_mode,
-                            *filter_mode,
-                            *mip_filter,
-                        );
+                        SamplerSet::make_sampler(sampler, *wrap_mode, *filter_mode, *mip_filter);
 
-                        samplers.insert(
-                            (*wrap_mode, *filter_mode, *mip_filter),
-                            sampler,
-                        );
+                        samplers.insert((*wrap_mode, *filter_mode, *mip_filter), sampler);
                     }
                 }
             }
