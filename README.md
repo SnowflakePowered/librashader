@@ -205,7 +205,7 @@ that particular feature.
 Any change to `LIBRASHADER_CURRENT_ABI` indicates a **breaking change** for the C **ABI**. For safety reasons, `librashader_ld.h`
 will check to ensure that `LIBRASHADER_CURRENT_ABI` matches that of the loaded librashader binary. If it does not match, 
 librashader will not load. A value of `0` for `LIBRASHADER_CURRENT_ABI` indicates the "null" instance where every operation
-is a no-op, which occurs if no librashader binary could be found.
+is a no-op, which occurs if no compatible librashader implementation could be found.
 
 The above does not apply to releases of librashader prior to `0.1.0`, which were allowed to break API and ABI compatibility
 in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VERSION` or `LIBRASHADER_CURRENT_ABI`.
