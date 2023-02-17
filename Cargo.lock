@@ -298,9 +298,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.1.4"
+version = "4.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f13b9c79b5d1dd500d20ef541215a6423c75829ef43117e1b4d17fd8af0b5d76"
+checksum = "ec0b0588d44d4d63a87dbd75c136c166bbfd9a86a31cb89e09906521c7d3f5e3"
 dependencies = [
  "bitflags",
  "clap_derive",
@@ -700,9 +700,9 @@ checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "fastrand"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499"
+checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
 dependencies = [
  "instant",
 ]
@@ -850,9 +850,9 @@ dependencies = [
 
 [[package]]
 name = "gimli"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "221996f774192f0f718773def8201c4ae31f02616a54ccfc2d358bb0e5cefdec"
+checksum = "ad0a93d233ebf96623465aad4046a8d3aa4da22d4f4beba5388838c8a434bbb4"
 
 [[package]]
 name = "gl"
@@ -1129,7 +1129,7 @@ name = "librashader-build-script"
 version = "0.1.0"
 dependencies = [
  "cbindgen",
- "clap 4.1.4",
+ "clap 4.1.6",
 ]
 
 [[package]]
@@ -1164,15 +1164,6 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.1.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e22634fcfd3d0307db6d31366bb6bdd4422ec18a889a18ebe5572e47f366989"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "librashader-common"
 version = "0.1.0-rc.6"
 dependencies = [
  "ash",
@@ -1182,13 +1173,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-common"
+version = "0.1.0-rc.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0e8663b9c52f89e7685a62914b5bcb6fcb9853f8010218a791ac3528ed77277"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "librashader-preprocess"
 version = "0.1.0-rc.6"
 dependencies = [
  "encoding_rs",
  "glob",
  "librashader-common 0.1.0-rc.6",
- "librashader-presets 0.1.0-rc.3",
+ "librashader-presets 0.1.0-rc.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom",
  "rayon",
  "rustc-hash",
@@ -1197,11 +1197,10 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.1.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ba84e8b4fdb76114d56f0ad2118e2cfbdde0666dd95e657afa4803c6f19bfee"
+version = "0.1.0-rc.6"
 dependencies = [
- "librashader-common 0.1.0-rc.3",
+ "glob",
+ "librashader-common 0.1.0-rc.6",
  "nom",
  "nom_locate",
  "num-traits",
@@ -1211,9 +1210,10 @@ dependencies = [
 [[package]]
 name = "librashader-presets"
 version = "0.1.0-rc.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e172b8aa741238b46dc24a29c07a90be0c32eb0aa0e5fc3a94ae5a6b0d451005"
 dependencies = [
- "glob",
- "librashader-common 0.1.0-rc.6",
+ "librashader-common 0.1.0-rc.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom",
  "nom_locate",
  "num-traits",
@@ -1447,14 +1447,14 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5d732bc30207a6423068df043e3d02e0735b155ad7ce1a6f76fe2baa5b158de"
+checksum = "5b9d9a46eff5b4ff64b45a9e316a6d1e0bc719ef429cbec4dc630684212bfdf9"
 dependencies = [
  "libc",
  "log",
  "wasi",
- "windows-sys 0.42.0",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -1715,9 +1715,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.17.0"
+version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
+checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
 name = "os_str_bytes"
@@ -2570,21 +2570,6 @@ dependencies = [
  "windows_i686_msvc 0.36.1",
  "windows_x86_64_gnu 0.36.1",
  "windows_x86_64_msvc 0.36.1",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.42.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7"
-dependencies = [
- "windows_aarch64_gnullvm",
- "windows_aarch64_msvc 0.42.1",
- "windows_i686_gnu 0.42.1",
- "windows_i686_msvc 0.42.1",
- "windows_x86_64_gnu 0.42.1",
- "windows_x86_64_gnullvm",
- "windows_x86_64_msvc 0.42.1",
 ]
 
 [[package]]
