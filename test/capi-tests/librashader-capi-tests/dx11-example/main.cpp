@@ -135,7 +135,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
     auto libra = librashader_load_instance();
     libra_shader_preset_t preset;
         auto error = libra.preset_create(
-        "../../../slang-shaders/border/gameboy-player/"
+        "../../../shaders_slang/border/gameboy-player/"
         "gameboy-player-crt-royale.slangp",
         &preset);
 

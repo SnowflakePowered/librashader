@@ -17,7 +17,7 @@ int main()
     auto instance = librashader_load_instance();
     libra_shader_preset_t preset;
     auto error = instance.preset_create(
-        "../../../slang-shaders/border/gameboy-player/"
+        "../../../shaders_slang/border/gameboy-player/"
         "gameboy-player-crt-royale.slangp",
         &preset);
 

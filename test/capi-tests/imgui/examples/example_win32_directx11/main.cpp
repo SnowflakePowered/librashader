@@ -67,8 +67,11 @@ int main(int, char**)
     auto libra = librashader_load_instance();
     libra_shader_preset_t preset;
     auto error = libra.preset_create(
-        "../../../../../../slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV-GLASS.slangp", &preset);
+        "../../../../shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", &preset);
 
+    if (error != NULL) {
+        libra.error_print(error);
+    }
     libra_d3d11_filter_chain_t filter_chain = NULL;
     filter_chain_d3d11_opt_t opt = {
         .force_no_mipmaps = false,

@@ -63,7 +63,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     auto libra = librashader_load_instance();
     libra_shader_preset_t preset;
     auto error = libra.preset_create(
-        "../../../slang-shaders/crt/crt-royale.slangp",
+        "../../../shaders_slang/crt/crt-royale.slangp",
         &preset);
 
     libra_d3d11_filter_chain_t filter_chain;
