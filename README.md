@@ -36,12 +36,10 @@ The librashader C API is best used by including `librashader_ld.h` in your proje
 loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. 
 
 
-### C ABI Compatibility
-As the recommended way of integrating `librashader` is by the `librashader_ld` single header library, ABI stability
-is important to ensure that updates to librashader do not break existing consumers.
-
-As of `0.1.0-rc.4`, the C ABI should be mostly stable. We reserve the right to make breaking changes before a numbered
-release without following semantic versioning.
+### C compatibility
+The recommended way of integrating `librashader` is by the `librashader_ld` single header library which implements
+a dynamic loader for `librashader.dll` / `librashader.so`. See the [versioning policy](https://github.com/SnowflakePowered/librashader#versioning)
+for details on how librashader handles C ABI and API stability with regards to library updates.
 
 Linking statically against `librashader.h` is possible, but is not officially supported. You will need to ensure
 linkage parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`.
