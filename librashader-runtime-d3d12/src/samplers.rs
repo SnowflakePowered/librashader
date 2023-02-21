@@ -41,7 +41,7 @@ impl SamplerSet {
                     let sampler = heap.alloc_slot()?;
                     device.CreateSampler(
                         &D3D12_SAMPLER_DESC {
-                            Filter: FilterMode::Linear.into(),
+                            Filter: filter_mode.into(),
                             AddressU: D3D12_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
                             AddressV: D3D12_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
                             AddressW: D3D12_TEXTURE_ADDRESS_MODE::from(*wrap_mode),
