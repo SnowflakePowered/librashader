@@ -7,3 +7,9 @@
 [submodule "test/shaders_slang"]
 	path = test/shaders_slang
 	url = https://github.com/libretro/slang-shaders
+[submodule "test/quark-shaders"]
+	path = test/quark-shaders
+	url = https://github.com/hizzlekizzle/quark-shaders
+[submodule "bml"]
+	path = bml
+	url = https://github.com/chyyran/bml

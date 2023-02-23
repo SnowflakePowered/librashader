@@ -12,7 +12,9 @@ members = [
     "librashader-runtime-vk",
     "librashader-cache",
     "librashader-capi",
-    "librashader-build-script"
+    "librashader-quark",
+    "librashader-build-script",
+    "bml"
 ]
 
 [workspace.metadata.release]
