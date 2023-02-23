@@ -19,10 +19,11 @@ pub struct ShaderPassConfig {
     pub wrap_mode: WrapMode,
     /// The number to which to wrap the frame count before passing it to the uniforms.
     pub frame_count_mod: u32,
-    /// Whether or not this shader pass expects an SRGB framebuffer output.
-    pub srgb_framebuffer: bool,
-    /// Whether or not this shader pass expects an float framebuffer output.
-    pub float_framebuffer: bool,
+    /// If the preset overrides the framebuffer format, get the format override.
+    ///
+    /// The precedence is always SRGB, then float. For quark shaders, this is
+    /// specified in the shader manifest.
+    pub framebuffer_format_override: Option<ImageFormat>,
     /// Whether or not to generate mipmaps for the input texture before passing to the shader.
     pub mipmap_input: bool,
     /// Specifies the scaling of the output framebuffer for this shader pass.
@@ -30,18 +31,6 @@ pub struct ShaderPassConfig {
 }
 
 impl ShaderPassConfig {
-    /// If the framebuffer expects a different format than what was defined in the
-    /// shader source, returns such format.
-    #[inline(always)]
-    pub fn get_format_override(&self) -> Option<ImageFormat> {
-        if self.srgb_framebuffer {
-            return Some(ImageFormat::R8G8B8A8Srgb);
-        } else if self.float_framebuffer {
-            return Some(ImageFormat::R16G16B16A16Sfloat);
-        }
-        None
-    }
-
     #[inline(always)]
     pub fn get_frame_count(&self, count: usize) -> u32 {
         (if self.frame_count_mod > 0 {

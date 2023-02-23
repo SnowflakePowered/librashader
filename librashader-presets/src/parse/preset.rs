@@ -1,3 +1,4 @@
+use librashader_common::ImageFormat;
 use crate::parse::remove_if;
 use crate::parse::value::Value;
 use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -112,6 +113,30 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                 scale_y = scale;
             }
 
+            let srgb_frambuffer = shader_values
+                .iter()
+                .find_map(|f| match f {
+                    Value::SrgbFramebuffer(_, value) => Some(*value),
+                    _ => None,
+                })
+                .unwrap_or(false);
+
+            let float_framebuffer = shader_values
+                .iter()
+                .find_map(|f| match f {
+                    Value::FloatFramebuffer(_, value) => Some(*value),
+                    _ => None,
+                })
+                .unwrap_or(false);
+
+            let framebuffer_format = if srgb_frambuffer {
+                Some(ImageFormat::R8G8B8A8Srgb)
+            } else if float_framebuffer {
+                Some(ImageFormat::R16G16B16A16Sfloat)
+            } else {
+                None
+            };
+
             let shader = ShaderPassConfig {
                 id,
                 name,
@@ -140,20 +165,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                         _ => None,
                     })
                     .unwrap_or(0),
-                srgb_framebuffer: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::SrgbFramebuffer(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or(false),
-                float_framebuffer: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::FloatFramebuffer(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or(false),
+                framebuffer_format_override: framebuffer_format,
                 mipmap_input: shader_values
                     .iter()
                     .find_map(|f| match f {

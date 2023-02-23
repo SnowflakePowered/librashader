@@ -432,7 +432,7 @@ impl FilterChainD3D12 {
                     librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
                 ))?;
 
-                let render_format = if let Some(format) = config.get_format_override() {
+                let render_format = if let Some(format) = config.framebuffer_format_override {
                     format
                 } else if source.format != ImageFormat::Unknown {
                     source.format

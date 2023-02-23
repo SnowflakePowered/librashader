@@ -428,7 +428,7 @@ impl FilterChainVulkan {
 
                 let render_pass_format = if !use_render_pass {
                     vk::Format::UNDEFINED
-                } else if let Some(format) = config.get_format_override() {
+                } else if let Some(format) = config.framebuffer_format_override {
                     format.into()
                 } else if source.format != ImageFormat::Unknown {
                     source.format.into()

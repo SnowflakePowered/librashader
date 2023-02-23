@@ -13,7 +13,7 @@ pub trait FilterPassMeta {
     #[inline(always)]
     fn get_format(&self) -> ImageFormat {
         let fb_format = self.framebuffer_format();
-        if let Some(format) = self.config().get_format_override() {
+        if let Some(format) = self.config().framebuffer_format_override {
             format
         } else if fb_format == ImageFormat::Unknown {
             ImageFormat::R8G8B8A8Unorm
