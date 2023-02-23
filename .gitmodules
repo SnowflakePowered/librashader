@@ -10,6 +10,3 @@
 [submodule "test/quark-shaders"]
 	path = test/quark-shaders
 	url = https://github.com/hizzlekizzle/quark-shaders
-[submodule "bml"]
-	path = bml
-	url = https://github.com/chyyran/bml

@@ -199,7 +199,9 @@ dependencies = [
 
 [[package]]
 name = "bml"
-version = "0.3.0"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f47cd661ced9603345d776f1b97350aa728602fcf9396583438935e3ea606f3b"
 dependencies = [
  "ordered-multimap",
  "pest",

@@ -3,6 +3,8 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/bml" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test/quark-shaders" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/test/shaders_slang" vcs="Git" />
   </component>
 </project>

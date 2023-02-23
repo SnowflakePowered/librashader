@@ -14,7 +14,6 @@ members = [
     "librashader-capi",
     "librashader-quark",
     "librashader-build-script",
-    "bml"
 ]
 
 [workspace.metadata.release]
