@@ -16,11 +16,25 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+
+#[derive(Debug)]
+pub enum ShaderStage {
+    Fragment,
+    Vertex,
+    Geometry
+}
+
+#[derive(Debug)]
+pub enum ShaderType {
+    Slang,
+    Quark(ShaderStage)
+}
+
 #[derive(Debug)]
 pub enum Value {
     ShaderCount(i32),
     FeedbackPass(i32),
-    Shader(i32, PathBuf),
+    Shader(i32, ShaderType, PathBuf),
     ScaleX(i32, ScaleFactor),
     ScaleY(i32, ScaleFactor),
     Scale(i32, ScaleFactor),
@@ -47,7 +61,7 @@ pub enum Value {
 impl Value {
     pub(crate) fn shader_index(&self) -> Option<i32> {
         match self {
-            Value::Shader(i, _) => Some(*i),
+            Value::Shader(i, _, _) => Some(*i),
             Value::ScaleX(i, _) => Some(*i),
             Value::ScaleY(i, _) => Some(*i),
             Value::Scale(i, _) => Some(*i),
@@ -202,6 +216,7 @@ fn load_child_reference_strings(
     Ok(reference_strings.into())
 }
 
+// todo: move this to slang
 pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetError> {
     let path = path.as_ref();
     let path = path
@@ -217,6 +232,7 @@ pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetErr
     parse_values(tokens, path)
 }
 
+// todo: move this to slang
 pub fn parse_values(
     mut tokens: Vec<Token>,
     root_path: impl AsRef<Path>,
@@ -299,7 +315,7 @@ pub fn parse_values(
             relative_path
                 .canonicalize()
                 .map_err(|e| ParsePresetError::IOError(relative_path.clone(), e))?;
-            values.push(Value::Shader(index, relative_path))
+            values.push(Value::Shader(index, ShaderType::Slang, relative_path))
         }
     }
 

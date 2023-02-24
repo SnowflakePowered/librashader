@@ -1,7 +1,7 @@
 use librashader_common::ImageFormat;
-use crate::parse::remove_if;
+use crate::parse::{remove_if, ShaderType};
 use crate::parse::value::Value;
-use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPreset, TextureConfig};
+use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPath, ShaderPreset, TextureConfig};
 
 pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     let textures: Vec<TextureConfig> = values
@@ -60,9 +60,9 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
         .unwrap_or(0);
 
     for shader in 0..shader_count {
-        if let Some(Value::Shader(id, name)) = remove_if(
+        if let Some(Value::Shader(id, ShaderType::Slang, name)) = remove_if(
             &mut values,
-            |v| matches!(*v, Value::Shader(shader_index, _) if shader_index == shader),
+            |v| matches!(*v, Value::Shader(shader_index, ShaderType::Slang, _) if shader_index == shader),
         ) {
             let shader_values: Vec<Value> = values
                 .drain_filter(|v| v.shader_index() == Some(shader))
@@ -139,7 +139,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
 
             let shader = ShaderPassConfig {
                 id,
-                name,
+                source_path: ShaderPath::Slang(name),
                 alias: shader_values.iter().find_map(|f| match f {
                     Value::Alias(_, value) => Some(value.to_string()),
                     _ => None,

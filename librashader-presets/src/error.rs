@@ -30,6 +30,9 @@ pub enum ParsePresetError {
     /// The shader preset did not contain valid UTF-8 bytes.
     #[error("expected utf8 bytes but got invalid utf8")]
     Utf8Error(Vec<u8>),
+    /// Error parsing BML file.
+    #[error("error parsing quark bml")]
+    BmlError(#[from] bml::BmlError)
 }
 
 /// The kind of error that may occur in parsing.

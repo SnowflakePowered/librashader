@@ -12,5 +12,7 @@
 mod error;
 mod parse;
 mod preset;
+mod quark;
+
 pub use error::*;
 pub use preset::*;

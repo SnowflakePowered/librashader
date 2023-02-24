@@ -12,7 +12,6 @@ members = [
     "librashader-runtime-vk",
     "librashader-cache",
     "librashader-capi",
-    "librashader-quark",
     "librashader-build-script",
 ]
 

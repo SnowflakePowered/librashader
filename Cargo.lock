@@ -1277,19 +1277,13 @@ dependencies = [
 name = "librashader-presets"
 version = "0.1.3"
 dependencies = [
+ "bml",
  "glob",
  "librashader-common 0.1.3",
  "nom",
  "nom_locate",
  "num-traits",
  "thiserror",
-]
-
-[[package]]
-name = "librashader-quark"
-version = "0.1.0"
-dependencies = [
- "bml",
 ]
 
 [[package]]

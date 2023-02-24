@@ -10,7 +10,7 @@ pub struct ShaderPassConfig {
     /// The index of the shader pass relative to its parent preset.
     pub id: i32,
     /// The fully qualified path to the shader pass source file.
-    pub name: PathBuf,
+    pub source_path: ShaderPath,
     /// The alias of the shader pass if available.
     pub alias: Option<String>,
     /// The filtering mode that this shader pass should expect.
@@ -39,6 +39,15 @@ impl ShaderPassConfig {
             count
         }) as u32
     }
+}
+
+#[derive(Clone, Debug)]
+/// The path to a shader.
+pub enum ShaderPath {
+    /// Slang combined shader
+    Slang(PathBuf),
+    /// Quark split vertex/fragment shaders.
+    Quark { vertex: Option<PathBuf>, fragment: Option<PathBuf> }
 }
 
 #[repr(i32)]

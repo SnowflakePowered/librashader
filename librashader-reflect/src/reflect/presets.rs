@@ -6,7 +6,7 @@ use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ShaderPassConfig, TextureConfig};
+use librashader_presets::{ShaderPassConfig, ShaderPath, TextureConfig};
 use rustc_hash::FxHashMap;
 
 /// Artifacts of a reflected and compiled shader pass.
@@ -83,7 +83,13 @@ where
     let passes = passes
         .into_iter()
         .map(|shader| {
-            let source: ShaderSource = ShaderSource::load(&shader.name)?;
+
+            let source = match &shader.source_path {
+                ShaderPath::Slang(source_path) => ShaderSource::load(source_path)?,
+                ShaderPath::Quark { vertex, fragment } => {
+                    panic!("quark shaders not implemented")
+                }
+            };
 
             let compiled = C::compile(&source)?;
             let reflect = T::from_compilation(compiled)?;

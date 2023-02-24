@@ -9,6 +9,9 @@ mod value;
 
 pub(crate) type Span<'a> = LocatedSpan<&'a str>;
 pub(crate) use token::Token;
+pub(crate) use value::Value;
+pub(crate) use value::ShaderType;
+pub(crate) use value::ShaderStage;
 
 use crate::error::ParsePresetError;
 use crate::parse::preset::resolve_values;
