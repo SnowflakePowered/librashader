@@ -250,6 +250,7 @@ pub fn parse_values(
     // load depth first, so all child tokens are first.
     // Later tokens take precedence.
     all_tokens.push((root_path.as_path(), tokens));
+
     // collect all possible parameter names.
     let mut parameter_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
@@ -529,6 +530,7 @@ pub fn parse_values(
                 param_val,
             ));
         }
+
         // very last resort, assume undeclared texture (must have extension)
         else if Path::new(token.value.fragment()).extension().is_some()
             && ["_mipmap", "_linear", "_wrap_mode", "_repeat_mode"]
