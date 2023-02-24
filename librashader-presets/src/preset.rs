@@ -47,7 +47,10 @@ pub enum ShaderPath {
     /// Slang combined shader
     Slang(PathBuf),
     /// Quark split vertex/fragment shaders.
-    Quark { vertex: Option<PathBuf>, fragment: Option<PathBuf> }
+    Quark {
+        vertex: Option<PathBuf>,
+        fragment: Option<PathBuf>,
+    },
 }
 
 #[repr(i32)]

@@ -32,7 +32,7 @@ pub enum ParsePresetError {
     Utf8Error(Vec<u8>),
     /// Error parsing BML file.
     #[error("error parsing quark bml")]
-    BmlError(#[from] bml::BmlError)
+    BmlError(#[from] bml::BmlError),
 }
 
 /// The kind of error that may occur in parsing.

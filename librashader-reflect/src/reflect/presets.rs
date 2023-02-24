@@ -83,7 +83,6 @@ where
     let passes = passes
         .into_iter()
         .map(|shader| {
-
             let source = match &shader.source_path {
                 ShaderPath::Slang(source_path) => ShaderSource::load(source_path)?,
                 ShaderPath::Quark { vertex, fragment } => {

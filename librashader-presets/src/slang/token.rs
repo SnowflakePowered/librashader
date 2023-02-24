@@ -6,12 +6,12 @@ use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
 use nom::combinator::{eof, map_res, value};
 use nom::error::{ErrorKind, ParseError};
 
+use crate::slang::Span;
 use nom::sequence::delimited;
 use nom::{
     bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength,
     InputTake,
 };
-use crate::slang::Span;
 
 #[derive(Debug)]
 pub struct Token<'a> {

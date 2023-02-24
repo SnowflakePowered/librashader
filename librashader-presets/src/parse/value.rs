@@ -1,4 +1,7 @@
-use crate::{ParameterConfig, remove_if, Scale2D, ScaleFactor, ScaleType, Scaling, ShaderPassConfig, ShaderPath, ShaderPreset, TextureConfig};
+use crate::{
+    remove_if, ParameterConfig, Scale2D, ScaleFactor, ScaleType, Scaling, ShaderPassConfig,
+    ShaderPath, ShaderPreset, TextureConfig,
+};
 use librashader_common::{FilterMode, ImageFormat, WrapMode};
 use std::path::PathBuf;
 
@@ -6,13 +9,13 @@ use std::path::PathBuf;
 pub enum ShaderStage {
     Fragment,
     Vertex,
-    Geometry
+    Geometry,
 }
 
 #[derive(Debug)]
 pub enum ShaderType {
     Slang,
-    Quark(ShaderStage)
+    Quark(ShaderStage),
 }
 
 #[derive(Debug)]
@@ -193,13 +196,19 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                 })
                 .unwrap_or(false);
 
-            let framebuffer_format = if srgb_frambuffer {
-                Some(ImageFormat::R8G8B8A8Srgb)
-            } else if float_framebuffer {
-                Some(ImageFormat::R16G16B16A16Sfloat)
-            } else {
-                None
-            };
+            let framebuffer_format_override = shader_values
+                .iter()
+                .find_map(|f| match f {
+                    Value::FormatOverride(_, value) => Some(Some(*value)),
+                    _ => None,
+                })
+                .unwrap_or(if srgb_frambuffer {
+                    Some(ImageFormat::R8G8B8A8Srgb)
+                } else if float_framebuffer {
+                    Some(ImageFormat::R16G16B16A16Sfloat)
+                } else {
+                    None
+                });
 
             let shader = ShaderPassConfig {
                 id,
@@ -229,7 +238,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                         _ => None,
                     })
                     .unwrap_or(0),
-                framebuffer_format_override: framebuffer_format,
+                framebuffer_format_override,
                 mipmap_input: shader_values
                     .iter()
                     .find_map(|f| match f {

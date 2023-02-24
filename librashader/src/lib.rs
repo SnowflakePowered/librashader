@@ -61,7 +61,9 @@ pub mod presets {
         let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset
             .shaders
             .iter()
-            .map(|s| ShaderSource::load(&s.source_path).map(|s| s.parameters.into_values().collect()))
+            .map(|s| {
+                ShaderSource::load(&s.source_path).map(|s| s.parameters.into_values().collect())
+            })
             .collect();
         let iters = iters?;
         Ok(iters.into_iter().flatten())

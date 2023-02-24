@@ -1,18 +1,18 @@
+use crate::parse::{ShaderType, Value};
+use crate::slang::token::{do_lex, Token};
+use crate::slang::Span;
+use crate::{remove_if, ParseErrorKind, ParsePresetError, ScaleFactor, ScaleType};
+use librashader_common::{FilterMode, WrapMode};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
-use std::path::{Path, PathBuf};
-use std::fs::File;
-use librashader_common::{FilterMode, WrapMode};
-use std::collections::VecDeque;
-use std::str::FromStr;
-use std::io::Read;
 use nom::IResult;
 use num_traits::ToPrimitive;
-use crate::{ParseErrorKind, ParsePresetError, remove_if, ScaleFactor, ScaleType};
-use crate::parse::{ShaderType, Value};
-use crate::slang::Span;
-use crate::slang::token::{do_lex, Token};
+use std::collections::VecDeque;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 fn from_int(input: Span) -> Result<i32, ParsePresetError> {
     // Presets like to commit ✨CRIMES✨ and end their lines with a ";".
