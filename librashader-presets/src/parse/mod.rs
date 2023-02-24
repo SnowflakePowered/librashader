@@ -1,6 +1,5 @@
 use std::path::Path;
 
-mod preset;
 mod value;
 
 pub(crate) use value::Value;
@@ -8,7 +7,7 @@ pub(crate) use value::ShaderType;
 pub(crate) use value::ShaderStage;
 
 use crate::error::ParsePresetError;
-use crate::parse::preset::resolve_values;
+use value::resolve_values;
 use crate::slang::parse_preset;
 use crate::ShaderPreset;
 
