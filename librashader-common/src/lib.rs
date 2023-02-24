@@ -94,6 +94,10 @@ impl FromStr for WrapMode {
             "clamp_to_edge" => WrapMode::ClampToEdge,
             "repeat" => WrapMode::Repeat,
             "mirrored_repeat" => WrapMode::MirroredRepeat,
+
+            // quark
+            "border" => WrapMode::ClampToBorder,
+            "edge" => WrapMode::ClampToEdge,
             _ => WrapMode::ClampToBorder,
         })
     }

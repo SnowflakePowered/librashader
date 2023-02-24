@@ -1,5 +1,4 @@
 use crate::error::ParsePresetError;
-use crate::parse::Span;
 use nom::branch::alt;
 use nom::bytes::complete::{is_not, take_until};
 use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
@@ -12,6 +11,7 @@ use nom::{
     bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength,
     InputTake,
 };
+use crate::slang::Span;
 
 #[derive(Debug)]
 pub struct Token<'a> {
@@ -155,7 +155,7 @@ pub fn do_lex(input: &str) -> Result<Vec<Token>, ParsePresetError> {
 
 #[cfg(test)]
 mod test {
-    use crate::parse::token::{do_lex, single_comment};
+    use crate::slang::token::{do_lex, single_comment};
 
     #[test]
     fn parses_single_line_comment() {

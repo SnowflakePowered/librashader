@@ -13,6 +13,11 @@ mod error;
 mod parse;
 mod preset;
 mod quark;
+mod slang;
 
 pub use error::*;
 pub use preset::*;
+
+pub(crate) fn remove_if<T>(values: &mut Vec<T>, f: impl FnMut(&T) -> bool) -> Option<T> {
+    values.iter().position(f).map(|idx| values.remove(idx))
+}

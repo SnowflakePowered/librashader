@@ -1,7 +1,7 @@
 use librashader_common::ImageFormat;
-use crate::parse::{remove_if, ShaderType};
+use crate::parse::ShaderType;
 use crate::parse::value::Value;
-use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPath, ShaderPreset, TextureConfig};
+use crate::{ParameterConfig, remove_if, Scale2D, Scaling, ShaderPassConfig, ShaderPath, ShaderPreset, TextureConfig};
 
 pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     let textures: Vec<TextureConfig> = values
