@@ -207,7 +207,7 @@ extern_fn! {
     ///    function will return an error.
     /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
     ///    values for the model view projection matrix.
-    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d11_opt_t`
     ///    struct.
     /// - `out` must not be null.
     /// - `image.handle` must not be null.
