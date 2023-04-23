@@ -6,7 +6,6 @@
 #![feature(strict_provenance)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
-#![feature(is_some_and)]
 
 mod binding;
 mod filter_chain;

@@ -9,7 +9,7 @@ use nom::combinator::{eof, map_res, value};
 use nom::error::{ErrorKind, ParseError};
 
 use nom::sequence::delimited;
-use nom::{bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength, InputTake, Parser, Slice, AsChar};
+use nom::{bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength, InputTake, Slice, AsChar};
 
 #[derive(Debug)]
 pub struct Token<'a> {
