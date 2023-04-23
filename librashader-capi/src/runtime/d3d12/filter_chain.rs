@@ -226,7 +226,7 @@ extern_fn! {
     ///    and must be associated with the `ID3D12Device` this filter chain was created with.
     /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
     ///   thread at a time may call this function.
-    fn libra_d3d12_filter_chain_frame(
+    nopanic fn libra_d3d12_filter_chain_frame(
         chain: *mut libra_d3d12_filter_chain_t,
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,
         frame_count: usize,
