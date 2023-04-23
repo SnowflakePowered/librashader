@@ -1153,7 +1153,7 @@ libra_error_t libra_d3d11_filter_chain_create_deferred(libra_shader_preset_t *pr
 ///    function will return an error.
 /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
 ///    values for the model view projection matrix.
-/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d11_opt_t`
 ///    struct.
 /// - `out` must not be null.
 /// - `image.handle` must not be null.
@@ -1280,7 +1280,7 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 ///    function will return an error.
 /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
 ///    values for the model view projection matrix.
-/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_gl_opt_t`
+/// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d12_opt_t`
 ///    struct.
 /// - `out` must be a descriptor handle to a render target view.
 /// - `image.resource` must not be null.

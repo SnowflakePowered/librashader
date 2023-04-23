@@ -82,7 +82,7 @@ impl From<libra_device_vk_t> for VulkanInstance {
     }
 }
 
-/// Options for each OpenGL shader frame.
+/// Options for each Vulkan shader frame.
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
 pub struct frame_vk_opt_t {
