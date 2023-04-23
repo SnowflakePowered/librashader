@@ -85,6 +85,7 @@ pub struct MipmapGenContext<'a> {
     cmd: &'a ID3D12GraphicsCommandList,
     heap: &'a mut D3D12DescriptorHeap<ResourceWorkHeap>,
     residuals: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+    residual_uav_descs: Vec<D3D12_RESOURCE_UAV_BARRIER>,
 }
 
 impl<'a> MipmapGenContext<'a> {
@@ -98,6 +99,7 @@ impl<'a> MipmapGenContext<'a> {
             cmd,
             heap,
             residuals: Vec::new(),
+            residual_uav_descs: Vec::new(),
         }
     }
 
@@ -111,17 +113,23 @@ impl<'a> MipmapGenContext<'a> {
         format: DXGI_FORMAT,
     ) -> error::Result<()> {
         unsafe {
-            let residuals = self
+            let (residuals_heap, residual_barriers) = self
                 .gen
                 .generate_mipmaps(self.cmd, resource, miplevels, size, format, self.heap)?;
-            self.residuals.extend(residuals)
+            self.residuals.extend(residuals_heap);
+            self.residual_uav_descs.extend(residual_barriers);
         }
 
         Ok(())
     }
 
-    fn close(self) -> Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>> {
-        self.residuals
+    fn close(
+        self,
+    ) -> (
+        Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+        Vec<D3D12_RESOURCE_UAV_BARRIER>,
+    ) {
+        (self.residuals, self.residual_uav_descs)
     }
 }
 
@@ -138,7 +146,7 @@ impl D3D12MipmapGen {
             let root_signature: ID3D12RootSignature = device.CreateRootSignature(0, blob)?;
 
             let desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-                pRootSignature: windows::core::ManuallyDrop::new(&root_signature),
+                pRootSignature: ManuallyDrop::new(Some(root_signature.clone())),
                 CS: D3D12_SHADER_BYTECODE {
                     pShaderBytecode: blob.as_ptr().cast(),
                     BytecodeLength: blob.len(),
@@ -148,7 +156,7 @@ impl D3D12MipmapGen {
             };
 
             let pipeline = device.CreateComputePipelineState(&desc)?;
-
+            drop(ManuallyDrop::into_inner(desc.pRootSignature));
             Ok(D3D12MipmapGen {
                 device: device.clone(),
                 root_signature,
@@ -184,7 +192,13 @@ impl D3D12MipmapGen {
         cmd: &ID3D12GraphicsCommandList,
         work_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
         mut f: F,
-    ) -> Result<Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>, E>
+    ) -> Result<
+        (
+            Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+            Vec<D3D12_RESOURCE_UAV_BARRIER>,
+        ),
+        E,
+    >
     where
         F: FnMut(&mut MipmapGenContext) -> Result<(), E>,
     {
@@ -194,7 +208,7 @@ impl D3D12MipmapGen {
 
             if self.own_heaps {
                 cmd.SetComputeRootSignature(&self.root_signature);
-                cmd.SetDescriptorHeaps(&[heap]);
+                cmd.SetDescriptorHeaps(&[Some(heap)]);
             }
         }
 
@@ -214,7 +228,10 @@ impl D3D12MipmapGen {
         size: Size<u32>,
         format: DXGI_FORMAT,
         work_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
-    ) -> error::Result<Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>> {
+    ) -> error::Result<(
+        Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
+        Vec<D3D12_RESOURCE_UAV_BARRIER>,
+    )> {
         // create views for mipmap generation
         let srv = work_heap.alloc_slot()?;
         unsafe {
@@ -265,6 +282,7 @@ impl D3D12MipmapGen {
             cmd.SetComputeRootDescriptorTable(0, *heap_slots[0].deref().as_ref());
         }
 
+        let mut residual_uavs = Vec::new();
         for i in 1..miplevels as u32 {
             let scaled = size.scale_mipmap(i);
             let mipmap_params = MipConstants {
@@ -307,10 +325,8 @@ impl D3D12MipmapGen {
                 );
             }
 
-            // todo: handle manuallyDrop properly.
-
             let uav_barrier = ManuallyDrop::new(D3D12_RESOURCE_UAV_BARRIER {
-                pResource: windows::core::ManuallyDrop::new(resource),
+                pResource: ManuallyDrop::new(Some(resource.clone())),
             });
 
             let barriers = [
@@ -336,8 +352,15 @@ impl D3D12MipmapGen {
             unsafe {
                 cmd.ResourceBarrier(&barriers);
             }
+
+            let uav = unsafe {
+                let [barrier, ..] = barriers;
+                barrier.Anonymous.UAV
+            };
+
+            residual_uavs.push(ManuallyDrop::into_inner(uav))
         }
 
-        Ok(heap_slots)
+        Ok((heap_slots, residual_uavs))
     }
 }

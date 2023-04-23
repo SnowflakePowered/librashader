@@ -4,7 +4,7 @@ use crate::error::assume_d3d12_init;
 use std::mem::ManuallyDrop;
 use std::u64;
 use widestring::{u16cstr, U16CStr};
-use windows::core::PCWSTR;
+use windows::core::{ComInterface, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
     DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
     DXC_CP_UTF8,
@@ -20,6 +20,7 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::*;
+use crate::filter_chain::FrameResiduals;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -166,7 +167,7 @@ pub fn dxc_validate_shader(
 
     unsafe {
         let _result = validator.Validate(&blob, DxcValidatorFlags_InPlaceEdit)?;
-        Ok(IDxcBlob::from(blob))
+        Ok(blob.cast()?)
     }
 }
 
@@ -197,7 +198,7 @@ pub fn d3d12_get_resource_transition_subresource(
         Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
         Anonymous: D3D12_RESOURCE_BARRIER_0 {
             Transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
-                pResource: windows::core::ManuallyDrop::new(resource),
+                pResource: ManuallyDrop::new(Some(resource.clone())),
                 Subresource: subresource,
                 StateBefore: before,
                 StateAfter: after,
@@ -223,7 +224,7 @@ pub fn d3d12_resource_transition_subresource(
     unsafe { cmd.ResourceBarrier(&barrier) }
 }
 
-pub fn d3d12_update_subresources(
+pub(crate) fn d3d12_update_subresources(
     cmd: &ID3D12GraphicsCommandList,
     destination_resource: &ID3D12Resource,
     intermediate_resource: &ID3D12Resource,
@@ -231,6 +232,7 @@ pub fn d3d12_update_subresources(
     first_subresouce: u32,
     num_subresources: u32,
     source: &[D3D12_SUBRESOURCE_DATA],
+    gc: &mut FrameResiduals,
 ) -> error::Result<u64> {
     // let allocation_size = std::mem::size_of::<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>()
     //     + std::mem::size_of::<u32>()
@@ -271,6 +273,7 @@ pub fn d3d12_update_subresources(
             &num_rows,
             &row_sizes_in_bytes,
             source,
+            gc
         )
     }
 }
@@ -287,6 +290,7 @@ fn update_subresources(
     num_rows: &[u32],
     row_sizes_in_bytes: &[u64],
     source_data: &[D3D12_SUBRESOURCE_DATA],
+    gc: &mut FrameResiduals,
 ) -> error::Result<u64> {
     // ToDo: implement validation as in the original function
 
@@ -325,7 +329,7 @@ fn update_subresources(
         } else {
             for i in 0..num_subresources as usize {
                 let dest_location = D3D12_TEXTURE_COPY_LOCATION {
-                    pResource: windows::core::ManuallyDrop::new(destination_resource),
+                    pResource: ManuallyDrop::new(Some(destination_resource.clone())),
                     Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
                     Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                         SubresourceIndex: i as u32 + first_subresouce,
@@ -333,7 +337,7 @@ fn update_subresources(
                 };
 
                 let source_location = D3D12_TEXTURE_COPY_LOCATION {
-                    pResource: windows::core::ManuallyDrop::new(intermediate_resource),
+                    pResource: ManuallyDrop::new(Some(intermediate_resource.clone())),
                     Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
                     Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                         PlacedFootprint: layouts[i],
@@ -341,6 +345,9 @@ fn update_subresources(
                 };
 
                 cmd.CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, None);
+
+                gc.dispose_resource(dest_location.pResource);
+                gc.dispose_resource(source_location.pResource);
             }
         }
         Ok(required_size)

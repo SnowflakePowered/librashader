@@ -1,15 +1,18 @@
-use std::ops::RangeFrom;
 use crate::error::ParsePresetError;
 use crate::parse::Span;
 use nom::branch::alt;
 use nom::bytes::complete::{is_not, take_until};
 use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
+use std::ops::RangeFrom;
 
 use nom::combinator::{eof, map_res, value};
 use nom::error::{ErrorKind, ParseError};
 
 use nom::sequence::delimited;
-use nom::{bytes::complete::tag, character::complete::multispace0, IResult, InputIter, InputLength, InputTake, Slice, AsChar};
+use nom::{
+    bytes::complete::tag, character::complete::multispace0, AsChar, IResult, InputIter,
+    InputLength, InputTake, Slice,
+};
 
 #[derive(Debug)]
 pub struct Token<'a> {
@@ -51,9 +54,10 @@ fn parse_assignment(input: Span) -> IResult<Span, ()> {
 }
 
 fn unbalanced_quote<I>(input: I) -> IResult<I, ()>
-where   I: Slice<RangeFrom<usize>> + InputIter + InputLength,
-        <I as InputIter>::Item: AsChar,
-    I: Copy
+where
+    I: Slice<RangeFrom<usize>> + InputIter + InputLength,
+    <I as InputIter>::Item: AsChar,
+    I: Copy,
 {
     if let Ok((input, _)) = eof::<_, ()>(input) {
         Ok((input, ()))

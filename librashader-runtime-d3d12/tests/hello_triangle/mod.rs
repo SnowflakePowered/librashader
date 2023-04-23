@@ -4,7 +4,7 @@ use windows::{
     core::*, Win32::Foundation::*, Win32::Graphics::Direct3D::Fxc::*, Win32::Graphics::Direct3D::*,
     Win32::Graphics::Direct3D12::*, Win32::Graphics::Dxgi::Common::*, Win32::Graphics::Dxgi::*,
     Win32::System::LibraryLoader::*, Win32::System::Threading::*,
-    Win32::System::WindowsProgramming::*, Win32::UI::WindowsAndMessaging::*,
+    Win32::UI::WindowsAndMessaging::*,
 };
 
 mod descriptor_heap;
@@ -228,6 +228,7 @@ unsafe extern "system" fn debug_log(
 }
 
 pub mod d3d12_hello_triangle {
+    use std::mem::ManuallyDrop;
     use super::*;
     use crate::hello_triangle::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
     use librashader_common::{Size, Viewport};
@@ -511,7 +512,7 @@ pub mod d3d12_hello_triangle {
                 .unwrap();
 
                 // Execute the command list.
-                let command_list = ID3D12CommandList::from(&resources.command_list);
+                let command_list: Option<ID3D12CommandList> = resources.command_list.cast().ok();
                 unsafe { resources.command_queue.ExecuteCommandLists(&[command_list]) };
 
                 // Present the frame.
@@ -570,7 +571,7 @@ pub mod d3d12_hello_triangle {
         // Record commands.
         unsafe {
             // TODO: workaround for https://github.com/microsoft/win32metadata/issues/1006
-            command_list.ClearRenderTargetView(rtv_handle, &*[0.3, 0.4, 0.6, 1.0].as_ptr(), &[]);
+            command_list.ClearRenderTargetView(rtv_handle, &*[0.3, 0.4, 0.6, 1.0].as_ptr(), Some(&[]));
             command_list.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             command_list.IASetVertexBuffers(0, Some(&[resources.vbv]));
             command_list.DrawInstanced(3, 1, 0, 0);
@@ -654,8 +655,8 @@ pub mod d3d12_hello_triangle {
             Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
             Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
             Anonymous: D3D12_RESOURCE_BARRIER_0 {
-                Transition: std::mem::ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
-                    pResource: ManuallyDrop::new(resource),
+                Transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
+                    pResource: ManuallyDrop::new(Some(resource.clone())),
                     StateBefore: state_before,
                     StateAfter: state_after,
                     Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
@@ -768,7 +769,7 @@ pub mod d3d12_hello_triangle {
                 pInputElementDescs: input_element_descs.as_mut_ptr(),
                 NumElements: input_element_descs.len() as u32,
             },
-            pRootSignature: ManuallyDrop::new(root_signature),
+            pRootSignature: ManuallyDrop::new(Some(root_signature.clone())),
             VS: D3D12_SHADER_BYTECODE {
                 pShaderBytecode: unsafe { vertex_shader.GetBufferPointer() },
                 BytecodeLength: unsafe { vertex_shader.GetBufferSize() },

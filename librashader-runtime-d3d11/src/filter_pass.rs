@@ -190,10 +190,10 @@ impl FilterPass {
             }
 
             if ubo.stage_mask.contains(BindingStage::VERTEX) {
-                unsafe { ctx.VSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
+                unsafe { ctx.VSSetConstantBuffers(ubo.binding, Some(&[Some(ubo.buffer.clone())])) }
             }
             if ubo.stage_mask.contains(BindingStage::FRAGMENT) {
-                unsafe { ctx.PSSetConstantBuffers(ubo.binding, Some(&[ubo.buffer.clone()])) }
+                unsafe { ctx.PSSetConstantBuffers(ubo.binding, Some(&[Some(ubo.buffer.clone())])) }
             }
         }
 
@@ -211,10 +211,14 @@ impl FilterPass {
             }
 
             if push.stage_mask.contains(BindingStage::VERTEX) {
-                unsafe { ctx.VSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
+                unsafe {
+                    ctx.VSSetConstantBuffers(push.binding, Some(&[Some(push.buffer.clone())]))
+                }
             }
             if push.stage_mask.contains(BindingStage::FRAGMENT) {
-                unsafe { ctx.PSSetConstantBuffers(push.binding, Some(&[push.buffer.clone()])) }
+                unsafe {
+                    ctx.PSSetConstantBuffers(push.binding, Some(&[Some(push.buffer.clone())]))
+                }
             }
         }
 
@@ -233,7 +237,7 @@ impl FilterPass {
             ctx.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
             ctx.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
 
-            ctx.OMSetRenderTargets(Some(&[output.output.handle.clone()]), None);
+            ctx.OMSetRenderTargets(Some(&[Some(output.output.handle.clone())]), None);
             ctx.RSSetViewports(Some(&[D3D11_VIEWPORT {
                 TopLeftX: output.x,
                 TopLeftY: output.y,

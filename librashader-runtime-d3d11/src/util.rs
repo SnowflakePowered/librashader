@@ -145,7 +145,7 @@ pub fn d3d11_compile_bound_shader<'a, T, L>(
     factory: ShaderFactory<'a, L, T>,
 ) -> error::Result<T>
 where
-    L: Into<windows::core::InParam<ID3D11ClassLinkage>>,
+    L: windows::core::IntoParam<ID3D11ClassLinkage>,
 {
     unsafe {
         // SAFETY: slice as valid for as long as vs_blob is alive.

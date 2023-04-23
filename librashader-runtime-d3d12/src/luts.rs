@@ -22,6 +22,7 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_TEX2D_SRV, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+use crate::filter_chain::FrameResiduals;
 
 pub struct LutTexture {
     resource: ID3D12Resource,
@@ -31,7 +32,7 @@ pub struct LutTexture {
 }
 
 impl LutTexture {
-    pub fn new(
+    pub(crate) fn new(
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         cmd: &ID3D12GraphicsCommandList,
@@ -39,6 +40,7 @@ impl LutTexture {
         filter: FilterMode,
         wrap_mode: WrapMode,
         mipmap: bool,
+        gc: &mut FrameResiduals,
     ) -> error::Result<LutTexture> {
         let miplevels = source.size.calculate_miplevels() as u16;
         let mut desc = D3D12_RESOURCE_DESC {
@@ -170,7 +172,7 @@ impl LutTexture {
             D3D12_RESOURCE_STATE_COPY_DEST,
         );
 
-        d3d12_update_subresources(cmd, &resource, &upload, 0, 0, 1, &subresource)?;
+        d3d12_update_subresources(cmd, &resource, &upload, 0, 0, 1, &subresource, gc)?;
 
         d3d12_resource_transition(
             cmd,

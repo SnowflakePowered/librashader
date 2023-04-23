@@ -15,7 +15,5 @@ fn parses_all_slang_presets() {
 #[test]
 fn parses_problematic() {
     let path  = "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_NDS_DREZ/NDS-[DREZ]-[Native]-[ADV]-[Guest]-[Night].slangp";
-    ShaderPreset::try_parse(path)
-        .expect(&format!("Failed to parse {}", path));
-
+    ShaderPreset::try_parse(path).expect(&format!("Failed to parse {}", path));
 }
