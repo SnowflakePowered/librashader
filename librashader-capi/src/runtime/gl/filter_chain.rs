@@ -172,7 +172,7 @@ extern_fn! {
     ///   thread at a time may call this function. The thread `libra_gl_filter_chain_frame` is called from
     ///   must have its thread-local OpenGL context initialized with the same context used to create
     ///   the filter chain.
-    fn libra_gl_filter_chain_frame(
+    nopanic fn libra_gl_filter_chain_frame(
         chain: *mut libra_gl_filter_chain_t,
         frame_count: usize,
         image: libra_source_image_gl_t,

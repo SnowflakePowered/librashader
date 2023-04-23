@@ -216,7 +216,7 @@ extern_fn! {
     ///   the filter chain was created with.
     /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
     ///   thread at a time may call this function.
-    fn libra_d3d11_filter_chain_frame(
+    nopanic fn libra_d3d11_filter_chain_frame(
         chain: *mut libra_d3d11_filter_chain_t,
         // cbindgen can't discover that ID3D11DeviceContext has the niche optimization
         // so ManuallyDrop<Option<ID3D11DeviceContext>> doesn't generate correct bindings.

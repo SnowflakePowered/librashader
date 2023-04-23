@@ -246,7 +246,7 @@ extern_fn! {
     ///    struct.
     /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
     ///   thread at a time may call this function.
-    fn libra_vk_filter_chain_frame(
+    nopanic fn libra_vk_filter_chain_frame(
         chain: *mut libra_vk_filter_chain_t,
         command_buffer: vk::CommandBuffer,
         frame_count: usize,
