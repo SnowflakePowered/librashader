@@ -6,8 +6,10 @@ use librashader_cache::{cache_pipeline, cache_shader_object};
 use librashader_reflect::back::cross::CrossHlslContext;
 use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use widestring::u16cstr;
+use windows::core::ComInterface;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcLibrary, DxcCreateInstance, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
@@ -159,7 +161,7 @@ impl D3D12GraphicsPipeline {
 
         let pipeline_state: ID3D12PipelineState = unsafe {
             let pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-                pRootSignature: windows::core::ManuallyDrop::new(&root_signature.handle),
+                pRootSignature: ManuallyDrop::new(Some(root_signature.handle.clone())),
                 VS: D3D12_SHADER_BYTECODE {
                     pShaderBytecode: vertex_dxil.GetBufferPointer(),
                     BytecodeLength: vertex_dxil.GetBufferSize(),
@@ -224,7 +226,7 @@ impl D3D12GraphicsPipeline {
                 ..Default::default()
             };
 
-            cache_pipeline(
+            let pipeline = cache_pipeline(
                 "d3d12",
                 &[&vertex_dxil, &fragment_dxil, &render_format.0],
                 |cached: Option<Vec<u8>>| {
@@ -234,12 +236,12 @@ impl D3D12GraphicsPipeline {
                                 pCachedBlob: cached.as_ptr().cast(),
                                 CachedBlobSizeInBytes: cached.len(),
                             },
-                            pRootSignature: windows::core::ManuallyDrop::new(
-                                &root_signature.handle,
-                            ),
+                            pRootSignature: ManuallyDrop::new(Some(root_signature.handle.clone())),
                             ..pipeline_desc
                         };
-                        device.CreateGraphicsPipelineState(&pipeline_desc)
+                        let pipeline_state = device.CreateGraphicsPipelineState(&pipeline_desc);
+                        drop(ManuallyDrop::into_inner(pipeline_desc.pRootSignature));
+                        pipeline_state
                     } else {
                         device.CreateGraphicsPipelineState(&pipeline_desc)
                     }
@@ -249,7 +251,12 @@ impl D3D12GraphicsPipeline {
                     Ok(cached_pso)
                 },
                 disable_cache,
-            )?
+            )?;
+
+            // cleanup handle
+            drop(ManuallyDrop::into_inner(pipeline_desc.pRootSignature));
+
+            pipeline
         };
 
         unsafe {
@@ -293,8 +300,8 @@ impl D3D12GraphicsPipeline {
         };
         let mut new_pipeline = Self::new_from_blobs(
             device,
-            vertex.into(),
-            fragment.into(),
+            vertex.cast()?,
+            fragment.cast()?,
             root_sig,
             format,
             self.cache_disabled,

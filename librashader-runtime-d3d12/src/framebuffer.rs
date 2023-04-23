@@ -1,13 +1,14 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
 use crate::error::{assume_d3d12_init, FilterChainError};
+use crate::filter_chain::FrameResiduals;
 use crate::texture::{D3D12OutputView, InputTexture};
 use crate::util::d3d12_get_closest_format;
 use crate::{error, util};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
-use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX,
     D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
@@ -138,6 +139,7 @@ impl OwnedImage {
         &self,
         cmd: &ID3D12GraphicsCommandList,
         input: &InputTexture,
+        gc: &mut FrameResiduals,
     ) -> error::Result<()> {
         let barriers = [
             util::d3d12_get_resource_transition_subresource(
@@ -157,24 +159,28 @@ impl OwnedImage {
         unsafe {
             cmd.ResourceBarrier(&barriers);
 
+            let dst = D3D12_TEXTURE_COPY_LOCATION {
+                pResource: ManuallyDrop::new(Some(self.handle.clone())),
+                Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    SubresourceIndex: 0,
+                },
+            };
+
+            let src = D3D12_TEXTURE_COPY_LOCATION {
+                pResource: ManuallyDrop::new(Some(input.resource.clone())),
+                Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    SubresourceIndex: 0,
+                },
+            };
+
             cmd.CopyTextureRegion(
-                &D3D12_TEXTURE_COPY_LOCATION {
-                    pResource: windows::core::ManuallyDrop::new(&self.handle),
-                    Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-                    Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                        SubresourceIndex: 0,
-                    },
-                },
+                &dst,
                 0,
                 0,
                 0,
-                &D3D12_TEXTURE_COPY_LOCATION {
-                    pResource: windows::core::ManuallyDrop::new(&input.resource),
-                    Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-                    Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                        SubresourceIndex: 0,
-                    },
-                },
+                &src,
                 Some(&D3D12_BOX {
                     left: 0,
                     top: 0,
@@ -184,6 +190,9 @@ impl OwnedImage {
                     back: 1,
                 }),
             );
+
+            gc.dispose_resource(dst.pResource);
+            gc.dispose_resource(src.pResource);
         }
 
         let barriers = [
@@ -204,6 +213,7 @@ impl OwnedImage {
         unsafe {
             cmd.ResourceBarrier(&barriers);
         }
+
         Ok(())
     }
 
@@ -221,17 +231,7 @@ impl OwnedImage {
 
         let rtv = self.create_render_target_view(heap)?;
 
-        let rect = RECT {
-            left: 0,
-            top: 0,
-            right: self.size.width as i32,
-            bottom: self.size.height as i32,
-        };
-
-        unsafe {
-            // todo: more efficient if we don't pass the rect but.. waiting on windows-rs updates
-            cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR.as_ptr(), &[rect])
-        }
+        unsafe { cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR.as_ptr(), None) }
 
         util::d3d12_resource_transition(
             cmd,

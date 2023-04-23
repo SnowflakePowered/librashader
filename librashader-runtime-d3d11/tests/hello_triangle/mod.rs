@@ -489,10 +489,10 @@ pub mod d3d11_hello_triangle {
             unsafe {
                 self.context.VSSetConstantBuffers(
                     buffer_number,
-                    Some(&[resources.triangle_uniforms.clone()]),
+                    Some(&[Some(resources.triangle_uniforms.clone())]),
                 );
                 self.context.OMSetRenderTargets(
-                    Some(&[resources.renderbufffer_rtv.clone()]),
+                    Some(&[Some(resources.renderbufffer_rtv.clone())]),
                     &resources.depth_stencil_view,
                 );
                 self.context.RSSetViewports(Some(&[resources.viewport]))
@@ -845,7 +845,7 @@ pub mod d3d11_hello_triangle {
             D3D11CreateDevice(
                 None,
                 D3D_DRIVER_TYPE_HARDWARE,
-                HINSTANCE::default(),
+                HMODULE::default(),
                 D3D11_CREATE_DEVICE_DEBUG,
                 Some(&feature_levels),
                 D3D11_SDK_VERSION,

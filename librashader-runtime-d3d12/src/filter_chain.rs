@@ -29,8 +29,9 @@ use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use spirv_cross::hlsl::ShaderModel;
 use std::collections::VecDeque;
+use std::mem::ManuallyDrop;
 use std::path::Path;
-use windows::core::Interface;
+use windows::core::ComInterface;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler,
@@ -38,13 +39,12 @@ use windows::Win32::Graphics::Direct3D::Dxc::{
 };
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device, ID3D12Fence,
-    ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
+    ID3D12GraphicsCommandList, ID3D12Resource, D3D12_COMMAND_LIST_TYPE_DIRECT,
+    D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
-use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject};
-use windows::Win32::System::WindowsProgramming::INFINITE;
+use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFINITE};
 
 use librashader_cache::CachedCompilation;
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -101,6 +101,7 @@ pub(crate) struct FrameResiduals {
     outputs: Vec<OutputDescriptor>,
     mipmaps: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
     mipmap_luts: Vec<D3D12MipmapGen>,
+    resources: Vec<ManuallyDrop<Option<ID3D12Resource>>>,
 }
 
 impl FrameResiduals {
@@ -109,6 +110,7 @@ impl FrameResiduals {
             outputs: Vec::new(),
             mipmaps: Vec::new(),
             mipmap_luts: Vec::new(),
+            resources: Vec::new(),
         }
     }
 
@@ -127,9 +129,16 @@ impl FrameResiduals {
         self.mipmaps.extend(handles)
     }
 
+    pub fn dispose_resource(&mut self, resource: ManuallyDrop<Option<ID3D12Resource>>) {
+        self.resources.push(resource)
+    }
+
     pub fn dispose(&mut self) {
         self.outputs.clear();
         self.mipmaps.clear();
+        for resource in self.resources.drain(..) {
+            drop(ManuallyDrop::into_inner(resource))
+        }
     }
 }
 
@@ -178,7 +187,7 @@ impl FilterChainD3D12 {
             let filter_chain = Self::load_from_preset_deferred(preset, device, &cmd, options)?;
 
             cmd.Close()?;
-            queue.ExecuteCommandLists(&[cmd.cast()?]);
+            queue.ExecuteCommandLists(&[Some(cmd.cast()?)]);
             queue.Signal(&fence, 1)?;
 
             if fence.GetCompletedValue() < 1 {
@@ -338,7 +347,7 @@ impl FilterChainD3D12 {
         cmd: &ID3D12GraphicsCommandList,
         staging_heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         mipmap_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
-        trash: &mut FrameResiduals,
+        gc: &mut FrameResiduals,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         // use separate mipgen to load luts.
@@ -359,20 +368,26 @@ impl FilterChainD3D12 {
                 texture.filter_mode,
                 texture.wrap_mode,
                 texture.mipmap,
+                gc
             )?;
             luts.insert(index, texture);
         }
 
-        let residual_mipmap = mipmap_gen.mipmapping_context(cmd, mipmap_heap, |context| {
-            for lut in luts.values() {
-                lut.generate_mipmaps(context)?;
-            }
+        let (residual_mipmap, residual_barrier) =
+            mipmap_gen.mipmapping_context(cmd, mipmap_heap, |context| {
+                for lut in luts.values() {
+                    lut.generate_mipmaps(context)?;
+                }
 
-            Ok::<(), FilterChainError>(())
-        })?;
+                Ok::<(), FilterChainError>(())
+            })?;
 
-        trash.dispose_mipmap_handles(residual_mipmap);
-        trash.dispose_mipmap_gen(mipmap_gen);
+        gc.dispose_mipmap_handles(residual_mipmap);
+        gc.dispose_mipmap_gen(mipmap_gen);
+
+        for barrier in residual_barrier {
+            gc.dispose_resource(barrier.pResource)
+        }
 
         Ok(luts)
     }
@@ -530,7 +545,7 @@ impl FilterChainD3D12 {
                 );
             }
             unsafe {
-                back.copy_from(cmd, input)?;
+                back.copy_from(cmd, input, &mut self.residuals)?;
             }
             self.history_framebuffers.push_front(back);
         }
@@ -644,7 +659,10 @@ impl FilterChainD3D12 {
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
         unsafe {
-            let heaps = [self.work_heap.clone(), self.sampler_heap.clone()];
+            let heaps = [
+                Some(self.work_heap.clone()),
+                Some(self.sampler_heap.clone()),
+            ];
             cmd.SetDescriptorHeaps(&heaps);
             cmd.SetGraphicsRootSignature(&self.common.root_signature.handle);
             self.common.mipmap_gen.pin_root_signature(cmd);
@@ -698,7 +716,7 @@ impl FilterChainD3D12 {
             );
 
             if target.max_mipmap > 1 && !self.disable_mipmaps {
-                let residuals = self.common.mipmap_gen.mipmapping_context(
+                let (residuals, residual_uav) = self.common.mipmap_gen.mipmapping_context(
                     cmd,
                     &mut self.mipmap_heap,
                     |ctx| {
@@ -713,6 +731,9 @@ impl FilterChainD3D12 {
                 )?;
 
                 self.residuals.dispose_mipmap_handles(residuals);
+                for uav in residual_uav {
+                    self.residuals.dispose_resource(uav.pResource)
+                }
             }
 
             self.residuals.dispose_output(view.descriptor);

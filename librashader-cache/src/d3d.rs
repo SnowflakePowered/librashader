@@ -2,6 +2,7 @@
 //! here because of the orphan rule.
 
 use crate::{CacheKey, Cacheable};
+use windows::core::ComInterface;
 
 impl CacheKey for windows::Win32::Graphics::Direct3D::ID3DBlob {
     fn hash_bytes(&self) -> &[u8] {
@@ -52,7 +53,7 @@ impl Cacheable for windows::Win32::Graphics::Direct3D::Dxc::IDxcBlob {
             return None;
         };
 
-        Some(blob.into())
+        Some(blob.cast().ok()?)
     }
 
     fn to_bytes(&self) -> Option<Vec<u8>> {
