@@ -2255,9 +2255,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-to-dxil"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe416a0585b1f9d8d87c563c12b45c1075921d6250d5975c34bfa95617336ee7"
+checksum = "abb7466357f0e485a8f5e792863356150d5e1dbe5c44094d5f8549110319417a"
 dependencies = [
  "bytemuck",
  "spirv-to-dxil-sys",
@@ -2266,9 +2266,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-to-dxil-sys"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e28ad63f8369949dd21f4fc30e3e424902680ede7c6fbb240d889ceec9665ef"
+checksum = "6439a0a9c17eac5258255dc5b42393749bcedd646c395aa636c94bd3b091a25d"
 dependencies = [
  "bytemuck",
  "cmake",

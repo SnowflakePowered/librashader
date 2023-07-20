@@ -59,6 +59,7 @@ impl CompileShader<DXIL> for WriteSpirV {
                 register_space: 0,
                 base_shader_register: 1,
             },
+            shader_model_max: sm,
             ..RuntimeConfig::default()
         };
 
@@ -68,7 +69,6 @@ impl CompileShader<DXIL> for WriteSpirV {
             None,
             "main",
             ShaderStage::Vertex,
-            sm,
             ValidatorVersion::None,
             &config,
         )
@@ -79,7 +79,6 @@ impl CompileShader<DXIL> for WriteSpirV {
             None,
             "main",
             ShaderStage::Fragment,
-            sm,
             ValidatorVersion::None,
             &config,
         )
