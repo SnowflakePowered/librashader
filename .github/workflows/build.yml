@@ -38,6 +38,9 @@ jobs:
         python-version: '3.x'
     - run: pip install meson ninja mako
       name: Install Meson for spirv-to-dxil-sys
+    - if: runner.os == 'Windows'
+      name: Install winflexbison
+      run: choco install winflexbison3
     - name: Build dynamic library
       run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }}
     - name: Upload build artifacts
