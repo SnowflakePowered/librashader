@@ -4,7 +4,7 @@ use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPreset, T
 
 pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     let textures: Vec<TextureConfig> = values
-        .drain_filter(|f| matches!(*f, Value::Texture { .. }))
+        .extract_if(|f| matches!(*f, Value::Texture { .. }))
         .map(|value| {
             if let Value::Texture {
                 name,
@@ -27,7 +27,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
         })
         .collect();
     let parameters: Vec<ParameterConfig> = values
-        .drain_filter(|f| matches!(*f, Value::Parameter { .. }))
+        .extract_if(|f| matches!(*f, Value::Parameter { .. }))
         .map(|value| {
             if let Value::Parameter(name, value) = value {
                 ParameterConfig { name, value }
@@ -64,7 +64,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
             |v| matches!(*v, Value::Shader(shader_index, _) if shader_index == shader),
         ) {
             let shader_values: Vec<Value> = values
-                .drain_filter(|v| v.shader_index() == Some(shader))
+                .extract_if(|v| v.shader_index() == Some(shader))
                 .collect();
             let scale_type = shader_values.iter().find_map(|f| match f {
                 Value::ScaleType(_, value) => Some(*value),
