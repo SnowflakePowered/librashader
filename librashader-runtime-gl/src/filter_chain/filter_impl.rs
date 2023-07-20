@@ -12,7 +12,7 @@ use crate::{error, GLImage};
 use gl::types::GLuint;
 use librashader_common::Viewport;
 
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::cross::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -98,6 +98,21 @@ impl<T: GLInterface> FilterChainImpl<T> {
 }
 
 type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<GLSL, GlslangCompilation>>;
+fn compile_passes(
+    shaders: Vec<ShaderPassConfig>,
+    textures: &[TextureConfig],
+    disable_cache: bool,
+) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
+    let (passes, semantics) = if !disable_cache {
+        GLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+            shaders, &textures,
+        )?
+    } else {
+        GLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+    };
+
+    Ok((passes, semantics))
+}
 
 impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
@@ -106,19 +121,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
-
-        let (passes, semantics) = if !disable_cache {
-            GLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        } else {
-            GLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        };
-
+        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
         let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.glsl_version));
 
         // initialize passes

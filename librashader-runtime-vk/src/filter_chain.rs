@@ -14,7 +14,7 @@ use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
 
 use gpu_allocator::vulkan::Allocator;
-use librashader_presets::{ShaderPreset, TextureConfig};
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
@@ -45,9 +45,6 @@ pub struct VulkanObjects {
     queue: vk::Queue,
     // pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
 }
-
-type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
 
 /// A collection of handles needed to access the Vulkan instance.
 #[derive(Clone)]
@@ -208,6 +205,24 @@ impl Drop for FrameResiduals {
     }
 }
 
+type ShaderPassMeta =
+ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
+fn compile_passes(
+    shaders: Vec<ShaderPassConfig>,
+    textures: &[TextureConfig],
+    disable_cache: bool,
+) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
+    let (passes, semantics) = if !disable_cache {
+        SPIRV::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+            shaders, &textures,
+        )?
+    } else {
+        SPIRV::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+    };
+
+    Ok((passes, semantics))
+}
+
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path<V, E>(
@@ -307,18 +322,7 @@ impl FilterChainVulkan {
         FilterChainError: From<E>,
     {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
-
-        let (passes, semantics) = if !disable_cache {
-            SPIRV::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        } else {
-            SPIRV::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        };
+        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
 
         let device = vulkan.try_into().map_err(From::from)?;
 
