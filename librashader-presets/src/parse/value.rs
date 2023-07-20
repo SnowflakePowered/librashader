@@ -187,7 +187,7 @@ fn load_child_reference_strings(
 
             let mut new_tokens = do_lex(&reference_contents)?;
             let new_references: Vec<PathBuf> = new_tokens
-                .drain_filter(|token| *token.key.fragment() == "#reference")
+                .extract_if(|token| *token.key.fragment() == "#reference")
                 .map(|value| PathBuf::from(*value.value.fragment()))
                 .collect();
 
@@ -232,7 +232,7 @@ pub fn parse_values(
     }
 
     let references: Vec<PathBuf> = tokens
-        .drain_filter(|token| *token.key.fragment() == "#reference")
+        .extract_if(|token| *token.key.fragment() == "#reference")
         .map(|value| PathBuf::from(*value.value.fragment()))
         .collect();
 
@@ -254,7 +254,7 @@ pub fn parse_values(
     // collect all possible parameter names.
     let mut parameter_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
-        for token in tokens.drain_filter(|token| *token.key.fragment() == "parameters") {
+        for token in tokens.extract_if(|token| *token.key.fragment() == "parameters") {
             let parameter_name_string: &str = token.value.fragment();
             for parameter_name in parameter_name_string.split(';') {
                 parameter_names.push(parameter_name);
@@ -265,7 +265,7 @@ pub fn parse_values(
     // collect all possible texture names.
     let mut texture_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
-        for token in tokens.drain_filter(|token| *token.key.fragment() == "textures") {
+        for token in tokens.extract_if(|token| *token.key.fragment() == "textures") {
             let texture_name_string: &str = token.value.fragment();
             for texture_name in texture_name_string.split(';') {
                 texture_names.push(texture_name);
@@ -276,7 +276,7 @@ pub fn parse_values(
     let mut values = Vec::new();
     // resolve shader paths.
     for (path, tokens) in all_tokens.iter_mut() {
-        for token in tokens.drain_filter(|token| parse_indexed_key("shader", token.key).is_ok()) {
+        for token in tokens.extract_if(|token| parse_indexed_key("shader", token.key).is_ok()) {
             let (_, index) = parse_indexed_key("shader", token.key).map_err(|e| match e {
                 nom::Err::Error(e) | nom::Err::Failure(e) => {
                     let input: Span = e.input;
@@ -307,7 +307,7 @@ pub fn parse_values(
     // resolve texture paths
     let mut textures = Vec::new();
     for (path, tokens) in all_tokens.iter_mut() {
-        for token in tokens.drain_filter(|token| texture_names.contains(token.key.fragment())) {
+        for token in tokens.extract_if(|token| texture_names.contains(token.key.fragment())) {
             let mut relative_path = path.to_path_buf();
             relative_path.push(*token.value.fragment());
             relative_path

@@ -7,7 +7,7 @@
 //! as input to create a filter chain.
 //!
 //! Re-exported as [`librashader::presets`](https://docs.rs/librashader/latest/librashader/presets/index.html).
-#![feature(drain_filter)]
+#![feature(extract_if)]
 
 mod error;
 mod parse;
