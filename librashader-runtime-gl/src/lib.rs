@@ -4,8 +4,9 @@
 //! See [`librashader::runtime::gl`](https://docs.rs/librashader/latest/librashader/runtime/gl/index.html) instead.
 #![deny(unsafe_op_in_unsafe_fn)]
 #![feature(strict_provenance)]
-#![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
+#![feature(type_alias_impl_trait)]
+#![feature(impl_trait_in_assoc_type)]
 
 mod binding;
 mod filter_chain;

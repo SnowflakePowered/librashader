@@ -144,7 +144,7 @@ impl Drop for FrameResiduals {
 }
 
 type DxilShaderPassMeta =
-ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
 fn compile_passes_dxil(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -161,7 +161,7 @@ fn compile_passes_dxil(
     Ok((passes, semantics))
 }
 type HlslShaderPassMeta =
-ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
 fn compile_passes_hlsl(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -249,7 +249,8 @@ impl FilterChainD3D12 {
         let shader_copy = preset.shaders.clone();
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
-        let (passes, semantics) = compile_passes_dxil(preset.shaders, &preset.textures, disable_cache)?;
+        let (passes, semantics) =
+            compile_passes_dxil(preset.shaders, &preset.textures, disable_cache)?;
         let (hlsl_passes, _) = compile_passes_hlsl(shader_copy, &preset.textures, disable_cache)?;
 
         let samplers = SamplerSet::new(device)?;

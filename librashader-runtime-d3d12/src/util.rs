@@ -10,6 +10,7 @@ use windows::Win32::Graphics::Direct3D::Dxc::{
     DXC_CP_UTF8,
 };
 
+use crate::filter_chain::FrameResiduals;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
     D3D12_FEATURE_FORMAT_SUPPORT, D3D12_MEMCPY_DEST, D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
@@ -20,7 +21,6 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::*;
-use crate::filter_chain::FrameResiduals;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -273,7 +273,7 @@ pub(crate) fn d3d12_update_subresources(
             &num_rows,
             &row_sizes_in_bytes,
             source,
-            gc
+            gc,
         )
     }
 }

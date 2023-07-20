@@ -54,10 +54,26 @@ pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
 
 impl ValidateTypeSemantics<Type> for UniqueSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
-        let (Type::Float { ref array, vecsize, columns, .. }
-            | Type::Int { ref array, vecsize, columns, .. }
-            | Type::UInt { ref array, vecsize, columns, .. }) = *ty else {
-            return None
+        let (Type::Float {
+            ref array,
+            vecsize,
+            columns,
+            ..
+        }
+        | Type::Int {
+            ref array,
+            vecsize,
+            columns,
+            ..
+        }
+        | Type::UInt {
+            ref array,
+            vecsize,
+            columns,
+            ..
+        }) = *ty
+        else {
+            return None;
         };
 
         if !array.is_empty() {
@@ -93,8 +109,14 @@ impl ValidateTypeSemantics<Type> for UniqueSemantics {
 
 impl ValidateTypeSemantics<Type> for TextureSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {
-        let Type::Float { ref array, vecsize, columns, .. } = *ty else {
-            return None
+        let Type::Float {
+            ref array,
+            vecsize,
+            columns,
+            ..
+        } = *ty
+        else {
+            return None;
         };
 
         if !array.is_empty() {
@@ -295,7 +317,7 @@ where
 
             if let Some(parameter) = semantics.uniform_semantics.get_unique_semantic(&name) {
                 let Some(typeinfo) = parameter.semantics.validate_type(&range_type) else {
-                    return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
+                    return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)));
                 };
 
                 match &parameter.semantics {
@@ -372,7 +394,7 @@ where
                 }
             } else if let Some(texture) = semantics.uniform_semantics.get_texture_semantic(&name) {
                 let Some(_typeinfo) = texture.semantics.validate_type(&range_type) else {
-                    return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)))
+                    return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)));
                 };
 
                 if let TextureSemantics::PassOutput = texture.semantics {
@@ -488,8 +510,15 @@ where
         semantics: &ShaderSemantics,
         meta: &mut BindingMeta,
     ) -> Result<(), ShaderReflectError> {
-        let Some(semantic) = semantics.texture_semantics.get_texture_semantic(texture.name) else {
-            return Err(SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(texture.name.to_string())))
+        let Some(semantic) = semantics
+            .texture_semantics
+            .get_texture_semantic(texture.name)
+        else {
+            return Err(
+                SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(
+                    texture.name.to_string(),
+                )),
+            );
         };
 
         if semantic.semantics == TextureSemantics::PassOutput && semantic.index >= pass_number {
