@@ -25,7 +25,7 @@ fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
             let buf = e.into_bytes();
             let decoder = WINDOWS_1252.new_decoder();
             let Some(len) = decoder.max_utf8_buffer_length_without_replacement(buf.len()) else {
-                return Err(PreprocessError::EncodingError(path.to_path_buf()))
+                return Err(PreprocessError::EncodingError(path.to_path_buf()));
             };
 
             let mut latin1_string = String::with_capacity(len);

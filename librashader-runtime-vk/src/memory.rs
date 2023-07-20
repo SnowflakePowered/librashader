@@ -100,10 +100,10 @@ impl VulkanBuffer {
 
     pub fn as_mut_slice(&mut self) -> error::Result<&mut [u8]> {
         let Some(allocation) = self.memory.as_mut() else {
-            return Err(FilterChainError::AllocationDoesNotExist)
+            return Err(FilterChainError::AllocationDoesNotExist);
         };
         let Some(allocation) = allocation.mapped_slice_mut() else {
-            return Err(FilterChainError::AllocationDoesNotExist)
+            return Err(FilterChainError::AllocationDoesNotExist);
         };
         Ok(allocation)
     }
@@ -147,11 +147,8 @@ impl RawVulkanBuffer {
     ) -> error::Result<Self> {
         let buffer = ManuallyDrop::new(VulkanBuffer::new(device, allocator, usage, size)?);
 
-        let Some(ptr) = buffer.memory
-            .as_ref()
-            .map(|m| m.mapped_ptr())
-            .flatten() else {
-            return Err(FilterChainError::AllocationDoesNotExist)
+        let Some(ptr) = buffer.memory.as_ref().map(|m| m.mapped_ptr()).flatten() else {
+            return Err(FilterChainError::AllocationDoesNotExist);
         };
 
         Ok(RawVulkanBuffer { buffer, ptr })

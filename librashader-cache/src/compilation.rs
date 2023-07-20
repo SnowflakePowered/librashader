@@ -17,8 +17,8 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
 
         let Ok(cache) = cache else {
             return Ok(CachedCompilation {
-                compilation: T::compile(source)?
-            })
+                compilation: T::compile(source)?,
+            });
         };
 
         let key = {

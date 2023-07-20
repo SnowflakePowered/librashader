@@ -206,7 +206,7 @@ impl Drop for FrameResiduals {
 }
 
 type ShaderPassMeta =
-ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],

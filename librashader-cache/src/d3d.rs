@@ -18,7 +18,9 @@ impl CacheKey for windows::Win32::Graphics::Direct3D::Dxc::IDxcBlob {
 
 impl Cacheable for windows::Win32::Graphics::Direct3D::ID3DBlob {
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        let Some(blob) = (unsafe { windows::Win32::Graphics::Direct3D::Fxc::D3DCreateBlob(bytes.len()).ok() }) else {
+        let Some(blob) =
+            (unsafe { windows::Win32::Graphics::Direct3D::Fxc::D3DCreateBlob(bytes.len()).ok() })
+        else {
             return None;
         };
 
@@ -44,11 +46,18 @@ impl Cacheable for windows::Win32::Graphics::Direct3D::Dxc::IDxcBlob {
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let Some(blob) = (unsafe {
             windows::Win32::Graphics::Direct3D::Dxc::DxcCreateInstance(
-                &windows::Win32::Graphics::Direct3D::Dxc::CLSID_DxcLibrary)
-                .and_then(|library: windows::Win32::Graphics::Direct3D::Dxc::IDxcUtils| {
-                    library.CreateBlob(bytes.as_ptr().cast(), bytes.len() as u32,
-                                       windows::Win32::Graphics::Direct3D::Dxc::DXC_CP(0))
-                }).ok()
+                &windows::Win32::Graphics::Direct3D::Dxc::CLSID_DxcLibrary,
+            )
+            .and_then(
+                |library: windows::Win32::Graphics::Direct3D::Dxc::IDxcUtils| {
+                    library.CreateBlob(
+                        bytes.as_ptr().cast(),
+                        bytes.len() as u32,
+                        windows::Win32::Graphics::Direct3D::Dxc::DXC_CP(0),
+                    )
+                },
+            )
+            .ok()
         }) else {
             return None;
         };

@@ -1,6 +1,7 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
 use crate::error;
 use crate::error::assume_d3d12_init;
+use crate::filter_chain::FrameResiduals;
 use crate::mipmap::MipmapGenContext;
 use crate::texture::InputTexture;
 use crate::util::{d3d12_get_closest_format, d3d12_resource_transition, d3d12_update_subresources};
@@ -22,7 +23,6 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_TEX2D_SRV, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
-use crate::filter_chain::FrameResiduals;
 
 pub struct LutTexture {
     resource: ID3D12Resource,

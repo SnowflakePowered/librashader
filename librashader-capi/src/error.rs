@@ -67,7 +67,7 @@ pub type PFN_libra_error_errno = extern "C" fn(error: libra_error_t) -> LIBRA_ER
 ///   - `error` must be valid and initialized.
 pub unsafe extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO {
     let Some(error) = error else {
-        return LIBRA_ERRNO::UNKNOWN_ERROR
+        return LIBRA_ERRNO::UNKNOWN_ERROR;
     };
 
     unsafe { error.as_ref().get_code() }
@@ -82,9 +82,7 @@ pub type PFN_libra_error_print = extern "C" fn(error: libra_error_t) -> i32;
 /// ## Safety
 ///   - `error` must be a valid and initialized instance of `libra_error_t`.
 pub unsafe extern "C" fn libra_error_print(error: libra_error_t) -> i32 {
-    let Some(error) = error else {
-        return 1
-    };
+    let Some(error) = error else { return 1 };
     unsafe {
         let error = error.as_ref();
         println!("{error:?}: {error}");
@@ -130,9 +128,7 @@ pub unsafe extern "C" fn libra_error_write(
     error: libra_error_t,
     out: *mut MaybeUninit<*mut c_char>,
 ) -> i32 {
-    let Some(error) = error else {
-        return 1
-    };
+    let Some(error) = error else { return 1 };
     if out.is_null() {
         return 1;
     }
@@ -140,7 +136,7 @@ pub unsafe extern "C" fn libra_error_write(
     unsafe {
         let error = error.as_ref();
         let Ok(cstring) = CString::new(format!("{error:?}: {error}")) else {
-            return 1
+            return 1;
         };
 
         out.write(MaybeUninit::new(cstring.into_raw()))

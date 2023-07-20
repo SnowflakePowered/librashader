@@ -361,7 +361,9 @@ impl TextureSemanticMap for FxHashMap<String, Semantic<TextureSemantics>> {
                 {
                     if semantics.is_indexed() {
                         let index = &name[semantics.texture_name().len()..];
-                        let Ok(index) = usize::from_str(index) else {return None};
+                        let Ok(index) = usize::from_str(index) else {
+                            return None;
+                        };
                         return Some(Semantic {
                             semantics: *semantics,
                             index,
