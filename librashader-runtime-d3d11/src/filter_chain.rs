@@ -1,7 +1,7 @@
 use crate::texture::{D3D11InputView, InputTexture, LutTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
 
-use librashader_presets::{ShaderPreset, TextureConfig};
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
@@ -45,9 +45,6 @@ pub struct FilterMutable {
     pub(crate) parameters: FxHashMap<String, f32>,
 }
 
-type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
-
 /// A Direct3D 11 filter chain.
 pub struct FilterChainD3D11 {
     pub(crate) common: FilterCommon,
@@ -73,6 +70,24 @@ pub(crate) struct FilterCommon {
     pub config: FilterMutable,
     pub disable_mipmaps: bool,
     pub(crate) draw_quad: DrawQuad,
+}
+
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+fn compile_passes(
+    shaders: Vec<ShaderPassConfig>,
+    textures: &[TextureConfig],
+    disable_cache: bool,
+) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
+    let (passes, semantics) = if !disable_cache {
+        HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+            shaders, &textures,
+        )?
+    } else {
+        HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+    };
+
+    Ok((passes, semantics))
 }
 
 impl FilterChainD3D11 {
@@ -121,17 +136,7 @@ impl FilterChainD3D11 {
     ) -> error::Result<FilterChainD3D11> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
-        let (passes, semantics) = if !disable_cache {
-            HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        } else {
-            HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        };
+        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
 
         let samplers = SamplerSet::new(device)?;
 

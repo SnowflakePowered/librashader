@@ -15,7 +15,7 @@ use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
 use librashader_common::{ImageFormat, Size, Viewport};
-use librashader_presets::{ShaderPreset, TextureConfig};
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
@@ -53,11 +53,6 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
-
-type DxilShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
-type HlslShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -148,6 +143,41 @@ impl Drop for FrameResiduals {
     }
 }
 
+type DxilShaderPassMeta =
+ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
+fn compile_passes_dxil(
+    shaders: Vec<ShaderPassConfig>,
+    textures: &[TextureConfig],
+    disable_cache: bool,
+) -> Result<(Vec<DxilShaderPassMeta>, ShaderSemantics), FilterChainError> {
+    let (passes, semantics) = if !disable_cache {
+        DXIL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+            shaders, &textures,
+        )?
+    } else {
+        DXIL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+    };
+
+    Ok((passes, semantics))
+}
+type HlslShaderPassMeta =
+ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+fn compile_passes_hlsl(
+    shaders: Vec<ShaderPassConfig>,
+    textures: &[TextureConfig],
+    disable_cache: bool,
+) -> Result<(Vec<HlslShaderPassMeta>, ShaderSemantics), FilterChainError> {
+    let (passes, semantics) = if !disable_cache {
+        HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+            shaders, &textures,
+        )?
+    } else {
+        HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+    };
+
+    Ok((passes, semantics))
+}
+
 impl FilterChainD3D12 {
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path(
@@ -219,29 +249,8 @@ impl FilterChainD3D12 {
         let shader_copy = preset.shaders.clone();
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
-        let (passes, semantics) = if !disable_cache {
-            DXIL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        } else {
-            DXIL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-                preset.shaders,
-                &preset.textures,
-            )?
-        };
-
-        let (hlsl_passes, _) = if !disable_cache {
-            HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
-                shader_copy,
-                &preset.textures,
-            )?
-        } else {
-            HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(
-                shader_copy,
-                &preset.textures,
-            )?
-        };
+        let (passes, semantics) = compile_passes_dxil(preset.shaders, &preset.textures, disable_cache)?;
+        let (hlsl_passes, _) = compile_passes_hlsl(shader_copy, &preset.textures, disable_cache)?;
 
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device, false)?;
@@ -368,7 +377,7 @@ impl FilterChainD3D12 {
                 texture.filter_mode,
                 texture.wrap_mode,
                 texture.mipmap,
-                gc
+                gc,
             )?;
             luts.insert(index, texture);
         }
@@ -424,40 +433,50 @@ impl FilterChainD3D12 {
         let (sampler_work_heaps, _, sampler_heap_handle) =
             unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize, 0) };
 
-        let filters: Vec<error::Result<_>> = passes.into_par_iter()
+        let filters: Vec<error::Result<_>> = passes
+            .into_par_iter()
             .zip(hlsl_passes)
             .zip(work_heaps)
             .zip(sampler_work_heaps)
             .enumerate()
             .map_init(
                 || {
-                    let validator: IDxcValidator = unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
+                    let validator: IDxcValidator =
+                        unsafe { DxcCreateInstance(&CLSID_DxcValidator)? };
                     let library: IDxcUtils = unsafe { DxcCreateInstance(&CLSID_DxcLibrary)? };
                     let compiler: IDxcCompiler = unsafe { DxcCreateInstance(&CLSID_DxcCompiler)? };
                     Ok::<_, FilterChainError>((validator, library, compiler))
                 },
-                |dxc, (index, ((((config, source, mut dxil),
-                          (_, _, mut hlsl)), mut texture_heap), mut sampler_heap))| {
-                let Ok((validator, library, compiler)) = dxc else {
-                    return Err(FilterChainError::Direct3DOperationError("Could not initialize DXC for thread"));
-                };
+                |dxc,
+                 (
+                    index,
+                    (
+                        (((config, source, mut dxil), (_, _, mut hlsl)), mut texture_heap),
+                        mut sampler_heap,
+                    ),
+                )| {
+                    let Ok((validator, library, compiler)) = dxc else {
+                        return Err(FilterChainError::Direct3DOperationError(
+                            "Could not initialize DXC for thread",
+                        ));
+                    };
 
-                let dxil_reflection = dxil.reflect(index, semantics)?;
-                let dxil = dxil.compile(Some(
-                    librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
-                ))?;
+                    let dxil_reflection = dxil.reflect(index, semantics)?;
+                    let dxil = dxil.compile(Some(
+                        librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
+                    ))?;
 
-                let render_format = if let Some(format) = config.get_format_override() {
-                    format
-                } else if source.format != ImageFormat::Unknown {
-                    source.format
-                } else {
-                    ImageFormat::R8G8B8A8Unorm
-                }.into();
+                    let render_format = if let Some(format) = config.get_format_override() {
+                        format
+                    } else if source.format != ImageFormat::Unknown {
+                        source.format
+                    } else {
+                        ImageFormat::R8G8B8A8Unorm
+                    }
+                    .into();
 
-
-                // incredibly cursed.
-                let (reflection, graphics_pipeline) = if !force_hlsl &&
+                    // incredibly cursed.
+                    let (reflection, graphics_pipeline) = if !force_hlsl &&
                     let Ok(graphics_pipeline) =
                         D3D12GraphicsPipeline::new_from_dxil(
                             device,
@@ -494,11 +513,11 @@ impl FilterChainD3D12 {
 
                     let uniform_storage = UniformStorage::new_with_storage(
                         RawD3D12Buffer::new(D3D12Buffer::new(device, ubo_size)?)?,
-                        RawD3D12Buffer::new(D3D12Buffer::new(device, push_size)?)?
-                );
+                        RawD3D12Buffer::new(D3D12Buffer::new(device, push_size)?)?,
+                    );
 
-
-                let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
+                    let uniform_bindings =
+                        reflection.meta.create_binding_map(|param| param.offset());
 
                     let texture_heap = texture_heap.alloc_range()?;
                     let sampler_heap = sampler_heap.alloc_range()?;
@@ -513,8 +532,9 @@ impl FilterChainD3D12 {
                         sampler_heap,
                         source,
                     })
-
-            }).collect();
+                },
+            )
+            .collect();
 
         let filters: error::Result<Vec<_>> = filters.into_iter().collect();
         let filters = filters?;
