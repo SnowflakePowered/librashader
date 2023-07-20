@@ -4,7 +4,7 @@ use crate::{ScaleFactor, ScaleType};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use nom::IResult;
 use num_traits::cast::ToPrimitive;
@@ -150,9 +150,11 @@ fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>
 
 pub const SHADER_MAX_REFERENCE_DEPTH: usize = 16;
 
+// prereq: root_path must be contextualized
 fn load_child_reference_strings(
     root_references: Vec<PathBuf>,
     root_path: impl AsRef<Path>,
+    context: &HashMap<String, String>
 ) -> Result<Vec<(PathBuf, String)>, ParsePresetError> {
     let root_path = root_path.as_ref();
 
@@ -161,13 +163,14 @@ fn load_child_reference_strings(
     let root_references = vec![(root_path.to_path_buf(), root_references)];
     let mut root_references = VecDeque::from(root_references);
     // search needs to be depth first to allow for overrides.
-    while let Some((reference_root, referenced_paths)) = root_references.pop_front() {
+    while let Some((mut reference_root, referenced_paths)) = root_references.pop_front() {
         if reference_depth > SHADER_MAX_REFERENCE_DEPTH {
             return Err(ParsePresetError::ExceededReferenceDepth);
         }
         // enter the current root
         reference_depth += 1;
         // canonicalize current root
+        apply_context(&mut reference_root, context);
         let reference_root = reference_root
             .canonicalize()
             .map_err(|e| ParsePresetError::IOError(reference_root.to_path_buf(), e))?;
@@ -177,8 +180,10 @@ fn load_child_reference_strings(
 
         for path in referenced_paths {
             let mut path = reference_root
-                .join(path.clone())
-                .canonicalize()
+                .join(path.clone());
+            apply_context(&mut path, context);
+
+            let mut path = path.canonicalize()
                 .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
             // println!("Opening {:?}", path);
             let mut reference_contents = String::new();
@@ -204,8 +209,15 @@ fn load_child_reference_strings(
     Ok(reference_strings.into())
 }
 
-pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetError> {
+fn apply_context(path: &mut PathBuf, context: &HashMap<String, String>) {
+
+}
+
+pub fn parse_preset(path: impl AsRef<Path>, context: HashMap<String, String>) -> Result<Vec<Value>, ParsePresetError> {
     let path = path.as_ref();
+    let mut path = path.to_path_buf();
+    apply_context(&mut path, &context);
+
     let path = path
         .canonicalize()
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
@@ -216,12 +228,14 @@ pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetErr
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
 
     let tokens = super::token::do_lex(&contents)?;
-    parse_values(tokens, path)
+    parse_values(tokens, path, context)
 }
 
+// prereq: root_path must be contextualized
 pub fn parse_values(
     mut tokens: Vec<Token>,
     root_path: impl AsRef<Path>,
+    context: HashMap<String, String>
 ) -> Result<Vec<Value>, ParsePresetError> {
     let mut root_path = root_path.as_ref().to_path_buf();
     if root_path.is_relative() {
@@ -239,7 +253,9 @@ pub fn parse_values(
         .collect();
 
     // unfortunately we need to lex twice because there's no way to know the references ahead of time.
-    let child_strings = load_child_reference_strings(references, &root_path)?;
+    // the returned references should have context applied
+
+    let child_strings = load_child_reference_strings(references, &root_path, &context)?;
     let mut all_tokens: Vec<(&Path, Vec<Token>)> = Vec::new();
 
     for (path, string) in child_strings.iter() {

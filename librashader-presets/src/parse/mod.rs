@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use nom_locate::LocatedSpan;
@@ -22,7 +23,12 @@ pub(crate) fn remove_if<T>(values: &mut Vec<T>, f: impl FnMut(&T) -> bool) -> Op
 impl ShaderPreset {
     /// Try to parse the shader preset at the given path.
     pub fn try_parse(path: impl AsRef<Path>) -> Result<ShaderPreset, ParsePresetError> {
-        let values = parse_preset(path)?;
+        ShaderPreset::try_parse_with_context(path, HashMap::new())
+    }
+
+    /// Try to parse the shader preset at the given path.
+    pub fn try_parse_with_context(path: impl AsRef<Path>, context: HashMap<String, String>) -> Result<ShaderPreset, ParsePresetError> {
+        let values = parse_preset(path, context)?;
         Ok(resolve_values(values))
     }
 }
