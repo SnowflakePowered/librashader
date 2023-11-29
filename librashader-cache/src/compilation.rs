@@ -56,6 +56,7 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
     }
 }
 
+#[cfg(all(target_os = "windows", feature = "d3d"))]
 impl FromCompilation<CachedCompilation<GlslangCompilation>> for DXIL {
     type Target = <DXIL as FromCompilation<GlslangCompilation>>::Target;
     type Options = <DXIL as FromCompilation<GlslangCompilation>>::Options;

@@ -23,7 +23,7 @@ pub enum ShaderCompileError {
     SpirvCrossCompileError(#[from] spirv_cross::ErrorCode),
 
     /// Error when transpiling from spirv-to-dxil
-    #[cfg(feature = "dxil")]
+    #[cfg(all(target_os = "windows", feature = "dxil"))]
     #[error("spirv-to-dxil")]
     SpirvToDxilCompileError(#[from] spirv_to_dxil::SpirvToDxilError),
 }
