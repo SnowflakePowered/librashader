@@ -30,12 +30,11 @@ jobs:
       name: Setup Python
       with:
         python-version: '3.x'
-    - name: Setup Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1.1.1
       with:
-        vulkan-query-version: latest
-        vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Cross, SPIRV-Headers, SPIRV-Reflect, SPIRV-Tools, Glslang
-        vulkan-use-cache: true
+        version: latest
+        cache: true
     - run: pip install meson ninja mako
       name: Install Meson for spirv-to-dxil-sys
 #    - if: runner.os == 'Windows'
