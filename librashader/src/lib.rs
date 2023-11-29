@@ -170,8 +170,8 @@ pub mod reflect {
     }
 
     /// DXIL reflection via spirv-to-dxil.
-    #[cfg(feature = "reflect-dxil")]
-    #[doc(cfg(feature = "reflect-dxil"))]
+    #[cfg(all(target_os = "windows", feature = "reflect-dxil"))]
+    #[doc(cfg(all(target_os = "windows", feature = "reflect-dxil")))]
     pub mod dxil {
         /// The maximum shader model to use when compiling the DXIL blob.
         pub use librashader_reflect::back::dxil::ShaderModel;

@@ -12,7 +12,7 @@ description = "RetroArch shaders for all."
 
 [dependencies]
 serde = { version = "1.0" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.1.4", features = ["serialize", "dxil"] }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.4", features = ["serialize"] }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.4" }
 platform-dirs = "0.3.0"
 blake3 = { version = "1.3.3" }
@@ -32,7 +32,7 @@ features = [
 optional = true
 
 [features]
-d3d = ["windows"]
+d3d = ["windows", "librashader-reflect/dxil"]
 
 # hack to get building on docsrs
 docsrs = ["blake3/pure", "rusqlite/in_gecko"]

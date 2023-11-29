@@ -39,9 +39,6 @@ jobs:
     - if: runner.os == 'Windows'
       run: pip install meson ninja mako
       name: Install Meson for spirv-to-dxil-sys
-    - if: runner.os == 'Linux'
-      name: Install Mesa build deps
-      run: apt-get build-dep mesa
     - name: Build dynamic library
       run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }}
     - name: Upload build artifacts
