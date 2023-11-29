@@ -1,4 +1,4 @@
-name: build librashader-capi
+name: build librashader-capi for x86_64
 
 on:
   push:
@@ -16,7 +16,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         profile: ['debug', 'release', 'optimized']
-        arch: ['x86_64']
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
