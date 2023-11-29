@@ -10,6 +10,8 @@ use std::{env, fs};
 struct Args {
     #[arg(long, default_value = "debug", global = true)]
     profile: String,
+    #[arg(long, global = true)]
+    target: Option<String>,
 }
 
 pub fn main() {
@@ -32,12 +34,26 @@ pub fn main() {
         "--profile={}",
         if profile == "debug" { "dev" } else { &profile }
     ));
+
+    if let Some(target) = &args.target {
+        cmd.arg(format!(
+            "--target={}",
+            &target
+        ));
+    }
+
     Some(cmd.status().expect("Failed to build librashader-capi"));
 
-    let output_dir = PathBuf::from(format!("target/{}", profile))
+    let mut output_dir = PathBuf::from(format!("target/{}", profile));
+    if let Some(target) = &args.target {
+        output_dir = PathBuf::from(format!("target/{}/{}", target, profile));
+    }
+
+    let output_dir = output_dir
         .canonicalize()
         .expect("Could not find output directory.");
 
+        
     println!("Generating C headers...");
 
     // Create headers.

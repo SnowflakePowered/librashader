@@ -90,13 +90,15 @@ static GL_DEFAULT_MVP: &[f32; 16] = &[
 librashader requires the following build time dependencies
 
 * The [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/)
-* [Meson](https://mesonbuild.com/)
 * [CMake 3.8 or later](https://cmake.org/)
+
+For DXIL support on Windows, the following is also needed
+* [Meson](https://mesonbuild.com/)
 * [Python 3.6 or later](https://www.python.org/)
 
 ---
 
-For Rust projects, simply add the crate to your `Cargo.toml`. 
+For Rust projects, simply add the crate tofil your `Cargo.toml`. 
 
 ```
 cargo add librashader
