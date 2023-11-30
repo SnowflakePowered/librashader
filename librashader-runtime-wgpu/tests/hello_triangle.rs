@@ -7,6 +7,8 @@ use winit::{
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::platform::windows::EventLoopBuilderExtWindows;
+use librashader_presets::ShaderPreset;
+use librashader_runtime_wgpu::FilterChainWGPU;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -69,6 +71,7 @@ struct State {
 
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
+    chain: FilterChainWGPU
 }
 impl State {
     async fn new(window: &Window) -> Self {
@@ -89,7 +92,7 @@ impl State {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::empty(),
+                    features: wgpu::Features::PUSH_CONSTANTS | wgpu::Features::SPIRV_SHADER_PASSTHROUGH,
                     limits: wgpu::Limits::default(),
                     label: None,
                 },
@@ -109,6 +112,9 @@ impl State {
             alpha_mode: swapchain_capabilities.alpha_modes[0],
             view_formats: vec![],
         };
+
+        let preset = ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+        let chain = FilterChainWGPU::load_from_preset_deferred(&device, preset).unwrap();
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -183,6 +189,7 @@ impl State {
             render_pipeline,
             vertex_buffer,
             num_vertices,
+            chain
         }
     }
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

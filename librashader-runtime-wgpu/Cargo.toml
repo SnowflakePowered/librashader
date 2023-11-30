@@ -1,0 +1,37 @@
+[package]
+name = "librashader-runtime-wgpu"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+librashader-common = { path = "../librashader-common", features = ["wgpu"], version = "0.1.4" }
+librashader-presets = { path = "../librashader-presets", version = "0.1.4" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.1.4" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.1.4", features = []   }
+librashader-runtime = { path = "../librashader-runtime" , version = "0.1.4" }
+librashader-cache = { path = "../librashader-cache", version = "0.1.4" }
+
+wgpu = { version = "0.18.0", features = ["spirv"] }
+rustc-hash = "1.1.0"
+image = "0.24.7"
+thiserror = "1.0.50"
+spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
+parking_lot = "0.12.1"
+rayon = "1.8.0"
+bytemuck = { version = "1.14.0", features = ["derive"] }
+
+
+
+[dev-dependencies]
+config = { version = "0.13.4", features = [] }
+env_logger = "0.10.1"
+raw-window-handle = "0.5"
+winit = "0.28.7"
+pollster = "0.3"
+log = "0.4.20"
+
+
+[[test]]
+name = "triangle"
