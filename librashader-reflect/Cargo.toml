@@ -12,7 +12,7 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-shaderc = { version = "0.8.2", features = [] }
+shaderc = { version = "0.8.3", features = [] }
 bytemuck = "1.13.0"
 
 thiserror = "1.0.37"
@@ -37,7 +37,7 @@ optional = true
 [features]
 default = ["cross", "serialize"]
 unstable-naga = [ "naga", "rspirv" ]
-standalone = ["shaderc/build-from-source"]
+standalone = ["shaderc/build-from-source", "shaderc/prefer-static-linking"]
 dxil = ["cross", "spirv-to-dxil"]
 cross = [ "spirv_cross", "spirv_cross/glsl", "spirv_cross/hlsl" ]
 serialize = [ "serde" ]
