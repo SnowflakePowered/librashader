@@ -8,6 +8,10 @@ pub mod gl;
 #[cfg(feature = "vulkan")]
 pub mod vk;
 
+/// WGPU common conversions.
+#[cfg(feature = "wgpu")]
+pub mod wgpu;
+
 /// DXGI common conversions.
 #[cfg(all(target_os = "windows", feature = "dxgi"))]
 pub mod dxgi;
@@ -21,6 +25,7 @@ pub mod d3d11;
 pub mod d3d12;
 
 mod viewport;
+
 pub use viewport::Viewport;
 
 use num_traits::AsPrimitive;

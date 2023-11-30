@@ -21,10 +21,13 @@ use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
+use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, TextureFormat};
+use librashader_common::ImageFormat;
 
 use crate::error;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
+use crate::graphics_pipeline::WgpuGraphicsPipeline;
 
 type ShaderPassMeta =
 ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
@@ -47,7 +50,7 @@ fn compile_passes(
 /// A Vulkan filter chain.
 pub struct FilterChainWGPU {
     pub(crate) common: FilterCommon,
-    // passes: Box<[FilterPass]>,
+    passes: Box<[FilterPass]>,
     // vulkan: VulkanObjects,
     // output_framebuffers: Box<[OwnedImage]>,
     // feedback_framebuffers: Box<[OwnedImage]>,
@@ -81,7 +84,9 @@ impl FilterChainWGPU {
     /// The provided command buffer must be ready for recording and contain no prior commands.
     /// The caller is responsible for ending the command buffer and immediately submitting it to a
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
-    pub unsafe fn load_from_preset_deferred(
+    pub fn load_from_preset_deferred(
+        device: &Device,
+        // cmd: &mut CommandEncoder,
         preset: ShaderPreset,
 
     ) -> error::Result<FilterChainWGPU>
@@ -90,7 +95,6 @@ impl FilterChainWGPU {
         let disable_cache = true;
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
 
-        todo!()
         // let device = vulkan.try_into().map_err(From::from)?;
         //
         // let mut frames_in_flight = options.map_or(0, |o| o.frames_in_flight);
@@ -99,14 +103,12 @@ impl FilterChainWGPU {
         // }
         //
         // // initialize passes
-        // let filters = Self::init_passes(
-        //     &device,
-        //     passes,
-        //     &semantics,
-        //     frames_in_flight,
-        //     options.map_or(false, |o| o.use_render_pass),
-        //     disable_cache,
-        // )?;
+        let filters = Self::init_passes(
+            &device,
+            passes,
+            &semantics,
+            disable_cache,
+        )?;
         //
         // let luts = FilterChainVulkan::load_luts(&device, cmd, &preset.textures)?;
         // let samplers = SamplerSet::new(&device.device)?;
@@ -162,9 +164,15 @@ impl FilterChainWGPU {
         //     residuals: intermediates.into_boxed_slice(),
         //     disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
         // })
+
+        Ok(FilterChainWGPU {
+            common: FilterCommon {},
+            passes: filters,
+        })
     }
 
     fn init_passes(
+        device: &Device,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         disable_cache: bool,
@@ -179,31 +187,31 @@ impl FilterChainWGPU {
                 let spirv_words = reflect.compile(None)?;
 
                 let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
-                // let uniform_storage = UniformStorage::new_with_ubo_storage(
-                //     RawVulkanBuffer::new(
-                //         &vulkan.device,
-                //         &vulkan.alloc,
-                //         vk::BufferUsageFlags::UNIFORM_BUFFER,
-                //         ubo_size,
-                //     )?,
-                //     reflection
-                //         .push_constant
-                //         .as_ref()
-                //         .map_or(0, |push| push.size as usize),
-                // );
-                //
+
+                let uniform_storage = UniformStorage::new(
+                    ubo_size,
+                    reflection
+                        .push_constant
+                        .as_ref()
+                        .map_or(0, |push| push.size as usize),
+                );
+
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
                 //
-                // let render_pass_format = if !use_render_pass {
-                //     vk::Format::UNDEFINED
-                // } else if let Some(format) = config.get_format_override() {
-                //     format.into()
-                // } else if source.format != ImageFormat::Unknown {
-                //     source.format.into()
-                // } else {
-                //     ImageFormat::R8G8B8A8Unorm.into()
-                // };
-                //
+                let render_pass_format: Option<TextureFormat> = if let Some(format) = config.get_format_override() {
+                    format.into()
+                } else {
+                    source.format.into()
+                };
+
+
+                let graphics_pipeline = WgpuGraphicsPipeline::new(
+                    device,
+                    &spirv_words,
+                    &reflection,
+                    render_pass_format.unwrap_or(TextureFormat::R8Unorm)
+                );
+
                 // let graphics_pipeline = VulkanGraphicsPipeline::new(
                 //     &vulkan.device,
                 //     &spirv_words,
@@ -217,11 +225,11 @@ impl FilterChainWGPU {
                     // device: vulkan.device.clone(),
                     reflection,
                     compiled: spirv_words,
-                    // uniform_storage,
+                    uniform_storage,
                     uniform_bindings,
                     source,
                     config,
-                    // graphics_pipeline,
+                    graphics_pipeline,
                     // // ubo_ring,
                     // frames_in_flight,
                 })
