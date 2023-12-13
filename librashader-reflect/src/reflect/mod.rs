@@ -12,8 +12,8 @@ pub mod presets;
 
 mod helper;
 
-#[cfg(feature = "unstable-naga")]
-mod naga;
+#[cfg(feature = "wgsl")]
+pub mod naga;
 
 /// A trait for compilation outputs that can provide reflection information.
 pub trait ReflectShader {

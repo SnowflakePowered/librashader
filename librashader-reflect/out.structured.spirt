@@ -1,0 +1,1461 @@
+module.dialect = spv.Module(version: 1.0, spv.Capability.Shader, spv.MemoryModel.GLSL450)
+
+module.debug_info = spv.Module.DebugInfo(
+  generator: spv.Tool(id: 15),
+  source_languages: {
+    spv.SourceLanguage.GLSL(version: 450): {},
+  },
+  source_extensions: ["GL_GOOGLE_cpp_style_line_directive", "GL_GOOGLE_include_directive"],
+)
+
+type T0 = spv.OpTypePointer(spv.StorageClass.Function, f32×3)
+
+type T1 = spv.OpTypePointer(spv.StorageClass.Function, f32×2)
+
+type T2 = spv.OpTypePointer(spv.StorageClass.Function, f32)
+
+type T3 = spv.OpTypePointer(spv.StorageClass.Function, f32×4)
+
+type T4 = spv.OpTypePointer(spv.StorageClass.PushConstant, f32)
+
+#[spv.OpMemberName(Member: 0, Name: "SourceSize")]
+#[spv.OpMemberName(Member: 1, Name: "OriginalSize")]
+#[spv.OpMemberName(Member: 2, Name: "OutputSize")]
+#[spv.OpMemberName(Member: 3, Name: "VERTICAL_SCANLINESSize")]
+#[spv.OpMemberName(Member: 4, Name: "BLOOM_APPROXSize")]
+#[spv.OpMemberName(Member: 5, Name: "HALATION_BLURSize")]
+#[spv.OpMemberName(Member: 6, Name: "MASK_RESIZESize")]
+#[spv.Decoration.Block]
+#[spv.OpMemberDecorate(Member: 0, spv.Decoration.Offset(ByteOffset: 0))]
+#[spv.OpMemberDecorate(Member: 1, spv.Decoration.Offset(ByteOffset: 16))]
+#[spv.OpMemberDecorate(Member: 2, spv.Decoration.Offset(ByteOffset: 32))]
+#[spv.OpMemberDecorate(Member: 3, spv.Decoration.Offset(ByteOffset: 48))]
+#[spv.OpMemberDecorate(Member: 4, spv.Decoration.Offset(ByteOffset: 64))]
+#[spv.OpMemberDecorate(Member: 5, spv.Decoration.Offset(ByteOffset: 80))]
+#[spv.OpMemberDecorate(Member: 6, spv.Decoration.Offset(ByteOffset: 96))]
+type T`Push` = spv.OpTypeStruct(f32×4, f32×4, f32×4, f32×4, f32×4, f32×4, f32×4)
+
+type T5 = spv.OpTypePointer(spv.StorageClass.Uniform, f32)
+
+#[spv.OpMemberName(Member: 0, Name: "MVP")]
+#[spv.OpMemberName(Member: 1, Name: "crt_gamma")]
+#[spv.OpMemberName(Member: 2, Name: "lcd_gamma")]
+#[spv.OpMemberName(Member: 3, Name: "levels_contrast")]
+#[spv.OpMemberName(Member: 4, Name: "halation_weight")]
+#[spv.OpMemberName(Member: 5, Name: "diffusion_weight")]
+#[spv.OpMemberName(Member: 6, Name: "bloom_underestimate_levels")]
+#[spv.OpMemberName(Member: 7, Name: "bloom_excess")]
+#[spv.OpMemberName(Member: 8, Name: "beam_min_sigma")]
+#[spv.OpMemberName(Member: 9, Name: "beam_max_sigma")]
+#[spv.OpMemberName(Member: 10, Name: "beam_spot_power")]
+#[spv.OpMemberName(Member: 11, Name: "beam_min_shape")]
+#[spv.OpMemberName(Member: 12, Name: "beam_max_shape")]
+#[spv.OpMemberName(Member: 13, Name: "beam_shape_power")]
+#[spv.OpMemberName(Member: 14, Name: "beam_horiz_filter")]
+#[spv.OpMemberName(Member: 15, Name: "beam_horiz_sigma")]
+#[spv.OpMemberName(Member: 16, Name: "beam_horiz_linear_rgb_weight")]
+#[spv.OpMemberName(Member: 17, Name: "convergence_offset_x_r")]
+#[spv.OpMemberName(Member: 18, Name: "convergence_offset_x_g")]
+#[spv.OpMemberName(Member: 19, Name: "convergence_offset_x_b")]
+#[spv.OpMemberName(Member: 20, Name: "convergence_offset_y_r")]
+#[spv.OpMemberName(Member: 21, Name: "convergence_offset_y_g")]
+#[spv.OpMemberName(Member: 22, Name: "convergence_offset_y_b")]
+#[spv.OpMemberName(Member: 23, Name: "mask_type")]
+#[spv.OpMemberName(Member: 24, Name: "mask_sample_mode_desired")]
+#[spv.OpMemberName(Member: 25, Name: "mask_num_triads_desired")]
+#[spv.OpMemberName(Member: 26, Name: "mask_triad_size_desired")]
+#[spv.OpMemberName(Member: 27, Name: "mask_specify_num_triads")]
+#[spv.OpMemberName(Member: 28, Name: "aa_subpixel_r_offset_x_runtime")]
+#[spv.OpMemberName(Member: 29, Name: "aa_subpixel_r_offset_y_runtime")]
+#[spv.OpMemberName(Member: 30, Name: "aa_cubic_c")]
+#[spv.OpMemberName(Member: 31, Name: "aa_gauss_sigma")]
+#[spv.OpMemberName(Member: 32, Name: "geom_mode_runtime")]
+#[spv.OpMemberName(Member: 33, Name: "geom_radius")]
+#[spv.OpMemberName(Member: 34, Name: "geom_view_dist")]
+#[spv.OpMemberName(Member: 35, Name: "geom_tilt_angle_x")]
+#[spv.OpMemberName(Member: 36, Name: "geom_tilt_angle_y")]
+#[spv.OpMemberName(Member: 37, Name: "geom_aspect_ratio_x")]
+#[spv.OpMemberName(Member: 38, Name: "geom_aspect_ratio_y")]
+#[spv.OpMemberName(Member: 39, Name: "geom_overscan_x")]
+#[spv.OpMemberName(Member: 40, Name: "geom_overscan_y")]
+#[spv.OpMemberName(Member: 41, Name: "border_size")]
+#[spv.OpMemberName(Member: 42, Name: "border_darkness")]
+#[spv.OpMemberName(Member: 43, Name: "border_compress")]
+#[spv.OpMemberName(Member: 44, Name: "interlace_bff")]
+#[spv.OpMemberName(Member: 45, Name: "interlace_1080i")]
+#[spv.OpMemberName(Member: 46, Name: "interlace_detect_toggle")]
+#[spv.Decoration.Block]
+#[spv.OpMemberDecorate(Member: 0, spv.Decoration.ColMajor)]
+#[spv.OpMemberDecorate(Member: 0, spv.Decoration.MatrixStride(MatrixStride: 16))]
+#[spv.OpMemberDecorate(Member: 0, spv.Decoration.Offset(ByteOffset: 0))]
+#[spv.OpMemberDecorate(Member: 1, spv.Decoration.Offset(ByteOffset: 64))]
+#[spv.OpMemberDecorate(Member: 2, spv.Decoration.Offset(ByteOffset: 68))]
+#[spv.OpMemberDecorate(Member: 3, spv.Decoration.Offset(ByteOffset: 72))]
+#[spv.OpMemberDecorate(Member: 4, spv.Decoration.Offset(ByteOffset: 76))]
+#[spv.OpMemberDecorate(Member: 5, spv.Decoration.Offset(ByteOffset: 80))]
+#[spv.OpMemberDecorate(Member: 6, spv.Decoration.Offset(ByteOffset: 84))]
+#[spv.OpMemberDecorate(Member: 7, spv.Decoration.Offset(ByteOffset: 88))]
+#[spv.OpMemberDecorate(Member: 8, spv.Decoration.Offset(ByteOffset: 92))]
+#[spv.OpMemberDecorate(Member: 9, spv.Decoration.Offset(ByteOffset: 96))]
+#[spv.OpMemberDecorate(Member: 10, spv.Decoration.Offset(ByteOffset: 100))]
+#[spv.OpMemberDecorate(Member: 11, spv.Decoration.Offset(ByteOffset: 104))]
+#[spv.OpMemberDecorate(Member: 12, spv.Decoration.Offset(ByteOffset: 108))]
+#[spv.OpMemberDecorate(Member: 13, spv.Decoration.Offset(ByteOffset: 112))]
+#[spv.OpMemberDecorate(Member: 14, spv.Decoration.Offset(ByteOffset: 116))]
+#[spv.OpMemberDecorate(Member: 15, spv.Decoration.Offset(ByteOffset: 120))]
+#[spv.OpMemberDecorate(Member: 16, spv.Decoration.Offset(ByteOffset: 124))]
+#[spv.OpMemberDecorate(Member: 17, spv.Decoration.Offset(ByteOffset: 128))]
+#[spv.OpMemberDecorate(Member: 18, spv.Decoration.Offset(ByteOffset: 132))]
+#[spv.OpMemberDecorate(Member: 19, spv.Decoration.Offset(ByteOffset: 136))]
+#[spv.OpMemberDecorate(Member: 20, spv.Decoration.Offset(ByteOffset: 140))]
+#[spv.OpMemberDecorate(Member: 21, spv.Decoration.Offset(ByteOffset: 144))]
+#[spv.OpMemberDecorate(Member: 22, spv.Decoration.Offset(ByteOffset: 148))]
+#[spv.OpMemberDecorate(Member: 23, spv.Decoration.Offset(ByteOffset: 152))]
+#[spv.OpMemberDecorate(Member: 24, spv.Decoration.Offset(ByteOffset: 156))]
+#[spv.OpMemberDecorate(Member: 25, spv.Decoration.Offset(ByteOffset: 160))]
+#[spv.OpMemberDecorate(Member: 26, spv.Decoration.Offset(ByteOffset: 164))]
+#[spv.OpMemberDecorate(Member: 27, spv.Decoration.Offset(ByteOffset: 168))]
+#[spv.OpMemberDecorate(Member: 28, spv.Decoration.Offset(ByteOffset: 172))]
+#[spv.OpMemberDecorate(Member: 29, spv.Decoration.Offset(ByteOffset: 176))]
+#[spv.OpMemberDecorate(Member: 30, spv.Decoration.Offset(ByteOffset: 180))]
+#[spv.OpMemberDecorate(Member: 31, spv.Decoration.Offset(ByteOffset: 184))]
+#[spv.OpMemberDecorate(Member: 32, spv.Decoration.Offset(ByteOffset: 188))]
+#[spv.OpMemberDecorate(Member: 33, spv.Decoration.Offset(ByteOffset: 192))]
+#[spv.OpMemberDecorate(Member: 34, spv.Decoration.Offset(ByteOffset: 196))]
+#[spv.OpMemberDecorate(Member: 35, spv.Decoration.Offset(ByteOffset: 200))]
+#[spv.OpMemberDecorate(Member: 36, spv.Decoration.Offset(ByteOffset: 204))]
+#[spv.OpMemberDecorate(Member: 37, spv.Decoration.Offset(ByteOffset: 208))]
+#[spv.OpMemberDecorate(Member: 38, spv.Decoration.Offset(ByteOffset: 212))]
+#[spv.OpMemberDecorate(Member: 39, spv.Decoration.Offset(ByteOffset: 216))]
+#[spv.OpMemberDecorate(Member: 40, spv.Decoration.Offset(ByteOffset: 220))]
+#[spv.OpMemberDecorate(Member: 41, spv.Decoration.Offset(ByteOffset: 224))]
+#[spv.OpMemberDecorate(Member: 42, spv.Decoration.Offset(ByteOffset: 228))]
+#[spv.OpMemberDecorate(Member: 43, spv.Decoration.Offset(ByteOffset: 232))]
+#[spv.OpMemberDecorate(Member: 44, spv.Decoration.Offset(ByteOffset: 236))]
+#[spv.OpMemberDecorate(Member: 45, spv.Decoration.Offset(ByteOffset: 240))]
+#[spv.OpMemberDecorate(Member: 46, spv.Decoration.Offset(ByteOffset: 244))]
+type T`UBO` = spv.OpTypeStruct(
+  spv.OpTypeMatrix(ColumnType: f32×4, ColumnCount: 4),
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+  f32,
+)
+
+type T6 = spv.OpTypeImage(SampledType: f32, spv.Dim.2D, Depth: 0, Arrayed: 0, MS: 0, Sampled: 1, spv.ImageFormat.Unknown)
+
+type T7 = spv.OpTypeSampledImage(ImageType: T6)
+
+type T8 = spv.OpTypePointer(spv.StorageClass.UniformConstant, T7)
+
+type T9 = spv.OpTypePointer(spv.StorageClass.UniformConstant, spv.OpTypeSampler)
+
+#[spv.Decoration.Location(Location: 1)]
+global_var GV`scanline_tex_uv`(spv.StorageClass.Input): f32×2
+
+#[spv.Decoration.Location(Location: 4)]
+global_var GV`scanline_texture_size_inv`(spv.StorageClass.Input): f32×2
+
+#[spv.Decoration.Location(Location: 0)]
+global_var GV`video_uv`(spv.StorageClass.Input): f32×2
+
+#[spv.Decoration.Location(Location: 6)]
+global_var GV`mask_tiles_per_screen`(spv.StorageClass.Input): f32×2
+
+#[name = "mask_tile_start_uv_and_size"]
+#[spv.Decoration.Location(Location: 5)]
+global_var GV0(spv.StorageClass.Input): f32×4
+
+#[spv.Decoration.Location(Location: 3)]
+global_var GV`halation_tex_uv`(spv.StorageClass.Input): f32×2
+
+#[spv.Decoration.Location(Location: 0)]
+global_var GV`FragColor`(spv.StorageClass.Output): f32×4
+
+#[spv.Decoration.Location(Location: 2)]
+global_var GV`blur3x3_tex_uv`(spv.StorageClass.Input): f32×2
+
+global_var GV`params`(spv.StorageClass.PushConstant): T`Push`
+
+global_var GV`bloom_approx_scale_x`(spv.StorageClass.Private): f32
+
+global_var GV`crt_gamma_static`(spv.StorageClass.Private): f32
+
+global_var GV`lcd_gamma_static`(spv.StorageClass.Private): f32
+
+global_var GV`levels_contrast_static`(spv.StorageClass.Private): f32
+
+global_var GV`levels_autodim_temp`(spv.StorageClass.Private): f32
+
+global_var GV`halation_weight_static`(spv.StorageClass.Private): f32
+
+global_var GV`diffusion_weight_static`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_underestimate_levels_static`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_excess_static`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_approx_filter_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_num_scanlines`(spv.StorageClass.Private): f32
+
+global_var GV`beam_generalized_gaussian`(spv.StorageClass.Private): bool
+
+global_var GV`beam_antialias_level`(spv.StorageClass.Private): f32
+
+global_var GV`beam_min_sigma_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_max_sigma_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_spot_shape_function`(spv.StorageClass.Private): f32
+
+global_var GV`beam_spot_power_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_min_shape_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_max_shape_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_shape_power_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_horiz_filter_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_horiz_sigma_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_horiz_linear_rgb_weight_static`(spv.StorageClass.Private): f32
+
+global_var GV`beam_misconvergence`(spv.StorageClass.Private): bool
+
+global_var GV`convergence_offsets_r_static`(spv.StorageClass.Private): f32×2
+
+global_var GV`convergence_offsets_g_static`(spv.StorageClass.Private): f32×2
+
+global_var GV`convergence_offsets_b_static`(spv.StorageClass.Private): f32×2
+
+global_var GV`interlace_detect_static`(spv.StorageClass.Private): bool
+
+global_var GV`interlace_1080i_static`(spv.StorageClass.Private): bool
+
+global_var GV`interlace_bff_static`(spv.StorageClass.Private): bool
+
+global_var GV`aa_level`(spv.StorageClass.Private): f32
+
+global_var GV`aa_filter`(spv.StorageClass.Private): f32
+
+global_var GV`aa_temporal`(spv.StorageClass.Private): bool
+
+global_var GV`aa_subpixel_r_offset_static`(spv.StorageClass.Private): f32×2
+
+global_var GV`aa_cubic_c_static`(spv.StorageClass.Private): f32
+
+global_var GV`aa_gauss_sigma_static`(spv.StorageClass.Private): f32
+
+global_var GV`mask_type_static`(spv.StorageClass.Private): f32
+
+global_var GV`mask_sample_mode_static`(spv.StorageClass.Private): f32
+
+global_var GV`mask_specify_num_triads_static`(spv.StorageClass.Private): f32
+
+global_var GV`mask_triad_size_desired_static`(spv.StorageClass.Private): f32
+
+global_var GV`mask_num_triads_desired_static`(spv.StorageClass.Private): f32
+
+global_var GV`mask_sinc_lobes`(spv.StorageClass.Private): f32
+
+global_var GV`mask_min_allowed_triad_size`(spv.StorageClass.Private): f32
+
+global_var GV`geom_mode_static`(spv.StorageClass.Private): f32
+
+global_var GV`geom_radius_static`(spv.StorageClass.Private): f32
+
+global_var GV`geom_view_dist_static`(spv.StorageClass.Private): f32
+
+global_var GV`geom_tilt_angle_static`(spv.StorageClass.Private): f32×2
+
+global_var GV`geom_aspect_ratio_static`(spv.StorageClass.Private): f32
+
+global_var GV`geom_overscan_static`(spv.StorageClass.Private): f32×2
+
+global_var GV`geom_force_correct_tangent_matrix`(spv.StorageClass.Private): bool
+
+global_var GV`border_size_static`(spv.StorageClass.Private): f32
+
+global_var GV`border_darkness_static`(spv.StorageClass.Private): f32
+
+global_var GV`border_compress_static`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_approx_size_x`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_approx_size_x_for_fake`(spv.StorageClass.Private): f32
+
+global_var GV`mask_resize_viewport_scale`(spv.StorageClass.Private): f32×2
+
+global_var GV`geom_max_aspect_ratio`(spv.StorageClass.Private): f32
+
+global_var GV`mask_texture_small_size`(spv.StorageClass.Private): f32×2
+
+global_var GV`mask_texture_large_size`(spv.StorageClass.Private): f32×2
+
+global_var GV`mask_triads_per_tile`(spv.StorageClass.Private): f32
+
+global_var GV`mask_grille14_avg_color`(spv.StorageClass.Private): f32
+
+global_var GV`mask_grille15_avg_color`(spv.StorageClass.Private): f32
+
+global_var GV`mask_slot_avg_color`(spv.StorageClass.Private): f32
+
+global_var GV`mask_shadow_avg_color`(spv.StorageClass.Private): f32
+
+global_var GV`mask_grille_avg_color`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_approx_filter`(spv.StorageClass.Private): f32
+
+global_var GV`mask_resize_src_lut_size`(spv.StorageClass.Private): f32×2
+
+global_var GV`max_aa_base_pixel_border`(spv.StorageClass.Private): f32
+
+global_var GV`max_aniso_pixel_border`(spv.StorageClass.Private): f32
+
+global_var GV`max_tiled_pixel_border`(spv.StorageClass.Private): f32
+
+global_var GV`max_mask_texel_border`(spv.StorageClass.Private): f32
+
+global_var GV`max_mask_tile_border`(spv.StorageClass.Private): f32
+
+global_var GV`mask_resize_num_tiles`(spv.StorageClass.Private): f32
+
+global_var GV`mask_start_texels`(spv.StorageClass.Private): f32
+
+global_var GV`mask_resize_num_triads`(spv.StorageClass.Private): f32
+
+global_var GV`min_allowed_viewport_triads`(spv.StorageClass.Private): f32×2
+
+global_var GV`pi`(spv.StorageClass.Private): f32
+
+global_var GV`under_half`(spv.StorageClass.Private): f32
+
+global_var GV`gba_gamma`(spv.StorageClass.Private): f32
+
+#[spv.Decoration.Binding(BindingPoint: 0)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`global`(spv.StorageClass.Uniform): T`UBO`
+
+global_var GV`interlace_detect`(spv.StorageClass.Private): bool
+
+global_var GV`ntsc_gamma`(spv.StorageClass.Private): f32
+
+global_var GV`pal_gamma`(spv.StorageClass.Private): f32
+
+global_var GV`crt_reference_gamma_high`(spv.StorageClass.Private): f32
+
+global_var GV`crt_reference_gamma_low`(spv.StorageClass.Private): f32
+
+global_var GV`lcd_reference_gamma`(spv.StorageClass.Private): f32
+
+global_var GV`crt_office_gamma`(spv.StorageClass.Private): f32
+
+global_var GV`lcd_office_gamma`(spv.StorageClass.Private): f32
+
+global_var GV`assume_opaque_alpha`(spv.StorageClass.Private): bool
+
+global_var GV`linearize_input`(spv.StorageClass.Private): bool
+
+global_var GV`gamma_encode_output`(spv.StorageClass.Private): bool
+
+global_var GV`gamma_aware_bilinear`(spv.StorageClass.Private): bool
+
+global_var GV`mask_min_allowed_tile_size`(spv.StorageClass.Private): f32
+
+global_var GV`mask_min_expected_tile_size`(spv.StorageClass.Private): f32
+
+global_var GV`pi_over_lobes`(spv.StorageClass.Private): f32
+
+global_var GV`max_sinc_resize_samples_float`(spv.StorageClass.Private): f32
+
+global_var GV`max_sinc_resize_samples_m4`(spv.StorageClass.Private): f32
+
+global_var GV`blur3_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur4_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur5_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur6_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur7_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur8_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur9_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur10_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur11_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur12_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur17_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur25_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur31_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`blur43_std_dev`(spv.StorageClass.Private): f32
+
+global_var GV`error_blurring`(spv.StorageClass.Private): f32
+
+global_var GV`bloom_diff_thresh`(spv.StorageClass.Private): f32
+
+func F`get_convergence_offsets_x_vector(`() -> f32×3 {
+  v0 = spv.OpAccessChain(Base: &GV`global`, 17s32): T5
+  v1 = spv.OpLoad(Pointer: v0): f32
+  v2 = spv.OpAccessChain(Base: &GV`global`, 18s32): T5
+  v3 = spv.OpLoad(Pointer: v2): f32
+  v4 = spv.OpAccessChain(Base: &GV`global`, 19s32): T5
+  v5 = spv.OpLoad(Pointer: v4): f32
+  v6 = vec.new(v1, v3, v5): f32×3
+  v6
+}
+
+func F`get_intermediate_gamma(`() -> f32 {
+  v0 = spv.OpLoad(Pointer: &GV`ntsc_gamma`): f32
+  v0
+}
+
+func F`get_raw_interpolated_color(vf3;vf3;vf3;vf3;vf4;`(
+  #[name = "color0"]
+  v0: T0,
+  #[name = "color1"]
+  v1: T0,
+  #[name = "color2"]
+  v2: T0,
+  #[name = "color3"]
+  v3: T0,
+  #[name = "weights"]
+  v4: T3,
+) -> f32×3 {
+  v5 = spv.OpLoad(Pointer: v0): f32×3
+  v6 = spv.OpLoad(Pointer: v1): f32×3
+  v7 = spv.OpLoad(Pointer: v2): f32×3
+  v8 = spv.OpLoad(Pointer: v3): f32×3
+  v9 = vec.extract(v5, 0): f32
+  v10 = vec.extract(v5, 1): f32
+  v11 = vec.extract(v5, 2): f32
+  v12 = vec.extract(v6, 0): f32
+  v13 = vec.extract(v6, 1): f32
+  v14 = vec.extract(v6, 2): f32
+  v15 = vec.extract(v7, 0): f32
+  v16 = vec.extract(v7, 1): f32
+  v17 = vec.extract(v7, 2): f32
+  v18 = vec.extract(v8, 0): f32
+  v19 = vec.extract(v8, 1): f32
+  v20 = vec.extract(v8, 2): f32
+  v21 = vec.new(v9, v10, v11): f32×3
+  v22 = vec.new(v12, v13, v14): f32×3
+  v23 = vec.new(v15, v16, v17): f32×3
+  v24 = vec.new(v18, v19, v20): f32×3
+  v25 = vec.new(v21, v22, v23, v24): spv.OpTypeMatrix(ColumnType: f32×3, ColumnCount: 4)
+  v26 = spv.OpLoad(Pointer: v4): f32×4
+  v27 = spv.OpMatrixTimesVector(Matrix: v25, Vector: v26): f32×3
+  v28 = vec.new(0.0f32, 0.0f32, 0.0f32): f32×3
+  v29 = spv.extinst."GLSL.std.450".FMax(X: v27, Y: v28): f32×3
+  v29
+}
+
+func F`get_interpolated_linear_color(vf3;vf3;vf3;vf3;vf4;`(
+  #[name = "color0"]
+  v0: T0,
+  #[name = "color1"]
+  v1: T0,
+  #[name = "color2"]
+  v2: T0,
+  #[name = "color3"]
+  v3: T0,
+  #[name = "weights"]
+  v4: T3,
+) -> f32×3 {
+  v`intermediate_gamma` = spv.OpVariable(spv.StorageClass.Function): T2
+  v`linear_mixed_color` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v5 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v6 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v7 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v8 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v9 = spv.OpVariable(spv.StorageClass.Function): T3
+  v`gamma_mixed_color` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v10 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v11 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v12 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v13 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v14 = spv.OpVariable(spv.StorageClass.Function): T3
+  v15 = call F`get_intermediate_gamma(`(): f32
+  spv.OpStore(Pointer: v`intermediate_gamma`, Object: v15)
+  v16 = spv.OpLoad(Pointer: v0): f32×3
+  spv.OpStore(Pointer: v5, Object: v16)
+  v17 = spv.OpLoad(Pointer: v1): f32×3
+  spv.OpStore(Pointer: v6, Object: v17)
+  v18 = spv.OpLoad(Pointer: v2): f32×3
+  spv.OpStore(Pointer: v7, Object: v18)
+  v19 = spv.OpLoad(Pointer: v3): f32×3
+  spv.OpStore(Pointer: v8, Object: v19)
+  v20 = spv.OpLoad(Pointer: v4): f32×4
+  spv.OpStore(Pointer: v9, Object: v20)
+  v21 = call F`get_raw_interpolated_color(vf3;vf3;vf3;vf3;vf4;`(v5, v6, v7, v8, v9): f32×3
+  spv.OpStore(Pointer: v`linear_mixed_color`, Object: v21)
+  v22 = spv.OpLoad(Pointer: v0): f32×3
+  v23 = spv.OpLoad(Pointer: v`intermediate_gamma`): f32
+  v24 = f.div(1.0f32, v23): f32
+  v25 = vec.new(v24, v24, v24): f32×3
+  v26 = spv.extinst."GLSL.std.450".Pow(X: v22, Y: v25): f32×3
+  v27 = spv.OpLoad(Pointer: v1): f32×3
+  v28 = spv.OpLoad(Pointer: v`intermediate_gamma`): f32
+  v29 = f.div(1.0f32, v28): f32
+  v30 = vec.new(v29, v29, v29): f32×3
+  v31 = spv.extinst."GLSL.std.450".Pow(X: v27, Y: v30): f32×3
+  v32 = spv.OpLoad(Pointer: v2): f32×3
+  v33 = spv.OpLoad(Pointer: v`intermediate_gamma`): f32
+  v34 = f.div(1.0f32, v33): f32
+  v35 = vec.new(v34, v34, v34): f32×3
+  v36 = spv.extinst."GLSL.std.450".Pow(X: v32, Y: v35): f32×3
+  v37 = spv.OpLoad(Pointer: v3): f32×3
+  v38 = spv.OpLoad(Pointer: v`intermediate_gamma`): f32
+  v39 = f.div(1.0f32, v38): f32
+  v40 = vec.new(v39, v39, v39): f32×3
+  v41 = spv.extinst."GLSL.std.450".Pow(X: v37, Y: v40): f32×3
+  spv.OpStore(Pointer: v10, Object: v26)
+  spv.OpStore(Pointer: v11, Object: v31)
+  spv.OpStore(Pointer: v12, Object: v36)
+  spv.OpStore(Pointer: v13, Object: v41)
+  v42 = spv.OpLoad(Pointer: v4): f32×4
+  spv.OpStore(Pointer: v14, Object: v42)
+  v43 = call F`get_raw_interpolated_color(vf3;vf3;vf3;vf3;vf4;`(v10, v11, v12, v13, v14): f32×3
+  spv.OpStore(Pointer: v`gamma_mixed_color`, Object: v43)
+  v44 = spv.OpLoad(Pointer: v`gamma_mixed_color`): f32×3
+  v45 = spv.OpLoad(Pointer: v`linear_mixed_color`): f32×3
+  v46 = spv.OpAccessChain(Base: &GV`global`, 16s32): T5
+  v47 = spv.OpLoad(Pointer: v46): f32
+  v48 = vec.new(v47, v47, v47): f32×3
+  v49 = spv.extinst."GLSL.std.450".FMix(X: v44, Y: v45, A: v48): f32×3
+  v49
+}
+
+func F`get_scanline_color(s21;vf2;vf2;vf4;`(
+  #[name = "tex"]
+  v0: T8,
+  v1: T9,
+  #[name = "scanline_uv"]
+  v2: T1,
+  #[name = "uv_step_x"]
+  v3: T1,
+  #[name = "weights"]
+  v4: T3,
+) -> f32×3 {
+  #[name = "color1"]
+  v5 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "color2"]
+  v6 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "color0"]
+  v7 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "color3"]
+  v8 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v9 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v10 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v11 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v12 = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v13 = spv.OpVariable(spv.StorageClass.Function): T3
+  v14 = spv.OpLoad(Pointer: v0): T6
+  v15 = spv.OpLoad(Pointer: v1): spv.OpTypeSampler
+  v16 = spv.OpSampledImage(Image: v14, Sampler: v15): T7
+  v17 = spv.OpLoad(Pointer: v2): f32×2
+  v18 = spv.OpImageSampleImplicitLod(SampledImage: v16, Coordinate: v17): f32×4
+  v19 = spv.OpVectorShuffle(Vector1: v18, Vector2: v18, 0, 1, 2): f32×3
+  spv.OpStore(Pointer: v5, Object: v19)
+  v20 = spv.OpLoad(Pointer: v0): T6
+  v21 = spv.OpLoad(Pointer: v1): spv.OpTypeSampler
+  v22 = spv.OpSampledImage(Image: v20, Sampler: v21): T7
+  v23 = spv.OpLoad(Pointer: v2): f32×2
+  v24 = spv.OpLoad(Pointer: v3): f32×2
+  v25 = vec.distribute(f.add)(v23, v24): f32×2
+  v26 = spv.OpImageSampleImplicitLod(SampledImage: v22, Coordinate: v25): f32×4
+  v27 = spv.OpVectorShuffle(Vector1: v26, Vector2: v26, 0, 1, 2): f32×3
+  spv.OpStore(Pointer: v6, Object: v27)
+  spv.OpStore(Pointer: v7, Object: f32×3(0.0, 0.0, 0.0))
+  spv.OpStore(Pointer: v8, Object: f32×3(0.0, 0.0, 0.0))
+  v28 = spv.OpAccessChain(Base: &GV`global`, 14s32): T5
+  v29 = spv.OpLoad(Pointer: v28): f32
+  v30 = f.gt(v29, 0.5f32): bool
+  if v30 {
+    v37 = spv.OpLoad(Pointer: v0): T6
+    v38 = spv.OpLoad(Pointer: v1): spv.OpTypeSampler
+    v39 = spv.OpSampledImage(Image: v37, Sampler: v38): T7
+    v40 = spv.OpLoad(Pointer: v2): f32×2
+    v41 = spv.OpLoad(Pointer: v3): f32×2
+    v42 = vec.distribute(f.sub)(v40, v41): f32×2
+    v43 = spv.OpImageSampleImplicitLod(SampledImage: v39, Coordinate: v42): f32×4
+    v44 = spv.OpVectorShuffle(Vector1: v43, Vector2: v43, 0, 1, 2): f32×3
+    spv.OpStore(Pointer: v7, Object: v44)
+    v45 = spv.OpLoad(Pointer: v0): T6
+    v46 = spv.OpLoad(Pointer: v1): spv.OpTypeSampler
+    v47 = spv.OpSampledImage(Image: v45, Sampler: v46): T7
+    v48 = spv.OpLoad(Pointer: v2): f32×2
+    v49 = spv.OpLoad(Pointer: v3): f32×2
+    v50 = vec.mul(v49, 2.0f32): f32×2
+    v51 = vec.distribute(f.add)(v48, v50): f32×2
+    v52 = spv.OpImageSampleImplicitLod(SampledImage: v47, Coordinate: v51): f32×4
+    v53 = spv.OpVectorShuffle(Vector1: v52, Vector2: v52, 0, 1, 2): f32×3
+    spv.OpStore(Pointer: v8, Object: v53)
+  } else {
+  }
+  v31 = spv.OpLoad(Pointer: v7): f32×3
+  spv.OpStore(Pointer: v9, Object: v31)
+  v32 = spv.OpLoad(Pointer: v5): f32×3
+  spv.OpStore(Pointer: v10, Object: v32)
+  v33 = spv.OpLoad(Pointer: v6): f32×3
+  spv.OpStore(Pointer: v11, Object: v33)
+  v34 = spv.OpLoad(Pointer: v8): f32×3
+  spv.OpStore(Pointer: v12, Object: v34)
+  v35 = spv.OpLoad(Pointer: v4): f32×4
+  spv.OpStore(Pointer: v13, Object: v35)
+  v36 = call F`get_interpolated_linear_color(vf3;vf3;vf3;vf3;vf4;`(v9, v10, v11, v12, v13): f32×3
+  v36
+}
+
+func F`sample_single_scanline_horizontal(s21;vf2;vf2;vf2;`(
+  #[name = "tex"]
+  v0: T8,
+  v1: T9,
+  #[name = "tex_uv"]
+  v2: T1,
+  #[name = "tex_size"]
+  v3: T1,
+  #[name = "texture_size_inv"]
+  v4: T1,
+) -> f32×3 {
+  v`curr_texel` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`prev_texel` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`prev_texel_hor` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`prev_texel_hor_uv` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`prev_dist` = spv.OpVariable(spv.StorageClass.Function): T2
+  v`sample_dists` = spv.OpVariable(spv.StorageClass.Function): T3
+  v`x` = spv.OpVariable(spv.StorageClass.Function): T2
+  v`w2` = spv.OpVariable(spv.StorageClass.Function): T2
+  #[name = "weights"]
+  v5 = spv.OpVariable(spv.StorageClass.Function): T3
+  v`inner_denom_inv` = spv.OpVariable(spv.StorageClass.Function): T2
+  v`pi_dists` = spv.OpVariable(spv.StorageClass.Function): T3
+  v`final_weights` = spv.OpVariable(spv.StorageClass.Function): T3
+  #[name = "uv_step_x"]
+  v6 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v7 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v8 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v9 = spv.OpVariable(spv.StorageClass.Function): T3
+  v10 = spv.OpLoad(Pointer: v2): f32×2
+  v11 = spv.OpLoad(Pointer: v3): f32×2
+  v12 = vec.distribute(f.mul)(v10, v11): f32×2
+  spv.OpStore(Pointer: v`curr_texel`, Object: v12)
+  v13 = spv.OpLoad(Pointer: v`curr_texel`): f32×2
+  v14 = spv.OpLoad(Pointer: &GV`under_half`): f32
+  v15 = vec.new(v14, v14): f32×2
+  v16 = vec.distribute(f.sub)(v13, v15): f32×2
+  v17 = spv.extinst."GLSL.std.450".Floor(X: v16): f32×2
+  v18 = vec.distribute(f.add)(v17, f32×2(0.5, 0.5)): f32×2
+  spv.OpStore(Pointer: v`prev_texel`, Object: v18)
+  v19 = spv.OpAccessChain(Base: v`prev_texel`, 0u32): T2
+  v20 = spv.OpLoad(Pointer: v19): f32
+  v21 = spv.OpAccessChain(Base: v`curr_texel`, 1u32): T2
+  v22 = spv.OpLoad(Pointer: v21): f32
+  v23 = vec.new(v20, v22): f32×2
+  spv.OpStore(Pointer: v`prev_texel_hor`, Object: v23)
+  v24 = spv.OpLoad(Pointer: v`prev_texel_hor`): f32×2
+  v25 = spv.OpLoad(Pointer: v4): f32×2
+  v26 = vec.distribute(f.mul)(v24, v25): f32×2
+  spv.OpStore(Pointer: v`prev_texel_hor_uv`, Object: v26)
+  v27 = spv.OpAccessChain(Base: v`curr_texel`, 0u32): T2
+  v28 = spv.OpLoad(Pointer: v27): f32
+  v29 = spv.OpAccessChain(Base: v`prev_texel_hor`, 0u32): T2
+  v30 = spv.OpLoad(Pointer: v29): f32
+  v31 = f.sub(v28, v30): f32
+  spv.OpStore(Pointer: v`prev_dist`, Object: v31)
+  v32 = spv.OpLoad(Pointer: v`prev_dist`): f32
+  v33 = f.add(1.0f32, v32): f32
+  v34 = spv.OpLoad(Pointer: v`prev_dist`): f32
+  v35 = spv.OpLoad(Pointer: v`prev_dist`): f32
+  v36 = f.sub(1.0f32, v35): f32
+  v37 = spv.OpLoad(Pointer: v`prev_dist`): f32
+  v38 = f.sub(2.0f32, v37): f32
+  v39 = vec.new(v33, v34, v36, v38): f32×4
+  spv.OpStore(Pointer: v`sample_dists`, Object: v39)
+  v40 = spv.OpAccessChain(Base: &GV`global`, 14s32): T5
+  v41 = spv.OpLoad(Pointer: v40): f32
+  v42 = f.lt(v41, 0.5f32): bool
+  if v42 {
+    v55 = spv.OpAccessChain(Base: v`sample_dists`, 1u32): T2
+    v56 = spv.OpLoad(Pointer: v55): f32
+    spv.OpStore(Pointer: v`x`, Object: v56)
+    v57 = spv.OpLoad(Pointer: v`x`): f32
+    v58 = spv.OpLoad(Pointer: v`x`): f32
+    v59 = f.mul(v57, v58): f32
+    v60 = spv.OpLoad(Pointer: v`x`): f32
+    v61 = f.mul(v59, v60): f32
+    v62 = spv.OpLoad(Pointer: v`x`): f32
+    v63 = spv.OpLoad(Pointer: v`x`): f32
+    v64 = f.mul(v63, 6.0f32): f32
+    v65 = f.sub(v64, 15.0f32): f32
+    v66 = f.mul(v62, v65): f32
+    v67 = f.add(v66, 10.0f32): f32
+    v68 = f.mul(v61, v67): f32
+    spv.OpStore(Pointer: v`w2`, Object: v68)
+    v69 = spv.OpLoad(Pointer: v`w2`): f32
+    v70 = f.sub(1.0f32, v69): f32
+    v71 = spv.OpLoad(Pointer: v`w2`): f32
+    v72 = vec.new(0.0f32, v70, v71, 0.0f32): f32×4
+    spv.OpStore(Pointer: v5, Object: v72)
+  } else {
+    v73 = spv.OpAccessChain(Base: &GV`global`, 14s32): T5
+    v74 = spv.OpLoad(Pointer: v73): f32
+    v75 = f.lt(v74, 1.5f32): bool
+    if v75 {
+      v76 = spv.OpAccessChain(Base: &GV`global`, 15s32): T5
+      v77 = spv.OpLoad(Pointer: v76): f32
+      v78 = f.mul(2.0f32, v77): f32
+      v79 = spv.OpAccessChain(Base: &GV`global`, 15s32): T5
+      v80 = spv.OpLoad(Pointer: v79): f32
+      v81 = f.mul(v78, v80): f32
+      v82 = f.div(1.0f32, v81): f32
+      spv.OpStore(Pointer: v`inner_denom_inv`, Object: v82)
+      v83 = spv.OpLoad(Pointer: v`sample_dists`): f32×4
+      v84 = spv.OpLoad(Pointer: v`sample_dists`): f32×4
+      v85 = vec.distribute(f.mul)(v83, v84): f32×4
+      v86 = vec.distribute(f.neg)(v85): f32×4
+      v87 = spv.OpLoad(Pointer: v`inner_denom_inv`): f32
+      v88 = vec.mul(v86, v87): f32×4
+      v89 = spv.extinst."GLSL.std.450".Exp(X: v88): f32×4
+      spv.OpStore(Pointer: v5, Object: v89)
+    } else {
+      v90 = spv.OpLoad(Pointer: v`sample_dists`): f32×4
+      v91 = spv.OpLoad(Pointer: &GV`pi`): f32
+      v92 = vec.mul(v90, v91): f32×4
+      v93 = spv.extinst."GLSL.std.450".FAbs(X: v92): f32×4
+      v94 = vec.new(1.5258789e-5f32, 1.5258789e-5f32, 1.5258789e-5f32, 1.5258789e-5f32): f32×4
+      v95 = spv.extinst."GLSL.std.450".FMax(X: v93, Y: v94): f32×4
+      spv.OpStore(Pointer: v`pi_dists`, Object: v95)
+      v96 = spv.OpLoad(Pointer: v`pi_dists`): f32×4
+      v97 = spv.extinst."GLSL.std.450".Sin(X: v96): f32×4
+      v98 = vec.mul(v97, 2.0f32): f32×4
+      v99 = spv.OpLoad(Pointer: v`pi_dists`): f32×4
+      v100 = vec.mul(v99, 0.5f32): f32×4
+      v101 = spv.extinst."GLSL.std.450".Sin(X: v100): f32×4
+      v102 = vec.distribute(f.mul)(v98, v101): f32×4
+      v103 = spv.OpLoad(Pointer: v`pi_dists`): f32×4
+      v104 = spv.OpLoad(Pointer: v`pi_dists`): f32×4
+      v105 = vec.distribute(f.mul)(v103, v104): f32×4
+      v106 = vec.distribute(f.div)(v102, v105): f32×4
+      spv.OpStore(Pointer: v5, Object: v106)
+    }
+  }
+  v43 = spv.OpLoad(Pointer: v5): f32×4
+  v44 = spv.OpLoad(Pointer: v5): f32×4
+  v45 = vec.dot(v44, f32×4(1.0, 1.0, 1.0, 1.0)): f32
+  v46 = vec.new(v45, v45, v45, v45): f32×4
+  v47 = vec.distribute(f.div)(v43, v46): f32×4
+  spv.OpStore(Pointer: v`final_weights`, Object: v47)
+  v48 = spv.OpAccessChain(Base: v4, 0u32): T2
+  v49 = spv.OpLoad(Pointer: v48): f32
+  v50 = vec.new(v49, 0.0f32): f32×2
+  spv.OpStore(Pointer: v6, Object: v50)
+  v51 = spv.OpLoad(Pointer: v`prev_texel_hor_uv`): f32×2
+  spv.OpStore(Pointer: v7, Object: v51)
+  v52 = spv.OpLoad(Pointer: v6): f32×2
+  spv.OpStore(Pointer: v8, Object: v52)
+  v53 = spv.OpLoad(Pointer: v`final_weights`): f32×4
+  spv.OpStore(Pointer: v9, Object: v53)
+  v54 = call F`get_scanline_color(s21;vf2;vf2;vf4;`(v0, v1, v7, v8, v9): f32×3
+  v54
+}
+
+func F`sample_rgb_scanline_horizontal(s21;vf2;vf2;vf2;`(
+  #[name = "tex"]
+  v0: T8,
+  v1: T9,
+  #[name = "tex_uv"]
+  v2: T1,
+  #[name = "tex_size"]
+  v3: T1,
+  #[name = "texture_size_inv"]
+  v4: T1,
+) -> f32×3 {
+  v`convergence_offsets_rgb` = spv.OpVariable(spv.StorageClass.Function): T0
+  v`offset_u_rgb` = spv.OpVariable(spv.StorageClass.Function): T0
+  v`scanline_uv_r` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`scanline_uv_g` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`scanline_uv_b` = spv.OpVariable(spv.StorageClass.Function): T1
+  v`sample_r` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v5 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v6 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v7 = spv.OpVariable(spv.StorageClass.Function): T1
+  v`sample_g` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v8 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v9 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v10 = spv.OpVariable(spv.StorageClass.Function): T1
+  v`sample_b` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v11 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v12 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v13 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v14 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v15 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v16 = spv.OpVariable(spv.StorageClass.Function): T1
+  v17 = spv.OpLoad(Pointer: &GV`beam_misconvergence`): bool
+  v18: f32×3 = if v17 {
+    v19 = call F`get_convergence_offsets_x_vector(`(): f32×3
+    spv.OpStore(Pointer: v`convergence_offsets_rgb`, Object: v19)
+    v20 = spv.OpLoad(Pointer: v`convergence_offsets_rgb`): f32×3
+    v21 = spv.OpLoad(Pointer: v4): f32×2
+    v22 = spv.OpVectorShuffle(Vector1: v21, Vector2: v21, 0, 0, 0): f32×3
+    v23 = vec.distribute(f.mul)(v20, v22): f32×3
+    spv.OpStore(Pointer: v`offset_u_rgb`, Object: v23)
+    v24 = spv.OpLoad(Pointer: v2): f32×2
+    v25 = spv.OpAccessChain(Base: v`offset_u_rgb`, 0u32): T2
+    v26 = spv.OpLoad(Pointer: v25): f32
+    v27 = vec.new(v26, 0.0f32): f32×2
+    v28 = vec.distribute(f.sub)(v24, v27): f32×2
+    spv.OpStore(Pointer: v`scanline_uv_r`, Object: v28)
+    v29 = spv.OpLoad(Pointer: v2): f32×2
+    v30 = spv.OpAccessChain(Base: v`offset_u_rgb`, 1u32): T2
+    v31 = spv.OpLoad(Pointer: v30): f32
+    v32 = vec.new(v31, 0.0f32): f32×2
+    v33 = vec.distribute(f.sub)(v29, v32): f32×2
+    spv.OpStore(Pointer: v`scanline_uv_g`, Object: v33)
+    v34 = spv.OpLoad(Pointer: v2): f32×2
+    v35 = spv.OpAccessChain(Base: v`offset_u_rgb`, 2u32): T2
+    v36 = spv.OpLoad(Pointer: v35): f32
+    v37 = vec.new(v36, 0.0f32): f32×2
+    v38 = vec.distribute(f.sub)(v34, v37): f32×2
+    spv.OpStore(Pointer: v`scanline_uv_b`, Object: v38)
+    v39 = spv.OpLoad(Pointer: v`scanline_uv_r`): f32×2
+    spv.OpStore(Pointer: v5, Object: v39)
+    v40 = spv.OpLoad(Pointer: v3): f32×2
+    spv.OpStore(Pointer: v6, Object: v40)
+    v41 = spv.OpLoad(Pointer: v4): f32×2
+    spv.OpStore(Pointer: v7, Object: v41)
+    v42 = call F`sample_single_scanline_horizontal(s21;vf2;vf2;vf2;`(v0, v1, v5, v6, v7): f32×3
+    spv.OpStore(Pointer: v`sample_r`, Object: v42)
+    v43 = spv.OpLoad(Pointer: v`scanline_uv_g`): f32×2
+    spv.OpStore(Pointer: v8, Object: v43)
+    v44 = spv.OpLoad(Pointer: v3): f32×2
+    spv.OpStore(Pointer: v9, Object: v44)
+    v45 = spv.OpLoad(Pointer: v4): f32×2
+    spv.OpStore(Pointer: v10, Object: v45)
+    v46 = call F`sample_single_scanline_horizontal(s21;vf2;vf2;vf2;`(v0, v1, v8, v9, v10): f32×3
+    spv.OpStore(Pointer: v`sample_g`, Object: v46)
+    v47 = spv.OpLoad(Pointer: v`scanline_uv_b`): f32×2
+    spv.OpStore(Pointer: v11, Object: v47)
+    v48 = spv.OpLoad(Pointer: v3): f32×2
+    spv.OpStore(Pointer: v12, Object: v48)
+    v49 = spv.OpLoad(Pointer: v4): f32×2
+    spv.OpStore(Pointer: v13, Object: v49)
+    v50 = call F`sample_single_scanline_horizontal(s21;vf2;vf2;vf2;`(v0, v1, v11, v12, v13): f32×3
+    spv.OpStore(Pointer: v`sample_b`, Object: v50)
+    v51 = spv.OpAccessChain(Base: v`sample_r`, 0u32): T2
+    v52 = spv.OpLoad(Pointer: v51): f32
+    v53 = spv.OpAccessChain(Base: v`sample_g`, 1u32): T2
+    v54 = spv.OpLoad(Pointer: v53): f32
+    v55 = spv.OpAccessChain(Base: v`sample_b`, 2u32): T2
+    v56 = spv.OpLoad(Pointer: v55): f32
+    v57 = vec.new(v52, v54, v56): f32×3
+    v57
+  } else {
+    v58 = spv.OpLoad(Pointer: v2): f32×2
+    spv.OpStore(Pointer: v14, Object: v58)
+    v59 = spv.OpLoad(Pointer: v3): f32×2
+    spv.OpStore(Pointer: v15, Object: v59)
+    v60 = spv.OpLoad(Pointer: v4): f32×2
+    spv.OpStore(Pointer: v16, Object: v60)
+    v61 = call F`sample_single_scanline_horizontal(s21;vf2;vf2;vf2;`(v0, v1, v14, v15, v16): f32×3
+    v61
+  }
+  v18
+}
+
+#[spv.Decoration.Binding(BindingPoint: 6)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`VERTICAL_SCANLINES`(spv.StorageClass.UniformConstant): T7
+
+#[spv.Decoration.Binding(BindingPoint: 6)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`_VERTICAL_SCANLINES_sampler`(spv.StorageClass.UniformConstant): spv.OpTypeSampler
+
+func F`get_mask_sample_mode(`() -> f32 {
+  v0 = spv.OpAccessChain(Base: &GV`global`, 24s32): T5
+  v1 = spv.OpLoad(Pointer: v0): f32
+  v1
+}
+
+func F`convert_phosphor_tile_uv_wrap_to_tex_uv(vf2;vf4;`(
+  #[name = "tile_uv_wrap"]
+  v0: T1,
+  #[name = "mask_tile_start_uv_and_size"]
+  v1: T3,
+) -> f32×2 {
+  v`tile_uv` = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "mask_tex_uv"]
+  v2 = spv.OpVariable(spv.StorageClass.Function): T1
+  v3 = call F`get_mask_sample_mode(`(): f32
+  v4 = f.lt(v3, 0.5f32): bool
+  v5: f32×2 = if v4 {
+    v6 = spv.OpLoad(Pointer: v0): f32×2
+    v7 = vec.mul(v6, 0.5f32): f32×2
+    v8 = spv.extinst."GLSL.std.450".Fract(X: v7): f32×2
+    v9 = vec.mul(v8, 2.0f32): f32×2
+    spv.OpStore(Pointer: v`tile_uv`, Object: v9)
+    v10 = spv.OpLoad(Pointer: v1): f32×4
+    v11 = spv.OpVectorShuffle(Vector1: v10, Vector2: v10, 0, 1): f32×2
+    v12 = spv.OpLoad(Pointer: v`tile_uv`): f32×2
+    v13 = spv.OpLoad(Pointer: v1): f32×4
+    v14 = spv.OpVectorShuffle(Vector1: v13, Vector2: v13, 2, 3): f32×2
+    v15 = vec.distribute(f.mul)(v12, v14): f32×2
+    v16 = vec.distribute(f.add)(v11, v15): f32×2
+    spv.OpStore(Pointer: v2, Object: v16)
+    v17 = spv.OpLoad(Pointer: v2): f32×2
+    v17
+  } else {
+    v18 = spv.OpLoad(Pointer: v0): f32×2
+    v18
+  }
+  v5
+}
+
+func F`get_pass_input_gamma(`() -> f32 {
+  1.0f32
+}
+
+func F`decode_input(vf4;`(
+  #[name = "color"]
+  v0: T3,
+) -> f32×4 {
+  v1 = spv.OpLoad(Pointer: &GV`linearize_input`): bool
+  v2: f32×4 = if v1 {
+    v3 = spv.OpLoad(Pointer: &GV`assume_opaque_alpha`): bool
+    v4: f32×4 = if v3 {
+      v5 = spv.OpLoad(Pointer: v0): f32×4
+      v6 = spv.OpVectorShuffle(Vector1: v5, Vector2: v5, 0, 1, 2): f32×3
+      v7 = call F`get_pass_input_gamma(`(): f32
+      v8 = vec.new(v7, v7, v7): f32×3
+      v9 = spv.extinst."GLSL.std.450".Pow(X: v6, Y: v8): f32×3
+      v10 = vec.extract(v9, 0): f32
+      v11 = vec.extract(v9, 1): f32
+      v12 = vec.extract(v9, 2): f32
+      v13 = vec.new(v10, v11, v12, 1.0f32): f32×4
+      v13
+    } else {
+      v14 = spv.OpLoad(Pointer: v0): f32×4
+      v15 = spv.OpVectorShuffle(Vector1: v14, Vector2: v14, 0, 1, 2): f32×3
+      v16 = call F`get_pass_input_gamma(`(): f32
+      v17 = vec.new(v16, v16, v16): f32×3
+      v18 = spv.extinst."GLSL.std.450".Pow(X: v15, Y: v17): f32×3
+      v19 = spv.OpAccessChain(Base: v0, 3u32): T2
+      v20 = spv.OpLoad(Pointer: v19): f32
+      v21 = vec.extract(v18, 0): f32
+      v22 = vec.extract(v18, 1): f32
+      v23 = vec.extract(v18, 2): f32
+      v24 = vec.new(v21, v22, v23, v20): f32×4
+      v24
+    }
+    v4
+  } else {
+    v25 = spv.OpLoad(Pointer: v0): f32×4
+    v25
+  }
+  v2
+}
+
+func F`tex2D_linearize(s21;vf2;`(
+  #[name = "tex"]
+  v0: T8,
+  v1: T9,
+  v2: T9,
+  #[name = "tex_coords"]
+  v3: T1,
+) -> f32×4 {
+  #[name = "param"]
+  v4 = spv.OpVariable(spv.StorageClass.Function): T3
+  v5 = spv.OpLoad(Pointer: v0): T6
+  v6 = spv.OpLoad(Pointer: v1): spv.OpTypeSampler
+  v7 = spv.OpSampledImage(Image: v5, Sampler: v6): T7
+  v8 = spv.OpLoad(Pointer: v2): spv.OpTypeSampler
+  v9 = spv.OpSampledImage(Image: v7, Sampler: v8): T7
+  v10 = spv.OpLoad(Pointer: v3): f32×2
+  v11 = spv.OpImageSampleImplicitLod(SampledImage: v9, Coordinate: v10): f32×4
+  spv.OpStore(Pointer: v4, Object: v11)
+  v12 = call F`decode_input(vf4;`(v4): f32×4
+  v12
+}
+
+#[spv.Decoration.Binding(BindingPoint: 3)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`mask_grille_texture_large`(spv.StorageClass.UniformConstant): T7
+
+#[spv.Decoration.Binding(BindingPoint: 3)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`_mask_grille_texture_large_sampler`(spv.StorageClass.UniformConstant): spv.OpTypeSampler
+
+#[spv.Decoration.Binding(BindingPoint: 4)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`mask_slot_texture_large`(spv.StorageClass.UniformConstant): T7
+
+#[spv.Decoration.Binding(BindingPoint: 4)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`_mask_slot_texture_large_sampler`(spv.StorageClass.UniformConstant): spv.OpTypeSampler
+
+#[spv.Decoration.Binding(BindingPoint: 5)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`mask_shadow_texture_large`(spv.StorageClass.UniformConstant): T7
+
+#[spv.Decoration.Binding(BindingPoint: 5)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`_mask_shadow_texture_large_sampler`(spv.StorageClass.UniformConstant): spv.OpTypeSampler
+
+func F`tex2Dtiled_mask_linearize(s21;vf2;`(
+  #[name = "tex"]
+  v0: T8,
+  v1: T9,
+  #[name = "tex_uv"]
+  v2: T1,
+) -> f32×4 {
+  #[name = "param"]
+  v3 = spv.OpVariable(spv.StorageClass.Function): T1
+  v4 = spv.OpLoad(Pointer: v2): f32×2
+  spv.OpStore(Pointer: v3, Object: v4)
+  v5 = call F`tex2D_linearize(s21;vf2;`(v0, v1, v3): f32×4
+  v5
+}
+
+#[spv.Decoration.Binding(BindingPoint: 9)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`MASK_RESIZE`(spv.StorageClass.UniformConstant): T7
+
+#[spv.Decoration.Binding(BindingPoint: 9)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`_MASK_RESIZE_sampler`(spv.StorageClass.UniformConstant): spv.OpTypeSampler
+
+#[spv.Decoration.Binding(BindingPoint: 8)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`HALATION_BLUR`(spv.StorageClass.UniformConstant): T7
+
+#[spv.Decoration.Binding(BindingPoint: 8)]
+#[spv.Decoration.DescriptorSet(DescriptorSet: 0)]
+global_var GV`_HALATION_BLUR_sampler`(spv.StorageClass.UniformConstant): spv.OpTypeSampler
+
+func F`get_pass_output_gamma(`() -> f32 {
+  1.0f32
+}
+
+func F`encode_output(vf4;`(
+  #[name = "color"]
+  v0: T3,
+) -> f32×4 {
+  v1 = spv.OpLoad(Pointer: &GV`gamma_encode_output`): bool
+  v2: f32×4 = if v1 {
+    v3 = spv.OpLoad(Pointer: &GV`assume_opaque_alpha`): bool
+    v4: f32×4 = if v3 {
+      v5 = spv.OpLoad(Pointer: v0): f32×4
+      v6 = spv.OpVectorShuffle(Vector1: v5, Vector2: v5, 0, 1, 2): f32×3
+      v7 = call F`get_pass_output_gamma(`(): f32
+      v8 = f.div(1.0f32, v7): f32
+      v9 = vec.new(v8, v8, v8): f32×3
+      v10 = spv.extinst."GLSL.std.450".Pow(X: v6, Y: v9): f32×3
+      v11 = vec.extract(v10, 0): f32
+      v12 = vec.extract(v10, 1): f32
+      v13 = vec.extract(v10, 2): f32
+      v14 = vec.new(v11, v12, v13, 1.0f32): f32×4
+      v14
+    } else {
+      v15 = spv.OpLoad(Pointer: v0): f32×4
+      v16 = spv.OpVectorShuffle(Vector1: v15, Vector2: v15, 0, 1, 2): f32×3
+      v17 = call F`get_pass_output_gamma(`(): f32
+      v18 = f.div(1.0f32, v17): f32
+      v19 = vec.new(v18, v18, v18): f32×3
+      v20 = spv.extinst."GLSL.std.450".Pow(X: v16, Y: v19): f32×3
+      v21 = spv.OpAccessChain(Base: v0, 3u32): T2
+      v22 = spv.OpLoad(Pointer: v21): f32
+      v23 = vec.extract(v20, 0): f32
+      v24 = vec.extract(v20, 1): f32
+      v25 = vec.extract(v20, 2): f32
+      v26 = vec.new(v23, v24, v25, v22): f32×4
+      v26
+    }
+    v4
+  } else {
+    v27 = spv.OpLoad(Pointer: v0): f32×4
+    v27
+  }
+  v2
+}
+
+#[spv.ExecutionMode.OriginUpperLeft]
+func F`main`() {
+  v`scanline_color_dim` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v0 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v1 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v2 = spv.OpVariable(spv.StorageClass.Function): T1
+  v`auto_dim_factor` = spv.OpVariable(spv.StorageClass.Function): T2
+  #[name = "tile_uv_wrap"]
+  v3 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "mask_tex_uv"]
+  v4 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v5 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v6 = spv.OpVariable(spv.StorageClass.Function): T3
+  v`sample_orig_luts` = spv.OpVariable(spv.StorageClass.Function): spv.OpTypePointer(spv.StorageClass.Function, bool)
+  v`phosphor_mask_sample` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v7 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v8 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v9 = spv.OpVariable(spv.StorageClass.Function): T1
+  #[name = "param"]
+  v10 = spv.OpVariable(spv.StorageClass.Function): T1
+  v`halation_color` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v11 = spv.OpVariable(spv.StorageClass.Function): T1
+  v`halation_intensity_dim` = spv.OpVariable(spv.StorageClass.Function): T0
+  v`electron_intensity_dim` = spv.OpVariable(spv.StorageClass.Function): T0
+  v`phosphor_emission_dim` = spv.OpVariable(spv.StorageClass.Function): T0
+  v`pixel_color` = spv.OpVariable(spv.StorageClass.Function): T0
+  #[name = "param"]
+  v12 = spv.OpVariable(spv.StorageClass.Function): T3
+  v13 = spv.OpAccessChain(Base: &GV`params`, 2s32, 0u32): T4
+  v14 = spv.OpLoad(Pointer: v13): f32
+  v15 = spv.OpAccessChain(Base: &GV`params`, 0s32, 1u32): T4
+  v16 = spv.OpLoad(Pointer: v15): f32
+  v17 = f.div(v14, v16): f32
+  spv.OpStore(Pointer: &GV`bloom_approx_scale_x`, Object: v17)
+  spv.OpStore(Pointer: &GV`crt_gamma_static`, Object: 2.5f32)
+  spv.OpStore(Pointer: &GV`lcd_gamma_static`, Object: 2.2f32)
+  spv.OpStore(Pointer: &GV`levels_contrast_static`, Object: 1.0f32)
+  spv.OpStore(Pointer: &GV`levels_autodim_temp`, Object: 0.5f32)
+  spv.OpStore(Pointer: &GV`halation_weight_static`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`diffusion_weight_static`, Object: 0.075f32)
+  spv.OpStore(Pointer: &GV`bloom_underestimate_levels_static`, Object: 0.8f32)
+  spv.OpStore(Pointer: &GV`bloom_excess_static`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`bloom_approx_filter_static`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`beam_num_scanlines`, Object: 3.0f32)
+  spv.OpStore(Pointer: &GV`beam_generalized_gaussian`, Object: true)
+  spv.OpStore(Pointer: &GV`beam_antialias_level`, Object: 1.0f32)
+  spv.OpStore(Pointer: &GV`beam_min_sigma_static`, Object: 0.02f32)
+  spv.OpStore(Pointer: &GV`beam_max_sigma_static`, Object: 0.3f32)
+  spv.OpStore(Pointer: &GV`beam_spot_shape_function`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`beam_spot_power_static`, Object: 0.33333334f32)
+  spv.OpStore(Pointer: &GV`beam_min_shape_static`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`beam_max_shape_static`, Object: 4.0f32)
+  spv.OpStore(Pointer: &GV`beam_shape_power_static`, Object: 0.25f32)
+  spv.OpStore(Pointer: &GV`beam_horiz_filter_static`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`beam_horiz_sigma_static`, Object: 0.35f32)
+  spv.OpStore(Pointer: &GV`beam_horiz_linear_rgb_weight_static`, Object: 1.0f32)
+  spv.OpStore(Pointer: &GV`beam_misconvergence`, Object: true)
+  spv.OpStore(Pointer: &GV`convergence_offsets_r_static`, Object: f32×2(0.1, 0.2))
+  spv.OpStore(Pointer: &GV`convergence_offsets_g_static`, Object: f32×2(0.3, 0.4))
+  spv.OpStore(Pointer: &GV`convergence_offsets_b_static`, Object: f32×2(0.5, 0.6))
+  spv.OpStore(Pointer: &GV`interlace_detect_static`, Object: true)
+  spv.OpStore(Pointer: &GV`interlace_1080i_static`, Object: false)
+  spv.OpStore(Pointer: &GV`interlace_bff_static`, Object: false)
+  spv.OpStore(Pointer: &GV`aa_level`, Object: 12.0f32)
+  spv.OpStore(Pointer: &GV`aa_filter`, Object: 6.0f32)
+  spv.OpStore(Pointer: &GV`aa_temporal`, Object: false)
+  spv.OpStore(Pointer: &GV`aa_subpixel_r_offset_static`, Object: f32×2(-0.33333334, 0.0))
+  spv.OpStore(Pointer: &GV`aa_cubic_c_static`, Object: 0.5f32)
+  spv.OpStore(Pointer: &GV`aa_gauss_sigma_static`, Object: 0.5f32)
+  spv.OpStore(Pointer: &GV`mask_type_static`, Object: 1.0f32)
+  spv.OpStore(Pointer: &GV`mask_sample_mode_static`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`mask_specify_num_triads_static`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`mask_triad_size_desired_static`, Object: 3.0f32)
+  spv.OpStore(Pointer: &GV`mask_num_triads_desired_static`, Object: 480.0f32)
+  spv.OpStore(Pointer: &GV`mask_sinc_lobes`, Object: 3.0f32)
+  spv.OpStore(Pointer: &GV`mask_min_allowed_triad_size`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`geom_mode_static`, Object: 0.0f32)
+  spv.OpStore(Pointer: &GV`geom_radius_static`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`geom_view_dist_static`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`geom_tilt_angle_static`, Object: f32×2(0.0, 0.0))
+  spv.OpStore(Pointer: &GV`geom_aspect_ratio_static`, Object: 1.3130699f32)
+  spv.OpStore(Pointer: &GV`geom_overscan_static`, Object: f32×2(1.0, 1.0))
+  spv.OpStore(Pointer: &GV`geom_force_correct_tangent_matrix`, Object: true)
+  spv.OpStore(Pointer: &GV`border_size_static`, Object: 0.015f32)
+  spv.OpStore(Pointer: &GV`border_darkness_static`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`border_compress_static`, Object: 2.5f32)
+  spv.OpStore(Pointer: &GV`bloom_approx_size_x`, Object: 320.0f32)
+  spv.OpStore(Pointer: &GV`bloom_approx_size_x_for_fake`, Object: 400.0f32)
+  spv.OpStore(Pointer: &GV`mask_resize_viewport_scale`, Object: f32×2(0.0625, 0.0625))
+  spv.OpStore(Pointer: &GV`geom_max_aspect_ratio`, Object: 1.3333334f32)
+  spv.OpStore(Pointer: &GV`mask_texture_small_size`, Object: f32×2(64.0, 64.0))
+  spv.OpStore(Pointer: &GV`mask_texture_large_size`, Object: f32×2(512.0, 512.0))
+  spv.OpStore(Pointer: &GV`mask_triads_per_tile`, Object: 8.0f32)
+  spv.OpStore(Pointer: &GV`mask_grille14_avg_color`, Object: 0.19869281f32)
+  spv.OpStore(Pointer: &GV`mask_grille15_avg_color`, Object: 0.20784314f32)
+  spv.OpStore(Pointer: &GV`mask_slot_avg_color`, Object: 0.18039216f32)
+  spv.OpStore(Pointer: &GV`mask_shadow_avg_color`, Object: 0.16078432f32)
+  v18 = spv.OpLoad(Pointer: &GV`mask_grille15_avg_color`): f32
+  spv.OpStore(Pointer: &GV`mask_grille_avg_color`, Object: v18)
+  v19 = spv.OpLoad(Pointer: &GV`bloom_approx_filter_static`): f32
+  spv.OpStore(Pointer: &GV`bloom_approx_filter`, Object: v19)
+  v20 = spv.OpLoad(Pointer: &GV`mask_texture_small_size`): f32×2
+  spv.OpStore(Pointer: &GV`mask_resize_src_lut_size`, Object: v20)
+  spv.OpStore(Pointer: &GV`max_aa_base_pixel_border`, Object: 0.0f32)
+  v21 = spv.OpLoad(Pointer: &GV`max_aa_base_pixel_border`): f32
+  v22 = f.add(v21, 0.5f32): f32
+  spv.OpStore(Pointer: &GV`max_aniso_pixel_border`, Object: v22)
+  v23 = spv.OpLoad(Pointer: &GV`max_aniso_pixel_border`): f32
+  spv.OpStore(Pointer: &GV`max_tiled_pixel_border`, Object: v23)
+  v24 = spv.OpLoad(Pointer: &GV`max_tiled_pixel_border`): f32
+  v25 = spv.extinst."GLSL.std.450".Ceil(X: v24): f32
+  spv.OpStore(Pointer: &GV`max_mask_texel_border`, Object: v25)
+  v26 = spv.OpLoad(Pointer: &GV`max_mask_texel_border`): f32
+  v27 = spv.OpLoad(Pointer: &GV`mask_min_allowed_triad_size`): f32
+  v28 = spv.OpLoad(Pointer: &GV`mask_triads_per_tile`): f32
+  v29 = f.mul(v27, v28): f32
+  v30 = f.div(v26, v29): f32
+  spv.OpStore(Pointer: &GV`max_mask_tile_border`, Object: v30)
+  spv.OpStore(Pointer: &GV`mask_resize_num_tiles`, Object: 2.0f32)
+  spv.OpStore(Pointer: &GV`mask_start_texels`, Object: 0.0f32)
+  v31 = spv.OpLoad(Pointer: &GV`mask_resize_num_tiles`): f32
+  v32 = spv.OpLoad(Pointer: &GV`mask_triads_per_tile`): f32
+  v33 = f.mul(v31, v32): f32
+  spv.OpStore(Pointer: &GV`mask_resize_num_triads`, Object: v33)
+  v34 = spv.OpLoad(Pointer: &GV`mask_resize_num_triads`): f32
+  v35 = vec.new(v34, v34): f32×2
+  v36 = spv.OpLoad(Pointer: &GV`mask_resize_viewport_scale`): f32×2
+  v37 = vec.distribute(f.div)(v35, v36): f32×2
+  spv.OpStore(Pointer: &GV`min_allowed_viewport_triads`, Object: v37)
+  spv.OpStore(Pointer: &GV`pi`, Object: 3.1415927f32)
+  spv.OpStore(Pointer: &GV`under_half`, Object: 0.4995f32)
+  spv.OpStore(Pointer: &GV`gba_gamma`, Object: 3.5f32)
+  v38 = spv.OpAccessChain(Base: &GV`global`, 46s32): T5
+  v39 = spv.OpLoad(Pointer: v38): f32
+  v40 = f.ne_or_unord(v39, 0.0f32): bool
+  spv.OpStore(Pointer: &GV`interlace_detect`, Object: v40)
+  spv.OpStore(Pointer: &GV`ntsc_gamma`, Object: 2.2f32)
+  spv.OpStore(Pointer: &GV`pal_gamma`, Object: 2.8f32)
+  spv.OpStore(Pointer: &GV`crt_reference_gamma_high`, Object: 2.5f32)
+  spv.OpStore(Pointer: &GV`crt_reference_gamma_low`, Object: 2.35f32)
+  spv.OpStore(Pointer: &GV`lcd_reference_gamma`, Object: 2.5f32)
+  spv.OpStore(Pointer: &GV`crt_office_gamma`, Object: 2.2f32)
+  spv.OpStore(Pointer: &GV`lcd_office_gamma`, Object: 2.2f32)
+  spv.OpStore(Pointer: &GV`assume_opaque_alpha`, Object: false)
+  spv.OpStore(Pointer: &GV`linearize_input`, Object: false)
+  spv.OpStore(Pointer: &GV`gamma_encode_output`, Object: false)
+  v41 = spv.OpLoad(Pointer: &GV`linearize_input`): bool
+  v42 = bool.not(v41): bool
+  spv.OpStore(Pointer: &GV`gamma_aware_bilinear`, Object: v42)
+  v43 = spv.OpLoad(Pointer: &GV`mask_min_allowed_triad_size`): f32
+  v44 = spv.OpLoad(Pointer: &GV`mask_triads_per_tile`): f32
+  v45 = f.mul(v43, v44): f32
+  v46 = spv.extinst."GLSL.std.450".Ceil(X: v45): f32
+  spv.OpStore(Pointer: &GV`mask_min_allowed_tile_size`, Object: v46)
+  v47 = spv.OpLoad(Pointer: &GV`mask_min_allowed_tile_size`): f32
+  spv.OpStore(Pointer: &GV`mask_min_expected_tile_size`, Object: v47)
+  v48 = spv.OpLoad(Pointer: &GV`pi`): f32
+  v49 = spv.OpLoad(Pointer: &GV`mask_sinc_lobes`): f32
+  v50 = f.div(v48, v49): f32
+  spv.OpStore(Pointer: &GV`pi_over_lobes`, Object: v50)
+  v51 = spv.OpLoad(Pointer: &GV`mask_sinc_lobes`): f32
+  v52 = f.mul(2.0f32, v51): f32
+  v53 = spv.OpAccessChain(Base: &GV`mask_resize_src_lut_size`, 0u32): spv.OpTypePointer(spv.StorageClass.Private, f32)
+  v54 = spv.OpLoad(Pointer: v53): f32
+  v55 = f.mul(v52, v54): f32
+  v56 = spv.OpLoad(Pointer: &GV`mask_min_expected_tile_size`): f32
+  v57 = f.div(v55, v56): f32
+  spv.OpStore(Pointer: &GV`max_sinc_resize_samples_float`, Object: v57)
+  v58 = spv.OpLoad(Pointer: &GV`max_sinc_resize_samples_float`): f32
+  v59 = f.mul(v58, 0.25f32): f32
+  v60 = spv.extinst."GLSL.std.450".Ceil(X: v59): f32
+  v61 = f.mul(v60, 4.0f32): f32
+  spv.OpStore(Pointer: &GV`max_sinc_resize_samples_m4`, Object: v61)
+  spv.OpStore(Pointer: &GV`blur3_std_dev`, Object: 0.62666017f32)
+  spv.OpStore(Pointer: &GV`blur4_std_dev`, Object: 0.6617187f32)
+  spv.OpStore(Pointer: &GV`blur5_std_dev`, Object: 0.9845703f32)
+  spv.OpStore(Pointer: &GV`blur6_std_dev`, Object: 1.0262696f32)
+  spv.OpStore(Pointer: &GV`blur7_std_dev`, Object: 1.3610351f32)
+  spv.OpStore(Pointer: &GV`blur8_std_dev`, Object: 1.4080079f32)
+  spv.OpStore(Pointer: &GV`blur9_std_dev`, Object: 1.7533203f32)
+  spv.OpStore(Pointer: &GV`blur10_std_dev`, Object: 1.8047851f32)
+  spv.OpStore(Pointer: &GV`blur11_std_dev`, Object: 2.1598632f32)
+  spv.OpStore(Pointer: &GV`blur12_std_dev`, Object: 2.2152343f32)
+  spv.OpStore(Pointer: &GV`blur17_std_dev`, Object: 3.455356f32)
+  spv.OpStore(Pointer: &GV`blur25_std_dev`, Object: 5.3409576f32)
+  spv.OpStore(Pointer: &GV`blur31_std_dev`, Object: 6.8648806f32)
+  spv.OpStore(Pointer: &GV`blur43_std_dev`, Object: 10.185205f32)
+  spv.OpStore(Pointer: &GV`error_blurring`, Object: 0.5f32)
+  spv.OpStore(Pointer: &GV`bloom_diff_thresh`, Object: 0.00390625f32)
+  v62 = spv.OpLoad(Pointer: &GV`scanline_tex_uv`): f32×2
+  spv.OpStore(Pointer: v0, Object: v62)
+  v63 = spv.OpAccessChain(Base: &GV`params`, 3s32): spv.OpTypePointer(spv.StorageClass.PushConstant, f32×4)
+  v64 = spv.OpLoad(Pointer: v63): f32×4
+  v65 = spv.OpVectorShuffle(Vector1: v64, Vector2: v64, 0, 1): f32×2
+  spv.OpStore(Pointer: v1, Object: v65)
+  v66 = spv.OpLoad(Pointer: &GV`scanline_texture_size_inv`): f32×2
+  spv.OpStore(Pointer: v2, Object: v66)
+  v67 = call F`sample_rgb_scanline_horizontal(s21;vf2;vf2;vf2;`(&GV`VERTICAL_SCANLINES`, &GV`_VERTICAL_SCANLINES_sampler`, v0, v1, v2):
+    f32×3
+  spv.OpStore(Pointer: v`scanline_color_dim`, Object: v67)
+  v68 = spv.OpLoad(Pointer: &GV`levels_autodim_temp`): f32
+  spv.OpStore(Pointer: v`auto_dim_factor`, Object: v68)
+  v69 = spv.OpLoad(Pointer: &GV`video_uv`): f32×2
+  v70 = spv.OpLoad(Pointer: &GV`mask_tiles_per_screen`): f32×2
+  v71 = vec.distribute(f.mul)(v69, v70): f32×2
+  spv.OpStore(Pointer: v3, Object: v71)
+  v72 = spv.OpLoad(Pointer: v3): f32×2
+  spv.OpStore(Pointer: v5, Object: v72)
+  v73 = spv.OpLoad(Pointer: &GV0): f32×4
+  spv.OpStore(Pointer: v6, Object: v73)
+  v74 = call F`convert_phosphor_tile_uv_wrap_to_tex_uv(vf2;vf4;`(v5, v6): f32×2
+  spv.OpStore(Pointer: v4, Object: v74)
+  v75 = call F`get_mask_sample_mode(`(): f32
+  v76 = f.gt(v75, 0.5f32): bool
+  spv.OpStore(Pointer: v`sample_orig_luts`, Object: v76)
+  v77 = spv.OpLoad(Pointer: v`sample_orig_luts`): bool
+  if v77 {
+    v103 = spv.OpAccessChain(Base: &GV`global`, 23s32): T5
+    v104 = spv.OpLoad(Pointer: v103): f32
+    v105 = f.lt(v104, 0.5f32): bool
+    if v105 {
+      v106 = spv.OpLoad(Pointer: v4): f32×2
+      spv.OpStore(Pointer: v7, Object: v106)
+      v107 = call F`tex2D_linearize(s21;vf2;`(&GV`mask_grille_texture_large`, &GV`_mask_grille_texture_large_sampler`, v7): f32×4
+      v108 = spv.OpVectorShuffle(Vector1: v107, Vector2: v107, 0, 1, 2): f32×3
+      spv.OpStore(Pointer: v`phosphor_mask_sample`, Object: v108)
+    } else {
+      v109 = spv.OpAccessChain(Base: &GV`global`, 23s32): T5
+      v110 = spv.OpLoad(Pointer: v109): f32
+      v111 = f.lt(v110, 1.5f32): bool
+      if v111 {
+        v112 = spv.OpLoad(Pointer: v4): f32×2
+        spv.OpStore(Pointer: v8, Object: v112)
+        v113 = call F`tex2D_linearize(s21;vf2;`(&GV`mask_slot_texture_large`, &GV`_mask_slot_texture_large_sampler`, v8): f32×4
+        v114 = spv.OpVectorShuffle(Vector1: v113, Vector2: v113, 0, 1, 2): f32×3
+        spv.OpStore(Pointer: v`phosphor_mask_sample`, Object: v114)
+      } else {
+        v115 = spv.OpLoad(Pointer: v4): f32×2
+        spv.OpStore(Pointer: v9, Object: v115)
+        v116 = call F`tex2D_linearize(s21;vf2;`(&GV`mask_shadow_texture_large`, &GV`_mask_shadow_texture_large_sampler`, v9): f32×4
+        v117 = spv.OpVectorShuffle(Vector1: v116, Vector2: v116, 0, 1, 2): f32×3
+        spv.OpStore(Pointer: v`phosphor_mask_sample`, Object: v117)
+      }
+    }
+  } else {
+    v118 = spv.OpLoad(Pointer: v4): f32×2
+    spv.OpStore(Pointer: v10, Object: v118)
+    v119 = call F`tex2Dtiled_mask_linearize(s21;vf2;`(&GV`MASK_RESIZE`, &GV`_MASK_RESIZE_sampler`, v10): f32×4
+    v120 = spv.OpVectorShuffle(Vector1: v119, Vector2: v119, 0, 1, 2): f32×3
+    spv.OpStore(Pointer: v`phosphor_mask_sample`, Object: v120)
+  }
+  v78 = spv.OpLoad(Pointer: &GV`halation_tex_uv`): f32×2
+  spv.OpStore(Pointer: v11, Object: v78)
+  v79 = call F`tex2D_linearize(s21;vf2;`(&GV`HALATION_BLUR`, &GV`_HALATION_BLUR_sampler`, v11): f32×4
+  v80 = spv.OpVectorShuffle(Vector1: v79, Vector2: v79, 0, 1, 2): f32×3
+  spv.OpStore(Pointer: v`halation_color`, Object: v80)
+  v81 = spv.OpLoad(Pointer: v`halation_color`): f32×3
+  v82 = spv.OpLoad(Pointer: v`auto_dim_factor`): f32
+  v83 = f.div(v82, 3.0f32): f32
+  v84 = vec.new(v83, v83, v83): f32×3
+  v85 = vec.dot(v81, v84): f32
+  v86 = vec.new(v85, v85, v85): f32×3
+  spv.OpStore(Pointer: v`halation_intensity_dim`, Object: v86)
+  v87 = spv.OpLoad(Pointer: v`scanline_color_dim`): f32×3
+  v88 = spv.OpLoad(Pointer: v`halation_intensity_dim`): f32×3
+  v89 = spv.OpAccessChain(Base: &GV`global`, 4s32): T5
+  v90 = spv.OpLoad(Pointer: v89): f32
+  v91 = vec.new(v90, v90, v90): f32×3
+  v92 = spv.extinst."GLSL.std.450".FMix(X: v87, Y: v88, A: v91): f32×3
+  spv.OpStore(Pointer: v`electron_intensity_dim`, Object: v92)
+  v93 = spv.OpLoad(Pointer: v`electron_intensity_dim`): f32×3
+  v94 = spv.OpLoad(Pointer: v`phosphor_mask_sample`): f32×3
+  v95 = vec.distribute(f.mul)(v93, v94): f32×3
+  spv.OpStore(Pointer: v`phosphor_emission_dim`, Object: v95)
+  v96 = spv.OpLoad(Pointer: v`phosphor_emission_dim`): f32×3
+  spv.OpStore(Pointer: v`pixel_color`, Object: v96)
+  v97 = spv.OpLoad(Pointer: v`pixel_color`): f32×3
+  v98 = vec.extract(v97, 0): f32
+  v99 = vec.extract(v97, 1): f32
+  v100 = vec.extract(v97, 2): f32
+  v101 = vec.new(v98, v99, v100, 1.0f32): f32×4
+  spv.OpStore(Pointer: v12, Object: v101)
+  v102 = call F`encode_output(vf4;`(v12): f32×4
+  spv.OpStore(Pointer: &GV`FragColor`, Object: v102)
+}
+
+export {
+  spv.OpEntryPoint(spv.ExecutionModel.Fragment, Name: "main"): F`main`,
+}

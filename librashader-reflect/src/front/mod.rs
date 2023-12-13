@@ -1,15 +1,9 @@
 use crate::error::ShaderCompileError;
 use librashader_preprocess::ShaderSource;
 
-#[cfg(feature = "unstable-naga")]
-mod naga;
-
 mod shaderc;
 
 pub use crate::front::shaderc::GlslangCompilation;
-
-#[cfg(feature = "unstable-naga")]
-pub use crate::front::naga::NagaCompilation;
 
 /// Trait for types that can compile shader sources into a compilation unit.
 pub trait ShaderCompilation: Sized {

@@ -3,6 +3,7 @@ pub mod cross;
 pub mod dxil;
 mod spirv;
 pub mod targets;
+pub mod wgsl;
 
 use crate::back::targets::OutputTarget;
 use crate::error::{ShaderCompileError, ShaderReflectError};
@@ -112,5 +113,16 @@ where
         semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
         self.backend.reflect(pass_number, semantics)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::front::GlslangCompilation;
+    use librashader_preprocess::ShaderSource;
+
+    pub fn test() {
+        let result = ShaderSource::load("../test/basic.slang").unwrap();
+        let _cross = GlslangCompilation::compile(&result).unwrap();
     }
 }

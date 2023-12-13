@@ -26,6 +26,15 @@ pub enum ShaderCompileError {
     #[cfg(all(target_os = "windows", feature = "dxil"))]
     #[error("spirv-to-dxil")]
     SpirvToDxilCompileError(#[from] spirv_to_dxil::SpirvToDxilError),
+
+    /// Error when transpiling from naga
+    #[cfg(feature = "wgsl")]
+    #[error("naga-wgsl")]
+    NagaWgslError(#[from] naga::back::wgsl::Error),
+    /// Error when transpiling from naga
+    #[cfg(feature = "wgsl")]
+    #[error("naga-wgsl")]
+    NagaValidationError(#[from] naga::WithSpan<naga::valid::ValidationError>),
 }
 
 /// The error kind encountered when reflecting shader semantics.
@@ -59,11 +68,6 @@ pub enum SemanticsErrorKind {
 #[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum ShaderReflectError {
-    /// Compile error from naga.
-    #[cfg(feature = "unstable-naga")]
-    #[error("shader")]
-    NagaCompileError(#[from] naga::front::spv::Error),
-
     /// Reflection error from spirv-cross.
     #[error("spirv")]
     SpirvCrossError(#[from] spirv_cross::ErrorCode),
@@ -100,6 +104,11 @@ pub enum ShaderReflectError {
     /// The binding number is already in use.
     #[error("the binding is already in use")]
     BindingInUse(u32),
+
+    /// Error when transpiling from naga
+    #[cfg(feature = "wgsl")]
+    #[error("naga-spv")]
+    NagaInputError(#[from] naga::front::spv::Error),
 }
 
 #[cfg(feature = "unstable-naga")]
