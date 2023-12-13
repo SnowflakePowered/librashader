@@ -922,9 +922,9 @@ mod test {
         let mut opts = CompilerOptions::default();
         opts.version = Version::V4_60;
         opts.enable_420_pack_extension = false;
-        let compiled = reflect.compile(Version::V3_30).unwrap();
-        // eprintln!("{shader_reflection:#?}");
-        eprintln!("{:#}", compiled.fragment)
+        // let compiled: ShaderCompilerOutput<String, CrossWgslContext> = <CrossReflect<glsl::Target> as CompileShader<WGSL>>::compile(reflect, Version::V3_30).unwrap();
+        // // eprintln!("{shader_reflection:#?}");
+        // eprintln!("{}", compiled.fragment)
         // let mut loader = rspirv::dr::Loader::new();
         // rspirv::binary::parse_words(spirv.fragment.as_binary(), &mut loader).unwrap();
         // let module = loader.module();

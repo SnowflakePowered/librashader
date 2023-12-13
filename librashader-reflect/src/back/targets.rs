@@ -18,16 +18,27 @@ pub struct MSL;
 /// must be validated using platform APIs before usage.
 pub struct DXIL;
 
+/// Shader compiler target for WGSL.
+///
+/// The resulting WGSL will split sampler2Ds into
+/// split textures and shaders. Shaders for each texture binding
+/// will be in descriptor set 1.
+#[derive(Debug)]
+pub struct WGSL;
 impl OutputTarget for GLSL {
     type Output = String;
 }
 impl OutputTarget for HLSL {
     type Output = String;
 }
+impl OutputTarget for WGSL {
+    type Output = String;
+}
 impl OutputTarget for SPIRV {
     type Output = Vec<u32>;
 }
 
+#[cfg(test)]
 mod test {
     use crate::back::targets::GLSL;
     use crate::back::FromCompilation;
