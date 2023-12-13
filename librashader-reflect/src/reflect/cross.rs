@@ -208,6 +208,7 @@ where
             ));
         }
 
+        // Ensure that vertex attributes use location 0 and 1
         let vert_mask = vertex_res.stage_inputs.iter().try_fold(0, |mask, input| {
             Ok::<u32, ErrorCode>(
                 mask | 1 << self.vertex.get_decoration(input.id, Decoration::Location)?,
@@ -227,9 +228,7 @@ where
 
         if vertex_res.push_constant_buffers.len() > 1 {
             return Err(ShaderReflectError::VertexSemanticError(
-                SemanticsErrorKind::InvalidUniformBufferCount(
-                    vertex_res.push_constant_buffers.len(),
-                ),
+                SemanticsErrorKind::InvalidPushBufferCount(vertex_res.push_constant_buffers.len()),
             ));
         }
 
@@ -241,7 +240,7 @@ where
 
         if fragment_res.push_constant_buffers.len() > 1 {
             return Err(ShaderReflectError::FragmentSemanticError(
-                SemanticsErrorKind::InvalidUniformBufferCount(
+                SemanticsErrorKind::InvalidPushBufferCount(
                     fragment_res.push_constant_buffers.len(),
                 ),
             ));

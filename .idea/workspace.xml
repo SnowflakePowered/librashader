@@ -12,7 +12,15 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): load shaders" />
+    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): load shaders">
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/back/wgsl/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/back/wgsl/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/reflect/cross.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/reflect/cross.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/shaders_slang" beforeDir="false" afterPath="$PROJECT_DIR$/test/shaders_slang" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -29,7 +37,14 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/test/shaders_slang" />
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="feat-wgpu-runtime" />
+        <entry key="$PROJECT_DIR$/test/shaders_slang" value="a6e11453ad8c62931c62eeb79d51c70887b40bba" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="z2x7agij" />
@@ -63,7 +78,7 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "a6e11453",
+    "git-widget-placeholder": "86a88bb2",
     "last_opened_file_path": "F:/coding/librashader",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -213,10 +228,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Cargo.Test back::wgsl::test::test_into" />
-        <item itemvalue="Cargo.Test reflect::cross::test::test_into" />
+        <item itemvalue="Cargo.Test triangle_wgpu" />
         <item itemvalue="Cargo.Test front::naga::test::naga_playground" />
         <item itemvalue="Cargo.Test front::naga::test::naga_playground (1)" />
-        <item itemvalue="Cargo.Test triangle_wgpu" />
+        <item itemvalue="Cargo.Test reflect::cross::test::test_into" />
       </list>
     </recent_temporary>
   </component>
@@ -246,6 +261,7 @@
       <workItem from="1702100458574" duration="619000" />
       <workItem from="1702163869988" duration="618000" />
       <workItem from="1702419933111" duration="5007000" />
+      <workItem from="1702425796345" duration="12240000" />
     </task>
     <task id="LOCAL-00001" summary="rt(wgpu): basic triangle example">
       <option name="closed" value="true" />

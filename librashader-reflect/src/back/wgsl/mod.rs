@@ -6,11 +6,10 @@ use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompile
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
 use crate::reflect::naga::NagaReflect;
-use crate::reflect::semantics::ShaderSemantics;
-use crate::reflect::{ReflectShader, ShaderReflection};
+use crate::reflect::ReflectShader;
 use naga::back::wgsl::WriterFlags;
 use naga::valid::{Capabilities, ValidationFlags};
-use naga::Module;
+use naga::{AddressSpace, Module};
 use rspirv::binary::Assemble;
 use rspirv::dr::Builder;
 
@@ -20,9 +19,16 @@ pub struct NagaWgslContext {
     pub vertex: Module,
 }
 
+/// Compiler options for WGSL
+#[derive(Debug, Default, Clone)]
+pub struct WgslCompileOptions {
+    pub write_pcb_as_ubo: bool,
+    pub sampler_bind_group: u32,
+}
+
 impl FromCompilation<GlslangCompilation> for WGSL {
     type Target = WGSL;
-    type Options = Option<()>;
+    type Options = WgslCompileOptions;
     type Context = NagaWgslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;
@@ -65,12 +71,12 @@ impl FromCompilation<GlslangCompilation> for WGSL {
 }
 
 impl CompileShader<WGSL> for NagaReflect {
-    type Options = Option<()>;
+    type Options = WgslCompileOptions;
     type Context = NagaWgslContext;
 
     fn compile(
         mut self,
-        _options: Self::Options,
+        options: Self::Options,
     ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
         fn write_wgsl(module: &Module) -> Result<String, ShaderCompileError> {
             let mut valid =
@@ -81,6 +87,19 @@ impl CompileShader<WGSL> for NagaReflect {
             Ok(wgsl)
         }
 
+        if options.write_pcb_as_ubo {
+            for (_, gv) in self.fragment.global_variables.iter_mut() {
+                if gv.space == AddressSpace::PushConstant {
+                    gv.space = AddressSpace::Uniform;
+                }
+            }
+
+            for (_, gv) in self.vertex.global_variables.iter_mut() {
+                if gv.space == AddressSpace::PushConstant {
+                    gv.space = AddressSpace::Uniform;
+                }
+            }
+        }
         // Reassign shit.
         let images = self
             .fragment
@@ -117,7 +136,7 @@ impl CompileShader<WGSL> for NagaReflect {
             .for_each(|(_, gv)| {
                 if images.contains(&(gv.binding.clone(), gv.space)) {
                     if let Some(binding) = &mut gv.binding {
-                        binding.group = 1;
+                        binding.group = options.sampler_bind_group;
                     }
                 }
             });
@@ -138,21 +157,54 @@ impl CompileShader<WGSL> for NagaReflect {
 #[cfg(test)]
 mod test {
     use crate::back::targets::WGSL;
+    use crate::back::wgsl::WgslCompileOptions;
     use crate::back::{CompileShader, FromCompilation};
+    use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
+    use crate::reflect::ReflectShader;
     use librashader_preprocess::ShaderSource;
+    use rustc_hash::FxHashMap;
 
     #[test]
     pub fn test_into() {
-        let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
+        // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
+        // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang").unwrap();
+
+        let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
+
+        for (_index, param) in result.parameters.iter().enumerate() {
+            uniform_semantics.insert(
+                param.1.id.clone(),
+                UniformSemantic::Unique(Semantic {
+                    semantics: UniqueSemantics::FloatParameter,
+                    index: (),
+                }),
+            );
+        }
+
         let compilation = crate::front::GlslangCompilation::try_from(&result).unwrap();
 
-        let wgsl = WGSL::from_compilation(compilation).unwrap();
+        let mut wgsl = WGSL::from_compilation(compilation).unwrap();
 
-        let compiled = wgsl.compile(None).unwrap();
+        wgsl.reflect(
+            0,
+            &ShaderSemantics {
+                uniform_semantics,
+                texture_semantics: Default::default(),
+            },
+        )
+        .expect("");
+
+        let compiled = wgsl
+            .compile(WgslCompileOptions {
+                write_pcb_as_ubo: false,
+                sampler_bind_group: 1,
+            })
+            .unwrap();
 
         println!("{}", compiled.vertex);
 
-        println!("{}", compiled.fragment);
+        // println!("{}", compiled.fragment);
         // let mut loader = rspirv::dr::Loader::new();
         // rspirv::binary::parse_words(compilation.vertex.as_binary(), &mut loader).unwrap();
         // let module = loader.module();
