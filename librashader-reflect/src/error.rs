@@ -43,6 +43,8 @@ pub enum SemanticsErrorKind {
     /// The number of uniform buffers was invalid. Only one UBO is permitted.
     InvalidUniformBufferCount(usize),
     /// The number of push constant blocks was invalid. Only one push constant block is permitted.
+    InvalidPushBufferCount(usize),
+    /// The size of the push constant block was invalid.
     InvalidPushBufferSize(u32),
     /// The location of a varying was invalid.
     InvalidLocation(u32),
@@ -52,12 +54,16 @@ pub enum SemanticsErrorKind {
     InvalidInputCount(usize),
     /// The number of outputs declared was invalid.
     InvalidOutputCount(usize),
+    /// Expected a binding but there was none.
+    MissingBinding,
     /// The declared binding point was invalid.
     InvalidBinding(u32),
     /// The declared resource type was invalid.
     InvalidResourceType,
     /// The range of a struct member was invalid.
     InvalidRange(u32),
+    /// The number of entry points in the shader was invalid.
+    InvalidEntryPointCount(usize),
     /// The requested uniform or texture name was not provided semantics.
     UnknownSemantics(String),
     /// The type of the requested uniform was not compatible with the provided semantics.
@@ -104,7 +110,6 @@ pub enum ShaderReflectError {
     /// The binding number is already in use.
     #[error("the binding is already in use")]
     BindingInUse(u32),
-
     /// Error when transpiling from naga
     #[cfg(feature = "wgsl")]
     #[error("naga-spv")]
