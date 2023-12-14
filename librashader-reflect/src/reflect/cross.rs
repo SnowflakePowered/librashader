@@ -1,8 +1,8 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
 use crate::reflect::semantics::{
-    BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderReflection, ShaderSemantics,
-    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
+    BindingMeta, BindingStage, MemberOffset, ShaderReflection, ShaderSemantics,
+    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, BufferReflection,
     UniformMemberBlock, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta,
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
@@ -449,7 +449,7 @@ where
         &mut self,
         vertex_ubo: Option<&Resource>,
         fragment_ubo: Option<&Resource>,
-    ) -> Result<Option<UboReflection>, ShaderReflectError> {
+    ) -> Result<Option<BufferReflection<u32>>, ShaderReflectError> {
         if let Some(vertex_ubo) = vertex_ubo {
             self.vertex
                 .set_decoration(vertex_ubo.id, Decoration::Binding, 0)?;
@@ -475,7 +475,7 @@ where
                 }
 
                 let size = std::cmp::max(vertex_ubo.size, fragment_ubo.size);
-                Ok(Some(UboReflection {
+                Ok(Some(BufferReflection {
                     binding: vertex_ubo.binding,
                     size: align_uniform_size(size),
                     stage_mask: BindingStage::VERTEX | BindingStage::FRAGMENT,
@@ -484,7 +484,7 @@ where
             (Some(vertex_ubo), None) => {
                 let vertex_ubo =
                     Self::get_ubo_data(&self.vertex, vertex_ubo, SemanticErrorBlame::Vertex)?;
-                Ok(Some(UboReflection {
+                Ok(Some(BufferReflection {
                     binding: vertex_ubo.binding,
                     size: align_uniform_size(vertex_ubo.size),
                     stage_mask: BindingStage::VERTEX,
@@ -493,7 +493,7 @@ where
             (None, Some(fragment_ubo)) => {
                 let fragment_ubo =
                     Self::get_ubo_data(&self.fragment, fragment_ubo, SemanticErrorBlame::Fragment)?;
-                Ok(Some(UboReflection {
+                Ok(Some(BufferReflection {
                     binding: fragment_ubo.binding,
                     size: align_uniform_size(fragment_ubo.size),
                     stage_mask: BindingStage::FRAGMENT,
@@ -569,7 +569,7 @@ where
         &mut self,
         vertex_pcb: Option<&Resource>,
         fragment_pcb: Option<&Resource>,
-    ) -> Result<Option<PushReflection>, ShaderReflectError> {
+    ) -> Result<Option<BufferReflection<Option<u32>>>, ShaderReflectError> {
         if let Some(vertex_pcb) = vertex_pcb {
             self.vertex
                 .set_decoration(vertex_pcb.id, Decoration::Binding, 1)?;
@@ -593,7 +593,8 @@ where
 
                 let size = std::cmp::max(vertex_size, fragment_size);
 
-                Ok(Some(PushReflection {
+                Ok(Some(BufferReflection {
+                    binding: None,
                     size: align_uniform_size(size),
                     stage_mask: BindingStage::VERTEX | BindingStage::FRAGMENT,
                 }))
@@ -601,7 +602,8 @@ where
             (Some(vertex_push), None) => {
                 let vertex_size =
                     Self::get_push_size(&self.vertex, vertex_push, SemanticErrorBlame::Vertex)?;
-                Ok(Some(PushReflection {
+                Ok(Some(BufferReflection {
+                    binding: None,
                     size: align_uniform_size(vertex_size),
                     stage_mask: BindingStage::VERTEX,
                 }))
@@ -612,7 +614,8 @@ where
                     fragment_push,
                     SemanticErrorBlame::Fragment,
                 )?;
-                Ok(Some(PushReflection {
+                Ok(Some(BufferReflection {
+                    binding: None,
                     size: align_uniform_size(fragment_size),
                     stage_mask: BindingStage::FRAGMENT,
                 }))

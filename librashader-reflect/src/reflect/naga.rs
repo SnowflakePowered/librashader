@@ -7,8 +7,8 @@ use naga::{
 
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
-    BindingMeta, BindingStage, MemberOffset, PushReflection, ShaderSemantics, TextureBinding,
-    TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UboReflection,
+    BindingMeta, BindingStage, MemberOffset, ShaderSemantics, TextureBinding,
+    TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, BufferReflection,
     UniformMemberBlock, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta,
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
@@ -105,23 +105,7 @@ impl NagaReflect {
         &mut self,
         vertex_ubo: Option<Handle<GlobalVariable>>,
         fragment_ubo: Option<Handle<GlobalVariable>>,
-    ) -> Result<Option<UboReflection>, ShaderReflectError> {
-        if let Some(vertex_ubo) = vertex_ubo {
-            let ubo = &mut self.vertex.global_variables[vertex_ubo];
-            ubo.binding = Some(ResourceBinding {
-                group: 0,
-                binding: 0,
-            })
-        }
-
-        if let Some(fragment_ubo) = fragment_ubo {
-            let ubo = &mut self.fragment.global_variables[fragment_ubo];
-            ubo.binding = Some(ResourceBinding {
-                group: 0,
-                binding: 0,
-            })
-        }
-
+    ) -> Result<Option<BufferReflection<u32>>, ShaderReflectError> {
         // todo: merge this with the spirv-cross code
         match (vertex_ubo, fragment_ubo) {
             (None, None) => Ok(None),
@@ -144,7 +128,7 @@ impl NagaReflect {
                 }
 
                 let size = std::cmp::max(vertex_ubo.size, fragment_ubo.size);
-                Ok(Some(UboReflection {
+                Ok(Some(BufferReflection {
                     binding: vertex_ubo.binding,
                     size: align_uniform_size(size),
                     stage_mask: BindingStage::VERTEX | BindingStage::FRAGMENT,
@@ -156,7 +140,7 @@ impl NagaReflect {
                     &self.vertex.global_variables[vertex_ubo],
                     SemanticErrorBlame::Vertex,
                 )?;
-                Ok(Some(UboReflection {
+                Ok(Some(BufferReflection {
                     binding: vertex_ubo.binding,
                     size: align_uniform_size(vertex_ubo.size),
                     stage_mask: BindingStage::VERTEX,
@@ -168,7 +152,7 @@ impl NagaReflect {
                     &self.fragment.global_variables[fragment_ubo],
                     SemanticErrorBlame::Fragment,
                 )?;
-                Ok(Some(UboReflection {
+                Ok(Some(BufferReflection {
                     binding: fragment_ubo.binding,
                     size: align_uniform_size(fragment_ubo.size),
                     stage_mask: BindingStage::FRAGMENT,
@@ -203,6 +187,34 @@ impl NagaReflect {
             size,
         })
     }
+
+    fn get_next_binding(&self, bind_group: u32) -> u32{
+        let mut max_bind = 0;
+        for (_, gv) in self.vertex
+            .global_variables.iter() {
+            let Some(binding) = &gv.binding else {
+                continue;
+            };
+            if binding.group != bind_group {
+                continue;
+            }
+            max_bind = std::cmp::max(max_bind, binding.binding);
+        }
+
+        for (_, gv) in self.fragment
+            .global_variables.iter() {
+            let Some(binding) = &gv.binding else {
+                continue;
+            };
+            if binding.group != bind_group {
+                continue;
+            }
+            max_bind = std::cmp::max(max_bind, binding.binding);
+        }
+
+        max_bind + 1
+    }
+
     fn get_push_size(
         module: &Module,
         push: &GlobalVariable,
@@ -220,13 +232,14 @@ impl NagaReflect {
         &mut self,
         vertex_pcb: Option<Handle<GlobalVariable>>,
         fragment_pcb: Option<Handle<GlobalVariable>>,
-    ) -> Result<Option<PushReflection>, ShaderReflectError> {
+    ) -> Result<Option<BufferReflection<Option<u32>>>, ShaderReflectError> {
+        let binding = self.get_next_binding(0);
         // Reassign to UBO later if we want during compilation.
         if let Some(vertex_pcb) = vertex_pcb {
             let ubo = &mut self.vertex.global_variables[vertex_pcb];
             ubo.binding = Some(ResourceBinding {
                 group: 0,
-                binding: 1,
+                binding,
             });
         }
 
@@ -234,7 +247,7 @@ impl NagaReflect {
             let ubo = &mut self.fragment.global_variables[fragment_pcb];
             ubo.binding = Some(ResourceBinding {
                 group: 0,
-                binding: 1,
+                binding,
             });
         };
 
@@ -254,7 +267,8 @@ impl NagaReflect {
 
                 let size = std::cmp::max(vertex_size, fragment_size);
 
-                Ok(Some(PushReflection {
+                Ok(Some(BufferReflection {
+                    binding: Some(binding),
                     size: align_uniform_size(size),
                     stage_mask: BindingStage::VERTEX | BindingStage::FRAGMENT,
                 }))
@@ -265,7 +279,8 @@ impl NagaReflect {
                     &self.vertex.global_variables[vertex_push],
                     SemanticErrorBlame::Vertex,
                 )?;
-                Ok(Some(PushReflection {
+                Ok(Some(BufferReflection {
+                    binding: Some(binding),
                     size: align_uniform_size(vertex_size),
                     stage_mask: BindingStage::VERTEX,
                 }))
@@ -276,7 +291,8 @@ impl NagaReflect {
                     &self.fragment.global_variables[fragment_push],
                     SemanticErrorBlame::Fragment,
                 )?;
-                Ok(Some(PushReflection {
+                Ok(Some(BufferReflection {
+                    binding: Some(binding),
                     size: align_uniform_size(fragment_size),
                     stage_mask: BindingStage::FRAGMENT,
                 }))

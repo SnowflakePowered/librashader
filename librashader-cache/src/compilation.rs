@@ -1,6 +1,9 @@
 //!  Cache helpers for `ShaderCompilation` objects to cache compiled SPIRV.
 use librashader_preprocess::ShaderSource;
-use librashader_reflect::back::targets::{DXIL, GLSL, HLSL, SPIRV};
+use librashader_reflect::back::targets::{GLSL, HLSL, SPIRV};
+#[cfg(all(target_os = "windows", feature = "d3d"))]
+use librashader_reflect::back::targets::DXIL;
+
 use librashader_reflect::back::{CompilerBackend, FromCompilation};
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_reflect::front::{GlslangCompilation, ShaderCompilation};

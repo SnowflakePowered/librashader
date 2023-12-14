@@ -169,23 +169,14 @@ bitflags! {
     }
 }
 
-/// Reflection information for the Uniform Buffer
+/// Reflection information for the Uniform Buffer or Push Constant Block
 #[derive(Debug)]
-pub struct UboReflection {
-    /// The binding point for this UBO.
-    pub binding: u32,
-    /// The size of the UBO buffer. UBO sizes returned by reflection is always aligned to a 16 byte boundary.
+pub struct BufferReflection<T> {
+    /// The binding point for this buffer, if applicable
+    pub binding: T,
+    /// The size of the buffer. Buffer sizes returned by reflection is always aligned to a 16 byte boundary.
     pub size: u32,
     /// The mask indicating for which stages the UBO should be bound.
-    pub stage_mask: BindingStage,
-}
-
-/// Reflection information for the Push Constant Block
-#[derive(Debug)]
-pub struct PushReflection {
-    /// The size of the Push Constant range. The size returned by reflection is always aligned to a 16 byte boundary.
-    pub size: u32,
-    /// The mask indicating for which stages the Push Constant range should be bound.
     pub stage_mask: BindingStage,
 }
 
@@ -279,9 +270,9 @@ pub struct TextureBinding {
 #[derive(Debug)]
 pub struct ShaderReflection {
     /// Reflection information about the UBO for this shader.
-    pub ubo: Option<UboReflection>,
+    pub ubo: Option<BufferReflection<u32>>,
     /// Reflection information about the Push Constant range for this shader.
-    pub push_constant: Option<PushReflection>,
+    pub push_constant: Option<BufferReflection<Option<u32>>>,
     /// Metadata about the bindings required for this shader.
     pub meta: BindingMeta,
 }

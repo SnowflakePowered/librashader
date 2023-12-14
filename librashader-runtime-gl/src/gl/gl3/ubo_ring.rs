@@ -1,7 +1,7 @@
 use crate::binding::UniformLocation;
 use crate::gl::UboRing;
 use gl::types::{GLsizei, GLsizeiptr, GLuint};
-use librashader_reflect::reflect::semantics::UboReflection;
+use librashader_reflect::reflect::semantics::BufferReflection;
 use librashader_runtime::ringbuffer::InlineRingBuffer;
 use librashader_runtime::ringbuffer::RingBuffer;
 use librashader_runtime::uniforms::UniformStorageAccess;
@@ -31,7 +31,7 @@ impl<const SIZE: usize> UboRing<SIZE> for Gl3UboRing<SIZE> {
 
     fn bind_for_frame(
         &mut self,
-        ubo: &UboReflection,
+        ubo: &BufferReflection<u32>,
         ubo_location: &UniformLocation<GLuint>,
         storage: &impl UniformStorageAccess,
     ) {
