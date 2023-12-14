@@ -14,6 +14,7 @@ mod texture;
 mod filter_pass;
 mod graphics_pipeline;
 mod util;
+mod samplers;
 
 pub use filter_chain::FilterChainWGPU;
 pub use filter_pass::FilterPass;
