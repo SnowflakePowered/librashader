@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, Device, PipelineLayout, PushConstantRange, SamplerBindingType, ShaderModule, ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension};
+use wgpu::{BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, Device, PipelineLayout, PushConstantRange, SamplerBindingType, ShaderModule, ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexAttribute, VertexBufferLayout};
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::reflect::semantics::BufferReflection;
@@ -17,28 +17,6 @@ pub struct PipelineLayoutObjects {
     pub layout: PipelineLayout,
     pub bind_group_layouts: Vec<BindGroupLayout>
 }
-//
-// pub fn add_ubo_binding(&mut self, ubo_meta: Option<&UboReflection>) {
-//
-// }
-
-// pub fn add_texture_bindings<'a>(&mut self, textures: impl Iterator<Item = &'a TextureBinding>) {
-//     let texture_mask = vk::ShaderStageFlags::FRAGMENT;
-//     for texture in textures {
-//         self.layout_bindings.push(vk::DescriptorSetLayoutBinding {
-//             binding: texture.binding,
-//             descriptor_type: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
-//             descriptor_count: 1,
-//             stage_flags: texture_mask,
-//             p_immutable_samplers: std::ptr::null(),
-//         });
-//
-//         self.pool_sizes.push(vk::DescriptorPoolSize {
-//             ty: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
-//             descriptor_count: self.replicas,
-//         })
-//     }
-// }
 
 impl PipelineLayoutObjects {
     pub fn new(
@@ -153,10 +131,73 @@ impl WgpuGraphicsPipeline {
             source: ShaderSource::Wgsl(Cow::from(&shader_assembly.fragment))
         });
 
+        let layout = PipelineLayoutObjects::new(reflection, device);
+
+        let vao_layout = VertexBufferLayout {
+            array_stride: 4 * std::mem::size_of::<f32>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x2,
+                    offset: 0,
+                    shader_location: 0,
+                },
+                wgpu::VertexAttribute {
+                    format:  wgpu::VertexFormat::Float32x2,
+                    offset: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
+                    shader_location: 1,
+                },
+            ],
+        };
+
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&layout.layout),
+            vertex: wgpu::VertexState {
+                module: &vertex,
+                entry_point: &shader_assembly
+                    .context
+                    .vertex
+                    .entry_points[0]
+                    .name,
+                buffers: &[
+                    vao_layout
+                ],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &fragment,
+                entry_point: &shader_assembly
+                    .context
+                    .fragment
+                    .entry_points[0]
+                    .name,
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: render_pass_format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+        });
 
         Self {
             vertex,
-            fragment
+            fragment,
         }
     }
 }
