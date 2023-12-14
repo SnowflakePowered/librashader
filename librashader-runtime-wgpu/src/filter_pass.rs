@@ -3,6 +3,7 @@ use rustc_hash::FxHashMap;
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::ShaderCompilerOutput;
+use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::reflect::semantics::{MemberOffset, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
@@ -10,7 +11,7 @@ use crate::graphics_pipeline::WgpuGraphicsPipeline;
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,
-    pub(crate) compiled: ShaderCompilerOutput<Vec<u32>>,
+    pub(crate) compiled: ShaderCompilerOutput<String, NagaWgslContext>,
     pub(crate) uniform_storage: UniformStorage,
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,

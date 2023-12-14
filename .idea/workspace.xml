@@ -12,14 +12,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): load shaders">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="reflect(wgsl): give push uniform a non-overlapping bind group">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/back/wgsl/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/back/wgsl/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/reflect/cross.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/reflect/cross.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/shaders_slang" beforeDir="false" afterPath="$PROJECT_DIR$/test/shaders_slang" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/graphics_pipeline.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/graphics_pipeline.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,6 +65,11 @@
     "Cargo.Test front::naga::test::naga_playground (1).executor": "Run",
     "Cargo.Test front::naga::test::naga_playground.executor": "Run",
     "Cargo.Test reflect::cross::test::test_into.executor": "Run",
+    "Cargo.Test triangle_d3d11.executor": "Run",
+    "Cargo.Test triangle_d3d12.executor": "Run",
+    "Cargo.Test triangle_gl.executor": "Run",
+    "Cargo.Test triangle_gl46.executor": "Run",
+    "Cargo.Test triangle_vk.executor": "Run",
     "Cargo.Test triangle_wgpu.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.RadMigrateCodeStyle": "true",
@@ -78,15 +78,15 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "86a88bb2",
-    "last_opened_file_path": "F:/coding/librashader",
+    "git-widget-placeholder": "feat-wgpu-runtime",
+    "last_opened_file_path": "C:/coding/librashader",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
+    "settings.editor.selected.configurable": "language.rust",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -131,40 +131,6 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test front::naga::test::naga_playground (1)" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package librashader-reflect --lib front::naga::test::naga_playground -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <envs />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test front::naga::test::naga_playground" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package librashader-reflect --features=unstable-naga --lib front::naga::test::naga_playground -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <envs />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="Test librashader" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="test --workspace" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -182,8 +148,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test reflect::cross::test::test_into" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package librashader-reflect --lib reflect::cross::test::test_into -- --exact" />
+    <configuration name="Test triangle_d3d11" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package librashader-runtime-d3d11 --test triangle triangle_d3d11 -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="emulateTerminal" value="true" />
       <option name="channel" value="DEFAULT" />
@@ -199,8 +165,42 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test triangle_wgpu" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package librashader-runtime-wgpu --test triangle triangle_wgpu -- --exact" />
+    <configuration name="Test triangle_d3d12" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package librashader-runtime-d3d12 --test triangle triangle_d3d12 -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test triangle_gl46" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package librashader-runtime-gl --test triangle triangle_gl46 -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test triangle_vk" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package librashader-runtime-vk --test triangle triangle_vk -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="emulateTerminal" value="true" />
       <option name="channel" value="DEFAULT" />
@@ -219,24 +219,24 @@
     <list>
       <item itemvalue="Cargo.Run librashader-build-script" />
       <item itemvalue="Cargo.Test librashader" />
+      <item itemvalue="Cargo.Test triangle_d3d11" />
+      <item itemvalue="Cargo.Test triangle_d3d12" />
+      <item itemvalue="Cargo.Test triangle_gl46" />
+      <item itemvalue="Cargo.Test triangle_vk" />
       <item itemvalue="Cargo.Test back::wgsl::test::test_into" />
-      <item itemvalue="Cargo.Test reflect::cross::test::test_into" />
-      <item itemvalue="Cargo.Test front::naga::test::naga_playground (1)" />
-      <item itemvalue="Cargo.Test front::naga::test::naga_playground" />
-      <item itemvalue="Cargo.Test triangle_wgpu" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Cargo.Test back::wgsl::test::test_into" />
-        <item itemvalue="Cargo.Test triangle_wgpu" />
-        <item itemvalue="Cargo.Test front::naga::test::naga_playground" />
-        <item itemvalue="Cargo.Test front::naga::test::naga_playground (1)" />
-        <item itemvalue="Cargo.Test reflect::cross::test::test_into" />
+        <item itemvalue="Cargo.Test triangle_gl46" />
+        <item itemvalue="Cargo.Test triangle_vk" />
+        <item itemvalue="Cargo.Test triangle_d3d11" />
+        <item itemvalue="Cargo.Test triangle_d3d12" />
       </list>
     </recent_temporary>
   </component>
   <component name="RustProjectSettings">
-    <option name="toolchainHomeDirectory" value="D:/Runtime/Rust/cargo/bin" />
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.rustup/toolchains/nightly-x86_64-pc-windows-msvc/bin" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -262,6 +262,9 @@
       <workItem from="1702163869988" duration="618000" />
       <workItem from="1702419933111" duration="5007000" />
       <workItem from="1702425796345" duration="12240000" />
+      <workItem from="1702482450853" duration="399000" />
+      <workItem from="1702482871248" duration="556000" />
+      <workItem from="1702484102491" duration="4924000" />
     </task>
     <task id="LOCAL-00001" summary="rt(wgpu): basic triangle example">
       <option name="closed" value="true" />
@@ -295,7 +298,15 @@
       <option name="project" value="LOCAL" />
       <updated>1701327201979</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="reflect(wgsl): give push uniform a non-overlapping bind group">
+      <option name="closed" value="true" />
+      <created>1702513440377</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1702513440377</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -307,7 +318,8 @@
     </ignored-roots>
     <MESSAGE value="rt(wgpu): basic triangle example" />
     <MESSAGE value="rt(wgpu): load shaders" />
-    <option name="LAST_COMMIT_MESSAGE" value="rt(wgpu): load shaders" />
+    <MESSAGE value="reflect(wgsl): give push uniform a non-overlapping bind group" />
+    <option name="LAST_COMMIT_MESSAGE" value="reflect(wgsl): give push uniform a non-overlapping bind group" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

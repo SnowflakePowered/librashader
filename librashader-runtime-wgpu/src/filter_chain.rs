@@ -1,5 +1,5 @@
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::SPIRV;
+use librashader_reflect::back::targets::{SPIRV, WGSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
@@ -23,6 +23,7 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, TextureFormat};
 use librashader_common::ImageFormat;
+use librashader_reflect::back::wgsl::WgslCompileOptions;
 
 use crate::error;
 use crate::error::FilterChainError;
@@ -30,20 +31,13 @@ use crate::filter_pass::FilterPass;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 
 type ShaderPassMeta =
-ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation> + Send>;
+ShaderPassArtifact<impl CompileReflectShader<WGSL, GlslangCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
-    disable_cache: bool,
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
-    let (passes, semantics) = if !disable_cache {
-        SPIRV::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
-            shaders, &textures,
-        )?
-    } else {
-        SPIRV::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
-    };
-
+    let (passes, semantics) =
+        WGSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?;
     Ok((passes, semantics))
 }
 
@@ -92,8 +86,7 @@ impl FilterChainWGPU {
     ) -> error::Result<FilterChainWGPU>
 
     {
-        let disable_cache = true;
-        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
+        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
         // let device = vulkan.try_into().map_err(From::from)?;
         //
@@ -107,7 +100,6 @@ impl FilterChainWGPU {
             &device,
             passes,
             &semantics,
-            disable_cache,
         )?;
         //
         // let luts = FilterChainVulkan::load_luts(&device, cmd, &preset.textures)?;
@@ -175,7 +167,6 @@ impl FilterChainWGPU {
         device: &Device,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
-        disable_cache: bool,
     ) -> error::Result<Box<[FilterPass]>> {
         // let frames_in_flight = std::cmp::max(1, frames_in_flight);
         //
@@ -184,7 +175,10 @@ impl FilterChainWGPU {
             .enumerate()
             .map(|(index, (config, source, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
-                let spirv_words = reflect.compile(None)?;
+                let wgsl = reflect.compile(WgslCompileOptions {
+                    write_pcb_as_ubo: true,
+                    sampler_bind_group: 1,
+                })?;
 
                 let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
 
@@ -207,7 +201,7 @@ impl FilterChainWGPU {
 
                 let graphics_pipeline = WgpuGraphicsPipeline::new(
                     device,
-                    &spirv_words,
+                    &wgsl,
                     &reflection,
                     render_pass_format.unwrap_or(TextureFormat::R8Unorm)
                 );
@@ -224,7 +218,7 @@ impl FilterChainWGPU {
                 Ok(FilterPass {
                     // device: vulkan.device.clone(),
                     reflection,
-                    compiled: spirv_words,
+                    compiled: wgsl,
                     uniform_storage,
                     uniform_bindings,
                     source,

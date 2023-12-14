@@ -99,7 +99,14 @@ impl CompileShader<WGSL> for NagaReflect {
                     gv.space = AddressSpace::Uniform;
                 }
             }
+        } else {
+            for (_, gv) in self.fragment.global_variables.iter_mut() {
+                if gv.space == AddressSpace::PushConstant {
+                    gv.binding = None;
+                }
+            }
         }
+
         // Reassign shit.
         let images = self
             .fragment
@@ -197,12 +204,12 @@ mod test {
 
         let compiled = wgsl
             .compile(WgslCompileOptions {
-                write_pcb_as_ubo: false,
+                write_pcb_as_ubo: true,
                 sampler_bind_group: 1,
             })
             .unwrap();
 
-        println!("{}", compiled.vertex);
+        println!("{}", compiled.fragment);
 
         // println!("{}", compiled.fragment);
         // let mut loader = rspirv::dr::Loader::new();

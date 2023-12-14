@@ -7,7 +7,7 @@ use crate::render_pass::VulkanRenderPass;
 use ash::vk::PushConstantRange;
 use librashader_cache::cache_pipeline;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{TextureBinding, UboReflection};
+use librashader_reflect::reflect::semantics::{TextureBinding, BufferReflection};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
@@ -30,10 +30,8 @@ impl PipelineDescriptors {
         }
     }
 
-    pub fn add_ubo_binding(&mut self, ubo_meta: Option<&UboReflection>) {
-        if let Some(ubo_meta) = ubo_meta
-            && !ubo_meta.stage_mask.is_empty()
-        {
+    pub fn add_ubo_binding(&mut self, ubo_meta: Option<&BufferReflection<u32>>) {
+        if let Some(ubo_meta) = ubo_meta && !ubo_meta.stage_mask.is_empty() {
             let ubo_mask = util::binding_stage_to_vulkan_stage(ubo_meta.stage_mask);
 
             self.layout_bindings.push(vk::DescriptorSetLayoutBinding {
@@ -120,18 +118,6 @@ impl PipelineLayoutObjects {
             push_constant_range.as_ref().map_or(&[], |o| o);
 
         let pipeline_create_info = pipeline_create_info.push_constant_ranges(push_constant_range);
-
-        // let pipeline_create_info = if let Some(push_constant) = &reflection.push_constant {
-        //     let stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
-        //     let push_constant_range = vk::PushConstantRange::builder()
-        //         .stage_flags(stage_mask)
-        //         .size(push_constant.size);
-        //     let push_constant_range = [*push_constant_range];
-        //     pipeline_create_info
-        //         .push_constant_ranges(&push_constant_range)
-        // } else {
-        //     pipeline_create_info
-        // };
 
         let layout = unsafe { device.create_pipeline_layout(&pipeline_create_info, None)? };
 

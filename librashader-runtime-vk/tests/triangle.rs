@@ -11,7 +11,7 @@ fn triangle_vk() {
 
     unsafe {
         let filter = FilterChainVulkan::load_from_path(
-            "../test/shaders_slang/crt/crt-royale.slangp",
+            "../test/slang-shaders/crt/crt-royale.slangp",
             // "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",
             &base,
             // "../test/slang-shaders/test/feedback.slancargogp",
