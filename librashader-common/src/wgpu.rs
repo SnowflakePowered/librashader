@@ -175,3 +175,13 @@ impl From<WrapMode> for wgpu_types::AddressMode {
         }
     }
 }
+
+impl From<Size<u32>> for wgpu_types::Extent3d {
+    fn from(value: Size<u32>) -> Self {
+        wgpu_types::Extent3d {
+            width: value.width,
+            height: value.height,
+            depth_or_array_layers: 1,
+        }
+    }
+}

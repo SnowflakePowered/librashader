@@ -384,14 +384,13 @@ impl VulkanGraphicsPipeline {
     #[inline(always)]
     pub(crate) fn begin_rendering(
         &self,
-        device: &ash::Device,
         output: &RenderTarget<OutputImage>,
         cmd: vk::CommandBuffer,
     ) -> error::Result<Option<vk::Framebuffer>> {
         if let Some(render_pass) = &self.render_pass {
             let attachments = [output.output.image_view];
             let framebuffer = unsafe {
-                device.create_framebuffer(
+                self.device.create_framebuffer(
                     &vk::FramebufferCreateInfo::builder()
                         .render_pass(render_pass.handle)
                         .attachments(&attachments)
@@ -418,7 +417,7 @@ impl VulkanGraphicsPipeline {
                     extent: output.output.size.into(),
                 });
             unsafe {
-                device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
+                self.device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
             }
             Ok(Some(framebuffer))
         } else {
@@ -438,18 +437,18 @@ impl VulkanGraphicsPipeline {
                 .color_attachments(&attachments);
 
             unsafe {
-                device.cmd_begin_rendering(cmd, &rendering_info);
+                self.device.cmd_begin_rendering(cmd, &rendering_info);
             }
             Ok(None)
         }
     }
 
-    pub(crate) fn end_rendering(&self, device: &ash::Device, cmd: vk::CommandBuffer) {
+    pub(crate) fn end_rendering(&self, cmd: vk::CommandBuffer) {
         unsafe {
             if self.render_pass.is_none() {
-                device.cmd_end_rendering(cmd);
+                self.device.cmd_end_rendering(cmd);
             } else {
-                device.cmd_end_render_pass(cmd)
+                self.device.cmd_end_render_pass(cmd)
             }
         }
     }

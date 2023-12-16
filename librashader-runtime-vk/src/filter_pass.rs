@@ -126,7 +126,7 @@ impl FilterPass {
 
         let residual = self
             .graphics_pipeline
-            .begin_rendering(&parent.device, output, cmd)?;
+            .begin_rendering(output, cmd)?;
 
         unsafe {
             parent.device.cmd_bind_pipeline(
@@ -178,7 +178,7 @@ impl FilterPass {
                 .device
                 .cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
             parent.draw_quad.draw_quad(cmd, vbo_type);
-            self.graphics_pipeline.end_rendering(&parent.device, cmd);
+            self.graphics_pipeline.end_rendering(cmd);
         }
         Ok(residual)
     }

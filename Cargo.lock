@@ -1830,6 +1830,7 @@ dependencies = [
 name = "librashader-runtime-wgpu"
 version = "0.1.0"
 dependencies = [
+ "array-concat",
  "bytemuck",
  "config",
  "env_logger",

@@ -1,28 +1,43 @@
-use std::borrow::Cow;
-use std::num::NonZeroU32;
-use std::sync::Arc;
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, Device, PipelineLayout, PushConstantRange, SamplerBindingType, ShaderModule, ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexAttribute, VertexBufferLayout};
-use librashader_reflect::back::ShaderCompilerOutput;
+use crate::{error, util};
 use librashader_reflect::back::wgsl::NagaWgslContext;
-use librashader_reflect::reflect::semantics::BufferReflection;
+use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
-use crate::util;
+use std::borrow::Cow;
+use std::sync::Arc;
+use wgpu::{BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, CommandEncoder, Device, Operations, PipelineLayout, PushConstantRange, RenderPass, RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor, SamplerBindingType, ShaderModule, ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexAttribute, VertexBufferLayout};
+use librashader_runtime::render_target::RenderTarget;
+use crate::framebuffer::OutputImage;
 
 pub struct WgpuGraphicsPipeline {
-    vertex: ShaderModule,
-    fragment: ShaderModule
+    layout: PipelineLayoutObjects,
+    render_pipeline: wgpu::RenderPipeline,
 }
 
 pub struct PipelineLayoutObjects {
-    pub layout: PipelineLayout,
-    pub bind_group_layouts: Vec<BindGroupLayout>
+    layout: PipelineLayout,
+    bind_group_layouts: Vec<BindGroupLayout>,
+    fragment_entry_name: String,
+    vertex_entry_name: String,
+    vertex: ShaderModule,
+    fragment: ShaderModule,
+    device: Arc<wgpu::Device>
 }
 
 impl PipelineLayoutObjects {
     pub fn new(
         reflection: &ShaderReflection,
-        device: &Device
+        shader_assembly: &ShaderCompilerOutput<String, NagaWgslContext>,
+        device: Arc<wgpu::Device>,
     ) -> Self {
+        let vertex = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("vertex"),
+            source: ShaderSource::Wgsl(Cow::from(&shader_assembly.vertex)),
+        });
+
+        let fragment = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("fragment"),
+            source: ShaderSource::Wgsl(Cow::from(&shader_assembly.fragment)),
+        });
 
         let mut bind_group_layouts = Vec::new();
 
@@ -31,7 +46,9 @@ impl PipelineLayoutObjects {
 
         let mut push_constant_range = Vec::new();
 
-        if let Some(push_meta) = reflection.push_constant.as_ref() && !push_meta.stage_mask.is_empty() {
+        if let Some(push_meta) = reflection.push_constant.as_ref()
+            && !push_meta.stage_mask.is_empty()
+        {
             let push_mask = util::binding_stage_to_wgpu_stage(push_meta.stage_mask);
 
             if let Some(binding) = push_meta.binding {
@@ -53,7 +70,9 @@ impl PipelineLayoutObjects {
             }
         }
 
-        if let Some(ubo_meta) = reflection.ubo.as_ref() && !ubo_meta.stage_mask.is_empty() {
+        if let Some(ubo_meta) = reflection.ubo.as_ref()
+            && !ubo_meta.stage_mask.is_empty()
+        {
             let ubo_mask = util::binding_stage_to_wgpu_stage(ubo_meta.stage_mask);
             main_bindings.push(BindGroupLayoutEntry {
                 binding: ubo_meta.binding,
@@ -99,80 +118,56 @@ impl PipelineLayoutObjects {
         bind_group_layouts.push(main_bind_group);
         bind_group_layouts.push(sampler_bind_group);
 
+        let bind_group_layout_refs = bind_group_layouts.iter().collect::<Vec<_>>();
+
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("shader pipeline layout"),
-            bind_group_layouts: &bind_group_layouts.as_ref(),
+            bind_group_layouts: &bind_group_layout_refs,
             push_constant_ranges: &push_constant_range.as_ref(),
         });
 
         Self {
             layout,
-            bind_group_layouts
+            bind_group_layouts,
+            fragment_entry_name: shader_assembly.context.fragment.entry_points[0]
+                .name
+                .clone(),
+            vertex_entry_name: shader_assembly.context.vertex.entry_points[0].name.clone(),
+            vertex,
+            fragment,
+            device,
         }
     }
-}
 
-
-
-impl WgpuGraphicsPipeline {
-    pub fn new(
-        device: &Device,
-        shader_assembly: &ShaderCompilerOutput<String, NagaWgslContext>,
-        reflection: &ShaderReflection,
-        render_pass_format: TextureFormat,
-    ) -> Self {
-        let vertex = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("vertex"),
-                source: ShaderSource::Wgsl(Cow::from(&shader_assembly.vertex))
-            });
-
-        let fragment = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("fragment"),
-            source: ShaderSource::Wgsl(Cow::from(&shader_assembly.fragment))
-        });
-
-        let layout = PipelineLayoutObjects::new(reflection, device);
-
-        let vao_layout = VertexBufferLayout {
-            array_stride: 4 * std::mem::size_of::<f32>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                wgpu::VertexAttribute {
-                    format:  wgpu::VertexFormat::Float32x2,
-                    offset: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
-                    shader_location: 1,
-                },
-            ],
-        };
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    pub fn create_pipeline(&self, framebuffer_format: TextureFormat) -> wgpu::RenderPipeline {
+        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
-            layout: Some(&layout.layout),
+            layout: Some(&self.layout),
             vertex: wgpu::VertexState {
-                module: &vertex,
-                entry_point: &shader_assembly
-                    .context
-                    .vertex
-                    .entry_points[0]
-                    .name,
-                buffers: &[
-                    vao_layout
-                ],
+                module: &self.vertex,
+                entry_point: &self.vertex_entry_name,
+                buffers: &[VertexBufferLayout {
+                    array_stride: 4 * std::mem::size_of::<f32>() as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
+                            shader_location: 1,
+                        },
+                    ],
+                }],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &fragment,
-                entry_point: &shader_assembly
-                    .context
-                    .fragment
-                    .entry_points[0]
-                    .name,
+                module: &self.fragment,
+                entry_point: &self.fragment_entry_name,
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: render_pass_format,
+                    format: framebuffer_format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -193,11 +188,64 @@ impl WgpuGraphicsPipeline {
                 alpha_to_coverage_enabled: false,
             },
             multiview: None,
+        })
+    }
+}
+
+impl WgpuGraphicsPipeline {
+    pub fn new(
+        device: Arc<wgpu::Device>,
+        shader_assembly: &ShaderCompilerOutput<String, NagaWgslContext>,
+        reflection: &ShaderReflection,
+        render_pass_format: TextureFormat,
+    ) -> Self {
+        let layout = PipelineLayoutObjects::new(reflection, shader_assembly, device);
+        let render_pipeline = layout.create_pipeline(render_pass_format);
+        Self {
+            layout,
+            render_pipeline,
+        }
+    }
+
+    pub fn recompile(&mut self, format: TextureFormat) {
+        let render_pipeline = self.layout.create_pipeline(format);
+        self.render_pipeline = render_pipeline;
+    }
+
+    pub(crate) fn begin_rendering<'pass>(
+        &'pass self,
+        output: &RenderTarget<'pass, OutputImage>,
+        cmd: &'pass mut CommandEncoder
+    ) -> RenderPass<'pass> {
+        let mut render_pass = cmd.begin_render_pass(&RenderPassDescriptor {
+            label: Some("librashader"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &output.output.view,
+                resolve_target: None,
+                ops: Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 0.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
 
-        Self {
-            vertex,
-            fragment,
-        }
+        render_pass.set_viewport(
+            output.x,
+            output.y,
+            output.output.size.width as f32,
+            output.output.size.height as f32,
+            1.0,
+            1.0
+        );
+
+        render_pass
     }
 }

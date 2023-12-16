@@ -1,13 +1,13 @@
-use std::sync::Arc;
-use rustc_hash::FxHashMap;
+use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::back::wgsl::NagaWgslContext;
+use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{MemberOffset, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
-use crate::graphics_pipeline::WgpuGraphicsPipeline;
+use rustc_hash::FxHashMap;
+use std::sync::Arc;
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,
