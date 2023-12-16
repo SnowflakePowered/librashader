@@ -4,11 +4,11 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+use librashader_presets::ShaderPreset;
+use librashader_runtime_wgpu::FilterChainWGPU;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use librashader_presets::ShaderPreset;
-use librashader_runtime_wgpu::FilterChainWGPU;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -35,29 +35,28 @@ impl Vertex {
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x3,
                 },
-            ]
+            ],
         }
     }
 }
 
-
-
-
 const VERTICES: &[Vertex] = &[
-    Vertex { // top
+    Vertex {
+        // top
         position: [0.0, 0.5, 0.0],
         color: [1.0, 0.0, 0.0],
     },
-    Vertex { // bottom left
+    Vertex {
+        // bottom left
         position: [-0.5, -0.5, 0.0],
         color: [0.0, 1.0, 0.0],
     },
-    Vertex { // bottom right
+    Vertex {
+        // bottom right
         position: [0.5, -0.5, 0.0],
         color: [0.0, 0.0, 1.0],
     },
 ];
-
 
 struct State {
     surface: wgpu::Surface,
@@ -71,7 +70,7 @@ struct State {
 
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
-    chain: FilterChainWGPU
+    chain: FilterChainWGPU,
 }
 impl State {
     async fn new(window: &Window) -> Self {
@@ -113,7 +112,8 @@ impl State {
             view_formats: vec![],
         };
 
-        let preset = ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+        let preset =
+            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
         let chain = FilterChainWGPU::load_from_preset_deferred(&device, preset).unwrap();
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -132,9 +132,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[
-                    Vertex::desc(),
-                ],
+                buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -163,14 +161,11 @@ impl State {
             multiview: None,
         });
 
-
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            },
-        );
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
 
         let clear_color = wgpu::Color {
             r: 0.1,
@@ -189,7 +184,7 @@ impl State {
             render_pipeline,
             vertex_buffer,
             num_vertices,
-            chain
+            chain,
         }
     }
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -223,7 +218,7 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(self.clear_color),
-                        store:  wgpu::StoreOp::Store,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
@@ -251,8 +246,6 @@ pub fn run() {
         .build();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-
-
     pollster::block_on(async {
         let mut state = State::new(&window).await;
         event_loop.run(move |event, _, control_flow| {
@@ -267,11 +260,11 @@ pub fn run() {
                             WindowEvent::CloseRequested
                             | WindowEvent::KeyboardInput {
                                 input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    },
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::Resized(physical_size) => {
@@ -302,6 +295,4 @@ pub fn run() {
             }
         });
     });
-
-
 }

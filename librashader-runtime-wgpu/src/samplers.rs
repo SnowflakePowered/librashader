@@ -1,5 +1,5 @@
-use librashader_common::{FilterMode, WrapMode};
 use crate::error;
+use librashader_common::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
 use wgpu::{Sampler, SamplerBorderColor, SamplerDescriptor};
@@ -22,7 +22,7 @@ impl SamplerSet {
         }
     }
 
-    pub fn new(device: &wgpu::Device) -> error::Result<SamplerSet> {
+    pub fn new(device: &wgpu::Device) -> SamplerSet {
         let mut samplers = FxHashMap::default();
         let wrap_modes = &[
             WrapMode::ClampToBorder,
@@ -37,18 +37,18 @@ impl SamplerSet {
                         (*wrap_mode, *filter_mode, *mipmap_filter),
                         device.create_sampler(&SamplerDescriptor {
                             label: None,
-                            address_mode_u: wrap_mode.into(),
-                            address_mode_v: wrap_mode.into(),
-                            address_mode_w: wrap_mode.into(),
-                            mag_filter: filter_mode.into(),
-                            min_filter: filter_mode.into(),
-                            mipmap_filter: mipmap_filter.into(),
+                            address_mode_u: (*wrap_mode).into(),
+                            address_mode_v: (*wrap_mode).into(),
+                            address_mode_w: (*wrap_mode).into(),
+                            mag_filter: (*filter_mode).into(),
+                            min_filter: (*filter_mode).into(),
+                            mipmap_filter: (*mipmap_filter).into(),
                             lod_min_clamp: 0.0,
                             lod_max_clamp: 1000.0,
                             compare: None,
                             anisotropy_clamp: 1,
                             border_color: Some(SamplerBorderColor::TransparentBlack),
-                        })
+                        }),
                     );
                 }
             }
@@ -56,6 +56,6 @@ impl SamplerSet {
 
         // assert all samplers were created.
         assert_eq!(samplers.len(), wrap_modes.len() * 2 * 2);
-        Ok(SamplerSet { samplers })
+        SamplerSet { samplers }
     }
 }

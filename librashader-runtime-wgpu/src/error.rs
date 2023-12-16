@@ -6,7 +6,7 @@ use librashader_runtime::image::ImageError;
 use std::convert::Infallible;
 use thiserror::Error;
 
-/// Cumulative error type for Vulkan filter chains.
+/// Cumulative error type for WGPU filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("SPIRV reflection error")]
