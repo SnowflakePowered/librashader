@@ -1,7 +1,7 @@
 use array_concat::concat_arrays;
 use librashader_runtime::quad::QuadType;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{Buffer, BufferDescriptor, Device, RenderPass};
+use wgpu::{Buffer, BufferAddress, BufferDescriptor, Device, Maintain, Queue, RenderPass};
 
 #[rustfmt::skip]
 const VBO_OFFSCREEN: [f32; 16] = [
@@ -21,16 +21,17 @@ const VBO_DEFAULT_FINAL: [f32; 16] = [
     1.0, 1.0, 1.0, 1.0,
 ];
 
-static VBO_DATA: &[f32; 32] = &concat_arrays!(VBO_OFFSCREEN, VBO_DEFAULT_FINAL);
+const VBO_DATA: [f32; 32] = concat_arrays!(VBO_OFFSCREEN, VBO_DEFAULT_FINAL);
+
 pub struct DrawQuad {
     buffer: Buffer,
 }
 
 impl DrawQuad {
-    pub fn new(device: &Device) -> DrawQuad {
+    pub fn new(device: &Device, queue: &mut Queue) -> DrawQuad {
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("librashader vbo"),
-            contents: bytemuck::cast_slice(VBO_DATA),
+            contents: bytemuck::cast_slice(&VBO_DATA),
             usage: wgpu::BufferUsages::VERTEX,
         });
 

@@ -126,7 +126,7 @@ impl FilterChainWGPU {
         //     FrameResiduals::new(&device.device)
         // });
 
-        let draw_quad = DrawQuad::new(&device);
+        let draw_quad = DrawQuad::new(&device, queue);
 
         Ok(FilterChainWGPU {
             common: FilterCommon {
