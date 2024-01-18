@@ -33,6 +33,7 @@ jobs:
     - name: Install ARM64 cross-compilation dependencies
       continue-on-error: true
       run: |
+        sudo apt-get update || true
         sudo dpkg --add-architecture arm64
         echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted" | sudo tee -a /etc/apt/sources.list
         echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted" | sudo tee -a /etc/apt/sources.list

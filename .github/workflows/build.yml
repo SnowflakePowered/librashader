@@ -35,9 +35,6 @@ jobs:
       with:
         version: latest
         cache: true
-    - if: runner.os == 'Windows'
-      run: pip install meson ninja mako
-      name: Install Meson for spirv-to-dxil-sys
     - name: Build dynamic library
       run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }}
     - name: Upload build artifacts
