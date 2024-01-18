@@ -1,9 +1,6 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 
-use naga::{
-    AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, ScalarKind,
-    TypeInner, VectorSize,
-};
+use naga::{AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar, ScalarKind, TypeInner, VectorSize};
 
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
@@ -29,7 +26,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
 
         match self {
             UniqueSemantics::MVP => {
-                if matches!(ty, TypeInner::Matrix { columns, rows, width } if *columns == VectorSize::Quad
+                if matches!(ty, TypeInner::Matrix { columns, rows, scalar: Scalar { width, .. } } if *columns == VectorSize::Quad
                     && *rows == VectorSize::Quad && *width == 4)
                 {
                     return Some(TypeInfo {
@@ -40,7 +37,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
             }
             UniqueSemantics::FrameCount => {
                 // Uint32 == width 4
-                if matches!(ty, TypeInner::Scalar { kind, width } if *kind == ScalarKind::Uint && *width == 4)
+                if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Uint && *width == 4)
                 {
                     return Some(TypeInfo {
                         size: 1,
@@ -50,7 +47,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
             }
             UniqueSemantics::FrameDirection => {
                 // Uint32 == width 4
-                if matches!(ty, TypeInner::Scalar { kind, width } if *kind == ScalarKind::Sint && *width == 4)
+                if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Sint && *width == 4)
                 {
                     return Some(TypeInfo {
                         size: 1,
@@ -60,7 +57,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
             }
             UniqueSemantics::FloatParameter => {
                 // Float32 == width 4
-                if matches!(ty, TypeInner::Scalar { kind, width } if *kind == ScalarKind::Float && *width == 4)
+                if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Float && *width == 4)
                 {
                     return Some(TypeInfo {
                         size: 1,
@@ -69,7 +66,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
                 }
             }
             _ => {
-                if matches!(ty, TypeInner::Vector { kind, width, size } if *kind == ScalarKind::Float && *width == 4 && *size == VectorSize::Quad)
+                if matches!(ty, TypeInner::Vector { scalar: Scalar { width, kind }, size } if *kind == ScalarKind::Float && *width == 4 && *size == VectorSize::Quad)
                 {
                     return Some(TypeInfo {
                         size: 4,
@@ -85,7 +82,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
 
 impl ValidateTypeSemantics<&TypeInner> for TextureSemantics {
     fn validate_type(&self, ty: &&TypeInner) -> Option<TypeInfo> {
-        let TypeInner::Vector { size, kind, width } = ty else {
+        let TypeInner::Vector { scalar: Scalar { width, kind }, size } = ty else {
             return None;
         };
 

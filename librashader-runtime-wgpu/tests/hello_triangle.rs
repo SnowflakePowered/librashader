@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use wgpu::{ Maintain, };
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -8,6 +10,7 @@ use librashader_presets::ShaderPreset;
 use librashader_runtime_wgpu::FilterChainWGPU;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
+use winit::keyboard::{Key, KeyCode, PhysicalKey};
 use winit::platform::windows::EventLoopBuilderExtWindows;
 
 #[cfg(target_arch = "wasm32")]
@@ -58,9 +61,9 @@ const VERTICES: &[Vertex] = &[
     },
 ];
 
-struct State {
-    surface: wgpu::Surface,
-    device: wgpu::Device,
+struct State<'a> {
+    surface: wgpu::Surface<'a>,
+    device: Arc<wgpu::Device>,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
@@ -72,8 +75,8 @@ struct State {
     num_vertices: u32,
     chain: FilterChainWGPU,
 }
-impl State {
-    async fn new(window: &Window) -> Self {
+impl<'a> State<'a> {
+    async fn new(window: &'a Window) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::default();
@@ -88,11 +91,11 @@ impl State {
             .await
             .unwrap();
 
-        let (device, queue) = adapter
+        let (device, mut queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::default(),
-                    limits: wgpu::Limits::default(),
+                    required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER,
+                    required_limits: wgpu::Limits::default(),
                     label: None,
                 },
                 None,
@@ -108,13 +111,27 @@ impl State {
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::Fifo,
+            desired_maximum_frame_latency: 2,
             alpha_mode: swapchain_capabilities.alpha_modes[0],
             view_formats: vec![],
         };
 
+        let device = Arc::new(device);
+
+        let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("start encoder"),
+        });
+
         let preset =
             ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
-        let chain = FilterChainWGPU::load_from_preset_deferred(&device, preset).unwrap();
+
+
+        let chain = FilterChainWGPU::load_from_preset_deferred(Arc::clone(&device), &mut queue, &mut cmd, preset).unwrap();
+
+        let cmd = cmd.finish();
+
+        let index = queue.submit([cmd]);
+        device.poll(Maintain::WaitForSubmissionIndex(index));
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -162,7 +179,7 @@ impl State {
         });
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
+            label: Some("triangle vertices"),
             contents: bytemuck::cast_slice(VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
@@ -243,56 +260,45 @@ pub fn run() {
     let event_loop = EventLoopBuilder::new()
         .with_any_thread(true)
         .with_dpi_aware(true)
-        .build();
+        .build()
+        .unwrap();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
     pollster::block_on(async {
         let mut state = State::new(&window).await;
-        event_loop.run(move |event, _, control_flow| {
+        event_loop.run(|event, target| {
+
             match event {
                 Event::WindowEvent {
-                    ref event,
-                    window_id,
-                } if window_id == window.id() => {
-                    if !state.input(event) {
-                        // UPDATED!
-                        match event {
-                            WindowEvent::CloseRequested
-                            | WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                                        ..
-                                    },
-                                ..
-                            } => *control_flow = ControlFlow::Exit,
-                            WindowEvent::Resized(physical_size) => {
-                                state.resize(*physical_size);
+                    window_id: _,
+                    event
+                } => match event {
+                    WindowEvent::Resized(new_size) => {
+                        state.resize(new_size);
+                        // On macos the window needs to be redrawn manually after resizing
+                        window.request_redraw();
+                    }
+                    WindowEvent::RedrawRequested => {
+                        state.update();
+                        match state.render() {
+                            Ok(_) => {}
+                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                                state.resize(state.size)
                             }
-                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                                state.resize(**new_inner_size);
-                            }
-                            _ => {}
+                            Err(wgpu::SurfaceError::OutOfMemory) => target.exit(),
+                            Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
                         }
                     }
+                    WindowEvent::CloseRequested => target.exit(),
+                    _ => {}
                 }
-                Event::RedrawRequested(window_id) if window_id == window.id() => {
-                    state.update();
-                    match state.render() {
-                        Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                            state.resize(state.size)
-                        }
-                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                        Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
-                    }
-                }
-                Event::RedrawEventsCleared => {
-                    window.request_redraw();
+                Event::AboutToWait => {
+                    window.request_redraw()
                 }
                 _ => {}
             }
-        });
+
+
+        }).unwrap();
     });
 }
