@@ -12,9 +12,7 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): create pipeline">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): create pipeline" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -56,34 +54,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Cargo.Build `Test back::wgsl::test::test_into`.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Build `Test reflect::cross::test::test_into`.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test back::wgsl::test::test_into.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test front::naga::test::naga_playground (1).executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test front::naga::test::naga_playground.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test reflect::cross::test::test_into.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test triangle_wgpu.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;86a88bb2&quot;,
-    &quot;last_opened_file_path&quot;: &quot;F:/coding/librashader&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Cargo.Build `Test back::wgsl::test::test_into`.executor": "Run",
+    "Cargo.Build `Test reflect::cross::test::test_into`.executor": "Run",
+    "Cargo.Test back::wgsl::test::test_into.executor": "Run",
+    "Cargo.Test front::naga::test::naga_playground (1).executor": "Run",
+    "Cargo.Test front::naga::test::naga_playground.executor": "Run",
+    "Cargo.Test reflect::cross::test::test_into.executor": "Run",
+    "Cargo.Test triangle_wgpu.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "feat-wgpu-runtime",
+    "last_opened_file_path": "F:/coding/librashader",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="F:\coding\librashader\librashader-reflect\src\back\wgsl" />
@@ -212,12 +210,12 @@
     </configuration>
     <list>
       <item itemvalue="Cargo.Run librashader-build-script" />
+      <item itemvalue="Cargo.Test back::wgsl::test::test_into" />
       <item itemvalue="Cargo.Test librashader" />
       <item itemvalue="Cargo.Test triangle_d3d11" />
       <item itemvalue="Cargo.Test triangle_d3d12" />
       <item itemvalue="Cargo.Test triangle_gl46" />
       <item itemvalue="Cargo.Test triangle_vk" />
-      <item itemvalue="Cargo.Test back::wgsl::test::test_into" />
     </list>
     <recent_temporary>
       <list>
@@ -261,6 +259,7 @@
       <workItem from="1702484102491" duration="5258000" />
       <workItem from="1702561144428" duration="1836000" />
       <workItem from="1702640983281" duration="967000" />
+      <workItem from="1705541451154" duration="11000" />
     </task>
     <task id="LOCAL-00001" summary="rt(wgpu): basic triangle example">
       <option name="closed" value="true" />
