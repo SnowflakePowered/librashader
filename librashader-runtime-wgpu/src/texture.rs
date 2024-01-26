@@ -17,7 +17,7 @@ pub struct OwnedImage {
 pub struct InputImage {
     /// A handle to the `VkImage`.
     pub image: wgpu::Texture,
-    pub image_view: wgpu::TextureView,
+    pub view: wgpu::TextureView,
     pub wrap_mode: WrapMode,
     pub filter_mode: FilterMode,
     pub mip_filter: FilterMode,
@@ -92,4 +92,16 @@ impl OwnedImage {
         }
         size
     }
+
+    pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
+        let image = self.clone();
+        InputImage {
+            image: self.image.clone(),
+            view: self.clone().,
+            wrap_mode,
+            filter_mode: filter,
+            mip_filter: filter,
+        }
+    }
+
 }
