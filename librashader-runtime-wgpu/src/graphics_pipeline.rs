@@ -9,13 +9,14 @@ use librashader_runtime::render_target::RenderTarget;
 use crate::framebuffer::OutputImage;
 
 pub struct WgpuGraphicsPipeline {
-    layout: PipelineLayoutObjects,
+    pub layout: PipelineLayoutObjects,
     render_pipeline: wgpu::RenderPipeline,
 }
 
 pub struct PipelineLayoutObjects {
     layout: PipelineLayout,
-    bind_group_layouts: Vec<BindGroupLayout>,
+    pub main_bind_group_layout: BindGroupLayout,
+    pub sampler_bind_group_layout: BindGroupLayout,
     fragment_entry_name: String,
     vertex_entry_name: String,
     vertex: ShaderModule,
@@ -38,8 +39,6 @@ impl PipelineLayoutObjects {
             label: Some("fragment"),
             source: ShaderSource::Wgsl(Cow::from(&shader_assembly.fragment)),
         });
-
-        let mut bind_group_layouts = Vec::new();
 
         let mut main_bindings = Vec::new();
         let mut sampler_bindings = Vec::new();
@@ -115,10 +114,7 @@ impl PipelineLayoutObjects {
             entries: &sampler_bindings,
         });
 
-        bind_group_layouts.push(main_bind_group);
-        bind_group_layouts.push(sampler_bind_group);
-
-        let bind_group_layout_refs = bind_group_layouts.iter().collect::<Vec<_>>();
+        let bind_group_layout_refs = [&main_bind_group, &sampler_bind_group];
 
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("shader pipeline layout"),
@@ -128,7 +124,8 @@ impl PipelineLayoutObjects {
 
         Self {
             layout,
-            bind_group_layouts,
+            main_bind_group_layout,
+            sampler_bind_group_layout,
             fragment_entry_name: shader_assembly.context.fragment.entry_points[0]
                 .name
                 .clone(),
@@ -237,6 +234,13 @@ impl WgpuGraphicsPipeline {
             occlusion_query_set: None,
         });
 
+        render_pass.set_scissor_rect(
+            output.x as u32,
+            output.y as u32,
+            output.output.size.width,
+            output.output.size.height
+        );
+        
         render_pass.set_viewport(
             output.x,
             output.y,
@@ -248,4 +252,5 @@ impl WgpuGraphicsPipeline {
 
         render_pass
     }
+
 }

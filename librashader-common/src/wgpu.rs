@@ -86,15 +86,25 @@ impl From<Option<wgpu_types::TextureFormat>> for ImageFormat {
 }
 
 //
-// impl From<Size<u32>> for vk::Extent3D {
-//     fn from(value: Size<u32>) -> Self {
-//         vk::Extent3D {
-//             width: value.width,
-//             height: value.height,
-//             depth: 1,
-//         }
-//     }
-// }
+impl From<Size<u32>> for wgpu_types::Extent3d {
+    fn from(value: Size<u32>) -> Self {
+        wgpu_types::Extent3d {
+            width: value.width,
+            height: value.height,
+            depth: 1,
+        }
+    }
+}
+
+impl From<wgpu_types::Extent3d> for Size<u32> {
+    fn from(value: wgpu_types::Extent3d) -> Self {
+        Size {
+            width: value.width,
+            height: value.height,
+        }
+    }
+}
+
 //
 // impl From<Size<u32>> for vk::Extent2D {
 //     fn from(value: Size<u32>) -> Self {
@@ -105,14 +115,7 @@ impl From<Option<wgpu_types::TextureFormat>> for ImageFormat {
 //     }
 // }
 //
-// impl From<vk::Extent3D> for Size<u32> {
-//     fn from(value: vk::Extent3D) -> Self {
-//         Size {
-//             width: value.width,
-//             height: value.height,
-//         }
-//     }
-// }
+
 //
 // impl From<vk::Extent2D> for Size<u32> {
 //     fn from(value: vk::Extent2D) -> Self {
