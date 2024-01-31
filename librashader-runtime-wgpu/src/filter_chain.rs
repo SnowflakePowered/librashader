@@ -16,13 +16,13 @@ use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
 
-use librashader_common::{ImageFormat, Size};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_reflect::back::wgsl::WgslCompileOptions;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
-use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, TextureFormat};
+use wgpu::{BindGroupEntry, CommandBuffer, CommandEncoder, Device, Queue, TextureAspect, TextureFormat};
 use crate::draw_quad::DrawQuad;
 
 use crate::error;
@@ -58,24 +58,17 @@ pub struct FilterChainWGPU {
 pub struct FilterMutable {
     pub passes_enabled: usize,
     pub(crate) parameters: FxHashMap<String, f32>,
-
 }
 
 pub(crate) struct FilterCommon {
-    // pub(crate) luts: FxHashMap<usize, LutTexture>,
-    // pub samplers: SamplerSet,
-    // pub(crate) draw_quad: DrawQuad,
     pub output_textures: Box<[Option<InputImage>]>,
     pub feedback_textures: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
-    // pub config: FilterMutable,
-    // pub device: Arc<ash::Device>,
-    // pub(crate) internal_frame_count: usize,
-    luts: FxHashMap<usize, LutTexture>,
-    samplers: SamplerSet,
-    config: FilterMutable,
-    internal_frame_count: i32,
-    draw_quad: DrawQuad,
+    pub luts: FxHashMap<usize, LutTexture>,
+    pub samplers: SamplerSet,
+    pub config: FilterMutable,
+    pub internal_frame_count: i32,
+    pub(crate) draw_quad: DrawQuad,
     device: Arc<Device>,
 }
 
@@ -219,6 +212,7 @@ impl FilterChainWGPU {
 
                 Ok(FilterPass {
                     // device: vulkan.device.clone(),
+                    device,
                     reflection,
                     compiled: wgsl,
                     uniform_storage,
@@ -228,6 +222,8 @@ impl FilterChainWGPU {
                     graphics_pipeline,
                     // // ubo_ring,
                     // frames_in_flight,
+                    // texture_heap: [],
+                    // sampler_heap: [],
                 })
             })
             .collect();
@@ -237,5 +233,95 @@ impl FilterChainWGPU {
         Ok(filters.into_boxed_slice())
     }
 
+    pub fn frame(&mut self,
+        input: wgpu::Texture,
+        viewport: &Viewport<OwnedImage>,
+        cmd: wgpu::CommandEncoder,
+        frame_count: usize,
+    ) -> error::Result<()> {
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let passes = &mut self.passes[0..max];
+
+        // if let Some(options) = &options {
+        //     if options.clear_history {
+        //         for history in &mut self.history_framebuffers {
+        //             history.clear(cmd);
+        //         }
+        //     }
+        // }
+
+        if passes.is_empty() {
+            return Ok(());
+        }
+
+        let original_image_view = input.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("original_image_view"),
+            format: Some(input.format()),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: TextureAspect::All,
+            base_mip_level: 1,
+            mip_level_count: None,
+            base_array_layer: 1,
+            array_layer_count: None,
+        });
+
+        let filter = passes[0].config.filter;
+        let wrap_mode = passes[0].config.wrap_mode;
+
+
+        // update history
+        for (texture, image) in self
+            .common
+            .history_textures
+            .iter_mut()
+            .zip(self.history_framebuffers.iter())
+        {
+            *texture = Some(image.as_input(filter, wrap_mode));
+        }
+
+        let original = InputImage {
+            image: input.clone(),
+            view: original_image_view,
+            wrap_mode,
+            filter_mode: filter,
+            mip_filter: filter,
+        };
+
+        let mut source = original.clone();
+
+        // swap output and feedback **before** recording command buffers
+        std::mem::swap(
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+        );
+
+        // rescale render buffers to ensure all bindings are valid.
+        OwnedImage::scale_framebuffers_with_context(
+            source.image.size,
+            viewport.output.size,
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+            passes,
+            &None::<()>,
+            Some(&mut |index: usize,
+                       pass: &FilterPass,
+                       output: &OwnedImage,
+                       feedback: &OwnedImage| {
+                // refresh inputs
+                self.common.feedback_textures[index] =
+                    Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode));
+                self.common.output_textures[index] =
+                    Some(output.as_input(pass.config.filter, pass.config.wrap_mode));
+                Ok(())
+            }),
+        )?;
+
+        let passes_len = passes.len();
+        let (pass, last) = passes.split_at_mut(passes_len - 1);
+
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
+
+        Ok(())
+    }
 
 }
