@@ -1,11 +1,16 @@
+use std::sync::Arc;
 use wgpu::{ImageDataLayout, Label, TextureDescriptor};
 use wgpu::util::DeviceExt;
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{BGRA8, Image};
 use librashader_runtime::scaling::MipmapSize;
+use crate::texture::{Handle, InputImage};
 
-pub(crate) struct LutTexture {
-    texture: wgpu::Texture,
+pub(crate) struct LutTexture(InputImage);
+impl AsRef<InputImage> for LutTexture {
+    fn as_ref(&self) -> &InputImage {
+        &self.0
+    }
 }
 
 impl LutTexture {
@@ -53,8 +58,26 @@ impl LutTexture {
 
         // todo: mipmaps
 
-        Self {
-            texture
-        }
+        // todo: fix this
+        let view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("lut view"),
+            format: None,
+            dimension: None,
+            aspect: Default::default(),
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: None,
+        });
+
+        let image = InputImage {
+            image: Arc::new(texture),
+            view: Arc::new(view),
+            wrap_mode: config.wrap_mode,
+            filter_mode: config.filter_mode,
+            mip_filter: config.filter_mode,
+        };
+
+        Self(image)
     }
 }

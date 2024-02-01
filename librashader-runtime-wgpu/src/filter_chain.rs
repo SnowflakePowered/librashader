@@ -23,6 +23,7 @@ use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 use wgpu::{BindGroupEntry, CommandBuffer, CommandEncoder, Device, Queue, TextureAspect, TextureFormat};
+use crate::buffer::WgpuMappedBuffer;
 use crate::draw_quad::DrawQuad;
 
 use crate::error;
@@ -30,8 +31,9 @@ use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
+use crate::options::FrameOptionsWGPU;
 use crate::samplers::SamplerSet;
-use crate::texture::{InputImage, OwnedImage};
+use crate::texture::{Handle, InputImage, OwnedImage};
 
 type ShaderPassMeta =
     ShaderPassArtifact<impl CompileReflectShader<WGSL, GlslangCompilation> + Send>;
@@ -185,17 +187,19 @@ impl FilterChainWGPU {
                 })?;
 
                 let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
+                let push_size = reflection
+                    .push_constant
+                    .as_ref()
+                    .map_or(0, |push| push.size as wgpu::BufferAddress);
 
-                let uniform_storage = UniformStorage::new(
-                    ubo_size,
-                    reflection
-                        .push_constant
-                        .as_ref()
-                        .map_or(0, |push| push.size as usize),
+
+                let uniform_storage = UniformStorage::new_with_storage(
+                    WgpuMappedBuffer::new(&device, wgpu::BufferUsages::UNIFORM, ubo_size as wgpu::BufferAddress, Some("ubo")),
+                    WgpuMappedBuffer::new(&device, wgpu::BufferUsages::UNIFORM, push_size as wgpu::BufferAddress, Some("push"))
                 );
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
-                //
+
                 let render_pass_format: Option<TextureFormat> =
                     if let Some(format) = config.get_format_override() {
                         format.into()
@@ -210,9 +214,10 @@ impl FilterChainWGPU {
                     render_pass_format.unwrap_or(TextureFormat::R8Unorm),
                 );
 
+
+
                 Ok(FilterPass {
-                    // device: vulkan.device.clone(),
-                    device,
+                    device: Arc::clone(&device),
                     reflection,
                     compiled: wgsl,
                     uniform_storage,
@@ -220,10 +225,6 @@ impl FilterChainWGPU {
                     source,
                     config,
                     graphics_pipeline,
-                    // // ubo_ring,
-                    // frames_in_flight,
-                    // texture_heap: [],
-                    // sampler_heap: [],
                 })
             })
             .collect();
@@ -238,17 +239,19 @@ impl FilterChainWGPU {
         viewport: &Viewport<OwnedImage>,
         cmd: wgpu::CommandEncoder,
         frame_count: usize,
+                 options: Option<&FrameOptionsWGPU>,
+
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
 
-        // if let Some(options) = &options {
-        //     if options.clear_history {
-        //         for history in &mut self.history_framebuffers {
-        //             history.clear(cmd);
-        //         }
-        //     }
-        // }
+        if let Some(options) = &options {
+            if options.clear_history {
+                for history in &mut self.history_framebuffers {
+                    // history.clear(cmd);
+                }
+            }
+        }
 
         if passes.is_empty() {
             return Ok(());
@@ -280,8 +283,8 @@ impl FilterChainWGPU {
         }
 
         let original = InputImage {
-            image: input.clone(),
-            view: original_image_view,
+            image: Arc::new(input),
+            view: Arc::new(original_image_view),
             wrap_mode,
             filter_mode: filter,
             mip_filter: filter,
@@ -297,12 +300,12 @@ impl FilterChainWGPU {
 
         // rescale render buffers to ensure all bindings are valid.
         OwnedImage::scale_framebuffers_with_context(
-            source.image.size,
+            source.image.size().into(),
             viewport.output.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
-            &None::<()>,
+            &(),
             Some(&mut |index: usize,
                        pass: &FilterPass,
                        output: &OwnedImage,
@@ -319,7 +322,7 @@ impl FilterChainWGPU {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        // let frame_direction = options.map_or(1, |f| f.frame_direction);
 
         Ok(())
     }

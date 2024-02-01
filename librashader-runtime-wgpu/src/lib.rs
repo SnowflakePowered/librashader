@@ -17,6 +17,8 @@ mod texture;
 mod util;
 mod framebuffer;
 mod luts;
+mod options;
+mod buffer;
 
 pub use filter_chain::FilterChainWGPU;
 pub use filter_pass::FilterPass;

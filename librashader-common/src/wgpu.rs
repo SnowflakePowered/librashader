@@ -85,17 +85,6 @@ impl From<Option<wgpu_types::TextureFormat>> for ImageFormat {
     }
 }
 
-//
-impl From<Size<u32>> for wgpu_types::Extent3d {
-    fn from(value: Size<u32>) -> Self {
-        wgpu_types::Extent3d {
-            width: value.width,
-            height: value.height,
-            depth: 1,
-        }
-    }
-}
-
 impl From<wgpu_types::Extent3d> for Size<u32> {
     fn from(value: wgpu_types::Extent3d) -> Self {
         Size {
