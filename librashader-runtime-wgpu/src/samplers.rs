@@ -6,19 +6,19 @@ use wgpu::{Sampler, SamplerBorderColor, SamplerDescriptor};
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
-    samplers: FxHashMap<(WrapMode, FilterMode, FilterMode), Sampler>,
+    samplers: FxHashMap<(WrapMode, FilterMode, FilterMode), Arc<Sampler>>,
 }
 
 impl SamplerSet {
     #[inline(always)]
-    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> &Sampler {
+    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> Arc<Sampler> {
         // eprintln!("{wrap}, {filter}, {mip}");
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
         unsafe {
-            self.samplers
+            Arc::clone(&self.samplers
                 .get(&(wrap, filter, mipmap))
-                .unwrap_unchecked()
+                .unwrap_unchecked())
         }
     }
 
@@ -35,7 +35,7 @@ impl SamplerSet {
                 for mipmap_filter in &[FilterMode::Linear, FilterMode::Nearest] {
                     samplers.insert(
                         (*wrap_mode, *filter_mode, *mipmap_filter),
-                        device.create_sampler(&SamplerDescriptor {
+                        Arc::new(device.create_sampler(&SamplerDescriptor {
                             label: None,
                             address_mode_u: (*wrap_mode).into(),
                             address_mode_v: (*wrap_mode).into(),
@@ -49,7 +49,7 @@ impl SamplerSet {
                             anisotropy_clamp: 1,
                             border_color: Some(SamplerBorderColor::TransparentBlack),
                         }),
-                    );
+                    ));
                 }
             }
         }

@@ -124,8 +124,8 @@ impl PipelineLayoutObjects {
 
         Self {
             layout,
-            main_bind_group_layout,
-            sampler_bind_group_layout,
+            main_bind_group_layout: main_bind_group,
+            sampler_bind_group_layout: sampler_bind_group,
             fragment_entry_name: shader_assembly.context.fragment.entry_points[0]
                 .name
                 .clone(),

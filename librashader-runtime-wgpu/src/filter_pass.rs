@@ -10,10 +10,12 @@ use rustc_hash::FxHashMap;
 use std::sync::Arc;
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding, BufferUsages, RenderPass, ShaderStages, TextureView};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use librashader_common::{Size, Viewport};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
+use crate::buffer::WgpuMappedBuffer;
 use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::OutputImage;
@@ -24,13 +26,12 @@ pub struct FilterPass {
     pub device: Arc<wgpu::Device>,
     pub reflection: ShaderReflection,
     pub(crate) compiled: ShaderCompilerOutput<String, NagaWgslContext>,
-    pub(crate) uniform_storage: UniformStorage,
+    pub(crate) uniform_storage: UniformStorage<NoUniformBinder, Option<()>, WgpuMappedBuffer, WgpuMappedBuffer>,
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
     pub graphics_pipeline: WgpuGraphicsPipeline,
-    // pub ubo_ring: VkUboRing,
-    // pub frames_in_flight: u32,
+
 }
 
 impl TextureInput for InputImage {
@@ -39,12 +40,17 @@ impl TextureInput for InputImage {
     }
 }
 
-impl BindSemantics<NoUniformBinder, Option<()>> for FilterPass {
+pub struct WgpuArcBinding<T> {
+    binding: u32,
+    resource: Arc<T>
+}
+
+impl BindSemantics<NoUniformBinder, Option<()>, WgpuMappedBuffer, WgpuMappedBuffer> for FilterPass {
     type InputTexture = InputImage;
     type SamplerSet = SamplerSet;
     type DescriptorSet<'a> = (
-        &'a mut FxHashMap<u32, BindGroupEntry<'a>>,
-        &'a mut  FxHashMap<u32, BindGroupEntry<'a>>,
+        &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::TextureView>>,
+        &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::Sampler>>,
     );
     type DeviceContext = Arc<wgpu::Device>;
     type UniformOffset = MemberOffset;
@@ -60,13 +66,14 @@ impl BindSemantics<NoUniformBinder, Option<()>> for FilterPass {
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
 
         let (texture_binding, sampler_binding) = descriptors;
-        texture_binding.insert(binding.binding, BindGroupEntry {
+        texture_binding.insert(binding.binding, WgpuArcBinding {
             binding: binding.binding,
-            resource:BindingResource::TextureView(&texture.view)}
-        );
-        sampler_binding.insert(binding.binding, BindGroupEntry {
+            resource: Arc::clone(&texture.view)
+        });
+
+        sampler_binding.insert(binding.binding, WgpuArcBinding {
             binding: binding.binding,
-            resource: BindingResource::Sampler(&sampler),
+            resource: sampler,
         });
     }
 }
@@ -84,7 +91,7 @@ impl FilterPass {
         source: &InputImage,
         output: &RenderTarget<OutputImage>,
         vbo_type: QuadType,
-    ) -> error::Result<RenderPass> {
+    ) -> error::Result<()> {
 
         let mut main_heap = FxHashMap::default();
         let mut sampler_heap = FxHashMap::default();
@@ -103,21 +110,29 @@ impl FilterPass {
             &mut sampler_heap,
         );
 
+        
+        let mut main_heap_array = Vec::with_capacity(main_heap.len() + 1);
+        let mut sampler_heap_array = Vec::with_capacity(sampler_heap.len() + 1);
 
-        let main_buffer: Buffer;
-        let pcb_buffer: Buffer;
+        for binding in main_heap.values() {
+            main_heap_array.push(BindGroupEntry {
+                binding: binding.binding,
+                resource: BindingResource::TextureView(&binding.resource)
+            })
+        }
+
+        for binding in sampler_heap.values() {
+            sampler_heap_array.push(BindGroupEntry {
+                binding: binding.binding,
+                resource: BindingResource::Sampler(&binding.resource)
+            })
+        }
+
         if let Some(ubo) = &self.reflection.ubo {
-             main_buffer = self.device
-                .create_buffer_init(&BufferInitDescriptor {
-                    label: Some("ubo buffer"),
-                    contents: self.uniform_storage.ubo_slice(),
-                    usage: BufferUsages::UNIFORM,
-                });
-
-            main_heap.insert(ubo.binding, BindGroupEntry {
+            main_heap_array.push(BindGroupEntry {
                 binding: ubo.binding,
                 resource: BindingResource::Buffer(BufferBinding {
-                    buffer: &main_buffer,
+                    buffer: self.uniform_storage.inner_ubo().buffer(),
                     offset: 0,
                     size: None,
                 }),
@@ -127,17 +142,10 @@ impl FilterPass {
         let mut has_pcb_buffer = false;
         if let Some(pcb) = &self.reflection.push_constant {
             if let Some(binding) = pcb.binding {
-                pcb_buffer = self.device
-                    .create_buffer_init(&BufferInitDescriptor {
-                        label: Some("ubo buffer"),
-                        contents: self.uniform_storage.push_slice(),
-                        usage: BufferUsages::UNIFORM,
-                    });
-
-                main_heap.insert(binding, BindGroupEntry {
+                main_heap_array.push(BindGroupEntry {
                     binding,
                     resource: BindingResource::Buffer(BufferBinding {
-                        buffer: &pcb_buffer,
+                        buffer: self.uniform_storage.inner_push().buffer(),
                         offset: 0,
                         size: None,
                     }),
@@ -146,21 +154,20 @@ impl FilterPass {
             }
         }
 
-
-        let mut render_pass = self.graphics_pipeline
-            .begin_rendering(output, cmd);
-
         let main_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
             label: Some("main bind group"),
             layout: &self.graphics_pipeline.layout.main_bind_group_layout,
-            entries: &main_heap.into_values().collect::<Vec<_>>()
+            entries: &main_heap_array
         });
 
         let sampler_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
             label: Some("sampler bind group"),
             layout: &self.graphics_pipeline.layout.sampler_bind_group_layout,
-            entries: &sampler_heap.into_values().collect::<Vec<_>>()
+            entries: &sampler_heap_array
         });
+
+        let mut render_pass = self.graphics_pipeline
+            .begin_rendering(output, cmd);
 
         render_pass.set_bind_group(
             0,
@@ -191,10 +198,10 @@ impl FilterPass {
 
         parent.draw_quad.draw_quad(&mut render_pass, vbo_type);
 
-        Ok(render_pass)
+        Ok(())
     }
 
-    fn build_semantics(
+    fn build_semantics<'a, 'b>(
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
@@ -205,9 +212,9 @@ impl FilterPass {
         viewport_size: Size<u32>,
         original: &InputImage,
         source: &InputImage,
-        main_heap: &mut FxHashMap<u32, BindGroupEntry>
-        sampler_heap: &mut FxHashMap<u32, BindGroupEntry>
-    ) {
+        main_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::TextureView>>,
+        sampler_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::Sampler>>
+    ) where 'a: 'b {
         Self::bind_semantics(
             &self.device,
             &parent.samplers,
@@ -231,5 +238,19 @@ impl FilterPass {
             &self.source.parameters,
             &parent.config.parameters,
         );
+
+        // flush to buffers
+        self.uniform_storage.inner_ubo().flush();
+        self.uniform_storage.inner_push().flush();
+    }
+}
+
+impl FilterPassMeta for FilterPass {
+    fn framebuffer_format(&self) -> ImageFormat {
+        self.source.format
+    }
+
+    fn config(&self) -> &ShaderPassConfig {
+        &self.config
     }
 }
