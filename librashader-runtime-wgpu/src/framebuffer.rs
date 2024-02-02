@@ -1,7 +1,19 @@
 use wgpu::TextureView;
 use librashader_common::Size;
+use crate::texture::OwnedImage;
 
-pub(crate) struct OutputImage {
+pub struct OutputImage<'a> {
     pub size: Size<u32>,
-    pub view: TextureView
+    pub view: &'a wgpu::TextureView,
+    pub format: wgpu::TextureFormat,
+}
+
+impl<'a> OutputImage<'a> {
+    pub fn new(image: &'a OwnedImage) -> Self {
+        Self {
+            size: image.size,
+            view: &image.view,
+            format: image.image.format()
+        }
+    }
 }

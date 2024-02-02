@@ -13,7 +13,6 @@ pub struct OwnedImage {
     pub max_miplevels: u32,
     pub levels: u32,
     pub size: Size<u32>,
-    pub format: wgpu::TextureFormat,
 }
 
 pub enum Handle<'a, T> {
@@ -98,7 +97,6 @@ impl OwnedImage {
             max_miplevels,
             levels: std::cmp::min(max_miplevels, size.calculate_miplevels()),
             size,
-            format,
         }
     }
 
@@ -117,7 +115,7 @@ impl OwnedImage {
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
-            || format != self.format
+            || format != self.image.format()
         {
             let mut new = OwnedImage::new(Arc::clone(&self.device), size, self.max_miplevels, format.into());
             std::mem::swap(self, &mut new);

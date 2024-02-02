@@ -29,6 +29,7 @@ use crate::draw_quad::DrawQuad;
 use crate::error;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
+use crate::framebuffer::OutputImage;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::options::FrameOptionsWGPU;
@@ -234,10 +235,10 @@ impl FilterChainWGPU {
         Ok(filters.into_boxed_slice())
     }
 
-    pub fn frame(&mut self,
+    pub fn frame<'a>(&mut self,
         input: wgpu::Texture,
-        viewport: &Viewport<OwnedImage>,
-        cmd: wgpu::CommandEncoder,
+        viewport: &Viewport<OutputImage<'a>>,
+        cmd: &mut wgpu::CommandEncoder,
         frame_count: usize,
                  options: Option<&FrameOptionsWGPU>,
 
@@ -322,8 +323,67 @@ impl FilterChainWGPU {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        // let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
 
+
+        for (index, pass) in pass.iter_mut().enumerate() {
+            let target = &self.output_framebuffers[index];
+            source.filter_mode = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            source.mip_filter = pass.config.filter;
+
+            let output_image = OutputImage::new(target);
+            let out = RenderTarget::identity(&output_image);
+
+            pass.draw(
+                cmd,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                frame_direction,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Offscreen
+            )?;
+
+            if target.max_miplevels > 1 && !self.disable_mipmaps {
+                // todo: mipmaps
+            }
+
+            source = self.common.output_textures[index].clone().unwrap();
+        }
+
+        // try to hint the optimizer
+        assert_eq!(last.len(), 1);
+
+        if let Some(pass) = last.iter_mut().next() {
+            if pass.graphics_pipeline.format != viewport.output.format {
+                // need to recompile
+                pass.graphics_pipeline.recompile(viewport.output.format);
+            }
+            source.filter_mode = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            source.mip_filter = pass.config.filter;
+            let output_image = &viewport.output;
+            let out = RenderTarget::viewport_with_output(output_image, viewport);
+            pass.draw(
+                cmd,
+                passes_len - 1,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                frame_direction,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final
+            )?;
+        }
+
+        // self.push_history(input, cmd)?;
+        self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
 
