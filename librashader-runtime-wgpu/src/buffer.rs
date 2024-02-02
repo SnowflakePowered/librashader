@@ -3,8 +3,7 @@ use std::sync::Arc;
 
 pub struct WgpuMappedBuffer {
     buffer: wgpu::Buffer,
-    backing: Box<[u8]>,
-    device: Arc<wgpu::Device>
+    shadow: Box<[u8]>,
 }
 
 impl WgpuMappedBuffer {
@@ -23,8 +22,7 @@ impl WgpuMappedBuffer {
 
         WgpuMappedBuffer {
             buffer,
-            backing: vec![0u8; size as usize].into_boxed_slice(),
-            device: Arc::clone(&device)
+            shadow: vec![0u8; size as usize].into_boxed_slice(),
         }
     }
 
@@ -35,7 +33,7 @@ impl WgpuMappedBuffer {
     /// Write the contents of the backing buffer to the device buffer.
     pub fn flush(&self) {
         self.buffer.slice(..)
-            .get_mapped_range_mut().copy_from_slice(&self.backing)
+            .get_mapped_range_mut().copy_from_slice(&self.shadow)
     }
 }
 
@@ -43,12 +41,12 @@ impl Deref for WgpuMappedBuffer {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        self.backing.deref()
+        self.shadow.deref()
     }
 }
 
 impl DerefMut for WgpuMappedBuffer {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.backing.deref_mut()
+        self.shadow.deref_mut()
     }
 }

@@ -11,6 +11,7 @@ use crate::framebuffer::OutputImage;
 pub struct WgpuGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     render_pipeline: wgpu::RenderPipeline,
+    pub format: wgpu::TextureFormat
 }
 
 pub struct PipelineLayoutObjects {
@@ -201,6 +202,7 @@ impl WgpuGraphicsPipeline {
         Self {
             layout,
             render_pipeline,
+            format: render_pass_format
         }
     }
 

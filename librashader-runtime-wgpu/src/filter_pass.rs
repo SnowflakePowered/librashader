@@ -86,7 +86,7 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport<OwnedImage>,
+        viewport: &Viewport<OutputImage>,
         original: &InputImage,
         source: &InputImage,
         output: &RenderTarget<OutputImage>,
@@ -201,7 +201,7 @@ impl FilterPass {
         Ok(())
     }
 
-    fn build_semantics<'a, 'b>(
+    fn build_semantics<'a>(
         &mut self,
         pass_index: usize,
         parent: &FilterCommon,
@@ -214,7 +214,7 @@ impl FilterPass {
         source: &InputImage,
         main_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::TextureView>>,
         sampler_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::Sampler>>
-    ) where 'a: 'b {
+    ) {
         Self::bind_semantics(
             &self.device,
             &parent.samplers,
