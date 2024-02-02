@@ -236,7 +236,7 @@ impl FilterChainWGPU {
     }
 
     pub fn frame<'a>(&mut self,
-        input: wgpu::Texture,
+        input: Arc<wgpu::Texture>,
         viewport: &Viewport<OutputImage<'a>>,
         cmd: &mut wgpu::CommandEncoder,
         frame_count: usize,
@@ -284,7 +284,7 @@ impl FilterChainWGPU {
         }
 
         let original = InputImage {
-            image: Arc::new(input),
+            image: Arc::clone(&input),
             view: Arc::new(original_image_view),
             wrap_mode,
             filter_mode: filter,
