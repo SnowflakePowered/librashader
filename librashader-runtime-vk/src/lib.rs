@@ -5,7 +5,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
-#![feature(strict_provenance)]
 
 mod draw_quad;
 mod filter_chain;

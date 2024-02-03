@@ -1,9 +1,8 @@
 #![cfg(target_os = "windows")]
+#![deny(unsafe_op_in_unsafe_fn)]
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
-#![feature(int_roundings)]
-#![deny(unsafe_op_in_unsafe_fn)]
 
 mod buffer;
 mod descriptor_heap;
