@@ -16,6 +16,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use vec_extract_if_polyfill::MakeExtractIf;
 #[derive(Debug)]
 pub enum Value {
     ShaderCount(i32),
