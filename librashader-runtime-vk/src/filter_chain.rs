@@ -188,7 +188,8 @@ impl FrameResiduals {
         }
         for framebuffer in self.framebuffers.drain(0..) {
             if let Some(framebuffer) = framebuffer
-                && framebuffer != vk::Framebuffer::null() {
+                && framebuffer != vk::Framebuffer::null()
+            {
                 unsafe {
                     self.device.destroy_framebuffer(framebuffer, None);
                 }
@@ -697,8 +698,13 @@ impl FilterChainVulkan {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
-            if let Some(format) = pass.graphics_pipeline.render_pass.as_ref().map(|r| r.format)
-                && format != viewport.output.format {
+            if let Some(format) = pass
+                .graphics_pipeline
+                .render_pass
+                .as_ref()
+                .map(|r| r.format)
+                && format != viewport.output.format
+            {
                 // need to recompile
                 pass.graphics_pipeline.recompile(viewport.output.format)?;
             }

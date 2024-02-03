@@ -68,10 +68,14 @@ where
             && location.bindable()
         {
             if location.is_valid(BindingStage::VERTEX) {
-                unsafe { T::FACTORY(location.vertex, value); }
+                unsafe {
+                    T::FACTORY(location.vertex, value);
+                }
             }
             if location.is_valid(BindingStage::FRAGMENT) {
-                unsafe {  T::FACTORY(location.fragment, value); }
+                unsafe {
+                    T::FACTORY(location.fragment, value);
+                }
             }
             Some(())
         } else {
