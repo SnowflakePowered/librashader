@@ -6,7 +6,7 @@ publish = false
 
 
 [dependencies]
-cbindgen = { git = "https://github.com/eqrion/cbindgen" }
+cbindgen = "0.26.0"
 clap = { version = "4.1.0", features = ["derive"] }
 
 
