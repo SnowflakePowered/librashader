@@ -13,5 +13,7 @@
 mod error;
 mod parse;
 mod preset;
+mod extract_if;
+
 pub use error::*;
 pub use preset::*;
