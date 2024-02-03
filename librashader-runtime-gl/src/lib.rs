@@ -3,7 +3,6 @@
 //! This crate should not be used directly.
 //! See [`librashader::runtime::gl`](https://docs.rs/librashader/latest/librashader/runtime/gl/index.html) instead.
 #![deny(unsafe_op_in_unsafe_fn)]
-#![feature(strict_provenance)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
 

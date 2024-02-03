@@ -26,6 +26,8 @@ bytemuck = "1.12.3"
 thiserror = "1.0.37"
 rayon = "1.6.1"
 
+sptr = "0.3"
+
 [dev-dependencies]
 glfw = "0.47.0"
 

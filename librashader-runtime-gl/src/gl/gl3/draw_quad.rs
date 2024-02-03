@@ -52,7 +52,7 @@ impl DrawQuad for Gl3DrawQuad {
                 gl::FLOAT,
                 gl::FALSE,
                 (4 * std::mem::size_of::<f32>()) as GLsizei,
-                std::ptr::invalid(0),
+                sptr::invalid(0),
             );
             gl::VertexAttribPointer(
                 1,
@@ -60,7 +60,7 @@ impl DrawQuad for Gl3DrawQuad {
                 gl::FLOAT,
                 gl::FALSE,
                 (4 * std::mem::size_of::<f32>()) as GLsizei,
-                std::ptr::invalid(2 * std::mem::size_of::<f32>()),
+                sptr::invalid(2 * std::mem::size_of::<f32>()),
             );
         }
     }
