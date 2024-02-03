@@ -6,7 +6,6 @@
 //!
 //! If you are _writing_ a librashader runtime implementation, using these traits and helpers will
 //! help in maintaining consistent behaviour in binding semantics and image handling.
-#![feature(array_chunks)]
 
 /// Scaling helpers.
 pub mod scaling;
@@ -37,3 +36,6 @@ pub mod render_target;
 
 /// Helpers for handling framebuffers.
 pub mod framebuffer;
+
+/// array_chunks_mut polyfill
+mod array_chunks_mut;

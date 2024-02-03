@@ -3,6 +3,7 @@ use librashader_common::Size;
 use std::marker::PhantomData;
 
 use std::path::Path;
+use crate::array_chunks_mut::ArrayChunksMut;
 
 /// An uncompressed raw image ready to upload to GPU buffers.
 pub struct Image<P: PixelFormat = RGBA8> {
@@ -37,7 +38,8 @@ impl PixelFormat for RGBA8 {
 
 impl PixelFormat for BGRA8 {
     fn convert(pixels: &mut Vec<u8>) {
-        for [r, _g, b, _a] in pixels.array_chunks_mut::<4>() {
+        assert!(pixels.len() % 4 == 0);
+        for [r, _g, b, _a] in ArrayChunksMut::new(pixels) {
             std::mem::swap(b, r)
         }
     }
