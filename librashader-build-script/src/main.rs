@@ -36,10 +36,7 @@ pub fn main() {
     ));
 
     if let Some(target) = &args.target {
-        cmd.arg(format!(
-            "--target={}",
-            &target
-        ));
+        cmd.arg(format!("--target={}", &target));
     }
 
     Some(cmd.status().expect("Failed to build librashader-capi"));
@@ -53,7 +50,6 @@ pub fn main() {
         .canonicalize()
         .expect("Could not find output directory.");
 
-        
     println!("Generating C headers...");
 
     // Create headers.
@@ -86,11 +82,20 @@ pub fn main() {
             "librashader_capi.d",
             "librashader_capi.dll.exp",
             "librashader_capi.dll.lib",
-            "librashader_capi.pdb",
         ];
         for artifact in artifacts {
             let ext = artifact.replace("_capi", "");
+            println!("Renaming {artifact} to {ext}");
             fs::rename(output_dir.join(artifact), output_dir.join(ext)).unwrap();
+        }
+
+        if output_dir.join("librashader_capi.pdb").exists() {
+            println!("Renaming librashader_capi.pdb to librashader.pdb");
+            fs::rename(
+                output_dir.join("librashader_capi.pdb"),
+                output_dir.join("librashader.pdb"),
+            )
+            .unwrap();
         }
     }
 }
