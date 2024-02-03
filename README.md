@@ -208,6 +208,8 @@ will check to ensure that `LIBRASHADER_CURRENT_ABI` matches that of the loaded l
 librashader will not load. A value of `0` for `LIBRASHADER_CURRENT_ABI` indicates the "null" instance where every operation
 is a no-op, which occurs if no compatible librashader implementation could be found.
 
+The `SONAME` of `librashader.so` when installed via package manager is set to `LIBRASHADER_CURRENT_ABI`.
+
 The above does not apply to releases of librashader prior to `0.1.0`, which were allowed to break API and ABI compatibility
 in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VERSION` or `LIBRASHADER_CURRENT_ABI`.
 

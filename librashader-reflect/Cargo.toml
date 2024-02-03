@@ -37,7 +37,7 @@ optional = true
 [features]
 default = ["cross", "serialize"]
 unstable-naga = [ "naga", "rspirv" ]
-standalone = ["shaderc/build-from-source", "shaderc/prefer-static-linking"]
+standalone = ["shaderc/prefer-static-linking"]
 dxil = ["cross", "spirv-to-dxil"]
 cross = [ "spirv_cross", "spirv_cross/glsl", "spirv_cross/hlsl" ]
 serialize = [ "serde" ]
