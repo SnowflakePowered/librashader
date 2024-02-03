@@ -7,7 +7,8 @@
 //! as input to create a filter chain.
 //!
 //! Re-exported as [`librashader::presets`](https://docs.rs/librashader/latest/librashader/presets/index.html).
-#![feature(extract_if)]
+
+#![allow(unstable_name_collisions)]
 
 mod error;
 mod parse;
