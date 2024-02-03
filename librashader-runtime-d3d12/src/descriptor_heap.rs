@@ -15,7 +15,6 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_GPU_DESCRIPTOR_HANDLE,
 };
 
-#[const_trait]
 pub trait D3D12HeapType {
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC;
 }
@@ -36,7 +35,7 @@ pub struct ResourceWorkHeap;
 #[derive(Clone)]
 pub struct SamplerWorkHeap;
 
-impl const D3D12HeapType for SamplerPaletteHeap {
+impl D3D12HeapType for SamplerPaletteHeap {
     // sampler palettes just get set directly
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
@@ -48,7 +47,7 @@ impl const D3D12HeapType for SamplerPaletteHeap {
     }
 }
 
-impl const D3D12HeapType for CpuStagingHeap {
+impl D3D12HeapType for CpuStagingHeap {
     // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
@@ -60,7 +59,7 @@ impl const D3D12HeapType for CpuStagingHeap {
     }
 }
 
-impl const D3D12HeapType for RenderTargetHeap {
+impl D3D12HeapType for RenderTargetHeap {
     // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
@@ -73,7 +72,7 @@ impl const D3D12HeapType for RenderTargetHeap {
 }
 
 impl D3D12ShaderVisibleHeapType for ResourceWorkHeap {}
-impl const D3D12HeapType for ResourceWorkHeap {
+impl D3D12HeapType for ResourceWorkHeap {
     // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
@@ -86,7 +85,7 @@ impl const D3D12HeapType for ResourceWorkHeap {
 }
 
 impl D3D12ShaderVisibleHeapType for SamplerWorkHeap {}
-impl const D3D12HeapType for SamplerWorkHeap {
+impl D3D12HeapType for SamplerWorkHeap {
     // Lut texture heaps are CPU only and get bound to the descriptor heap of the shader.
     fn get_desc(size: usize) -> D3D12_DESCRIPTOR_HEAP_DESC {
         D3D12_DESCRIPTOR_HEAP_DESC {
