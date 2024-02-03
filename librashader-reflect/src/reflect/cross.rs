@@ -332,7 +332,7 @@ where
                                     expected,
                                     received: offset,
                                     ty: offset_type,
-                                    pass: pass_number
+                                    pass: pass_number,
                                 });
                             }
                             if meta.size != typeinfo.size {
@@ -367,7 +367,7 @@ where
                                     expected,
                                     received: offset,
                                     ty: offset_type,
-                                    pass: pass_number
+                                    pass: pass_number,
                                 });
                             }
                             if meta.size != typeinfo.size * typeinfo.columns {
@@ -416,7 +416,7 @@ where
                             expected,
                             received: offset,
                             ty: offset_type,
-                            pass: pass_number
+                            pass: pass_number,
                         });
                     }
 

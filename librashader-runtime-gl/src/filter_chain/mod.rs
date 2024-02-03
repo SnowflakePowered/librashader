@@ -27,12 +27,14 @@ impl FilterChainGL {
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         let result = catch_unwind(|| {
-            if let Some(options) = options && options.use_dsa {
+            if let Some(options) = options
+                && options.use_dsa
+            {
                 return Ok(Self {
                     filter: FilterChainDispatch::DirectStateAccess(unsafe {
                         FilterChainImpl::load_from_preset(preset, Some(options))?
-                    })
-                })
+                    }),
+                });
             }
             Ok(Self {
                 filter: FilterChainDispatch::Compatibility(unsafe {

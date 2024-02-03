@@ -477,33 +477,32 @@ impl FilterChainD3D12 {
                     .into();
 
                     // incredibly cursed.
-                    let (reflection, graphics_pipeline) = if !force_hlsl &&
-                    let Ok(graphics_pipeline) =
-                        D3D12GraphicsPipeline::new_from_dxil(
+                    let (reflection, graphics_pipeline) = if !force_hlsl
+                        && let Ok(graphics_pipeline) = D3D12GraphicsPipeline::new_from_dxil(
                             device,
                             library,
                             validator,
                             &dxil,
                             root_signature,
                             render_format,
-                            disable_cache
+                            disable_cache,
                         ) {
-                    (dxil_reflection, graphics_pipeline)
-                } else {
-                    let hlsl_reflection = hlsl.reflect(index, semantics)?;
-                    let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
+                        (dxil_reflection, graphics_pipeline)
+                    } else {
+                        let hlsl_reflection = hlsl.reflect(index, semantics)?;
+                        let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
 
-                    let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
-                        device,
-                        library,
-                        compiler,
-                        &hlsl,
-                        root_signature,
-                        render_format,
-                        disable_cache
-                    )?;
-                    (hlsl_reflection, graphics_pipeline)
-                };
+                        let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
+                            device,
+                            library,
+                            compiler,
+                            &hlsl,
+                            root_signature,
+                            render_format,
+                            disable_cache,
+                        )?;
+                        (hlsl_reflection, graphics_pipeline)
+                    };
 
                     // minimum size here has to be 1 byte.
                     let ubo_size = reflection.ubo.as_ref().map_or(1, |ubo| ubo.size as usize);

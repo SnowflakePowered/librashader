@@ -97,7 +97,8 @@ pub fn d3d11_get_closest_format(
     for supported in format_support_list {
         unsafe {
             if let Ok(supported_format) = device.CheckFormatSupport(*supported)
-                && (supported_format & format_support_mask) == format_support_mask {
+                && (supported_format & format_support_mask) == format_support_mask
+            {
                 return *supported;
             }
         }

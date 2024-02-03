@@ -31,7 +31,9 @@ impl PipelineDescriptors {
     }
 
     pub fn add_ubo_binding(&mut self, ubo_meta: Option<&UboReflection>) {
-        if let Some(ubo_meta) = ubo_meta && !ubo_meta.stage_mask.is_empty() {
+        if let Some(ubo_meta) = ubo_meta
+            && !ubo_meta.stage_mask.is_empty()
+        {
             let ubo_mask = util::binding_stage_to_vulkan_stage(ubo_meta.stage_mask);
 
             self.layout_bindings.push(vk::DescriptorSetLayoutBinding {

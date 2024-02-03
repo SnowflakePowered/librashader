@@ -265,7 +265,9 @@ impl FilterChainD3D11 {
                 disable_cache,
             )?;
 
-            let ubo_cbuffer = if let Some(ubo) = &reflection.ubo && ubo.size != 0 {
+            let ubo_cbuffer = if let Some(ubo) = &reflection.ubo
+                && ubo.size != 0
+            {
                 let buffer = FilterChainD3D11::create_constant_buffer(device, ubo.size)?;
                 Some(ConstantBufferBinding {
                     binding: ubo.binding,
@@ -277,7 +279,9 @@ impl FilterChainD3D11 {
                 None
             };
 
-            let push_cbuffer = if let Some(push) = &reflection.push_constant && push.size != 0 {
+            let push_cbuffer = if let Some(push) = &reflection.push_constant
+                && push.size != 0
+            {
                 let buffer = FilterChainD3D11::create_constant_buffer(device, push.size)?;
                 Some(ConstantBufferBinding {
                     binding: if ubo_cbuffer.is_some() { 1 } else { 0 },
