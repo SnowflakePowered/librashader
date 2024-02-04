@@ -15,6 +15,7 @@ BuildRequires: pkgconfig(vulkan)
 BuildRequires: pkgconfig(shaderc)
 BuildRequires: cmake
 BuildRequires: gcc
+BuildRequires: git
 BuildRequires: g++
 BuildRequires: ninja-build
 BuildRequires: patchelf
@@ -46,4 +47,5 @@ cp include/librashader_ld.h %{buildroot}%{_includedir}/librashader/librashader_l
 
 %files 
 %{_libdir}/librashader.so
+%{_libdir}/librashader.so.1
 %{_includedir}/librashader/
