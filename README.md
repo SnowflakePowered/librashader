@@ -10,6 +10,9 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 ![License](https://img.shields.io/crates/l/librashader)
 ![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg) 
 
+## Installation
+For end-users, librashader is available from the [Open Build Service](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader) for a variety of Linux distributions and platforms. Windows users can grab the latest DLL from [GitHub Releases](https://github.com/SnowflakePowered/librashader/releases).
+
 ## Supported Render APIs
 librashader supports OpenGL 3, OpenGL 4.6, Vulkan, Direct3D 11, and Direct3D 12.  Metal and WebGPU
 are not currently supported (but pull-requests are welcome). librashader does not support legacy render
