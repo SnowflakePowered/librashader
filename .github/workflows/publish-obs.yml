@@ -41,6 +41,7 @@ jobs:
       - name: Vendor sources for Open Build Service
         run: |
           cd home:chyyran:librashader/librashader/
+          rm *.obscpio
           osc service mr
       - name: Build package
         run: |
