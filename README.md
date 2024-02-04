@@ -6,8 +6,9 @@
 
 librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for RetroArch 'slang' shaders, rewritten in pure Rust.
 
-[![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader) [![Docs](https://docs.rs/librashader/badge.svg)](https://docs.rs/librashader) ![License](https://img.shields.io/crates/l/librashader)
-![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg)
+[![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader) [![Docs](https://docs.rs/librashader/badge.svg)](https://docs.rs/librashader) [![build result](https://build.opensuse.org/projects/home:chyyran:librashader/packages/librashader/badge.svg)](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader)
+![License](https://img.shields.io/crates/l/librashader)
+![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg) 
 
 ## Supported Render APIs
 librashader supports OpenGL 3, OpenGL 4.6, Vulkan, Direct3D 11, and Direct3D 12.  Metal and WebGPU
