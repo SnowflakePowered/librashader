@@ -9,7 +9,6 @@ use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, GLImage};
-use gl::types::GLuint;
 use librashader_common::Viewport;
 
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -19,6 +18,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
+use glow::HasContext;
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
 use librashader_reflect::reflect::cross::SpirvCross;
@@ -30,6 +30,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -51,10 +52,15 @@ pub(crate) struct FilterCommon {
     pub feedback_textures: Box<[InputTexture]>,
     pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
+    pub context: Arc<glow::Context>,
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
-    fn reflect_uniform_location(pipeline: GLuint, meta: &dyn UniformMeta) -> VariableLocation {
+    fn reflect_uniform_location(
+        ctx: &glow::Context,
+        pipeline: glow::Program,
+        meta: &dyn UniformMeta,
+    ) -> VariableLocation {
         let mut location = VariableLocation {
             ubo: None,
             push: None,
@@ -66,9 +72,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}", meta.id());
             let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}", meta.id());
             unsafe {
-                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
-
+                let vertex = ctx.get_uniform_location(pipeline, &vert_name);
+                let fragment = ctx.get_uniform_location(pipeline, &frag_name);
                 location.ubo = Some(UniformLocation { vertex, fragment })
             }
         }
@@ -77,9 +82,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}", meta.id());
             let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}", meta.id());
             unsafe {
-                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
-
+                let vertex = ctx.get_uniform_location(pipeline, &vert_name);
+                let fragment = ctx.get_uniform_location(pipeline, &frag_name);
                 location.push = Some(UniformLocation { vertex, fragment })
             }
         }
@@ -128,14 +132,18 @@ impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub(crate) unsafe fn load_from_preset(
         preset: ShaderPreset,
+        context: glow::Context,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
-        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.glsl_version));
+        let version = options.map_or_else(
+            || gl_get_version(&context),
+            |o| gl_u16_to_version(&context, o.glsl_version),
+        );
 
         // initialize passes
-        let filters = Self::init_passes(version, passes, &semantics, disable_cache)?;
+        let filters = Self::init_passes(&context, version, passes, &semantics, disable_cache)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         let default_wrap = filters
@@ -143,12 +151,13 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .map(|f| f.config.wrap_mode)
             .unwrap_or_default();
 
-        let samplers = SamplerSet::new();
+        let samplers = SamplerSet::new(&context)?;
 
         // load luts
-        let luts = T::LoadLut::load_luts(&preset.textures)?;
+        let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
 
-        let framebuffer_gen = || Ok::<_, FilterChainError>(T::FramebufferInterface::new(1));
+        let context = Arc::new(context);
+        let framebuffer_gen = || T::FramebufferInterface::new(&context, 1);
         let input_gen = || InputTexture {
             image: Default::default(),
             filter: default_filter,
@@ -173,7 +182,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         // create vertex objects
-        let draw_quad = T::DrawQuad::new();
+        let draw_quad = T::DrawQuad::new(&context)?;
 
         Ok(FilterChainImpl {
             draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
@@ -190,12 +199,14 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 output_textures,
                 feedback_textures,
                 history_textures,
+                context,
             },
             default_options: Default::default(),
         })
     }
 
     fn init_passes(
+        context: &glow::Context,
         version: GlslVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
@@ -208,10 +219,11 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let reflection = reflect.reflect(index, semantics)?;
             let glsl = reflect.compile(version)?;
 
-            let (program, ubo_location) = T::CompileShader::compile_program(glsl, !disable_cache)?;
+            let (program, ubo_location) =
+                T::CompileShader::compile_program(context, glsl, !disable_cache)?;
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let ring = UboRing::new(ubo.size);
+                let ring = T::UboRing::new(&context, ubo.size)?;
                 Some(ring)
             } else {
                 None
@@ -227,7 +239,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
             let uniform_bindings = reflection.meta.create_binding_map(|param| {
                 UniformOffset::new(
-                    Self::reflect_uniform_location(program, param),
+                    Self::reflect_uniform_location(&context, program, param),
                     param.offset(),
                 )
             });
@@ -290,7 +302,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
-        self.draw_quad.bind_vertices(QuadType::Offscreen);
+        self.draw_quad
+            .bind_vertices(&self.common.context, QuadType::Offscreen);
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -343,7 +356,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        self.draw_quad.bind_vertices(QuadType::Offscreen);
+        self.draw_quad
+            .bind_vertices(&self.common.context, QuadType::Offscreen);
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             source.filter = pass.config.filter;
@@ -366,7 +380,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source = target;
         }
 
-        self.draw_quad.bind_vertices(QuadType::Final);
+        self.draw_quad
+            .bind_vertices(&self.common.context, QuadType::Final);
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
@@ -412,7 +427,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         self.push_history(input)?;
 
-        self.draw_quad.unbind_vertices();
+        self.draw_quad.unbind_vertices(&self.common.context);
 
         Ok(())
     }

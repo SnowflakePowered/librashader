@@ -1,6 +1,5 @@
 //! OpenGL shader runtime errors.
 
-use gl::types::GLenum;
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
@@ -11,7 +10,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("fbo initialization error")]
-    FramebufferInit(GLenum),
+    FramebufferInit(u32),
     #[error("SPIRV reflection error")]
     SpirvCrossReflectError(#[from] spirv_cross2::SpirvCrossError),
     #[error("shader preset parse error")]
@@ -30,6 +29,12 @@ pub enum FilterChainError {
     GLLinkError,
     #[error("opengl could not compile program")]
     GlCompileError,
+    #[error("opengl could not create samplers")]
+    GlSamplerError,
+    #[error("opengl could not create samplers")]
+    GlProgramError,
+    #[error("opengl error: {0}")]
+    GlError(String),
 }
 
 /// Result type for OpenGL filter chains.

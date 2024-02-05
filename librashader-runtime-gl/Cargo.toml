@@ -20,12 +20,10 @@ librashader-runtime = { path = "../librashader-runtime" , version = "0.4.5" }
 librashader-cache = { path = "../librashader-cache", version = "0.4.5" }
 
 spirv-cross2 = { workspace = true, features = ["glsl"] }
-gl = "0.14.0"
+glow = { workspace = true}
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
 rayon = "1.6.1"
-
-sptr = "0.3"
 
 [features]
 stable = ["librashader-reflect/stable"]

@@ -145,7 +145,7 @@ impl CompileShader<GLSL> for CrossReflect<targets::Glsl> {
             )?;
             self.fragment
                 .set_decoration(res.id, Decoration::Binding, DecorationValue::unset())?;
-            let mut name = res.name.to_string();
+            let name = res.name.to_string();
             texture_fixups.push((name, binding));
         }
 
