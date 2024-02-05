@@ -5,6 +5,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
+#![feature(array_try_from_fn)]
 
 mod binding;
 mod filter_chain;

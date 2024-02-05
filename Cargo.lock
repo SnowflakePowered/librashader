@@ -1113,15 +1113,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gl"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a94edab108827d67608095e269cf862e60d920f144a5026d3dbcfd8b877fb404"
-dependencies = [
- "gl_generator",
-]
-
-[[package]]
 name = "gl_generator"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1178,6 +1169,29 @@ name = "glow"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd348e04c43b32574f2de31c8bb397d96c9fcfa1371bd4ca6d8bdc464ab121b1"
+dependencies = [
+ "js-sys",
+ "slotmap",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "glow"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f865cbd94bd355b89611211e49508da98a1fce0ad755c1e8448fb96711b24528"
+dependencies = [
+ "js-sys",
+ "slotmap",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "glow"
+version = "0.14.0"
+source = "git+https://github.com/chyyran/glow/?branch=feat-named-framebuffer#66bda22ddfc1953caedc7b5c8e32306b946fa897"
 dependencies = [
  "js-sys",
  "slotmap",
@@ -1656,7 +1670,7 @@ name = "librashader-capi"
 version = "0.3.0"
 dependencies = [
  "ash",
- "gl",
+ "glow 0.14.0 (git+https://github.com/chyyran/glow/?branch=feat-named-framebuffer)",
  "librashader",
  "librashader-spirv-cross",
  "objc2 0.5.2",
@@ -1673,7 +1687,7 @@ name = "librashader-common"
 version = "0.3.0"
 dependencies = [
  "ash",
- "gl",
+ "glow 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "halfbrown",
  "num-traits",
  "objc2-metal",
@@ -1809,8 +1823,8 @@ name = "librashader-runtime-gl"
 version = "0.3.0"
 dependencies = [
  "bytemuck",
- "gl",
  "glfw 0.47.0",
+ "glow 0.14.0 (git+https://github.com/chyyran/glow/?branch=feat-named-framebuffer)",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
@@ -1819,7 +1833,6 @@ dependencies = [
  "librashader-runtime",
  "librashader-spirv-cross",
  "rayon",
- "sptr",
  "thiserror",
 ]
 
@@ -2494,9 +2507,9 @@ dependencies = [
 
 [[package]]
 name = "polling"
-version = "3.7.2"
+version = "3.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3ed00ed3fbf728b5816498ecd316d1716eecaced9c0c8d2c5a6740ca214985b"
+checksum = "cc2790cd301dec6cd3b7a025e4815cf825724a51c98dccfe6a3e55f05ffb6511"
 dependencies = [
  "cfg-if",
  "concurrent-queue",
@@ -2504,7 +2517,7 @@ dependencies = [
  "pin-project-lite",
  "rustix",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3718,7 +3731,7 @@ dependencies = [
  "cfg_aliases",
  "core-graphics-types",
  "d3d12",
- "glow",
+ "glow 0.13.1",
  "glutin_wgl_sys",
  "gpu-alloc",
  "gpu-allocator 0.26.0",
@@ -4202,9 +4215,9 @@ checksum = "ec107c4503ea0b4a98ef47356329af139c0a4f7750e621cf2973cd3385ebcb3d"
 
 [[package]]
 name = "xcursor"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d491ee231a51ae64a5b762114c3ac2104b967aadba1de45c86ca42cf051513b7"
+checksum = "f513f231f0810b04d988f0df4fb16ef0b6b25d23248f2c4b56b074e6b1b0ffe4"
 
 [[package]]
 name = "xkbcommon-dl"
