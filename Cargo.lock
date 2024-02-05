@@ -1119,6 +1119,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "glow"
+version = "0.14.0"
+source = "git+https://github.com/grovesNL/glow/#eb44a878a756d5ddce8505158690ec9bd272be8f"
+dependencies = [
+ "js-sys",
+ "slotmap",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "glslang"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1537,7 +1548,7 @@ name = "librashader-common"
 version = "0.4.5"
 dependencies = [
  "ash",
- "gl",
+ "glow 0.14.0",
  "halfbrown",
  "num-traits",
  "objc2-metal",
@@ -1678,8 +1689,8 @@ name = "librashader-runtime-gl"
 version = "0.4.5"
 dependencies = [
  "bytemuck",
- "gl",
  "glfw 0.47.0",
+ "glow 0.14.0",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
@@ -1688,7 +1699,6 @@ dependencies = [
  "librashader-runtime",
  "rayon",
  "spirv-cross2",
- "sptr",
  "thiserror",
 ]
 
@@ -3500,7 +3510,7 @@ dependencies = [
  "cfg_aliases",
  "core-graphics-types",
  "d3d12",
- "glow",
+ "glow 0.13.1",
  "glutin_wgl_sys",
  "gpu-alloc",
  "gpu-allocator 0.26.0",
