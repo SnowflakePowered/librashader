@@ -21,6 +21,7 @@ librashader-cache = { path = "../librashader-cache", version = "0.3.0" }
 spirv_cross = { package = "librashader-spirv-cross", version = "0.25.1" }
 
 gl = "0.14.0"
+glow = { version = "0.14", git = "https://github.com/chyyran/glow/", branch = "feat-named-framebuffer" }
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
 rayon = "1.6.1"

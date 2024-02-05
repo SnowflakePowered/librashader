@@ -1,38 +1,36 @@
-use gl::types::{GLenum, GLuint};
+use glow::HasContext;
 
 use crate::error;
 use crate::error::FilterChainError;
 use librashader_reflect::back::glsl::GlslVersion;
 
-pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GLuint> {
-    let (shader, compile_status) = unsafe {
-        let shader = gl::CreateShader(stage);
-        gl::ShaderSource(
-            shader,
-            1,
-            &source.as_bytes().as_ptr().cast(),
-            std::ptr::null(),
-        );
-        gl::CompileShader(shader);
-        let mut compile_status = 0;
-        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);
-        (shader, compile_status)
-    };
+pub fn gl_compile_shader(
+    context: &glow::Context,
+    stage: u32,
+    source: &str,
+) -> error::Result<glow::Shader> {
+    unsafe {
+        let shader = context
+            .create_shader(stage)
+            .map_err(|_| FilterChainError::GlCompileError)?;
 
-    if compile_status == 0 {
-        Err(FilterChainError::GlCompileError)
-    } else {
-        Ok(shader)
+        context.shader_source(shader, &source);
+        context.compile_shader(shader);
+        let compile_status = context.get_shader_compile_status(shader);
+
+        if !compile_status {
+            Err(FilterChainError::GlCompileError)
+        } else {
+            Ok(shader)
+        }
     }
 }
 
-pub fn gl_get_version() -> GlslVersion {
-    let mut maj_ver = 0;
-    let mut min_ver = 0;
-    unsafe {
-        gl::GetIntegerv(gl::MAJOR_VERSION, &mut maj_ver);
-        gl::GetIntegerv(gl::MINOR_VERSION, &mut min_ver);
-    }
+pub fn gl_get_version(context: &glow::Context) -> GlslVersion {
+    let version = context.version();
+
+    let maj_ver = version.major;
+    let min_ver = version.minor;
 
     match maj_ver {
         3 => match min_ver {
@@ -56,9 +54,9 @@ pub fn gl_get_version() -> GlslVersion {
     }
 }
 
-pub fn gl_u16_to_version(version: u16) -> GlslVersion {
+pub fn gl_u16_to_version(context: &glow::Context, version: u16) -> GlslVersion {
     match version {
-        0 => gl_get_version(),
+        0 => gl_get_version(context),
         300 => GlslVersion::V1_30,
         310 => GlslVersion::V1_40,
         320 => GlslVersion::V1_50,

@@ -1186,6 +1186,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "glow"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f865cbd94bd355b89611211e49508da98a1fce0ad755c1e8448fb96711b24528"
+dependencies = [
+ "js-sys",
+ "slotmap",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "glow"
+version = "0.14.0"
+source = "git+https://github.com/chyyran/glow/?branch=feat-named-framebuffer#66bda22ddfc1953caedc7b5c8e32306b946fa897"
+dependencies = [
+ "js-sys",
+ "slotmap",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "glslang"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1673,7 +1696,7 @@ name = "librashader-common"
 version = "0.3.0"
 dependencies = [
  "ash",
- "gl",
+ "glow 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "halfbrown",
  "num-traits",
  "objc2-metal",
@@ -1813,6 +1836,7 @@ dependencies = [
  "bytemuck",
  "gl",
  "glfw 0.47.0",
+ "glow 0.14.0 (git+https://github.com/chyyran/glow/?branch=feat-named-framebuffer)",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
@@ -3729,7 +3753,7 @@ dependencies = [
  "cfg_aliases",
  "core-graphics-types",
  "d3d12",
- "glow",
+ "glow 0.13.1",
  "glutin_wgl_sys",
  "gpu-alloc",
  "gpu-allocator 0.26.0",
