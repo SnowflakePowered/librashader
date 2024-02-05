@@ -1,8 +1,9 @@
+use std::rc::Rc;
+use glow::HasContext;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::InputTexture;
-use gl::types::{GLenum, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -12,13 +13,14 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 /// Generally for use as render targets.
 #[derive(Debug)]
 pub struct GLFramebuffer {
-    pub(crate) image: GLuint,
-    pub(crate) fbo: GLuint,
+    pub(crate) image: Option<glow::Texture>,
+    pub(crate) fbo: Option<glow::Framebuffer>,
     pub(crate) size: Size<u32>,
-    pub(crate) format: GLenum,
+    pub(crate) format: u32,
     pub(crate) max_levels: u32,
     pub(crate) mip_levels: u32,
     pub(crate) is_raw: bool,
+    pub(crate) ctx: Rc<glow::Context>
 }
 
 impl GLFramebuffer {
@@ -26,9 +28,10 @@ impl GLFramebuffer {
     ///
     /// The framebuffer will not be deleted when this struct is dropped.
     pub fn new_from_raw(
-        texture: GLuint,
-        fbo: GLuint,
-        format: GLenum,
+        ctx: Rc<glow::Context>,
+        texture: Option<glow::Texture>,
+        fbo: Option<glow::Framebuffer>,
+        format: u32,
         size: Size<u32>,
         miplevels: u32,
     ) -> GLFramebuffer {
@@ -38,8 +41,9 @@ impl GLFramebuffer {
             format,
             max_levels: miplevels,
             mip_levels: miplevels,
-            fbo: fbo,
+            fbo,
             is_raw: true,
+            ctx,
         }
     }
 
@@ -74,7 +78,7 @@ impl GLFramebuffer {
     pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputTexture {
         InputTexture {
             image: GLImage {
-                handle: self.image,
+                handle: Some(self.image),
                 format: self.format,
                 size: self.size,
             },
@@ -92,11 +96,11 @@ impl Drop for GLFramebuffer {
         }
 
         unsafe {
-            if self.fbo != 0 {
-                gl::DeleteFramebuffers(1, &self.fbo);
+            if let Some(fbo) = self.fbo {
+                self.ctx.delete_framebuffer(fbo);
             }
-            if self.image != 0 {
-                gl::DeleteTextures(1, &self.image);
+            if let Some(image) = self.image {
+                self.ctx.delete_texture(image);
             }
         }
     }

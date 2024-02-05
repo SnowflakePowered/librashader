@@ -30,6 +30,10 @@ pub enum FilterChainError {
     GLLinkError,
     #[error("opengl could not compile program")]
     GlCompileError,
+    #[error("opengl could not create samplers")]
+    GlSamplerError,
+    #[error("opengl could not create samplers")]
+    GlProgramError,
 }
 
 /// Result type for OpenGL filter chains.

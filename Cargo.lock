@@ -1528,7 +1528,7 @@ name = "librashader-common"
 version = "0.2.2"
 dependencies = [
  "ash",
- "gl",
+ "glow",
  "halfbrown",
  "icrate 0.1.0",
  "num-traits",
@@ -1648,8 +1648,8 @@ name = "librashader-runtime-gl"
 version = "0.2.2"
 dependencies = [
  "bytemuck",
- "gl",
  "glfw 0.47.0",
+ "glow",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",

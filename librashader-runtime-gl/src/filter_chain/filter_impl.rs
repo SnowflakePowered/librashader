@@ -30,6 +30,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
+use glow::HasContext;
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -50,6 +51,7 @@ pub(crate) struct FilterCommon {
     pub feedback_textures: Box<[InputTexture]>,
     pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
+    pub context: glow::Context,
 }
 
 pub struct FilterMutable {
@@ -58,7 +60,7 @@ pub struct FilterMutable {
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
-    fn reflect_uniform_location(pipeline: GLuint, meta: &dyn UniformMeta) -> VariableLocation {
+    fn reflect_uniform_location(ctx: &glow::Context, pipeline: glow::Program, meta: &dyn UniformMeta) -> VariableLocation {
         let mut location = VariableLocation {
             ubo: None,
             push: None,
@@ -70,9 +72,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}\0", meta.id());
             let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}\0", meta.id());
             unsafe {
-                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
-
+                let vertex = ctx.get_uniform_location(pipeline, &vert_name);
+                let fragment = ctx.get_uniform_location(pipeline, &frag_name);
                 location.ubo = Some(UniformLocation { vertex, fragment })
             }
         }
@@ -81,9 +82,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}\0", meta.id());
             let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id());
             unsafe {
-                let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
-                let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
-
+                let vertex = ctx.get_uniform_location(pipeline, &vert_name);
+                let fragment = ctx.get_uniform_location(pipeline, &frag_name);
                 location.push = Some(UniformLocation { vertex, fragment })
             }
         }
