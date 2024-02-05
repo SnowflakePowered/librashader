@@ -62,9 +62,10 @@ pub(crate) trait LoadLut {
 
 pub(crate) trait CompileProgram {
     fn compile_program(
+        context: &glow::Context,
         shader: ShaderCompilerOutput<String, CrossGlslContext>,
         cache: bool,
-    ) -> Result<(GLuint, UniformLocation<GLuint>)>;
+    ) -> Result<(glow::Program, UniformLocation<Option<glow::UniformLocation>>)>;
 }
 
 pub(crate) trait DrawQuad {
@@ -78,7 +79,7 @@ pub(crate) trait UboRing<const SIZE: usize> {
     fn bind_for_frame(
         &mut self,
         ubo: &BufferReflection<u32>,
-        ubo_location: &UniformLocation<GLuint>,
+        ubo_location: &UniformLocation<u32>,
         storage: &impl UniformStorageAccess,
     );
 }
@@ -96,12 +97,12 @@ pub(crate) trait FramebufferInterface {
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);
     fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()>;
-    fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<GLenum>) -> Result<()>;
+    fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<u32>) -> Result<()>;
 }
 
 pub(crate) trait BindTexture {
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture);
-    fn gen_mipmaps(texture: &InputTexture);
+    fn bind_texture(context: &glow::Context, samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture);
+    fn gen_mipmaps(context: &glow::Context, texture: &InputTexture);
 }
 
 pub(crate) trait GLInterface {

@@ -1,3 +1,4 @@
+use glow::HasContext;
 use crate::binding::UniformLocation;
 use crate::error::FilterChainError;
 use crate::gl::CompileProgram;
@@ -12,7 +13,7 @@ pub struct Gl4CompileProgram;
 
 struct GlProgramBinary {
     program: Vec<u8>,
-    format: GLuint,
+    format: u32,
 }
 
 impl Cacheable for GlProgramBinary {
@@ -22,7 +23,7 @@ impl Cacheable for GlProgramBinary {
     {
         let mut cached = Vec::from(cached);
         let format = cached.split_off(cached.len() - std::mem::size_of::<u32>());
-        let format: Option<&GLuint> = bytemuck::try_from_bytes(&format).ok();
+        let format: Option<&u32> = bytemuck::try_from_bytes(&format).ok();
         let Some(format) = format else {
             return None;
         };
@@ -42,21 +43,24 @@ impl Cacheable for GlProgramBinary {
 
 impl CompileProgram for Gl4CompileProgram {
     fn compile_program(
+        context: &glow::Context,
         glsl: ShaderCompilerOutput<String, CrossGlslContext>,
         cache: bool,
-    ) -> crate::error::Result<(GLuint, UniformLocation<GLuint>)> {
+    ) -> crate::error::Result<(glow::Program, UniformLocation<Option<glow::UniformLocation>>)> {
         let vertex_resources = glsl.context.artifact.vertex.get_shader_resources()?;
 
         let program = librashader_cache::cache_shader_object(
             "opengl4",
             &[glsl.vertex.as_str(), glsl.fragment.as_str()],
             |&[vertex, fragment]| unsafe {
-                let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, vertex)?;
-                let fragment = util::gl_compile_shader(gl::FRAGMENT_SHADER, fragment)?;
+                let vertex = util::gl_compile_shader(context, glow::VERTEX_SHADER, vertex)?;
+                let fragment = util::gl_compile_shader(context, glow::FRAGMENT_SHADER, fragment)?;
 
-                let program = gl::CreateProgram();
-                gl::AttachShader(program, vertex);
-                gl::AttachShader(program, fragment);
+                let program = context.create_program()
+                    .map_err(|_| FilterChainError::GlProgramError)?;
+
+                context.attach_shader(program, vertex);
+                context.attach_shader(program, fragment);
 
                 for res in &vertex_resources.stage_inputs {
                     let loc = glsl
@@ -64,20 +68,19 @@ impl CompileProgram for Gl4CompileProgram {
                         .artifact
                         .vertex
                         .get_decoration(res.id, Decoration::Location)?;
-                    let mut name = res.name.clone();
-                    name.push('\0');
 
-                    gl::BindAttribLocation(program, loc, name.as_str().as_ptr().cast())
+                    context.bind_attrib_location(program, loc, &res.name);
                 }
-                gl::LinkProgram(program);
-                gl::DeleteShader(vertex);
-                gl::DeleteShader(fragment);
+                context.link_program(program);
+                context.delete_shader(vertex);
+                context.delete_shader(fragment);
 
-                let mut status = 0;
-                gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
-                if status != 1 {
+                if !context.get_program_link_status(program) {
                     return Err(FilterChainError::GLLinkError);
                 }
+
+                context.get_program_binary
+                let length = context.get_program_resource_i32(program, )
 
                 let mut length = 0;
                 gl::GetProgramiv(program, gl::PROGRAM_BINARY_LENGTH, &mut length);

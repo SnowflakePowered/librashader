@@ -47,6 +47,7 @@ impl CompileProgram for Gl3CompileProgram {
 
             gl::UseProgram(program);
 
+            
             for (name, binding) in &glsl.context.sampler_bindings {
                 let location = gl::GetUniformLocation(program, name.as_str().as_ptr().cast());
                 if location >= 0 {

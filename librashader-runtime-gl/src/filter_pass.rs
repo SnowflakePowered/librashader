@@ -32,8 +32,8 @@ impl UniformOffset {
 
 pub(crate) struct FilterPass<T: GLInterface> {
     pub reflection: ShaderReflection,
-    pub program: GLuint,
-    pub ubo_location: UniformLocation<GLuint>,
+    pub program: glow::Program,
+    pub ubo_location: UniformLocation<u32>,
     pub ubo_ring: Option<T::UboRing>,
     pub(crate) uniform_storage: GlUniformStorage,
     pub uniform_bindings: FastHashMap<UniformBinding, UniformOffset>,
@@ -61,7 +61,7 @@ impl<T: GLInterface> BindSemantics<GlUniformBinder, VariableLocation> for Filter
     type InputTexture = InputTexture;
     type SamplerSet = SamplerSet;
     type DescriptorSet<'a> = ();
-    type DeviceContext = ();
+    type DeviceContext = glow::Context;
     type UniformOffset = UniformOffset;
 
     fn bind_texture<'a>(
@@ -69,9 +69,9 @@ impl<T: GLInterface> BindSemantics<GlUniformBinder, VariableLocation> for Filter
         samplers: &Self::SamplerSet,
         binding: &TextureBinding,
         texture: &Self::InputTexture,
-        _device: &Self::DeviceContext,
+        device: &Self::DeviceContext,
     ) {
-        T::BindTexture::bind_texture(samplers, binding, texture);
+        T::BindTexture::bind_texture(device, samplers, binding, texture);
     }
 }
 
@@ -85,7 +85,7 @@ impl<T: GLInterface> FilterPass<T> {
         viewport: &Viewport<&GLFramebuffer>,
         original: &InputTexture,
         source: &InputTexture,
-        output: RenderTarget<GLFramebuffer, GLint>,
+        output: RenderTarget<GLFramebuffer, glow::Texture>,
     ) {
         let framebuffer = output.output;
 
@@ -171,7 +171,7 @@ impl<T: GLInterface> FilterPass<T> {
         source: &InputTexture,
     ) {
         Self::bind_semantics(
-            &(),
+            &parent.context,
             &parent.samplers,
             &mut self.uniform_storage,
             &mut (),
