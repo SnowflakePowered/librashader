@@ -13,7 +13,7 @@ description = "RetroArch shaders for all."
 
 [features]
 default = []
-opengl = ["gl"]
+opengl = ["glow"]
 d3d9 = ["windows"]
 d3d11 = ["windows", "dxgi"]
 d3d12 = ["windows", "dxgi"]
@@ -28,7 +28,7 @@ rustc-hash = "2.0.0"
 halfbrown = "0.2.4"
 smartstring = "1.0"
 
-gl = { version = "0.14", optional = true }
+glow = { workspace = true, optional = true }
 ash = { workspace = true, optional = true }
 wgpu-types = { workspace = true, optional = true }
 

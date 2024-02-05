@@ -23,7 +23,7 @@ ash = "0.38"
 spirv-cross2 = { version = "0.4", default-features = false }
 objc2-metal = { version = "0.2" }
 objc2 = { version = "0.5.0" }
-
+glow = { version = "0.14", git = "https://github.com/grovesNL/glow/" }
 wgpu = { version = "22", default-features = false }
 wgpu-types = { version = "22" }
 

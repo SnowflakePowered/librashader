@@ -1,4 +1,3 @@
-use gl::types::{GLenum, GLuint};
 use librashader_common::Size;
 
 /// A handle to an OpenGL texture with format and size information.
@@ -7,9 +6,9 @@ use librashader_common::Size;
 #[derive(Default, Debug, Copy, Clone)]
 pub struct GLImage {
     /// A GLuint to the texture.
-    pub handle: GLuint,
+    pub handle: Option<glow::Texture>,
     /// The format of the texture.
-    pub format: GLenum,
+    pub format: u32,
     /// The size of the texture.
     pub size: Size<u32>,
 }
