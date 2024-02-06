@@ -5,7 +5,6 @@ use core::slice;
 
 /// Polyfill trait for [`Vec::extract_if`](https://github.com/rust-lang/rust/issues/43244).
 pub(crate) trait MakeExtractIf<T> {
-
     /// Creates an iterator which uses a closure to determine if an element should be removed.
     ///
     /// If the closure returns true, then the element is removed and yielded.
@@ -33,14 +32,14 @@ pub(crate) trait MakeExtractIf<T> {
     /// assert_eq!(odds, vec![1, 3, 5, 9, 11, 13, 15]);
     /// ```
     fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
-        where
-            F: FnMut(&mut T) -> bool;
+    where
+        F: FnMut(&mut T) -> bool;
 }
 
 impl<T> MakeExtractIf<T> for Vec<T> {
     fn extract_if<F>(&mut self, filter: F) -> ExtractIf<T, F>
-        where
-            F: FnMut(&mut T) -> bool,
+    where
+        F: FnMut(&mut T) -> bool,
     {
         let old_len = self.len();
 
@@ -74,8 +73,8 @@ impl<T> MakeExtractIf<T> for Vec<T> {
 #[derive(Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct ExtractIf<'a, T, F>
-    where
-        F: FnMut(&mut T) -> bool,
+where
+    F: FnMut(&mut T) -> bool,
 {
     vec: &'a mut Vec<T>,
     /// The index of the item that will be inspected by the next call to `next`.
@@ -89,8 +88,8 @@ pub struct ExtractIf<'a, T, F>
 }
 
 impl<T, F> Iterator for ExtractIf<'_, T, F>
-    where
-        F: FnMut(&mut T) -> bool,
+where
+    F: FnMut(&mut T) -> bool,
 {
     type Item = T;
 
@@ -124,8 +123,8 @@ impl<T, F> Iterator for ExtractIf<'_, T, F>
 }
 
 impl<T, F> Drop for ExtractIf<'_, T, F>
-    where
-        F: FnMut(&mut T) -> bool,
+where
+    F: FnMut(&mut T) -> bool,
 {
     fn drop(&mut self) {
         unsafe {
@@ -235,35 +234,30 @@ mod test {
 
     #[test]
     fn drain_filter_complex() {
-
-        {   //                [+xxx++++++xxxxx++++x+x++]
-            let mut vec = vec![1,
-                               2, 4, 6,
-                               7, 9, 11, 13, 15, 17,
-                               18, 20, 22, 24, 26,
-                               27, 29, 31, 33,
-                               34,
-                               35,
-                               36,
-                               37, 39];
+        {
+            //                [+xxx++++++xxxxx++++x+x++]
+            let mut vec = vec![
+                1, 2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36,
+                37, 39,
+            ];
 
             let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
             assert_eq!(removed.len(), 10);
             assert_eq!(removed, vec![2, 4, 6, 18, 20, 22, 24, 26, 34, 36]);
 
             assert_eq!(vec.len(), 14);
-            assert_eq!(vec, vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
+            assert_eq!(
+                vec,
+                vec![1, 7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]
+            );
         }
 
-        {   //                [xxx++++++xxxxx++++x+x++]
-            let mut vec = vec![2, 4, 6,
-                               7, 9, 11, 13, 15, 17,
-                               18, 20, 22, 24, 26,
-                               27, 29, 31, 33,
-                               34,
-                               35,
-                               36,
-                               37, 39];
+        {
+            //                [xxx++++++xxxxx++++x+x++]
+            let mut vec = vec![
+                2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36, 37,
+                39,
+            ];
 
             let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
             assert_eq!(removed.len(), 10);
@@ -273,14 +267,11 @@ mod test {
             assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35, 37, 39]);
         }
 
-        {   //                [xxx++++++xxxxx++++x+x]
-            let mut vec = vec![2, 4, 6,
-                               7, 9, 11, 13, 15, 17,
-                               18, 20, 22, 24, 26,
-                               27, 29, 31, 33,
-                               34,
-                               35,
-                               36];
+        {
+            //                [xxx++++++xxxxx++++x+x]
+            let mut vec = vec![
+                2, 4, 6, 7, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26, 27, 29, 31, 33, 34, 35, 36,
+            ];
 
             let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
             assert_eq!(removed.len(), 10);
@@ -290,9 +281,11 @@ mod test {
             assert_eq!(vec, vec![7, 9, 11, 13, 15, 17, 27, 29, 31, 33, 35]);
         }
 
-        {   //                [xxxxxxxxxx+++++++++++]
-            let mut vec = vec![2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
-                               1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+        {
+            //                [xxxxxxxxxx+++++++++++]
+            let mut vec = vec![
+                2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19,
+            ];
 
             let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
             assert_eq!(removed.len(), 10);
@@ -302,9 +295,11 @@ mod test {
             assert_eq!(vec, vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
         }
 
-        {   //                [+++++++++++xxxxxxxxxx]
-            let mut vec = vec![1, 3, 5, 7, 9, 11, 13, 15, 17, 19,
-                               2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+        {
+            //                [+++++++++++xxxxxxxxxx]
+            let mut vec = vec![
+                1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
+            ];
 
             let removed = vec.extract_if(|x| *x % 2 == 0).collect::<Vec<_>>();
             assert_eq!(removed.len(), 10);

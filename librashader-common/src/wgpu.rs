@@ -71,7 +71,7 @@ impl From<wgpu_types::TextureFormat> for ImageFormat {
             wgpu_types::TextureFormat::Rgba32Uint => ImageFormat::R32G32B32A32Uint,
             wgpu_types::TextureFormat::Rgba32Sint => ImageFormat::R32G32B32A32Sint,
             wgpu_types::TextureFormat::Rgba32Float => ImageFormat::R32G32B32A32Sfloat,
-            _ => ImageFormat::Unknown
+            _ => ImageFormat::Unknown,
         }
     }
 }
@@ -154,8 +154,6 @@ impl From<FilterMode> for wgpu_types::FilterMode {
         }
     }
 }
-
-
 
 impl From<WrapMode> for wgpu_types::AddressMode {
     fn from(value: WrapMode) -> Self {

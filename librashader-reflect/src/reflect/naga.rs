@@ -1,13 +1,16 @@
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 
-use naga::{AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar, ScalarKind, TypeInner, VectorSize};
+use naga::{
+    AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar,
+    ScalarKind, TypeInner, VectorSize,
+};
 
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
-    BindingMeta, BindingStage, MemberOffset, ShaderSemantics, TextureBinding,
-    TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, BufferReflection,
-    UniformMemberBlock, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta,
-    MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
+    BindingMeta, BindingStage, BufferReflection, MemberOffset, ShaderSemantics, TextureBinding,
+    TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, UniformMemberBlock,
+    UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT,
+    MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
 
@@ -82,7 +85,11 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
 
 impl ValidateTypeSemantics<&TypeInner> for TextureSemantics {
     fn validate_type(&self, ty: &&TypeInner) -> Option<TypeInfo> {
-        let TypeInner::Vector { scalar: Scalar { width, kind }, size } = ty else {
+        let TypeInner::Vector {
+            scalar: Scalar { width, kind },
+            size,
+        } = ty
+        else {
             return None;
         };
 
@@ -185,10 +192,9 @@ impl NagaReflect {
         })
     }
 
-    fn get_next_binding(&self, bind_group: u32) -> u32{
+    fn get_next_binding(&self, bind_group: u32) -> u32 {
         let mut max_bind = 0;
-        for (_, gv) in self.vertex
-            .global_variables.iter() {
+        for (_, gv) in self.vertex.global_variables.iter() {
             let Some(binding) = &gv.binding else {
                 continue;
             };
@@ -198,8 +204,7 @@ impl NagaReflect {
             max_bind = std::cmp::max(max_bind, binding.binding);
         }
 
-        for (_, gv) in self.fragment
-            .global_variables.iter() {
+        for (_, gv) in self.fragment.global_variables.iter() {
             let Some(binding) = &gv.binding else {
                 continue;
             };
@@ -234,18 +239,12 @@ impl NagaReflect {
         // Reassign to UBO later if we want during compilation.
         if let Some(vertex_pcb) = vertex_pcb {
             let ubo = &mut self.vertex.global_variables[vertex_pcb];
-            ubo.binding = Some(ResourceBinding {
-                group: 0,
-                binding,
-            });
+            ubo.binding = Some(ResourceBinding { group: 0, binding });
         }
 
         if let Some(fragment_pcb) = fragment_pcb {
             let ubo = &mut self.fragment.global_variables[fragment_pcb];
-            ubo.binding = Some(ResourceBinding {
-                group: 0,
-                binding,
-            });
+            ubo.binding = Some(ResourceBinding { group: 0, binding });
         };
 
         match (vertex_pcb, fragment_pcb) {

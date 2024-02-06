@@ -13,7 +13,7 @@ use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, TextureConfig};
 use librashader_reflect::back::cross::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{TextureBinding, BufferReflection};
+use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::uniforms::UniformStorageAccess;
 use rustc_hash::FxHashMap;
 

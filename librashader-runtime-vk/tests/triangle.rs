@@ -23,7 +23,7 @@ fn triangle_vk() {
                 disable_cache: false,
             }),
         )
-            .unwrap();
+        .unwrap();
 
         hello_triangle::main(base, filter)
     }

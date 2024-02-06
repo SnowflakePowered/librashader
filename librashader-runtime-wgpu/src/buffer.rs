@@ -1,6 +1,6 @@
+use parking_lot::RwLock;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use parking_lot::RwLock;
 
 pub struct WgpuStagedBuffer {
     buffer: wgpu::Buffer,
