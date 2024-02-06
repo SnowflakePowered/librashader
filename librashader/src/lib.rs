@@ -314,7 +314,7 @@ pub mod runtime {
             options::{
                 FilterChainOptionsWgpu as FilterChainOptions, FrameOptionsWgpu as FrameOptions,
             },
-            FilterChainWgpu as FilterChain, OutputView,
+            FilterChainWgpu as FilterChain, WgpuOutputView,
         };
     }
 }

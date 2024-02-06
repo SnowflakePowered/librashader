@@ -21,7 +21,7 @@ mod texture;
 mod util;
 
 pub use filter_chain::FilterChainWgpu;
-pub use framebuffer::OutputView;
+pub use framebuffer::WgpuOutputView;
 
 
 pub mod error;

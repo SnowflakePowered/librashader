@@ -284,7 +284,7 @@ impl<'a> State<'a> {
                     x: 0.0,
                     y: 0.0,
                     mvp: None,
-                    output: librashader_runtime_wgpu::OutputView::new_from_raw(
+                    output: librashader_runtime_wgpu::WgpuOutputView::new_from_raw(
                         &filter_view,
                         filter_output.size().into(),
                         filter_output.format(),

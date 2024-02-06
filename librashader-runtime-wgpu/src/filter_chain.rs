@@ -28,7 +28,7 @@ use wgpu::{Device, TextureFormat};
 use crate::error;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::OutputView;
+use crate::framebuffer::WgpuOutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::mipmap::MipmapGen;
@@ -319,7 +319,7 @@ impl FilterChainWgpu {
     pub fn frame<'a>(
         &mut self,
         input: Arc<wgpu::Texture>,
-        viewport: &Viewport<OutputView<'a>>,
+        viewport: &Viewport<WgpuOutputView<'a>>,
         cmd: &mut wgpu::CommandEncoder,
         frame_count: usize,
         options: Option<&FrameOptionsWgpu>,
@@ -402,7 +402,7 @@ impl FilterChainWgpu {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let output_image = OutputView::from(target);
+            let output_image = WgpuOutputView::from(target);
             let out = RenderTarget::identity(&output_image);
 
             pass.draw(
