@@ -1,7 +1,7 @@
 use crate::buffer::WgpuStagedBuffer;
 use crate::error;
 use crate::filter_chain::FilterCommon;
-use crate::framebuffer::OutputView;
+use crate::framebuffer::WgpuOutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
@@ -90,10 +90,10 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport<OutputView>,
+        viewport: &Viewport<WgpuOutputView>,
         original: &InputImage,
         source: &InputImage,
-        output: &RenderTarget<OutputView>,
+        output: &RenderTarget<WgpuOutputView>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         let mut main_heap = FxHashMap::default();

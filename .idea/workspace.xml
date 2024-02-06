@@ -12,24 +12,7 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): wip filter chain logic">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-reflect/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-gl/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-gl/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-vk/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-vk/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_chain.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_chain.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_pass.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_pass.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/framebuffer.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/framebuffer.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/options.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/options.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/tests/hello_triangle.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/tests/hello_triangle.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader/src/lib.rs" afterDir="false" />
-    </list>
+    <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): rename OutputView to WgpuOutputView" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -284,7 +267,7 @@
       <workItem from="1706229877283" duration="1844000" />
       <workItem from="1706680503632" duration="3415000" />
       <workItem from="1706766058493" duration="620000" />
-      <workItem from="1707260879653" duration="1928000" />
+      <workItem from="1707260879653" duration="2601000" />
     </task>
     <task id="LOCAL-00001" summary="rt(wgpu): basic triangle example">
       <option name="closed" value="true" />
@@ -382,7 +365,23 @@
       <option name="project" value="LOCAL" />
       <updated>1706680538133</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="lib: add wgpu to librashader library">
+      <option name="closed" value="true" />
+      <created>1707262952330</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1707262952330</updated>
+    </task>
+    <task id="LOCAL-00014" summary="rt(wgpu): rename OutputView to WgpuOutputView">
+      <option name="closed" value="true" />
+      <created>1707263225337</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1707263225337</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -412,7 +411,9 @@
     <MESSAGE value="rt(wgpu): update to wgpu 0.19" />
     <MESSAGE value="rt(wgpu): filter pass logic" />
     <MESSAGE value="rt(wgpu): wip filter chain logic" />
-    <option name="LAST_COMMIT_MESSAGE" value="rt(wgpu): wip filter chain logic" />
+    <MESSAGE value="lib: add wgpu to librashader library" />
+    <MESSAGE value="rt(wgpu): rename OutputView to WgpuOutputView" />
+    <option name="LAST_COMMIT_MESSAGE" value="rt(wgpu): rename OutputView to WgpuOutputView" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

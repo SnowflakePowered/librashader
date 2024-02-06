@@ -1,4 +1,4 @@
-use crate::framebuffer::OutputView;
+use crate::framebuffer::WgpuOutputView;
 use crate::util;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
@@ -220,7 +220,7 @@ impl WgpuGraphicsPipeline {
 
     pub(crate) fn begin_rendering<'pass>(
         &'pass self,
-        output: &RenderTarget<'pass, OutputView>,
+        output: &RenderTarget<'pass, WgpuOutputView>,
         cmd: &'pass mut CommandEncoder,
     ) -> RenderPass<'pass> {
         let mut render_pass = cmd.begin_render_pass(&RenderPassDescriptor {
