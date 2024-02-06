@@ -82,7 +82,7 @@ impl<'a> State<'a> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::default();
-        let surface = unsafe { instance.create_surface(window).unwrap() };
+        let surface = instance.create_surface(window).unwrap();
         // NOTE: could be none, see: https://sotrh.github.io/learn-wgpu/beginner/tutorial2-surface/#state-new
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -121,25 +121,16 @@ impl<'a> State<'a> {
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
-        let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("start encoder"),
-        });
-
         let preset =
             ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
 
-        let chain = FilterChainWGPU::load_from_preset_deferred(
+        let chain = FilterChainWGPU::load_from_preset(
+            preset,
             Arc::clone(&device),
             Arc::clone(&queue),
-            &mut cmd,
-            preset,
+            None,
         )
         .unwrap();
-
-        let cmd = cmd.finish();
-
-        let index = queue.submit([cmd]);
-        device.poll(Maintain::WaitForSubmissionIndex(index));
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
