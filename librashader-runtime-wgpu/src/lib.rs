@@ -9,7 +9,6 @@
 
 mod buffer;
 mod draw_quad;
-mod error;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
@@ -17,11 +16,13 @@ mod graphics_pipeline;
 mod handle;
 mod luts;
 mod mipmap;
-mod options;
 mod samplers;
 mod texture;
 mod util;
 
-pub use filter_chain::FilterChainWGPU;
-pub use filter_pass::FilterPass;
+pub use filter_chain::FilterChainWgpu;
 pub use framebuffer::OutputView;
+
+
+pub mod error;
+pub mod options;

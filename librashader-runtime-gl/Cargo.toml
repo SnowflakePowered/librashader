@@ -31,8 +31,5 @@ sptr = "0.3"
 [dev-dependencies]
 glfw = "0.47.0"
 
-[[test]]
-name = "triangle"
-
 [package.metadata.docs.rs]
 features = ["librashader-cache/docsrs"]

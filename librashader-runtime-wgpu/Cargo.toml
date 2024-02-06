@@ -1,7 +1,15 @@
 [package]
 name = "librashader-runtime-wgpu"
-version = "0.1.0"
 edition = "2021"
+
+version = "0.2.0-beta.2"
+license = "MPL-2.0 OR GPL-3.0-only"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,6 +36,3 @@ winit = "0.29.10"
 pollster = "0.3"
 log = "0.4.20"
 
-
-[[test]]
-name = "triangle"

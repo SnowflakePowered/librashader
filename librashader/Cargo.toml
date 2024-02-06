@@ -22,6 +22,7 @@ librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = 
 librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = "0.2.0-beta.2", optional = true }
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.2.0-beta.2", optional = true }
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.2.0-beta.2", optional = true }
+librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.2.0-beta.2", optional = true }
 
 librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.2" }
 
@@ -39,17 +40,20 @@ preprocess = []
 presets = []
 
 # runtimes
+
 runtime-gl = [ "runtime", "reflect-cross", "librashader-common/opengl", "librashader-runtime-gl" ]
 runtime-d3d11 = [ "runtime", "reflect-cross","librashader-common/d3d11", "librashader-runtime-d3d11", "windows/Win32_Graphics_Direct3D11" ]
 runtime-d3d12 = [ "runtime", "reflect-cross", "reflect-dxil", "librashader-common/d3d12", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
 runtime-vk = ["runtime", "reflect-cross", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
+runtime-wgpu = [ "runtime", "reflect-naga", "librashader-common/wgpu", "librashader-runtime-wgpu" ]
 
 # reflection
 reflect-cross = ["reflect", "librashader-reflect/cross"]
 reflect-dxil = ["reflect", "librashader-reflect/dxil"]
+reflect-naga = ["reflect", "librashader-reflect/naga"]
 
-runtime-all = ["runtime-gl", "runtime-d3d11", "runtime-d3d12", "runtime-vk"]
-reflect-all = ["reflect-cross", "reflect-dxil"]
+runtime-all = ["runtime-gl", "runtime-d3d11", "runtime-d3d12", "runtime-vk", "runtime-wgpu"]
+reflect-all = ["reflect-cross", "reflect-dxil", "reflect-naga"]
 
 # enable all features by default
 default = [ "full" ]

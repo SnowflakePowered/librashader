@@ -8,7 +8,7 @@ use winit::{
 
 use librashader_common::Viewport;
 use librashader_presets::ShaderPreset;
-use librashader_runtime_wgpu::FilterChainWGPU;
+use librashader_runtime_wgpu::FilterChainWgpu;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::keyboard::{Key, KeyCode, PhysicalKey};
@@ -74,7 +74,7 @@ struct State<'a> {
 
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
-    chain: FilterChainWGPU,
+    chain: FilterChainWgpu,
     frame_count: usize,
 }
 impl<'a> State<'a> {
@@ -124,7 +124,7 @@ impl<'a> State<'a> {
         let preset =
             ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
 
-        let chain = FilterChainWGPU::load_from_preset(
+        let chain = FilterChainWgpu::load_from_preset(
             preset,
             Arc::clone(&device),
             Arc::clone(&queue),

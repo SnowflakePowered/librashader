@@ -13,16 +13,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="02471831-07cd-4975-a00c-e042450023a1" name="Changes" comment="rt(wgpu): wip filter chain logic">
-      <change afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/options.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-common/src/wgpu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-common/src/wgpu.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-reflect/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-reflect/src/reflect/naga.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-gl/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-gl/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-vk/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-vk/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_chain.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_chain.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_pass.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/filter_pass.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/graphics_pipeline.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/graphics_pipeline.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/framebuffer.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/framebuffer.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/luts.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/luts.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/texture.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/texture.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/src/options.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/src/options.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader-runtime-wgpu/tests/hello_triangle.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader-runtime-wgpu/tests/hello_triangle.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/librashader/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/librashader/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/librashader/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -278,6 +284,7 @@
       <workItem from="1706229877283" duration="1844000" />
       <workItem from="1706680503632" duration="3415000" />
       <workItem from="1706766058493" duration="620000" />
+      <workItem from="1707260879653" duration="1928000" />
     </task>
     <task id="LOCAL-00001" summary="rt(wgpu): basic triangle example">
       <option name="closed" value="true" />
@@ -380,6 +387,17 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <ignored-roots>

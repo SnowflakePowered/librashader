@@ -1,12 +1,11 @@
-//! Vulkan shader runtime errors.
+//! wgpu shader runtime errors.
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
-use std::convert::Infallible;
 use thiserror::Error;
 
-/// Cumulative error type for WGPU filter chains.
+/// Cumulative error type for wgpu filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("shader preset parse error")]
@@ -21,11 +20,5 @@ pub enum FilterChainError {
     LutLoadError(#[from] ImageError),
 }
 
-impl From<Infallible> for FilterChainError {
-    fn from(_value: Infallible) -> Self {
-        panic!("uninhabited error")
-    }
-}
-
-/// Result type for Vulkan filter chains.
+/// Result type for wgpu filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;
