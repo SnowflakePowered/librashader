@@ -9,11 +9,9 @@ use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8, RGBA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
-use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
-use std::convert::Infallible;
-use std::path::Path;
+
 use std::sync::Arc;
 
 use crate::buffer::WgpuStagedBuffer;
@@ -25,7 +23,7 @@ use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
 use wgpu::{
-    BindGroupEntry, CommandBuffer, CommandEncoder, Device, Queue, TextureAspect, TextureFormat,
+    Device, TextureFormat,
 };
 
 use crate::error;

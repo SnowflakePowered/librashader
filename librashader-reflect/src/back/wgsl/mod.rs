@@ -53,7 +53,7 @@ impl FromCompilation<GlslangCompilation> for WGSL {
         }
 
         let options = naga::front::spv::Options {
-            adjust_coordinate_space: false,
+            adjust_coordinate_space: true,
             strict_capabilities: false,
             block_ctx_dump_prefix: None,
         };
