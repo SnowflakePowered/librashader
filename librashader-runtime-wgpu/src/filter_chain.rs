@@ -11,6 +11,8 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
+use std::convert::Infallible;
+use std::path::Path;
 
 use std::sync::Arc;
 
@@ -31,7 +33,7 @@ use crate::framebuffer::OutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::mipmap::MipmapGen;
-use crate::options::FrameOptionsWGPU;
+use crate::options::{FilterChainOptionsWGPU, FrameOptionsWGPU};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage};
 
@@ -76,6 +78,46 @@ pub(crate) struct FilterCommon {
 }
 
 impl FilterChainWGPU {
+    /// Load the shader preset at the given path into a filter chain.
+    pub fn load_from_path(
+        path: impl AsRef<Path>,
+        device: Arc<Device>,
+        queue: Arc<wgpu::Queue>,
+        options: Option<&FilterChainOptionsWGPU>,
+    ) -> error::Result<FilterChainWGPU> {
+        // load passes from preset
+        let preset = ShaderPreset::try_parse(path)?;
+
+        Self::load_from_preset(preset, device, queue, options)
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    pub fn load_from_preset(
+        preset: ShaderPreset,
+        device: Arc<Device>,
+        queue: Arc<wgpu::Queue>,
+        options: Option<&FilterChainOptionsWGPU>,
+    ) -> error::Result<FilterChainWGPU> {
+        let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("librashader load cmd"),
+        });
+        let filter_chain = Self::load_from_preset_deferred(
+            preset,
+            Arc::clone(&device),
+            Arc::clone(&queue),
+            &mut cmd,
+            options,
+        )?;
+
+        let cmd = cmd.finish();
+
+        // Wait for device
+        let index = queue.submit([cmd]);
+        device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+
+        Ok(filter_chain)
+    }
+
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
     /// to the caller. This function therefore requires no external synchronization of the device queue.
     ///
@@ -84,10 +126,11 @@ impl FilterChainWGPU {
     /// The caller is responsible for ending the command buffer and immediately submitting it to a
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub fn load_from_preset_deferred(
+        preset: ShaderPreset,
         device: Arc<Device>,
         queue: Arc<wgpu::Queue>,
         cmd: &mut wgpu::CommandEncoder,
-        preset: ShaderPreset,
+        options: Option<&FilterChainOptionsWGPU>,
     ) -> error::Result<FilterChainWGPU> {
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
@@ -157,7 +200,7 @@ impl FilterChainWGPU {
             output_framebuffers,
             feedback_framebuffers,
             history_framebuffers,
-            disable_mipmaps: false, // todo: force no mipmaps,
+            disable_mipmaps: options.map(|f| f.force_no_mipmaps).unwrap_or(false),
             mipmapper,
         })
     }
