@@ -15,7 +15,7 @@ use crate::reflect::semantics::{
 use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
 
 #[derive(Debug)]
-pub struct NagaReflect {
+pub(crate) struct NagaReflect {
     pub(crate) vertex: Module,
     pub(crate) fragment: Module,
 }

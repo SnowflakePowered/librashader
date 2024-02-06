@@ -1,7 +1,9 @@
-/// Options for each WGPU shader frame.
+//! wgpu shader runtime options.
+
+/// Options for each wgpu shader frame.
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
-pub struct FrameOptionsWGPU {
+pub struct FrameOptionsWgpu {
     /// Whether or not to clear the history buffers.
     pub clear_history: bool,
     /// The direction of rendering.
@@ -12,7 +14,7 @@ pub struct FrameOptionsWGPU {
 /// Options for filter chain creation.
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
-pub struct FilterChainOptionsWGPU {
+pub struct FilterChainOptionsWgpu {
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
 }

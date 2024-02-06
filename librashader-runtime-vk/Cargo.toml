@@ -37,9 +37,5 @@ winit = "0.27.5"
 raw-window-handle = "0.5"
 ash-window = "0.12.0"
 
-
-[[test]]
-name = "triangle"
-
 [package.metadata.docs.rs]
 features = ["librashader-cache/docsrs"]

@@ -15,7 +15,7 @@
 //! called with appropriate input and output parameters to draw a frame with the shader effect applied.
 //!
 //! ## Runtimes
-//! Currently available runtimes are Vulkan, OpenGL 3.3+ and 4.6 (with DSA), Direct3D 11, and Direct3D 12.
+//! Currently available runtimes are wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA), Direct3D 11, and Direct3D 12.
 //!
 //! The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
 //! by default, unless [`FilterChainOptions::use_render_pass`](crate::runtime::vk::FilterChainOptions) is explicitly set. Note that dynamic rendering
@@ -24,6 +24,8 @@
 //! The Direct3D 12 runtime requires support for [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes), which
 //! have been available since Windows 10, version 1809.
 //!
+//! wgpu support is not available in the librashader C API.
+//!
 //! | **API**     | **Status** | **`librashader` feature** |
 //! |-------------|------------|---------------------------|
 //! | OpenGL 3.3+ | ✔         | `gl`                      |
@@ -31,8 +33,9 @@
 //! | Vulkan      | ✔         | `vk`                     |
 //! | Direct3D 11  | ✔        | `d3d11`                 |
 //! | Direct3D 12  | ✔        | `d3d12`                 |
+//! | wgpu        | ✔        |  `wgpu`                 |
 //! | Metal       | ❌        |                         |
-//! | WebGPU      | ❌        |                        |
+//!
 //! ## C API
 //! For documentation on the librashader C API, see [librashader-capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
 //! or [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
@@ -135,6 +138,7 @@ pub mod reflect {
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
         pub use librashader_reflect::back::targets::SPIRV;
+        pub use librashader_reflect::back::targets::WGSL;
     }
 
     pub use librashader_reflect::error::*;
@@ -146,12 +150,12 @@ pub mod reflect {
         FromCompilation, ShaderCompilerOutput,
     };
 
+    pub use librashader_reflect::front::GlslangCompilation;
+
     /// Reflection via SPIRV-Cross.
     #[cfg(feature = "reflect-cross")]
     #[doc(cfg(feature = "reflect-cross"))]
     pub mod cross {
-        pub use librashader_reflect::front::GlslangCompilation;
-
         /// The version of GLSL to target.
         ///
         pub use librashader_reflect::back::cross::GlslVersion;
@@ -178,6 +182,14 @@ pub mod reflect {
 
         /// A compiled DXIL artifact.
         pub use librashader_reflect::back::dxil::DxilObject;
+    }
+
+    /// Reflection via Naga
+    #[cfg(feature = "reflect-naga")]
+    #[doc(cfg(feature = "reflect-naga"))]
+    pub mod naga {
+        pub use librashader_reflect::back::wgsl::NagaWgslContext;
+        pub use librashader_reflect::back::wgsl::WgslCompileOptions;
     }
 
     pub use librashader_reflect::reflect::semantics::BindingMeta;
@@ -291,6 +303,19 @@ pub mod runtime {
         pub mod capi {
             pub use librashader_runtime_vk::*;
         }
+    }
+
+    #[cfg(feature = "runtime-wgpu")]
+    #[doc(cfg(feature = "runtime-wgpu"))]
+    /// Shader runtime for wgpu
+    pub mod wgpu {
+        pub use librashader_runtime_wgpu::{
+            error,
+            options::{
+                FilterChainOptionsWgpu as FilterChainOptions, FrameOptionsWgpu as FrameOptions,
+            },
+            FilterChainWgpu as FilterChain, OutputView,
+        };
     }
 }
 

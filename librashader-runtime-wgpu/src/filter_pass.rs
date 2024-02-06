@@ -8,8 +8,6 @@ use crate::texture::InputImage;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
-use librashader_reflect::back::wgsl::NagaWgslContext;
-use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
@@ -26,7 +24,6 @@ use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, BufferBinding, 
 pub struct FilterPass {
     pub device: Arc<wgpu::Device>,
     pub reflection: ShaderReflection,
-    pub(crate) compiled: ShaderCompilerOutput<String, NagaWgslContext>,
     pub(crate) uniform_storage:
         UniformStorage<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuffer>,
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,

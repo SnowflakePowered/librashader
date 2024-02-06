@@ -3,6 +3,7 @@ use crate::texture::OwnedImage;
 use librashader_common::Size;
 use wgpu::TextureViewDescriptor;
 
+/// A wgpu `TextureView` with size and texture information to output.
 pub struct OutputView<'a> {
     pub(crate) size: Size<u32>,
     pub(crate) view: Handle<'a, wgpu::TextureView>,

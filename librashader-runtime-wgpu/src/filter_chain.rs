@@ -11,7 +11,6 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
-use std::convert::Infallible;
 use std::path::Path;
 
 use std::sync::Arc;
@@ -33,7 +32,7 @@ use crate::framebuffer::OutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::mipmap::MipmapGen;
-use crate::options::{FilterChainOptionsWGPU, FrameOptionsWGPU};
+use crate::options::{FilterChainOptionsWgpu, FrameOptionsWgpu};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage};
 
@@ -48,8 +47,8 @@ fn compile_passes(
     Ok((passes, semantics))
 }
 
-/// A WGPU filter chain.
-pub struct FilterChainWGPU {
+/// A wgpu filter chain.
+pub struct FilterChainWgpu {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
     output_framebuffers: Box<[OwnedImage]>,
@@ -77,14 +76,14 @@ pub(crate) struct FilterCommon {
     pub(crate) queue: Arc<wgpu::Queue>,
 }
 
-impl FilterChainWGPU {
+impl FilterChainWgpu {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
         device: Arc<Device>,
         queue: Arc<wgpu::Queue>,
-        options: Option<&FilterChainOptionsWGPU>,
-    ) -> error::Result<FilterChainWGPU> {
+        options: Option<&FilterChainOptionsWgpu>,
+    ) -> error::Result<FilterChainWgpu> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path)?;
 
@@ -96,8 +95,8 @@ impl FilterChainWGPU {
         preset: ShaderPreset,
         device: Arc<Device>,
         queue: Arc<wgpu::Queue>,
-        options: Option<&FilterChainOptionsWGPU>,
-    ) -> error::Result<FilterChainWGPU> {
+        options: Option<&FilterChainOptionsWgpu>,
+    ) -> error::Result<FilterChainWgpu> {
         let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("librashader load cmd"),
         });
@@ -130,8 +129,8 @@ impl FilterChainWGPU {
         device: Arc<Device>,
         queue: Arc<wgpu::Queue>,
         cmd: &mut wgpu::CommandEncoder,
-        options: Option<&FilterChainOptionsWGPU>,
-    ) -> error::Result<FilterChainWGPU> {
+        options: Option<&FilterChainOptionsWgpu>,
+    ) -> error::Result<FilterChainWgpu> {
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
         // // initialize passes
@@ -139,7 +138,7 @@ impl FilterChainWGPU {
 
         let samplers = SamplerSet::new(&device);
         let mut mipmapper = MipmapGen::new(Arc::clone(&device));
-        let luts = FilterChainWGPU::load_luts(
+        let luts = FilterChainWgpu::load_luts(
             &device,
             &queue,
             cmd,
@@ -176,7 +175,7 @@ impl FilterChainWGPU {
 
         let draw_quad = DrawQuad::new(&device);
 
-        Ok(FilterChainWGPU {
+        Ok(FilterChainWgpu {
             common: FilterCommon {
                 luts,
                 samplers,
@@ -302,7 +301,6 @@ impl FilterChainWGPU {
                 Ok(FilterPass {
                     device: Arc::clone(&device),
                     reflection,
-                    compiled: wgsl,
                     uniform_storage,
                     uniform_bindings,
                     source,
@@ -317,13 +315,14 @@ impl FilterChainWGPU {
         Ok(filters.into_boxed_slice())
     }
 
+    /// Records shader rendering commands to the provided command encoder.
     pub fn frame<'a>(
         &mut self,
         input: Arc<wgpu::Texture>,
         viewport: &Viewport<OutputView<'a>>,
         cmd: &mut wgpu::CommandEncoder,
         frame_count: usize,
-        options: Option<&FrameOptionsWGPU>,
+        options: Option<&FrameOptionsWgpu>,
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
