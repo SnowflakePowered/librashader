@@ -1,10 +1,12 @@
+use crate::mipmap::MipmapGen;
+use crate::samplers::SamplerSet;
 use crate::texture::{Handle, InputImage};
+use librashader_common::{Size, WrapMode};
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 use std::sync::Arc;
-use wgpu::util::DeviceExt;
-use wgpu::{ImageDataLayout, Label, TextureDescriptor};
+use wgpu::TextureDescriptor;
 
 pub(crate) struct LutTexture(InputImage);
 impl AsRef<InputImage> for LutTexture {
@@ -17,9 +19,11 @@ impl LutTexture {
     pub fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        _cmd: &mut wgpu::CommandEncoder,
+        cmd: &mut wgpu::CommandEncoder,
         image: Image,
         config: &TextureConfig,
+        mipmapper: &mut MipmapGen,
+        sampler_set: &SamplerSet,
     ) -> LutTexture {
         let texture = device.create_texture(&TextureDescriptor {
             label: Some(&config.name),
@@ -55,19 +59,20 @@ impl LutTexture {
             image.size.into(),
         );
 
-        // todo: mipmaps
+        if config.mipmap {
+            mipmapper.generate_mipmaps(
+                cmd,
+                &texture,
+                &*sampler_set.get(
+                    WrapMode::ClampToEdge,
+                    config.filter_mode,
+                    config.filter_mode,
+                ),
+                Size::<u32>::from(texture.size()).calculate_miplevels(),
+            );
+        }
 
-        // todo: fix this
-        let view = texture.create_view(&wgpu::TextureViewDescriptor {
-            label: Some("lut view"),
-            format: None,
-            dimension: None,
-            aspect: Default::default(),
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 0,
-            array_layer_count: None,
-        });
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let image = InputImage {
             image: Arc::new(texture),
