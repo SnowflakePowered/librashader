@@ -1175,6 +1175,17 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "glow"
+version = "0.13.0"
+source = "git+https://github.com/chyyran/glow?branch=feat-get-program-binary#51673490fb8c06fa956a3a3b39ddab6b27c8bc3a"
+dependencies = [
+ "js-sys",
+ "slotmap",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "glow"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd348e04c43b32574f2de31c8bb397d96c9fcfa1371bd4ca6d8bdc464ab121b1"
@@ -1824,7 +1835,7 @@ version = "0.3.0"
 dependencies = [
  "bytemuck",
  "glfw 0.47.0",
- "glow 0.13.1",
+ "glow 0.13.0",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
