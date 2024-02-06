@@ -16,20 +16,22 @@ use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::buffer::WgpuStagedBuffer;
+use crate::draw_quad::DrawQuad;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_reflect::back::wgsl::WgslCompileOptions;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
-use wgpu::{BindGroupEntry, CommandBuffer, CommandEncoder, Device, Queue, TextureAspect, TextureFormat};
-use crate::buffer::WgpuMappedBuffer;
-use crate::draw_quad::DrawQuad;
+use wgpu::{
+    BindGroupEntry, CommandBuffer, CommandEncoder, Device, Queue, TextureAspect, TextureFormat,
+};
 
 use crate::error;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
-use crate::framebuffer::OutputImage;
+use crate::framebuffer::OutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::options::FrameOptionsWGPU;
@@ -73,6 +75,7 @@ pub(crate) struct FilterCommon {
     pub internal_frame_count: i32,
     pub(crate) draw_quad: DrawQuad,
     device: Arc<Device>,
+    pub(crate) queue: Arc<wgpu::Queue>
 }
 
 impl FilterChainWGPU {
@@ -85,7 +88,7 @@ impl FilterChainWGPU {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub fn load_from_preset_deferred(
         device: Arc<Device>,
-        queue: &mut wgpu::Queue,
+        queue:  Arc<wgpu::Queue>,
         cmd: &mut wgpu::CommandEncoder,
         preset: ShaderPreset,
     ) -> error::Result<FilterChainWGPU> {
@@ -94,11 +97,17 @@ impl FilterChainWGPU {
         // // initialize passes
         let filters = Self::init_passes(Arc::clone(&device), passes, &semantics)?;
         //
-        let luts = FilterChainWGPU::load_luts(&device, queue, cmd, &preset.textures)?;
+        let luts = FilterChainWGPU::load_luts(&device, &queue, cmd, &preset.textures)?;
         let samplers = SamplerSet::new(&device);
         //
-        let framebuffer_gen =
-            || Ok::<_, error::FilterChainError>(OwnedImage::new(Arc::clone(&device), Size::new(1, 1), 1, ImageFormat::R8G8B8A8Unorm));
+        let framebuffer_gen = || {
+            Ok::<_, error::FilterChainError>(OwnedImage::new(
+                Arc::clone(&device),
+                Size::new(1, 1),
+                1,
+                ImageFormat::R8G8B8A8Unorm,
+            ))
+        };
         let input_gen = || None;
         let framebuffer_init = FramebufferInit::new(
             filters.iter().map(|f| &f.reflection.meta),
@@ -122,39 +131,39 @@ impl FilterChainWGPU {
         //     FrameResiduals::new(&device.device)
         // });
 
-        let draw_quad = DrawQuad::new(&device, queue);
+        let draw_quad = DrawQuad::new(&device);
 
         Ok(FilterChainWGPU {
             common: FilterCommon {
                 luts,
                 samplers,
-                        config: FilterMutable {
-                            passes_enabled: preset.shader_count as usize,
-                            parameters: preset
-                                .parameters
-                                .into_iter()
-                                .map(|param| (param.name, param.value))
-                                .collect(),
-                        },
-                        draw_quad,
-                        device,
-                        output_textures,
-                        feedback_textures,
-                        history_textures,
-                        internal_frame_count: 0,
-
+                config: FilterMutable {
+                    passes_enabled: preset.shader_count as usize,
+                    parameters: preset
+                        .parameters
+                        .into_iter()
+                        .map(|param| (param.name, param.value))
+                        .collect(),
+                },
+                draw_quad,
+                device,
+                queue,
+                output_textures,
+                feedback_textures,
+                history_textures,
+                internal_frame_count: 0,
             },
             passes: filters,
-                output_framebuffers,
-                feedback_framebuffers,
-                history_framebuffers,
-                disable_mipmaps: false // todo: force no mipmaps,
+            output_framebuffers,
+            feedback_framebuffers,
+            history_framebuffers,
+            disable_mipmaps: false, // todo: force no mipmaps,
         })
     }
 
     fn load_luts(
         device: &wgpu::Device,
-        queue: &mut wgpu::Queue,
+        queue: &wgpu::Queue,
         cmd: &mut wgpu::CommandEncoder,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
@@ -168,6 +177,29 @@ impl FilterChainWGPU {
             luts.insert(index, texture);
         }
         Ok(luts)
+    }
+
+    fn push_history(&mut self, input: &wgpu::Texture, cmd: &mut wgpu::CommandEncoder) {
+        if let Some(mut back) = self.history_framebuffers.pop_back() {
+            if back.image.size() != input.size() || input.format() != back.image.format() {
+                // old back will get dropped.. do we need to defer?
+                let _old_back = std::mem::replace(
+                    &mut back,
+                    OwnedImage::new(
+                        Arc::clone(&self.common.device),
+                        input.size().into(),
+                        1,
+                        input.format().into(),
+                    ),
+                );
+            }
+
+            unsafe {
+                back.copy_from(cmd, input);
+            }
+
+            self.history_framebuffers.push_front(back)
+        }
     }
 
     fn init_passes(
@@ -193,10 +225,19 @@ impl FilterChainWGPU {
                     .as_ref()
                     .map_or(0, |push| push.size as wgpu::BufferAddress);
 
-
                 let uniform_storage = UniformStorage::new_with_storage(
-                    WgpuMappedBuffer::new(&device, wgpu::BufferUsages::UNIFORM, ubo_size as wgpu::BufferAddress, Some("ubo")),
-                    WgpuMappedBuffer::new(&device, wgpu::BufferUsages::UNIFORM, push_size as wgpu::BufferAddress, Some("push"))
+                    WgpuStagedBuffer::new(
+                        &device,
+                        wgpu::BufferUsages::UNIFORM,
+                        ubo_size as wgpu::BufferAddress,
+                        Some("ubo"),
+                    ),
+                    WgpuStagedBuffer::new(
+                        &device,
+                        wgpu::BufferUsages::UNIFORM,
+                        push_size as wgpu::BufferAddress,
+                        Some("push"),
+                    ),
                 );
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
@@ -212,10 +253,8 @@ impl FilterChainWGPU {
                     Arc::clone(&device),
                     &wgsl,
                     &reflection,
-                    render_pass_format.unwrap_or(TextureFormat::R8Unorm),
+                    render_pass_format.unwrap_or(TextureFormat::Rgba8Unorm),
                 );
-
-
 
                 Ok(FilterPass {
                     device: Arc::clone(&device),
@@ -235,13 +274,13 @@ impl FilterChainWGPU {
         Ok(filters.into_boxed_slice())
     }
 
-    pub fn frame<'a>(&mut self,
+    pub fn frame<'a>(
+        &mut self,
         input: Arc<wgpu::Texture>,
-        viewport: &Viewport<OutputImage<'a>>,
+        viewport: &Viewport<OutputView<'a>>,
         cmd: &mut wgpu::CommandEncoder,
         frame_count: usize,
-                 options: Option<&FrameOptionsWGPU>,
-
+        options: Option<&FrameOptionsWGPU>,
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
@@ -249,7 +288,7 @@ impl FilterChainWGPU {
         if let Some(options) = &options {
             if options.clear_history {
                 for history in &mut self.history_framebuffers {
-                    // history.clear(cmd);
+                    history.clear(cmd);
                 }
             }
         }
@@ -258,20 +297,10 @@ impl FilterChainWGPU {
             return Ok(());
         }
 
-        let original_image_view = input.create_view(&wgpu::TextureViewDescriptor {
-            label: Some("original_image_view"),
-            format: Some(input.format()),
-            dimension: Some(wgpu::TextureViewDimension::D2),
-            aspect: TextureAspect::All,
-            base_mip_level: 1,
-            mip_level_count: None,
-            base_array_layer: 1,
-            array_layer_count: None,
-        });
+        let original_image_view = input.create_view(&wgpu::TextureViewDescriptor::default());
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
-
 
         // update history
         for (texture, image) in self
@@ -325,14 +354,13 @@ impl FilterChainWGPU {
 
         let frame_direction = options.map_or(1, |f| f.frame_direction);
 
-
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             source.filter_mode = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let output_image = OutputImage::new(target);
+            let output_image = OutputView::new(target);
             let out = RenderTarget::identity(&output_image);
 
             pass.draw(
@@ -345,11 +373,11 @@ impl FilterChainWGPU {
                 &original,
                 &source,
                 &out,
-                QuadType::Offscreen
+                QuadType::Offscreen,
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
-                // todo: mipmaps
+                target.generate_mipmaps(cmd);
             }
 
             source = self.common.output_textures[index].clone().unwrap();
@@ -378,13 +406,12 @@ impl FilterChainWGPU {
                 &original,
                 &source,
                 &out,
-                QuadType::Final
+                QuadType::Final,
             )?;
         }
 
-        // self.push_history(input, cmd)?;
+        self.push_history(&input, cmd);
         self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
-
 }

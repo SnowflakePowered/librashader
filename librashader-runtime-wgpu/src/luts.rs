@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use wgpu::{ImageDataLayout, Label, TextureDescriptor};
-use wgpu::util::DeviceExt;
-use librashader_presets::TextureConfig;
-use librashader_runtime::image::{BGRA8, Image};
-use librashader_runtime::scaling::MipmapSize;
 use crate::texture::{Handle, InputImage};
+use librashader_presets::TextureConfig;
+use librashader_runtime::image::{Image, BGRA8};
+use librashader_runtime::scaling::MipmapSize;
+use std::sync::Arc;
+use wgpu::util::DeviceExt;
+use wgpu::{ImageDataLayout, Label, TextureDescriptor};
 
 pub(crate) struct LutTexture(InputImage);
 impl AsRef<InputImage> for LutTexture {
@@ -16,10 +16,10 @@ impl AsRef<InputImage> for LutTexture {
 impl LutTexture {
     pub fn new(
         device: &wgpu::Device,
-        queue: &mut wgpu::Queue,
+        queue: &wgpu::Queue,
         _cmd: &mut wgpu::CommandEncoder,
         image: Image,
-        config: &TextureConfig
+        config: &TextureConfig,
     ) -> LutTexture {
         let texture = device.create_texture(&TextureDescriptor {
             label: Some(&config.name),
@@ -39,7 +39,6 @@ impl LutTexture {
             view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
         });
 
-
         queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: &texture,
@@ -53,7 +52,7 @@ impl LutTexture {
                 bytes_per_row: Some(4 * image.size.width),
                 rows_per_image: None,
             },
-            image.size.into()
+            image.size.into(),
         );
 
         // todo: mipmaps

@@ -1,37 +1,42 @@
+use crate::buffer::WgpuStagedBuffer;
+use crate::error;
+use crate::filter_chain::FilterCommon;
+use crate::framebuffer::OutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
+use crate::samplers::SamplerSet;
+use crate::texture::{InputImage, OwnedImage};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{BindingStage, MemberOffset, TextureBinding, UniformBinding};
+use librashader_reflect::reflect::semantics::{
+    BindingStage, MemberOffset, TextureBinding, UniformBinding,
+};
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
-use rustc_hash::FxHashMap;
-use std::sync::Arc;
-use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding, BufferUsages, RenderPass, ShaderStages, TextureView};
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_runtime::binding::{BindSemantics, TextureInput};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
-use crate::buffer::WgpuMappedBuffer;
-use crate::error;
-use crate::filter_chain::FilterCommon;
-use crate::framebuffer::OutputImage;
-use crate::samplers::SamplerSet;
-use crate::texture::{InputImage, OwnedImage};
+use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
+use rustc_hash::FxHashMap;
+use std::sync::Arc;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use wgpu::{
+    BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding, BufferUsages,
+    RenderPass, ShaderStages, TextureView,
+};
 
 pub struct FilterPass {
     pub device: Arc<wgpu::Device>,
     pub reflection: ShaderReflection,
     pub(crate) compiled: ShaderCompilerOutput<String, NagaWgslContext>,
-    pub(crate) uniform_storage: UniformStorage<NoUniformBinder, Option<()>, WgpuMappedBuffer, WgpuMappedBuffer>,
+    pub(crate) uniform_storage:
+        UniformStorage<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuffer>,
     pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
     pub graphics_pipeline: WgpuGraphicsPipeline,
-
 }
 
 impl TextureInput for InputImage {
@@ -42,10 +47,10 @@ impl TextureInput for InputImage {
 
 pub struct WgpuArcBinding<T> {
     binding: u32,
-    resource: Arc<T>
+    resource: Arc<T>,
 }
 
-impl BindSemantics<NoUniformBinder, Option<()>, WgpuMappedBuffer, WgpuMappedBuffer> for FilterPass {
+impl BindSemantics<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuffer> for FilterPass {
     type InputTexture = InputImage;
     type SamplerSet = SamplerSet;
     type DescriptorSet<'a> = (
@@ -66,15 +71,21 @@ impl BindSemantics<NoUniformBinder, Option<()>, WgpuMappedBuffer, WgpuMappedBuff
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
 
         let (texture_binding, sampler_binding) = descriptors;
-        texture_binding.insert(binding.binding, WgpuArcBinding {
-            binding: binding.binding,
-            resource: Arc::clone(&texture.view)
-        });
+        texture_binding.insert(
+            binding.binding,
+            WgpuArcBinding {
+                binding: binding.binding,
+                resource: Arc::clone(&texture.view),
+            },
+        );
 
-        sampler_binding.insert(binding.binding, WgpuArcBinding {
-            binding: binding.binding,
-            resource: sampler,
-        });
+        sampler_binding.insert(
+            binding.binding,
+            WgpuArcBinding {
+                binding: binding.binding,
+                resource: sampler,
+            },
+        );
     }
 }
 
@@ -86,13 +97,12 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         frame_direction: i32,
-        viewport: &Viewport<OutputImage>,
+        viewport: &Viewport<OutputView>,
         original: &InputImage,
         source: &InputImage,
-        output: &RenderTarget<OutputImage>,
+        output: &RenderTarget<OutputView>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
-
         let mut main_heap = FxHashMap::default();
         let mut sampler_heap = FxHashMap::default();
 
@@ -110,21 +120,20 @@ impl FilterPass {
             &mut sampler_heap,
         );
 
-        
         let mut main_heap_array = Vec::with_capacity(main_heap.len() + 1);
         let mut sampler_heap_array = Vec::with_capacity(sampler_heap.len() + 1);
 
         for binding in main_heap.values() {
             main_heap_array.push(BindGroupEntry {
                 binding: binding.binding,
-                resource: BindingResource::TextureView(&binding.resource)
+                resource: BindingResource::TextureView(&binding.resource),
             })
         }
 
         for binding in sampler_heap.values() {
             sampler_heap_array.push(BindGroupEntry {
                 binding: binding.binding,
-                resource: BindingResource::Sampler(&binding.resource)
+                resource: BindingResource::Sampler(&binding.resource),
             })
         }
 
@@ -157,31 +166,24 @@ impl FilterPass {
         let main_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
             label: Some("main bind group"),
             layout: &self.graphics_pipeline.layout.main_bind_group_layout,
-            entries: &main_heap_array
+            entries: &main_heap_array,
         });
 
         let sampler_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
             label: Some("sampler bind group"),
             layout: &self.graphics_pipeline.layout.sampler_bind_group_layout,
-            entries: &sampler_heap_array
+            entries: &sampler_heap_array,
         });
 
-        let mut render_pass = self.graphics_pipeline
-            .begin_rendering(output, cmd);
+        let mut render_pass = self.graphics_pipeline.begin_rendering(output, cmd);
 
-        render_pass.set_bind_group(
-            0,
-            &main_bind_group,
-            &[]
-        );
+        render_pass.set_bind_group(0, &main_bind_group, &[]);
 
-        render_pass.set_bind_group(
-            1,
-            &sampler_bind_group,
-            &[]
-        );
+        render_pass.set_bind_group(1, &sampler_bind_group, &[]);
 
-        if let Some(push) = &self.reflection.push_constant && !has_pcb_buffer {
+        if let Some(push) = &self.reflection.push_constant
+            && !has_pcb_buffer
+        {
             let mut stage_mask = ShaderStages::empty();
             if push.stage_mask.contains(BindingStage::FRAGMENT) {
                 stage_mask |= ShaderStages::FRAGMENT;
@@ -189,11 +191,7 @@ impl FilterPass {
             if push.stage_mask.contains(BindingStage::VERTEX) {
                 stage_mask |= ShaderStages::VERTEX;
             }
-            render_pass.set_push_constants(
-                stage_mask,
-                0,
-                self.uniform_storage.push_slice()
-            )
+            render_pass.set_push_constants(stage_mask, 0, self.uniform_storage.push_slice())
         }
 
         parent.draw_quad.draw_quad(&mut render_pass, vbo_type);
@@ -213,7 +211,7 @@ impl FilterPass {
         original: &InputImage,
         source: &InputImage,
         main_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::TextureView>>,
-        sampler_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::Sampler>>
+        sampler_heap: &'a mut FxHashMap<u32, WgpuArcBinding<wgpu::Sampler>>,
     ) {
         Self::bind_semantics(
             &self.device,
@@ -240,8 +238,8 @@ impl FilterPass {
         );
 
         // flush to buffers
-        self.uniform_storage.inner_ubo().flush();
-        self.uniform_storage.inner_push().flush();
+        self.uniform_storage.inner_ubo().flush(&parent.queue);
+        self.uniform_storage.inner_push().flush(&parent.queue);
     }
 }
 

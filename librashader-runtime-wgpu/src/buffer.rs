@@ -1,26 +1,27 @@
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use parking_lot::RwLock;
 
-pub struct WgpuMappedBuffer {
+pub struct WgpuStagedBuffer {
     buffer: wgpu::Buffer,
     shadow: Box<[u8]>,
 }
 
-impl WgpuMappedBuffer {
+impl WgpuStagedBuffer {
     pub fn new(
         device: &Arc<wgpu::Device>,
         usage: wgpu::BufferUsages,
         size: wgpu::BufferAddress,
-        label: wgpu::Label<'static>
-    ) -> WgpuMappedBuffer {
+        label: wgpu::Label<'static>,
+    ) -> WgpuStagedBuffer {
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label,
             size,
-            usage,
-            mapped_at_creation: true,
+            usage: usage | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
-        WgpuMappedBuffer {
+        WgpuStagedBuffer {
             buffer,
             shadow: vec![0u8; size as usize].into_boxed_slice(),
         }
@@ -31,13 +32,12 @@ impl WgpuMappedBuffer {
     }
 
     /// Write the contents of the backing buffer to the device buffer.
-    pub fn flush(&self) {
-        self.buffer.slice(..)
-            .get_mapped_range_mut().copy_from_slice(&self.shadow)
+    pub fn flush(&self, queue: &wgpu::Queue) {
+        queue.write_buffer(&self.buffer, 0, &self.shadow);
     }
 }
 
-impl Deref for WgpuMappedBuffer {
+impl Deref for WgpuStagedBuffer {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -45,7 +45,7 @@ impl Deref for WgpuMappedBuffer {
     }
 }
 
-impl DerefMut for WgpuMappedBuffer {
+impl DerefMut for WgpuStagedBuffer {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.shadow.deref_mut()
     }

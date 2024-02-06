@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use wgpu::{ Maintain, };
+use wgpu::Maintain;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -12,6 +12,7 @@ use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::keyboard::{Key, KeyCode, PhysicalKey};
 use winit::platform::windows::EventLoopBuilderExtWindows;
+use librashader_common::Viewport;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -64,7 +65,7 @@ const VERTICES: &[Vertex] = &[
 struct State<'a> {
     surface: wgpu::Surface<'a>,
     device: Arc<wgpu::Device>,
-    queue: wgpu::Queue,
+    queue: Arc<wgpu::Queue>,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     clear_color: wgpu::Color,
@@ -74,6 +75,7 @@ struct State<'a> {
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
     chain: FilterChainWGPU,
+    frame_count: usize
 }
 impl<'a> State<'a> {
     async fn new(window: &'a Window) -> Self {
@@ -91,7 +93,7 @@ impl<'a> State<'a> {
             .await
             .unwrap();
 
-        let (device, mut queue) = adapter
+        let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER,
@@ -106,7 +108,7 @@ impl<'a> State<'a> {
         let swapchain_format = swapchain_capabilities.formats[0];
 
         let mut config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
             format: swapchain_format,
             width: size.width,
             height: size.height,
@@ -117,16 +119,22 @@ impl<'a> State<'a> {
         };
 
         let device = Arc::new(device);
+        let queue = Arc::new(queue);
 
         let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("start encoder"),
         });
 
         let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+            ShaderPreset::try_parse("../test/basic.slangp").unwrap();
 
-
-        let chain = FilterChainWGPU::load_from_preset_deferred(Arc::clone(&device), &mut queue, &mut cmd, preset).unwrap();
+        let chain = FilterChainWGPU::load_from_preset_deferred(
+            Arc::clone(&device),
+            Arc::clone(&queue),
+            &mut cmd,
+            preset,
+        )
+        .unwrap();
 
         let cmd = cmd.finish();
 
@@ -202,6 +210,7 @@ impl<'a> State<'a> {
             vertex_buffer,
             num_vertices,
             chain,
+            frame_count: 0,
         }
     }
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -218,9 +227,46 @@ impl<'a> State<'a> {
     fn update(&mut self) {}
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
+
+        let render_output = Arc::new(self.device.create_texture(
+            &wgpu::TextureDescriptor {
+                label: Some("rendertexture"),
+                size: output.texture.size(),
+                mip_level_count: output.texture.mip_level_count(),
+                sample_count: output.texture.sample_count(),
+                dimension: output.texture.dimension(),
+                format: output.texture.format(),
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::COPY_SRC,
+                view_formats: &[output.texture.format()],
+            }
+        ));
+
+        let filter_output = Arc::new(self.device.create_texture(
+            &wgpu::TextureDescriptor {
+                label: Some("filteroutput"),
+                size: output.texture.size(),
+                mip_level_count: output.texture.mip_level_count(),
+                sample_count: output.texture.sample_count(),
+                dimension: output.texture.dimension(),
+                format: output.texture.format(),
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::COPY_SRC,
+                view_formats: &[output.texture.format()],
+            }
+        ));
+
+
+        let view = render_output
             .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let filter_view = filter_output
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -228,7 +274,8 @@ impl<'a> State<'a> {
             });
 
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass =
+                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -247,9 +294,32 @@ impl<'a> State<'a> {
             render_pass.draw(0..self.num_vertices, 0..1);
         }
 
+        self.chain
+            .frame(Arc::clone(&render_output),
+                   &Viewport {
+                       x: 0.0,
+                       y: 0.0,
+                       mvp: None,
+                       output: librashader_runtime_wgpu::OutputView {
+                           size: filter_output.size().into(),
+                           view: &filter_view,
+                           format: filter_output.format(),
+                       },
+                   },
+                   &mut encoder,
+                self.frame_count, None
+            ).expect("failed to draw frame");
+
+        encoder.copy_texture_to_texture(
+            filter_output.as_image_copy(),
+            output.texture.as_image_copy(),
+            output.texture.size()
+        );
+
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
+        self.frame_count += 1;
         Ok(())
     }
 }
@@ -266,39 +336,36 @@ pub fn run() {
 
     pollster::block_on(async {
         let mut state = State::new(&window).await;
-        event_loop.run(|event, target| {
-
-            match event {
-                Event::WindowEvent {
-                    window_id: _,
-                    event
-                } => match event {
-                    WindowEvent::Resized(new_size) => {
-                        state.resize(new_size);
-                        // On macos the window needs to be redrawn manually after resizing
-                        window.request_redraw();
-                    }
-                    WindowEvent::RedrawRequested => {
-                        state.update();
-                        match state.render() {
-                            Ok(_) => {}
-                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                                state.resize(state.size)
-                            }
-                            Err(wgpu::SurfaceError::OutOfMemory) => target.exit(),
-                            Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
+        event_loop
+            .run(|event, target| {
+                match event {
+                    Event::WindowEvent {
+                        window_id: _,
+                        event,
+                    } => match event {
+                        WindowEvent::Resized(new_size) => {
+                            state.resize(new_size);
+                            // On macos the window needs to be redrawn manually after resizing
+                            window.request_redraw();
                         }
-                    }
-                    WindowEvent::CloseRequested => target.exit(),
+                        WindowEvent::RedrawRequested => {
+                            state.update();
+                            match state.render() {
+                                Ok(_) => {}
+                                Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                                    state.resize(state.size)
+                                }
+                                Err(wgpu::SurfaceError::OutOfMemory) => target.exit(),
+                                Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
+                            }
+                        }
+                        WindowEvent::CloseRequested => target.exit(),
+                        _ => {}
+                    },
+                    Event::AboutToWait => window.request_redraw(),
                     _ => {}
                 }
-                Event::AboutToWait => {
-                    window.request_redraw()
-                }
-                _ => {}
-            }
-
-
-        }).unwrap();
+            })
+            .unwrap();
     });
 }
