@@ -126,7 +126,7 @@ impl<'a> State<'a> {
         });
 
         let preset =
-            ShaderPreset::try_parse("../test/basic.slangp").unwrap();
+            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
 
         let chain = FilterChainWGPU::load_from_preset_deferred(
             Arc::clone(&device),
