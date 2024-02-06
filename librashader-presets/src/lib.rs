@@ -11,9 +11,9 @@
 #![allow(unstable_name_collisions)]
 
 mod error;
+mod extract_if;
 mod parse;
 mod preset;
-mod extract_if;
 
 pub use error::*;
 pub use preset::*;

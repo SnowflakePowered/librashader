@@ -16,15 +16,13 @@ use std::sync::Arc;
 
 use crate::buffer::WgpuStagedBuffer;
 use crate::draw_quad::DrawQuad;
-use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_reflect::back::wgsl::WgslCompileOptions;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
-use wgpu::{
-    Device, TextureFormat,
-};
+use wgpu::{Device, TextureFormat};
 
 use crate::error;
 use crate::error::FilterChainError;
@@ -32,6 +30,7 @@ use crate::filter_pass::FilterPass;
 use crate::framebuffer::OutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::luts::LutTexture;
+use crate::mipmap::MipmapGen;
 use crate::options::FrameOptionsWGPU;
 use crate::samplers::SamplerSet;
 use crate::texture::{Handle, InputImage, OwnedImage};
@@ -56,6 +55,7 @@ pub struct FilterChainWGPU {
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
     // residuals: Box<[FrameResiduals]>,
+    mipmapper: MipmapGen,
 }
 
 pub struct FilterMutable {
@@ -73,7 +73,7 @@ pub(crate) struct FilterCommon {
     pub internal_frame_count: i32,
     pub(crate) draw_quad: DrawQuad,
     device: Arc<Device>,
-    pub(crate) queue: Arc<wgpu::Queue>
+    pub(crate) queue: Arc<wgpu::Queue>,
 }
 
 impl FilterChainWGPU {
@@ -86,7 +86,7 @@ impl FilterChainWGPU {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub fn load_from_preset_deferred(
         device: Arc<Device>,
-        queue:  Arc<wgpu::Queue>,
+        queue: Arc<wgpu::Queue>,
         cmd: &mut wgpu::CommandEncoder,
         preset: ShaderPreset,
     ) -> error::Result<FilterChainWGPU> {
@@ -94,9 +94,17 @@ impl FilterChainWGPU {
 
         // // initialize passes
         let filters = Self::init_passes(Arc::clone(&device), passes, &semantics)?;
-        //
-        let luts = FilterChainWGPU::load_luts(&device, &queue, cmd, &preset.textures)?;
+
         let samplers = SamplerSet::new(&device);
+        let mut mipmapper = MipmapGen::new(Arc::clone(&device));
+        let luts = FilterChainWGPU::load_luts(
+            &device,
+            &queue,
+            cmd,
+            &mut mipmapper,
+            &samplers,
+            &preset.textures,
+        )?;
         //
         let framebuffer_gen = || {
             Ok::<_, error::FilterChainError>(OwnedImage::new(
@@ -123,11 +131,6 @@ impl FilterChainWGPU {
         //
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
-        //
-        // let mut intermediates = Vec::new();
-        // intermediates.resize_with(frames_in_flight as usize, || {
-        //     FrameResiduals::new(&device.device)
-        // });
 
         let draw_quad = DrawQuad::new(&device);
 
@@ -156,6 +159,7 @@ impl FilterChainWGPU {
             feedback_framebuffers,
             history_framebuffers,
             disable_mipmaps: false, // todo: force no mipmaps,
+            mipmapper,
         })
     }
 
@@ -163,6 +167,8 @@ impl FilterChainWGPU {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         cmd: &mut wgpu::CommandEncoder,
+        mipmapper: &mut MipmapGen,
+        sampler_set: &SamplerSet,
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
@@ -171,7 +177,8 @@ impl FilterChainWGPU {
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(device, queue, cmd, image, texture);
+            let texture =
+                LutTexture::new(device, queue, cmd, image, texture, mipmapper, sampler_set);
             luts.insert(index, texture);
         }
         Ok(luts)
@@ -375,7 +382,13 @@ impl FilterChainWGPU {
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
-                target.generate_mipmaps(cmd);
+                let sampler = self.common.samplers.get(
+                    WrapMode::ClampToEdge,
+                    FilterMode::Linear,
+                    FilterMode::Nearest,
+                );
+
+                target.generate_mipmaps(cmd, &mut self.mipmapper, &sampler);
             }
 
             source = self.common.output_textures[index].clone().unwrap();

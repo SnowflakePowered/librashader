@@ -21,7 +21,9 @@ impl<'a, T, const N: usize> ArrayChunksMut<'a, T, N> {
     #[inline]
     pub(super) fn new(slice: &'a mut [T]) -> Self {
         let (array_slice, _rem) = as_chunks_mut(slice);
-        Self { iter: array_slice.iter_mut() }
+        Self {
+            iter: array_slice.iter_mut(),
+        }
     }
 }
 
@@ -54,7 +56,6 @@ impl<'a, T, const N: usize> Iterator for ArrayChunksMut<'a, T, N> {
     }
 }
 
-
 /// Splits the slice into a slice of `N`-element arrays,
 /// starting at the beginning of the slice,
 /// and a remainder slice with length strictly less than `N`.
@@ -69,7 +70,7 @@ impl<'a, T, const N: usize> Iterator for ArrayChunksMut<'a, T, N> {
 fn as_chunks_mut<T, const N: usize>(slice: &mut [T]) -> (&mut [[T; N]], &mut [T]) {
     unsafe fn as_chunks_unchecked_mut<T, const N: usize>(slice: &mut [T]) -> &mut [[T; N]] {
         // SAFETY: Caller must guarantee that `N` is nonzero and exactly divides the slice length
-        let new_len =  slice.len() / N;
+        let new_len = slice.len() / N;
 
         // SAFETY: We cast a slice of `new_len * N` elements into
         // a slice of `new_len` many `N` elements chunks.

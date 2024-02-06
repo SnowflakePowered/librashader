@@ -6,13 +6,13 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+use librashader_common::Viewport;
 use librashader_presets::ShaderPreset;
 use librashader_runtime_wgpu::FilterChainWGPU;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::keyboard::{Key, KeyCode, PhysicalKey};
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use librashader_common::Viewport;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -75,7 +75,7 @@ struct State<'a> {
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
     chain: FilterChainWGPU,
-    frame_count: usize
+    frame_count: usize,
 }
 impl<'a> State<'a> {
     async fn new(window: &'a Window) -> Self {
@@ -228,44 +228,37 @@ impl<'a> State<'a> {
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
 
-        let render_output = Arc::new(self.device.create_texture(
-            &wgpu::TextureDescriptor {
-                label: Some("rendertexture"),
-                size: output.texture.size(),
-                mip_level_count: output.texture.mip_level_count(),
-                sample_count: output.texture.sample_count(),
-                dimension: output.texture.dimension(),
-                format: output.texture.format(),
-                usage: wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::COPY_DST
-                    | wgpu::TextureUsages::COPY_SRC,
-                view_formats: &[output.texture.format()],
-            }
-        ));
+        let render_output = Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("rendertexture"),
+            size: output.texture.size(),
+            mip_level_count: output.texture.mip_level_count(),
+            sample_count: output.texture.sample_count(),
+            dimension: output.texture.dimension(),
+            format: output.texture.format(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[output.texture.format()],
+        }));
 
-        let filter_output = Arc::new(self.device.create_texture(
-            &wgpu::TextureDescriptor {
-                label: Some("filteroutput"),
-                size: output.texture.size(),
-                mip_level_count: output.texture.mip_level_count(),
-                sample_count: output.texture.sample_count(),
-                dimension: output.texture.dimension(),
-                format: output.texture.format(),
-                usage: wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::COPY_DST
-                    | wgpu::TextureUsages::COPY_SRC,
-                view_formats: &[output.texture.format()],
-            }
-        ));
+        let filter_output = Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("filteroutput"),
+            size: output.texture.size(),
+            mip_level_count: output.texture.mip_level_count(),
+            sample_count: output.texture.sample_count(),
+            dimension: output.texture.dimension(),
+            format: output.texture.format(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[output.texture.format()],
+        }));
 
+        let view = render_output.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let view = render_output
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        let filter_view = filter_output
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let filter_view = filter_output.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = self
             .device
@@ -274,8 +267,7 @@ impl<'a> State<'a> {
             });
 
         {
-            let mut render_pass =
-                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -295,25 +287,28 @@ impl<'a> State<'a> {
         }
 
         self.chain
-            .frame(Arc::clone(&render_output),
-                   &Viewport {
-                       x: 0.0,
-                       y: 0.0,
-                       mvp: None,
-                       output: librashader_runtime_wgpu::OutputView {
-                           size: filter_output.size().into(),
-                           view: &filter_view,
-                           format: filter_output.format(),
-                       },
-                   },
-                   &mut encoder,
-                self.frame_count, None
-            ).expect("failed to draw frame");
+            .frame(
+                Arc::clone(&render_output),
+                &Viewport {
+                    x: 0.0,
+                    y: 0.0,
+                    mvp: None,
+                    output: librashader_runtime_wgpu::OutputView {
+                        size: filter_output.size().into(),
+                        view: &filter_view,
+                        format: filter_output.format(),
+                    },
+                },
+                &mut encoder,
+                self.frame_count,
+                None,
+            )
+            .expect("failed to draw frame");
 
         encoder.copy_texture_to_texture(
             filter_output.as_image_copy(),
             output.texture.as_image_copy(),
-            output.texture.size()
+            output.texture.size(),
         );
 
         self.queue.submit(std::iter::once(encoder.finish()));

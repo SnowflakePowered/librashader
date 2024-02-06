@@ -7,7 +7,7 @@ use crate::render_pass::VulkanRenderPass;
 use ash::vk::PushConstantRange;
 use librashader_cache::cache_pipeline;
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::semantics::{TextureBinding, BufferReflection};
+use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
@@ -31,7 +31,9 @@ impl PipelineDescriptors {
     }
 
     pub fn add_ubo_binding(&mut self, ubo_meta: Option<&BufferReflection<u32>>) {
-        if let Some(ubo_meta) = ubo_meta && !ubo_meta.stage_mask.is_empty() {
+        if let Some(ubo_meta) = ubo_meta
+            && !ubo_meta.stage_mask.is_empty()
+        {
             let ubo_mask = util::binding_stage_to_vulkan_stage(ubo_meta.stage_mask);
 
             self.layout_bindings.push(vk::DescriptorSetLayoutBinding {
@@ -417,7 +419,11 @@ impl VulkanGraphicsPipeline {
                     extent: output.output.size.into(),
                 });
             unsafe {
-                self.device.cmd_begin_render_pass(cmd, &render_pass_info, vk::SubpassContents::INLINE);
+                self.device.cmd_begin_render_pass(
+                    cmd,
+                    &render_pass_info,
+                    vk::SubpassContents::INLINE,
+                );
             }
             Ok(Some(framebuffer))
         } else {

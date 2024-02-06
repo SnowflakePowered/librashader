@@ -1,8 +1,8 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::GlslangCompilation;
 use crate::reflect::semantics::{
-    BindingMeta, BindingStage, MemberOffset, ShaderReflection, ShaderSemantics,
-    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo, BufferReflection,
+    BindingMeta, BindingStage, BufferReflection, MemberOffset, ShaderReflection, ShaderSemantics,
+    TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo,
     UniformMemberBlock, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta,
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
