@@ -7,18 +7,19 @@
 #![feature(let_chains)]
 #![feature(strict_provenance)]
 
+mod buffer;
 mod draw_quad;
 mod error;
 mod filter_chain;
 mod filter_pass;
+mod framebuffer;
 mod graphics_pipeline;
+mod luts;
+mod options;
 mod samplers;
 mod texture;
 mod util;
-mod framebuffer;
-mod luts;
-mod options;
-mod buffer;
 
+pub use framebuffer::OutputView;
 pub use filter_chain::FilterChainWGPU;
 pub use filter_pass::FilterPass;

@@ -1,17 +1,24 @@
+use crate::framebuffer::OutputView;
 use crate::{error, util};
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
+use librashader_runtime::render_target::RenderTarget;
 use std::borrow::Cow;
 use std::sync::Arc;
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, CommandEncoder, Device, Operations, PipelineLayout, PushConstantRange, RenderPass, RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor, SamplerBindingType, ShaderModule, ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexAttribute, VertexBufferLayout};
-use librashader_runtime::render_target::RenderTarget;
-use crate::framebuffer::OutputImage;
+use wgpu::{
+    BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, CommandEncoder, Device,
+    Operations, PipelineLayout, PushConstantRange, RenderPass, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipelineDescriptor, SamplerBindingType, ShaderModule, ShaderSource,
+    ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexAttribute,
+    VertexBufferLayout,
+};
 
 pub struct WgpuGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     render_pipeline: wgpu::RenderPipeline,
-    pub format: wgpu::TextureFormat
+    pub format: wgpu::TextureFormat,
 }
 
 pub struct PipelineLayoutObjects {
@@ -22,7 +29,7 @@ pub struct PipelineLayoutObjects {
     vertex_entry_name: String,
     vertex: ShaderModule,
     fragment: ShaderModule,
-    device: Arc<wgpu::Device>
+    device: Arc<wgpu::Device>,
 }
 
 impl PipelineLayoutObjects {
@@ -138,55 +145,56 @@ impl PipelineLayoutObjects {
     }
 
     pub fn create_pipeline(&self, framebuffer_format: TextureFormat) -> wgpu::RenderPipeline {
-        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&self.layout),
-            vertex: wgpu::VertexState {
-                module: &self.vertex,
-                entry_point: &self.vertex_entry_name,
-                buffers: &[VertexBufferLayout {
-                    array_stride: 4 * std::mem::size_of::<f32>() as wgpu::BufferAddress,
-                    step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &[
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x2,
-                            offset: 0,
-                            shader_location: 0,
-                        },
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x2,
-                            offset: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
-                            shader_location: 1,
-                        },
-                    ],
-                }],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &self.fragment,
-                entry_point: &self.fragment_entry_name,
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: framebuffer_format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                unclipped_depth: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        })
+        self.device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("Render Pipeline"),
+                layout: Some(&self.layout),
+                vertex: wgpu::VertexState {
+                    module: &self.vertex,
+                    entry_point: &self.vertex_entry_name,
+                    buffers: &[VertexBufferLayout {
+                        array_stride: 4 * std::mem::size_of::<f32>() as wgpu::BufferAddress,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &[
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x2,
+                                offset: 0,
+                                shader_location: 0,
+                            },
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x2,
+                                offset: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
+                                shader_location: 1,
+                            },
+                        ],
+                    }],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &self.fragment,
+                    entry_point: &self.fragment_entry_name,
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: framebuffer_format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleStrip,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    unclipped_depth: false,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+            })
     }
 }
 
@@ -202,7 +210,7 @@ impl WgpuGraphicsPipeline {
         Self {
             layout,
             render_pipeline,
-            format: render_pass_format
+            format: render_pass_format,
         }
     }
 
@@ -213,8 +221,8 @@ impl WgpuGraphicsPipeline {
 
     pub(crate) fn begin_rendering<'pass>(
         &'pass self,
-        output: &RenderTarget<'pass, OutputImage>,
-        cmd: &'pass mut CommandEncoder
+        output: &RenderTarget<'pass, OutputView>,
+        cmd: &'pass mut CommandEncoder,
     ) -> RenderPass<'pass> {
         let mut render_pass = cmd.begin_render_pass(&RenderPassDescriptor {
             label: Some("librashader"),
@@ -240,19 +248,19 @@ impl WgpuGraphicsPipeline {
             output.x as u32,
             output.y as u32,
             output.output.size.width,
-            output.output.size.height
+            output.output.size.height,
         );
-        
+
         render_pass.set_viewport(
             output.x,
             output.y,
             output.output.size.width as f32,
             output.output.size.height as f32,
             1.0,
-            1.0
+            1.0,
         );
 
+        render_pass.set_pipeline(&self.render_pipeline);
         render_pass
     }
-
 }

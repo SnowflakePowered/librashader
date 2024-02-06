@@ -28,7 +28,7 @@ pub struct DrawQuad {
 }
 
 impl DrawQuad {
-    pub fn new(device: &Device, queue: &mut Queue) -> DrawQuad {
+    pub fn new(device: &Device) -> DrawQuad {
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("librashader vbo"),
             contents: bytemuck::cast_slice(&VBO_DATA),
@@ -38,14 +38,12 @@ impl DrawQuad {
         DrawQuad { buffer }
     }
 
-    pub fn bind_vbo_for_frame<'a, 'b: 'a>(&'b self, cmd: &mut RenderPass<'a>) {
-        cmd.set_vertex_buffer(0, self.buffer.slice(0..));
-    }
-
     pub fn draw_quad<'a, 'b: 'a>(&'b self, cmd: &mut RenderPass<'a>, vbo: QuadType) {
+        cmd.set_vertex_buffer(0, self.buffer.slice(0..));
+
         let offset = match vbo {
-            QuadType::Offscreen => 0..3,
-            QuadType::Final => 1..4,
+            QuadType::Offscreen => 0..4,
+            QuadType::Final => 4..8,
         };
 
         cmd.draw(offset, 0..1)

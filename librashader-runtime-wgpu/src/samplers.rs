@@ -16,9 +16,12 @@ impl SamplerSet {
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
         unsafe {
-            Arc::clone(&self.samplers
-                .get(&(wrap, filter, mipmap))
-                .unwrap_unchecked())
+            Arc::clone(
+                &self
+                    .samplers
+                    .get(&(wrap, filter, mipmap))
+                    .unwrap_unchecked(),
+            )
         }
     }
 
@@ -48,8 +51,8 @@ impl SamplerSet {
                             compare: None,
                             anisotropy_clamp: 1,
                             border_color: Some(SamplerBorderColor::TransparentBlack),
-                        }),
-                    ));
+                        })),
+                    );
                 }
             }
         }

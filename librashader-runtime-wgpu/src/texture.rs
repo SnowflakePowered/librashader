@@ -1,10 +1,10 @@
-use std::ops::Deref;
-use std::sync::Arc;
-use wgpu::{TextureFormat, TextureView};
+use crate::error::FilterChainError;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
-use crate::error::FilterChainError;
+use std::ops::Deref;
+use std::sync::Arc;
+use wgpu::{ImageCopyTexture, TextureFormat, TextureView};
 
 pub struct OwnedImage {
     device: Arc<wgpu::Device>,
@@ -17,14 +17,14 @@ pub struct OwnedImage {
 
 pub enum Handle<'a, T> {
     Borrowed(&'a T),
-    Owned(Arc<T>)
+    Owned(Arc<T>),
 }
 
 impl<T> Clone for Handle<'_, T> {
     fn clone(&self) -> Self {
         match self {
             Handle::Borrowed(r) => Handle::Borrowed(r),
-            Handle::Owned(r) => Handle::Owned(Arc::clone(r))
+            Handle::Owned(r) => Handle::Owned(Arc::clone(r)),
         }
     }
 }
@@ -34,7 +34,7 @@ impl<T> Deref for Handle<'_, T> {
     fn deref(&self) -> &Self::Target {
         match self {
             Handle::Borrowed(r) => &r,
-            Handle::Owned(r) => &r
+            Handle::Owned(r) => &r,
         }
     }
 }
@@ -56,12 +56,12 @@ impl AsRef<InputImage> for InputImage {
 }
 
 impl OwnedImage {
-    pub fn new(device: Arc<wgpu::Device>,
-               size: Size<u32>,
-               max_miplevels: u32,
+    pub fn new(
+        device: Arc<wgpu::Device>,
+        size: Size<u32>,
+        max_miplevels: u32,
         format: ImageFormat,
     ) -> Self {
-
         let format: Option<wgpu::TextureFormat> = format.into();
         let format = format.unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
 
@@ -117,7 +117,12 @@ impl OwnedImage {
             || (!mipmap && self.max_miplevels != 1)
             || format != self.image.format()
         {
-            let mut new = OwnedImage::new(Arc::clone(&self.device), size, self.max_miplevels, format.into());
+            let mut new = OwnedImage::new(
+                Arc::clone(&self.device),
+                size,
+                self.max_miplevels,
+                format.into(),
+            );
             std::mem::swap(self, &mut new);
         }
         size
@@ -132,25 +137,34 @@ impl OwnedImage {
             mip_filter: filter,
         }
     }
+
+    pub fn copy_from(&self, cmd: &mut wgpu::CommandEncoder, source: &wgpu::Texture) {
+        cmd.copy_texture_to_texture(
+            source.as_image_copy(),
+            self.image.as_image_copy(),
+            source.size(),
+        )
+    }
+
+    pub fn clear(&self, cmd: &mut wgpu::CommandEncoder) {
+        cmd.clear_texture(&self.image, &wgpu::ImageSubresourceRange::default());
+    }
+    pub fn generate_mipmaps(&self, cmd: &mut wgpu::CommandEncoder) {}
 }
 
 impl ScaleFramebuffer for OwnedImage {
     type Error = FilterChainError;
     type Context = ();
 
-    fn scale(&mut self,
-             scaling: Scale2D,
-             format: ImageFormat,
-             viewport_size: &Size<u32>,
-             source_size: &Size<u32>,
-             should_mipmap: bool,
-             _context: &Self::Context) -> Result<Size<u32>, Self::Error> {
-        Ok(self.scale(
-            scaling,
-            format,
-            viewport_size,
-            source_size,
-            should_mipmap,
-        ))
+    fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ImageFormat,
+        viewport_size: &Size<u32>,
+        source_size: &Size<u32>,
+        should_mipmap: bool,
+        _context: &Self::Context,
+    ) -> Result<Size<u32>, Self::Error> {
+        Ok(self.scale(scaling, format, viewport_size, source_size, should_mipmap))
     }
 }
