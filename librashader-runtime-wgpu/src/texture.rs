@@ -1,4 +1,6 @@
 use crate::error::FilterChainError;
+use crate::mipmap::MipmapGen;
+use crate::samplers::SamplerSet;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
@@ -149,7 +151,14 @@ impl OwnedImage {
     pub fn clear(&self, cmd: &mut wgpu::CommandEncoder) {
         cmd.clear_texture(&self.image, &wgpu::ImageSubresourceRange::default());
     }
-    pub fn generate_mipmaps(&self, cmd: &mut wgpu::CommandEncoder) {}
+    pub fn generate_mipmaps(
+        &self,
+        cmd: &mut wgpu::CommandEncoder,
+        mipmapper: &mut MipmapGen,
+        sampler: &wgpu::Sampler,
+    ) {
+        mipmapper.generate_mipmaps(cmd, &self.image, sampler, self.max_miplevels);
+    }
 }
 
 impl ScaleFramebuffer for OwnedImage {

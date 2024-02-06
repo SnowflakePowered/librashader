@@ -15,11 +15,12 @@ mod filter_pass;
 mod framebuffer;
 mod graphics_pipeline;
 mod luts;
+mod mipmap;
 mod options;
 mod samplers;
 mod texture;
 mod util;
 
-pub use framebuffer::OutputView;
 pub use filter_chain::FilterChainWGPU;
 pub use filter_pass::FilterPass;
+pub use framebuffer::OutputView;
