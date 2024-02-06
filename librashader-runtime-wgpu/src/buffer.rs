@@ -1,4 +1,3 @@
-use parking_lot::RwLock;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 

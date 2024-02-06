@@ -1,9 +1,9 @@
 use crate::mipmap::MipmapGen;
 use crate::samplers::SamplerSet;
-use crate::texture::{Handle, InputImage};
+use crate::texture::InputImage;
 use librashader_common::{Size, WrapMode};
 use librashader_presets::TextureConfig;
-use librashader_runtime::image::{Image, BGRA8};
+use librashader_runtime::image::Image;
 use librashader_runtime::scaling::MipmapSize;
 use std::sync::Arc;
 use wgpu::TextureDescriptor;

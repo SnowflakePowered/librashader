@@ -4,7 +4,7 @@ use crate::filter_chain::FilterCommon;
 use crate::framebuffer::OutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::samplers::SamplerSet;
-use crate::texture::{InputImage, OwnedImage};
+use crate::texture::InputImage;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -21,11 +21,7 @@ use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{
-    BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding, BufferUsages,
-    RenderPass, ShaderStages, TextureView,
-};
+use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, BufferBinding, ShaderStages};
 
 pub struct FilterPass {
     pub device: Arc<wgpu::Device>,

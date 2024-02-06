@@ -1,12 +1,9 @@
 use crate::error::FilterChainError;
 use crate::mipmap::MipmapGen;
-use crate::samplers::SamplerSet;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
-use std::ops::Deref;
 use std::sync::Arc;
-use wgpu::{ImageCopyTexture, TextureFormat, TextureView};
 
 pub struct OwnedImage {
     device: Arc<wgpu::Device>,
@@ -15,30 +12,6 @@ pub struct OwnedImage {
     pub max_miplevels: u32,
     pub levels: u32,
     pub size: Size<u32>,
-}
-
-pub enum Handle<'a, T> {
-    Borrowed(&'a T),
-    Owned(Arc<T>),
-}
-
-impl<T> Clone for Handle<'_, T> {
-    fn clone(&self) -> Self {
-        match self {
-            Handle::Borrowed(r) => Handle::Borrowed(r),
-            Handle::Owned(r) => Handle::Owned(Arc::clone(r)),
-        }
-    }
-}
-impl<T> Deref for Handle<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Handle::Borrowed(r) => &r,
-            Handle::Owned(r) => &r,
-        }
-    }
 }
 
 #[derive(Clone)]
