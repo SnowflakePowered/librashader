@@ -1,5 +1,5 @@
 use crate::framebuffer::OutputView;
-use crate::{error, util};
+use crate::util;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
@@ -7,11 +7,10 @@ use librashader_runtime::render_target::RenderTarget;
 use std::borrow::Cow;
 use std::sync::Arc;
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, BufferBindingType, BufferSize, CommandEncoder, Device,
-    Operations, PipelineLayout, PushConstantRange, RenderPass, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipelineDescriptor, SamplerBindingType, ShaderModule, ShaderSource,
-    ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexAttribute,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
+    BufferBindingType, BufferSize, CommandEncoder, Operations, PipelineLayout, PushConstantRange,
+    RenderPass, RenderPassColorAttachment, RenderPassDescriptor, SamplerBindingType, ShaderModule,
+    ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
     VertexBufferLayout,
 };
 

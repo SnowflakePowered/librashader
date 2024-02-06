@@ -1,12 +1,12 @@
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::{SPIRV, WGSL};
+use librashader_reflect::back::targets::WGSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::GlslangCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8, RGBA8};
+use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
@@ -33,7 +33,7 @@ use crate::luts::LutTexture;
 use crate::mipmap::MipmapGen;
 use crate::options::FrameOptionsWGPU;
 use crate::samplers::SamplerSet;
-use crate::texture::{Handle, InputImage, OwnedImage};
+use crate::texture::{InputImage, OwnedImage};
 
 type ShaderPassMeta =
     ShaderPassArtifact<impl CompileReflectShader<WGSL, GlslangCompilation> + Send>;
@@ -46,7 +46,7 @@ fn compile_passes(
     Ok((passes, semantics))
 }
 
-/// A Vulkan filter chain.
+/// A WGPU filter chain.
 pub struct FilterChainWGPU {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
@@ -54,7 +54,6 @@ pub struct FilterChainWGPU {
     feedback_framebuffers: Box<[OwnedImage]>,
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
-    // residuals: Box<[FrameResiduals]>,
     mipmapper: MipmapGen,
 }
 
@@ -199,9 +198,7 @@ impl FilterChainWGPU {
                 );
             }
 
-            unsafe {
-                back.copy_from(cmd, input);
-            }
+            back.copy_from(cmd, input);
 
             self.history_framebuffers.push_front(back)
         }
@@ -212,8 +209,6 @@ impl FilterChainWGPU {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
     ) -> error::Result<Box<[FilterPass]>> {
-        // let frames_in_flight = std::cmp::max(1, frames_in_flight);
-        //
         let filters: Vec<error::Result<FilterPass>> = passes
             .into_par_iter()
             .enumerate()
@@ -365,7 +360,7 @@ impl FilterChainWGPU {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let output_image = OutputView::new(target);
+            let output_image = OutputView::from(target);
             let out = RenderTarget::identity(&output_image);
 
             pass.draw(

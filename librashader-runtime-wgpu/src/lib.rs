@@ -14,6 +14,7 @@ mod filter_chain;
 mod filter_pass;
 mod framebuffer;
 mod graphics_pipeline;
+mod handle;
 mod luts;
 mod mipmap;
 mod options;

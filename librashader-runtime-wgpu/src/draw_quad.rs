@@ -1,7 +1,7 @@
 use array_concat::concat_arrays;
 use librashader_runtime::quad::QuadType;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{Buffer, BufferAddress, BufferDescriptor, Device, Maintain, Queue, RenderPass};
+use wgpu::{Buffer, Device, RenderPass};
 
 #[rustfmt::skip]
 const VBO_OFFSCREEN: [f32; 16] = [

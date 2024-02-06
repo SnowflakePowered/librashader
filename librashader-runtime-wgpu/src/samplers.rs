@@ -1,4 +1,3 @@
-use crate::error;
 use librashader_common::{FilterMode, WrapMode};
 use rustc_hash::FxHashMap;
 use std::sync::Arc;

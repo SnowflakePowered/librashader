@@ -9,21 +9,16 @@ edition = "2021"
 librashader-common = { path = "../librashader-common", features = ["wgpu"], version = "0.2.0-beta.2" }
 librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.2" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.2" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.2", features = []   }
+librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.2", features = ["wgsl"], default-features = false }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.2" }
 
 wgpu = { version = "0.19.0", features = ["spirv"] }
 rustc-hash = "1.1.0"
 image = "0.24.7"
 thiserror = "1.0.50"
-spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
-parking_lot = "0.12.1"
 rayon = "1.8.0"
 bytemuck = { version = "1.14.0", features = ["derive"] }
-
 array-concat = "0.5.2"
-config = "0.13.4"
-once_cell = "1.19.0"
 
 [dev-dependencies]
 config = { version = "0.13.4", features = [] }

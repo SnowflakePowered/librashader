@@ -293,11 +293,11 @@ impl<'a> State<'a> {
                     x: 0.0,
                     y: 0.0,
                     mvp: None,
-                    output: librashader_runtime_wgpu::OutputView {
-                        size: filter_output.size().into(),
-                        view: &filter_view,
-                        format: filter_output.format(),
-                    },
+                    output: librashader_runtime_wgpu::OutputView::new_from_raw(
+                        &filter_view,
+                        filter_output.size().into(),
+                        filter_output.format(),
+                    ),
                 },
                 &mut encoder,
                 self.frame_count,
