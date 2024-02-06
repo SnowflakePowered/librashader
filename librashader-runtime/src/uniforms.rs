@@ -8,11 +8,6 @@ impl UniformScalar for f32 {}
 impl UniformScalar for i32 {}
 impl UniformScalar for u32 {}
 
-pub trait AsDerefable {
-    fn get_deref(&self) -> impl Deref<Target = [u8]>;
-    fn get_deref_mut(&mut self) -> impl DerefMut<Target = [u8]>;
-}
-
 /// A trait for a binder that binds the given value and context into the uniform for a shader pass.
 pub trait BindUniform<C, T> {
     /// Bind the given value to the shader uniforms given the input context.
