@@ -1,3 +1,5 @@
+#![allow(stable_features)]
+#![feature(return_position_impl_trait_in_trait)]
 //! Helpers and shared logic for librashader runtime implementations.
 //!
 //! Most of this is only useful when _writing_ a librashader runtime implementations,
