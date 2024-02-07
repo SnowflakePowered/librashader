@@ -27,7 +27,8 @@ librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.
 librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.5" }
 
 ash = { version = "0.37", optional = true }
-wgpu = { version = "0.19.1", optional = true }
+wgpu = { version = "0.19", optional = true }
+wgpu-types = { version = "0.19", optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.48.0"
@@ -46,7 +47,7 @@ runtime-gl = [ "runtime", "reflect-cross", "librashader-common/opengl", "librash
 runtime-d3d11 = [ "runtime", "reflect-cross","librashader-common/d3d11", "librashader-runtime-d3d11", "windows/Win32_Graphics_Direct3D11" ]
 runtime-d3d12 = [ "runtime", "reflect-cross", "reflect-dxil", "librashader-common/d3d12", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
 runtime-vk = ["runtime", "reflect-cross", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
-runtime-wgpu = [ "runtime", "reflect-naga", "librashader-common/wgpu", "librashader-runtime-wgpu", "wgpu" ]
+runtime-wgpu = [ "runtime", "reflect-naga", "librashader-common/wgpu", "librashader-runtime-wgpu", "wgpu", "wgpu-types" ]
 
 # reflection
 reflect-cross = ["reflect", "librashader-reflect/cross"]

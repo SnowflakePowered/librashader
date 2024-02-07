@@ -1716,6 +1716,7 @@ dependencies = [
  "librashader-runtime-vk",
  "librashader-runtime-wgpu",
  "wgpu",
+ "wgpu-types",
  "windows 0.48.0",
 ]
 
