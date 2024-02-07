@@ -3,7 +3,7 @@ name = "librashader-runtime-d3d11"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.2"
+version = "0.2.0-beta.4"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -12,13 +12,13 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-librashader-common = { path = "../librashader-common", features = ["d3d11"], version = "0.2.0-beta.2" }
-librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.2" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.2" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.2", features = ["standalone"]  }
-librashader-runtime = { path = "../librashader-runtime", version = "0.2.0-beta.2" }
+librashader-common = { path = "../librashader-common", features = ["d3d11"], version = "0.2.0-beta.4" }
+librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.4" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.4" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.4", features = ["standalone"]  }
+librashader-runtime = { path = "../librashader-runtime", version = "0.2.0-beta.4" }
 spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
-librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.2", features = ["d3d"] }
+librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.4", features = ["d3d"] }
 
 thiserror = "1.0.37"
 rustc-hash = "1.1.0"
