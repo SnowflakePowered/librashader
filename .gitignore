@@ -5,6 +5,7 @@
 *.rdc
 *.cap
 /.vs/
+.idea/
 librashader_runtime_*.exe
 /test/capi-tests/librashader-capi-tests/.vs/
 /test/capi-tests/librashader-capi-tests/x64/
