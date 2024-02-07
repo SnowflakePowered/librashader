@@ -211,12 +211,12 @@
     </configuration>
     <list>
       <item itemvalue="Cargo.Run librashader-build-script" />
-      <item itemvalue="Cargo.Test librashader" />
-      <item itemvalue="Cargo.Test triangle_wgpu" />
       <item itemvalue="Cargo.Test back::wgsl::test::test_into" />
+      <item itemvalue="Cargo.Test librashader" />
       <item itemvalue="Cargo.Test triangle_d3d11" />
       <item itemvalue="Cargo.Test triangle_gl46" />
       <item itemvalue="Cargo.Test triangle_vk" />
+      <item itemvalue="Cargo.Test triangle_wgpu" />
     </list>
     <recent_temporary>
       <list>
