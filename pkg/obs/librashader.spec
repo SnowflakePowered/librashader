@@ -9,7 +9,6 @@ URL:      https://github.com/SnowflakePowered/%{name}
 Source0:  librashader-%{version}.tar.xz
 Source1:  vendor.tar.xz
 Source2:  cargo_config
-BuildRequires: pkgconfig(vulkan)
 BuildRequires: ninja-build
 BuildRequires: patchelf
 BuildRequires: gcc
