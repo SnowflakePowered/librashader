@@ -25,7 +25,7 @@ spirv_cross = { package = "librashader-spirv-cross", version = "0.23" }
 rustc-hash = "1.1.0"
 bytemuck = "1.12.3"
 thiserror = "1.0.37"
-ash = { version = "0.37.1+1.3.235", features = ["linked", "debug"] }
+ash = { version = "0.37.1+1.3.235", features = ["debug"] }
 gpu-allocator = { version = "0.22.0", default-features = false, features = ["vulkan"] }
 parking_lot = "0.12.1"
 rayon = "1.6.1"

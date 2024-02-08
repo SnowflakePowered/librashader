@@ -91,10 +91,6 @@ static GL_DEFAULT_MVP: &[f32; 16] = &[
 
 ### Building
 
-librashader requires the [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/).
-
----
-
 For Rust projects, simply add the crate to your `Cargo.toml`. 
 
 ```
@@ -109,6 +105,9 @@ cargo run -p librashader-build-script -- --profile optimized
 
 This will output a `librashader.dll` or `librashader.so` in the target folder. Profile can be `debug`, `release`, or 
 `optimized` for full LTO.
+
+While librashader has no build-time dependencies, using `librashader_ld.h` may require headers from
+the relevant runtime graphics API.
 
 ### Writing a librashader Runtime
 

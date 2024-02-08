@@ -11,7 +11,6 @@ License:  MPL-2.0
 URL:      https://github.com/SnowflakePowered/%{name}
 %undefine _disable_source_fetch
 Source:  https://github.com/SnowflakePowered/%{name}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz
-BuildRequires: pkgconfig(vulkan)
 BuildRequires: gcc
 BuildRequires: g++
 BuildRequires: ninja-build
