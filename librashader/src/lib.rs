@@ -130,7 +130,7 @@ pub mod preprocess {
 /// matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
 ///
 /// In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::reflect::cross::GlslangCompilation),
-/// which does transpilation via [shaderc](https://github.com/google/shaderc) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
+/// which does transpilation via [glslang](https://github.com/KhronosGroup/glslang/) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
 pub mod reflect {
     /// Supported shader compiler targets.
     pub mod targets {

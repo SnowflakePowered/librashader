@@ -11,7 +11,7 @@ fn triangle_vk() {
 
     unsafe {
         let filter = FilterChainVulkan::load_from_path(
-            "../test/slang-shaders/crt/crt-royale.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             // "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",
             &base,
             // "../test/slang-shaders/test/feedback.slancargogp",
@@ -20,7 +20,7 @@ fn triangle_vk() {
                 frames_in_flight: 3,
                 force_no_mipmaps: false,
                 use_render_pass: true,
-                disable_cache: false,
+                disable_cache: true,
             }),
         )
         .unwrap();

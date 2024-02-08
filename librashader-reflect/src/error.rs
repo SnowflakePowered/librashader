@@ -10,13 +10,13 @@ pub enum ShaderCompileError {
     #[error("shader")]
     NagaCompileError(Vec<naga::front::glsl::Error>),
 
-    /// Compilation error from shaderc (glslang).
-    #[error("shaderc")]
-    ShaderCCompileError(#[from] shaderc::Error),
+    /// Compilation error from glslang.
+    #[error("glslang")]
+    GlslangError(#[from] glslang::error::GlslangError),
 
-    /// Error when initializing the shaderc compiler.
-    #[error("shaderc init")]
-    ShaderCInitError,
+    /// Error when initializing the glslang compiler.
+    #[error("glslang init")]
+    CompilerInitError,
 
     /// Error when transpiling from spirv-cross.
     #[error("cross")]

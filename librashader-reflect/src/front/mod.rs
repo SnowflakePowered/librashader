@@ -1,9 +1,9 @@
 use crate::error::ShaderCompileError;
 use librashader_preprocess::ShaderSource;
 
-mod shaderc;
+mod glslang;
 
-pub use crate::front::shaderc::GlslangCompilation;
+pub use crate::front::glslang::GlslangCompilation;
 
 /// Trait for types that can compile shader sources into a compilation unit.
 pub trait ShaderCompilation: Sized {

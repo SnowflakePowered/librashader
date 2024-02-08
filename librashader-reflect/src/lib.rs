@@ -44,7 +44,7 @@
 //! matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
 //!
 //! In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::front::GlslangCompilation),
-//! which does transpilation via [shaderc](https://github.com/google/shaderc) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
+//! which does transpilation via [glslang](https://github.com/KhronosGroup/glslang) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(let_chains)]
