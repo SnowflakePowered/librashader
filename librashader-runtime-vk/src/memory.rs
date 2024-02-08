@@ -186,9 +186,6 @@ impl Drop for RawVulkanBuffer {
     fn drop(&mut self) {
         unsafe {
             ManuallyDrop::drop(&mut self.buffer);
-            if self.buffer.handle != vk::Buffer::null() {
-                self.buffer.device.destroy_buffer(self.buffer.handle, None);
-            }
         }
     }
 }
