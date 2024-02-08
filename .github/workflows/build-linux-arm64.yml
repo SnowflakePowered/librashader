@@ -26,10 +26,6 @@ jobs:
         toolchain: nightly
         override: true
         target: aarch64-unknown-linux-gnu
-    - uses: actions/setup-python@v1
-      name: Setup Python 3.11
-      with:
-        python-version: '3.11'
     - name: Install ARM64 cross-compilation dependencies
       continue-on-error: true
       run: |

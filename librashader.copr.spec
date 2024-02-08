@@ -12,7 +12,6 @@ URL:      https://github.com/SnowflakePowered/%{name}
 %undefine _disable_source_fetch
 Source:   {{{ git_dir_pack }}}
 BuildRequires: pkgconfig(vulkan)
-BuildRequires: cmake
 BuildRequires: gcc
 BuildRequires: git
 BuildRequires: g++

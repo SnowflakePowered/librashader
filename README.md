@@ -19,14 +19,14 @@ are not currently supported (but pull-requests are welcome). librashader does no
 APIs such as older versions of OpenGL, or legacy versions of Direct3D.
 
 | **API**     | **Status** | **`librashader` feature** |
-|-------------|------------|--------------------------|
-| OpenGL 3.3+ | ✔          | `gl`                     |
-| OpenGL 4.6  | ✔          | `gl`                     |
-| Vulkan      | ✔          | `vk`                     |
-| Direct3D 11 | ✔          | `d3d11`                  |
-| Direct3D 12 | ✔          | `d3d12`                  |
-| Metal       | ❌          |                         |
-| WebGPU      | ❌          |                         |
+|-------------|------------|---------------------------|
+| OpenGL 3.3+ | ✔          | `gl`                      |
+| OpenGL 4.6  | ✔          | `gl`                      |
+| Vulkan      | ✔          | `vk`                      |
+| Direct3D 11 | ✔          | `d3d11`                   |
+| Direct3D 12 | ✔          | `d3d12`                   |
+| wgpu        | ✔          | `wgpu`                    |
+| Metal       | ❌         |                           |
 
 ✔ = Render API is supported &mdash; ❌ Render API is not supported
 
@@ -91,18 +91,11 @@ static GL_DEFAULT_MVP: &[f32; 16] = &[
 
 ### Building
 
-librashader requires the following build time dependencies
-
-* The [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/)
-* [CMake 3.8 or later](https://cmake.org/)
-
-For DXIL support on Windows, the following is also needed
-* [Meson](https://mesonbuild.com/)
-* [Python 3.6 or later](https://www.python.org/)
+librashader requires the [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/).
 
 ---
 
-For Rust projects, simply add the crate tofil your `Cargo.toml`. 
+For Rust projects, simply add the crate to your `Cargo.toml`. 
 
 ```
 cargo add librashader
