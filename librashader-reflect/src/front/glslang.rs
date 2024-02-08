@@ -1,6 +1,5 @@
+use glslang::{CompilerOptions, ShaderInput};
 use crate::error::ShaderCompileError;
-use glslang::input::{CompilerOptions, ShaderInput};
-use glslang::limits::ResourceLimits;
 use librashader_preprocess::ShaderSource;
 
 #[cfg(feature = "serialize")]
@@ -34,28 +33,31 @@ pub(crate) fn compile_spirv(
     source: &ShaderSource,
 ) -> Result<GlslangCompilation, ShaderCompileError> {
     let compiler = glslang::Compiler::acquire().ok_or(ShaderCompileError::CompilerInitError)?;
+    let options = CompilerOptions {
+        source_language: glslang::SourceLanguage::GLSL,
+        target: glslang::Target::Vulkan {
+            version: glslang::VulkanVersion::Vulkan1_0,
+            spirv_version: glslang::SpirvVersion::SPIRV1_0
+        },
+        version_profile: None,
+    };
 
-    let limits = ResourceLimits::default();
-    let options = CompilerOptions::default();
-
-    let vertex = glslang::input::ShaderSource::from(source.vertex.as_str());
+    let vertex = glslang::ShaderSource::from(source.vertex.as_str());
     let vertex = ShaderInput::new(
         &vertex,
-        &limits,
         glslang::ShaderStage::Vertex,
         &options,
         None,
-    );
+    )?;
     let vertex = compiler.create_shader(vertex)?;
 
-    let fragment = glslang::input::ShaderSource::from(source.fragment.as_str());
+    let fragment = glslang::ShaderSource::from(source.fragment.as_str());
     let fragment = ShaderInput::new(
         &fragment,
-        &limits,
         glslang::ShaderStage::Fragment,
         &options,
         None,
-    );
+    )?;
     let fragment = compiler.create_shader(fragment)?;
 
     let vertex = Vec::from(vertex.compile()?);

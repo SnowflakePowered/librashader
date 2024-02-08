@@ -1343,9 +1343,9 @@ dependencies = [
 
 [[package]]
 name = "glslang"
-version = "0.2.3"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffa3b9c49e9b4270061e25e7e3946d979a9394a21ac51edcb72e7c17874d3a54"
+checksum = "c5df6491e5d4c222a6373b892c1bea8d697fca0c087890f64f0e2975b3f8bb48"
 dependencies = [
  "glslang-sys",
  "once_cell",
@@ -1355,9 +1355,9 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.2.1"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3c81cefc876b4fd65354162037a464768bc5bada8b02d93b64e18186ae5cb7e"
+checksum = "6d76f2d75ad6e8a12c26e77ed6443a9369ef7957daf361e751c3489a97f8b816"
 dependencies = [
  "cc",
  "glob",
@@ -1843,7 +1843,7 @@ dependencies = [
 name = "librashader-reflect"
 version = "0.2.0-beta.7"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.4.2",
  "bytemuck",
  "glslang",
  "indexmap 2.2.2",

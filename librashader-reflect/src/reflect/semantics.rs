@@ -162,6 +162,7 @@ pub struct Semantic<T, I = usize> {
 
 bitflags! {
     /// The pipeline stage for which a uniform is bound.
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct BindingStage: u8 {
         const NONE = 0b00000000;
         const VERTEX = 0b00000001;
