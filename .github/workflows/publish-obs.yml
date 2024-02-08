@@ -8,6 +8,7 @@ env:
 
 jobs:
   build-obs-binary:
+    if: github.repository == 'SnowflakePowered/librashader'
     strategy:
       matrix:
         include:
@@ -49,6 +50,7 @@ jobs:
           osc build --no-verify --trust-all-projects ${{ matrix.repo }} x86_64 ${{ matrix.spec }}
   publish-obs:
     needs: build-obs-binary
+    if: github.repository == 'SnowflakePowered/librashader'
     runs-on: ubuntu-latest
     container: fedora:39
     steps:
