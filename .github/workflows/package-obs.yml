@@ -8,6 +8,7 @@ env:
 
 jobs:
   build-obs-binary:
+    if: github.repository == 'SnowflakePowered/librashader'
     strategy:
       matrix:
         include:
