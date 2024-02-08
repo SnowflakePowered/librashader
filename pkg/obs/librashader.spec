@@ -12,7 +12,6 @@ Source2:  cargo_config
 BuildRequires: pkgconfig(vulkan)
 BuildRequires: ninja-build
 BuildRequires: patchelf
-BuildRequires: cmake
 BuildRequires: gcc
 BuildRequires: gcc-c++
 BuildRequires: cargo
