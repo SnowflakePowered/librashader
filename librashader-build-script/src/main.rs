@@ -66,7 +66,15 @@ pub fn main() {
         .expect("Unable to write bindings.");
 
     println!("Moving artifacts...");
-    if cfg!(target_os = "linux") {
+    if cfg!(target_os = "macos") {
+        let artifacts = &["liblibrashader_capi.dylib", "liblibrashader_capi.a"];
+        for artifact in artifacts {
+            let ext = artifact.strip_prefix("lib").unwrap();
+            let ext = ext.replace("_capi", "");
+            fs::rename(output_dir.join(artifact), output_dir.join(ext)).unwrap();
+        }
+    }
+    else if cfg!(target_family = "unix") {
         let artifacts = &["liblibrashader_capi.so", "liblibrashader_capi.a"];
         for artifact in artifacts {
             let ext = artifact.strip_prefix("lib").unwrap();

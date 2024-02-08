@@ -48,8 +48,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 typedef HMODULE _LIBRASHADER_IMPL_HANDLE;
 #define _LIBRASHADER_LOAD LoadLibraryW(L"librashader.dll")
-
-#elif defined(__linux__)
+#elif defined(__APPLE__)
+#include <dlfcn.h>
+#define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)        \
+    {                                                    \
+        void *address = dlsym(HMOD, "libra_" #NAME);     \
+        if (address != NULL) {                           \
+            (INSTANCE).NAME = (PFN_libra_##NAME)address; \
+        }                                                \
+    }
+typedef void* _LIBRASHADER_IMPL_HANDLE;
+#define _LIBRASHADER_LOAD dlopen("librashader.dylib", RTLD_LAZY)
+#elif defined(__unix__) || defined (__linux__)
 #include <dlfcn.h>
 #define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)        \
     {                                                    \
@@ -160,7 +170,7 @@ libra_error_t __librashader__noop_gl_filter_chain_get_active_pass_count(
 
 #if defined(LIBRA_RUNTIME_VULKAN)
 libra_error_t __librashader__noop_vk_filter_chain_create(
-    libra_shader_preset_t *preset, struct libra_device_vk_t vulkan, 
+    libra_shader_preset_t *preset, struct libra_device_vk_t vulkan,
     const struct filter_chain_vk_opt_t *options, libra_vk_filter_chain_t *out) {
     *out = NULL;
     return NULL;
@@ -168,7 +178,7 @@ libra_error_t __librashader__noop_vk_filter_chain_create(
 
 libra_error_t __librashader__noop_vk_filter_chain_create_deferred(
     libra_shader_preset_t *preset, struct libra_device_vk_t vulkan,
-    VkCommandBuffer command_buffer, const struct filter_chain_vk_opt_t *options, 
+    VkCommandBuffer command_buffer, const struct filter_chain_vk_opt_t *options,
     libra_vk_filter_chain_t *out) {
     *out = NULL;
     return NULL;
@@ -211,7 +221,7 @@ libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
 #if defined(LIBRA_RUNTIME_D3D11)
 libra_error_t __librashader__noop_d3d11_filter_chain_create(
     libra_shader_preset_t *preset, ID3D11Device *device,
-    const struct filter_chain_d3d11_opt_t *options, 
+    const struct filter_chain_d3d11_opt_t *options,
     libra_d3d11_filter_chain_t *out) {
     *out = NULL;
     return NULL;
@@ -319,7 +329,7 @@ typedef struct libra_instance_t {
     /// The null instance has ABI version 0. Any valid loaded
     /// instance must have ABI version greater than or equal to 1.
     PFN_libra_instance_abi_version instance_abi_version;
-   
+
     /// Get the supported API version of the loaded instance.
     ///
     /// The null instance has API version 0.
@@ -330,7 +340,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety
     ///  - `filename` must be either null or a valid, aligned pointer to a
     ///  string path to the shader preset.
@@ -415,7 +425,7 @@ typedef struct libra_instance_t {
     ///   result in undefined behaviour.
     PFN_libra_preset_free_runtime_params preset_free_runtime_params;
 
-    
+
     /// Get the error code corresponding to this error object.
     ///
     /// ## Safety
@@ -478,7 +488,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -551,7 +561,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - The handles provided in `vulkan` must be valid for the command buffers
     /// that
@@ -573,7 +583,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - The handles provided in `vulkan` must be valid for the command buffers
     /// that
@@ -665,7 +675,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -685,7 +695,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -776,7 +786,7 @@ typedef struct libra_instance_t {
     /// If this function is not loaded, `out` will unconditionally be set to
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -791,9 +801,9 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
-    /// If this function is not loaded, `out` will unconditionally be set to null. 
+    /// If this function is not loaded, `out` will unconditionally be set to null.
     /// If this function returns an error, the state of `out` is unspecified.
-    /// 
+    ///
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
     /// - `options` must be either null, or valid and aligned.
@@ -869,14 +879,14 @@ typedef struct libra_instance_t {
     /// This flag is not indicative of whether any functions were loaded
     /// properly or not. The flag is true immediately after the instance
     /// was created with librashader_load_instance if and only if:
-    /// 
+    ///
     /// 1. A librashader library was found in the search path.
     /// 2. The ABI version of the librashader library in the search path is compatible.
-    /// 
+    ///
     /// This flag can only be relied upon when checked immediately after
     /// librashader_load_instance as there is no protection against mutating
     /// this flag.
-    /// 
+    ///
     /// Regardless of the state of this flag, a librashader instance created
     /// with librashader_load_instance is always safe to call. An instance
     /// that fails to load is still valid to call as long as safety invariants
@@ -990,7 +1000,7 @@ libra_instance_t __librashader_make_null_instance() {
 /// \return An `libra_instance_t` struct with loaded function pointers.
 libra_instance_t librashader_load_instance();
 
-#if defined(_WIN32) || defined(__linux__)
+#if defined(_WIN32) || defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 libra_instance_t librashader_load_instance() {
     _LIBRASHADER_IMPL_HANDLE librashader = _LIBRASHADER_LOAD;
     libra_instance_t instance = __librashader_make_null_instance();
