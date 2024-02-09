@@ -19,6 +19,7 @@ d3d12 = ["windows", "dxgi"]
 dxgi = ["windows"]
 vulkan = ["ash"]
 wgpu = ["wgpu-types"]
+metal = ["icrate"]
 
 [dependencies]
 gl = { version = "0.14.0", optional = true }
@@ -37,3 +38,8 @@ features = [
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Direct3D12",
 ]
+
+[target.'cfg(macos)'.dependencies.icrate]
+optional = true
+version = "0.1.0"
+features = ["Metal"]
