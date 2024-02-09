@@ -1,0 +1,30 @@
+[package]
+name = "librashader-runtime-metal"
+edition = "2021"
+
+license = "MPL-2.0 OR GPL-3.0-only"
+version = "0.2.0-beta.7"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+librashader-common = { path = "../librashader-common", features = ["vulkan"], version = "0.2.0-beta.7" }
+librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.7" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.7" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.7" }
+librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.7" }
+librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.7" }
+
+icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all", "MetalKit" ]}
+
+[dev-dependencies]
+
+
+[package.metadata.docs.rs]
+features = ["librashader-cache/docsrs"]
