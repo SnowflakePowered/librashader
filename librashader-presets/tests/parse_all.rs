@@ -1,5 +1,7 @@
 use glob::glob;
+use librashader_presets::context::{ContextItem, VideoDriver, WildcardContext};
 use librashader_presets::ShaderPreset;
+use std::collections::HashMap;
 
 #[test]
 fn parses_all_slang_presets() {
@@ -16,4 +18,18 @@ fn parses_all_slang_presets() {
 fn parses_problematic() {
     let path  = "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_NDS_DREZ/NDS-[DREZ]-[Native]-[ADV]-[Guest]-[Night].slangp";
     ShaderPreset::try_parse(path).expect(&format!("Failed to parse {}", path));
+}
+
+#[test]
+fn parses_wildcard() {
+    let path =
+        "../test/shaders_slang/bezel/Mega_Bezel/resource/wildcard-examples/Preset-01-Core.slangp";
+    let mut context = WildcardContext::new();
+
+    context.add_video_driver_defaults(VideoDriver::Vulkan);
+
+    context.append_item(ContextItem::CoreName(String::from("image display")));
+
+    ShaderPreset::try_parse_with_context(path, context)
+        .expect(&format!("Failed to parse {}", path));
 }

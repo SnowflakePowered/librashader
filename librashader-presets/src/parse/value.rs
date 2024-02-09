@@ -1,5 +1,5 @@
 use crate::error::{ParseErrorKind, ParsePresetError};
-use crate::parse::{remove_if, Span, Token};
+use crate::parse::{context, remove_if, Span, Token};
 use crate::{ScaleFactor, ScaleType};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
@@ -11,12 +11,14 @@ use num_traits::cast::ToPrimitive;
 
 use crate::parse::token::do_lex;
 use librashader_common::{FilterMode, WrapMode};
+use rustc_hash::FxHashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::extract_if::MakeExtractIf;
+use crate::parse::context::WildcardContext;
 
 #[derive(Debug)]
 pub enum Value {
@@ -154,7 +156,7 @@ pub const SHADER_MAX_REFERENCE_DEPTH: usize = 16;
 fn load_child_reference_strings(
     root_references: Vec<PathBuf>,
     root_path: impl AsRef<Path>,
-    context: &HashMap<String, String>
+    context: &FxHashMap<String, String>,
 ) -> Result<Vec<(PathBuf, String)>, ParsePresetError> {
     let root_path = root_path.as_ref();
 
@@ -170,7 +172,7 @@ fn load_child_reference_strings(
         // enter the current root
         reference_depth += 1;
         // canonicalize current root
-        apply_context(&mut reference_root, context);
+        context::apply_context(&mut reference_root, context);
         let reference_root = reference_root
             .canonicalize()
             .map_err(|e| ParsePresetError::IOError(reference_root.to_path_buf(), e))?;
@@ -179,11 +181,11 @@ fn load_child_reference_strings(
         // println!("Resolving {referenced_paths:?} against {reference_root:?}.");
 
         for path in referenced_paths {
-            let mut path = reference_root
-                .join(path.clone());
-            apply_context(&mut path, context);
+            let mut path = reference_root.join(path.clone());
+            context::apply_context(&mut path, context);
 
-            let mut path = path.canonicalize()
+            let mut path = path
+                .canonicalize()
                 .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
             // println!("Opening {:?}", path);
             let mut reference_contents = String::new();
@@ -209,14 +211,15 @@ fn load_child_reference_strings(
     Ok(reference_strings.into())
 }
 
-fn apply_context(path: &mut PathBuf, context: &HashMap<String, String>) {
-
-}
-
-pub fn parse_preset(path: impl AsRef<Path>, context: HashMap<String, String>) -> Result<Vec<Value>, ParsePresetError> {
+pub(crate) fn parse_preset(
+    path: impl AsRef<Path>,
+    context: WildcardContext,
+) -> Result<Vec<Value>, ParsePresetError> {
     let path = path.as_ref();
     let mut path = path.to_path_buf();
-    apply_context(&mut path, &context);
+    let context = context.to_hashmap();
+
+    context::apply_context(&mut path, &context);
 
     let path = path
         .canonicalize()
@@ -235,7 +238,7 @@ pub fn parse_preset(path: impl AsRef<Path>, context: HashMap<String, String>) ->
 pub fn parse_values(
     mut tokens: Vec<Token>,
     root_path: impl AsRef<Path>,
-    context: HashMap<String, String>
+    context: FxHashMap<String, String>,
 ) -> Result<Vec<Value>, ParsePresetError> {
     let mut root_path = root_path.as_ref().to_path_buf();
     if root_path.is_relative() {

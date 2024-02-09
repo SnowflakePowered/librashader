@@ -4,6 +4,7 @@ use std::path::Path;
 use nom_locate::LocatedSpan;
 use std::str;
 
+pub mod context;
 mod preset;
 mod token;
 mod value;
@@ -12,6 +13,7 @@ pub(crate) type Span<'a> = LocatedSpan<&'a str>;
 pub(crate) use token::Token;
 
 use crate::error::ParsePresetError;
+use crate::parse::context::{VideoDriver, WildcardContext};
 use crate::parse::preset::resolve_values;
 use crate::parse::value::parse_preset;
 use crate::ShaderPreset;
@@ -22,12 +24,37 @@ pub(crate) fn remove_if<T>(values: &mut Vec<T>, f: impl FnMut(&T) -> bool) -> Op
 
 impl ShaderPreset {
     /// Try to parse the shader preset at the given path.
+    ///
+    /// This will add path defaults to the wildcard resolution context.
     pub fn try_parse(path: impl AsRef<Path>) -> Result<ShaderPreset, ParsePresetError> {
-        ShaderPreset::try_parse_with_context(path, HashMap::new())
+        let mut context = WildcardContext::new();
+        context.add_path_defaults(path.as_ref());
+        let values = parse_preset(path, WildcardContext::new())?;
+        Ok(resolve_values(values))
     }
 
     /// Try to parse the shader preset at the given path.
-    pub fn try_parse_with_context(path: impl AsRef<Path>, context: HashMap<String, String>) -> Result<ShaderPreset, ParsePresetError> {
+    ///
+    /// This will add path and driver defaults to the wildcard resolution context.
+    pub fn try_parse_with_driver_context(
+        path: impl AsRef<Path>,
+        driver: VideoDriver,
+    ) -> Result<ShaderPreset, ParsePresetError> {
+        let mut context = WildcardContext::new();
+        context.add_path_defaults(path.as_ref());
+        context.add_video_driver_defaults(driver);
+        let values = parse_preset(path, context)?;
+        Ok(resolve_values(values))
+    }
+
+    /// Try to parse the shader preset at the given path, with the exact provided context.
+    ///
+    /// This function does not change any of the values in the provided context, except calculating `VID-FINAL-ROT`
+    /// if `CORE-REQ-ROT` and `VID-USER-ROT` is present.
+    pub fn try_parse_with_context(
+        path: impl AsRef<Path>,
+        context: WildcardContext,
+    ) -> Result<ShaderPreset, ParsePresetError> {
         let values = parse_preset(path, context)?;
         Ok(resolve_values(values))
     }
