@@ -51,6 +51,7 @@ use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
+use librashader_presets::context::VideoDriver;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
 
@@ -186,7 +187,7 @@ impl FilterChainD3D12 {
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Direct3D12)?;
 
         unsafe { Self::load_from_preset(preset, device, options) }
     }

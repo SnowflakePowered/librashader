@@ -1,10 +1,9 @@
-use nom::AsBytes;
 use once_cell::sync::Lazy;
 use regex::bytes::Regex;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::ffi::{OsStr, OsString};
-use std::fmt::{Debug, Display, Formatter, Write};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::ops::Add;
 use std::path::{Component, Path, PathBuf};

@@ -14,6 +14,7 @@ mod parameters;
 
 pub(crate) use filter_impl::FilterCommon;
 use librashader_common::Viewport;
+use librashader_presets::context::VideoDriver;
 
 /// An OpenGL filter chain.
 pub struct FilterChainGL {
@@ -42,10 +43,7 @@ impl FilterChainGL {
                 }),
             })
         });
-        match result {
-            Err(_) => Err(FilterChainError::GLLoadError),
-            Ok(res) => res,
-        }
+        result.unwrap_or_else(|_| Err(FilterChainError::GLLoadError))
     }
 
     /// Load the shader preset at the given path into a filter chain.
@@ -54,7 +52,7 @@ impl FilterChainGL {
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::GlCore)?;
         unsafe { Self::load_from_preset(preset, options) }
     }
 

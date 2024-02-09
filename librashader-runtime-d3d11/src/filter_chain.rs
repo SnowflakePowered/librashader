@@ -39,6 +39,7 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
+use librashader_presets::context::VideoDriver;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
@@ -98,7 +99,7 @@ impl FilterChainD3D11 {
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Direct3D11)?;
 
         unsafe { Self::load_from_preset(preset, device, options) }
     }

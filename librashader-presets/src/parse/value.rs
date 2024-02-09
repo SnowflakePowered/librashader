@@ -4,7 +4,7 @@ use crate::{ScaleFactor, ScaleType};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{VecDeque};
 
 use nom::IResult;
 use num_traits::cast::ToPrimitive;

@@ -37,6 +37,7 @@ use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
+use librashader_presets::context::VideoDriver;
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
@@ -236,7 +237,7 @@ impl FilterChainVulkan {
         FilterChainError: From<E>,
     {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Vulkan)?;
 
         unsafe { Self::load_from_preset(preset, vulkan, options) }
     }
