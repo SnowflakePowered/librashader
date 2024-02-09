@@ -11,12 +11,14 @@ use num_traits::cast::ToPrimitive;
 
 use crate::parse::token::do_lex;
 use librashader_common::{FilterMode, WrapMode};
+use rustc_hash::FxHashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::extract_if::MakeExtractIf;
+use crate::context::{apply_context, WildcardContext};
 
 #[derive(Debug)]
 pub enum Value {
@@ -150,9 +152,11 @@ fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>
 
 pub const SHADER_MAX_REFERENCE_DEPTH: usize = 16;
 
+// prereq: root_path must be contextualized
 fn load_child_reference_strings(
     root_references: Vec<PathBuf>,
     root_path: impl AsRef<Path>,
+    context: &FxHashMap<String, String>,
 ) -> Result<Vec<(PathBuf, String)>, ParsePresetError> {
     let root_path = root_path.as_ref();
 
@@ -161,13 +165,14 @@ fn load_child_reference_strings(
     let root_references = vec![(root_path.to_path_buf(), root_references)];
     let mut root_references = VecDeque::from(root_references);
     // search needs to be depth first to allow for overrides.
-    while let Some((reference_root, referenced_paths)) = root_references.pop_front() {
+    while let Some((mut reference_root, referenced_paths)) = root_references.pop_front() {
         if reference_depth > SHADER_MAX_REFERENCE_DEPTH {
             return Err(ParsePresetError::ExceededReferenceDepth);
         }
         // enter the current root
         reference_depth += 1;
         // canonicalize current root
+        apply_context(&mut reference_root, context);
         let reference_root = reference_root
             .canonicalize()
             .map_err(|e| ParsePresetError::IOError(reference_root.to_path_buf(), e))?;
@@ -176,8 +181,10 @@ fn load_child_reference_strings(
         // println!("Resolving {referenced_paths:?} against {reference_root:?}.");
 
         for path in referenced_paths {
-            let mut path = reference_root
-                .join(path.clone())
+            let mut path = reference_root.join(path.clone());
+            apply_context(&mut path, context);
+
+            let mut path = path
                 .canonicalize()
                 .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
             // println!("Opening {:?}", path);
@@ -204,8 +211,16 @@ fn load_child_reference_strings(
     Ok(reference_strings.into())
 }
 
-pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetError> {
+pub(crate) fn parse_preset(
+    path: impl AsRef<Path>,
+    context: WildcardContext,
+) -> Result<Vec<Value>, ParsePresetError> {
     let path = path.as_ref();
+    let mut path = path.to_path_buf();
+    let context = context.to_hashmap();
+
+    apply_context(&mut path, &context);
+
     let path = path
         .canonicalize()
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
@@ -216,12 +231,14 @@ pub fn parse_preset(path: impl AsRef<Path>) -> Result<Vec<Value>, ParsePresetErr
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
 
     let tokens = super::token::do_lex(&contents)?;
-    parse_values(tokens, path)
+    parse_values(tokens, path, context)
 }
 
+// prereq: root_path must be contextualized
 pub fn parse_values(
     mut tokens: Vec<Token>,
     root_path: impl AsRef<Path>,
+    context: FxHashMap<String, String>,
 ) -> Result<Vec<Value>, ParsePresetError> {
     let mut root_path = root_path.as_ref().to_path_buf();
     if root_path.is_relative() {
@@ -239,7 +256,9 @@ pub fn parse_values(
         .collect();
 
     // unfortunately we need to lex twice because there's no way to know the references ahead of time.
-    let child_strings = load_child_reference_strings(references, &root_path)?;
+    // the returned references should have context applied
+
+    let child_strings = load_child_reference_strings(references, &root_path, &context)?;
     let mut all_tokens: Vec<(&Path, Vec<Token>)> = Vec::new();
 
     for (path, string) in child_strings.iter() {
@@ -597,12 +616,13 @@ pub fn parse_values(
 mod test {
     use crate::parse::value::parse_preset;
     use std::path::PathBuf;
+    use crate::WildcardContext;
 
     #[test]
     pub fn parse_basic() {
         let root =
             PathBuf::from("../test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
-        let basic = parse_preset(root);
+        let basic = parse_preset(root, WildcardContext::new());
         eprintln!("{basic:?}");
         assert!(basic.is_ok());
     }

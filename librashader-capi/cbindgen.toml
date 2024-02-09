@@ -68,15 +68,7 @@ typedef void D3D12_CPU_DESCRIPTOR_HANDLE;
 
 [parse]
 parse_deps = true
-include = ["librashader",
-    "librashader-presets",
-    "librashader-preprocess",
-    "librashader-reflect",
-    "librashader-runtime-gl",
-    "librashader-runtime-vk",
-    "librashader-runtime-d3d11",
-    "librashader-runtime-d3d12",
-]
+include = ["librashader"]
 expand = ["librashader-capi"]
 
 [struct]
@@ -99,6 +91,20 @@ include = [
     "PFN_libra_preset_print",
     "PFN_libra_preset_get_runtime_params",
     "PFN_libra_preset_free_runtime_params",
+    "PFN_libra_preset_create_with_context",
+
+    "PFN_libra_preset_ctx_create",
+    "PFN_libra_preset_ctx_free",
+    "PFN_libra_preset_ctx_set_core_name",
+    "PFN_libra_preset_ctx_set_content_dir",
+    "PFN_libra_preset_ctx_set_param",
+    "PFN_libra_preset_ctx_set_core_rotation",
+    "PFN_libra_preset_ctx_set_user_rotation",
+    "PFN_libra_preset_ctx_set_screen_orientation",
+    "PFN_libra_preset_ctx_set_allow_rotation",
+    "PFN_libra_preset_ctx_set_view_aspect_orientation",
+    "PFN_libra_preset_ctx_set_core_aspect_orientation",
+    "PFN_libra_preset_ctx_set_runtime",
 
     # error
     "PFN_libra_error_errno",
@@ -154,6 +160,9 @@ exclude = ["Option_ID3D11DeviceContext"]
 [export.rename]
 "LibrashaderError" = "_libra_error"
 "ShaderPreset" = "_shader_preset"
+
+"WildcardContext" = "_preset_ctx"
+
 "FilterChainGL" = "_filter_chain_gl"
 "FilterChainVulkan" = "_filter_chain_vk"
 "FilterChainD3D11" = "_filter_chain_d3d11"

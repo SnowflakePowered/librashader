@@ -47,6 +47,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFINITE};
 
 use librashader_cache::CachedCompilation;
+use librashader_presets::context::VideoDriver;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -186,7 +187,7 @@ impl FilterChainD3D12 {
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Direct3D12)?;
 
         unsafe { Self::load_from_preset(preset, device, options) }
     }

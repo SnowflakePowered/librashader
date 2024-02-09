@@ -5,7 +5,7 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use thiserror::Error;
 
-/// The error type for librashader.
+/// The error type for librashader C API.
 #[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum LibrashaderError {

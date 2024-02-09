@@ -15,10 +15,17 @@ int main()
     std::cout << "Hello World!\n";
     std::cout << std::filesystem::current_path() << std::endl;
     auto instance = librashader_load_instance();
+
+    libra_preset_ctx_t context;
+
+    instance.preset_ctx_create(&context);
+    instance.preset_ctx_set_core_name(&context, "Hello");
+
     libra_shader_preset_t preset;
-    auto error = instance.preset_create(
+    auto error = instance.preset_create_with_context(
         "../../../shaders_slang/border/gameboy-player/"
         "gameboy-player-crt-royale.slangp",
+        &context,
         &preset);
 
    /* libra_shader_preset_t preset2;

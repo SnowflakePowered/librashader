@@ -3,7 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::d3d11::{D3D11InputView, D3D11OutputView};
+use librashader::runtime::d3d11::{FilterChain, FilterChainOptions, FrameOptions, D3D11InputView, D3D11OutputView};
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
@@ -12,9 +12,6 @@ use std::slice;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11ShaderResourceView,
 };
-
-use librashader::runtime::d3d11::capi::options::FilterChainOptionsD3D11;
-use librashader::runtime::d3d11::capi::options::FrameOptionsD3D11;
 
 use crate::LIBRASHADER_API_VERSION;
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
@@ -58,7 +55,7 @@ pub struct filter_chain_d3d11_opt_t {
 }
 
 config_struct! {
-    impl FilterChainOptionsD3D11 => filter_chain_d3d11_opt_t {
+    impl FilterChainOptions => filter_chain_d3d11_opt_t {
         0 => [force_no_mipmaps, disable_cache];
     }
 }
@@ -77,7 +74,7 @@ pub struct frame_d3d11_opt_t {
 }
 
 config_struct! {
-    impl FrameOptionsD3D11 => frame_d3d11_opt_t {
+    impl FrameOptions => frame_d3d11_opt_t {
         0 => [clear_history, frame_direction];
     }
 }
@@ -114,7 +111,7 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         unsafe {
-            let chain = librashader::runtime::d3d11::capi::FilterChainD3D11::load_from_preset(
+            let chain = FilterChain::load_from_preset(
                 *preset,
                 &device,
                 options.as_ref(),
@@ -174,7 +171,7 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         unsafe {
-            let chain = librashader::runtime::d3d11::capi::FilterChainD3D11::load_from_preset_deferred(
+            let chain = FilterChain::load_from_preset_deferred(
                 *preset,
                 &device,
                 &device_context,

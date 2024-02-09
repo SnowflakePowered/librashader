@@ -109,54 +109,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anstream"
-version = "0.6.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e2e1ebcb11de5c03c67de28a7df593d32191b44939c482e97702baaaa6ab6a5"
-dependencies = [
- "anstyle",
- "anstyle-parse",
- "anstyle-query",
- "anstyle-wincon",
- "colorchoice",
- "utf8parse",
-]
-
-[[package]]
-name = "anstyle"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8901269c6307e8d93993578286ac0edf7f195079ffff5ebdeea6a59ffb7e36bc"
-
-[[package]]
-name = "anstyle-parse"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c75ac65da39e5fe5ab759307499ddad880d724eed2f6ce5b5e8a26f4f387928c"
-dependencies = [
- "utf8parse",
-]
-
-[[package]]
-name = "anstyle-query"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e28923312444cdd728e4738b3f9c9cac739500909bb3d3c94b43551b16517648"
-dependencies = [
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "anstyle-wincon"
-version = "3.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cd54b81ec8d6180e24654d0b371ad22fc3dd083b6ff8ba325b72e00c87660a7"
-dependencies = [
- "anstyle",
- "windows-sys 0.52.0",
-]
-
-[[package]]
 name = "array-concat"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -404,9 +356,9 @@ checksum = "e1e5f035d16fc623ae5f74981db80a439803888314e3a555fd6f04acd51a3205"
 
 [[package]]
 name = "bytemuck"
-version = "1.14.2"
+version = "1.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea31d69bda4949c1c1562c1e6f042a1caefac98cdc8a298260a2ff41c1e2d42b"
+checksum = "a2ef034f05691a48569bd920a96c81b9d91bbad1ab5ac7c4616c1f6ef36cb79f"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -538,36 +490,30 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.4.18"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e578d6ec4194633722ccf9544794b71b1385c3c027efe0c55db226fc880865c"
+checksum = "aa91278560fc226a5d9d736cc21e485ff9aad47d26b8ffe1f54cba868b684b9f"
 dependencies = [
- "clap_builder",
+ "bitflags 1.3.2",
  "clap_derive",
-]
-
-[[package]]
-name = "clap_builder"
-version = "4.4.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4df4df40ec50c46000231c914968278b1eb05098cf8f1b3a518a95030e71d1c7"
-dependencies = [
- "anstream",
- "anstyle",
- "clap_lex 0.6.0",
+ "clap_lex 0.3.3",
+ "is-terminal",
+ "once_cell",
  "strsim",
+ "termcolor",
 ]
 
 [[package]]
 name = "clap_derive"
-version = "4.4.7"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf9804afaaf59a91e75b022a30fb7229a7901f60c755489cc61c9b423b836442"
+checksum = "684a277d672e91966334af371f1a7b5833f9aa00b07c84e92fbce95e00208ce8"
 dependencies = [
  "heck",
+ "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.48",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -581,9 +527,12 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.6.0"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
+checksum = "033f6b7a4acb1f358c742aaca805c939ee73b4c6209ae4318ec7aca81c42e646"
+dependencies = [
+ "os_str_bytes",
+]
 
 [[package]]
 name = "cmake"
@@ -655,12 +604,6 @@ name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
-
-[[package]]
-name = "colorchoice"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
 name = "com"
@@ -1355,9 +1298,9 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d76f2d75ad6e8a12c26e77ed6443a9369ef7957daf361e751c3489a97f8b816"
+checksum = "6a47e052f086ec9b43df0bca02c1675c2a89bceb5386dd64382dc36143930985"
 dependencies = [
  "cc",
  "glob",
@@ -1591,12 +1534,12 @@ dependencies = [
 
 [[package]]
 name = "is-terminal"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bad00257d07be169d870ab665980b06cdb366d792ad690bf2e76876dc503455"
+checksum = "fe8f25ce1159c7740ff0b9b2f5cdf4a8428742ba7c112b9f20f22cd5219c7dab"
 dependencies = [
  "hermit-abi 0.3.5",
- "rustix",
+ "libc",
  "windows-sys 0.52.0",
 ]
 
@@ -1630,9 +1573,9 @@ checksum = "8eaf4bc02d17cbdd7ff4c7438cafcdf7fb9a4613313ad11b4f8fefe7d3fa0130"
 
 [[package]]
 name = "jobserver"
-version = "0.1.27"
+version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c37f63953c4c63420ed5fd3d6d398c719489b9f872b9fa683262f8edd363c7d"
+checksum = "ab46a6e9526ddef3ae7f787c06f0f2600639ba80ea3eade3d8e670a2230f51d6"
 dependencies = [
  "libc",
 ]
@@ -1723,13 +1666,13 @@ dependencies = [
 
 [[package]]
 name = "librashader"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "ash",
  "librashader-cache",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-runtime-d3d11",
@@ -1747,12 +1690,12 @@ name = "librashader-build-script"
 version = "0.1.0"
 dependencies = [
  "cbindgen",
- "clap 4.4.18",
+ "clap 4.1.0",
 ]
 
 [[package]]
 name = "librashader-cache"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "bincode",
  "blake3",
@@ -1768,7 +1711,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-capi"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "ash",
  "gl",
@@ -1791,7 +1734,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "ash",
  "gl",
@@ -1802,11 +1745,11 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "encoding_rs",
  "glob",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-presets 0.1.4",
  "nom",
  "rayon",
@@ -1829,27 +1772,32 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "glob",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "nom",
  "nom_locate",
  "num-traits",
+ "once_cell",
+ "os_str_bytes",
+ "regex",
+ "rustc-hash",
+ "rustversion",
  "thiserror",
 ]
 
 [[package]]
 name = "librashader-reflect"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "bitflags 2.4.2",
  "bytemuck",
  "glslang",
  "indexmap 2.2.2",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-spirv-cross",
  "matches",
  "naga",
@@ -1863,13 +1811,13 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "bytemuck",
  "image",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "num-traits",
  "rustc-hash",
@@ -1877,15 +1825,15 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "array-concat",
  "bytemuck",
  "gfx-maths",
  "librashader-cache",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -1897,7 +1845,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "array-concat",
  "array-init",
@@ -1905,9 +1853,9 @@ dependencies = [
  "bytemuck",
  "gfx-maths",
  "librashader-cache",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -1921,15 +1869,15 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "bytemuck",
  "gl",
  "glfw 0.47.0",
  "librashader-cache",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -1941,7 +1889,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "ash",
  "ash-window",
@@ -1949,9 +1897,9 @@ dependencies = [
  "glfw 0.49.1",
  "gpu-allocator 0.22.0",
  "librashader-cache",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "librashader-runtime",
  "librashader-spirv-cross",
@@ -1966,16 +1914,16 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-wgpu"
-version = "0.2.0-beta.7"
+version = "0.2.0-beta.8"
 dependencies = [
  "array-concat",
  "bytemuck",
  "config",
  "env_logger",
  "image",
- "librashader-common 0.2.0-beta.7",
+ "librashader-common 0.2.0-beta.8",
  "librashader-preprocess",
- "librashader-presets 0.2.0-beta.7",
+ "librashader-presets 0.2.0-beta.8",
  "librashader-reflect",
  "librashader-runtime",
  "log",
@@ -2497,6 +2445,9 @@ name = "os_str_bytes"
 version = "6.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "owned_ttf_parser"
@@ -2680,6 +2631,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d37c51ca738a55da99dc0c4a34860fd675453b8b36209178c2249bb13651284"
 dependencies = [
  "toml_edit 0.21.1",
+]
+
+[[package]]
+name = "proc-macro-error"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
+dependencies = [
+ "proc-macro-error-attr",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+ "version_check",
+]
+
+[[package]]
+name = "proc-macro-error-attr"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "version_check",
 ]
 
 [[package]]
@@ -2924,6 +2899,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ffc183a10b4478d04cbbbfc96d0873219d962dd5accaff2ffbd4ceb7df837f4"
+
+[[package]]
 name = "ryu"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2980,7 +2961,7 @@ dependencies = [
  "ab_glyph",
  "log",
  "memmap2 0.9.4",
- "smithay-client-toolkit 0.18.0",
+ "smithay-client-toolkit 0.18.1",
  "tiny-skia 0.11.4",
 ]
 
@@ -3098,9 +3079,9 @@ dependencies = [
 
 [[package]]
 name = "smithay-client-toolkit"
-version = "0.18.0"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60e3d9941fa3bacf7c2bf4b065304faa14164151254cd16ce1b1bc8fc381600f"
+checksum = "922fd3eeab3bd820d76537ce8f582b1cf951eceb5475c28500c7457d9d17f53a"
 dependencies = [
  "bitflags 2.4.2",
  "calloop 0.12.4",
@@ -3424,12 +3405,6 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
-name = "utf8parse"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "vcpkg"
@@ -4221,7 +4196,7 @@ dependencies = [
  "redox_syscall 0.3.5",
  "rustix",
  "sctk-adwaita 0.8.1",
- "smithay-client-toolkit 0.18.0",
+ "smithay-client-toolkit 0.18.1",
  "smol_str",
  "unicode-segmentation",
  "wasm-bindgen",

@@ -3,15 +3,13 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::vk::{VulkanImage, VulkanInstance};
+use librashader::runtime::vk::{FrameOptions, FilterChainOptions, FilterChain, VulkanImage, VulkanInstance};
 use std::ffi::CStr;
 use std::ffi::{c_char, c_void};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
 
-use librashader::runtime::vk::capi::options::FilterChainOptionsVulkan;
-use librashader::runtime::vk::capi::options::FrameOptionsVulkan;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 
@@ -96,7 +94,7 @@ pub struct frame_vk_opt_t {
 }
 
 config_struct! {
-    impl FrameOptionsVulkan => frame_vk_opt_t {
+    impl FrameOptions => frame_vk_opt_t {
         0 => [clear_history, frame_direction];
     }
 }
@@ -120,7 +118,7 @@ pub struct filter_chain_vk_opt_t {
 }
 
 config_struct! {
-    impl FilterChainOptionsVulkan => filter_chain_vk_opt_t {
+    impl FilterChainOptions => filter_chain_vk_opt_t {
         0 => [frames_in_flight, force_no_mipmaps, use_render_pass, disable_cache];
     }
 }
@@ -161,7 +159,7 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         unsafe {
-            let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset(*preset, vulkan, options.as_ref())?;
+            let chain = FilterChain::load_from_preset(*preset, vulkan, options.as_ref())?;
 
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
@@ -212,7 +210,7 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         unsafe {
-            let chain = librashader::runtime::vk::capi::FilterChainVulkan::load_from_preset_deferred(*preset,
+            let chain = FilterChain::load_from_preset_deferred(*preset,
                 vulkan,
                 command_buffer,
                 options.as_ref())?;

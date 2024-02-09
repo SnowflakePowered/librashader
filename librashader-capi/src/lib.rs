@@ -68,6 +68,7 @@
 #![feature(pointer_is_aligned)]
 #![feature(vec_into_raw_parts)]
 #![deny(unsafe_op_in_unsafe_fn)]
+#![deny(deprecated)]
 
 pub mod ctypes;
 pub mod error;
@@ -80,6 +81,7 @@ pub mod reflect;
 
 pub mod runtime;
 pub mod version;
+pub mod wildcard;
 
 pub use version::LIBRASHADER_ABI_VERSION;
 pub use version::LIBRASHADER_API_VERSION;

@@ -3,7 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::gl::{GLFramebuffer, GLImage};
+use librashader::runtime::gl::{FilterChain, FilterChainOptions, FrameOptions, GLFramebuffer, GLImage};
 use std::ffi::CStr;
 use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;
@@ -11,8 +11,6 @@ use std::ptr::NonNull;
 use std::slice;
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::gl::capi::options::FilterChainOptionsGL;
-use librashader::runtime::gl::capi::options::FrameOptionsGL;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 
@@ -67,7 +65,7 @@ pub struct frame_gl_opt_t {
 }
 
 config_struct! {
-    impl FrameOptionsGL => frame_gl_opt_t {
+    impl FrameOptions => frame_gl_opt_t {
         0 => [clear_history, frame_direction];
     }
 }
@@ -92,7 +90,7 @@ pub struct filter_chain_gl_opt_t {
 }
 
 config_struct! {
-    impl FilterChainOptionsGL => filter_chain_gl_opt_t {
+    impl FilterChainOptions => filter_chain_gl_opt_t {
         0 => [glsl_version, use_dsa, force_no_mipmaps, disable_cache];
     }
 }
@@ -149,7 +147,7 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         unsafe {
-            let chain = librashader::runtime::gl::capi::FilterChainGL::load_from_preset(*preset, options.as_ref())?;
+            let chain = FilterChain::load_from_preset(*preset, options.as_ref())?;
 
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,

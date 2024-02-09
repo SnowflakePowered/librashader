@@ -24,6 +24,7 @@ use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_cache::cache_shader_object;
 use librashader_cache::CachedCompilation;
+use librashader_presets::context::VideoDriver;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -98,7 +99,7 @@ impl FilterChainD3D11 {
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Direct3D11)?;
 
         unsafe { Self::load_from_preset(preset, device, options) }
     }

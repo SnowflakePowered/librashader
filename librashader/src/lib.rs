@@ -228,15 +228,6 @@ pub mod runtime {
             options::{FilterChainOptionsGL as FilterChainOptions, FrameOptionsGL as FrameOptions},
             FilterChainGL as FilterChain, GLFramebuffer, GLImage,
         };
-
-        #[doc(hidden)]
-        #[cfg(feature = "internal")]
-        /// Re-exports names to deal with C API conflicts.
-        ///
-        /// This is internal to librashader-capi and is exempt from semantic versioning.
-        pub mod capi {
-            pub use librashader_runtime_gl::*;
-        }
     }
 
     #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
@@ -250,15 +241,6 @@ pub mod runtime {
             },
             D3D11InputView, D3D11OutputView, FilterChainD3D11 as FilterChain,
         };
-
-        #[doc(hidden)]
-        #[cfg(feature = "internal")]
-        /// Re-exports names to deal with C API conflicts.
-        ///
-        /// This is internal to librashader-capi and is exempt from semantic versioning.
-        pub mod capi {
-            pub use librashader_runtime_d3d11::*;
-        }
     }
 
     #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
@@ -272,15 +254,6 @@ pub mod runtime {
             },
             D3D12InputImage, D3D12OutputView, FilterChainD3D12 as FilterChain,
         };
-
-        #[doc(hidden)]
-        #[cfg(feature = "internal")]
-        /// Re-exports names to deal with C API conflicts.
-        ///
-        /// This is internal to librashader-capi and is exempt from semantic versioning.
-        pub mod capi {
-            pub use librashader_runtime_d3d12::*;
-        }
     }
 
     #[cfg(feature = "runtime-vk")]
@@ -294,15 +267,6 @@ pub mod runtime {
             },
             FilterChainVulkan as FilterChain, VulkanImage, VulkanInstance, VulkanObjects,
         };
-
-        #[doc(hidden)]
-        #[cfg(feature = "internal")]
-        /// Re-exports names to deal with C API conflicts.
-        ///
-        /// This is internal to librashader-capi and is exempt from semantic versioning.
-        pub mod capi {
-            pub use librashader_runtime_vk::*;
-        }
     }
 
     #[cfg(feature = "runtime-wgpu")]

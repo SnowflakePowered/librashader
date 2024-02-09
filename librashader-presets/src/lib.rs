@@ -8,12 +8,15 @@
 //!
 //! Re-exported as [`librashader::presets`](https://docs.rs/librashader/latest/librashader/presets/index.html).
 
+#![allow(stable_features)]
 #![allow(unstable_name_collisions)]
 
 mod error;
 mod extract_if;
 mod parse;
 mod preset;
+pub mod context;
 
+pub use context::WildcardContext;
 pub use error::*;
 pub use preset::*;

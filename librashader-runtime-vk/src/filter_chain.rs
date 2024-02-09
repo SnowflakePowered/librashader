@@ -33,6 +33,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use librashader_cache::CachedCompilation;
+use librashader_presets::context::VideoDriver;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -236,7 +237,7 @@ impl FilterChainVulkan {
         FilterChainError: From<E>,
     {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Vulkan)?;
 
         unsafe { Self::load_from_preset(preset, vulkan, options) }
     }
