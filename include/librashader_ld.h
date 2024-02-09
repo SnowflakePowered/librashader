@@ -1132,7 +1132,30 @@ libra_instance_t __librashader_make_null_instance() {
         .instance_abi_version = __librashader__noop_instance_abi_version,
         .instance_api_version = __librashader__noop_instance_api_version,
 
+        .preset_ctx_create = __librashader__noop_preset_ctx_create,
+        .preset_ctx_free = __librashader__noop_preset_ctx_free,
+        .preset_ctx_set_core_name =
+            __librashader__noop_preset_ctx_set_core_name,
+        .preset_ctx_set_content_dir =
+            __librashader__noop_preset_ctx_set_content_dir,
+        .preset_ctx_set_param = __librashader__noop_preset_ctx_set_param,
+        .preset_ctx_set_runtime = __librashader__noop_preset_ctx_set_runtime,
+        .preset_ctx_set_core_rotation =
+            __librashader__noop_preset_ctx_set_core_rotation,
+        .preset_ctx_set_user_rotation =
+            __librashader__noop_preset_ctx_set_user_rotation,
+        .preset_ctx_set_screen_orientation =
+            __librashader__noop_preset_ctx_set_screen_orientation,
+        .preset_ctx_set_allow_rotation =
+            __librashader__noop_preset_ctx_set_allow_rotation,
+        .preset_ctx_set_view_aspect_orientation =
+            __librashader__noop_preset_ctx_set_view_aspect_orientation,
+        .preset_ctx_set_core_aspect_orientation =
+            __librashader__noop_preset_ctx_set_core_aspect_orientation,
+
         .preset_create = __librashader__noop_preset_create,
+        .preset_create_with_context =
+            __librashader__noop_preset_create_with_context,
         .preset_free = __librashader__noop_preset_free,
         .preset_set_param = __librashader__noop_preset_set_param,
         .preset_get_param = __librashader__noop_preset_get_param,

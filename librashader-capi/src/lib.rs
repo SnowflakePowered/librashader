@@ -68,6 +68,7 @@
 #![feature(pointer_is_aligned)]
 #![feature(vec_into_raw_parts)]
 #![deny(unsafe_op_in_unsafe_fn)]
+#![deny(deprecated)]
 
 pub mod ctypes;
 pub mod error;

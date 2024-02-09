@@ -1,7 +1,6 @@
 use glob::glob;
 use librashader_presets::context::{ContextItem, VideoDriver, WildcardContext};
 use librashader_presets::ShaderPreset;
-use std::collections::HashMap;
 
 #[test]
 fn parses_all_slang_presets() {

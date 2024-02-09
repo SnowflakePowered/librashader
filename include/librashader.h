@@ -107,38 +107,25 @@ enum LIBRA_PRESET_CTX_RUNTIME
 typedef uint32_t LIBRA_PRESET_CTX_RUNTIME;
 #endif    // __cplusplus
 
-/// A Direct3D 11 filter chain.
+/// Opaque struct for a Direct3D 11 filter chain.
 typedef struct _filter_chain_d3d11 _filter_chain_d3d11;
 
-/// A Direct3D 12 filter chain.
+/// Opaque struct for a Direct3D 12 filter chain.
 typedef struct _filter_chain_d3d12 _filter_chain_d3d12;
 
-/// An OpenGL filter chain.
+/// Opaque struct for an OpenGL filter chain.
 typedef struct _filter_chain_gl _filter_chain_gl;
 
-/// A Vulkan filter chain.
+/// Opaque struct for a Vulkan filter chain.
 typedef struct _filter_chain_vk _filter_chain_vk;
 
-/// The error type for librashader.
+/// The error type for librashader C API.
 typedef struct _libra_error _libra_error;
 
-/// A shader preset including all specified parameters, textures, and paths to
-/// specified shaders.
-///
-/// A shader preset can be used to create a filter chain runtime instance, or
-/// reflected to get parameter metadata.
+/// Opaque struct for a shader preset.
 typedef struct _shader_preset _shader_preset;
 
-/// A preset wildcard context.
-///
-/// Any items added after will have higher priority
-/// when passed to the shader preset parser.
-///
-/// When passed to the preset parser, the preset parser
-/// will automatically add inferred items at lowest priority.
-///
-/// Any items added by the user will override the automatically
-/// inferred items.
+/// Opaque struct for a preset context.
 typedef struct _preset_ctx _preset_ctx;
 
 /// A handle to a librashader error object.

@@ -13,11 +13,8 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
-use librashader::runtime::d3d12::capi::options::FilterChainOptionsD3D12;
-use librashader::runtime::d3d12::capi::options::FrameOptionsD3D12;
-
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::d3d12::{D3D12InputImage, D3D12OutputView};
+use librashader::runtime::d3d12::{FilterChain, FilterChainOptions, FrameOptions, D3D12InputImage, D3D12OutputView};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Direct3D 12 parameters for the source image.
@@ -58,7 +55,7 @@ pub struct frame_d3d12_opt_t {
 }
 
 config_struct! {
-    impl FrameOptionsD3D12 => frame_d3d12_opt_t {
+    impl FrameOptions => frame_d3d12_opt_t {
         0 => [clear_history, frame_direction];
     }
 }
@@ -84,7 +81,7 @@ pub struct filter_chain_d3d12_opt_t {
 }
 
 config_struct! {
-    impl FilterChainOptionsD3D12 => filter_chain_d3d12_opt_t {
+    impl FilterChainOptions => filter_chain_d3d12_opt_t {
         0 =>  [force_hlsl_pipeline, force_no_mipmaps, disable_cache];
     }
 }
@@ -136,7 +133,7 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         unsafe {
-            let chain = librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset(
+            let chain = FilterChain::load_from_preset(
                 *preset,
                 &device,
                 options.as_ref(),
@@ -188,7 +185,7 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         unsafe {
-            let chain = librashader::runtime::d3d12::capi::FilterChainD3D12::load_from_preset_deferred(
+            let chain = FilterChain::load_from_preset_deferred(
                 *preset,
                 &device,
                 &command_list,

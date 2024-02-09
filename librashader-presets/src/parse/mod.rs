@@ -3,7 +3,6 @@ use std::path::Path;
 use nom_locate::LocatedSpan;
 use std::str;
 
-pub mod context;
 mod preset;
 mod token;
 mod value;
@@ -12,7 +11,7 @@ pub(crate) type Span<'a> = LocatedSpan<&'a str>;
 pub(crate) use token::Token;
 
 use crate::error::ParsePresetError;
-use crate::parse::context::{VideoDriver, WildcardContext};
+use crate::context::{VideoDriver, WildcardContext};
 use crate::parse::preset::resolve_values;
 use crate::parse::value::parse_preset;
 use crate::ShaderPreset;

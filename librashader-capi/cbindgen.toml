@@ -68,15 +68,7 @@ typedef void D3D12_CPU_DESCRIPTOR_HANDLE;
 
 [parse]
 parse_deps = true
-include = ["librashader",
-    "librashader-presets",
-    "librashader-preprocess",
-    "librashader-reflect",
-    "librashader-runtime-gl",
-    "librashader-runtime-vk",
-    "librashader-runtime-d3d11",
-    "librashader-runtime-d3d12",
-]
+include = ["librashader"]
 expand = ["librashader-capi"]
 
 [struct]
@@ -161,8 +153,6 @@ include = [
     "PFN_libra_d3d12_filter_chain_set_active_pass_count",
     "PFN_libra_d3d12_filter_chain_get_active_pass_count",
     "PFN_libra_d3d12_filter_chain_free",
-
-    "WildcardPresetContext"
 ]
 
 exclude = ["Option_ID3D11DeviceContext"]
@@ -171,9 +161,7 @@ exclude = ["Option_ID3D11DeviceContext"]
 "LibrashaderError" = "_libra_error"
 "ShaderPreset" = "_shader_preset"
 
-# I don't know why its literally just WildcardContext??
 "WildcardContext" = "_preset_ctx"
-"WildcardPresetContext" = "_aaaa_preset_ctx"
 
 "FilterChainGL" = "_filter_chain_gl"
 "FilterChainVulkan" = "_filter_chain_vk"

@@ -55,28 +55,39 @@ impl From<LIBRA_PRESET_CTX_RUNTIME> for VideoDriver {
     }
 }
 
+#[cfg(feature = "runtime-opengl")]
+use librashader::runtime::gl::FilterChain as FilterChainGL;
+
 /// A handle to a OpenGL filter chain.
 #[cfg(feature = "runtime-opengl")]
 #[doc(cfg(feature = "runtime-opengl"))]
-pub type libra_gl_filter_chain_t = Option<NonNull<librashader::runtime::gl::capi::FilterChainGL>>;
+pub type libra_gl_filter_chain_t = Option<NonNull<FilterChainGL>>;
+
+/// A handle to a Direct3D 11 filter chain.
+#[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+use librashader::runtime::d3d11::FilterChain as FilterChainD3D11;
 
 /// A handle to a Direct3D 11 filter chain.
 #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
 #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
 pub type libra_d3d11_filter_chain_t =
-    Option<NonNull<librashader::runtime::d3d11::capi::FilterChainD3D11>>;
+    Option<NonNull<FilterChainD3D11>>;
 
+#[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
+use librashader::runtime::d3d12::FilterChain as FilterChainD3D12;
 /// A handle to a Direct3D 12 filter chain.
 #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
 #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
 pub type libra_d3d12_filter_chain_t =
-    Option<NonNull<librashader::runtime::d3d12::capi::FilterChainD3D12>>;
+    Option<NonNull<FilterChainD3D12>>;
 
+#[cfg(feature = "runtime-vulkan")]
+use librashader::runtime::vk::FilterChain as FilterChainVulkan;
 /// A handle to a Vulkan filter chain.
 #[cfg(feature = "runtime-vulkan")]
 #[doc(cfg(feature = "runtime-vulkan"))]
 pub type libra_vk_filter_chain_t =
-    Option<NonNull<librashader::runtime::vk::capi::FilterChainVulkan>>;
+    Option<NonNull<FilterChainVulkan>>;
 
 /// Defines the output viewport for a rendered frame.
 #[repr(C)]
@@ -132,3 +143,35 @@ macro_rules! config_struct {
 pub(crate) use config_set_field;
 pub(crate) use config_struct;
 pub(crate) use config_version_set;
+
+#[doc(hidden)]
+#[deny(deprecated)]
+#[deprecated = "Forward declarations for cbindgen, do not use."]
+mod __cbindgen_opaque_forward_declarations {
+    macro_rules! typedef_struct {
+        ($($(#[$($attrss:tt)*])* $name:ident;)*) => {
+            $($(#[$($attrss)*])*
+                #[allow(unused)]
+                #[doc(hidden)]
+                #[deny(deprecated)]
+                #[deprecated]
+                pub struct $name;
+            )*
+        };
+    }
+
+    typedef_struct! {
+        /// Opaque struct for a preset context.
+        WildcardContext;
+        /// Opaque struct for a shader preset.
+        ShaderPreset;
+        /// Opaque struct for an OpenGL filter chain.
+        FilterChainGL;
+        /// Opaque struct for a Direct3D 11 filter chain.
+        FilterChainD3D11;
+        /// Opaque struct for a Direct3D 12 filter chain.
+        FilterChainD3D12;
+        /// Opaque struct for a Vulkan filter chain.
+        FilterChainVulkan;
+    }
+}

@@ -1,5 +1,5 @@
 use crate::error::{ParseErrorKind, ParsePresetError};
-use crate::parse::{context, remove_if, Span, Token};
+use crate::parse::{remove_if, Span, Token};
 use crate::{ScaleFactor, ScaleType};
 use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::extract_if::MakeExtractIf;
-use crate::parse::context::WildcardContext;
+use crate::context::{apply_context, WildcardContext};
 
 #[derive(Debug)]
 pub enum Value {
@@ -172,7 +172,7 @@ fn load_child_reference_strings(
         // enter the current root
         reference_depth += 1;
         // canonicalize current root
-        context::apply_context(&mut reference_root, context);
+        apply_context(&mut reference_root, context);
         let reference_root = reference_root
             .canonicalize()
             .map_err(|e| ParsePresetError::IOError(reference_root.to_path_buf(), e))?;
@@ -182,7 +182,7 @@ fn load_child_reference_strings(
 
         for path in referenced_paths {
             let mut path = reference_root.join(path.clone());
-            context::apply_context(&mut path, context);
+            apply_context(&mut path, context);
 
             let mut path = path
                 .canonicalize()
@@ -219,7 +219,7 @@ pub(crate) fn parse_preset(
     let mut path = path.to_path_buf();
     let context = context.to_hashmap();
 
-    context::apply_context(&mut path, &context);
+    apply_context(&mut path, &context);
 
     let path = path
         .canonicalize()
@@ -616,12 +616,13 @@ pub fn parse_values(
 mod test {
     use crate::parse::value::parse_preset;
     use std::path::PathBuf;
+    use crate::WildcardContext;
 
     #[test]
     pub fn parse_basic() {
         let root =
             PathBuf::from("../test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
-        let basic = parse_preset(root);
+        let basic = parse_preset(root, WildcardContext::new());
         eprintln!("{basic:?}");
         assert!(basic.is_ok());
     }

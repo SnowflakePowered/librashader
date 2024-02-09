@@ -148,7 +148,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::MakeExtractIf;
+    use crate::extract_if::MakeExtractIf;
     #[test]
     fn drain_filter_empty() {
         let mut vec: Vec<i32> = vec![];
