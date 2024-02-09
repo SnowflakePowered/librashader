@@ -4,7 +4,6 @@ use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{Debug, Display, Formatter};
-use std::hash::Hash;
 use std::ops::Add;
 use std::path::{Component, Path, PathBuf};
 
@@ -85,20 +84,26 @@ pub enum Rotation {
     Reflex = 3,
 }
 
-impl Add for Rotation {
-    type Output = Rotation;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        let lhs = self as u32;
-        let out = lhs + rhs as u32;
-        let out = out % 4;
-        match out {
+impl From<u32> for Rotation {
+    fn from(value: u32) -> Self {
+        let value = value % 4;
+        match value {
             0 => Rotation::Zero,
             1 => Rotation::Right,
             2 => Rotation::Straight,
             3 => Rotation::Reflex,
             _ => unreachable!(),
         }
+    }
+}
+
+impl Add for Rotation {
+    type Output = Rotation;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let lhs = self as u32;
+        let out = lhs + rhs as u32;
+        Rotation::from(out)
     }
 }
 
@@ -213,7 +218,7 @@ impl Display for ContextItem {
     }
 }
 
-/// A builder for preset wildcard context.
+/// A preset wildcard context.
 ///
 /// Any items added after will have higher priority
 /// when passed to the shader preset parser.
@@ -247,13 +252,13 @@ impl WildcardContext {
     ///
     /// Any values added, either previously or afterwards will not be overridden.
     pub fn add_video_driver_defaults(&mut self, video_driver: VideoDriver) {
-        self.0.push_front(ContextItem::VideoDriverPresetExtension(
+        self.prepend_item(ContextItem::VideoDriverPresetExtension(
             PresetExtension::Slangp,
         ));
-        self.0.push_front(ContextItem::VideoDriverShaderExtension(
+        self.prepend_item(ContextItem::VideoDriverShaderExtension(
             ShaderExtension::Slang,
         ));
-        self.0.push_front(ContextItem::VideoDriver(video_driver));
+        self.prepend_item(ContextItem::VideoDriver(video_driver));
     }
 
     /// Prepend default entries from the path of the preset.
@@ -263,7 +268,7 @@ impl WildcardContext {
         let path = path.as_ref();
         if let Some(preset_name) = path.file_stem() {
             let preset_name = preset_name.to_string_lossy();
-            self.0.push_front(ContextItem::Preset(preset_name.into()))
+            self.prepend_item(ContextItem::Preset(preset_name.into()))
         }
 
         if let Some(preset_dir_name) = path.parent().and_then(|p| {
@@ -273,8 +278,7 @@ impl WildcardContext {
             p.file_name()
         }) {
             let preset_dir_name = preset_dir_name.to_string_lossy();
-            self.0
-                .push_front(ContextItem::PresetDirectory(preset_dir_name.into()))
+            self.prepend_item(ContextItem::PresetDirectory(preset_dir_name.into()))
         }
     }
 

@@ -1,5 +1,6 @@
 //! Binding types for the librashader C API.
 use crate::error::LibrashaderError;
+use librashader::presets::context::{Orientation, VideoDriver, WildcardContext};
 use librashader::presets::ShaderPreset;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
@@ -7,8 +8,52 @@ use std::ptr::NonNull;
 /// A handle to a shader preset object.
 pub type libra_shader_preset_t = Option<NonNull<ShaderPreset>>;
 
+/// A handle to a preset wildcard context object.
+pub type libra_preset_ctx_t = Option<NonNull<WildcardContext>>;
+
 /// A handle to a librashader error object.
 pub type libra_error_t = Option<NonNull<LibrashaderError>>;
+
+/// An enum representing orientation for use in preset contexts.
+#[repr(u32)]
+#[derive(Debug, Copy, Clone)]
+pub enum LIBRA_PRESET_CTX_ORIENTATION {
+    Vertical = 0,
+    Horizontal,
+}
+impl From<LIBRA_PRESET_CTX_ORIENTATION> for Orientation {
+    fn from(value: LIBRA_PRESET_CTX_ORIENTATION) -> Self {
+        match value {
+            LIBRA_PRESET_CTX_ORIENTATION::Vertical => Orientation::Vertical,
+            LIBRA_PRESET_CTX_ORIENTATION::Horizontal => Orientation::Horizontal,
+        }
+    }
+}
+
+// An enum representing graphics runtimes (video drivers) for use in preset contexts.
+#[repr(u32)]
+#[derive(Debug, Copy, Clone)]
+pub enum LIBRA_PRESET_CTX_RUNTIME {
+    None = 0,
+    GlCore,
+    Vulkan,
+    D3D11,
+    D3D12,
+    Metal,
+}
+
+impl From<LIBRA_PRESET_CTX_RUNTIME> for VideoDriver {
+    fn from(value: LIBRA_PRESET_CTX_RUNTIME) -> Self {
+        match value {
+            LIBRA_PRESET_CTX_RUNTIME::None => VideoDriver::None,
+            LIBRA_PRESET_CTX_RUNTIME::GlCore => VideoDriver::GlCore,
+            LIBRA_PRESET_CTX_RUNTIME::Vulkan => VideoDriver::Vulkan,
+            LIBRA_PRESET_CTX_RUNTIME::D3D11 => VideoDriver::Direct3D11,
+            LIBRA_PRESET_CTX_RUNTIME::D3D12 => VideoDriver::Direct3D12,
+            LIBRA_PRESET_CTX_RUNTIME::Metal => VideoDriver::Metal,
+        }
+    }
+}
 
 /// A handle to a OpenGL filter chain.
 #[cfg(feature = "runtime-opengl")]

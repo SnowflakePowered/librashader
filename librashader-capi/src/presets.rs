@@ -1,5 +1,5 @@
 //! librashader preset C API (`libra_preset_*`).
-use crate::ctypes::libra_shader_preset_t;
+use crate::ctypes::{libra_preset_ctx_t, libra_shader_preset_t};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::presets::ShaderPreset;
@@ -55,9 +55,51 @@ extern_fn! {
 
         let filename = unsafe { CStr::from_ptr(filename) };
         let filename = filename.to_str()?;
-        println!("loading {filename}");
 
         let preset = ShaderPreset::try_parse(filename)?;
+        unsafe {
+            out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                preset,
+            )))))
+        }
+    }
+}
+
+extern_fn! {
+    /// Load a preset with the given wildcard context.
+    ///
+    /// The wildcard context is immediately invalidated and must be recreated after
+    /// the preset is created.
+    ///
+    /// Path information variables `PRESET_DIR` and `PRESET` will automatically be filled in.
+    /// ## Safety
+    ///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
+    ///  - `context` must be either null or a valid, aligned pointer to a initialized `libra_preset_ctx_t`.
+    ///  - `context` is  invalidated after this function returns.
+    ///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
+    /// ## Returns
+    ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
+    fn libra_preset_create_with_context(
+        filename: *const c_char,
+        context: *mut libra_preset_ctx_t,
+        out: *mut MaybeUninit<libra_shader_preset_t>
+    ) {
+        assert_non_null!(filename);
+        assert_non_null!(context);
+        assert_non_null!(out);
+
+        let filename = unsafe { CStr::from_ptr(filename) };
+        let filename = filename.to_str()?;
+
+        let mut context = unsafe {
+            let context_ptr = &mut *context;
+            let context = context_ptr.take();
+            Box::from_raw(context.unwrap().as_ptr())
+        };
+
+        context.add_path_defaults(filename);
+
+        let preset = ShaderPreset::try_parse_with_context(filename, *context)?;
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 preset,
@@ -73,7 +115,7 @@ extern_fn! {
     /// null.
     ///
     /// ## Safety
-    /// - `preset` must be a valid and aligned pointer to a shader preset.
+    /// - `preset` must be a valid and aligned pointer to a `libra_shader_preset_t`.
     fn libra_preset_free(preset: *mut libra_shader_preset_t) {
         assert_non_null!(preset);
         unsafe {
@@ -88,7 +130,7 @@ extern_fn! {
     /// Set the value of the parameter in the preset.
     ///
     /// ## Safety
-    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
+    /// - `preset` must be null or a valid and aligned pointer to a `libra_shader_preset_t`.
     /// - `name` must be null or a valid and aligned pointer to a string.
     fn libra_preset_set_param(
         preset: *mut libra_shader_preset_t,
@@ -135,7 +177,7 @@ extern_fn! {
     /// Pretty print the shader preset.
     ///
     /// ## Safety
-    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
+    /// - `preset` must be null or a valid and aligned pointer to a `libra_shader_preset_t`.
     fn libra_preset_print(preset: *mut libra_shader_preset_t) |preset| {
         assert_some_ptr!(preset);
         println!("{preset:#?}");
@@ -146,7 +188,7 @@ extern_fn! {
     /// Get a list of runtime parameters.
     ///
     /// ## Safety
-    /// - `preset` must be null or a valid and aligned pointer to a shader preset.
+    /// - `preset` must be null or a valid and aligned pointer to a `libra_shader_preset_t`.
     /// - `out` must be an aligned pointer to a `libra_preset_parameter_list_t`.
     /// - The output struct should be treated as immutable. Mutating any struct fields
     ///   in the returned struct may at best cause memory leaks, and at worse

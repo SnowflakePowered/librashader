@@ -47,11 +47,11 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFINITE};
 
 use librashader_cache::CachedCompilation;
+use librashader_presets::context::VideoDriver;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
-use librashader_presets::context::VideoDriver;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
 

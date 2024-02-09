@@ -33,11 +33,11 @@ use std::path::Path;
 use std::sync::Arc;
 
 use librashader_cache::CachedCompilation;
+use librashader_presets::context::VideoDriver;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
-use librashader_presets::context::VideoDriver;
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {

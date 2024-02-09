@@ -24,6 +24,7 @@ use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util, D3D11OutputView};
 use librashader_cache::cache_shader_object;
 use librashader_cache::CachedCompilation;
+use librashader_presets::context::VideoDriver;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -39,7 +40,6 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_USAGE_DYNAMIC,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
-use librashader_presets::context::VideoDriver;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,

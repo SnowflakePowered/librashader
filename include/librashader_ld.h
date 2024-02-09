@@ -28,7 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 // Uncomment the following defines to activate runtimes.
- 
+
 // #define LIBRA_RUNTIME_OPENGL
 // #define LIBRA_RUNTIME_VULKAN
 
@@ -39,7 +39,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WIN32)
 #include <windows.h>
-#define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)       \
+#define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)               \
     {                                                           \
         FARPROC address = GetProcAddress(HMOD, "libra_" #NAME); \
         if (address != NULL) {                                  \
@@ -57,9 +57,9 @@ typedef HMODULE _LIBRASHADER_IMPL_HANDLE;
             (INSTANCE).NAME = (PFN_libra_##NAME)address; \
         }                                                \
     }
-typedef void* _LIBRASHADER_IMPL_HANDLE;
+typedef void *_LIBRASHADER_IMPL_HANDLE;
 #define _LIBRASHADER_LOAD dlopen("librashader.dylib", RTLD_LAZY)
-#elif defined(__unix__) || defined (__linux__)
+#elif defined(__unix__) || defined(__linux__)
 #include <dlfcn.h>
 #define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)        \
     {                                                    \
@@ -68,7 +68,7 @@ typedef void* _LIBRASHADER_IMPL_HANDLE;
             (INSTANCE).NAME = (PFN_libra_##NAME)address; \
         }                                                \
     }
-typedef void* _LIBRASHADER_IMPL_HANDLE;
+typedef void *_LIBRASHADER_IMPL_HANDLE;
 #define _LIBRASHADER_LOAD dlopen("librashader.so", RTLD_LAZY)
 #endif
 
@@ -91,6 +91,72 @@ int32_t __librashader__noop_error_write(libra_error_t error, char **out) {
 }
 
 int32_t __librashader__noop_error_free_string(char **out) { return 1; }
+
+libra_error_t __librashader__noop_preset_ctx_create(libra_preset_ctx_t *out) {
+    *out = NULL;
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_free(libra_preset_ctx_t *context) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_core_name(
+    libra_preset_ctx_t *context, const char *name) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_content_dir(
+    libra_preset_ctx_t *context, const char *name) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_param(
+    libra_preset_ctx_t *context, const char *name, const char *value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_runtime(
+    libra_preset_ctx_t *context, LIBRA_PRESET_CTX_RUNTIME value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_core_rotation(
+    libra_preset_ctx_t *context, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_user_rotation(
+    libra_preset_ctx_t *context, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_screen_orientation(
+    libra_preset_ctx_t *context, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_allow_rotation(
+    libra_preset_ctx_t *context, bool value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_view_aspect_orientation(
+    libra_preset_ctx_t *context, LIBRA_PRESET_CTX_ORIENTATION value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_ctx_set_core_aspect_orientation(
+    libra_preset_ctx_t *context, LIBRA_PRESET_CTX_ORIENTATION value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_preset_create_with_context(
+    const char *filename, libra_preset_ctx_t *context,
+    libra_shader_preset_t *out) {
+    *out = NULL;
+    return NULL;
+}
 
 libra_error_t __librashader__noop_preset_create(const char *filename,
                                                 libra_shader_preset_t *out) {
@@ -119,7 +185,8 @@ libra_error_t __librashader__noop_preset_get_runtime_params(
     libra_shader_preset_t *preset, struct libra_preset_param_list_t *out) {
     return NULL;
 }
-libra_error_t __librashader__noop_preset_free_runtime_params(struct libra_preset_param_list_t out) {
+libra_error_t __librashader__noop_preset_free_runtime_params(
+    struct libra_preset_param_list_t out) {
     return NULL;
 }
 #if defined(LIBRA_RUNTIME_OPENGL)
@@ -228,7 +295,8 @@ libra_error_t __librashader__noop_d3d11_filter_chain_create(
 }
 
 libra_error_t __librashader__noop_d3d11_filter_chain_create_deferred(
-    libra_shader_preset_t *preset, ID3D11Device *device, ID3D11DeviceContext *device_context,
+    libra_shader_preset_t *preset, ID3D11Device *device,
+    ID3D11DeviceContext *device_context,
     const struct filter_chain_d3d11_opt_t *options,
     libra_d3d11_filter_chain_t *out) {
     *out = NULL;
@@ -236,11 +304,10 @@ libra_error_t __librashader__noop_d3d11_filter_chain_create_deferred(
 }
 
 libra_error_t __librashader__noop_d3d11_filter_chain_frame(
-    libra_d3d11_filter_chain_t *chain,
-    ID3D11DeviceContext *device_context, size_t frame_count,
-    struct libra_source_image_d3d11_t image, struct libra_viewport_t viewport,
-    ID3D11RenderTargetView *out, const float *mvp,
-    const struct frame_d3d11_opt_t *opt) {
+    libra_d3d11_filter_chain_t *chain, ID3D11DeviceContext *device_context,
+    size_t frame_count, struct libra_source_image_d3d11_t image,
+    struct libra_viewport_t viewport, ID3D11RenderTargetView *out,
+    const float *mvp, const struct frame_d3d11_opt_t *opt) {
     return NULL;
 }
 
@@ -270,7 +337,6 @@ libra_error_t __librashader__noop_d3d11_filter_chain_get_active_pass_count(
 }
 #endif
 
-
 #if defined(LIBRA_RUNTIME_D3D12)
 libra_error_t __librashader__noop_d3d12_filter_chain_create(
     libra_shader_preset_t *preset, ID3D12Device *device,
@@ -290,11 +356,10 @@ libra_error_t __librashader__noop_d3d12_filter_chain_create_deferred(
 }
 
 libra_error_t __librashader__noop_d3d12_filter_chain_frame(
-    libra_d3d12_filter_chain_t *chain,
-    ID3D12GraphicsCommandList *command_list, size_t frame_count,
-    struct libra_source_image_d3d12_t image, struct libra_viewport_t viewport,
-    struct libra_output_image_d3d12_t out, const float *mvp,
-    const struct frame_d3d12_opt_t *opt) {
+    libra_d3d12_filter_chain_t *chain, ID3D12GraphicsCommandList *command_list,
+    size_t frame_count, struct libra_source_image_d3d12_t image,
+    struct libra_viewport_t viewport, struct libra_output_image_d3d12_t out,
+    const float *mvp, const struct frame_d3d12_opt_t *opt) {
     return NULL;
 }
 
@@ -335,6 +400,151 @@ typedef struct libra_instance_t {
     /// The null instance has API version 0.
     PFN_libra_instance_api_version instance_api_version;
 
+    /// Create a wildcard context
+    ///
+    /// The C API does not allow directly setting certain variables
+    ///
+    /// - `PRESET_DIR` and `PRESET` are inferred on preset creation.
+    /// - `VID-DRV-SHADER-EXT` and `VID-DRV-PRESET-EXT` are always set to
+    /// `slang` and `slangp` for librashader.
+    /// - `VID-FINAL-ROT` is automatically calculated as the sum of
+    /// `VID-USER-ROT` and `CORE-REQ-ROT` if either are present.
+    ///
+    /// These automatically inferred variables, as well as all other variables
+    /// can be overridden with `libra_preset_ctx_set_param`, but the expected
+    /// string values must be provided. See
+    /// https://github.com/libretro/RetroArch/pull/15023 for a list of expected
+    /// string values.
+    ///
+    /// No variables can be removed once added to the context, however
+    /// subsequent calls to set the same variable will overwrite the expected
+    /// variable.
+    /// ## Safety
+    ///  - `out` must be either null, or an aligned pointer to an uninitialized
+    ///  or invalid `libra_preset_ctx_t`.
+    /// ## Returns
+    ///  - If any parameters are null, `out` is unchanged, and this function
+    ///  returns `LIBRA_ERR_INVALID_PARAMETER`.
+    PFN_libra_preset_ctx_create preset_ctx_create;
+
+    /// Free the wildcard context.
+    ///
+    /// If `context` is null, this function does nothing. The resulting value in
+    /// `context` then becomes null.
+    ///
+    /// ## Safety
+    /// - `context` must be a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`
+    PFN_libra_preset_ctx_free preset_ctx_free;
+
+    /// Set the core name (`CORE`) variable in the context
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    /// - `name` must be null or a valid and aligned pointer to a string.
+    PFN_libra_preset_ctx_set_core_name preset_ctx_set_core_name;
+
+    /// Set the content directory (`CONTENT-DIR`) variable in the context.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    /// - `name` must be null or a valid and aligned pointer to a string.
+    PFN_libra_preset_ctx_set_content_dir preset_ctx_set_content_dir;
+
+    /// Set a custom string variable in context.
+    ///
+    /// If the path contains this variable when loading a preset, it will be
+    /// replaced with the provided contents.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    /// - `name` must be null or a valid and aligned pointer to a string.
+    /// - `value` must be null or a valid and aligned pointer to a string.
+    PFN_libra_preset_ctx_set_param preset_ctx_set_param;
+
+    /// Set the graphics runtime (`VID-DRV`) variable in the context.
+    ///
+    /// Note that librashader only supports the following runtimes.
+    ///
+    /// - Vulkan
+    /// - GLCore
+    /// - Direct3D11
+    /// - Direct3D12
+    ///
+    /// This will also set the appropriate video driver extensions.
+    ///
+    /// For librashader, `VID-DRV-SHADER-EXT` and `VID-DRV-PRESET-EXT` are
+    /// always `slang` and `slangp`. To override this, use
+    /// `libra_preset_ctx_set_param`.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    /// - `name` must be null or a valid and aligned pointer to a string.
+    PFN_libra_preset_ctx_set_runtime preset_ctx_set_runtime;
+
+    /// Set the core requested rotation (`CORE-REQ-ROT`) variable in the
+    /// context.
+    ///
+    /// Rotation is represented by quarter rotations around the unit circle.
+    /// For example. `0` = 0deg, `1` = 90deg, `2` = 180deg, `3` = 270deg, `4` =
+    /// 0deg.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    PFN_libra_preset_ctx_set_core_rotation preset_ctx_set_core_rotation;
+
+    /// Set the user rotation (`VID-USER-ROT`) variable in the context.
+    ///
+    /// Rotation is represented by quarter rotations around the unit circle.
+    /// For example. `0` = 0deg, `1` = 90deg, `2` = 180deg, `3` = 270deg, `4` =
+    /// 0deg.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    PFN_libra_preset_ctx_set_user_rotation preset_ctx_set_user_rotation;
+
+    /// Set the screen orientation (`SCREEN-ORIENT`) variable in the context.
+    ///
+    /// Orientation is represented by quarter rotations around the unit circle.
+    /// For example. `0` = 0deg, `1` = 90deg, `2` = 180deg, `3` = 270deg, `4` =
+    /// 0deg.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    PFN_libra_preset_ctx_set_screen_orientation
+        preset_ctx_set_screen_orientation;
+
+    /// Set whether or not to allow rotation (`VID-ALLOW-CORE-ROT`) variable in
+    /// the context.
+    ///
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    PFN_libra_preset_ctx_set_allow_rotation preset_ctx_set_allow_rotation;
+
+    /// Set the view aspect orientation (`VIEW-ASPECT-ORIENT`) variable in the
+    /// context.
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    PFN_libra_preset_ctx_set_view_aspect_orientation
+        preset_ctx_set_view_aspect_orientation;
+
+    /// Set the core aspect orientation (`CORE-ASPECT-ORIENT`) variable in the
+    /// context.
+    /// ## Safety
+    /// - `context` must be null or a valid and aligned pointer to a
+    /// `libra_preset_ctx_t`.
+    PFN_libra_preset_ctx_set_core_aspect_orientation
+        preset_ctx_set_core_aspect_orientation;
+
     /// Load a preset.
     ///
     /// If this function is not loaded, `out` will unconditionally be set to
@@ -350,6 +560,26 @@ typedef struct libra_instance_t {
     ///  - If any parameters are null, `out` is unchanged, and this function
     ///  returns `LIBRA_ERR_INVALID_PARAMETER`.
     PFN_libra_preset_create preset_create;
+
+    /// Load a preset with the given wildcard context.
+    ///
+    /// The wildcard context is immediately invalidated and must be recreated
+    /// after the preset is created.
+    ///
+    /// Path information variables `PRESET_DIR` and `PRESET` will automatically
+    /// be filled in.
+    /// ## Safety
+    ///  - `filename` must be either null or a valid, aligned pointer to a
+    ///  string path to the shader preset.
+    ///  - `context` must be either null or a valid, aligned pointer to a
+    ///  initialized `libra_preset_ctx_t`.
+    ///  - `context` is  invalidated after this function returns.
+    ///  - `out` must be either null, or an aligned pointer to an uninitialized
+    ///  or invalid `libra_shader_preset_t`.
+    /// ## Returns
+    ///  - If any parameters are null, `out` is unchanged, and this function
+    ///  returns `LIBRA_ERR_INVALID_PARAMETER`.
+    PFN_libra_preset_create_with_context preset_create_with_context;
 
     /// Free the preset.
     ///
@@ -425,7 +655,6 @@ typedef struct libra_instance_t {
     ///   result in undefined behaviour.
     PFN_libra_preset_free_runtime_params preset_free_runtime_params;
 
-
     /// Get the error code corresponding to this error object.
     ///
     /// ## Safety
@@ -473,7 +702,8 @@ typedef struct libra_instance_t {
     /// Initialize the OpenGL Context for librashader.
     ///
     /// ## Safety
-    /// Attempting to create a filter chain will fail if the context is not initialized.
+    /// Attempting to create a filter chain will fail if the context is not
+    /// initialized.
     ///
     /// Reinitializing the OpenGL context with a different loader immediately
     /// invalidates previous filter chain objects, and drawing with them causes
@@ -717,7 +947,8 @@ typedef struct libra_instance_t {
     ///
     /// If the context is immediate, then access to the immediate context
     /// requires external synchronization.
-    PFN_libra_d3d11_filter_chain_create_deferred d3d11_filter_chain_create_deferred;
+    PFN_libra_d3d11_filter_chain_create_deferred
+        d3d11_filter_chain_create_deferred;
 
     /// Draw a frame with the given parameters for the given filter chain.
     ///
@@ -776,7 +1007,6 @@ typedef struct libra_instance_t {
     PFN_libra_d3d11_filter_chain_set_param d3d11_filter_chain_set_param;
 #endif
 
-
 #if defined(LIBRA_RUNTIME_D3D12)
     /// Create the filter chain given the shader preset.
     ///
@@ -801,8 +1031,9 @@ typedef struct libra_instance_t {
     /// The shader preset is immediately invalidated and must be recreated after
     /// the filter chain is created.
     ///
-    /// If this function is not loaded, `out` will unconditionally be set to null.
-    /// If this function returns an error, the state of `out` is unspecified.
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
     ///
     /// ## Safety:
     /// - `preset` must be either null, or valid and aligned.
@@ -815,7 +1046,8 @@ typedef struct libra_instance_t {
     /// prior commands. The caller is responsible for ending the command list
     /// and immediately submitting it to a graphics queue. The command list must
     /// be completely executed before calling `libra_d3d12_filter_chain_frame`
-    PFN_libra_d3d12_filter_chain_create_deferred d3d12_filter_chain_create_deferred;
+    PFN_libra_d3d12_filter_chain_create_deferred
+        d3d12_filter_chain_create_deferred;
 
     /// Draw a frame with the given parameters for the given filter chain.
     ///
@@ -881,7 +1113,8 @@ typedef struct libra_instance_t {
     /// was created with librashader_load_instance if and only if:
     ///
     /// 1. A librashader library was found in the search path.
-    /// 2. The ABI version of the librashader library in the search path is compatible.
+    /// 2. The ABI version of the librashader library in the search path is
+    /// compatible.
     ///
     /// This flag can only be relied upon when checked immediately after
     /// librashader_load_instance as there is no protection against mutating
@@ -893,8 +1126,6 @@ typedef struct libra_instance_t {
     /// are maintained. However, an unloaded function will be a no-op.
     bool instance_loaded;
 } libra_instance_t;
-
-
 
 libra_instance_t __librashader_make_null_instance() {
     return libra_instance_t {
@@ -934,7 +1165,8 @@ libra_instance_t __librashader_make_null_instance() {
 
 #if defined(LIBRA_RUNTIME_VULKAN)
         .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
-        .vk_filter_chain_create_deferred = __librashader__noop_vk_filter_chain_create_deferred,
+        .vk_filter_chain_create_deferred =
+            __librashader__noop_vk_filter_chain_create_deferred,
         .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
         .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
         .vk_filter_chain_get_active_pass_count =
@@ -1000,7 +1232,8 @@ libra_instance_t __librashader_make_null_instance() {
 /// \return An `libra_instance_t` struct with loaded function pointers.
 libra_instance_t librashader_load_instance();
 
-#if defined(_WIN32) || defined(__linux__) || defined(__unix__) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__linux__) || defined(__unix__) || \
+    defined(__APPLE__)
 libra_instance_t librashader_load_instance() {
     _LIBRASHADER_IMPL_HANDLE librashader = _LIBRASHADER_LOAD;
     libra_instance_t instance = __librashader_make_null_instance();
@@ -1016,15 +1249,31 @@ libra_instance_t librashader_load_instance() {
         return instance;
     }
 
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_core_name);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_content_dir);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_runtime);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_core_rotation);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_user_rotation);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        preset_ctx_set_screen_orientation);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_ctx_set_allow_rotation);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        preset_ctx_set_view_aspect_orientation);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        preset_ctx_set_core_aspect_orientation);
+
     _LIBRASHADER_ASSIGN(librashader, instance, preset_create);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_create_with_context);
+
     _LIBRASHADER_ASSIGN(librashader, instance, preset_free);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_set_param);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_get_param);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_print);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                preset_get_runtime_params);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                preset_free_runtime_params);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_get_runtime_params);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_free_runtime_params);
 
     _LIBRASHADER_ASSIGN(librashader, instance, error_errno);
     _LIBRASHADER_ASSIGN(librashader, instance, error_print);
@@ -1037,14 +1286,12 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_create);
     _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_set_param);
     _LIBRASHADER_ASSIGN(librashader, instance,
-                                gl_filter_chain_get_param);
+                        gl_filter_chain_get_active_pass_count);
     _LIBRASHADER_ASSIGN(librashader, instance,
-                                gl_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                gl_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                gl_filter_chain_set_active_pass_count);
+                        gl_filter_chain_set_active_pass_count);
 
 #endif
 
@@ -1053,19 +1300,18 @@ libra_instance_t librashader_load_instance() {
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_create_deferred);
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, vk_filter_chain_set_param);
     _LIBRASHADER_ASSIGN(librashader, instance,
-                                vk_filter_chain_get_param);
+                        vk_filter_chain_get_active_pass_count);
     _LIBRASHADER_ASSIGN(librashader, instance,
-                                vk_filter_chain_set_param);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                vk_filter_chain_get_active_pass_count);
-    _LIBRASHADER_ASSIGN(librashader, instance,
-                                vk_filter_chain_set_active_pass_count);
+                        vk_filter_chain_set_active_pass_count);
 #endif
 
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11)
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_create);
-    _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_create_deferred);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        d3d11_filter_chain_create_deferred);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_free);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d11_filter_chain_get_param);
@@ -1078,7 +1324,8 @@ libra_instance_t librashader_load_instance() {
 
 #if defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12)
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_create);
-    _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_create_deferred);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        d3d12_filter_chain_create_deferred);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_free);
     _LIBRASHADER_ASSIGN(librashader, instance, d3d12_filter_chain_get_param);

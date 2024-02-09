@@ -80,6 +80,7 @@ pub mod reflect;
 
 pub mod runtime;
 pub mod version;
+pub mod wildcard;
 
 pub use version::LIBRASHADER_ABI_VERSION;
 pub use version::LIBRASHADER_API_VERSION;
