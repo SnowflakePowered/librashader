@@ -24,7 +24,11 @@ pub mod d3d11;
 #[cfg(all(target_os = "windows", feature = "d3d12"))]
 pub mod d3d12;
 
+#[cfg(all(target_os = "macos", feature = "metal"))]
+pub mod metal;
+
 mod viewport;
+
 
 pub use viewport::Viewport;
 
