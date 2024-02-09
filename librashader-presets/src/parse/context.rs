@@ -1,3 +1,7 @@
+//! Shader preset wildcard replacement context handling.
+//!
+//! Implements wildcard replacement of shader paths specified in
+//! [RetroArch#15023](https://github.com/libretro/RetroArch/pull/15023).
 use once_cell::sync::Lazy;
 use regex::bytes::Regex;
 use rustc_hash::FxHashMap;
@@ -7,16 +11,26 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::path::{Component, Path, PathBuf};
 
+/// Valid video driver or runtime. This list is non-exhaustive.
 #[repr(u32)]
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone)]
 pub enum VideoDriver {
+    /// None  (`null`)
     None = 0,
+    /// OpenGL Core (`glcore`)
     GlCore,
+    /// Legacy OpenGL (`gl`)
     Gl,
+    /// Vulkan (`vulkan`)
     Vulkan,
-    Direct3D11,
+    /// Direct3D 9 (`d3d9_hlsl`)
     Direct3D9Hlsl,
+    /// Direct3D 11 (`d3d11`)
+    Direct3D11,
+    /// Direct3D12 (`d3d12`)
     Direct3D12,
+    /// Metal (`metal`)
     Metal,
 }
 
@@ -35,11 +49,15 @@ impl Display for VideoDriver {
     }
 }
 
+/// Valid extensions for shader extensions.
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum ShaderExtension {
+    /// `.slang`
     Slang = 0,
+    /// `.glsl`
     Glsl,
+    /// `.cg`
     Cg,
 }
 
@@ -53,11 +71,15 @@ impl Display for ShaderExtension {
     }
 }
 
+/// Valid extensions for shader presets
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum PresetExtension {
+    /// `.slangp`
     Slangp = 0,
+    /// `.glslp`
     Glslp,
+    /// `.cgp`
     Cgp,
 }
 
@@ -71,6 +93,7 @@ impl Display for PresetExtension {
     }
 }
 
+/// Rotation of the viewport.
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum Rotation {
@@ -118,10 +141,13 @@ impl Display for Rotation {
     }
 }
 
+/// Orientation of  aspect ratios
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum Orientation {
+    /// Vertical orientation.
     Vertical = 0,
+    /// Horizontal orientation.
     Horizontal,
 }
 
@@ -134,23 +160,40 @@ impl Display for Orientation {
     }
 }
 
+/// An item representing a variable that can be replaced in a path preset.
 #[derive(Debug, Clone)]
 pub enum ContextItem {
+    /// The content directory of the game (`CONTENT-DIR`)
     ContentDirectory(String),
+    /// The name of the libretro core (`CORE`)
     CoreName(String),
+    /// The filename of the game (`GAME`)
     GameName(String),
+    /// The name of the preset (`PRESET`)
     Preset(String),
+    /// The name of the preset directory (`PRESET_DIR`)
     PresetDirectory(String),
+    /// The video driver (runtime) (`VID-DRV`)
     VideoDriver(VideoDriver),
+    /// The extension of shader types supported by the driver (`VID-DRV-SHADER-EXT`)
     VideoDriverShaderExtension(ShaderExtension),
+    /// The extension of shader presets supported by the driver (`VID-DRV-PRESET-EXT`)
     VideoDriverPresetExtension(PresetExtension),
+    /// The rotation that the core is requesting (`CORE-REQ-ROT`)
     CoreRequestedRotation(Rotation),
+    /// Whether or not to allow core-requested rotation (`VID-ALLOW-CORE-ROT`)
     AllowCoreRotation(bool),
+    /// The rotation the user is requesting (`VID-USER-ROT`)
     UserRotation(Rotation),
+    /// The final rotation (`VID-FINAL-ROT`) calculated by the sum of `VID-USER-ROT` and `CORE-REQ-ROT`
     FinalRotation(Rotation),
+    /// The user-adjusted screen orientation (`SCREEN-ORIENT`)
     ScreenOrientation(Rotation),
+    /// The orientation of the viewport aspect ratio (`VIEW-ASPECT-ORIENT`)
     ViewAspectOrientation(Orientation),
+    /// The orientation of the aspect ratio requested by the core (`CORE-ASPECT-ORIENT`)
     CoreAspectOrientation(Orientation),
+    /// An external, arbitrary context variable.
     ExternContext(String, String),
 }
 
@@ -316,7 +359,7 @@ impl WildcardContext {
     }
 }
 
-pub fn apply_context(path: &mut PathBuf, context: &FxHashMap<String, String>) {
+pub(crate) fn apply_context(path: &mut PathBuf, context: &FxHashMap<String, String>) {
     static WILDCARD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("\\$([A-Z-_]+)\\$").unwrap());
     if context.is_empty() {
         return;
