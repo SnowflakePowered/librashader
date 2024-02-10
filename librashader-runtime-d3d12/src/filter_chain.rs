@@ -10,7 +10,7 @@ use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
 use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
-use crate::quad_render::DrawQuad;
+use crate::draw_quad::DrawQuad;
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
