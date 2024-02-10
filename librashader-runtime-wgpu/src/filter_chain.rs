@@ -9,6 +9,8 @@ use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
@@ -22,7 +24,6 @@ use librashader_reflect::back::wgsl::WgslCompileOptions;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
-use rayon::prelude::*;
 use wgpu::{Device, TextureFormat};
 
 use crate::error;
@@ -213,8 +214,14 @@ impl FilterChainWgpu {
         textures: &[TextureConfig],
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
-        let images = textures
-            .par_iter()
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let images_iter = textures.par_iter();
+
+        #[cfg(target_arch = "wasm32")]
+        let images_iter = textures.iter();
+
+        let images = images_iter
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
@@ -251,8 +258,12 @@ impl FilterChainWgpu {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
     ) -> error::Result<Box<[FilterPass]>> {
-        let filters: Vec<error::Result<FilterPass>> = passes
-            .into_par_iter()
+        #[cfg(not(target_arch = "wasm32"))]
+        let passes_iter = passes.into_par_iter();
+        #[cfg(target_arch = "wasm32")]
+        let passes_iter = passes.into_iter();
+
+        let filters: Vec<error::Result<FilterPass>> = passes_iter
             .enumerate()
             .map(|(index, (config, source, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;

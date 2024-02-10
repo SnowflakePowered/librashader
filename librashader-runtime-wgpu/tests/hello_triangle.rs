@@ -1,8 +1,6 @@
 use std::sync::Arc;
-use wgpu::Maintain;
 use winit::{
     event::*,
-    event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
@@ -11,7 +9,6 @@ use librashader_presets::ShaderPreset;
 use librashader_runtime_wgpu::FilterChainWgpu;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
-use winit::keyboard::{Key, KeyCode, PhysicalKey};
 use winit::platform::windows::EventLoopBuilderExtWindows;
 
 #[cfg(target_arch = "wasm32")]
@@ -107,7 +104,7 @@ impl<'a> State<'a> {
         let swapchain_capabilities = surface.get_capabilities(&adapter);
         let swapchain_format = swapchain_capabilities.formats[0];
 
-        let mut config = wgpu::SurfaceConfiguration {
+        let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
             format: swapchain_format,
             width: size.width,
@@ -212,7 +209,7 @@ impl<'a> State<'a> {
             self.surface.configure(&self.device, &self.config);
         }
     }
-    fn input(&mut self, event: &WindowEvent) -> bool {
+    fn input(&mut self, _event: &WindowEvent) -> bool {
         false
     }
     fn update(&mut self) {}
