@@ -4,7 +4,7 @@ use crate::back::targets::WGSL;
 use crate::back::wgsl::lower_samplers::LowerCombinedImageSamplerPass;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::front::GlslangCompilation;
+use crate::front::SpirvCompilation;
 use crate::reflect::naga::NagaReflect;
 use crate::reflect::ReflectShader;
 use naga::back::wgsl::WriterFlags;
@@ -26,7 +26,7 @@ pub struct WgslCompileOptions {
     pub sampler_bind_group: u32,
 }
 
-impl FromCompilation<GlslangCompilation> for WGSL {
+impl FromCompilation<SpirvCompilation> for WGSL {
     type Target = WGSL;
     type Options = WgslCompileOptions;
     type Context = NagaWgslContext;
@@ -34,7 +34,7 @@ impl FromCompilation<GlslangCompilation> for WGSL {
         + ReflectShader;
 
     fn from_compilation(
-        compile: GlslangCompilation,
+        compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         fn lower_fragment_shader(words: &[u32]) -> Vec<u32> {
             let mut loader = rspirv::dr::Loader::new();
@@ -189,7 +189,7 @@ mod test {
             );
         }
 
-        let compilation = crate::front::GlslangCompilation::try_from(&result).unwrap();
+        let compilation = crate::front::SpirvCompilation::try_from(&result).unwrap();
 
         let mut wgsl = WGSL::from_compilation(compilation).unwrap();
 

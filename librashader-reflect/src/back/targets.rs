@@ -34,6 +34,9 @@ impl OutputTarget for HLSL {
 impl OutputTarget for WGSL {
     type Output = String;
 }
+impl OutputTarget for MSL {
+    type Output = String;
+}
 impl OutputTarget for SPIRV {
     type Output = Vec<u32>;
 }
@@ -42,9 +45,9 @@ impl OutputTarget for SPIRV {
 mod test {
     use crate::back::targets::GLSL;
     use crate::back::FromCompilation;
-    use crate::front::GlslangCompilation;
+    use crate::front::SpirvCompilation;
     #[allow(dead_code)]
-    pub fn test_compile(value: GlslangCompilation) {
+    pub fn test_compile(value: SpirvCompilation) {
         let _x = GLSL::from_compilation(value).unwrap();
     }
 }

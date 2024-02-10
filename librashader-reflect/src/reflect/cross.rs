@@ -1,5 +1,5 @@
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
-use crate::front::GlslangCompilation;
+use crate::front::SpirvCompilation;
 use crate::reflect::semantics::{
     BindingMeta, BindingStage, BufferReflection, MemberOffset, ShaderReflection, ShaderSemantics,
     TextureBinding, TextureSemanticMap, TextureSemantics, TextureSizeMeta, TypeInfo,
@@ -134,7 +134,7 @@ impl ValidateTypeSemantics<Type> for TextureSemantics {
     }
 }
 
-impl<T> TryFrom<&GlslangCompilation> for CrossReflect<T>
+impl<T> TryFrom<&SpirvCompilation> for CrossReflect<T>
 where
     T: spirv_cross::spirv::Target,
     Ast<T>: spirv_cross::spirv::Compile<T>,
@@ -142,7 +142,7 @@ where
 {
     type Error = ShaderReflectError;
 
-    fn try_from(value: &GlslangCompilation) -> Result<Self, Self::Error> {
+    fn try_from(value: &SpirvCompilation) -> Result<Self, Self::Error> {
         let vertex_module = Module::from_words(&value.vertex);
         let fragment_module = Module::from_words(&value.fragment);
 
@@ -890,7 +890,7 @@ mod test {
     use rustc_hash::FxHashMap;
 
     use crate::back::CompileShader;
-    use crate::front::GlslangCompilation;
+    use crate::front::{Glslang, ShaderInputCompiler, SpirvCompilation};
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
@@ -910,7 +910,7 @@ mod test {
                 }),
             );
         }
-        let spirv = GlslangCompilation::compile(&result).unwrap();
+        let spirv = Glslang::compile(&result).unwrap();
         let mut reflect = CrossReflect::<glsl::Target>::try_from(&spirv).unwrap();
         let _shader_reflection = reflect
             .reflect(

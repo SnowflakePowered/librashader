@@ -1,7 +1,7 @@
 use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
-use crate::front::GlslangCompilation;
+use crate::front::SpirvCompilation;
 use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect};
 use crate::reflect::ReflectShader;
 
@@ -19,7 +19,7 @@ pub struct CrossGlslContext {
     pub artifact: CompiledProgram<spirv_cross::glsl::Target>,
 }
 
-impl FromCompilation<GlslangCompilation> for GLSL {
+impl FromCompilation<SpirvCompilation> for GLSL {
     type Target = GLSL;
     type Options = GlslVersion;
     type Context = CrossGlslContext;
@@ -27,7 +27,7 @@ impl FromCompilation<GlslangCompilation> for GLSL {
         + ReflectShader;
 
     fn from_compilation(
-        compile: GlslangCompilation,
+        compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: GlslReflect::try_from(&compile)?,
@@ -41,7 +41,7 @@ pub struct CrossHlslContext {
     pub artifact: CompiledProgram<spirv_cross::hlsl::Target>,
 }
 
-impl FromCompilation<GlslangCompilation> for HLSL {
+impl FromCompilation<SpirvCompilation> for HLSL {
     type Target = HLSL;
     type Options = Option<HlslShaderModel>;
     type Context = CrossHlslContext;
@@ -49,7 +49,7 @@ impl FromCompilation<GlslangCompilation> for HLSL {
         + ReflectShader;
 
     fn from_compilation(
-        compile: GlslangCompilation,
+        compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: HlslReflect::try_from(&compile)?,

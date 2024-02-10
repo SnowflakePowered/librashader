@@ -13,10 +13,10 @@
 //! use librashader_presets::ShaderPreset;
 //! use librashader_reflect::back::{CompileReflectShader, FromCompilation};
 //! use librashader_reflect::back::targets::SPIRV;
-//! use librashader_reflect::front::GlslangCompilation;
+//! use librashader_reflect::front::{Glslang, ShaderInputCompiler, SpirvCompilation};
 //! use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 //! use librashader_reflect::reflect::semantics::ShaderSemantics;
-//! type Artifact = impl CompileReflectShader<SPIRV, GlslangCompilation>;
+//! type Artifact = impl CompileReflectShader<SPIRV, SpirvCompilation>;
 //! type ShaderPassMeta = ShaderPassArtifact<Artifact>;
 //!
 //! // Compile single shader
@@ -24,7 +24,7 @@
 //!         source: &ShaderSource,
 //!     ) -> Result<Artifact, Box<dyn Error>>
 //! {
-//!     let compilation = GlslangCompilation::compile(&source)?;
+//!     let artifact = Glslang::compile(&source)?;
 //!     let spirv = SPIRV::from_compilation(artifact)?;
 //!     Ok(spirv)
 //! }
@@ -32,7 +32,7 @@
 //! // Compile preset
 //! pub fn compile_preset(preset: ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), Box<dyn Error>>
 //! {
-//!     let (passes, semantics) = SPIRV::compile_preset_passes::<GlslangCompilation, Box<dyn Error>>(
+//!     let (passes, semantics) = SPIRV::compile_preset_passes::<Glslang, SpirvCompilation, Box<dyn Error>>(
 //!     preset.shaders, &preset.textures)?;
 //!     Ok((passes, semantics))
 //! }
@@ -43,7 +43,7 @@
 //! [naga](https://docs.rs/naga/latest/naga/index.html), a pure-Rust shader compiler, when it has
 //! matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
 //!
-//! In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::front::GlslangCompilation),
+//! In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::front::SpirvCompilation),
 //! which does transpilation via [glslang](https://github.com/KhronosGroup/glslang) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]

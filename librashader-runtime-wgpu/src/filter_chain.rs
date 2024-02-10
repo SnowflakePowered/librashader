@@ -1,7 +1,7 @@
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::WGSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::GlslangCompilation;
+use librashader_reflect::front::{Glslang, SpirvCompilation};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
@@ -38,13 +38,13 @@ use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage};
 
 type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<WGSL, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<WGSL, SpirvCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) =
-        WGSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?;
+        WGSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?;
     Ok((passes, semantics))
 }
 
