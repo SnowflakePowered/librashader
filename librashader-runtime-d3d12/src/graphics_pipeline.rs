@@ -1,6 +1,6 @@
 use crate::error::assume_d3d12_init;
 use crate::error::FilterChainError::Direct3DOperationError;
-use crate::quad_render::DrawQuad;
+use crate::draw_quad::DrawQuad;
 use crate::{error, util};
 use librashader_cache::{cache_pipeline, cache_shader_object};
 use librashader_reflect::back::cross::CrossHlslContext;

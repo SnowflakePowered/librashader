@@ -12,7 +12,7 @@ mod graphics_pipeline;
 mod luts;
 mod mipmap;
 mod parameters;
-mod quad_render;
+mod draw_quad;
 mod samplers;
 mod texture;
 mod util;
