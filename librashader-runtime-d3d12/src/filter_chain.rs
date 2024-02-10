@@ -18,7 +18,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::GlslangCompilation;
+use librashader_reflect::front::{Glslang, SpirvCompilation};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::{ShaderSemantics, MAX_BINDINGS_COUNT};
 use librashader_reflect::reflect::ReflectShader;
@@ -145,35 +145,35 @@ impl Drop for FrameResiduals {
 }
 
 type DxilShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<DXIL, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation> + Send>;
 fn compile_passes_dxil(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<DxilShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        DXIL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+        DXIL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
             shaders, &textures,
         )?
     } else {
-        DXIL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
     };
 
     Ok((passes, semantics))
 }
 type HlslShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation> + Send>;
 fn compile_passes_hlsl(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<HlslShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+        HLSL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
             shaders, &textures,
         )?
     } else {
-        HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
     };
 
     Ok((passes, semantics))

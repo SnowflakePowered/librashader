@@ -6,21 +6,25 @@ use librashader_reflect::back::targets::{GLSL, HLSL, SPIRV};
 
 use librashader_reflect::back::{CompilerBackend, FromCompilation};
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
-use librashader_reflect::front::{GlslangCompilation, ShaderCompilation};
+use librashader_reflect::front::{Glslang, ShaderInputCompiler, ShaderReflectObject, SpirvCompilation};
 
 pub struct CachedCompilation<T> {
     compilation: T,
 }
 
-impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
-    ShaderCompilation for CachedCompilation<T>
+impl <T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> {
+
+}
+
+impl<T: ShaderReflectObject + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
+ShaderInputCompiler<CachedCompilation<T>> for Glslang  where Glslang: ShaderInputCompiler<T>
 {
-    fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
+    fn compile(source: &ShaderSource) -> Result<CachedCompilation<T>, ShaderCompileError> {
         let cache = crate::cache::internal::get_cache();
 
         let Ok(cache) = cache else {
             return Ok(CachedCompilation {
-                compilation: T::compile(source)?,
+                compilation: Glslang::compile(source)?,
             });
         };
 
@@ -45,7 +49,7 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
             }
 
             CachedCompilation {
-                compilation: T::compile(source)?,
+                compilation: Glslang::compile(source)?,
             }
         };
 
@@ -60,53 +64,53 @@ impl<T: ShaderCompilation + for<'de> serde::Deserialize<'de> + serde::Serialize 
 }
 
 #[cfg(all(target_os = "windows", feature = "d3d"))]
-impl FromCompilation<CachedCompilation<GlslangCompilation>> for DXIL {
-    type Target = <DXIL as FromCompilation<GlslangCompilation>>::Target;
-    type Options = <DXIL as FromCompilation<GlslangCompilation>>::Options;
-    type Context = <DXIL as FromCompilation<GlslangCompilation>>::Context;
-    type Output = <DXIL as FromCompilation<GlslangCompilation>>::Output;
+impl FromCompilation<CachedCompilation<SpirvCompilation>> for DXIL {
+    type Target = <DXIL as FromCompilation<SpirvCompilation>>::Target;
+    type Options = <DXIL as FromCompilation<SpirvCompilation>>::Options;
+    type Context = <DXIL as FromCompilation<SpirvCompilation>>::Context;
+    type Output = <DXIL as FromCompilation<SpirvCompilation>>::Output;
 
     fn from_compilation(
-        compile: CachedCompilation<GlslangCompilation>,
+        compile: CachedCompilation<SpirvCompilation>,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         DXIL::from_compilation(compile.compilation)
     }
 }
 
-impl FromCompilation<CachedCompilation<GlslangCompilation>> for HLSL {
-    type Target = <HLSL as FromCompilation<GlslangCompilation>>::Target;
-    type Options = <HLSL as FromCompilation<GlslangCompilation>>::Options;
-    type Context = <HLSL as FromCompilation<GlslangCompilation>>::Context;
-    type Output = <HLSL as FromCompilation<GlslangCompilation>>::Output;
+impl FromCompilation<CachedCompilation<SpirvCompilation>> for HLSL {
+    type Target = <HLSL as FromCompilation<SpirvCompilation>>::Target;
+    type Options = <HLSL as FromCompilation<SpirvCompilation>>::Options;
+    type Context = <HLSL as FromCompilation<SpirvCompilation>>::Context;
+    type Output = <HLSL as FromCompilation<SpirvCompilation>>::Output;
 
     fn from_compilation(
-        compile: CachedCompilation<GlslangCompilation>,
+        compile: CachedCompilation<SpirvCompilation>,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         HLSL::from_compilation(compile.compilation)
     }
 }
 
-impl FromCompilation<CachedCompilation<GlslangCompilation>> for GLSL {
-    type Target = <GLSL as FromCompilation<GlslangCompilation>>::Target;
-    type Options = <GLSL as FromCompilation<GlslangCompilation>>::Options;
-    type Context = <GLSL as FromCompilation<GlslangCompilation>>::Context;
-    type Output = <GLSL as FromCompilation<GlslangCompilation>>::Output;
+impl FromCompilation<CachedCompilation<SpirvCompilation>> for GLSL {
+    type Target = <GLSL as FromCompilation<SpirvCompilation>>::Target;
+    type Options = <GLSL as FromCompilation<SpirvCompilation>>::Options;
+    type Context = <GLSL as FromCompilation<SpirvCompilation>>::Context;
+    type Output = <GLSL as FromCompilation<SpirvCompilation>>::Output;
 
     fn from_compilation(
-        compile: CachedCompilation<GlslangCompilation>,
+        compile: CachedCompilation<SpirvCompilation>,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         GLSL::from_compilation(compile.compilation)
     }
 }
 
-impl FromCompilation<CachedCompilation<GlslangCompilation>> for SPIRV {
-    type Target = <SPIRV as FromCompilation<GlslangCompilation>>::Target;
-    type Options = <SPIRV as FromCompilation<GlslangCompilation>>::Options;
-    type Context = <SPIRV as FromCompilation<GlslangCompilation>>::Context;
-    type Output = <SPIRV as FromCompilation<GlslangCompilation>>::Output;
+impl FromCompilation<CachedCompilation<SpirvCompilation>> for SPIRV {
+    type Target = <SPIRV as FromCompilation<SpirvCompilation>>::Target;
+    type Options = <SPIRV as FromCompilation<SpirvCompilation>>::Options;
+    type Context = <SPIRV as FromCompilation<SpirvCompilation>>::Context;
+    type Output = <SPIRV as FromCompilation<SpirvCompilation>>::Output;
 
     fn from_compilation(
-        compile: CachedCompilation<GlslangCompilation>,
+        compile: CachedCompilation<SpirvCompilation>,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         SPIRV::from_compilation(compile.compilation)
     }

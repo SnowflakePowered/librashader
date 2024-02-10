@@ -4,12 +4,14 @@ pub mod dxil;
 mod spirv;
 pub mod targets;
 pub mod wgsl;
+mod msl;
 
 use crate::back::targets::OutputTarget;
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::reflect::semantics::ShaderSemantics;
 use crate::reflect::{ReflectShader, ShaderReflection};
 use std::fmt::Debug;
+use crate::front::ShaderReflectObject;
 
 /// The output of the shader compiler.
 #[derive(Debug)]
@@ -118,11 +120,11 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::front::GlslangCompilation;
+    use crate::front::{Glslang, ShaderInputCompiler, SpirvCompilation};
     use librashader_preprocess::ShaderSource;
 
     pub fn test() {
         let result = ShaderSource::load("../test/basic.slang").unwrap();
-        let _cross = GlslangCompilation::compile(&result).unwrap();
+        let _cross = Glslang::compile(&result).unwrap();
     }
 }

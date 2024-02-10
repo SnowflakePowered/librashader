@@ -1,7 +1,7 @@
 use crate::back::targets::OutputTarget;
 use crate::back::{CompilerBackend, FromCompilation};
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::front::ShaderCompilation;
+use crate::front::{ShaderInputCompiler, ShaderReflectObject, SpirvCompilation};
 use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
@@ -19,10 +19,10 @@ use rustc_hash::FxHashMap;
 /// #![feature(type_alias_impl_trait)]
 /// use librashader_reflect::back::CompileReflectShader;
 /// use librashader_reflect::back::targets::SPIRV;
-/// use librashader_reflect::front::GlslangCompilation;
+/// use librashader_reflect::front::SpirvCompilation;
 /// use librashader_reflect::reflect::presets::ShaderPassArtifact;
 ///
-/// type VulkanPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, GlslangCompilation>>;
+/// type VulkanPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation>>;
 /// ```
 ///
 /// This allows a runtime to not name the backing type of the compiled artifact if not necessary.
@@ -35,44 +35,46 @@ impl<T: OutputTarget> CompilePresetTarget for T {}
 pub trait CompilePresetTarget: OutputTarget {
     /// Compile passes of a shader preset given the applicable
     /// shader output target, compilation type, and resulting error.
-    fn compile_preset_passes<C, E>(
+    fn compile_preset_passes<C, I, E>(
         passes: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
     ) -> Result<
         (
-            Vec<ShaderPassArtifact<<Self as FromCompilation<C>>::Output>>,
+            Vec<ShaderPassArtifact<<Self as FromCompilation<I>>::Output>>,
             ShaderSemantics,
         ),
         E,
     >
     where
+        I: ShaderReflectObject,
         Self: Sized,
-        Self: FromCompilation<C>,
-        C: ShaderCompilation,
+        Self: FromCompilation<I>,
+        C: ShaderInputCompiler<I>,
         E: From<PreprocessError>,
         E: From<ShaderReflectError>,
         E: From<ShaderCompileError>,
     {
-        compile_preset_passes::<Self, C, E>(passes, textures)
+        compile_preset_passes::<Self, C, I, E>(passes, textures)
     }
 }
 
 /// Compile passes of a shader preset given the applicable
 /// shader output target, compilation type, and resulting error.
-fn compile_preset_passes<T, C, E>(
+fn compile_preset_passes<T, C, I, E>(
     passes: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
 ) -> Result<
     (
-        Vec<ShaderPassArtifact<<T as FromCompilation<C>>::Output>>,
+        Vec<ShaderPassArtifact<<T as FromCompilation<I>>::Output>>,
         ShaderSemantics,
     ),
     E,
 >
 where
+    I: ShaderReflectObject,
     T: OutputTarget,
-    T: FromCompilation<C>,
-    C: ShaderCompilation,
+    T: FromCompilation<I>,
+    C: ShaderInputCompiler<I>,
     E: From<PreprocessError>,
     E: From<ShaderReflectError>,
     E: From<ShaderCompileError>,

@@ -8,7 +8,7 @@ use spirv_to_dxil::{
 
 use crate::back::targets::{OutputTarget, DXIL};
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::front::GlslangCompilation;
+use crate::front::SpirvCompilation;
 use crate::reflect::cross::GlslReflect;
 use crate::reflect::ReflectShader;
 
@@ -16,7 +16,7 @@ impl OutputTarget for DXIL {
     type Output = DxilObject;
 }
 
-impl FromCompilation<GlslangCompilation> for DXIL {
+impl FromCompilation<SpirvCompilation> for DXIL {
     type Target = DXIL;
     type Options = Option<ShaderModel>;
     type Context = ();
@@ -24,7 +24,7 @@ impl FromCompilation<GlslangCompilation> for DXIL {
         + ReflectShader;
 
     fn from_compilation(
-        compile: GlslangCompilation,
+        compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         let reflect = GlslReflect::try_from(&compile)?;
         let vertex = compile.vertex;

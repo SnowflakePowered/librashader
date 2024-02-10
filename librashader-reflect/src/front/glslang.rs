@@ -4,34 +4,20 @@ use librashader_preprocess::ShaderSource;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
+use crate::front::{ShaderInputCompiler, SpirvCompilation};
 
-/// A reflectable shader compilation via glslang.
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone)]
-pub struct GlslangCompilation {
-    pub(crate) vertex: Vec<u32>,
-    pub(crate) fragment: Vec<u32>,
-}
+/// glslang compiler
+pub struct Glslang;
 
-impl GlslangCompilation {
-    /// Tries to compile SPIR-V from the provided shader source.
-    pub fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
+impl ShaderInputCompiler<SpirvCompilation> for Glslang {
+    fn compile(source: &ShaderSource) -> Result<SpirvCompilation, ShaderCompileError> {
         compile_spirv(source)
-    }
-}
-
-impl TryFrom<&ShaderSource> for GlslangCompilation {
-    type Error = ShaderCompileError;
-
-    /// Tries to compile SPIR-V from the provided shader source.
-    fn try_from(source: &ShaderSource) -> Result<Self, Self::Error> {
-        GlslangCompilation::compile(source)
     }
 }
 
 pub(crate) fn compile_spirv(
     source: &ShaderSource,
-) -> Result<GlslangCompilation, ShaderCompileError> {
+) -> Result<SpirvCompilation, ShaderCompileError> {
     let compiler = glslang::Compiler::acquire().ok_or(ShaderCompileError::CompilerInitError)?;
     let options = CompilerOptions {
         source_language: glslang::SourceLanguage::GLSL,
@@ -53,7 +39,7 @@ pub(crate) fn compile_spirv(
     let vertex = Vec::from(vertex.compile()?);
     let fragment = Vec::from(fragment.compile()?);
 
-    Ok(GlslangCompilation { vertex, fragment })
+    Ok(SpirvCompilation { vertex, fragment })
 }
 
 #[cfg(test)]

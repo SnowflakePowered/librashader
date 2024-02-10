@@ -150,7 +150,7 @@ pub mod reflect {
         FromCompilation, ShaderCompilerOutput,
     };
 
-    pub use librashader_reflect::front::GlslangCompilation;
+    pub use librashader_reflect::front::SpirvCompilation;
 
     /// Reflection via SPIRV-Cross.
     #[cfg(feature = "reflect-cross")]
@@ -196,7 +196,7 @@ pub mod reflect {
 
     pub use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 
-    pub use librashader_reflect::front::ShaderCompilation;
+    pub use librashader_reflect::front::ShaderInputCompiler;
     #[doc(hidden)]
     #[cfg(feature = "internal")]
     /// Helper methods for runtimes.

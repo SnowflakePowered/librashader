@@ -4,7 +4,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::GlslangCompilation;
+use librashader_reflect::front::{Glslang, SpirvCompilation};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
@@ -74,18 +74,18 @@ pub(crate) struct FilterCommon {
 }
 
 type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, GlslangCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        HLSL::compile_preset_passes::<CachedCompilation<GlslangCompilation>, FilterChainError>(
+        HLSL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
             shaders, &textures,
         )?
     } else {
-        HLSL::compile_preset_passes::<GlslangCompilation, FilterChainError>(shaders, &textures)?
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
     };
 
     Ok((passes, semantics))
