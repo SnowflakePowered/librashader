@@ -24,9 +24,11 @@ wgpu = { version = "0.19.0", features = ["spirv"] }
 rustc-hash = "1.1.0"
 image = "0.24.7"
 thiserror = "1.0.50"
-rayon = "1.8.0"
 bytemuck = { version = "1.14.0", features = ["derive"] }
 array-concat = "0.5.2"
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+rayon = "1.8.1"
 
 [dev-dependencies]
 config = { version = "0.13.4", features = [] }
