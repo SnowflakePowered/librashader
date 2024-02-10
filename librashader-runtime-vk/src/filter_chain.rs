@@ -207,19 +207,22 @@ impl Drop for FrameResiduals {
     }
 }
 
-type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation> + Send>;
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        SPIRV::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
+        SPIRV::compile_preset_passes::<
+            Glslang,
+            CachedCompilation<SpirvCompilation>,
+            FilterChainError,
+        >(shaders, &textures)?
+    } else {
+        SPIRV::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
             shaders, &textures,
         )?
-    } else {
-        SPIRV::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
     };
 
     Ok((passes, semantics))

@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+use std::marker::PhantomData;
 use crate::error::{SemanticsErrorKind, ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
 use crate::reflect::semantics::{
@@ -6,23 +8,72 @@ use crate::reflect::semantics::{
     UniformMemberBlock, UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta,
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
-use crate::reflect::{align_uniform_size, ReflectShader};
+use crate::reflect::{align_uniform_size, ReflectShader, ShaderOutputCompiler};
 use std::ops::Deref;
 
-use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
+use spirv_cross::spirv::{Ast,  Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::{glsl, hlsl, ErrorCode};
 
 use crate::back::cross::{CrossGlslContext, CrossHlslContext, HlslShaderModel};
-use crate::back::targets::{GLSL, HLSL};
+use crate::back::targets::{GLSL, HLSL, OutputTarget};
 use crate::back::{CompileShader, ShaderCompilerOutput};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 
+
+pub trait SpirvCrossTarget {
+    type CrossTarget: spirv_cross::spirv::Target;
+}
+
+impl SpirvCrossTarget for HLSL {
+    type CrossTarget = spirv_cross::hlsl::Target;
+}
+
+
+impl SpirvCrossTarget for GLSL {
+    type CrossTarget = spirv_cross::glsl::Target;
+}
+
+pub struct SpirvCross<T: OutputTarget + SpirvCrossTarget>(PhantomData<T>);
+
+pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
+pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
+
+impl<T: OutputTarget + SpirvCrossTarget, Opt, Ctx>
+ShaderOutputCompiler<SpirvCompilation, T, Opt, Ctx> for SpirvCross<T>
+// where Spv: spirv_cross::spirv::Target,
+//       Ast<Spv>: spirv_cross::spirv::Compile<Spv>,
+//       Ast<Spv>: spirv_cross::spirv::Parse<Spv>,
+where CrossReflect<<T as SpirvCrossTarget>::CrossTarget>
+      : CompileShader<T, Options = Opt, Context=Ctx>,
+    <T as SpirvCrossTarget>::CrossTarget: spirv_cross::spirv::Target,
+    Ast<<T as SpirvCrossTarget>::CrossTarget>: spirv_cross::spirv::Compile<<T as SpirvCrossTarget>::CrossTarget>,
+      Ast<<T as SpirvCrossTarget>::CrossTarget>: spirv_cross::spirv::Parse<<T as SpirvCrossTarget>::CrossTarget>,
+{
+    fn create_reflection(compiled: SpirvCompilation)
+        -> Result<impl ReflectShader + CompileShader<T, Options = Opt, Context = Ctx>,
+            ShaderReflectError> {
+        let compiled = compiled.borrow();
+        let vertex_module = Module::from_words(&compiled.vertex);
+        let fragment_module = Module::from_words(&compiled.fragment);
+
+        let vertex = Ast::<T::CrossTarget>::parse(&vertex_module)?;
+        let fragment = Ast::<T::CrossTarget>::parse(&fragment_module)?;
+
+        Ok(CrossReflect { vertex, fragment })
+    }
+}
+
 // This is "probably" OK.
-unsafe impl<T: Send + spirv_cross::spirv::Target> Send for CrossReflect<T> {}
+unsafe impl<T: Send + spirv_cross::spirv::Target> Send for CrossReflect<T>
+where         Ast<T>: spirv_cross::spirv::Compile<T>,
+              Ast<T>: spirv_cross::spirv::Parse<T>,
+{}
 
 pub(crate) struct CrossReflect<T>
 where
     T: spirv_cross::spirv::Target,
+    Ast<T>: spirv_cross::spirv::Compile<T>,
+    Ast<T>: spirv_cross::spirv::Parse<T>,
 {
     vertex: Ast<T>,
     fragment: Ast<T>,
@@ -49,8 +100,7 @@ where
     pub fragment: CompiledAst<T>,
 }
 
-pub(crate) type HlslReflect = CrossReflect<hlsl::Target>;
-pub(crate) type GlslReflect = CrossReflect<glsl::Target>;
+
 
 impl ValidateTypeSemantics<Type> for UniqueSemantics {
     fn validate_type(&self, ty: &Type) -> Option<TypeInfo> {

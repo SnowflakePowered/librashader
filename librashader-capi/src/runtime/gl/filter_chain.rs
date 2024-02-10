@@ -3,7 +3,9 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::gl::{FilterChain, FilterChainOptions, FrameOptions, GLFramebuffer, GLImage};
+use librashader::runtime::gl::{
+    FilterChain, FilterChainOptions, FrameOptions, GLFramebuffer, GLImage,
+};
 use std::ffi::CStr;
 use std::ffi::{c_char, c_void, CString};
 use std::mem::MaybeUninit;

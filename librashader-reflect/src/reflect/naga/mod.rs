@@ -1,9 +1,17 @@
+mod lower_samplers;
+
+use std::borrow::Borrow;
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 
+use crate::back::targets::OutputTarget;
+use crate::back::CompileShader;
+use crate::front::SpirvCompilation;
 use naga::{
     AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar,
     ScalarKind, TypeInner, VectorSize,
 };
+use rspirv::binary::Assemble;
+use rspirv::dr::Builder;
 
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
@@ -12,7 +20,57 @@ use crate::reflect::semantics::{
     UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT,
     MAX_PUSH_BUFFER_SIZE,
 };
-use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
+use crate::reflect::{align_uniform_size, ReflectShader, ShaderOutputCompiler, ShaderReflection};
+
+/// Represents the naga output compiler.
+///
+/// The Naga reflector will lower combined image samplers to split,
+/// with the same bind point on descriptor group 1.
+pub struct Naga;
+
+impl<T: OutputTarget, Opt, Ctx> ShaderOutputCompiler<SpirvCompilation, T, Opt, Ctx> for Naga
+where
+    NagaReflect: CompileShader<T, Options = Opt, Context = Ctx>,
+{
+    fn create_reflection(
+        compile: SpirvCompilation,
+    ) -> Result<
+        impl ReflectShader + CompileShader<T, Options = Opt, Context = Ctx>,
+        ShaderReflectError
+    > {
+        fn lower_fragment_shader(words: &[u32]) -> Vec<u32> {
+            let mut loader = rspirv::dr::Loader::new();
+            rspirv::binary::parse_words(words, &mut loader).unwrap();
+            let module = loader.module();
+            let mut builder = Builder::new_from_module(module);
+
+            let mut pass = lower_samplers::LowerCombinedImageSamplerPass::new(&mut builder);
+
+            pass.ensure_op_type_sampler();
+            pass.do_pass();
+
+            let module = builder.module();
+
+            module.assemble()
+        }
+
+        let compile = compile.borrow();
+
+        let options = naga::front::spv::Options {
+            adjust_coordinate_space: true,
+            strict_capabilities: false,
+            block_ctx_dump_prefix: None,
+        };
+
+        let vertex =
+            naga::front::spv::parse_u8_slice(bytemuck::cast_slice(&compile.vertex), &options)?;
+
+        let fragment = lower_fragment_shader(&compile.fragment);
+        let fragment = naga::front::spv::parse_u8_slice(bytemuck::cast_slice(&fragment), &options)?;
+
+        Ok(NagaReflect { vertex, fragment })
+    }
+}
 
 #[derive(Debug)]
 pub(crate) struct NagaReflect {

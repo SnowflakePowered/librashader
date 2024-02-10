@@ -6,18 +6,20 @@ use librashader_reflect::back::targets::{GLSL, HLSL, SPIRV};
 
 use librashader_reflect::back::{CompilerBackend, FromCompilation};
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
-use librashader_reflect::front::{Glslang, ShaderInputCompiler, ShaderReflectObject, SpirvCompilation};
+use librashader_reflect::front::{
+    Glslang, ShaderInputCompiler, ShaderReflectObject, SpirvCompilation,
+};
 
 pub struct CachedCompilation<T> {
     compilation: T,
 }
 
-impl <T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> {
-
-}
+impl<T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> {}
 
 impl<T: ShaderReflectObject + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
-ShaderInputCompiler<CachedCompilation<T>> for Glslang  where Glslang: ShaderInputCompiler<T>
+    ShaderInputCompiler<CachedCompilation<T>> for Glslang
+where
+    Glslang: ShaderInputCompiler<T>,
 {
     fn compile(source: &ShaderSource) -> Result<CachedCompilation<T>, ShaderCompileError> {
         let cache = crate::cache::internal::get_cache();

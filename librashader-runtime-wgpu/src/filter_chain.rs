@@ -37,14 +37,15 @@ use crate::options::{FilterChainOptionsWgpu, FrameOptionsWgpu};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage};
 
-type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<WGSL, SpirvCompilation> + Send>;
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<WGSL, SpirvCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) =
-        WGSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?;
+        WGSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+            shaders, &textures,
+        )?;
     Ok((passes, semantics))
 }
 

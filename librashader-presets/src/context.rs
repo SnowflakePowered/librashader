@@ -379,7 +379,6 @@ pub(crate) fn apply_context(path: &mut PathBuf, context: &FxHashMap<String, Stri
             Component::Normal(path) => {
                 let haystack = path.as_encoded_bytes();
 
-
                 let replaced =
                     WILDCARD_REGEX.replace_all(haystack, |caps: &regex::bytes::Captures| {
                         let Some(name) = caps.get(1) else {

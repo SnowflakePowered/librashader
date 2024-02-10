@@ -108,7 +108,9 @@ fn compile_passes(
             shaders, &textures,
         )?
     } else {
-        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
+        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+            shaders, &textures,
+        )?
     };
 
     Ok((passes, semantics))

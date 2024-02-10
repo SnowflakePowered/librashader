@@ -11,11 +11,11 @@
 #![allow(stable_features)]
 #![allow(unstable_name_collisions)]
 
+pub mod context;
 mod error;
 mod extract_if;
 mod parse;
 mod preset;
-pub mod context;
 
 pub use context::WildcardContext;
 pub use error::*;

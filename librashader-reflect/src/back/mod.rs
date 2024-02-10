@@ -1,17 +1,16 @@
 pub mod cross;
 #[cfg(all(target_os = "windows", feature = "dxil"))]
 pub mod dxil;
+mod msl;
 mod spirv;
 pub mod targets;
 pub mod wgsl;
-mod msl;
 
 use crate::back::targets::OutputTarget;
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::reflect::semantics::ShaderSemantics;
 use crate::reflect::{ReflectShader, ShaderReflection};
 use std::fmt::Debug;
-use crate::front::ShaderReflectObject;
 
 /// The output of the shader compiler.
 #[derive(Debug)]

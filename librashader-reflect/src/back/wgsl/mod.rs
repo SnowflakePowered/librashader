@@ -1,17 +1,13 @@
-mod lower_samplers;
-
 use crate::back::targets::WGSL;
-use crate::back::wgsl::lower_samplers::LowerCombinedImageSamplerPass;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
-use crate::reflect::naga::NagaReflect;
-use crate::reflect::ReflectShader;
+use crate::reflect::naga::{Naga, NagaReflect};
+use crate::reflect::{ReflectShader, ShaderOutputCompiler};
 use naga::back::wgsl::WriterFlags;
 use naga::valid::{Capabilities, ValidationFlags};
 use naga::{AddressSpace, Module};
 use rspirv::binary::Assemble;
-use rspirv::dr::Builder;
 
 /// The context for a WGSL compilation via Naga
 pub struct NagaWgslContext {
@@ -36,36 +32,8 @@ impl FromCompilation<SpirvCompilation> for WGSL {
     fn from_compilation(
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
-        fn lower_fragment_shader(words: &[u32]) -> Vec<u32> {
-            let mut loader = rspirv::dr::Loader::new();
-            rspirv::binary::parse_words(words, &mut loader).unwrap();
-            let module = loader.module();
-            let mut builder = Builder::new_from_module(module);
-
-            let mut pass = LowerCombinedImageSamplerPass::new(&mut builder);
-
-            pass.ensure_op_type_sampler();
-            pass.do_pass();
-
-            let module = builder.module();
-
-            module.assemble()
-        }
-
-        let options = naga::front::spv::Options {
-            adjust_coordinate_space: true,
-            strict_capabilities: false,
-            block_ctx_dump_prefix: None,
-        };
-
-        let vertex =
-            naga::front::spv::parse_u8_slice(bytemuck::cast_slice(&compile.vertex), &options)?;
-
-        let fragment = lower_fragment_shader(&compile.fragment);
-        let fragment = naga::front::spv::parse_u8_slice(bytemuck::cast_slice(&fragment), &options)?;
-
         Ok(CompilerBackend {
-            backend: NagaReflect { vertex, fragment },
+            backend: Naga::create_reflection(compile)?,
         })
     }
 }

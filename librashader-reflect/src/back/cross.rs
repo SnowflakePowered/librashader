@@ -2,8 +2,8 @@ use crate::back::targets::{GLSL, HLSL};
 use crate::back::{CompileShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
 use crate::front::SpirvCompilation;
-use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect};
-use crate::reflect::ReflectShader;
+use crate::reflect::cross::{CompiledProgram, GlslReflect, HlslReflect, SpirvCross};
+use crate::reflect::{ReflectShader, ShaderOutputCompiler};
 
 /// The GLSL version to target.
 pub use spirv_cross::glsl::Version as GlslVersion;
@@ -29,8 +29,9 @@ impl FromCompilation<SpirvCompilation> for GLSL {
     fn from_compilation(
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        let backend = SpirvCross::<GLSL>::create_reflection(compile)?;
         Ok(CompilerBackend {
-            backend: GlslReflect::try_from(&compile)?,
+            backend,
         })
     }
 }
@@ -52,7 +53,7 @@ impl FromCompilation<SpirvCompilation> for HLSL {
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: HlslReflect::try_from(&compile)?,
+            backend: SpirvCross::<HLSL>::create_reflection(compile)?,
         })
     }
 }

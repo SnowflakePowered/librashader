@@ -171,7 +171,7 @@ pub fn do_lex(input: &str) -> Result<Vec<Token>, ParsePresetError> {
 
 #[cfg(test)]
 mod test {
-    use crate::parse::token::{single_comment};
+    use crate::parse::token::single_comment;
 
     #[test]
     fn parses_single_line_comment() {
