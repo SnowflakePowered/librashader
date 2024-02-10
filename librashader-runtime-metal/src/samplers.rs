@@ -1,31 +1,43 @@
-use icrate::Metal::{MTLDevice, MTLSamplerDescriptor, MTLSamplerState};
+use icrate::Metal::{
+    MTLCompareFunctionNever, MTLDevice, MTLSamplerAddressMode,
+    MTLSamplerBorderColorTransparentBlack, MTLSamplerDescriptor, MTLSamplerMinMagFilter,
+    MTLSamplerState,
+};
+use librashader_common::{FilterMode, WrapMode};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use rustc_hash::FxHashMap;
-use librashader_common::{FilterMode, WrapMode};
+
+use crate::error::{FilterChainError, Result};
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
-    samplers: FxHashMap<(WrapMode, FilterMode, FilterMode), Id<ProtocolObject<dyn MTLSamplerState>>>,
+    samplers:
+        FxHashMap<(WrapMode, FilterMode, FilterMode), Id<ProtocolObject<dyn MTLSamplerState>>>,
 }
 
 impl SamplerSet {
     #[inline(always)]
-    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> Id<ProtocolObject<dyn MTLSamplerState>>> {
+    pub fn get(
+        &self,
+        wrap: WrapMode,
+        filter: FilterMode,
+        mipmap: FilterMode,
+    ) -> &ProtocolObject<dyn MTLSamplerState> {
         // eprintln!("{wrap}, {filter}, {mip}");
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
-        unsafe {
-            Id::clone(
-                &self
-                    .samplers
-                    .get(&(wrap, filter, mipmap))
-                    .unwrap_unchecked(),
-            )
-        }
+        let id: &Id<ProtocolObject<dyn MTLSamplerState>> = unsafe {
+            self
+                .samplers
+                .get(&(wrap, filter, mipmap))
+                .unwrap_unchecked()
+        };
+
+        id.as_ref()
     }
 
-    pub fn new(device: &dyn MTLDevice) -> SamplerSet {
+    pub fn new(device: &ProtocolObject<dyn MTLDevice>) -> Result<SamplerSet> {
         let mut samplers = FxHashMap::default();
         let wrap_modes = &[
             WrapMode::ClampToBorder,
@@ -37,35 +49,37 @@ impl SamplerSet {
             for filter_mode in &[FilterMode::Linear, FilterMode::Nearest] {
                 for mipmap_filter in &[FilterMode::Linear, FilterMode::Nearest] {
                     let descriptor = MTLSamplerDescriptor::new();
-                    descriptor
-                        .setRAddressMode(MTLSamplerA)
-                    samplers.insert(
-                        (*wrap_mode, *filter_mode, *mipmap_filter),
+                    descriptor.setRAddressMode(MTLSamplerAddressMode::from(*wrap_mode));
+                    descriptor.setSAddressMode(MTLSamplerAddressMode::from(*wrap_mode));
+                    descriptor.setTAddressMode(MTLSamplerAddressMode::from(*wrap_mode));
 
-                        device.newSamplerStateWithDescriptor(&MTLSamplerDescriptor {
+                    descriptor.setMagFilter(MTLSamplerMinMagFilter::from(*filter_mode));
 
-                        })
-                        Arc::new(device.create_sampler(&SamplerDescriptor {
-                            label: None,
-                            address_mode_u: (*wrap_mode).into(),
-                            address_mode_v: (*wrap_mode).into(),
-                            address_mode_w: (*wrap_mode).into(),
-                            mag_filter: (*filter_mode).into(),
-                            min_filter: (*filter_mode).into(),
-                            mipmap_filter: (*mipmap_filter).into(),
-                            lod_min_clamp: 0.0,
-                            lod_max_clamp: 1000.0,
-                            compare: None,
-                            anisotropy_clamp: 1,
-                            border_color: Some(SamplerBorderColor::TransparentBlack),
-                        })),
-                    );
+                    descriptor.setMinFilter(MTLSamplerMinMagFilter::from(*filter_mode));
+                    descriptor.setMipFilter(MTLSamplerMinMagFilter::from(*mipmap_filter));
+                    descriptor.setLodMinClamp(0.0);
+                    descriptor.setLodMaxClamp(1000.0);
+                    descriptor.setCompareFunction(MTLCompareFunctionNever);
+                    descriptor.setMaxAnisotropy(1);
+                    descriptor.setBorderColor(MTLSamplerBorderColorTransparentBlack);
+                    descriptor.setNormalizedCoordinates(true);
+
+                    let Some(sampler_state) = device.newSamplerStateWithDescriptor(&descriptor)
+                    else {
+                        return Err(FilterChainError::SamplerError(
+                            *wrap_mode,
+                            *filter_mode,
+                            *mipmap_filter,
+                        ));
+                    };
+
+                    samplers.insert((*wrap_mode, *filter_mode, *mipmap_filter), sampler_state);
                 }
             }
         }
 
         // assert all samplers were created.
         assert_eq!(samplers.len(), wrap_modes.len() * 2 * 2);
-        SamplerSet { samplers }
+        Ok(SamplerSet { samplers })
     }
 }
