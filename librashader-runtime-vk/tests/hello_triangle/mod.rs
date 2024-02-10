@@ -26,7 +26,7 @@ use vulkan_base::VulkanBase;
 use librashader_common::Viewport;
 
 use librashader_runtime_vk::options::FrameOptionsVulkan;
-use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::platform::windows::EventLoopBuilderExtWindows;
 
@@ -55,32 +55,29 @@ impl VulkanWindow {
         mut filter_chain: FilterChainVulkan,
     ) {
         let mut counter = 0;
-        event_loop.run(move |event, _, control_flow| match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::KeyboardInput { input, .. } => match input {
-                    KeyboardInput {
-                        virtual_keycode,
-                        state,
-                        ..
-                    } => match (virtual_keycode, state) {
-                        (Some(VirtualKeyCode::Escape), ElementState::Pressed) => {
-                            *control_flow = ControlFlow::Exit
+        event_loop
+            .run(|event, target| {
+                match event {
+                    Event::WindowEvent {
+                        window_id: _,
+                        event,
+                    } => match event {
+                        WindowEvent::Resized(new_size) => {
+                            // On macos the window needs to be redrawn manually after resizing
+                            window.request_redraw();
                         }
+                        WindowEvent::RedrawRequested => {
+                            VulkanWindow::draw_frame(counter, &vulkan, &mut filter_chain);
+                            counter += 1;
+                        }
+                        WindowEvent::CloseRequested => target.exit(),
                         _ => {}
                     },
-                },
-                _ => {}
-            },
-            Event::MainEventsCleared => {
-                window.request_redraw();
-            }
-            Event::RedrawRequested(_window_id) => {
-                VulkanWindow::draw_frame(counter, &vulkan, &mut filter_chain);
-                counter += 1;
-            }
-            _ => (),
-        })
+                    Event::AboutToWait => window.request_redraw(),
+                    _ => {}
+                }
+            })
+            .unwrap();
     }
 
     unsafe fn record_command_buffer(
@@ -405,7 +402,8 @@ pub fn main(vulkan: VulkanBase, filter_chain: FilterChainVulkan) {
     let event_loop = EventLoopBuilder::new()
         .with_any_thread(true)
         .with_dpi_aware(true)
-        .build();
+        .build()
+        .unwrap();
 
     let window = VulkanWindow::init_window(&event_loop);
     let surface = VulkanSurface::new(&vulkan, &window).unwrap();
