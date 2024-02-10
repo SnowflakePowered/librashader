@@ -10,8 +10,8 @@ mod value;
 pub(crate) type Span<'a> = LocatedSpan<&'a str>;
 pub(crate) use token::Token;
 
-use crate::error::ParsePresetError;
 use crate::context::{VideoDriver, WildcardContext};
+use crate::error::ParsePresetError;
 use crate::parse::preset::resolve_values;
 use crate::parse::value::parse_preset;
 use crate::ShaderPreset;

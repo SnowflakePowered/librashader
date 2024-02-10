@@ -5,6 +5,7 @@
 
 mod buffer;
 mod descriptor_heap;
+mod draw_quad;
 mod filter_chain;
 mod filter_pass;
 mod framebuffer;
@@ -12,7 +13,6 @@ mod graphics_pipeline;
 mod luts;
 mod mipmap;
 mod parameters;
-mod draw_quad;
 mod samplers;
 mod texture;
 mod util;

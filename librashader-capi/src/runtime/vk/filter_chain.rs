@@ -3,7 +3,9 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::vk::{FrameOptions, FilterChainOptions, FilterChain, VulkanImage, VulkanInstance};
+use librashader::runtime::vk::{
+    FilterChain, FilterChainOptions, FrameOptions, VulkanImage, VulkanInstance,
+};
 use std::ffi::CStr;
 use std::ffi::{c_char, c_void};
 use std::mem::MaybeUninit;

@@ -17,8 +17,8 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::extract_if::MakeExtractIf;
 use crate::context::{apply_context, WildcardContext};
+use crate::extract_if::MakeExtractIf;
 
 #[derive(Debug)]
 pub enum Value {
@@ -615,8 +615,8 @@ pub fn parse_values(
 #[cfg(test)]
 mod test {
     use crate::parse::value::parse_preset;
-    use std::path::PathBuf;
     use crate::WildcardContext;
+    use std::path::PathBuf;
 
     #[test]
     pub fn parse_basic() {

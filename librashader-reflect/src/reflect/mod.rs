@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use crate::error::ShaderReflectError;
 use semantics::ShaderSemantics;
 
@@ -12,8 +13,18 @@ pub mod presets;
 
 mod helper;
 
-#[cfg(feature = "wgsl")]
+#[cfg(feature = "naga")]
 pub mod naga;
+
+pub trait ShaderOutputCompiler<O: ShaderReflectObject, T: OutputTarget, Opt, Ctx> {
+    /// Create the reflection object
+    fn create_reflection(
+        compiled: O,
+    ) -> Result<
+        impl ReflectShader + CompileShader<T, Options = Opt, Context = Ctx>,
+        ShaderReflectError,
+    >;
+}
 
 /// A trait for compilation outputs that can provide reflection information.
 pub trait ReflectShader {
@@ -26,6 +37,9 @@ pub trait ReflectShader {
     ) -> Result<ShaderReflection, ShaderReflectError>;
 }
 
+use crate::back::targets::OutputTarget;
+use crate::back::CompileShader;
+use crate::front::ShaderReflectObject;
 pub use semantics::ShaderReflection;
 
 #[inline(always)]

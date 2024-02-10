@@ -2,9 +2,9 @@ use crate::error::ShaderCompileError;
 use glslang::{CompilerOptions, ShaderInput};
 use librashader_preprocess::ShaderSource;
 
+use crate::front::{ShaderInputCompiler, SpirvCompilation};
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
-use crate::front::{ShaderInputCompiler, SpirvCompilation};
 
 /// glslang compiler
 pub struct Glslang;
@@ -15,9 +15,7 @@ impl ShaderInputCompiler<SpirvCompilation> for Glslang {
     }
 }
 
-pub(crate) fn compile_spirv(
-    source: &ShaderSource,
-) -> Result<SpirvCompilation, ShaderCompileError> {
+pub(crate) fn compile_spirv(source: &ShaderSource) -> Result<SpirvCompilation, ShaderCompileError> {
     let compiler = glslang::Compiler::acquire().ok_or(ShaderCompileError::CompilerInitError)?;
     let options = CompilerOptions {
         source_language: glslang::SourceLanguage::GLSL,

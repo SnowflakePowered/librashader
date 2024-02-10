@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 
 mod glslang;
 
-
-pub trait ShaderReflectObject : Sized {
-
-}
+pub trait ShaderReflectObject: Sized {}
 
 pub use glslang::Glslang;
 
@@ -17,7 +14,7 @@ pub trait ShaderInputCompiler<O: ShaderReflectObject>: Sized {
     fn compile(source: &ShaderSource) -> Result<O, ShaderCompileError>;
 }
 
-impl ShaderReflectObject for SpirvCompilation { }
+impl ShaderReflectObject for SpirvCompilation {}
 /// A reflectable shader compilation via glslang.
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
@@ -41,4 +38,3 @@ impl TryFrom<&ShaderSource> for SpirvCompilation {
         Glslang::compile(source)
     }
 }
-

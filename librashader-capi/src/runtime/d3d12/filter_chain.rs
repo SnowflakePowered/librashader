@@ -14,7 +14,9 @@ use windows::Win32::Graphics::Direct3D12::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::d3d12::{FilterChain, FilterChainOptions, FrameOptions, D3D12InputImage, D3D12OutputView};
+use librashader::runtime::d3d12::{
+    D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions,
+};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Direct3D 12 parameters for the source image.

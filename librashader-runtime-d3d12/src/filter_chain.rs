@@ -3,6 +3,7 @@ use crate::descriptor_heap::{
     CpuStagingHeap, D3D12DescriptorHeap, D3D12DescriptorHeapSlot, RenderTargetHeap,
     ResourceWorkHeap,
 };
+use crate::draw_quad::DrawQuad;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
 use crate::framebuffer::OwnedImage;
@@ -10,7 +11,6 @@ use crate::graphics_pipeline::{D3D12GraphicsPipeline, D3D12RootSignature};
 use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
 use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
-use crate::draw_quad::DrawQuad;
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
@@ -156,7 +156,9 @@ fn compile_passes_dxil(
             shaders, &textures,
         )?
     } else {
-        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
+        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+            shaders, &textures,
+        )?
     };
 
     Ok((passes, semantics))
@@ -173,7 +175,9 @@ fn compile_passes_hlsl(
             shaders, &textures,
         )?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+            shaders, &textures,
+        )?
     };
 
     Ok((passes, semantics))

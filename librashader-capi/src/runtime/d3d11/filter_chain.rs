@@ -3,7 +3,9 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::d3d11::{FilterChain, FilterChainOptions, FrameOptions, D3D11InputView, D3D11OutputView};
+use librashader::runtime::d3d11::{
+    D3D11InputView, D3D11OutputView, FilterChain, FilterChainOptions, FrameOptions,
+};
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};

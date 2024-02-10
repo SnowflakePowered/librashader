@@ -73,8 +73,7 @@ pub(crate) struct FilterCommon {
     pub(crate) draw_quad: DrawQuad,
 }
 
-type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation> + Send>;
+type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -85,7 +84,9 @@ fn compile_passes(
             shaders, &textures,
         )?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(shaders, &textures)?
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+            shaders, &textures,
+        )?
     };
 
     Ok((passes, semantics))

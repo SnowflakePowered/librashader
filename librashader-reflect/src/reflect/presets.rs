@@ -1,7 +1,7 @@
 use crate::back::targets::OutputTarget;
 use crate::back::{CompilerBackend, FromCompilation};
 use crate::error::{ShaderCompileError, ShaderReflectError};
-use crate::front::{ShaderInputCompiler, ShaderReflectObject, SpirvCompilation};
+use crate::front::{ShaderInputCompiler, ShaderReflectObject};
 use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
