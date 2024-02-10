@@ -39,7 +39,7 @@ features = [
     "Win32_Graphics_Direct3D12",
 ]
 
-[target.'cfg(macos)'.dependencies.icrate]
+[target.'cfg(target_vendor="apple")'.dependencies.icrate]
 optional = true
 version = "0.1.0"
-features = ["Metal"]
+features = ["Metal", "Metal_all"]
