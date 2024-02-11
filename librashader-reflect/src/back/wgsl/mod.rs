@@ -22,7 +22,7 @@ pub struct WgslCompileOptions {
     pub sampler_bind_group: u32,
 }
 
-impl FromCompilation<SpirvCompilation> for WGSL {
+impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     type Target = WGSL;
     type Options = WgslCompileOptions;
     type Context = NagaWgslContext;

@@ -66,11 +66,14 @@ where
 }
 
 #[cfg(all(target_os = "windows", feature = "d3d"))]
-impl FromCompilation<CachedCompilation<SpirvCompilation>> for DXIL {
-    type Target = <DXIL as FromCompilation<SpirvCompilation>>::Target;
-    type Options = <DXIL as FromCompilation<SpirvCompilation>>::Options;
-    type Context = <DXIL as FromCompilation<SpirvCompilation>>::Context;
-    type Output = <DXIL as FromCompilation<SpirvCompilation>>::Output;
+impl<T> FromCompilation<CachedCompilation<SpirvCompilation>, T> for DXIL
+where
+    DXIL: FromCompilation<SpirvCompilation, T>,
+{
+    type Target = <DXIL as FromCompilation<SpirvCompilation, T>>::Target;
+    type Options = <DXIL as FromCompilation<SpirvCompilation, T>>::Options;
+    type Context = <DXIL as FromCompilation<SpirvCompilation, T>>::Context;
+    type Output = <DXIL as FromCompilation<SpirvCompilation, T>>::Output;
 
     fn from_compilation(
         compile: CachedCompilation<SpirvCompilation>,
@@ -79,11 +82,14 @@ impl FromCompilation<CachedCompilation<SpirvCompilation>> for DXIL {
     }
 }
 
-impl FromCompilation<CachedCompilation<SpirvCompilation>> for HLSL {
-    type Target = <HLSL as FromCompilation<SpirvCompilation>>::Target;
-    type Options = <HLSL as FromCompilation<SpirvCompilation>>::Options;
-    type Context = <HLSL as FromCompilation<SpirvCompilation>>::Context;
-    type Output = <HLSL as FromCompilation<SpirvCompilation>>::Output;
+impl<T> FromCompilation<CachedCompilation<SpirvCompilation>, T> for HLSL
+where
+    HLSL: FromCompilation<SpirvCompilation, T>,
+{
+    type Target = <HLSL as FromCompilation<SpirvCompilation, T>>::Target;
+    type Options = <HLSL as FromCompilation<SpirvCompilation, T>>::Options;
+    type Context = <HLSL as FromCompilation<SpirvCompilation, T>>::Context;
+    type Output = <HLSL as FromCompilation<SpirvCompilation, T>>::Output;
 
     fn from_compilation(
         compile: CachedCompilation<SpirvCompilation>,
@@ -92,11 +98,14 @@ impl FromCompilation<CachedCompilation<SpirvCompilation>> for HLSL {
     }
 }
 
-impl FromCompilation<CachedCompilation<SpirvCompilation>> for GLSL {
-    type Target = <GLSL as FromCompilation<SpirvCompilation>>::Target;
-    type Options = <GLSL as FromCompilation<SpirvCompilation>>::Options;
-    type Context = <GLSL as FromCompilation<SpirvCompilation>>::Context;
-    type Output = <GLSL as FromCompilation<SpirvCompilation>>::Output;
+impl<T> FromCompilation<CachedCompilation<SpirvCompilation>, T> for GLSL
+where
+    GLSL: FromCompilation<SpirvCompilation, T>,
+{
+    type Target = <GLSL as FromCompilation<SpirvCompilation, T>>::Target;
+    type Options = <GLSL as FromCompilation<SpirvCompilation, T>>::Options;
+    type Context = <GLSL as FromCompilation<SpirvCompilation, T>>::Context;
+    type Output = <GLSL as FromCompilation<SpirvCompilation, T>>::Output;
 
     fn from_compilation(
         compile: CachedCompilation<SpirvCompilation>,
@@ -105,11 +114,14 @@ impl FromCompilation<CachedCompilation<SpirvCompilation>> for GLSL {
     }
 }
 
-impl FromCompilation<CachedCompilation<SpirvCompilation>> for SPIRV {
-    type Target = <SPIRV as FromCompilation<SpirvCompilation>>::Target;
-    type Options = <SPIRV as FromCompilation<SpirvCompilation>>::Options;
-    type Context = <SPIRV as FromCompilation<SpirvCompilation>>::Context;
-    type Output = <SPIRV as FromCompilation<SpirvCompilation>>::Output;
+impl<T> FromCompilation<CachedCompilation<SpirvCompilation>, T> for SPIRV
+where
+    SPIRV: FromCompilation<SpirvCompilation, T>,
+{
+    type Target = <SPIRV as FromCompilation<SpirvCompilation, T>>::Target;
+    type Options = <SPIRV as FromCompilation<SpirvCompilation, T>>::Options;
+    type Context = <SPIRV as FromCompilation<SpirvCompilation, T>>::Context;
+    type Output = <SPIRV as FromCompilation<SpirvCompilation, T>>::Output;
 
     fn from_compilation(
         compile: CachedCompilation<SpirvCompilation>,

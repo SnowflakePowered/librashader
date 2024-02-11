@@ -2,7 +2,7 @@ use crate::back::targets::SPIRV;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
-use crate::reflect::cross::GlslReflect;
+use crate::reflect::cross::{GlslReflect, SpirvCross};
 use crate::reflect::semantics::ShaderSemantics;
 use crate::reflect::{ReflectShader, ShaderReflection};
 
@@ -13,7 +13,7 @@ pub(crate) struct WriteSpirV {
     pub(crate) fragment: Vec<u32>,
 }
 
-impl FromCompilation<SpirvCompilation> for SPIRV {
+impl FromCompilation<SpirvCompilation, SpirvCross<SPIRV>> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
     type Context = ();

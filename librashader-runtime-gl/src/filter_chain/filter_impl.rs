@@ -20,6 +20,7 @@ use librashader_reflect::front::{Glslang, SpirvCompilation};
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
 use librashader_cache::CachedCompilation;
+use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
@@ -97,18 +98,22 @@ impl<T: GLInterface> FilterChainImpl<T> {
     }
 }
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<GLSL, SpirvCompilation>>;
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<GLSL, SpirvCompilation, SpirvCross<GLSL>>>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        GLSL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
-            shaders, &textures,
-        )?
+        GLSL::compile_preset_passes::<
+            Glslang,
+            CachedCompilation<SpirvCompilation>,
+            SpirvCross<GLSL>,
+            FilterChainError,
+        >(shaders, &textures)?
     } else {
-        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<GLSL>, FilterChainError>(
             shaders, &textures,
         )?
     };

@@ -25,6 +25,7 @@ use crate::{error, util, D3D11OutputView};
 use librashader_cache::cache_shader_object;
 use librashader_cache::CachedCompilation;
 use librashader_presets::context::VideoDriver;
+use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
@@ -73,18 +74,22 @@ pub(crate) struct FilterCommon {
     pub(crate) draw_quad: DrawQuad,
 }
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation> + Send>;
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross<HLSL>> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        HLSL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
-            shaders, &textures,
-        )?
+        HLSL::compile_preset_passes::<
+            Glslang,
+            CachedCompilation<SpirvCompilation>,
+            SpirvCross<HLSL>,
+            FilterChainError,
+        >(shaders, &textures)?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<HLSL>, FilterChainError>(
             shaders, &textures,
         )?
     };

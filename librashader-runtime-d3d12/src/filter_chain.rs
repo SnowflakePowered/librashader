@@ -48,6 +48,7 @@ use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFIN
 
 use librashader_cache::CachedCompilation;
 use librashader_presets::context::VideoDriver;
+use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -145,18 +146,21 @@ impl Drop for FrameResiduals {
 }
 
 type DxilShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation, SpirvCross<DXIL>> + Send>;
 fn compile_passes_dxil(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<DxilShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        DXIL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
-            shaders, &textures,
-        )?
+        DXIL::compile_preset_passes::<
+            Glslang,
+            CachedCompilation<SpirvCompilation>,
+            SpirvCross<DXIL>,
+            FilterChainError,
+        >(shaders, &textures)?
     } else {
-        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<DXIL>, FilterChainError>(
             shaders, &textures,
         )?
     };
@@ -164,18 +168,21 @@ fn compile_passes_dxil(
     Ok((passes, semantics))
 }
 type HlslShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross<HLSL>> + Send>;
 fn compile_passes_hlsl(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
     disable_cache: bool,
 ) -> Result<(Vec<HlslShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
-        HLSL::compile_preset_passes::<Glslang, CachedCompilation<SpirvCompilation>, FilterChainError>(
-            shaders, &textures,
-        )?
+        HLSL::compile_preset_passes::<
+            Glslang,
+            CachedCompilation<SpirvCompilation>,
+            SpirvCross<HLSL>,
+            FilterChainError,
+        >(shaders, &textures)?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<HLSL>, FilterChainError>(
             shaders, &textures,
         )?
     };

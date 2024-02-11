@@ -18,11 +18,12 @@ use rustc_hash::FxHashMap;
 /// ```rust
 /// #![feature(type_alias_impl_trait)]
 /// use librashader_reflect::back::CompileReflectShader;
-/// use librashader_reflect::back::targets::SPIRV;
+/// use librashader_reflect::back::targets::{GLSL, SPIRV};
 /// use librashader_reflect::front::SpirvCompilation;
+/// use librashader_reflect::reflect::cross::SpirvCross;
 /// use librashader_reflect::reflect::presets::ShaderPassArtifact;
 ///
-/// type VulkanPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation>>;
+/// type VulkanPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross<GLSL>>>;
 /// ```
 ///
 /// This allows a runtime to not name the backing type of the compiled artifact if not necessary.
@@ -35,12 +36,12 @@ impl<T: OutputTarget> CompilePresetTarget for T {}
 pub trait CompilePresetTarget: OutputTarget {
     /// Compile passes of a shader preset given the applicable
     /// shader output target, compilation type, and resulting error.
-    fn compile_preset_passes<C, I, E>(
+    fn compile_preset_passes<C, I, R, E>(
         passes: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
     ) -> Result<
         (
-            Vec<ShaderPassArtifact<<Self as FromCompilation<I>>::Output>>,
+            Vec<ShaderPassArtifact<<Self as FromCompilation<I, R>>::Output>>,
             ShaderSemantics,
         ),
         E,
@@ -48,24 +49,24 @@ pub trait CompilePresetTarget: OutputTarget {
     where
         I: ShaderReflectObject,
         Self: Sized,
-        Self: FromCompilation<I>,
+        Self: FromCompilation<I, R>,
         C: ShaderInputCompiler<I>,
         E: From<PreprocessError>,
         E: From<ShaderReflectError>,
         E: From<ShaderCompileError>,
     {
-        compile_preset_passes::<Self, C, I, E>(passes, textures)
+        compile_preset_passes::<Self, C, I, R, E>(passes, textures)
     }
 }
 
 /// Compile passes of a shader preset given the applicable
 /// shader output target, compilation type, and resulting error.
-fn compile_preset_passes<T, C, I, E>(
+fn compile_preset_passes<T, C, I, R, E>(
     passes: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
 ) -> Result<
     (
-        Vec<ShaderPassArtifact<<T as FromCompilation<I>>::Output>>,
+        Vec<ShaderPassArtifact<<T as FromCompilation<I, R>>::Output>>,
         ShaderSemantics,
     ),
     E,
@@ -73,7 +74,7 @@ fn compile_preset_passes<T, C, I, E>(
 where
     I: ShaderReflectObject,
     T: OutputTarget,
-    T: FromCompilation<I>,
+    T: FromCompilation<I, R>,
     C: ShaderInputCompiler<I>,
     E: From<PreprocessError>,
     E: From<ShaderReflectError>,
