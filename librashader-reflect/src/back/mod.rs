@@ -42,26 +42,26 @@ pub trait CompileShader<T: OutputTarget> {
 ///
 /// This trait is automatically implemented for reflected outputs that have [`FromCompilation`](crate::back::FromCompilation) implement
 /// for a given target that also implement [`CompileShader`](crate::back::CompileShader) for that target.
-pub trait CompileReflectShader<T: OutputTarget, C>:
+pub trait CompileReflectShader<T: OutputTarget, C, O>:
     CompileShader<
         T,
-        Options = <T as FromCompilation<C>>::Options,
-        Context = <T as FromCompilation<C>>::Context,
+        Options = <T as FromCompilation<C, O>>::Options,
+        Context = <T as FromCompilation<C, O>>::Context,
     > + ReflectShader
 where
-    T: FromCompilation<C>,
+    T: FromCompilation<C, O>,
 {
 }
 
-impl<T, C, O> CompileReflectShader<T, C> for O
+impl<T, C, O, R> CompileReflectShader<T, C, R> for O
 where
     T: OutputTarget,
-    T: FromCompilation<C>,
+    T: FromCompilation<C, R>,
     O: ReflectShader,
     O: CompileShader<
         T,
-        Options = <T as FromCompilation<C>>::Options,
-        Context = <T as FromCompilation<C>>::Context,
+        Options = <T as FromCompilation<C, R>>::Options,
+        Context = <T as FromCompilation<C, R>>::Context,
     >,
 {
 }
@@ -83,7 +83,7 @@ where
 }
 
 /// A trait for reflectable compilations that can be transformed into an object ready for reflection or compilation.
-pub trait FromCompilation<T> {
+pub trait FromCompilation<T, R> {
     /// The target that the transformed object is expected to compile for.
     type Target: OutputTarget;
     /// Options provided to the compiler.

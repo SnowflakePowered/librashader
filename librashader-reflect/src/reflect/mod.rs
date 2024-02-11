@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use crate::error::ShaderReflectError;
 use semantics::ShaderSemantics;
 

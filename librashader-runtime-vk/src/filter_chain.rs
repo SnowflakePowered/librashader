@@ -34,6 +34,7 @@ use std::sync::Arc;
 
 use librashader_cache::CachedCompilation;
 use librashader_presets::context::VideoDriver;
+use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -207,7 +208,9 @@ impl Drop for FrameResiduals {
     }
 }
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation> + Send>;
+type ShaderPassMeta = ShaderPassArtifact<
+    impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross<SPIRV>> + Send,
+>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -217,12 +220,16 @@ fn compile_passes(
         SPIRV::compile_preset_passes::<
             Glslang,
             CachedCompilation<SpirvCompilation>,
+            SpirvCross<SPIRV>,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        SPIRV::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
-            shaders, &textures,
-        )?
+        SPIRV::compile_preset_passes::<
+            Glslang,
+            SpirvCompilation,
+            SpirvCross<SPIRV>,
+            FilterChainError,
+        >(shaders, &textures)?
     };
 
     Ok((passes, semantics))

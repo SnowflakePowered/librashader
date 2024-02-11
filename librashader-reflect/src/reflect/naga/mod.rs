@@ -1,7 +1,7 @@
 mod lower_samplers;
 
-use std::borrow::Borrow;
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
+use std::borrow::Borrow;
 
 use crate::back::targets::OutputTarget;
 use crate::back::CompileShader;
@@ -36,7 +36,7 @@ where
         compile: SpirvCompilation,
     ) -> Result<
         impl ReflectShader + CompileShader<T, Options = Opt, Context = Ctx>,
-        ShaderReflectError
+        ShaderReflectError,
     > {
         fn lower_fragment_shader(words: &[u32]) -> Vec<u32> {
             let mut loader = rspirv::dr::Loader::new();

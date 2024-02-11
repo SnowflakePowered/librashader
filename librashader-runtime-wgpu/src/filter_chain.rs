@@ -21,6 +21,7 @@ use crate::buffer::WgpuStagedBuffer;
 use crate::draw_quad::DrawQuad;
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_reflect::back::wgsl::WgslCompileOptions;
+use librashader_reflect::reflect::naga::Naga;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -37,13 +38,14 @@ use crate::options::{FilterChainOptionsWgpu, FrameOptionsWgpu};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage};
 
-type ShaderPassMeta = ShaderPassArtifact<impl CompileReflectShader<WGSL, SpirvCompilation> + Send>;
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<WGSL, SpirvCompilation, Naga> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) =
-        WGSL::compile_preset_passes::<Glslang, SpirvCompilation, FilterChainError>(
+        WGSL::compile_preset_passes::<Glslang, SpirvCompilation, Naga, FilterChainError>(
             shaders, &textures,
         )?;
     Ok((passes, semantics))
