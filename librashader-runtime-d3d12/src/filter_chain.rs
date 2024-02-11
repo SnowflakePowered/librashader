@@ -27,7 +27,6 @@ use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use rustc_hash::FxHashMap;
-use spirv_cross::hlsl::ShaderModel;
 use std::collections::VecDeque;
 use std::mem::ManuallyDrop;
 use std::path::Path;
@@ -502,7 +501,9 @@ impl FilterChainD3D12 {
                         (dxil_reflection, graphics_pipeline)
                     } else {
                         let hlsl_reflection = hlsl.reflect(index, semantics)?;
-                        let hlsl = hlsl.compile(Some(ShaderModel::V6_0))?;
+                        let hlsl = hlsl.compile(
+                            Some(librashader_reflect::back::hlsl::HlslShaderModel::V6_0)
+                        )?;
 
                         let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(
                             device,

@@ -31,15 +31,15 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
             for resource in &resources.push_constant_buffers {
                 let location = ResourceBindingLocation {
                     stage,
-                    desc_set: u32::MAX, // ResourceBindingPushConstantDescriptorSet
-                    binding: 0,
+                    desc_set: msl::PUSH_CONSTANT_DESCRIPTOR_SET,
+                    binding: msl::PUSH_CONSTANT_BINDING,
                 };
-
                 let overridden = ResourceBinding {
                     buffer_id: ast.get_decoration(resource.id, Decoration::Binding)?,
                     texture_id: 0,
                     sampler_id: 0,
-                    count: 0,
+                    base_type: None,
+                    count: 0, // no arrays allowed in slang shaders, otherwise we'd have to get the type and get the array length
                 };
 
                 binding_map.insert(location, overridden);
@@ -57,7 +57,8 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
                     buffer_id: binding,
                     texture_id: binding,
                     sampler_id: binding,
-                    count: 0,
+                    base_type: None,
+                    count: 0, // no arrays allowed in slang shaders, otherwise we'd have to get the type and get the array length
                 };
 
                 binding_map.insert(location, overridden);
@@ -77,6 +78,7 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
             &mut frag_options.resource_binding_overrides
         )?;
 
+        eprintln!("{:?}", frag_options.resource_binding_overrides);
         self.vertex.set_compiler_options(&vert_options)?;
         self.fragment.set_compiler_options(&frag_options)?;
 
@@ -95,6 +97,7 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
 
 #[cfg(test)]
 mod test {
+    use std::io::Write;
     use crate::back::targets::{MSL, WGSL};
     use crate::back::{CompileShader, FromCompilation};
     use crate::reflect::naga::{Naga, NagaLoweringOptions};
