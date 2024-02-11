@@ -6,3 +6,6 @@ mod graphics_pipeline;
 mod luts;
 mod samplers;
 mod texture;
+mod filter_chain;
+mod filter_pass;
+mod options;

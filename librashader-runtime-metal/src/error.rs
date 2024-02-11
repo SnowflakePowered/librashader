@@ -33,6 +33,8 @@ pub enum FilterChainError {
     FailedToCreateRenderPass,
     #[error("couldn't create texture")]
     FailedToCreateTexture,
+    #[error("couldn't create command buffer")]
+    FailedToCreateCommandBuffer,
 }
 
 /// Result type for Metal filter chains.
