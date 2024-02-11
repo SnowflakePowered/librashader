@@ -1,27 +1,57 @@
 use array_concat::concat_arrays;
+use bytemuck::{Pod, Zeroable};
 use librashader_runtime::quad::QuadType;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{Buffer, Device, RenderPass};
 
-#[rustfmt::skip]
-const VBO_OFFSCREEN: [f32; 16] = [
-    // Offscreen
-    -1.0f32, -1.0, 0.0, 0.0,
-    -1.0, 1.0, 0.0, 1.0,
-    1.0, -1.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0,
+// As per https://www.w3.org/TR/webgpu/#vertex-processing,
+// WGPU does vertex expansion
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
+struct WgpuVertex {
+    position: [f32; 2],
+    texcoord: [f32; 2],
+}
+
+const OFFSCREEN_VBO_DATA: [WgpuVertex; 4] = [
+    WgpuVertex {
+        position: [-1.0, -1.0],
+        texcoord: [0.0, 0.0],
+    },
+    WgpuVertex {
+        position: [-1.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    WgpuVertex {
+        position: [1.0, -1.0],
+        texcoord: [1.0, 0.0],
+    },
+    WgpuVertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
 ];
 
-#[rustfmt::skip]
-const VBO_DEFAULT_FINAL: [f32; 16] = [
-    // Final
-    0.0f32, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 1.0,
-    1.0, 0.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0,
+const FINAL_VBO_DATA: [WgpuVertex; 4] = [
+    WgpuVertex {
+        position: [0.0, 0.0],
+        texcoord: [0.0, 0.0],
+    },
+    WgpuVertex {
+        position: [0.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    WgpuVertex {
+        position: [1.0, 0.0],
+        texcoord: [1.0, 0.0],
+    },
+    WgpuVertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
 ];
 
-const VBO_DATA: [f32; 32] = concat_arrays!(VBO_OFFSCREEN, VBO_DEFAULT_FINAL);
+static VBO_DATA: &[WgpuVertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
     buffer: Buffer,
@@ -31,7 +61,7 @@ impl DrawQuad {
     pub fn new(device: &Device) -> DrawQuad {
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("librashader vbo"),
-            contents: bytemuck::cast_slice(&VBO_DATA),
+            contents: bytemuck::cast_slice(VBO_DATA),
             usage: wgpu::BufferUsages::VERTEX,
         });
 

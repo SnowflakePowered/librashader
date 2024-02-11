@@ -5,24 +5,56 @@ use gpu_allocator::vulkan::Allocator;
 use librashader_runtime::quad::QuadType;
 use parking_lot::RwLock;
 use std::sync::Arc;
+use bytemuck::{Pod, Zeroable};
+use array_concat::concat_arrays;
 
-#[rustfmt::skip]
-static VBO_OFFSCREEN: &[f32; 16] = &[
-    // Offscreen
-    -1.0, -1.0, 0.0, 0.0,
-    -1.0, 1.0, 0.0, 1.0,
-    1.0, -1.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0,
+// Vulkan does vertex expansion
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
+struct VulkanVertex {
+    position: [f32; 2],
+    texcoord: [f32; 2],
+}
+
+const OFFSCREEN_VBO_DATA: [VulkanVertex; 4] = [
+    VulkanVertex {
+        position: [-1.0, -1.0],
+        texcoord: [0.0, 0.0],
+    },
+    VulkanVertex {
+        position: [-1.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    VulkanVertex {
+        position: [1.0, -1.0],
+        texcoord: [1.0, 0.0],
+    },
+    VulkanVertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
 ];
 
-#[rustfmt::skip]
-static VBO_DEFAULT_FINAL: &[f32; 16] = &[
-    // Final
-    0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 1.0,
-    1.0, 0.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0,
+const FINAL_VBO_DATA: [VulkanVertex; 4] = [
+    VulkanVertex {
+        position: [0.0, 0.0],
+        texcoord: [0.0, 0.0],
+    },
+    VulkanVertex {
+        position: [0.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    VulkanVertex {
+        position: [1.0, 0.0],
+        texcoord: [1.0, 0.0],
+    },
+    VulkanVertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
 ];
+
+static VBO_DATA: &[VulkanVertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
     buffer: VulkanBuffer,
@@ -38,15 +70,13 @@ impl DrawQuad {
             device,
             allocator,
             vk::BufferUsageFlags::VERTEX_BUFFER,
-            2 * std::mem::size_of::<[f32; 16]>(),
+            std::mem::size_of::<[VulkanVertex; 8]>(),
         )?;
 
         {
             let slice = buffer.as_mut_slice()?;
-            slice[0..std::mem::size_of::<[f32; 16]>()]
-                .copy_from_slice(bytemuck::cast_slice(VBO_OFFSCREEN));
-            slice[std::mem::size_of::<[f32; 16]>()..]
-                .copy_from_slice(bytemuck::cast_slice(VBO_DEFAULT_FINAL));
+            slice
+                .copy_from_slice(bytemuck::cast_slice(VBO_DATA));
         }
 
         Ok(DrawQuad {

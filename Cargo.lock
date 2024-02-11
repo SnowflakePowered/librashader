@@ -1723,6 +1723,7 @@ dependencies = [
 name = "librashader-runtime-vk"
 version = "0.2.0-beta.9"
 dependencies = [
+ "array-concat",
  "ash",
  "ash-window",
  "bytemuck",
