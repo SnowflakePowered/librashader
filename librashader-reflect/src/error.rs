@@ -35,10 +35,15 @@ pub enum ShaderCompileError {
     /// Error when transpiling from naga
     #[cfg(feature = "naga")]
     #[error("naga-spv")]
-    NagaGlslError(#[from] naga::back::spv::Error),
+    NagaSpvError(#[from] naga::back::spv::Error),
 
     /// Error when transpiling from naga
-    #[cfg(feature = "wgsl")]
+    #[cfg(all(feature = "naga", feature = "msl"))]
+    #[error("naga-spv")]
+    NagaMslError(#[from] naga::back::msl::Error),
+
+    /// Error when transpiling from naga
+    #[cfg(any(feature = "naga", feature = "wgsl"))]
     #[error("naga-wgsl")]
     NagaValidationError(#[from] naga::WithSpan<naga::valid::ValidationError>),
 }

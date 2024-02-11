@@ -126,7 +126,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::front::{Glslang, ShaderInputCompiler, SpirvCompilation};
+    use crate::front::{Glslang, ShaderInputCompiler};
     use librashader_preprocess::ShaderSource;
 
     pub fn test() {

@@ -6,6 +6,8 @@ use crate::reflect::cross::msl::MslReflect;
 use crate::reflect::cross::{CompiledProgram, SpirvCross};
 use crate::reflect::naga::{Naga, NagaReflect};
 use crate::reflect::ReflectShader;
+use naga::back::msl::TranslationInfo;
+use naga::Module;
 
 /// The HLSL shader model version to target.
 pub use spirv_cross::msl::Version as MslVersion;
@@ -25,7 +27,7 @@ pub struct CrossMslContext {
 
 impl FromCompilation<SpirvCompilation, SpirvCross> for MSL {
     type Target = MSL;
-    type Options = Option<spirv_cross::msl::Version>;
+    type Options = Option<self::MslVersion>;
     type Context = CrossMslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;
@@ -39,10 +41,21 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for MSL {
     }
 }
 
+/// The naga module for a shader after compilation
+pub struct NagaMslModule {
+    pub translation_info: TranslationInfo,
+    pub module: Module,
+}
+
+pub struct NagaMslContext {
+    pub vertex: NagaMslModule,
+    pub fragment: NagaMslModule,
+}
+
 impl FromCompilation<SpirvCompilation, Naga> for MSL {
     type Target = MSL;
-    type Options = ();
-    type Context = ();
+    type Options = Option<self::MslVersion>;
+    type Context = NagaMslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;
 
