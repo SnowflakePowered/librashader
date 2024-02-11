@@ -14,12 +14,16 @@ jobs:
         include:
           - repo: Fedora_39
             spec: librashader.spec
+            can_fail: true
           - repo: xUbuntu_23.10
             spec: librashader.spec
+            can_fail: true
           - repo: Arch
             spec: PKGBUILD
+            can_fail: false
     runs-on: ubuntu-latest
-    container: 
+    continue-on-error: ${{ matrix.can_fail }}
+    container:
       image: fedora:39
       options: --privileged
     steps:
