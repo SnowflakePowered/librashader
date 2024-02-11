@@ -3,11 +3,10 @@ use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompile
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
 use crate::reflect::naga::{Naga, NagaReflect};
-use crate::reflect::{ReflectShader, ShaderOutputCompiler};
+use crate::reflect::ReflectShader;
 use naga::back::wgsl::WriterFlags;
 use naga::valid::{Capabilities, ValidationFlags};
 use naga::{AddressSpace, Module};
-use rspirv::binary::Assemble;
 
 /// The context for a WGSL compilation via Naga
 pub struct NagaWgslContext {
@@ -33,7 +32,7 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: Naga::create_reflection(compile)?,
+            backend: NagaReflect::create_reflection(&compile)?,
         })
     }
 }

@@ -42,26 +42,26 @@ pub trait CompileShader<T: OutputTarget> {
 ///
 /// This trait is automatically implemented for reflected outputs that have [`FromCompilation`](crate::back::FromCompilation) implement
 /// for a given target that also implement [`CompileShader`](crate::back::CompileShader) for that target.
-pub trait CompileReflectShader<T: OutputTarget, C, O>:
+pub trait CompileReflectShader<T: OutputTarget, C, S>:
     CompileShader<
         T,
-        Options = <T as FromCompilation<C, O>>::Options,
-        Context = <T as FromCompilation<C, O>>::Context,
+        Options = <T as FromCompilation<C, S>>::Options,
+        Context = <T as FromCompilation<C, S>>::Context,
     > + ReflectShader
 where
-    T: FromCompilation<C, O>,
+    T: FromCompilation<C, S>,
 {
 }
 
-impl<T, C, O, R> CompileReflectShader<T, C, R> for O
+impl<T, C, O, S> CompileReflectShader<T, C, S> for O
 where
     T: OutputTarget,
-    T: FromCompilation<C, R>,
+    T: FromCompilation<C, S>,
     O: ReflectShader,
     O: CompileShader<
         T,
-        Options = <T as FromCompilation<C, R>>::Options,
-        Context = <T as FromCompilation<C, R>>::Context,
+        Options = <T as FromCompilation<C, S>>::Options,
+        Context = <T as FromCompilation<C, S>>::Context,
     >,
 {
 }
@@ -82,8 +82,14 @@ where
     }
 }
 
-/// A trait for reflectable compilations that can be transformed into an object ready for reflection or compilation.
-pub trait FromCompilation<T, R> {
+/// A trait for reflectable compilations that can be transformed
+/// into an object ready for reflection or compilation.
+///
+/// `T` is the compiled reflectable form of the shader.
+/// `S` is the semantics under which the shader is reflected.
+///
+/// librashader currently supports two semantics, [`SpirvCross`](crate::reflect::cross::SpirvCross)
+pub trait FromCompilation<T, S> {
     /// The target that the transformed object is expected to compile for.
     type Target: OutputTarget;
     /// Options provided to the compiler.

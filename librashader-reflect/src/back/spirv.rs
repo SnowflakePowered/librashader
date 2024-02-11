@@ -13,7 +13,7 @@ pub(crate) struct WriteSpirV {
     pub(crate) fragment: Vec<u32>,
 }
 
-impl FromCompilation<SpirvCompilation, SpirvCross<SPIRV>> for SPIRV {
+impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
     type Context = ();

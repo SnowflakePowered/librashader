@@ -6,7 +6,7 @@ mod glslang;
 
 pub trait ShaderReflectObject: Sized {}
 
-pub use glslang::Glslang;
+pub use crate::front::glslang::Glslang;
 
 /// Trait for types that can compile shader sources into a compilation unit.
 pub trait ShaderInputCompiler<O: ShaderReflectObject>: Sized {

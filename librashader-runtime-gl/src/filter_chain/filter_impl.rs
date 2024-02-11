@@ -99,7 +99,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 }
 
 type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<GLSL, SpirvCompilation, SpirvCross<GLSL>>>;
+    ShaderPassArtifact<impl CompileReflectShader<GLSL, SpirvCompilation, SpirvCross>>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -109,11 +109,11 @@ fn compile_passes(
         GLSL::compile_preset_passes::<
             Glslang,
             CachedCompilation<SpirvCompilation>,
-            SpirvCross<GLSL>,
+            SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<GLSL>, FilterChainError>(
+        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };

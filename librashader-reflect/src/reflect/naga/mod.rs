@@ -1,10 +1,8 @@
 mod lower_samplers;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
-use std::borrow::Borrow;
 
-use crate::back::targets::OutputTarget;
-use crate::back::CompileShader;
+use crate::error;
 use crate::front::SpirvCompilation;
 use naga::{
     AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar,
@@ -20,24 +18,24 @@ use crate::reflect::semantics::{
     UniqueSemanticMap, UniqueSemantics, ValidateTypeSemantics, VariableMeta, MAX_BINDINGS_COUNT,
     MAX_PUSH_BUFFER_SIZE,
 };
-use crate::reflect::{align_uniform_size, ReflectShader, ShaderOutputCompiler, ShaderReflection};
+use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
 
-/// Represents the naga output compiler.
+/// Reflect under Naga semantics
 ///
 /// The Naga reflector will lower combined image samplers to split,
 /// with the same bind point on descriptor group 1.
 pub struct Naga;
 
-impl<T: OutputTarget, Opt, Ctx> ShaderOutputCompiler<SpirvCompilation, T, Opt, Ctx> for Naga
-where
-    NagaReflect: CompileShader<T, Options = Opt, Context = Ctx>,
-{
-    fn create_reflection(
-        compile: SpirvCompilation,
-    ) -> Result<
-        impl ReflectShader + CompileShader<T, Options = Opt, Context = Ctx>,
-        ShaderReflectError,
-    > {
+#[derive(Debug)]
+pub(crate) struct NagaReflect {
+    pub(crate) vertex: Module,
+    pub(crate) fragment: Module,
+}
+
+impl NagaReflect {
+    pub(crate) fn create_reflection(
+        compile: &SpirvCompilation,
+    ) -> Result<Self, error::ShaderReflectError> {
         fn lower_fragment_shader(words: &[u32]) -> Vec<u32> {
             let mut loader = rspirv::dr::Loader::new();
             rspirv::binary::parse_words(words, &mut loader).unwrap();
@@ -54,8 +52,6 @@ where
             module.assemble()
         }
 
-        let compile = compile.borrow();
-
         let options = naga::front::spv::Options {
             adjust_coordinate_space: true,
             strict_capabilities: false,
@@ -71,13 +67,6 @@ where
         Ok(NagaReflect { vertex, fragment })
     }
 }
-
-#[derive(Debug)]
-pub(crate) struct NagaReflect {
-    pub(crate) vertex: Module,
-    pub(crate) fragment: Module,
-}
-
 impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
     fn validate_type(&self, ty: &&TypeInner) -> Option<TypeInfo> {
         let (TypeInner::Vector { .. } | TypeInner::Scalar { .. } | TypeInner::Matrix { .. }) = *ty

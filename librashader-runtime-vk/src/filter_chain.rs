@@ -208,9 +208,8 @@ impl Drop for FrameResiduals {
     }
 }
 
-type ShaderPassMeta = ShaderPassArtifact<
-    impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross<SPIRV>> + Send,
->;
+type ShaderPassMeta =
+    ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -220,16 +219,13 @@ fn compile_passes(
         SPIRV::compile_preset_passes::<
             Glslang,
             CachedCompilation<SpirvCompilation>,
-            SpirvCross<SPIRV>,
+            SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        SPIRV::compile_preset_passes::<
-            Glslang,
-            SpirvCompilation,
-            SpirvCross<SPIRV>,
-            FilterChainError,
-        >(shaders, &textures)?
+        SPIRV::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
+            shaders, &textures,
+        )?
     };
 
     Ok((passes, semantics))
