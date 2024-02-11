@@ -14,7 +14,9 @@ pub trait ShaderInputCompiler<O: ShaderReflectObject>: Sized {
     fn compile(source: &ShaderSource) -> Result<O, ShaderCompileError>;
 }
 
+/// Marker trait for types that are the reflectable outputs of a shader compilation.
 impl ShaderReflectObject for SpirvCompilation {}
+
 /// A reflectable shader compilation via glslang.
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
