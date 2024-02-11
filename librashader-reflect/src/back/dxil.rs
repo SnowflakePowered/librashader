@@ -9,7 +9,8 @@ use spirv_to_dxil::{
 use crate::back::targets::{OutputTarget, DXIL};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
-use crate::reflect::cross::{GlslReflect, SpirvCross};
+use crate::reflect::cross::glsl::GlslReflect;
+use crate::reflect::cross::SpirvCross;
 use crate::reflect::ReflectShader;
 
 impl OutputTarget for DXIL {

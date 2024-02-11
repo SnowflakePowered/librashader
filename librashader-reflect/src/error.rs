@@ -28,9 +28,15 @@ pub enum ShaderCompileError {
     SpirvToDxilCompileError(#[from] spirv_to_dxil::SpirvToDxilError),
 
     /// Error when transpiling from naga
-    #[cfg(feature = "wgsl")]
+    #[cfg(all(feature = "wgsl", feature = "naga"))]
     #[error("naga-wgsl")]
     NagaWgslError(#[from] naga::back::wgsl::Error),
+
+    /// Error when transpiling from naga
+    #[cfg(feature = "naga")]
+    #[error("naga-spv")]
+    NagaGlslError(#[from] naga::back::spv::Error),
+
     /// Error when transpiling from naga
     #[cfg(feature = "wgsl")]
     #[error("naga-wgsl")]

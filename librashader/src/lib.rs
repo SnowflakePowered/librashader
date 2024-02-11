@@ -158,15 +158,15 @@ pub mod reflect {
     pub mod cross {
         /// The version of GLSL to target.
         ///
-        pub use librashader_reflect::back::cross::GlslVersion;
+        pub use librashader_reflect::back::glsl::GlslVersion;
 
         /// The HLSL Shader Model to target.
         ///
-        pub use librashader_reflect::back::cross::HlslShaderModel;
+        pub use librashader_reflect::back::glsl::HlslShaderModel;
 
-        pub use librashader_reflect::back::cross::CrossGlslContext;
+        pub use librashader_reflect::back::glsl::CrossGlslContext;
 
-        pub use librashader_reflect::back::cross::CrossHlslContext;
+        pub use librashader_reflect::back::hlsl::CrossHlslContext;
 
         pub use librashader_reflect::reflect::cross::CompiledAst;
 

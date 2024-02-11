@@ -4,7 +4,7 @@ use crate::gl::CompileProgram;
 use crate::util;
 use gl::types::{GLint, GLsizei, GLuint};
 use librashader_cache::Cacheable;
-use librashader_reflect::back::cross::CrossGlslContext;
+use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use spirv_cross::spirv::Decoration;
 

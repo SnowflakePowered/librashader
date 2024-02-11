@@ -3,7 +3,7 @@ use crate::error::assume_d3d12_init;
 use crate::error::FilterChainError::Direct3DOperationError;
 use crate::{error, util};
 use librashader_cache::{cache_pipeline, cache_shader_object};
-use librashader_reflect::back::cross::CrossHlslContext;
+use librashader_reflect::back::hlsl::CrossHlslContext;
 use librashader_reflect::back::dxil::DxilObject;
 use librashader_reflect::back::ShaderCompilerOutput;
 use std::mem::ManuallyDrop;

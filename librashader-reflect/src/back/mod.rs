@@ -1,8 +1,9 @@
-pub mod cross;
 #[cfg(all(target_os = "windows", feature = "dxil"))]
 pub mod dxil;
-mod msl;
-mod spirv;
+pub mod glsl;
+pub mod hlsl;
+pub mod msl;
+pub mod spirv;
 pub mod targets;
 pub mod wgsl;
 

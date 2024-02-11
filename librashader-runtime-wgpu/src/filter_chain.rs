@@ -21,7 +21,7 @@ use crate::buffer::WgpuStagedBuffer;
 use crate::draw_quad::DrawQuad;
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
 use librashader_reflect::back::wgsl::WgslCompileOptions;
-use librashader_reflect::reflect::naga::Naga;
+use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -270,7 +270,7 @@ impl FilterChainWgpu {
             .enumerate()
             .map(|(index, (config, source, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
-                let wgsl = reflect.compile(WgslCompileOptions {
+                let wgsl = reflect.compile(NagaLoweringOptions {
                     write_pcb_as_ubo: true,
                     sampler_bind_group: 1,
                 })?;
