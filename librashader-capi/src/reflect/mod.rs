@@ -6,7 +6,8 @@ use librashader::reflect::targets::SPIRV;
 use librashader::reflect::{CompileShader, ReflectShader, ShaderCompilerOutput, ShaderReflection};
 use librashader::{FilterMode, WrapMode};
 
-use librashader::reflect::cross::GlslangCompilation;
+use librashader::reflect::SpirvCompilation;
+use librashader::reflect::f
 use librashader::reflect::helper::image::{Image, UVDirection, RGBA8};
 
 pub(crate) struct LookupTexture {
@@ -38,8 +39,9 @@ impl FilterReflection {
         let (passes, textures) = (preset.shaders, preset.textures);
 
         let (passes, semantics) = librashader::reflect::helper::compile_preset_passes::<
+            Glslang,
             SPIRV,
-            GlslangCompilation,
+            SpirvCompilation,
             error::LibrashaderError,
         >(passes, &textures)?;
 
