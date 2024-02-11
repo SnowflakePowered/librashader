@@ -59,4 +59,3 @@ macro_rules! impl_filter_chain_parameters {
         }
     };
 }
-
