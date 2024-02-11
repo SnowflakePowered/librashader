@@ -75,7 +75,7 @@ pub(crate) struct FilterCommon {
 }
 
 type ShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross<HLSL>> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -85,11 +85,11 @@ fn compile_passes(
         HLSL::compile_preset_passes::<
             Glslang,
             CachedCompilation<SpirvCompilation>,
-            SpirvCross<HLSL>,
+            SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<HLSL>, FilterChainError>(
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };

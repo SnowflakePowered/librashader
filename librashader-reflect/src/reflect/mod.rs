@@ -15,16 +15,6 @@ mod helper;
 #[cfg(feature = "naga")]
 pub mod naga;
 
-pub trait ShaderOutputCompiler<O: ShaderReflectObject, T: OutputTarget, Opt, Ctx> {
-    /// Create the reflection object
-    fn create_reflection(
-        compiled: O,
-    ) -> Result<
-        impl ReflectShader + CompileShader<T, Options = Opt, Context = Ctx>,
-        ShaderReflectError,
-    >;
-}
-
 /// A trait for compilation outputs that can provide reflection information.
 pub trait ReflectShader {
     /// Reflect the shader as the given pass within the shader preset, against the provided
@@ -36,9 +26,6 @@ pub trait ReflectShader {
     ) -> Result<ShaderReflection, ShaderReflectError>;
 }
 
-use crate::back::targets::OutputTarget;
-use crate::back::CompileShader;
-use crate::front::ShaderReflectObject;
 pub use semantics::ShaderReflection;
 
 #[inline(always)]

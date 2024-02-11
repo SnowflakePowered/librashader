@@ -16,7 +16,7 @@ impl OutputTarget for DXIL {
     type Output = DxilObject;
 }
 
-impl FromCompilation<SpirvCompilation, SpirvCross<DXIL>> for DXIL {
+impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     type Target = DXIL;
     type Options = Option<ShaderModel>;
     type Context = ();

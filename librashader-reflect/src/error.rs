@@ -111,7 +111,7 @@ pub enum ShaderReflectError {
     #[error("the binding is already in use")]
     BindingInUse(u32),
     /// Error when transpiling from naga
-    #[cfg(feature = "wgsl")]
+    #[cfg(feature = "naga")]
     #[error("naga-spv")]
     NagaInputError(#[from] naga::front::spv::Error),
 }

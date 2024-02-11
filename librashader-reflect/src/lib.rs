@@ -14,9 +14,10 @@
 //! use librashader_reflect::back::{CompileReflectShader, FromCompilation};
 //! use librashader_reflect::back::targets::SPIRV;
 //! use librashader_reflect::front::{Glslang, ShaderInputCompiler, SpirvCompilation};
+//! use librashader_reflect::reflect::cross::SpirvCross;
 //! use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 //! use librashader_reflect::reflect::semantics::ShaderSemantics;
-//! type Artifact = impl CompileReflectShader<SPIRV, SpirvCompilation>;
+//! type Artifact = impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross>;
 //! type ShaderPassMeta = ShaderPassArtifact<Artifact>;
 //!
 //! // Compile single shader

@@ -146,7 +146,7 @@ impl Drop for FrameResiduals {
 }
 
 type DxilShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation, SpirvCross<DXIL>> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation, SpirvCross> + Send>;
 fn compile_passes_dxil(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -156,11 +156,11 @@ fn compile_passes_dxil(
         DXIL::compile_preset_passes::<
             Glslang,
             CachedCompilation<SpirvCompilation>,
-            SpirvCross<DXIL>,
+            SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<DXIL>, FilterChainError>(
+        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };
@@ -168,7 +168,7 @@ fn compile_passes_dxil(
     Ok((passes, semantics))
 }
 type HlslShaderPassMeta =
-    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross<HLSL>> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>;
 fn compile_passes_hlsl(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -178,11 +178,11 @@ fn compile_passes_hlsl(
         HLSL::compile_preset_passes::<
             Glslang,
             CachedCompilation<SpirvCompilation>,
-            SpirvCross<HLSL>,
+            SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross<HLSL>, FilterChainError>(
+        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };
