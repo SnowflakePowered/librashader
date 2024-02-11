@@ -28,8 +28,7 @@ impl SamplerSet {
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
         let id: &Id<ProtocolObject<dyn MTLSamplerState>> = unsafe {
-            self
-                .samplers
+            self.samplers
                 .get(&(wrap, filter, mipmap))
                 .unwrap_unchecked()
         };
