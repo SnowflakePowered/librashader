@@ -20,7 +20,6 @@ use std::sync::Arc;
 use crate::buffer::WgpuStagedBuffer;
 use crate::draw_quad::DrawQuad;
 use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
-use librashader_reflect::back::wgsl::WgslCompileOptions;
 use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;

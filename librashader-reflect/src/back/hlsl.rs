@@ -5,7 +5,9 @@ use crate::front::SpirvCompilation;
 use crate::reflect::cross::hlsl::HlslReflect;
 use crate::reflect::cross::{CompiledProgram, SpirvCross};
 use crate::reflect::ReflectShader;
-use spirv_cross::hlsl::ShaderModel as HlslShaderModel;
+
+/// The HLSL shader model version to target.
+pub use spirv_cross::hlsl::ShaderModel as HlslShaderModel;
 
 /// The context for a HLSL compilation via spirv-cross.
 pub struct CrossHlslContext {

@@ -156,17 +156,25 @@ pub mod reflect {
     #[cfg(feature = "reflect-cross")]
     #[doc(cfg(feature = "reflect-cross"))]
     pub mod cross {
+        pub use librashader_reflect::reflect::cross::SpirvCross;
+
         /// The version of GLSL to target.
         ///
         pub use librashader_reflect::back::glsl::GlslVersion;
 
         /// The HLSL Shader Model to target.
         ///
-        pub use librashader_reflect::back::glsl::HlslShaderModel;
+        pub use librashader_reflect::back::hlsl::HlslShaderModel;
+
+        /// The MSL version to target.
+        ///
+        pub use librashader_reflect::back::msl::MslVersion;
 
         pub use librashader_reflect::back::glsl::CrossGlslContext;
 
         pub use librashader_reflect::back::hlsl::CrossHlslContext;
+
+        pub use librashader_reflect::back::msl::CrossMslContext;
 
         pub use librashader_reflect::reflect::cross::CompiledAst;
 
@@ -188,8 +196,9 @@ pub mod reflect {
     #[cfg(feature = "reflect-naga")]
     #[doc(cfg(feature = "reflect-naga"))]
     pub mod naga {
+        pub use librashader_reflect::reflect::naga::Naga;
         pub use librashader_reflect::back::wgsl::NagaWgslContext;
-        pub use librashader_reflect::back::wgsl::WgslCompileOptions;
+        pub use librashader_reflect::reflect::naga::NagaLoweringOptions;
     }
 
     pub use librashader_reflect::reflect::semantics::BindingMeta;
