@@ -27,6 +27,10 @@ pub enum FilterChainError {
     BufferError,
     #[error("metal error")]
     MetalError(Id<NSError>),
+    #[error("couldn't find entry for shader")]
+    ShaderWrongEntryName,
+    #[error("couldn't create render pass")]
+    FailedToCreateRenderPass,
 }
 
 /// Result type for Metal filter chains.

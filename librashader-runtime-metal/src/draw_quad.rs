@@ -19,7 +19,7 @@ struct MetalVertex {
     texcoord: [f32; 2],
 }
 
-const OFFSCREEN_VBO_DATA: [MetalVertex; 4] = [
+const FINAL_VBO_DATA: [MetalVertex; 4] = [
     MetalVertex {
         position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
