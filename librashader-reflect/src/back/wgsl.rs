@@ -1,12 +1,10 @@
 use crate::back::targets::WGSL;
-use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
-use crate::error::{ShaderCompileError, ShaderReflectError};
+use crate::back::{CompileShader, CompilerBackend, FromCompilation};
+use crate::error::ShaderReflectError;
 use crate::front::SpirvCompilation;
-use crate::reflect::naga::{Naga, NagaReflect};
+use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
 use crate::reflect::ReflectShader;
-use naga::back::wgsl::WriterFlags;
-use naga::valid::{Capabilities, ValidationFlags};
-use naga::{AddressSpace, Module};
+use naga::Module;
 
 /// The context for a WGSL compilation via Naga
 pub struct NagaWgslContext {
@@ -14,16 +12,9 @@ pub struct NagaWgslContext {
     pub vertex: Module,
 }
 
-/// Compiler options for WGSL
-#[derive(Debug, Default, Clone)]
-pub struct WgslCompileOptions {
-    pub write_pcb_as_ubo: bool,
-    pub sampler_bind_group: u32,
-}
-
 impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     type Target = WGSL;
-    type Options = WgslCompileOptions;
+    type Options = NagaLoweringOptions;
     type Context = NagaWgslContext;
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
         + ReflectShader;
@@ -32,98 +23,7 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: NagaReflect::create_reflection(&compile)?,
-        })
-    }
-}
-
-impl CompileShader<WGSL> for NagaReflect {
-    type Options = WgslCompileOptions;
-    type Context = NagaWgslContext;
-
-    fn compile(
-        mut self,
-        options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
-        fn write_wgsl(module: &Module) -> Result<String, ShaderCompileError> {
-            let mut valid =
-                naga::valid::Validator::new(ValidationFlags::all(), Capabilities::empty());
-            let info = valid.validate(&module)?;
-
-            let wgsl = naga::back::wgsl::write_string(&module, &info, WriterFlags::EXPLICIT_TYPES)?;
-            Ok(wgsl)
-        }
-
-        if options.write_pcb_as_ubo {
-            for (_, gv) in self.fragment.global_variables.iter_mut() {
-                if gv.space == AddressSpace::PushConstant {
-                    gv.space = AddressSpace::Uniform;
-                }
-            }
-
-            for (_, gv) in self.vertex.global_variables.iter_mut() {
-                if gv.space == AddressSpace::PushConstant {
-                    gv.space = AddressSpace::Uniform;
-                }
-            }
-        } else {
-            for (_, gv) in self.fragment.global_variables.iter_mut() {
-                if gv.space == AddressSpace::PushConstant {
-                    gv.binding = None;
-                }
-            }
-        }
-
-        // Reassign shit.
-        let images = self
-            .fragment
-            .global_variables
-            .iter()
-            .filter(|&(_, gv)| {
-                let ty = &self.fragment.types[gv.ty];
-                match ty.inner {
-                    naga::TypeInner::Image { .. } => true,
-                    naga::TypeInner::BindingArray { base, .. } => {
-                        let ty = &self.fragment.types[base];
-                        matches!(ty.inner, naga::TypeInner::Image { .. })
-                    }
-                    _ => false,
-                }
-            })
-            .map(|(_, gv)| (gv.binding.clone(), gv.space))
-            .collect::<naga::FastHashSet<_>>();
-
-        self.fragment
-            .global_variables
-            .iter_mut()
-            .filter(|(_, gv)| {
-                let ty = &self.fragment.types[gv.ty];
-                match ty.inner {
-                    naga::TypeInner::Sampler { .. } => true,
-                    naga::TypeInner::BindingArray { base, .. } => {
-                        let ty = &self.fragment.types[base];
-                        matches!(ty.inner, naga::TypeInner::Sampler { .. })
-                    }
-                    _ => false,
-                }
-            })
-            .for_each(|(_, gv)| {
-                if images.contains(&(gv.binding.clone(), gv.space)) {
-                    if let Some(binding) = &mut gv.binding {
-                        binding.group = options.sampler_bind_group;
-                    }
-                }
-            });
-
-        let fragment = write_wgsl(&self.fragment)?;
-        let vertex = write_wgsl(&self.vertex)?;
-        Ok(ShaderCompilerOutput {
-            vertex,
-            fragment,
-            context: NagaWgslContext {
-                fragment: self.fragment,
-                vertex: self.vertex,
-            },
+            backend: NagaReflect::try_from(&compile)?,
         })
     }
 }
@@ -131,12 +31,13 @@ impl CompileShader<WGSL> for NagaReflect {
 #[cfg(test)]
 mod test {
     use crate::back::targets::WGSL;
-    use crate::back::wgsl::WgslCompileOptions;
     use crate::back::{CompileShader, FromCompilation};
+    use crate::reflect::naga::NagaLoweringOptions;
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use crate::reflect::ReflectShader;
     use librashader_preprocess::ShaderSource;
     use rustc_hash::FxHashMap;
+    use bitflags::Flags;
 
     #[test]
     pub fn test_into() {
@@ -170,7 +71,7 @@ mod test {
         .expect("");
 
         let compiled = wgsl
-            .compile(WgslCompileOptions {
+            .compile(NagaLoweringOptions {
                 write_pcb_as_ubo: true,
                 sampler_bind_group: 1,
             })

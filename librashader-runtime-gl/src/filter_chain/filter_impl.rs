@@ -13,7 +13,7 @@ use gl::types::GLuint;
 use librashader_common::Viewport;
 
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::cross::GlslVersion;
+use librashader_reflect::back::glsl::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::{Glslang, SpirvCompilation};

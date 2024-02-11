@@ -1,8 +1,10 @@
 mod lower_samplers;
+pub mod msl;
+pub mod spirv;
+pub mod wgsl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 
-use crate::error;
 use crate::front::SpirvCompilation;
 use naga::{
     AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar,
@@ -32,10 +34,82 @@ pub(crate) struct NagaReflect {
     pub(crate) fragment: Module,
 }
 
+/// Options to lower samplers and pcbs
+#[derive(Debug, Default, Clone)]
+pub struct NagaLoweringOptions {
+    pub write_pcb_as_ubo: bool,
+    pub sampler_bind_group: u32,
+}
+
 impl NagaReflect {
-    pub(crate) fn create_reflection(
-        compile: &SpirvCompilation,
-    ) -> Result<Self, error::ShaderReflectError> {
+    pub fn do_lowering(&mut self, options: &NagaLoweringOptions) {
+        if options.write_pcb_as_ubo {
+            for (_, gv) in self.fragment.global_variables.iter_mut() {
+                if gv.space == AddressSpace::PushConstant {
+                    gv.space = AddressSpace::Uniform;
+                }
+            }
+
+            for (_, gv) in self.vertex.global_variables.iter_mut() {
+                if gv.space == AddressSpace::PushConstant {
+                    gv.space = AddressSpace::Uniform;
+                }
+            }
+        } else {
+            for (_, gv) in self.fragment.global_variables.iter_mut() {
+                if gv.space == AddressSpace::PushConstant {
+                    gv.binding = None;
+                }
+            }
+        }
+
+        // Reassign shit.
+        let images = self
+            .fragment
+            .global_variables
+            .iter()
+            .filter(|&(_, gv)| {
+                let ty = &self.fragment.types[gv.ty];
+                match ty.inner {
+                    naga::TypeInner::Image { .. } => true,
+                    naga::TypeInner::BindingArray { base, .. } => {
+                        let ty = &self.fragment.types[base];
+                        matches!(ty.inner, naga::TypeInner::Image { .. })
+                    }
+                    _ => false,
+                }
+            })
+            .map(|(_, gv)| (gv.binding.clone(), gv.space))
+            .collect::<naga::FastHashSet<_>>();
+
+        self.fragment
+            .global_variables
+            .iter_mut()
+            .filter(|(_, gv)| {
+                let ty = &self.fragment.types[gv.ty];
+                match ty.inner {
+                    naga::TypeInner::Sampler { .. } => true,
+                    naga::TypeInner::BindingArray { base, .. } => {
+                        let ty = &self.fragment.types[base];
+                        matches!(ty.inner, naga::TypeInner::Sampler { .. })
+                    }
+                    _ => false,
+                }
+            })
+            .for_each(|(_, gv)| {
+                if images.contains(&(gv.binding.clone(), gv.space)) {
+                    if let Some(binding) = &mut gv.binding {
+                        binding.group = options.sampler_bind_group;
+                    }
+                }
+            });
+    }
+}
+
+impl TryFrom<&SpirvCompilation> for NagaReflect {
+    type Error = ShaderReflectError;
+
+    fn try_from(compile: &SpirvCompilation) -> Result<Self, Self::Error> {
         fn lower_fragment_shader(words: &[u32]) -> Vec<u32> {
             let mut loader = rspirv::dr::Loader::new();
             rspirv::binary::parse_words(words, &mut loader).unwrap();
@@ -67,6 +141,7 @@ impl NagaReflect {
         Ok(NagaReflect { vertex, fragment })
     }
 }
+
 impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
     fn validate_type(&self, ty: &&TypeInner) -> Option<TypeInfo> {
         let (TypeInner::Vector { .. } | TypeInner::Scalar { .. } | TypeInner::Matrix { .. }) = *ty

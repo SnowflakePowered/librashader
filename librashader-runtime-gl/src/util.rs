@@ -2,7 +2,7 @@ use gl::types::{GLenum, GLuint};
 
 use crate::error;
 use crate::error::FilterChainError;
-use librashader_reflect::back::cross::GlslVersion;
+use librashader_reflect::back::glsl::GlslVersion;
 
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GLuint> {
     let (shader, compile_status) = unsafe {

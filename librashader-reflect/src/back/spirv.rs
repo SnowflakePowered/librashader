@@ -2,9 +2,12 @@ use crate::back::targets::SPIRV;
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
-use crate::reflect::cross::{GlslReflect, SpirvCross};
+use crate::reflect::cross::glsl::GlslReflect;
+use crate::reflect::cross::SpirvCross;
+use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
 use crate::reflect::semantics::ShaderSemantics;
 use crate::reflect::{ReflectShader, ShaderReflection};
+use naga::Module;
 
 pub(crate) struct WriteSpirV {
     // rely on GLSL to provide out reflection but we don't actually need the AST.
@@ -60,4 +63,31 @@ impl CompileShader<SPIRV> for WriteSpirV {
             context: (),
         })
     }
+}
+
+/// The context for a SPIRV compilation via Naga
+pub struct NagaSpirvContext {
+    pub fragment: Module,
+    pub vertex: Module,
+}
+
+impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
+    type Target = SPIRV;
+    type Options = NagaSpirvOptions;
+    type Context = NagaSpirvContext;
+    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
+        + ReflectShader;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: NagaReflect::try_from(&compile)?,
+        })
+    }
+}
+
+pub struct NagaSpirvOptions {
+    pub lowering: NagaLoweringOptions,
+    pub version: (u8, u8),
 }
