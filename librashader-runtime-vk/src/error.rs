@@ -10,8 +10,6 @@ use thiserror::Error;
 /// Cumulative error type for Vulkan filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
-    #[error("SPIRV reflection error")]
-    SpirvCrossReflectError(#[from] spirv_cross::ErrorCode),
     #[error("shader preset parse error")]
     ShaderPresetError(#[from] ParsePresetError),
     #[error("shader preprocess error")]

@@ -9,8 +9,6 @@ pub enum FilterChainError {
     Direct3DOperationError(&'static str),
     #[error("direct3d driver error")]
     Direct3DError(#[from] windows::core::Error),
-    #[error("SPIRV reflection error")]
-    SpirvCrossReflectError(#[from] spirv_cross::ErrorCode),
     #[error("shader preset parse error")]
     ShaderPresetError(#[from] ParsePresetError),
     #[error("shader preprocess error")]

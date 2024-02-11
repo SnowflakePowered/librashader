@@ -35,9 +35,9 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "ahash"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a824f2aa7e75a0c98c5a504fceb80649e9c35265d44525b5f94de4771a395cd"
+checksum = "891477e0c6a8957309ee5c45a6368af3ae14bb510732d2684ffa19af310920f9"
 dependencies = [
  "getrandom",
  "once_cell",
@@ -46,9 +46,9 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.8.7"
+version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c3a9648d43b9cd48db467b3f87fdd6e146bcc88ab0180006cef2179fe11d01"
+checksum = "42cd52102d3df161c77a887b608d7a4897d7cc112886a9537b738a887a03aaff"
 dependencies = [
  "cfg-if",
  "getrandom",
@@ -1209,7 +1209,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash 0.7.7",
+ "ahash 0.7.8",
 ]
 
 [[package]]
@@ -1218,7 +1218,7 @@ version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 dependencies = [
- "ahash 0.8.7",
+ "ahash 0.8.8",
  "allocator-api2",
 ]
 
@@ -1632,7 +1632,6 @@ dependencies = [
  "librashader-presets 0.2.0-beta.9",
  "librashader-reflect",
  "librashader-runtime",
- "librashader-spirv-cross",
  "rayon",
  "rustc-hash",
  "thiserror",
@@ -1654,7 +1653,6 @@ dependencies = [
  "librashader-presets 0.2.0-beta.9",
  "librashader-reflect",
  "librashader-runtime",
- "librashader-spirv-cross",
  "parking_lot",
  "rayon",
  "rustc-hash",
@@ -1698,7 +1696,6 @@ dependencies = [
  "librashader-presets 0.2.0-beta.9",
  "librashader-reflect",
  "librashader-runtime",
- "librashader-spirv-cross",
  "num",
  "parking_lot",
  "raw-window-handle 0.5.2",
@@ -1734,10 +1731,11 @@ dependencies = [
 
 [[package]]
 name = "librashader-spirv-cross"
-version = "0.23.5"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc8e651a93a3bec5cec3264949f8ca9a8c4cbd09f03911af789000e3cebf98f6"
+checksum = "1842c733107d5f223c30a9d9c532d8f4bfd403d51e9ce22c53d6248a0ffa8318"
 dependencies = [
+ "build-target",
  "cc",
  "js-sys",
  "wasm-bindgen",
@@ -3578,7 +3576,7 @@ version = "0.29.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c824f11941eeae66ec71111cc2674373c772f482b58939bb4066b642aa2ffcf"
 dependencies = [
- "ahash 0.8.7",
+ "ahash 0.8.8",
  "android-activity",
  "atomic-waker",
  "bitflags 2.4.2",
@@ -3679,9 +3677,9 @@ checksum = "6a0ccd7b4a5345edfcd0c3535718a4e9ff7798ffc536bb5b5a0e26ff84732911"
 
 [[package]]
 name = "xkbcommon-dl"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6924668544c48c0133152e7eec86d644a056ca3d09275eb8d5cdb9855f9d8699"
+checksum = "d039de8032a9a8856a6be89cea3e5d12fdd82306ab7c94d74e6deab2460651c5"
 dependencies = [
  "bitflags 2.4.2",
  "dlib",

@@ -4,6 +4,7 @@
 layout(set = 0, binding = 0, std140) uniform UBO
 {
    mat4 MVP;
+    float ColorMod2;
 };
 
 layout(push_constant) uniform Push {
@@ -13,6 +14,7 @@ layout(push_constant) uniform Push {
 #pragma name StockShader
 #pragma format R8G8B8A8_UNORM
 #pragma parameter ColorMod "Color intensity" 1.0 0.1 2.0 0.1
+#pragma parameter ColorMod2 "Color intensity" 1.0 0.1 2.0 0.1
 
 #pragma stage vertex
 layout(location = 0) in vec4 Position;
@@ -30,5 +32,5 @@ layout(location = 0) out vec4 FragColor;
 layout(binding = 1) uniform sampler2D Source;
 void main()
 {
-   FragColor = texture(Source, vTexCoord) * params.ColorMod;
+   FragColor = texture(Source, vTexCoord) * params.ColorMod * ColorMod2;
 }
