@@ -37,7 +37,10 @@ pub(crate) struct NagaReflect {
 /// Options to lower samplers and pcbs
 #[derive(Debug, Default, Clone)]
 pub struct NagaLoweringOptions {
+    /// Whether to write the PCB as a UBO.
     pub write_pcb_as_ubo: bool,
+    /// The bind group to assign samplers to. This is to ensure that samplers will
+    /// maintain the same bindings as textures.
     pub sampler_bind_group: u32,
 }
 
@@ -360,13 +363,13 @@ impl NagaReflect {
         let binding = self.get_next_binding(0);
         // Reassign to UBO later if we want during compilation.
         if let Some(vertex_pcb) = vertex_pcb {
-            let ubo = &mut self.vertex.global_variables[vertex_pcb];
-            ubo.binding = Some(ResourceBinding { group: 0, binding });
+            let pcb = &mut self.vertex.global_variables[vertex_pcb];
+            pcb.binding = Some(ResourceBinding { group: 0, binding });
         }
 
         if let Some(fragment_pcb) = fragment_pcb {
-            let ubo = &mut self.fragment.global_variables[fragment_pcb];
-            ubo.binding = Some(ResourceBinding { group: 0, binding });
+            let pcb = &mut self.fragment.global_variables[fragment_pcb];
+            pcb.binding = Some(ResourceBinding { group: 0, binding });
         };
 
         match (vertex_pcb, fragment_pcb) {

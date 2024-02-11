@@ -35,9 +35,9 @@ mod test {
     use crate::reflect::naga::NagaLoweringOptions;
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use crate::reflect::ReflectShader;
+    use bitflags::Flags;
     use librashader_preprocess::ShaderSource;
     use rustc_hash::FxHashMap;
-    use bitflags::Flags;
 
     #[test]
     pub fn test_into() {

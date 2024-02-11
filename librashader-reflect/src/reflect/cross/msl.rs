@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-use naga::{Module};
 use crate::back::msl::CrossMslContext;
 use crate::back::targets::MSL;
 use crate::back::{CompileShader, ShaderCompilerOutput};
@@ -8,6 +6,7 @@ use crate::reflect::cross::{CompiledAst, CompiledProgram, CrossReflect};
 use spirv_cross::msl;
 use spirv_cross::msl::{ResourceBinding, ResourceBindingLocation};
 use spirv_cross::spirv::{Ast, Decoration, ExecutionModel};
+use std::collections::BTreeMap;
 
 pub(crate) type MslReflect = CrossReflect<spirv_cross::msl::Target>;
 
@@ -26,7 +25,11 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
         vert_options.version = version;
         frag_options.version = version;
 
-        fn get_binding(ast: &Ast<msl::Target>, stage: ExecutionModel, binding_map: &mut BTreeMap<ResourceBindingLocation, ResourceBinding>) -> Result<(), ShaderCompileError>{
+        fn set_bindings(
+            ast: &Ast<msl::Target>,
+            stage: ExecutionModel,
+            binding_map: &mut BTreeMap<ResourceBindingLocation, ResourceBinding>,
+        ) -> Result<(), ShaderCompileError> {
             let resources = ast.get_shader_resources()?;
             for resource in &resources.push_constant_buffers {
                 let location = ResourceBindingLocation {
@@ -45,7 +48,11 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
                 binding_map.insert(location, overridden);
             }
 
-            for resource in resources.uniform_buffers.iter().chain(resources.sampled_images.iter()) {
+            for resource in resources
+                .uniform_buffers
+                .iter()
+                .chain(resources.sampled_images.iter())
+            {
                 let binding = ast.get_decoration(resource.id, Decoration::Binding)?;
                 let location = ResourceBindingLocation {
                     stage,
@@ -66,19 +73,18 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
 
             Ok(())
         }
-        get_binding(
+        set_bindings(
             &self.vertex,
             ExecutionModel::Vertex,
-            &mut vert_options.resource_binding_overrides
+            &mut vert_options.resource_binding_overrides,
         )?;
 
-        get_binding(
+        set_bindings(
             &self.fragment,
             ExecutionModel::Fragment,
-            &mut frag_options.resource_binding_overrides
+            &mut frag_options.resource_binding_overrides,
         )?;
 
-        eprintln!("{:?}", frag_options.resource_binding_overrides);
         self.vertex.set_compiler_options(&vert_options)?;
         self.fragment.set_compiler_options(&frag_options)?;
 
@@ -97,17 +103,17 @@ impl CompileShader<MSL> for CrossReflect<spirv_cross::msl::Target> {
 
 #[cfg(test)]
 mod test {
-    use std::io::Write;
     use crate::back::targets::{MSL, WGSL};
     use crate::back::{CompileShader, FromCompilation};
+    use crate::reflect::cross::SpirvCross;
     use crate::reflect::naga::{Naga, NagaLoweringOptions};
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use crate::reflect::ReflectShader;
+    use bitflags::Flags;
     use librashader_preprocess::ShaderSource;
     use rustc_hash::FxHashMap;
-    use bitflags::Flags;
     use spirv_cross::msl;
-    use crate::reflect::cross::SpirvCross;
+    use std::io::Write;
 
     #[test]
     pub fn test_into() {
@@ -129,7 +135,8 @@ mod test {
 
         let compilation = crate::front::SpirvCompilation::try_from(&result).unwrap();
 
-        let mut msl = <MSL as FromCompilation<_, SpirvCross>>::from_compilation(compilation).unwrap();
+        let mut msl =
+            <MSL as FromCompilation<_, SpirvCross>>::from_compilation(compilation).unwrap();
 
         msl.reflect(
             0,
@@ -138,25 +145,10 @@ mod test {
                 texture_semantics: Default::default(),
             },
         )
-            .expect("");
+        .expect("");
 
-        let compiled = msl
-            .compile(Some(msl::Version::V2_0))
-            .unwrap();
+        let compiled = msl.compile(Some(msl::Version::V2_0)).unwrap();
 
         println!("{}", compiled.fragment);
-
-        // println!("{}", compiled.fragment);
-        // let mut loader = rspirv::dr::Loader::new();
-        // rspirv::binary::parse_words(compilation.vertex.as_binary(), &mut loader).unwrap();
-        // let module = loader.module();
-        //
-        // let outputs: Vec<&Instruction> = module
-        //     .types_global_values
-        //     .iter()
-        //     .filter(|i| i.class.opcode == Op::Variable)
-        //     .collect();
-        //
-        // println!("{outputs:#?}");
     }
 }

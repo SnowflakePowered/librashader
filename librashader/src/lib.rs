@@ -150,7 +150,7 @@ pub mod reflect {
         FromCompilation, ShaderCompilerOutput,
     };
 
-    pub use librashader_reflect::front::{SpirvCompilation, Glslang, ShaderReflectObject };
+    pub use librashader_reflect::front::{Glslang, ShaderReflectObject, SpirvCompilation};
 
     /// Reflection via SPIRV-Cross.
     #[cfg(feature = "reflect-cross")]
@@ -196,8 +196,8 @@ pub mod reflect {
     #[cfg(feature = "reflect-naga")]
     #[doc(cfg(feature = "reflect-naga"))]
     pub mod naga {
-        pub use librashader_reflect::reflect::naga::Naga;
         pub use librashader_reflect::back::wgsl::NagaWgslContext;
+        pub use librashader_reflect::reflect::naga::Naga;
         pub use librashader_reflect::reflect::naga::NagaLoweringOptions;
     }
 
