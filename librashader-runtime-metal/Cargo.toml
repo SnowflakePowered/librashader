@@ -20,8 +20,7 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-
 librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.7" }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.7" }
 
-icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ]}
-objc2 = { version = "0.5.0", features = ["apple"] }
+
 rustc-hash = "1.1.0"
 thiserror = "1.0"
 array-concat = "0.5.2"
@@ -32,3 +31,7 @@ bytemuck = "1.14.3"
 
 [package.metadata.docs.rs]
 features = ["librashader-cache/docsrs"]
+
+[target.'cfg(target_vendor="apple")'.dependencies]
+icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ]}
+objc2 = { version = "0.5.0", features = ["apple"] }
