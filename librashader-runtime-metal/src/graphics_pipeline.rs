@@ -30,7 +30,7 @@ pub struct PipelineLayoutObjects {
 }
 
 trait MslEntryPoint {
-    fn entry_point() -> NSString;
+    fn entry_point() -> Id<NSString>;
 }
 
 impl MslEntryPoint for CrossMslContext {
@@ -112,7 +112,7 @@ impl PipelineLayoutObjects {
         ca.setSourceAlphaBlendFactor(MTLBlendFactorSourceAlpha);
         ca.setSourceRGBBlendFactor(MTLBlendFactorSourceAlpha);
         ca.setDestinationAlphaBlendFactor(MTLBlendFactorOneMinusSourceAlpha);
-        ca.setDetinationRGBBlendFactor(MTLBlendFactorOneMinusSourceAlpha);
+        ca.setDestinationRGBBlendFactor(MTLBlendFactorOneMinusSourceAlpha);
 
         ca
     }
@@ -153,10 +153,10 @@ impl MetalGraphicsPipeline {
         render_pass_format: MTLPixelFormat,
     ) -> Result<Self> {
         let layout = PipelineLayoutObjects::new(shader_assembly, device)?;
-
+        let pipeline = layout.create_pipeline(render_pass_format)?;
         Ok(Self {
             layout,
-            render_pipeline: layout.create_pipeline(render_pass_format)?,
+            render_pipeline: pipeline,
         })
     }
 
