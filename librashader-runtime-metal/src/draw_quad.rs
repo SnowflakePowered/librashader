@@ -1,12 +1,42 @@
-use std::ffi::c_void;
-use std::ptr::NonNull;
 use array_concat::concat_arrays;
-use icrate::Metal::{MTLBuffer, MTLDevice, MTLPrimitiveTypeTriangleStrip, MTLRenderCommandEncoder, MTLResourceStorageModeManaged, MTLResourceStorageModeShared};
+use bytemuck::{Pod, Zeroable};
+use icrate::Metal::{
+    MTLBuffer, MTLDevice, MTLPrimitiveTypeTriangleStrip, MTLRenderCommandEncoder,
+    MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
+};
+use librashader_runtime::quad::QuadType;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use librashader_runtime::quad::QuadType;
+use std::ffi::c_void;
+use std::ptr::NonNull;
 
 use crate::error::{FilterChainError, Result};
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
+struct MetalVertex {
+    position: [f32; 4],
+    texcoord: [f32; 2],
+}
+
+const FINAL_VBO_DATA: [MetalVertex; 4] = [
+    MetalVertex {
+        position: [0.0, 1.0, 0.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    MetalVertex {
+        position: [1.0, 1.0, 0.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
+    MetalVertex {
+        position: [0.0, 0.0, 0.0, 1.0],
+        texcoord: [0.0, 0.0],
+    },
+    MetalVertex {
+        position: [1.0, 0.0, 0.0, 1.0],
+        texcoord: [1.0, 0.0],
+    },
+];
 
 #[rustfmt::skip]
 const VBO_OFFSCREEN: [f32; 16] = [
@@ -45,16 +75,17 @@ impl DrawQuad {
                     MTLResourceStorageModeShared
                 } else {
                     MTLResourceStorageModeManaged
-                }
+                },
             )
         }) else {
-            return Err(FilterChainError::BufferError)
+            return Err(FilterChainError::BufferError);
         };
 
         Ok(DrawQuad { buffer })
     }
 
     pub fn draw_quad(&self, cmd: &ProtocolObject<dyn MTLRenderCommandEncoder>, vbo: QuadType) {
+        // TODO: need to see how naga outputs MSL
         let offset = match vbo {
             QuadType::Offscreen => 0,
             QuadType::Final => 4,
