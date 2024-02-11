@@ -24,7 +24,7 @@ librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.
 rustc-hash = "1.1.0"
 thiserror = "1.0"
 array-concat = "0.5.2"
-bytemuck = "1.14.3"
+bytemuck = { version = "1.12.3", features = ["derive"] }
 
 [dev-dependencies]
 
