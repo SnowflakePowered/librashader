@@ -1,10 +1,12 @@
 //! Metal shader runtime errors.
+use icrate::Foundation::NSError;
+use librashader_common::{FilterMode, WrapMode};
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
+use objc2::rc::Id;
 use thiserror::Error;
-use librashader_common::{FilterMode, WrapMode};
 
 /// Cumulative error type for Metal filter chains.
 #[derive(Error, Debug)]
@@ -22,7 +24,13 @@ pub enum FilterChainError {
     #[error("sampler create error")]
     SamplerError(WrapMode, FilterMode, FilterMode),
     #[error("buffer creation error")]
-    BufferError
+    BufferError,
+    #[error("metal error")]
+    MetalError(Id<NSError>),
+    #[error("couldn't find entry for shader")]
+    ShaderWrongEntryName,
+    #[error("couldn't create render pass")]
+    FailedToCreateRenderPass,
 }
 
 /// Result type for Metal filter chains.
