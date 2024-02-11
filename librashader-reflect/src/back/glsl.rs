@@ -9,8 +9,6 @@ use crate::reflect::ReflectShader;
 pub use spirv_cross::glsl::Version as GlslVersion;
 
 use crate::reflect::cross::glsl::GlslReflect;
-/// The HLSL shader model version to target.
-pub use spirv_cross::hlsl::ShaderModel as HlslShaderModel;
 
 /// The context for a GLSL compilation via spirv-cross.
 pub struct CrossGlslContext {

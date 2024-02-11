@@ -7,6 +7,9 @@ use crate::reflect::cross::{CompiledProgram, SpirvCross};
 use crate::reflect::naga::{Naga, NagaReflect};
 use crate::reflect::ReflectShader;
 
+/// The HLSL shader model version to target.
+pub use spirv_cross::msl::Version as MslVersion;
+
 /// Compiler options for MSL
 #[derive(Debug, Default, Clone)]
 pub struct MslNagaCompileOptions {
