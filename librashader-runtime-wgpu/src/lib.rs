@@ -25,3 +25,6 @@ pub use framebuffer::WgpuOutputView;
 
 pub mod error;
 pub mod options;
+
+use librashader_runtime::impl_filter_chain_parameters;
+impl_filter_chain_parameters!(FilterChainWgpu);
