@@ -59,6 +59,7 @@ pub struct FilterChainMetal {
     feedback_framebuffers: Box<[OwnedTexture]>,
     history_framebuffers: VecDeque<OwnedTexture>,
     disable_mipmaps: bool,
+    default_options: FrameOptionsMetal
 }
 
 impl Debug for FilterChainMetal {
@@ -309,6 +310,7 @@ impl FilterChainMetal {
             feedback_framebuffers,
             history_framebuffers,
             disable_mipmaps: options.map(|f| f.force_no_mipmaps).unwrap_or(false),
+            default_options: Default::default(),
         })
     }
 
@@ -370,6 +372,7 @@ impl FilterChainMetal {
         OwnedTexture::scale_framebuffers_with_context(
             get_texture_size(&source.texture).into(),
             get_texture_size(viewport.output),
+            get_texture_size(&original.texture).into(),
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
@@ -389,7 +392,7 @@ impl FilterChainMetal {
 
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let options = options.unwrap_or(&self.default_options);
 
         let mipmapper = cmd_buffer
             .blitCommandEncoder()
@@ -407,7 +410,7 @@ impl FilterChainMetal {
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
@@ -445,7 +448,7 @@ impl FilterChainMetal {
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
