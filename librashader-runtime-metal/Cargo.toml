@@ -30,6 +30,11 @@ rayon = "1.8.1"
 [dev-dependencies]
 
 
+[[test]]
+name = "triangle"
+path = "tests/hello_triangle/main.rs"
+harness = false
+
 [package.metadata.docs.rs]
 features = ["librashader-cache/docsrs"]
 
