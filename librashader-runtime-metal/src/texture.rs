@@ -92,9 +92,10 @@ impl OwnedTexture {
         format: MTLPixelFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
-        let size = source_size.scale_viewport(scaling, *viewport_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
 
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
@@ -155,6 +156,7 @@ impl ScaleFramebuffer for OwnedTexture {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         should_mipmap: bool,
         context: &Self::Context,
     ) -> std::result::Result<Size<u32>, Self::Error> {
@@ -164,6 +166,7 @@ impl ScaleFramebuffer for OwnedTexture {
             format.into(),
             viewport_size,
             source_size,
+            original_size,
             should_mipmap,
         )?)
     }
