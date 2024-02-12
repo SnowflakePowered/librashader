@@ -1,3 +1,4 @@
+use crate::error;
 use crate::error::FilterChainError;
 use icrate::Foundation::NSRange;
 use icrate::Metal::{
@@ -12,8 +13,14 @@ pub struct MetalBuffer {
     size: usize,
 }
 
+impl AsRef<ProtocolObject<dyn MTLBuffer>> for MetalBuffer {
+    fn as_ref(&self) -> &ProtocolObject<dyn MTLBuffer> {
+        self.buffer.as_ref()
+    }
+}
+
 impl MetalBuffer {
-    pub fn new(device: &ProtocolObject<dyn MTLDevice>, size: usize) -> Result<Self> {
+    pub fn new(device: &ProtocolObject<dyn MTLDevice>, size: usize) -> error::Result<Self> {
         let resource_mode = if cfg!(target_os = "ios") {
             MTLResourceStorageModeShared
         } else {

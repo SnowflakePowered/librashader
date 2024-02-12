@@ -1,8 +1,8 @@
 use crate::error::{FilterChainError, Result};
 use icrate::Foundation::NSString;
 use icrate::Metal::{
-    MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLCommandBuffer,
-    MTLCommandEncoder, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat,
+    MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLCommandBuffer, MTLDevice,
+    MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat,
     MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor,
     MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor,
     MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture,
@@ -11,25 +11,27 @@ use icrate::Metal::{
 };
 use librashader_reflect::back::msl::{CrossMslContext, NagaMslContext};
 use librashader_reflect::back::ShaderCompilerOutput;
-use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::render_target::RenderTarget;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 
+/// This is only really plausible for SPIRV-Cross, for Naga we need to supply the next plausible binding.
+pub const VERTEX_BUFFER_INDEX: usize = 4;
+
 pub struct MetalGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     render_pipeline: Id<ProtocolObject<dyn MTLRenderPipelineState>>,
+    pub render_pass_format: MTLPixelFormat,
 }
 
 pub struct PipelineLayoutObjects {
-    vertex_lib: Id<ProtocolObject<dyn MTLLibrary>>,
-    fragment_lib: Id<ProtocolObject<dyn MTLLibrary>>,
+    _vertex_lib: Id<ProtocolObject<dyn MTLLibrary>>,
+    _fragment_lib: Id<ProtocolObject<dyn MTLLibrary>>,
     vertex_entry: Id<ProtocolObject<dyn MTLFunction>>,
     fragment_entry: Id<ProtocolObject<dyn MTLFunction>>,
-    device: Id<ProtocolObject<dyn MTLDevice>>,
 }
 
-trait MslEntryPoint {
+pub(crate) trait MslEntryPoint {
     fn entry_point() -> Id<NSString>;
 }
 
@@ -48,7 +50,7 @@ impl MslEntryPoint for NagaMslContext {
 impl PipelineLayoutObjects {
     pub fn new<T: MslEntryPoint>(
         shader_assembly: &ShaderCompilerOutput<String, T>,
-        device: Id<ProtocolObject<dyn MTLDevice>>,
+        device: &ProtocolObject<dyn MTLDevice>,
     ) -> Result<Self> {
         let entry = T::entry_point();
 
@@ -65,11 +67,10 @@ impl PipelineLayoutObjects {
             .ok_or(FilterChainError::ShaderWrongEntryName)?;
 
         Ok(Self {
-            vertex_lib: vertex,
-            fragment_lib: fragment,
+            _vertex_lib: vertex,
+            _fragment_lib: fragment,
             vertex_entry,
             fragment_entry,
-            device,
         })
     }
 
@@ -85,11 +86,11 @@ impl PipelineLayoutObjects {
 
         // hopefully metal fills in vertices otherwise we'll need to use the vec4 stuff.
         vertex_0.setFormat(MTLVertexFormatFloat2);
-        vertex_0.setBufferIndex(4);
+        vertex_0.setBufferIndex(VERTEX_BUFFER_INDEX);
         vertex_0.setOffset(0);
 
         vertex_1.setFormat(MTLVertexFormatFloat2);
-        vertex_1.setBufferIndex(4);
+        vertex_1.setBufferIndex(VERTEX_BUFFER_INDEX);
         vertex_1.setOffset(2 * std::mem::size_of::<f32>());
 
         attributes.setObject_atIndexedSubscript(Some(&vertex_0), 0);
@@ -119,6 +120,7 @@ impl PipelineLayoutObjects {
 
     pub fn create_pipeline(
         &self,
+        device: &ProtocolObject<dyn MTLDevice>,
         format: MTLPixelFormat,
     ) -> Result<Id<ProtocolObject<dyn MTLRenderPipelineState>>> {
         let descriptor = MTLRenderPipelineDescriptor::new();
@@ -140,36 +142,39 @@ impl PipelineLayoutObjects {
             descriptor.setFragmentFunction(Some(&self.fragment_entry));
         }
 
-        Ok(self
-            .device
-            .newRenderPipelineStateWithDescriptor_error(descriptor.as_ref())?)
+        Ok(device.newRenderPipelineStateWithDescriptor_error(descriptor.as_ref())?)
     }
 }
 
 impl MetalGraphicsPipeline {
     pub fn new<T: MslEntryPoint>(
-        device: Id<ProtocolObject<dyn MTLDevice>>,
+        device: &ProtocolObject<dyn MTLDevice>,
         shader_assembly: &ShaderCompilerOutput<String, T>,
         render_pass_format: MTLPixelFormat,
     ) -> Result<Self> {
         let layout = PipelineLayoutObjects::new(shader_assembly, device)?;
-        let pipeline = layout.create_pipeline(render_pass_format)?;
+        let pipeline = layout.create_pipeline(device, render_pass_format)?;
         Ok(Self {
             layout,
             render_pipeline: pipeline,
+            render_pass_format,
         })
     }
 
-    pub fn recompile(&mut self, format: MTLPixelFormat) -> Result<()> {
-        let render_pipeline = self.layout.create_pipeline(format)?;
+    pub fn recompile(
+        &mut self,
+        device: &ProtocolObject<dyn MTLDevice>,
+        format: MTLPixelFormat,
+    ) -> Result<()> {
+        let render_pipeline = self.layout.create_pipeline(device, format)?;
         self.render_pipeline = render_pipeline;
         Ok(())
     }
 
     pub fn begin_rendering<'pass>(
         &self,
-        output: RenderTarget<&'pass ProtocolObject<dyn MTLTexture>>,
-        buffer: Id<ProtocolObject<dyn MTLCommandBuffer>>,
+        output: &RenderTarget<ProtocolObject<dyn MTLTexture>>,
+        buffer: &ProtocolObject<dyn MTLCommandBuffer>,
     ) -> Result<Id<ProtocolObject<dyn MTLRenderCommandEncoder>>> {
         unsafe {
             let descriptor = MTLRenderPassDescriptor::new();

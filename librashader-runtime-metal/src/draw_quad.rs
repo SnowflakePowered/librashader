@@ -11,6 +11,7 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 
 use crate::error::{FilterChainError, Result};
+use crate::graphics_pipeline::VERTEX_BUFFER_INDEX;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
@@ -92,7 +93,7 @@ impl DrawQuad {
         };
 
         unsafe {
-            cmd.setVertexBuffer_offset_atIndex(Some(self.buffer.as_ref()), 0, 0);
+            cmd.setVertexBuffer_offset_atIndex(Some(self.buffer.as_ref()), 0, VERTEX_BUFFER_INDEX);
             cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip, offset, 4);
         }
     }
