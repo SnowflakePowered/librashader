@@ -6,6 +6,7 @@ use icrate::Metal::{
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ops::{Deref, DerefMut};
+use crate::error;
 
 pub struct MetalBuffer {
     buffer: Id<ProtocolObject<dyn MTLBuffer>>,
@@ -13,7 +14,7 @@ pub struct MetalBuffer {
 }
 
 impl MetalBuffer {
-    pub fn new(device: &ProtocolObject<dyn MTLDevice>, size: usize) -> Result<Self> {
+    pub fn new(device: &ProtocolObject<dyn MTLDevice>, size: usize) -> error::Result<Self> {
         let resource_mode = if cfg!(target_os = "ios") {
             MTLResourceStorageModeShared
         } else {

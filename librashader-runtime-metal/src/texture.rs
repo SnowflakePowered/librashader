@@ -6,20 +6,35 @@ use icrate::Metal::{
 };
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::sync::Arc;
+use crate::luts::LutTexture;
 
 pub type MetalTexture = Id<ProtocolObject<dyn MTLTexture>>;
 
-pub struct OwnedImage {
-    pub(crate) image: MetalTexture,
+pub struct OwnedTexture {
+    pub(crate) texture: MetalTexture,
     max_miplevels: u32,
     size: Size<u32>,
 }
 
-impl OwnedImage {
+pub struct InputTexture {
+    pub texture: MetalTexture,
+    pub wrap_mode: WrapMode,
+    pub filter_mode: FilterMode,
+    pub mip_filter: FilterMode,
+}
+
+impl AsRef<InputTexture> for InputTexture {
+    fn as_ref(&self) -> &InputTexture {
+        &self
+    }
+}
+
+
+impl OwnedTexture {
     pub fn new(
         device: &ProtocolObject<dyn MTLDevice>,
         size: Size<u32>,
@@ -52,7 +67,7 @@ impl OwnedImage {
         };
 
         Ok(Self {
-            image: device
+            texture: device
                 .newTextureWithDescriptor(&descriptor)
                 .ok_or(FilterChainError::FailedToCreateTexture)?,
             max_miplevels,
@@ -68,39 +83,40 @@ impl OwnedImage {
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         mipmap: bool,
-    ) -> Size<u32> {
+    ) -> Result<Size<u32>> {
         let size = source_size.scale_viewport(scaling, *viewport_size);
 
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
-            || format != self.image.pixelFormat()
+            || format != self.texture.pixelFormat()
         {
-            let mut new = OwnedImage::new(device, size, self.max_miplevels, format)?;
+            let mut new = OwnedTexture::new(device, size, self.max_miplevels, format)?;
             std::mem::swap(self, &mut new);
         }
-        size
+        Ok(size)
     }
 
-    // pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
-    //     InputImage {
-    //         image: Arc::clone(&self.image),
-    //         view: Arc::clone(&self.view),
-    //         wrap_mode,
-    //         filter_mode: filter,
-    //         mip_filter: filter,
-    //     }
-    // }
+    pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> Result<InputTexture> {
+        Ok(InputTexture {
+            texture: self.texture.newTextureViewWithPixelFormat(self.texture.pixelFormat()).ok_or(
+                FilterChainError::FailedToCreateTexture
+            )?,
+            wrap_mode,
+            filter_mode: filter,
+            mip_filter: filter,
+        })
+    }
 
     pub fn copy_from(
         &self,
-        encoder: &ProtocolObject<dyn MTLBlitCommandEncoder>>,
+        encoder: &ProtocolObject<dyn MTLBlitCommandEncoder>,
         other: &ProtocolObject<dyn MTLTexture>,
     ) -> Result<()> {
         unsafe {
-            encoder.copyFromTexture_toTexture(other, &self.image);
+            encoder.copyFromTexture_toTexture(other, &self.texture);
         }
-        encoder.generateMipmapsForTexture(&self.image);
+        encoder.generateMipmapsForTexture(&self.texture);
 
         Ok(())
     }
@@ -114,6 +130,23 @@ impl OwnedImage {
 
     /// caller must end the blit encoder after.
     pub fn generate_mipmaps(&self, mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>) {
-        mipmapper.generateMipmapsForTexture(&self.image);
+        mipmapper.generateMipmapsForTexture(&self.texture);
+    }
+}
+
+impl ScaleFramebuffer for OwnedTexture {
+    type Error = FilterChainError;
+    type Context = ProtocolObject<dyn MTLDevice>;
+
+    fn scale(
+        &mut self,
+        scaling: Scale2D,
+        format: ImageFormat,
+        viewport_size: &Size<u32>,
+        source_size: &Size<u32>,
+        should_mipmap: bool,
+        context: &Self::Context,
+    ) -> std::result::Result<Size<u32>, Self::Error> {
+        Ok(self.scale(&context, scaling, format.into(), viewport_size, source_size, should_mipmap)?)
     }
 }

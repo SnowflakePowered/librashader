@@ -1,6 +1,6 @@
 use crate::error::{FilterChainError, Result};
 use crate::samplers::SamplerSet;
-use crate::texture::MetalTexture;
+use crate::texture::{InputTexture, MetalTexture};
 use icrate::Metal::{
     MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLOrigin,
     MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize, MTLTexture, MTLTextureDescriptor,
@@ -14,7 +14,13 @@ use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-pub(crate) struct LutTexture(MetalTexture);
+pub(crate) struct LutTexture(InputTexture);
+
+impl AsRef<InputTexture> for LutTexture {
+    fn as_ref(&self) -> &InputTexture {
+        self.0.as_ref()
+    }
+}
 
 impl LutTexture {
     pub fn new(
@@ -71,6 +77,11 @@ impl LutTexture {
             mipmapper.generateMipmapsForTexture(&texture);
         }
 
-        Ok(LutTexture(texture))
+        Ok(LutTexture(InputTexture {
+            texture,
+            wrap_mode: config.wrap_mode,
+            filter_mode: config.filter_mode,
+            mip_filter: config.filter_mode,
+        }))
     }
 }
