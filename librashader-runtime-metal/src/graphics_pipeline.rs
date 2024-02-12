@@ -1,19 +1,13 @@
+use std::mem::offset_of;
 use crate::error::{FilterChainError, Result};
 use icrate::Foundation::NSString;
-use icrate::Metal::{
-    MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLCommandBuffer, MTLDevice,
-    MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat,
-    MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor,
-    MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor,
-    MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture,
-    MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor,
-    MTLVertexFormatFloat2, MTLVertexStepFunctionPerVertex, MTLViewport,
-};
+use icrate::Metal::{MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLClearColor, MTLCommandBuffer, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat, MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor, MTLVertexFormatFloat2, MTLVertexFormatFloat4, MTLVertexStepFunctionPerVertex, MTLViewport};
 use librashader_reflect::back::msl::{CrossMslContext, NagaMslContext};
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_runtime::render_target::RenderTarget;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
+use crate::draw_quad::MetalVertex;
 
 /// This is only really plausible for SPIRV-Cross, for Naga we need to supply the next plausible binding.
 pub const VERTEX_BUFFER_INDEX: usize = 4;
@@ -85,20 +79,20 @@ impl PipelineLayoutObjects {
         let texcoord = MTLVertexAttributeDescriptor::new();
 
         // hopefully metal fills in vertices otherwise we'll need to use the vec4 stuff.
-        position.setFormat(MTLVertexFormatFloat2);
+        position.setFormat(MTLVertexFormatFloat4);
         position.setBufferIndex(VERTEX_BUFFER_INDEX);
-        position.setOffset(0);
+        position.setOffset(offset_of!(MetalVertex, position));
 
         texcoord.setFormat(MTLVertexFormatFloat2);
         texcoord.setBufferIndex(VERTEX_BUFFER_INDEX);
-        texcoord.setOffset(2 * std::mem::size_of::<f32>());
+        texcoord.setOffset(offset_of!(MetalVertex, texcoord));
 
         attributes.setObject_atIndexedSubscript(Some(&position), 0);
 
         attributes.setObject_atIndexedSubscript(Some(&texcoord), 1);
 
         binding.setStepFunction(MTLVertexStepFunctionPerVertex);
-        binding.setStride(4 * std::mem::size_of::<f32>());
+        binding.setStride(std::mem::size_of::<MetalVertex>());
         layouts.setObject_atIndexedSubscript(Some(&binding), VERTEX_BUFFER_INDEX);
 
         descriptor
@@ -178,7 +172,8 @@ impl MetalGraphicsPipeline {
     ) -> Result<Id<ProtocolObject<dyn MTLRenderCommandEncoder>>> {
         unsafe {
             let descriptor = MTLRenderPassDescriptor::new();
-            let ca = descriptor.colorAttachments().objectAtIndexedSubscript(0);
+            let ca = descriptor.colorAttachments()
+                .objectAtIndexedSubscript(0);
             ca.setLoadAction(MTLLoadActionDontCare);
             ca.setStoreAction(MTLStoreActionStore);
             ca.setTexture(Some(output.output));
