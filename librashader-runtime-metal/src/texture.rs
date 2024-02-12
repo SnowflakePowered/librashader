@@ -1,16 +1,23 @@
-use std::sync::Arc;
-use icrate::Metal::{MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat, MTLPixelFormatBGRA8Unorm, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead, MTLTextureUsageShaderWrite};
-use objc2::rc::Id;
-use objc2::runtime::ProtocolObject;
+use crate::error::{FilterChainError, Result};
+use icrate::Metal::{
+    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat,
+    MTLPixelFormatBGRA8Unorm, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget,
+    MTLTextureUsageShaderRead, MTLTextureUsageShaderWrite,
+};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
-use crate::error::{Result, FilterChainError};
+use objc2::rc::Id;
+use objc2::runtime::ProtocolObject;
+use std::sync::Arc;
 
 pub type MetalTexture = Id<ProtocolObject<dyn MTLTexture>>;
 
-pub struct OwnedImage(MetalTexture);
-
+pub struct OwnedImage {
+    image: MetalTexture,
+    max_miplevels: u32,
+    size: Size<u32>,
+}
 
 impl OwnedImage {
     pub fn new(
@@ -37,17 +44,27 @@ impl OwnedImage {
                 1
             });
 
-            descriptor.setUsage(MTLTextureUsageShaderRead |  MTLTextureUsageRenderTarget);
+            descriptor.setUsage(
+                MTLTextureUsageShaderRead
+                    | MTLTextureUsageShaderWrite
+                    | MTLTextureUsageRenderTarget,
+            );
 
             descriptor
         };
 
-        Ok(Self(device.newTextureWithDescriptor(&descriptor)
-            .ok_or(FilterChainError::FailedToCreateTexture)?))
+        Ok(Self {
+            image: device
+                .newTextureWithDescriptor(&descriptor)
+                .ok_or(FilterChainError::FailedToCreateTexture)?,
+            max_miplevels,
+            size,
+        })
     }
 
     pub fn scale(
         &mut self,
+        device: &ProtocolObject<dyn MTLDevice>,
         scaling: Scale2D,
         format: ImageFormat,
         viewport_size: &Size<u32>,
@@ -57,18 +74,12 @@ impl OwnedImage {
         let size = source_size.scale_viewport(scaling, *viewport_size);
         let format: MTLPixelFormat = format.into();
 
-
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
-            || format != self.image.format()
+            || format != self.image.pixelFormat()
         {
-            let mut new = OwnedImage::new(
-                Arc::clone(&self.device),
-                size,
-                self.max_miplevels,
-                format.into(),
-            );
+            let mut new = OwnedImage::new(device, size, self.max_miplevels, format.into())?;
             std::mem::swap(self, &mut new);
         }
         size
@@ -84,26 +95,31 @@ impl OwnedImage {
     //     }
     // }
 
-    pub fn copy_from(&self, other: &ProtocolObject<dyn MTLTexture>, cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>) -> Result<()> {
-        let encoder = cmd.blitCommandEncoder()
+    pub fn copy_from(
+        &self,
+        other: &ProtocolObject<dyn MTLTexture>,
+        cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>,
+    ) -> Result<()> {
+        let encoder = cmd
+            .blitCommandEncoder()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
         unsafe {
-            encoder.copyFromTexture_toTexture(&self.0, other);
+            encoder.copyFromTexture_toTexture(other, &self.image);
         }
+        encoder.generateMipmapsForTexture(&self.image);
         encoder.endEncoding();
         Ok(())
     }
 
     pub fn clear(&self, cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>) {
-
+        // let render = cmd.renderCommandEncoder()
+        //     .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
+        // render.
         // cmd.clear_texture(&self.image, &wgpu::ImageSubresourceRange::default());
     }
-    // pub fn generate_mipmaps(
-    //     &self,
-    //     cmd: &mut wgpu::CommandEncoder,
-    //     mipmapper: &mut MipmapGen,
-    //     sampler: &wgpu::Sampler,
-    // ) {
-    //     mipmapper.generate_mipmaps(cmd, &self.image, sampler, self.max_miplevels);
-    // }
+
+    /// caller must end the blit encoder after.
+    pub fn generate_mipmaps(&self, mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>) {
+        mipmapper.generateMipmapsForTexture(&self.image);
+    }
 }

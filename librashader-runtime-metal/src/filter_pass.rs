@@ -1,3 +1,1 @@
-pub struct FilterPass {
-
-}
+pub struct FilterPass {}

@@ -1,5 +1,5 @@
+use crate::{FilterMode, ImageFormat, Size, WrapMode};
 use icrate::Metal;
-use crate::{Size, ImageFormat, FilterMode, WrapMode};
 
 impl From<ImageFormat> for Metal::MTLPixelFormat {
     fn from(format: ImageFormat) -> Self {
@@ -61,7 +61,6 @@ impl From<Size<u32>> for Metal::MTLViewport {
     }
 }
 
-
 impl From<WrapMode> for Metal::MTLSamplerAddressMode {
     fn from(value: WrapMode) -> Self {
         match value {
@@ -91,5 +90,3 @@ impl FilterMode {
         }
     }
 }
-
-

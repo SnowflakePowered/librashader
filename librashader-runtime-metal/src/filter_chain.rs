@@ -1,19 +1,3 @@
-use std::collections::VecDeque;
-use std::path::Path;
-use std::sync::Arc;
-use icrate::Metal::{MTLCommandBuffer, MTLCommandQueue, MTLDevice};
-use objc2::rc::Id;
-use objc2::runtime::ProtocolObject;
-use rustc_hash::FxHashMap;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_presets::context::VideoDriver;
-use librashader_reflect::back::CompileReflectShader;
-use librashader_reflect::back::targets::{MSL, WGSL};
-use librashader_reflect::front::{Glslang, SpirvCompilation};
-use librashader_reflect::reflect::cross::SpirvCross;
-use librashader_reflect::reflect::naga::Naga;
-use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
-use librashader_reflect::reflect::semantics::ShaderSemantics;
 use crate::draw_quad::DrawQuad;
 use crate::error;
 use crate::error::FilterChainError;
@@ -22,9 +6,25 @@ use crate::luts::LutTexture;
 use crate::options::FilterChainOptionsMetal;
 use crate::samplers::SamplerSet;
 use crate::texture::{MetalTexture, OwnedImage};
+use icrate::Metal::{MTLCommandBuffer, MTLCommandQueue, MTLDevice};
+use librashader_presets::context::VideoDriver;
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_reflect::back::targets::{MSL, WGSL};
+use librashader_reflect::back::CompileReflectShader;
+use librashader_reflect::front::{Glslang, SpirvCompilation};
+use librashader_reflect::reflect::cross::SpirvCross;
+use librashader_reflect::reflect::naga::Naga;
+use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
+use librashader_reflect::reflect::semantics::ShaderSemantics;
+use objc2::rc::Id;
+use objc2::runtime::ProtocolObject;
+use rustc_hash::FxHashMap;
+use std::collections::VecDeque;
+use std::path::Path;
+use std::sync::Arc;
 
 type ShaderPassMeta =
-ShaderPassArtifact<impl CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>;
+    ShaderPassArtifact<impl CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>;
 fn compile_passes(
     shaders: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
@@ -61,7 +61,7 @@ pub(crate) struct FilterCommon {
     pub internal_frame_count: i32,
     pub(crate) draw_quad: DrawQuad,
     device: Id<ProtocolObject<dyn MTLDevice>>,
-    queue: Id<ProtocolObject<dyn MTLCommandQueue>>
+    queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
 }
 
 impl FilterChainMetal {
@@ -73,9 +73,8 @@ impl FilterChainMetal {
     ) -> error::Result<FilterChainMetal> {
         // load passes from preset
         let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Metal)?;
-        Self::load_from_preset(preset,  queue, options)
+        Self::load_from_preset(preset, queue, options)
     }
-
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
@@ -83,24 +82,17 @@ impl FilterChainMetal {
         queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
-        let cmd = queue.commandBuffer()
+        let cmd = queue
+            .commandBuffer()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
 
-        let filter_chain = Self::load_from_preset_deferred(
-            preset,
-            queue,
-            cmd,
-            options,
-        )?;
+        let filter_chain = Self::load_from_preset_deferred(preset, queue, cmd, options)?;
 
         cmd.commit();
-        unsafe {
-            cmd.waitUntilCompleted()
-        };
+        unsafe { cmd.waitUntilCompleted() };
 
         Ok(filter_chain)
     }
-
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
     /// to the caller. This function therefore requires no external synchronization of the device queue.
@@ -114,13 +106,10 @@ impl FilterChainMetal {
         queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
         cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>,
         options: Option<&FilterChainOptionsMetal>,
-    ) -> error::Result<FilterChainMetal>
-    {
+    ) -> error::Result<FilterChainMetal> {
         let device = queue.device();
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
         let samplers = SamplerSet::new(&device)?;
-
-
     }
 }

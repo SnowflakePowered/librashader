@@ -29,7 +29,6 @@ pub mod metal;
 
 mod viewport;
 
-
 pub use viewport::Viewport;
 
 use num_traits::AsPrimitive;
