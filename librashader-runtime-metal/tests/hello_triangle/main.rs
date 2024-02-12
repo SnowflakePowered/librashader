@@ -2,6 +2,7 @@
 
 use core::{cell::OnceCell, ptr::NonNull};
 
+use icrate::Metal::MTLClearColor;
 use icrate::{
     AppKit::{
         NSApplication, NSApplicationActivationPolicyRegular, NSApplicationDelegate,
@@ -19,6 +20,8 @@ use icrate::{
     },
     MetalKit::{MTKView, MTKViewDelegate},
 };
+use librashader_presets::ShaderPreset;
+use librashader_runtime_metal::FilterChainMetal;
 use objc2::{
     declare_class, msg_send_id, mutability::MainThreadOnly, rc::Id, runtime::ProtocolObject,
     ClassType, DeclaredClass,
@@ -120,6 +123,7 @@ struct Ivars {
     start_date: Id<NSDate>,
     command_queue: OnceCell<Id<ProtocolObject<dyn MTLCommandQueue>>>,
     pipeline_state: OnceCell<Id<ProtocolObject<dyn MTLRenderPipelineState>>>,
+    filter_chain: OnceCell<FilterChainMetal>,
     window: OnceCell<Id<NSWindow>>,
 }
 
@@ -213,6 +217,16 @@ declare_class!(
                 .newRenderPipelineStateWithDescriptor_error(&pipeline_descriptor)
                 .expect("Failed to create a pipeline state.");
 
+           let preset =
+            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+
+        let filter_chain = FilterChainMetal::load_from_preset(
+            preset,
+            &command_queue,
+            None,
+        )
+        .unwrap();
+
             // configure the metal view delegate
             unsafe {
                 let object = ProtocolObject::from_ref(self);
@@ -228,6 +242,7 @@ declare_class!(
             // initialize the delegate state
             idcell!(command_queue => self);
             idcell!(pipeline_state => self);
+            idcell!(filter_chain => self);
             idcell!(window => self);
         }
     }
@@ -239,6 +254,15 @@ declare_class!(
         unsafe fn drawInMTKView(&self, mtk_view: &MTKView) {
             idcell!(command_queue <= self);
             idcell!(pipeline_state <= self);
+
+            unsafe {
+                mtk_view.setClearColor(MTLClearColor {
+                            red: 0.3,
+                            blue: 0.5,
+                            green: 0.3,
+                            alpha: 0.0,
+                    });
+            }
 
             // FIXME: icrate `MTKView` doesn't have a generated binding for `currentDrawable` yet
             // (because it needs a definition of `CAMetalDrawable`, which we don't support yet) so
@@ -351,6 +375,7 @@ impl Delegate {
             start_date: unsafe { NSDate::now() },
             command_queue: OnceCell::default(),
             pipeline_state: OnceCell::default(),
+            filter_chain: OnceCell::default(),
             window: OnceCell::default(),
         });
         unsafe { msg_send_id![super(this), init] }
