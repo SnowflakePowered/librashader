@@ -150,7 +150,7 @@ impl CompileShader<MSL> for NagaReflect {
                     translation_info: vertex.1,
                     module: self.vertex,
                 },
-                next_free_binding: vertex_binding
+                next_free_binding: vertex_binding,
             },
         })
     }

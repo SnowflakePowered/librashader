@@ -81,25 +81,25 @@ impl PipelineLayoutObjects {
 
         let binding = MTLVertexBufferLayoutDescriptor::new();
 
-        let vertex_0 = MTLVertexAttributeDescriptor::new();
-        let vertex_1 = MTLVertexAttributeDescriptor::new();
+        let position = MTLVertexAttributeDescriptor::new();
+        let texcoord = MTLVertexAttributeDescriptor::new();
 
         // hopefully metal fills in vertices otherwise we'll need to use the vec4 stuff.
-        vertex_0.setFormat(MTLVertexFormatFloat2);
-        vertex_0.setBufferIndex(VERTEX_BUFFER_INDEX);
-        vertex_0.setOffset(0);
+        position.setFormat(MTLVertexFormatFloat2);
+        position.setBufferIndex(VERTEX_BUFFER_INDEX);
+        position.setOffset(0);
 
-        vertex_1.setFormat(MTLVertexFormatFloat2);
-        vertex_1.setBufferIndex(VERTEX_BUFFER_INDEX);
-        vertex_1.setOffset(2 * std::mem::size_of::<f32>());
+        texcoord.setFormat(MTLVertexFormatFloat2);
+        texcoord.setBufferIndex(VERTEX_BUFFER_INDEX);
+        texcoord.setOffset(2 * std::mem::size_of::<f32>());
 
-        attributes.setObject_atIndexedSubscript(Some(&vertex_0), 0);
+        attributes.setObject_atIndexedSubscript(Some(&position), 0);
 
-        attributes.setObject_atIndexedSubscript(Some(&vertex_1), 1);
+        attributes.setObject_atIndexedSubscript(Some(&texcoord), 1);
 
         binding.setStepFunction(MTLVertexStepFunctionPerVertex);
         binding.setStride(4 * std::mem::size_of::<f32>());
-        layouts.setObject_atIndexedSubscript(Some(&binding), 0);
+        layouts.setObject_atIndexedSubscript(Some(&binding), VERTEX_BUFFER_INDEX);
 
         descriptor
     }
