@@ -1,3 +1,4 @@
+use crate::error;
 use crate::error::FilterChainError;
 use icrate::Foundation::NSRange;
 use icrate::Metal::{
@@ -6,11 +7,16 @@ use icrate::Metal::{
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ops::{Deref, DerefMut};
-use crate::error;
 
 pub struct MetalBuffer {
     buffer: Id<ProtocolObject<dyn MTLBuffer>>,
     size: usize,
+}
+
+impl AsRef<ProtocolObject<dyn MTLBuffer>> for MetalBuffer {
+    fn as_ref(&self) -> &ProtocolObject<dyn MTLBuffer> {
+        self.buffer.as_ref()
+    }
 }
 
 impl MetalBuffer {

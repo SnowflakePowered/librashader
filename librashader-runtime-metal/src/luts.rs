@@ -1,15 +1,12 @@
 use crate::error::{FilterChainError, Result};
-use crate::samplers::SamplerSet;
-use crate::texture::{InputTexture, MetalTexture};
+use crate::texture::InputTexture;
 use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLOrigin,
-    MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize, MTLTexture, MTLTextureDescriptor,
-    MTLTextureUsageShaderRead,
+    MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize,
+    MTLTexture, MTLTextureDescriptor, MTLTextureUsageShaderRead,
 };
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
-use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
 use std::ptr::NonNull;

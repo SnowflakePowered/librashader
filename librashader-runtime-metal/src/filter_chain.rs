@@ -1,37 +1,41 @@
+use crate::buffer::MetalBuffer;
 use crate::draw_quad::DrawQuad;
 use crate::error;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
+use crate::graphics_pipeline::MetalGraphicsPipeline;
 use crate::luts::LutTexture;
-use crate::options::FilterChainOptionsMetal;
+use crate::options::{FilterChainOptionsMetal, FrameOptionsMetal};
 use crate::samplers::SamplerSet;
-use crate::texture::{InputTexture, MetalTexture, OwnedTexture};
-use icrate::Metal::{MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLPixelFormat, MTLPixelFormatRGBA8Unorm, MTLTexture};
+use crate::texture::{get_texture_size, InputTexture, OwnedTexture};
+use icrate::Metal::{
+    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice,
+    MTLPixelFormat, MTLPixelFormatRGBA8Unorm, MTLTexture,
+};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
-use librashader_reflect::back::targets::{MSL, WGSL};
+use librashader_reflect::back::msl::MslVersion;
+use librashader_reflect::back::targets::MSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::{Glslang, SpirvCompilation};
 use librashader_reflect::reflect::cross::SpirvCross;
-use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
-use objc2::rc::Id;
-use objc2::runtime::ProtocolObject;
-use rustc_hash::FxHashMap;
-use std::collections::VecDeque;
-use std::path::Path;
-use std::sync::Arc;
-use librashader_common::{ImageFormat, Size};
-use librashader_reflect::back::msl::MslVersion;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::image::{BGRA8, Image, ImageError, UVDirection};
+use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
+use librashader_runtime::quad::QuadType;
+use librashader_runtime::render_target::RenderTarget;
+use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
-use crate::buffer::MetalBuffer;
-use crate::graphics_pipeline::MetalGraphicsPipeline;
+use objc2::rc::Id;
+use objc2::runtime::ProtocolObject;
 use rayon::prelude::*;
+use rustc_hash::FxHashMap;
+use std::collections::VecDeque;
+use std::path::Path;
 
 type ShaderPassMeta =
     ShaderPassArtifact<impl CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>;
@@ -71,14 +75,13 @@ pub(crate) struct FilterCommon {
     pub internal_frame_count: i32,
     pub(crate) draw_quad: DrawQuad,
     device: Id<ProtocolObject<dyn MTLDevice>>,
-    queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
 }
 
 impl FilterChainMetal {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
-        queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
+        queue: &ProtocolObject<dyn MTLCommandQueue>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
         // load passes from preset
@@ -89,14 +92,15 @@ impl FilterChainMetal {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
         preset: ShaderPreset,
-        queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
+        queue: &ProtocolObject<dyn MTLCommandQueue>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
         let cmd = queue
             .commandBuffer()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
 
-        let filter_chain = Self::load_from_preset_deferred_internal(preset, queue, &cmd, options)?;
+        let filter_chain =
+            Self::load_from_preset_deferred_internal(preset, queue.device(), &cmd, options)?;
 
         cmd.commit();
         unsafe { cmd.waitUntilCompleted() };
@@ -111,15 +115,16 @@ impl FilterChainMetal {
     ) -> error::Result<FxHashMap<usize, LutTexture>> {
         let mut luts = FxHashMap::default();
 
-        let mipmapper = cmd.blitCommandEncoder()
+        let mipmapper = cmd
+            .blitCommandEncoder()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
 
-        let images = textures.par_iter()
+        let images = textures
+            .par_iter()
             .map(|texture| Image::<BGRA8>::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture =
-                LutTexture::new(device, &mipmapper, image, texture)?;
+            let texture = LutTexture::new(device, &mipmapper, image, texture)?;
             luts.insert(index, texture);
         }
 
@@ -133,7 +138,8 @@ impl FilterChainMetal {
         semantics: &ShaderSemantics,
     ) -> error::Result<Box<[FilterPass]>> {
         // todo: fix this to allow send
-        let filters: Vec<error::Result<FilterPass>> = passes.into_iter()
+        let filters: Vec<error::Result<FilterPass>> = passes
+            .into_iter()
             .enumerate()
             .map(|(index, (config, source, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
@@ -166,7 +172,7 @@ impl FilterChainMetal {
                         MTLPixelFormatRGBA8Unorm
                     } else {
                         render_pass_format
-                    }
+                    },
                 )?;
 
                 Ok(FilterPass {
@@ -185,26 +191,24 @@ impl FilterChainMetal {
         Ok(filters.into_boxed_slice())
     }
 
-    fn push_history(&mut self, input: &ProtocolObject<dyn MTLTexture>,
-                    cmd: &ProtocolObject<dyn MTLBlitCommandEncoder>) -> error::Result<()> {
+    fn push_history(
+        &mut self,
+        input: &ProtocolObject<dyn MTLTexture>,
+        cmd: &ProtocolObject<dyn MTLBlitCommandEncoder>,
+    ) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.texture.height() != input.height()
                 || back.texture.width() != input.width()
-                || input.pixelFormat() != back.texture.pixelFormat() {
-
+                || input.pixelFormat() != back.texture.pixelFormat()
+            {
                 let size = Size {
                     width: input.width() as u32,
-                    height: input.height() as u32
+                    height: input.height() as u32,
                 };
 
                 let _old_back = std::mem::replace(
                     &mut back,
-                    OwnedTexture::new(
-                        &self.common.device,
-                        size,
-                        1,
-                        input.pixelFormat(),
-                    )?,
+                    OwnedTexture::new(&self.common.device, size, 1, input.pixelFormat())?,
                 );
             }
 
@@ -213,7 +217,6 @@ impl FilterChainMetal {
             self.history_framebuffers.push_front(back);
         }
         Ok(())
-
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
@@ -225,13 +228,12 @@ impl FilterChainMetal {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub fn load_from_preset_deferred(
         preset: ShaderPreset,
-        queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
-        cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>,
+        queue: &ProtocolObject<dyn MTLCommandQueue>,
+        cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
-    )  -> error::Result<FilterChainMetal> {
-        Self::load_from_preset_deferred_internal(preset, queue, &cmd, options)
+    ) -> error::Result<FilterChainMetal> {
+        Self::load_from_preset_deferred_internal(preset, queue.device(), &cmd, options)
     }
-
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
     /// to the caller. This function therefore requires no external synchronization of the device queue.
@@ -242,21 +244,16 @@ impl FilterChainMetal {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     fn load_from_preset_deferred_internal(
         preset: ShaderPreset,
-        queue: Id<ProtocolObject<dyn MTLCommandQueue>>,
+        device: Id<ProtocolObject<dyn MTLDevice>>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
-        let device = queue.device();
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
         let filters = Self::init_passes(&device, passes, &semantics)?;
 
         let samplers = SamplerSet::new(&device)?;
-        let luts = FilterChainMetal::load_luts(
-            &device,
-            &cmd,
-            &preset.textures,
-        )?;
+        let luts = FilterChainMetal::load_luts(&device, &cmd, &preset.textures)?;
         let framebuffer_gen = || {
             Ok::<_, error::FilterChainError>(OwnedTexture::new(
                 &device,
@@ -281,7 +278,7 @@ impl FilterChainMetal {
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         let draw_quad = DrawQuad::new(&device)?;
-        Ok(FilterChainMetal{
+        Ok(FilterChainMetal {
             common: FilterCommon {
                 luts,
                 samplers,
@@ -295,7 +292,6 @@ impl FilterChainMetal {
                 },
                 draw_quad,
                 device,
-                queue,
                 output_textures,
                 feedback_textures,
                 history_textures,
@@ -309,5 +305,150 @@ impl FilterChainMetal {
         })
     }
 
+    /// Records shader rendering commands to the provided command encoder.
+    pub fn frame(
+        &mut self,
+        input: Id<ProtocolObject<dyn MTLTexture>>,
+        viewport: &Viewport<&ProtocolObject<dyn MTLTexture>>,
+        cmd_buffer: &ProtocolObject<dyn MTLCommandBuffer>,
+        frame_count: usize,
+        options: Option<&FrameOptionsMetal>,
+    ) -> error::Result<()> {
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let passes = &mut self.passes[0..max];
+        if let Some(options) = &options {
+            if options.clear_history {
+                for history in &mut self.history_framebuffers {
+                    history.clear(cmd_buffer);
+                }
+            }
+        }
+        if passes.is_empty() {
+            return Ok(());
+        }
 
+        // let original_image_view = input.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let filter = passes[0].config.filter;
+        let wrap_mode = passes[0].config.wrap_mode;
+
+        // update history
+        for (texture, image) in self
+            .common
+            .history_textures
+            .iter_mut()
+            .zip(self.history_framebuffers.iter())
+        {
+            *texture = Some(image.as_input(filter, wrap_mode)?);
+        }
+
+        let original = InputTexture {
+            texture: input
+                .newTextureViewWithPixelFormat(input.pixelFormat())
+                .ok_or(FilterChainError::FailedToCreateTexture)?,
+            wrap_mode,
+            filter_mode: filter,
+            mip_filter: filter,
+        };
+
+        let mut source = original.try_clone()?;
+
+        // swap output and feedback **before** recording command buffers
+        std::mem::swap(
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+        );
+
+        // rescale render buffers to ensure all bindings are valid.
+        OwnedTexture::scale_framebuffers_with_context(
+            get_texture_size(&source.texture).into(),
+            get_texture_size(viewport.output),
+            &mut self.output_framebuffers,
+            &mut self.feedback_framebuffers,
+            passes,
+            &self.common.device,
+            Some(&mut |index: usize,
+                       pass: &FilterPass,
+                       output: &OwnedTexture,
+                       feedback: &OwnedTexture| {
+                // refresh inputs
+                self.common.feedback_textures[index] =
+                    Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode)?);
+                self.common.output_textures[index] =
+                    Some(output.as_input(pass.config.filter, pass.config.wrap_mode)?);
+                Ok(())
+            }),
+        )?;
+
+        let passes_len = passes.len();
+        let (pass, last) = passes.split_at_mut(passes_len - 1);
+        let frame_direction = options.map_or(1, |f| f.frame_direction);
+
+        let mipmapper = cmd_buffer
+            .blitCommandEncoder()
+            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
+
+        for (index, pass) in pass.iter_mut().enumerate() {
+            let target = &self.output_framebuffers[index];
+            source.filter_mode = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            source.mip_filter = pass.config.filter;
+
+            let out = RenderTarget::identity(target.texture.as_ref());
+            pass.draw(
+                &cmd_buffer,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                frame_direction,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Offscreen,
+            )?;
+
+            if target.max_miplevels > 1 && !self.disable_mipmaps {
+                target.generate_mipmaps(&mipmapper);
+            }
+
+            source = self.common.output_textures[index]
+                .as_ref()
+                .map(InputTexture::try_clone)
+                .unwrap()?;
+        }
+
+        // try to hint the optimizer
+        assert_eq!(last.len(), 1);
+
+        if let Some(pass) = last.iter_mut().next() {
+            if pass.graphics_pipeline.render_pass_format != viewport.output.pixelFormat() {
+                // need to recompile
+                pass.graphics_pipeline
+                    .recompile(&self.common.device, viewport.output.pixelFormat())?;
+            }
+
+            source.filter_mode = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+            source.mip_filter = pass.config.filter;
+            let output_image = viewport.output;
+            let out = RenderTarget::viewport_with_output(output_image, viewport);
+            pass.draw(
+                &cmd_buffer,
+                passes_len - 1,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                frame_direction,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final,
+            )?;
+        }
+
+        self.push_history(&input, &mipmapper)?;
+        self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
+        Ok(())
+    }
 }

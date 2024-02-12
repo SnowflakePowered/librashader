@@ -1,22 +1,20 @@
 use crate::error::{FilterChainError, Result};
 use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat,
-    MTLPixelFormatBGRA8Unorm, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget,
-    MTLTextureUsageShaderRead, MTLTextureUsageShaderWrite,
+    MTLBlitCommandEncoder, MTLCommandBuffer, MTLDevice, MTLPixelFormat, MTLTexture,
+    MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead,
+    MTLTextureUsageShaderWrite,
 };
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use std::sync::Arc;
-use crate::luts::LutTexture;
 
 pub type MetalTexture = Id<ProtocolObject<dyn MTLTexture>>;
 
 pub struct OwnedTexture {
     pub(crate) texture: MetalTexture,
-    max_miplevels: u32,
+    pub(crate) max_miplevels: u32,
     size: Size<u32>,
 }
 
@@ -27,12 +25,24 @@ pub struct InputTexture {
     pub mip_filter: FilterMode,
 }
 
+impl InputTexture {
+    pub fn try_clone(&self) -> Result<Self> {
+        Ok(Self {
+            texture: self
+                .texture
+                .newTextureViewWithPixelFormat(self.texture.pixelFormat())
+                .ok_or(FilterChainError::FailedToCreateTexture)?,
+            wrap_mode: self.wrap_mode,
+            filter_mode: self.filter_mode,
+            mip_filter: self.mip_filter,
+        })
+    }
+}
 impl AsRef<InputTexture> for InputTexture {
     fn as_ref(&self) -> &InputTexture {
         &self
     }
 }
-
 
 impl OwnedTexture {
     pub fn new(
@@ -99,9 +109,10 @@ impl OwnedTexture {
 
     pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> Result<InputTexture> {
         Ok(InputTexture {
-            texture: self.texture.newTextureViewWithPixelFormat(self.texture.pixelFormat()).ok_or(
-                FilterChainError::FailedToCreateTexture
-            )?,
+            texture: self
+                .texture
+                .newTextureViewWithPixelFormat(self.texture.pixelFormat())
+                .ok_or(FilterChainError::FailedToCreateTexture)?,
             wrap_mode,
             filter_mode: filter,
             mip_filter: filter,
@@ -121,7 +132,7 @@ impl OwnedTexture {
         Ok(())
     }
 
-    pub fn clear(&self, cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>) {
+    pub fn clear(&self, cmd: &ProtocolObject<dyn MTLCommandBuffer>) {
         // let render = cmd.renderCommandEncoder()
         //     .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
         // render.
@@ -147,6 +158,22 @@ impl ScaleFramebuffer for OwnedTexture {
         should_mipmap: bool,
         context: &Self::Context,
     ) -> std::result::Result<Size<u32>, Self::Error> {
-        Ok(self.scale(&context, scaling, format.into(), viewport_size, source_size, should_mipmap)?)
+        Ok(self.scale(
+            &context,
+            scaling,
+            format.into(),
+            viewport_size,
+            source_size,
+            should_mipmap,
+        )?)
+    }
+}
+
+pub(crate) fn get_texture_size(texture: &ProtocolObject<dyn MTLTexture>) -> Size<u32> {
+    let height = texture.height();
+    let width = texture.width();
+    Size {
+        height: height as u32,
+        width: width as u32,
     }
 }
