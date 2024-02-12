@@ -1737,6 +1737,7 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "objc2 0.5.0",
+ "rayon",
  "rustc-hash",
  "thiserror",
 ]

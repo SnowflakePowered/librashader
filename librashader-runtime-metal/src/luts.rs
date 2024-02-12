@@ -1,26 +1,29 @@
 use crate::error::{FilterChainError, Result};
-use crate::samplers::SamplerSet;
-use crate::texture::MetalTexture;
+use crate::texture::InputTexture;
 use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLOrigin,
-    MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize, MTLTexture, MTLTextureDescriptor,
-    MTLTextureUsageShaderRead,
+    MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize,
+    MTLTexture, MTLTextureDescriptor, MTLTextureUsageShaderRead,
 };
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
-use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-pub(crate) struct LutTexture(MetalTexture);
+pub(crate) struct LutTexture(InputTexture);
+
+impl AsRef<InputTexture> for LutTexture {
+    fn as_ref(&self) -> &InputTexture {
+        self.0.as_ref()
+    }
+}
 
 impl LutTexture {
     pub fn new(
         device: &ProtocolObject<dyn MTLDevice>,
+        mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>,
         image: Image<BGRA8>,
-        cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         config: &TextureConfig,
     ) -> Result<Self> {
         let descriptor = unsafe {
@@ -68,12 +71,14 @@ impl LutTexture {
         }
 
         if config.mipmap {
-            if let Some(encoder) = cmd.blitCommandEncoder() {
-                encoder.generateMipmapsForTexture(&texture);
-                encoder.endEncoding();
-            }
+            mipmapper.generateMipmapsForTexture(&texture);
         }
 
-        Ok(LutTexture(texture))
+        Ok(LutTexture(InputTexture {
+            texture,
+            wrap_mode: config.wrap_mode,
+            filter_mode: config.filter_mode,
+            mip_filter: config.filter_mode,
+        }))
     }
 }
