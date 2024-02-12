@@ -35,6 +35,7 @@ use objc2::runtime::ProtocolObject;
 use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
+use std::fmt::{Debug, Formatter};
 use std::path::Path;
 
 type ShaderPassMeta =
@@ -58,6 +59,12 @@ pub struct FilterChainMetal {
     feedback_framebuffers: Box<[OwnedTexture]>,
     history_framebuffers: VecDeque<OwnedTexture>,
     disable_mipmaps: bool,
+}
+
+impl Debug for FilterChainMetal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("FilterChainMetal"))
+    }
 }
 
 pub struct FilterMutable {
