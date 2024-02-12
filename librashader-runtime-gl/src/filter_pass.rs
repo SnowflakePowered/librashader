@@ -5,7 +5,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
-use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput};
+use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::render_target::RenderTarget;
 use rustc_hash::FxHashMap;
@@ -13,6 +13,7 @@ use rustc_hash::FxHashMap;
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
 use crate::gl::{BindTexture, GLInterface, UboRing};
+use crate::options::FrameOptionsGL;
 use crate::samplers::SamplerSet;
 use crate::GLFramebuffer;
 
@@ -80,7 +81,7 @@ impl<T: GLInterface> FilterPass<T> {
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsGL,
         viewport: &Viewport<&GLFramebuffer>,
         original: &InputTexture,
         source: &InputTexture,
@@ -102,7 +103,7 @@ impl<T: GLInterface> FilterPass<T> {
             parent,
             output.mvp,
             frame_count,
-            frame_direction,
+            options,
             framebuffer.size,
             viewport,
             original,
@@ -163,7 +164,7 @@ impl<T: GLInterface> FilterPass<T> {
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsGL,
         fb_size: Size<u32>,
         viewport: &Viewport<&GLFramebuffer>,
         original: &InputTexture,
@@ -174,11 +175,16 @@ impl<T: GLInterface> FilterPass<T> {
             &parent.samplers,
             &mut self.uniform_storage,
             &mut (),
-            mvp,
-            frame_count,
-            frame_direction,
-            fb_size,
-            viewport.output.size,
+            UniformInputs {
+                mvp,
+                frame_count,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+                frame_direction: options.frame_direction,
+                framebuffer_size: fb_size,
+                viewport_size: viewport.output.size,
+            },
             original,
             source,
             &self.uniform_bindings,

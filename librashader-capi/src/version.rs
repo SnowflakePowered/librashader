@@ -13,7 +13,11 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 /// versions must remain backwards compatible.
 /// ## API Versions
 /// - API version 0: 0.1.0
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 0;
+/// - API version 1: 0.2.0
+///     - Added rotation, total_subframes, current_subframes to frame options
+///     - Added preset context API
+///     - Added Metal runtime API
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 1;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.

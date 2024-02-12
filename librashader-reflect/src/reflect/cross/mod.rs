@@ -92,7 +92,10 @@ impl ValidateTypeSemantics<Type> for UniqueSemantics {
             UniqueSemantics::MVP => {
                 matches!(ty, Type::Float { .. }) && vecsize == 4 && columns == 4
             }
-            UniqueSemantics::FrameCount => {
+            UniqueSemantics::FrameCount
+            | UniqueSemantics::Rotation
+            | UniqueSemantics::TotalSubFrames
+            | UniqueSemantics::CurrentSubFrame => {
                 matches!(ty, Type::UInt { .. }) && vecsize == 1 && columns == 1
             }
             UniqueSemantics::FrameDirection => {

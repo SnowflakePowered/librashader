@@ -1,5 +1,7 @@
 use crate::filter_chain::FilterCommon;
+use crate::options::FrameOptionsD3D11;
 use crate::texture::InputTexture;
+
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -9,7 +11,7 @@ use librashader_reflect::reflect::semantics::{
 use librashader_reflect::reflect::ShaderReflection;
 use rustc_hash::FxHashMap;
 
-use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -100,7 +102,7 @@ impl FilterPass {
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsD3D11,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
         mut descriptors: (
@@ -115,11 +117,16 @@ impl FilterPass {
             &parent.samplers,
             &mut self.uniform_storage,
             &mut descriptors,
-            mvp,
-            frame_count,
-            frame_direction,
-            fb_size,
-            viewport_size,
+            UniformInputs {
+                mvp,
+                frame_count,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+                frame_direction: options.frame_direction,
+                framebuffer_size: fb_size,
+                viewport_size,
+            },
             original,
             source,
             &self.uniform_bindings,
@@ -141,7 +148,7 @@ impl FilterPass {
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsD3D11,
         viewport: &Viewport<D3D11OutputView>,
         original: &InputTexture,
         source: &InputTexture,
@@ -168,7 +175,7 @@ impl FilterPass {
             parent,
             output.mvp,
             frame_count,
-            frame_direction,
+            options,
             output.output.size,
             viewport.output.size,
             descriptors,

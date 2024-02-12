@@ -77,6 +77,8 @@ pub struct FilterChainD3D12 {
     mipmap_heap: D3D12DescriptorHeap<ResourceWorkHeap>,
 
     disable_mipmaps: bool,
+
+    default_options: FrameOptionsD3D12,
 }
 
 pub(crate) struct FilterCommon {
@@ -360,6 +362,7 @@ impl FilterChainD3D12 {
             mipmap_heap,
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
             residuals,
+            default_options: Default::default(),
         })
     }
 
@@ -620,7 +623,7 @@ impl FilterChainD3D12 {
             return Ok(());
         }
 
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let options = options.unwrap_or(&self.default_options);
 
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
@@ -734,7 +737,7 @@ impl FilterChainD3D12 {
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
@@ -796,7 +799,7 @@ impl FilterChainD3D12 {
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,

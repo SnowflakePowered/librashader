@@ -163,7 +163,10 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
                     });
                 }
             }
-            UniqueSemantics::FrameCount => {
+            UniqueSemantics::FrameCount
+            | UniqueSemantics::Rotation
+            | UniqueSemantics::CurrentSubFrame
+            | UniqueSemantics::TotalSubFrames => {
                 // Uint32 == width 4
                 if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Uint && *width == 4)
                 {
@@ -174,7 +177,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
                 }
             }
             UniqueSemantics::FrameDirection => {
-                // Uint32 == width 4
+                // iint32 == width 4
                 if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Sint && *width == 4)
                 {
                     return Some(TypeInfo {
