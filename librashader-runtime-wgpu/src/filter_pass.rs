@@ -3,6 +3,7 @@ use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::framebuffer::WgpuOutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
+use crate::options::FrameOptionsWgpu;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -12,7 +13,7 @@ use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -89,7 +90,7 @@ impl FilterPass {
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsWgpu,
         viewport: &Viewport<WgpuOutputView>,
         original: &InputImage,
         source: &InputImage,
@@ -104,7 +105,7 @@ impl FilterPass {
             parent,
             output.mvp,
             frame_count,
-            frame_direction,
+            options,
             output.output.size,
             viewport.output.size,
             original,
@@ -198,7 +199,7 @@ impl FilterPass {
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsWgpu,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
         original: &InputImage,
@@ -211,11 +212,16 @@ impl FilterPass {
             &parent.samplers,
             &mut self.uniform_storage,
             &mut (main_heap, sampler_heap),
-            mvp,
-            frame_count,
-            frame_direction,
-            fb_size,
-            viewport_size,
+            UniformInputs {
+                mvp,
+                frame_count,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+                frame_direction: options.frame_direction,
+                framebuffer_size: fb_size,
+                viewport_size,
+            },
             original,
             source,
             &self.uniform_bindings,

@@ -125,6 +125,7 @@ pub struct FilterChainVulkan {
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
     residuals: Box<[FrameResiduals]>,
+    default_options: FrameOptionsVulkan,
 }
 
 pub struct FilterMutable {
@@ -402,6 +403,7 @@ impl FilterChainVulkan {
             history_framebuffers,
             residuals: intermediates.into_boxed_slice(),
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
+            default_options: Default::default(),
         })
     }
 
@@ -667,7 +669,7 @@ impl FilterChainVulkan {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let options = options.unwrap_or(&self.default_options);
 
         self.common.draw_quad.bind_vbo_for_frame(cmd);
         for (index, pass) in pass.iter_mut().enumerate() {
@@ -684,7 +686,7 @@ impl FilterChainVulkan {
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
@@ -729,7 +731,7 @@ impl FilterChainVulkan {
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,

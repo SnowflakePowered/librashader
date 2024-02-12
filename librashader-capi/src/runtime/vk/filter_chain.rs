@@ -17,6 +17,7 @@ use librashader::runtime::{Size, Viewport};
 
 use ash::vk;
 
+use crate::LIBRASHADER_API_VERSION;
 pub use ash::vk::PFN_vkGetInstanceProcAddr;
 
 /// A Vulkan instance function loader that the Vulkan filter chain needs to be initialized with.
@@ -87,17 +88,24 @@ impl From<libra_device_vk_t> for VulkanInstance {
 #[derive(Default, Debug, Clone)]
 pub struct frame_vk_opt_t {
     /// The librashader API version.
-    pub version: usize,
+    pub version: LIBRASHADER_API_VERSION,
     /// Whether or not to clear the history buffers.
     pub clear_history: bool,
     /// The direction of rendering.
     /// -1 indicates that the frames are played in reverse order.
     pub frame_direction: i32,
+    /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+    pub rotation: u32,
+    /// The total number of subframes ran. Default is 1.
+    pub total_subframes: u32,
+    // The current sub frame. Default is 1.
+    pub current_subframe: u32,
 }
 
 config_struct! {
     impl FrameOptions => frame_vk_opt_t {
         0 => [clear_history, frame_direction];
+        1 => [rotation, total_subframes, current_subframe]
     }
 }
 

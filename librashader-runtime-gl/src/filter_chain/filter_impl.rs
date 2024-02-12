@@ -45,6 +45,7 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     output_framebuffers: Box<[GLFramebuffer]>,
     feedback_framebuffers: Box<[GLFramebuffer]>,
     history_framebuffers: VecDeque<GLFramebuffer>,
+    default_options: FrameOptionsGL,
 }
 
 pub(crate) struct FilterCommon {
@@ -194,6 +195,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 feedback_textures,
                 history_textures,
             },
+            default_options: Default::default(),
         })
     }
 
@@ -288,7 +290,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if passes.is_empty() {
             return Ok(());
         }
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let options = options.unwrap_or(&self.default_options);
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
@@ -355,7 +357,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
@@ -378,7 +380,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,

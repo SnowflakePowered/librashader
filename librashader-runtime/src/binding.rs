@@ -49,6 +49,26 @@ where
     }
 }
 
+/// Inputs to binding semantics
+pub struct UniformInputs<'a> {
+    /// MVP
+    pub mvp: &'a [f32; 16],
+    /// FrameCount
+    pub frame_count: u32,
+    /// Rotation
+    pub rotation: u32,
+    /// TotalSubFrames
+    pub total_subframes: u32,
+    /// CurrentSubFrame
+    pub current_subframe: u32,
+    /// FrameDirection
+    pub frame_direction: i32,
+    /// OutputSize
+    pub framebuffer_size: Size<u32>,
+    /// FinalViewportSize
+    pub viewport_size: Size<u32>,
+}
+
 /// Trait that abstracts binding of semantics to shader uniforms.
 pub trait BindSemantics<H = NoUniformBinder, C = Option<()>, U = Box<[u8]>, P = Box<[u8]>>
 where
@@ -92,11 +112,7 @@ where
         sampler_set: &Self::SamplerSet,
         uniform_storage: &mut UniformStorage<H, C, U, P>,
         descriptor_set: &mut Self::DescriptorSet<'a>,
-        mvp: &[f32; 16],
-        frame_count: u32,
-        frame_direction: i32,
-        framebuffer_size: Size<u32>,
-        viewport_size: Size<u32>,
+        uniform_inputs: UniformInputs<'_>,
         original: &Self::InputTexture,
         source: &Self::InputTexture,
         uniform_bindings: &HashMap<UniformBinding, Self::UniformOffset, impl BuildHasher>,
@@ -110,27 +126,66 @@ where
     ) {
         // Bind MVP
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::MVP.into()) {
-            uniform_storage.bind_mat4(offset.offset(), mvp, offset.context());
+            uniform_storage.bind_mat4(offset.offset(), uniform_inputs.mvp, offset.context());
         }
 
         // Bind OutputSize
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::Output.into()) {
-            uniform_storage.bind_vec4(offset.offset(), framebuffer_size, offset.context());
+            uniform_storage.bind_vec4(
+                offset.offset(),
+                uniform_inputs.framebuffer_size,
+                offset.context(),
+            );
         }
 
         // bind FinalViewportSize
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::FinalViewport.into()) {
-            uniform_storage.bind_vec4(offset.offset(), viewport_size, offset.context());
+            uniform_storage.bind_vec4(
+                offset.offset(),
+                uniform_inputs.viewport_size,
+                offset.context(),
+            );
         }
 
         // bind FrameCount
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::FrameCount.into()) {
-            uniform_storage.bind_scalar(offset.offset(), frame_count, offset.context());
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                uniform_inputs.frame_count,
+                offset.context(),
+            );
         }
 
         // bind FrameDirection
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::FrameDirection.into()) {
-            uniform_storage.bind_scalar(offset.offset(), frame_direction, offset.context());
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                uniform_inputs.frame_direction,
+                offset.context(),
+            );
+        }
+
+        // bind Rotation
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::Rotation.into()) {
+            uniform_storage.bind_scalar(offset.offset(), uniform_inputs.rotation, offset.context());
+        }
+
+        // bind TotalSubFrames
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::TotalSubFrames.into()) {
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                uniform_inputs.total_subframes,
+                offset.context(),
+            );
+        }
+
+        // bind CurrentSubFrames
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::CurrentSubFrame.into()) {
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                uniform_inputs.current_subframe,
+                offset.context(),
+            );
         }
 
         // bind Original sampler
@@ -149,7 +204,7 @@ where
             Self::bind_texture(descriptor_set, sampler_set, binding, source, device);
         }
 
-        // bind SourcelSize
+        // bind SourceSize
         if let Some(offset) = uniform_bindings.get(&TextureSemantics::Source.semantics(0).into()) {
             uniform_storage.bind_vec4(offset.offset(), source.size(), offset.context());
         }
@@ -329,4 +384,38 @@ impl BindingUtil for BindingMeta {
 
         required_images
     }
+}
+
+#[macro_export]
+macro_rules! impl_default_frame_options {
+    ($ty:ident) => {
+        /// Options for each frame.
+        #[repr(C)]
+        #[derive(Debug, Clone)]
+        pub struct $ty {
+            /// Whether or not to clear the history buffers.
+            pub clear_history: bool,
+            /// The direction of rendering.
+            /// -1 indicates that the frames are played in reverse order.
+            pub frame_direction: i32,
+            /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+            pub rotation: u32,
+            /// The total number of subframes ran. Default is 1.
+            pub total_subframes: u32,
+            // The current sub frame. Default is 1.
+            pub current_subframe: u32,
+        }
+
+        impl Default for $ty {
+            fn default() -> Self {
+                Self {
+                    clear_history: false,
+                    frame_direction: 1,
+                    rotation: 0,
+                    total_subframes: 1,
+                    current_subframe: 1,
+                }
+            }
+        }
+    };
 }

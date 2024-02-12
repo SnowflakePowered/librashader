@@ -55,6 +55,7 @@ pub struct FilterChainD3D11 {
     feedback_framebuffers: Box<[OwnedImage]>,
     history_framebuffers: VecDeque<OwnedImage>,
     state: D3D11State,
+    default_options: FrameOptionsD3D11,
 }
 
 pub(crate) struct Direct3D11 {
@@ -203,6 +204,7 @@ impl FilterChainD3D11 {
                 draw_quad,
             },
             state,
+            default_options: Default::default(),
         })
     }
 }
@@ -416,7 +418,7 @@ impl FilterChainD3D11 {
             return Ok(());
         }
 
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let options = options.unwrap_or(&self.default_options);
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
 
@@ -480,7 +482,7 @@ impl FilterChainD3D11 {
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
@@ -509,7 +511,7 @@ impl FilterChainD3D11 {
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,

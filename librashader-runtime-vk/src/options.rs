@@ -1,15 +1,7 @@
 //! Vulkan shader runtime options.
 
-/// Options for each Vulkan shader frame.
-#[repr(C)]
-#[derive(Default, Debug, Clone)]
-pub struct FrameOptionsVulkan {
-    /// Whether or not to clear the history buffers.
-    pub clear_history: bool,
-    /// The direction of rendering.
-    /// -1 indicates that the frames are played in reverse order.
-    pub frame_direction: i32,
-}
+use librashader_runtime::impl_default_frame_options;
+impl_default_frame_options!(FrameOptionsVulkan);
 
 /// Options for filter chain creation.
 #[repr(C)]

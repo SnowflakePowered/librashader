@@ -59,6 +59,7 @@ pub struct FilterChainWgpu {
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
     mipmapper: MipmapGen,
+    default_frame_options: FrameOptionsWgpu,
 }
 
 pub struct FilterMutable {
@@ -204,6 +205,7 @@ impl FilterChainWgpu {
             history_framebuffers,
             disable_mipmaps: options.map(|f| f.force_no_mipmaps).unwrap_or(false),
             mipmapper,
+            default_frame_options: Default::default(),
         })
     }
 
@@ -408,7 +410,7 @@ impl FilterChainWgpu {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        let frame_direction = options.map_or(1, |f| f.frame_direction);
+        let options = options.unwrap_or(&self.default_frame_options);
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
@@ -424,7 +426,7 @@ impl FilterChainWgpu {
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,
@@ -463,7 +465,7 @@ impl FilterChainWgpu {
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
-                frame_direction,
+                options,
                 viewport,
                 &original,
                 &source,

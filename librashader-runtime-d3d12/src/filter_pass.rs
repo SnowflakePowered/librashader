@@ -3,6 +3,7 @@ use crate::descriptor_heap::{D3D12DescriptorHeapSlot, ResourceWorkHeap, SamplerW
 use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::D3D12GraphicsPipeline;
+use crate::options::FrameOptionsD3D12;
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12OutputView, InputTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -10,7 +11,7 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -93,7 +94,7 @@ impl FilterPass {
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsD3D12,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
         original: &InputTexture,
@@ -104,11 +105,16 @@ impl FilterPass {
             &parent.samplers,
             &mut self.uniform_storage,
             &mut (&mut self.texture_heap, &mut self.sampler_heap),
-            mvp,
-            frame_count,
-            frame_direction,
-            fb_size,
-            viewport_size,
+            UniformInputs {
+                mvp,
+                frame_count,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+                frame_direction: options.frame_direction,
+                framebuffer_size: fb_size,
+                viewport_size,
+            },
             original,
             source,
             &self.uniform_bindings,
@@ -135,7 +141,7 @@ impl FilterPass {
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsD3D12,
         viewport: &Viewport<D3D12OutputView>,
         original: &InputTexture,
         source: &InputTexture,
@@ -151,7 +157,7 @@ impl FilterPass {
             parent,
             output.mvp,
             frame_count,
-            frame_direction,
+            options,
             output.output.size,
             viewport.output.size,
             original,

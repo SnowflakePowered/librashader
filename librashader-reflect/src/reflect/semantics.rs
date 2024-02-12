@@ -40,11 +40,18 @@ pub enum UniqueSemantics {
     /// The frame count, possibly with shader-defined modulo.
     FrameCount = 3,
     // int, frame direction
-    /// The frame direction.
+    /// The direction in time where frames are rendered
     FrameDirection = 4,
+    //int, rotation (glUniform1i(uni->rotation, retroarch_get_rotation());)
+    /// The rotation index (0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg)
+    Rotation = 5,
+    /// Total number of subframes.
+    TotalSubFrames = 6,
+    /// The current subframe (default 1)
+    CurrentSubFrame = 7,
     /// A user defined float parameter.
     // float, user defined parameter, array
-    FloatParameter = 5,
+    FloatParameter = 8,
 }
 
 impl UniqueSemantics {
@@ -64,6 +71,9 @@ impl UniqueSemantics {
             UniqueSemantics::FinalViewport => UniformType::Vec4,
             UniqueSemantics::FrameCount => UniformType::Unsigned,
             UniqueSemantics::FrameDirection => UniformType::Signed,
+            UniqueSemantics::Rotation => UniformType::Unsigned,
+            UniqueSemantics::TotalSubFrames => UniformType::Unsigned,
+            UniqueSemantics::CurrentSubFrame => UniformType::Unsigned,
             UniqueSemantics::FloatParameter => UniformType::Float,
         }
     }
@@ -403,6 +413,18 @@ impl UniqueSemanticMap for FxHashMap<String, UniformSemantic> {
                 }),
                 "FrameDirection" => Some(Semantic {
                     semantics: UniqueSemantics::FrameDirection,
+                    index: (),
+                }),
+                "Rotation" => Some(Semantic {
+                    semantics: UniqueSemantics::Rotation,
+                    index: (),
+                }),
+                "TotalSubFrames" => Some(Semantic {
+                    semantics: UniqueSemantics::TotalSubFrames,
+                    index: (),
+                }),
+                "CurrentSubFrame" => Some(Semantic {
+                    semantics: UniqueSemantics::TotalSubFrames,
                     index: (),
                 }),
                 _ => None,
