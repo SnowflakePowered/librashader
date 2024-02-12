@@ -12,7 +12,7 @@ where
     f32: AsPrimitive<T>,
 {
     /// Produce a `Size<T>` scaled with the input scaling options.
-    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>) -> Size<T>;
+    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>, original: Size<T>) -> Size<T>;
 }
 
 impl<T> ViewportSize<T> for Size<T>
@@ -20,12 +20,12 @@ where
     T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
     f32: AsPrimitive<T>,
 {
-    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>) -> Size<T>
+    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>, original: Size<T>) -> Size<T>
     where
         T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
         f32: AsPrimitive<T>,
     {
-        scaling::scale(scaling, self, viewport)
+        scaling::scale(scaling, self, viewport, original)
     }
 }
 
@@ -57,7 +57,7 @@ impl MipmapSize<u32> for Size<u32> {
     }
 }
 
-fn scale<T>(scaling: Scale2D, source: Size<T>, viewport: Size<T>) -> Size<T>
+fn scale<T>(scaling: Scale2D, source: Size<T>, viewport: Size<T>, original: Size<T>) -> Size<T>
 where
     T: Mul<ScaleFactor, Output = f32> + Copy + 'static,
     f32: AsPrimitive<T>,
@@ -75,6 +75,10 @@ where
             scale_type: ScaleType::Viewport,
             factor,
         } => viewport.width * factor,
+        Scaling {
+            scale_type: ScaleType::Original,
+            factor,
+        } => original.width * factor,
     };
 
     let height = match scaling.y {
@@ -90,6 +94,10 @@ where
             scale_type: ScaleType::Viewport,
             factor,
         } => viewport.height * factor,
+        Scaling {
+            scale_type: ScaleType::Original,
+            factor,
+        } => original.height * factor,
     };
 
     Size {
@@ -109,6 +117,7 @@ pub trait ScaleFramebuffer<T = ()> {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         should_mipmap: bool,
         context: &Self::Context,
     ) -> Result<Size<u32>, Self::Error>;
@@ -118,6 +127,7 @@ pub trait ScaleFramebuffer<T = ()> {
     fn scale_framebuffers<P>(
         source_size: Size<u32>,
         viewport_size: Size<u32>,
+        original_size: Size<u32>,
         output: &mut [Self],
         feedback: &mut [Self],
         passes: &[P],
@@ -131,6 +141,7 @@ pub trait ScaleFramebuffer<T = ()> {
         scale_framebuffers_with_context_callback::<T, Self, Self::Error, Self::Context, _>(
             source_size,
             viewport_size,
+            original_size,
             output,
             feedback,
             passes,
@@ -144,6 +155,7 @@ pub trait ScaleFramebuffer<T = ()> {
     fn scale_framebuffers_with_context<P>(
         source_size: Size<u32>,
         viewport_size: Size<u32>,
+        original_size: Size<u32>,
         output: &mut [Self],
         feedback: &mut [Self],
         passes: &[P],
@@ -157,6 +169,7 @@ pub trait ScaleFramebuffer<T = ()> {
         scale_framebuffers_with_context_callback::<T, Self, Self::Error, Self::Context, _>(
             source_size,
             viewport_size,
+            original_size,
             output,
             feedback,
             passes,
@@ -172,6 +185,7 @@ pub trait ScaleFramebuffer<T = ()> {
 fn scale_framebuffers_with_context_callback<T, F, E, C, P>(
     source_size: Size<u32>,
     viewport_size: Size<u32>,
+    original_size: Size<u32>,
     output: &mut [F],
     feedback: &mut [F],
     passes: &[P],
@@ -195,6 +209,7 @@ where
             pass.get_format(),
             &viewport_size,
             &target_size,
+            &original_size,
             should_mipmap,
             context,
         )?;
@@ -204,6 +219,7 @@ where
             pass.get_format(),
             &viewport_size,
             &target_size,
+            &original_size,
             should_mipmap,
             context,
         )?;

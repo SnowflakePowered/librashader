@@ -63,6 +63,8 @@ pub enum ScaleType {
     Absolute,
     /// Scale by the size of the viewport.
     Viewport,
+    /// Scale by the size of the original input quad.
+    Original,
 }
 
 /// The scaling factor for framebuffer scaling.
@@ -119,6 +121,7 @@ impl FromStr for ScaleType {
             "source" => Ok(ScaleType::Input),
             "viewport" => Ok(ScaleType::Viewport),
             "absolute" => Ok(ScaleType::Absolute),
+            "original" => Ok(ScaleType::Original),
             _ => Err(ParsePresetError::InvalidScaleType(s.to_string())),
         }
     }

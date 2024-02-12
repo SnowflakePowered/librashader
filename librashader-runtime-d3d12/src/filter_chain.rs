@@ -668,6 +668,7 @@ impl FilterChainD3D12 {
         OwnedImage::scale_framebuffers(
             source.size(),
             viewport.output.size,
+            original.size(),
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
