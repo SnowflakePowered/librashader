@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub type MetalTexture = Id<ProtocolObject<dyn MTLTexture>>;
 
 pub struct OwnedImage {
-    image: MetalTexture,
+    pub(crate) image: MetalTexture,
     max_miplevels: u32,
     size: Size<u32>,
 }
@@ -24,10 +24,8 @@ impl OwnedImage {
         device: &ProtocolObject<dyn MTLDevice>,
         size: Size<u32>,
         max_miplevels: u32,
-        format: ImageFormat,
+        format: MTLPixelFormat,
     ) -> Result<Self> {
-        let format: MTLPixelFormat = format.into();
-
         let descriptor = unsafe {
             let descriptor =
                 MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
@@ -66,20 +64,19 @@ impl OwnedImage {
         &mut self,
         device: &ProtocolObject<dyn MTLDevice>,
         scaling: Scale2D,
-        format: ImageFormat,
+        format: MTLPixelFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
         mipmap: bool,
     ) -> Size<u32> {
         let size = source_size.scale_viewport(scaling, *viewport_size);
-        let format: MTLPixelFormat = format.into();
 
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
             || format != self.image.pixelFormat()
         {
-            let mut new = OwnedImage::new(device, size, self.max_miplevels, format.into())?;
+            let mut new = OwnedImage::new(device, size, self.max_miplevels, format)?;
             std::mem::swap(self, &mut new);
         }
         size
@@ -97,17 +94,14 @@ impl OwnedImage {
 
     pub fn copy_from(
         &self,
+        encoder: &ProtocolObject<dyn MTLBlitCommandEncoder>>,
         other: &ProtocolObject<dyn MTLTexture>,
-        cmd: Id<ProtocolObject<dyn MTLCommandBuffer>>,
     ) -> Result<()> {
-        let encoder = cmd
-            .blitCommandEncoder()
-            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
         unsafe {
             encoder.copyFromTexture_toTexture(other, &self.image);
         }
         encoder.generateMipmapsForTexture(&self.image);
-        encoder.endEncoding();
+
         Ok(())
     }
 

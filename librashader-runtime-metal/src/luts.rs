@@ -19,8 +19,8 @@ pub(crate) struct LutTexture(MetalTexture);
 impl LutTexture {
     pub fn new(
         device: &ProtocolObject<dyn MTLDevice>,
+        mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>,
         image: Image<BGRA8>,
-        cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         config: &TextureConfig,
     ) -> Result<Self> {
         let descriptor = unsafe {
@@ -68,10 +68,7 @@ impl LutTexture {
         }
 
         if config.mipmap {
-            if let Some(encoder) = cmd.blitCommandEncoder() {
-                encoder.generateMipmapsForTexture(&texture);
-                encoder.endEncoding();
-            }
+            mipmapper.generateMipmapsForTexture(&texture);
         }
 
         Ok(LutTexture(texture))
