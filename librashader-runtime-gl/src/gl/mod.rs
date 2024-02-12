@@ -52,6 +52,7 @@ pub(crate) trait FramebufferInterface {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);

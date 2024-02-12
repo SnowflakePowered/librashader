@@ -321,6 +321,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         <GLFramebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_framebuffers(
             source.image.size,
             viewport.output.size,
+            original.image.size,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,

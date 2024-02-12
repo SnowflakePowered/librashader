@@ -69,9 +69,10 @@ impl OwnedImage {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         should_mipmap: bool,
     ) -> error::Result<Size<u32>> {
-        let size = source_size.scale_viewport(scaling, *viewport_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
 
         if self.size != size
             || (should_mipmap && self.max_mipmap == 1)
@@ -255,9 +256,17 @@ impl ScaleFramebuffer for OwnedImage {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         should_mipmap: bool,
         _context: &Self::Context,
     ) -> Result<Size<u32>, Self::Error> {
-        self.scale(scaling, format, viewport_size, source_size, should_mipmap)
+        self.scale(
+            scaling,
+            format,
+            viewport_size,
+            source_size,
+            original_size,
+            should_mipmap,
+        )
     }
 }

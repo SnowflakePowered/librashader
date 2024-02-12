@@ -387,6 +387,7 @@ impl FilterChainWgpu {
         OwnedImage::scale_framebuffers_with_context(
             source.image.size().into(),
             viewport.output.size,
+            original.image.size().into(),
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,

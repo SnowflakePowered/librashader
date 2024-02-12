@@ -39,13 +39,14 @@ impl FramebufferInterface for Gl3Framebuffer {
         format: ImageFormat,
         viewport_size: &Size<u32>,
         source_size: &Size<u32>,
+        original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
         if fb.is_raw {
             return Ok(fb.size);
         }
 
-        let size = source_size.scale_viewport(scaling, *viewport_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
 
         if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {
             fb.size = size;
