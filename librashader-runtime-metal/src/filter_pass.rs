@@ -44,7 +44,6 @@ impl BindSemantics<NoUniformBinder, Option<()>, MetalBuffer, MetalBuffer> for Fi
 
         unsafe {
             renderpass.setFragmentTexture_atIndex(Some(&texture.texture), binding.binding as usize);
-            renderpass.setFragmentTexture_atIndex(Some(&texture.texture), binding.binding as usize);
             renderpass.setFragmentSamplerState_atIndex(Some(sampler), binding.binding as usize);
         }
     }
@@ -95,6 +94,11 @@ impl FilterPass {
                     Some(self.uniform_storage.inner_ubo().as_ref()),
                     0,
                     ubo.binding as usize,
+                );
+                cmd.setFragmentBuffer_offset_atIndex(
+                    Some(self.uniform_storage.inner_ubo().as_ref()),
+                    0,
+                    ubo.binding as usize,
                 )
             }
         }
@@ -102,6 +106,11 @@ impl FilterPass {
             unsafe {
                 // SPIRV-Cross always has PCB bound to 1. Naga is arbitrary but their compilation provides the next free binding for drawquad.
                 cmd.setVertexBuffer_offset_atIndex(
+                    Some(self.uniform_storage.inner_ubo().as_ref()),
+                    0,
+                    pcb.binding.unwrap_or(1) as usize,
+                );
+                cmd.setFragmentBuffer_offset_atIndex(
                     Some(self.uniform_storage.inner_ubo().as_ref()),
                     0,
                     pcb.binding.unwrap_or(1) as usize,
