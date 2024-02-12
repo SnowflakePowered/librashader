@@ -202,8 +202,11 @@ impl FilterChainMetal {
     fn push_history(
         &mut self,
         input: &ProtocolObject<dyn MTLTexture>,
-        cmd: &ProtocolObject<dyn MTLBlitCommandEncoder>,
+        cmd: &ProtocolObject<dyn MTLCommandBuffer>,
     ) -> error::Result<()> {
+        let mipmapper = cmd
+            .blitCommandEncoder()
+            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.texture.height() != input.height()
                 || back.texture.width() != input.width()
@@ -220,10 +223,11 @@ impl FilterChainMetal {
                 );
             }
 
-            back.copy_from(cmd, input)?;
+            back.copy_from(&mipmapper, input)?;
 
             self.history_framebuffers.push_front(back);
         }
+        mipmapper.endEncoding();
         Ok(())
     }
 
@@ -317,7 +321,7 @@ impl FilterChainMetal {
     /// Records shader rendering commands to the provided command encoder.
     pub fn frame(
         &mut self,
-        input: Id<ProtocolObject<dyn MTLTexture>>,
+        input: &ProtocolObject<dyn MTLTexture>,
         viewport: &Viewport<&ProtocolObject<dyn MTLTexture>>,
         cmd_buffer: &ProtocolObject<dyn MTLCommandBuffer>,
         frame_count: usize,
@@ -394,17 +398,14 @@ impl FilterChainMetal {
         let (pass, last) = passes.split_at_mut(passes_len - 1);
         let options = options.unwrap_or(&self.default_options);
 
-        let mipmapper = cmd_buffer
-            .blitCommandEncoder()
-            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
-
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             source.filter_mode = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let out = RenderTarget::identity(target.texture.as_ref());
+            let out =
+                RenderTarget::identity(target.texture.as_ref());
             pass.draw(
                 &cmd_buffer,
                 index,
@@ -419,7 +420,7 @@ impl FilterChainMetal {
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
-                target.generate_mipmaps(&mipmapper);
+                target.generate_mipmaps(&cmd_buffer)?;
             }
 
             source = self.common.output_textures[index]
@@ -457,7 +458,7 @@ impl FilterChainMetal {
             )?;
         }
 
-        self.push_history(&input, &mipmapper)?;
+        self.push_history(&input, &cmd_buffer)?;
         self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
