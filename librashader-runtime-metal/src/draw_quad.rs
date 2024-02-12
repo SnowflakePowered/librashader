@@ -15,9 +15,9 @@ use crate::graphics_pipeline::VERTEX_BUFFER_INDEX;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
-struct MetalVertex {
-    position: [f32; 4],
-    texcoord: [f32; 2],
+pub(crate) struct MetalVertex {
+    pub position: [f32; 4],
+    pub texcoord: [f32; 2],
 }
 
 const FINAL_VBO_DATA: [MetalVertex; 4] = [
@@ -65,7 +65,23 @@ pub struct DrawQuad {
 
 impl DrawQuad {
     pub fn new(device: &ProtocolObject<dyn MTLDevice>) -> Result<DrawQuad> {
-        let vbo_data: &'static [u8] = bytemuck::cast_slice(&VBO_DATA);
+        let vbo_data: &'static [u8] = bytemuck::cast_slice(&FINAL_VBO_DATA);
+        // let buffer = unsafe {
+        //     device
+        //         .newBufferWithBytes_length_options(
+        //             // SAFETY: this pointer is const.
+        //             // https://developer.apple.com/documentation/metal/mtldevice/1433429-newbufferwithbytes
+        //             NonNull::new_unchecked(vbo_data.as_ptr() as *mut c_void),
+        //             vbo_data.len(),
+        //             if cfg!(target_os = "ios") {
+        //                 MTLResourceStorageModeShared
+        //             } else {
+        //                 MTLResourceStorageModeManaged
+        //             },
+        //         )
+        //         .ok_or(FilterChainError::BufferError)?
+        // };
+
         let buffer = unsafe {
             device
                 .newBufferWithBytes_length_options(
@@ -87,19 +103,21 @@ impl DrawQuad {
 
     pub fn draw_quad(&self, cmd: &ProtocolObject<dyn MTLRenderCommandEncoder>, vbo: QuadType) {
         // TODO: need to see how naga outputs MSL
-        let offset = match vbo {
-            QuadType::Offscreen => 0,
-            QuadType::Final => 4,
-        };
+        // let offset = match vbo {
+        //     QuadType::Offscreen => 0,
+        //     QuadType::Final => 4,
+        // };
 
         unsafe {
             cmd.setVertexBuffer_offset_attributeStride_atIndex(
                 Some(self.buffer.as_ref()),
                 0,
-                4 * std::mem::size_of::<f32>(),
+                std::mem::size_of::<MetalVertex>(),
                 VERTEX_BUFFER_INDEX,
             );
-            cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip, offset, 4);
+            cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip,
+                                                       0,
+                                                       4);
         }
     }
 }

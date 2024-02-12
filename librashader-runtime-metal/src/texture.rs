@@ -1,7 +1,7 @@
 use crate::error::{FilterChainError, Result};
 use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLDevice, MTLPixelFormat, MTLTexture,
-    MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead,
+    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat,
+    MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead,
     MTLTextureUsageShaderWrite,
 };
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
@@ -139,9 +139,13 @@ impl OwnedTexture {
         // cmd.clear_texture(&self.image, &wgpu::ImageSubresourceRange::default());
     }
 
-    /// caller must end the blit encoder after.
-    pub fn generate_mipmaps(&self, mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>) {
+    pub fn generate_mipmaps(&self, cmd: &ProtocolObject<dyn MTLCommandBuffer>) -> Result<()> {
+        let mipmapper = cmd
+            .blitCommandEncoder()
+            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
         mipmapper.generateMipmapsForTexture(&self.texture);
+        mipmapper.endEncoding();
+        Ok(())
     }
 }
 

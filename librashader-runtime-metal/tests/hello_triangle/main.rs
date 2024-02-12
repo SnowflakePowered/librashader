@@ -1,8 +1,9 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use core::{cell::OnceCell, ptr::NonNull};
+use std::sync::RwLock;
 
-use icrate::Metal::MTLClearColor;
+use icrate::Metal::{MTLBlitCommandEncoder, MTLClearColor, MTLTexture, MTLTextureDescriptor};
 use icrate::{
     AppKit::{
         NSApplication, NSApplicationActivationPolicyRegular, NSApplicationDelegate,
@@ -20,6 +21,7 @@ use icrate::{
     },
     MetalKit::{MTKView, MTKViewDelegate},
 };
+use librashader_common::Viewport;
 use librashader_presets::ShaderPreset;
 use librashader_runtime_metal::FilterChainMetal;
 use objc2::{
@@ -123,7 +125,7 @@ struct Ivars {
     start_date: Id<NSDate>,
     command_queue: OnceCell<Id<ProtocolObject<dyn MTLCommandQueue>>>,
     pipeline_state: OnceCell<Id<ProtocolObject<dyn MTLRenderPipelineState>>>,
-    filter_chain: OnceCell<FilterChainMetal>,
+    filter_chain: OnceCell<RwLock<FilterChainMetal>>,
     window: OnceCell<Id<NSWindow>>,
 }
 
@@ -227,6 +229,8 @@ declare_class!(
         )
         .unwrap();
 
+            let filter_chain = RwLock::new(filter_chain);
+
             // configure the metal view delegate
             unsafe {
                 let object = ProtocolObject::from_ref(self);
@@ -254,6 +258,7 @@ declare_class!(
         unsafe fn drawInMTKView(&self, mtk_view: &MTKView) {
             idcell!(command_queue <= self);
             idcell!(pipeline_state <= self);
+            idcell!(filter_chain <= self);
 
             unsafe {
                 mtk_view.setClearColor(MTLClearColor {
@@ -280,6 +285,7 @@ declare_class!(
             let Some(pass_descriptor) = (unsafe { mtk_view.currentRenderPassDescriptor() }) else {
                 return;
             };
+
             let Some(encoder) = command_buffer.renderCommandEncoderWithDescriptor(&pass_descriptor)
             else {
                 return;
@@ -348,12 +354,50 @@ declare_class!(
                 )
             };
 
+
             // configure the encoder with the pipeline and draw the triangle
             encoder.setRenderPipelineState(pipeline_state);
             unsafe {
                 encoder.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangle, 0, 3)
             };
             encoder.endEncoding();
+
+
+            unsafe {
+                let mut filter_chain = filter_chain.write().unwrap();
+                let texture = pass_descriptor
+                    .colorAttachments()
+                    .objectAtIndexedSubscript(0)
+                    .texture()
+                    .unwrap();
+ let tex_desc = MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
+                    texture.pixelFormat(),
+                    texture.width(),
+                    texture.height(),
+                    false
+                );
+
+                let backbuffer = command_queue
+                .device()
+                .newTextureWithDescriptor(&tex_desc)
+                .unwrap();
+
+                filter_chain.frame(&texture,
+                    &Viewport {
+                        x: 0.0,
+                        y: 0.0,
+                        mvp: None,
+                        output: &backbuffer
+                    }, &command_buffer, 0, None)
+                .expect("frame");
+
+                let blit = command_buffer
+                .blitCommandEncoder()
+                .unwrap();
+                blit.copyFromTexture_toTexture(&backbuffer, &texture);
+                blit.endEncoding();
+            }
+
 
             // schedule the command buffer for display and commit
             command_buffer.presentDrawable(&current_drawable);
