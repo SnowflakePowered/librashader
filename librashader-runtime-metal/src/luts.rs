@@ -36,11 +36,13 @@ impl LutTexture {
                 );
 
             descriptor.setSampleCount(1);
-            descriptor.setMipmapLevelCount(if config.mipmap {
-                image.size.calculate_miplevels() as usize
-            } else {
-                1
-            });
+            // descriptor.setMipmapLevelCount(if config.mipmap {
+            //     image.size.calculate_miplevels() as usize
+            // } else {
+            //     1
+            // });
+
+            descriptor.setMipmapLevelCount(1);
 
             descriptor.setUsage(MTLTextureUsageShaderRead);
 
@@ -71,7 +73,7 @@ impl LutTexture {
         }
 
         if config.mipmap {
-            mipmapper.generateMipmapsForTexture(&texture);
+            // mipmapper.generateMipmapsForTexture(&texture);
         }
 
         Ok(LutTexture(InputTexture {
