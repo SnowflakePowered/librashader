@@ -109,12 +109,7 @@ impl DrawQuad {
         // };
 
         unsafe {
-            cmd.setVertexBuffer_offset_attributeStride_atIndex(
-                Some(self.buffer.as_ref()),
-                0,
-                std::mem::size_of::<MetalVertex>(),
-                VERTEX_BUFFER_INDEX,
-            );
+            cmd.setVertexBuffer_offset_atIndex(Some(&self.buffer), 0, VERTEX_BUFFER_INDEX);
             cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip,
                                                        0,
                                                        4);
