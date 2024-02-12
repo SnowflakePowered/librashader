@@ -10,13 +10,14 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::binding::{BindSemantics, TextureInput};
+use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use objc2::runtime::ProtocolObject;
 use rustc_hash::FxHashMap;
+use crate::options::FrameOptionsMetal;
 
 impl TextureInput for InputTexture {
     fn size(&self) -> Size<u32> {
@@ -66,7 +67,7 @@ impl FilterPass {
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsMetal,
         viewport: &Viewport<&ProtocolObject<dyn MTLTexture>>,
         original: &InputTexture,
         source: &InputTexture,
@@ -80,7 +81,7 @@ impl FilterPass {
             parent,
             output.mvp,
             frame_count,
-            frame_direction,
+            options,
             get_texture_size(output.output),
             get_texture_size(viewport.output),
             original,
@@ -120,7 +121,7 @@ impl FilterPass {
         parent: &FilterCommon,
         mvp: &[f32; 16],
         frame_count: u32,
-        frame_direction: i32,
+        options: &FrameOptionsMetal,
         fb_size: Size<u32>,
         viewport_size: Size<u32>,
         original: &InputTexture,
@@ -132,11 +133,16 @@ impl FilterPass {
             &parent.samplers,
             &mut self.uniform_storage,
             &mut renderpass,
-            mvp,
-            frame_count,
-            frame_direction,
-            fb_size,
-            viewport_size,
+            UniformInputs {
+                mvp,
+                frame_count,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+                frame_direction: options.frame_direction,
+                framebuffer_size: fb_size,
+                viewport_size,
+            },
             original,
             source,
             &self.uniform_bindings,
