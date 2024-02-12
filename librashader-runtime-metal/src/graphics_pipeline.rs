@@ -1,7 +1,7 @@
 use std::mem::offset_of;
 use crate::error::{FilterChainError, Result};
 use icrate::Foundation::NSString;
-use icrate::Metal::{MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLCommandBuffer, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat, MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor, MTLVertexFormatFloat2, MTLVertexFormatFloat4, MTLVertexStepFunctionPerVertex, MTLViewport};
+use icrate::Metal::{MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLClearColor, MTLCommandBuffer, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat, MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor, MTLVertexFormatFloat2, MTLVertexFormatFloat4, MTLVertexStepFunctionPerVertex, MTLViewport};
 use librashader_reflect::back::msl::{CrossMslContext, NagaMslContext};
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_runtime::render_target::RenderTarget;
@@ -172,7 +172,8 @@ impl MetalGraphicsPipeline {
     ) -> Result<Id<ProtocolObject<dyn MTLRenderCommandEncoder>>> {
         unsafe {
             let descriptor = MTLRenderPassDescriptor::new();
-            let ca = descriptor.colorAttachments().objectAtIndexedSubscript(0);
+            let ca = descriptor.colorAttachments()
+                .objectAtIndexedSubscript(0);
             ca.setLoadAction(MTLLoadActionDontCare);
             ca.setStoreAction(MTLStoreActionStore);
             ca.setTexture(Some(output.output));

@@ -24,7 +24,7 @@ impl MetalBuffer {
         let resource_mode = if cfg!(target_os = "ios") {
             MTLResourceStorageModeShared
         } else {
-            MTLResourceStorageModeManaged
+            MTLResourceStorageModeShared
         };
 
         let buffer = device
@@ -35,10 +35,10 @@ impl MetalBuffer {
 
     pub fn flush(&self) {
         // We don't know what was actually written to so...
-        self.buffer.didModifyRange(NSRange {
-            location: 0,
-            length: self.size,
-        })
+        // self.buffer.didModifyRange(NSRange {
+        //     location: 0,
+        //     length: self.size,
+        // })
     }
 }
 

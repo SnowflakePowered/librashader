@@ -3,7 +3,7 @@
 use core::{cell::OnceCell, ptr::NonNull};
 use std::sync::RwLock;
 
-use icrate::Metal::{MTLBlitCommandEncoder, MTLClearColor, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget};
+use icrate::Metal::{MTLBlitCommandEncoder, MTLClearColor, MTLPixelFormatRGBA8Unorm, MTLTexture, MTLTextureDescriptor, MTLTextureUsagePixelFormatView, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead};
 use icrate::{
     AppKit::{
         NSApplication, NSApplicationActivationPolicyRegular, NSApplicationDelegate,
@@ -219,8 +219,10 @@ declare_class!(
                 .newRenderPipelineStateWithDescriptor_error(&pipeline_descriptor)
                 .expect("Failed to create a pipeline state.");
 
-           let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+                       // let preset = ShaderPreset::try_parse("./test/shaders_slang/crt/crt-lottes.slangp").unwrap();
+
+           // let preset = ShaderPreset::try_parse("./test/shaders_slang/crt/crt-lottes.slangp").unwrap();
+  let preset = ShaderPreset::try_parse("./test/basic.slangp").unwrap();
 
         let filter_chain = FilterChainMetal::load_from_preset(
             preset,
@@ -294,7 +296,8 @@ declare_class!(
 
             // compute the scene properties
             let scene_properties_data = &SceneProperties {
-                time: unsafe { self.ivars().start_date.timeIntervalSinceNow() } as f32,
+                // time: unsafe { self.ivars().start_date.timeIntervalSinceNow() } as f32,
+                time: 0.0
             };
             // write the scene properties to the vertex shader argument buffer at index 0
             let scene_properties_bytes = NonNull::from(scene_properties_data);
@@ -379,24 +382,25 @@ declare_class!(
                     false
                 );
 
-                tex_desc.setUsage(MTLTextureUsageRenderTarget);
-                //  let frontbuffer = command_queue
-                // .device()
-                // .newTextureWithDescriptor(&tex_desc)
-                // .unwrap();
+                tex_desc.setUsage(MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead | MTLTextureUsagePixelFormatView);
+                // tex_desc.setPixelFormat(MTLPixelFormatRGBA8Unorm);
+                 let frontbuffer = command_queue
+                .device()
+                .newTextureWithDescriptor(&tex_desc)
+                .unwrap();
 
                 let backbuffer = command_queue
                 .device()
                 .newTextureWithDescriptor(&tex_desc)
                 .unwrap();
 
-                //   let blit = command_buffer
-                // .blitCommandEncoder()
-                // .unwrap();
-                // blit.copyFromTexture_toTexture(&texture, &frontbuffer);
-                // blit.endEncoding();
+                  let blit = command_buffer
+                .blitCommandEncoder()
+                .unwrap();
+                blit.copyFromTexture_toTexture(&texture, &frontbuffer);
+                blit.endEncoding();
 
-                filter_chain.frame(&texture,
+                filter_chain.frame(&frontbuffer,
                     &Viewport {
                         x: 0.0,
                         y: 0.0,

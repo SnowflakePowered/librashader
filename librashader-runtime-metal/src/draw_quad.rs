@@ -20,21 +20,41 @@ pub(crate) struct MetalVertex {
     pub texcoord: [f32; 2],
 }
 
-const FINAL_VBO_DATA: [MetalVertex; 4] = [
+const OFFSCREEN_VBO_DATA: [MetalVertex; 4] = [
     MetalVertex {
-        position: [0.0, 1.0, 0.0, 1.0],
+        position: [-1.0, -1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
     MetalVertex {
-        position: [1.0, 1.0, 0.0, 1.0],
+        position: [-1.0, 1.0, 0.0, 1.0],
+        texcoord: [0.0, 0.0],
+    },
+    MetalVertex {
+        position: [1.0, -1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
     MetalVertex {
+        position: [1.0, 1.0, 0.0, 1.0],
+        texcoord: [1.0, 0.0],
+    },
+];
+
+
+const FINAL_VBO_DATA: [MetalVertex; 4] = [
+    MetalVertex {
         position: [0.0, 0.0, 0.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    MetalVertex {
+        position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
     MetalVertex {
         position: [1.0, 0.0, 0.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
+    MetalVertex {
+        position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
 ];
@@ -57,7 +77,7 @@ const VBO_DEFAULT_FINAL: [f32; 16] = [
     1.0, 1.0, 1.0, 1.0,
 ];
 
-const VBO_DATA: [f32; 32] = concat_arrays!(VBO_OFFSCREEN, VBO_DEFAULT_FINAL);
+const VBO_DATA: [MetalVertex; 8] = concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
     buffer: Id<ProtocolObject<dyn MTLBuffer>>,
@@ -65,7 +85,7 @@ pub struct DrawQuad {
 
 impl DrawQuad {
     pub fn new(device: &ProtocolObject<dyn MTLDevice>) -> Result<DrawQuad> {
-        let vbo_data: &'static [u8] = bytemuck::cast_slice(&FINAL_VBO_DATA);
+        let vbo_data: &'static [u8] = bytemuck::cast_slice(&VBO_DATA);
         // let buffer = unsafe {
         //     device
         //         .newBufferWithBytes_length_options(
@@ -103,15 +123,15 @@ impl DrawQuad {
 
     pub fn draw_quad(&self, cmd: &ProtocolObject<dyn MTLRenderCommandEncoder>, vbo: QuadType) {
         // TODO: need to see how naga outputs MSL
-        // let offset = match vbo {
-        //     QuadType::Offscreen => 0,
-        //     QuadType::Final => 4,
-        // };
+        let offset = match vbo {
+            QuadType::Offscreen => 0,
+            QuadType::Final => 4,
+        };
 
         unsafe {
             cmd.setVertexBuffer_offset_atIndex(Some(&self.buffer), 0, VERTEX_BUFFER_INDEX);
             cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip,
-                                                       0,
+                                                       offset,
                                                        4);
         }
     }

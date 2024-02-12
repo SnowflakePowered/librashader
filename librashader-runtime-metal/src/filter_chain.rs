@@ -405,7 +405,7 @@ impl FilterChainMetal {
             source.mip_filter = pass.config.filter;
 
             let out =
-                RenderTarget::viewport_with_output(target.texture.as_ref(), viewport);
+                RenderTarget::identity(target.texture.as_ref());
             pass.draw(
                 &cmd_buffer,
                 index,
@@ -416,7 +416,7 @@ impl FilterChainMetal {
                 &original,
                 &source,
                 &out,
-                QuadType::Final,
+                QuadType::Offscreen,
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {

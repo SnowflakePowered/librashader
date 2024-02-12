@@ -61,11 +61,13 @@ impl OwnedTexture {
                 );
 
             descriptor.setSampleCount(1);
-            descriptor.setMipmapLevelCount(if max_miplevels <= 1 {
-                size.calculate_miplevels() as usize
-            } else {
-                1
-            });
+            // descriptor.setMipmapLevelCount(if max_miplevels <= 1 {
+            //     size.calculate_miplevels() as usize
+            // } else {
+            //     1
+            // });
+
+            descriptor.setMipmapLevelCount(1);
 
             descriptor.setUsage(
                 MTLTextureUsageShaderRead
@@ -144,7 +146,7 @@ impl OwnedTexture {
         let mipmapper = cmd
             .blitCommandEncoder()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
-        mipmapper.generateMipmapsForTexture(&self.texture);
+        // mipmapper.generateMipmapsForTexture(&self.texture);
         mipmapper.endEncoding();
         Ok(())
     }
