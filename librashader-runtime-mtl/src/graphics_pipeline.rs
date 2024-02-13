@@ -3,7 +3,7 @@ use crate::error::{FilterChainError, Result};
 use crate::select_optimal_pixel_format;
 use icrate::Foundation::NSString;
 use icrate::Metal::{
-    MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLClearColor, MTLCommandBuffer,
+    MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLCommandBuffer,
     MTLCommandEncoder, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat,
     MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor,
     MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor,
