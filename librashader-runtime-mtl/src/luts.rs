@@ -1,12 +1,11 @@
 use crate::error::{FilterChainError, Result};
 use crate::texture::InputTexture;
 use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize,
-    MTLTexture, MTLTextureDescriptor, MTLTextureUsageShaderRead,
+    MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize, MTLTexture,
+    MTLTextureDescriptor, MTLTextureUsageShaderRead,
 };
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
-use librashader_runtime::scaling::MipmapSize;
 use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
 use std::ptr::NonNull;
@@ -22,7 +21,6 @@ impl AsRef<InputTexture> for LutTexture {
 impl LutTexture {
     pub fn new(
         device: &ProtocolObject<dyn MTLDevice>,
-        mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>,
         image: Image<BGRA8>,
         config: &TextureConfig,
     ) -> Result<Self> {

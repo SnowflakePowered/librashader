@@ -278,6 +278,19 @@ pub mod runtime {
         };
     }
 
+    #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+    #[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+    /// Shader runtime for Metal
+    pub mod mtl {
+        pub use librashader_runtime_mtl::{
+            error,
+            options::{
+                FilterChainOptionsMetal as FilterChainOptions, FrameOptionsMetal as FrameOptions,
+            },
+            FilterChainMetal as FilterChain, MetalOutputView,
+        };
+    }
+
     #[cfg(feature = "runtime-wgpu")]
     #[doc(cfg(feature = "runtime-wgpu"))]
     /// Shader runtime for wgpu
