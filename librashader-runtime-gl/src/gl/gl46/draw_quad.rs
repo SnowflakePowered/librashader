@@ -1,14 +1,7 @@
-use crate::gl::DrawQuad;
+use crate::gl::FINAL_VBO_DATA;
+use crate::gl::{DrawQuad, OpenGLVertex};
 use gl::types::{GLint, GLsizeiptr, GLuint};
-
-#[rustfmt::skip]
-static QUAD_VBO_DATA: &[f32; 16] = &[
-    0.0, 0.0, 0.0, 0.0,
-    1.0, 0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0, 1.0,
-    1.0, 1.0, 1.0, 1.0,
-];
-
+use std::mem::offset_of;
 pub struct Gl46DrawQuad {
     vbo: GLuint,
     vao: GLuint,
@@ -23,8 +16,8 @@ impl DrawQuad for Gl46DrawQuad {
             gl::CreateBuffers(1, &mut vbo);
             gl::NamedBufferData(
                 vbo,
-                std::mem::size_of_val(QUAD_VBO_DATA) as GLsizeiptr,
-                QUAD_VBO_DATA.as_ptr().cast(),
+                4 * std::mem::size_of::<OpenGLVertex>() as GLsizeiptr,
+                FINAL_VBO_DATA.as_ptr().cast(),
                 gl::STATIC_DRAW,
             );
             gl::CreateVertexArrays(1, &mut vao);
@@ -32,16 +25,29 @@ impl DrawQuad for Gl46DrawQuad {
             gl::EnableVertexArrayAttrib(vao, 0);
             gl::EnableVertexArrayAttrib(vao, 1);
 
-            gl::VertexArrayVertexBuffer(vao, 0, vbo, 0, 4 * std::mem::size_of::<f32>() as GLint);
+            gl::VertexArrayVertexBuffer(
+                vao,
+                0,
+                vbo,
+                0,
+                std::mem::size_of::<OpenGLVertex>() as GLint,
+            );
 
-            gl::VertexArrayAttribFormat(vao, 0, 2, gl::FLOAT, gl::FALSE, 0);
+            gl::VertexArrayAttribFormat(
+                vao,
+                0,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                offset_of!(OpenGLVertex, position) as GLuint,
+            );
             gl::VertexArrayAttribFormat(
                 vao,
                 1,
                 2,
                 gl::FLOAT,
                 gl::FALSE,
-                2 * std::mem::size_of::<f32>() as GLuint,
+                offset_of!(OpenGLVertex, texcoord) as GLuint,
             );
 
             gl::VertexArrayAttribBinding(vao, 0, 0);

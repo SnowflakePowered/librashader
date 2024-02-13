@@ -196,6 +196,9 @@ mod test {
 
         let compiled = msl.compile(Some(msl::Version::V2_0)).unwrap();
 
-        println!("{:?}", compiled.context.fragment.translation_info.entry_point_names);
+        println!(
+            "{:?}",
+            compiled.context.fragment.translation_info.entry_point_names
+        );
     }
 }

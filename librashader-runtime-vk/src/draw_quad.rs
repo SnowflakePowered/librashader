@@ -1,12 +1,12 @@
 use crate::error;
 use crate::memory::VulkanBuffer;
+use array_concat::concat_arrays;
 use ash::vk;
+use bytemuck::{Pod, Zeroable};
 use gpu_allocator::vulkan::Allocator;
 use librashader_runtime::quad::QuadType;
 use parking_lot::RwLock;
 use std::sync::Arc;
-use bytemuck::{Pod, Zeroable};
-use array_concat::concat_arrays;
 
 // Vulkan does vertex expansion
 #[repr(C)]
@@ -75,8 +75,7 @@ impl DrawQuad {
 
         {
             let slice = buffer.as_mut_slice()?;
-            slice
-                .copy_from_slice(bytemuck::cast_slice(VBO_DATA));
+            slice.copy_from_slice(bytemuck::cast_slice(VBO_DATA));
         }
 
         Ok(DrawQuad {
