@@ -1,11 +1,13 @@
 use crate::error::{FilterChainError, Result};
 use crate::texture::InputTexture;
 use icrate::Metal::{
-    MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize, MTLTexture,
-    MTLTextureDescriptor, MTLTextureUsageShaderRead,
+    MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLSize,
+    MTLTexture, MTLTextureDescriptor, MTLTextureUsageShaderRead,
 };
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
+use librashader_runtime::scaling::MipmapSize;
+use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
 use std::ptr::NonNull;
@@ -23,6 +25,7 @@ impl LutTexture {
         device: &ProtocolObject<dyn MTLDevice>,
         image: Image<BGRA8>,
         config: &TextureConfig,
+        mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>,
     ) -> Result<Self> {
         let descriptor = unsafe {
             let descriptor =
@@ -34,13 +37,11 @@ impl LutTexture {
                 );
 
             descriptor.setSampleCount(1);
-            // descriptor.setMipmapLevelCount(if config.mipmap {
-            //     image.size.calculate_miplevels() as usize
-            // } else {
-            //     1
-            // });
-
-            descriptor.setMipmapLevelCount(1);
+            descriptor.setMipmapLevelCount(if config.mipmap {
+                image.size.calculate_miplevels() as usize
+            } else {
+                1
+            });
 
             descriptor.setUsage(MTLTextureUsageShaderRead);
 
@@ -71,7 +72,7 @@ impl LutTexture {
         }
 
         if config.mipmap {
-            // mipmapper.generateMipmapsForTexture(&texture);
+            mipmapper.generateMipmapsForTexture(&texture);
         }
 
         Ok(LutTexture(InputTexture {

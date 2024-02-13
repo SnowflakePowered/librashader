@@ -134,7 +134,7 @@ impl FilterChainMetal {
             .map(|texture| Image::<BGRA8>::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(device, image, texture)?;
+            let texture = LutTexture::new(device, image, texture, &mipmapper)?;
             luts.insert(index, texture);
         }
 
@@ -397,7 +397,8 @@ impl FilterChainMetal {
 
         source
             .texture
-            .setLabel(Some(&*NSString::from_str("sourcetex")));
+            .setLabel(Some(&*NSString::from_str("librashader_sourcetex")));
+        
         // swap output and feedback **before** recording command buffers
         std::mem::swap(
             &mut self.output_framebuffers,
