@@ -27,10 +27,6 @@ array-concat = "0.5.2"
 bytemuck = { version = "1.12.3", features = ["derive"] }
 rayon = "1.8.1"
 
-[dependencies.icrate]
-version = "0.1.0"
-features = ["AppKit", "AppKit_all", "Foundation", "Foundation_all", "MetalKit", "MetalKit_all", "Metal", "Metal_all"]
-
 [[test]]
 name = "triangle"
 path = "tests/hello_triangle/main.rs"
@@ -40,8 +36,11 @@ harness = false
 features = ["librashader-cache/docsrs"]
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-#icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ]}
+icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ]}
 objc2 = { version = "0.5.0", features = ["apple"] }
-#
+
+[features]
+run_test = ["icrate/AppKit", "icrate/AppKit_all", "icrate/Foundation", "icrate/Foundation_all", "icrate/MetalKit", "icrate/MetalKit_all"]
+
 #[lib]
 #crate-type = ["lib", "staticlib"]

@@ -1,3 +1,4 @@
+#![cfg(feature = "run_test")]
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use core::{cell::OnceCell, ptr::NonNull};
