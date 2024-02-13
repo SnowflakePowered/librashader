@@ -73,6 +73,5 @@ full = ["runtime-all", "reflect-all", "preprocess", "presets"]
 docsrs = ["librashader-cache/docsrs"]
 
 [package.metadata.docs.rs]
-targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu",
-    "x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
 features = [ "librashader-cache/docsrs" ]
