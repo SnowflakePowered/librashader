@@ -14,3 +14,7 @@ pub mod d3d11;
 #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
 #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
 pub mod d3d12;
+
+#[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+#[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+mod mtl;

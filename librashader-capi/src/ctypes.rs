@@ -86,6 +86,12 @@ use librashader::runtime::vk::FilterChain as FilterChainVulkan;
 #[doc(cfg(feature = "runtime-vulkan"))]
 pub type libra_vk_filter_chain_t = Option<NonNull<FilterChainVulkan>>;
 
+#[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+use librashader::runtime::mtl::FilterChain as FilterChainMetal;
+#[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+#[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+pub type libra_mtl_filter_chain_t = Option<NonNull<FilterChainMetal>>;
+
 /// Defines the output viewport for a rendered frame.
 #[repr(C)]
 pub struct libra_viewport_t {

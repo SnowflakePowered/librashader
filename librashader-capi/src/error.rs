@@ -41,6 +41,10 @@ pub enum LibrashaderError {
     #[doc(cfg(feature = "runtime-vulkan"))]
     #[error("There was an error in the Vulkan filter chain.")]
     VulkanFilterError(#[from] librashader::runtime::vk::error::FilterChainError),
+    #[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+    #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+    #[error("There was an error in the D3D12 filter chain.")]
+    MetalFilterError(#[from] librashader::runtime::mtl::error::FilterChainError),
 }
 
 /// Error codes for librashader error types.
@@ -187,6 +191,9 @@ impl LibrashaderError {
             LibrashaderError::D3D12FilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(feature = "runtime-vulkan")]
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
+            #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+            #[error("There was an error in the D3D12 filter chain.")]
+            LibrashaderError::MetalFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR
         }
     }
     pub(crate) const fn ok() -> libra_error_t {
