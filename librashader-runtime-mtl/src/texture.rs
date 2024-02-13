@@ -1,14 +1,9 @@
 use crate::error::{FilterChainError, Result};
 use crate::select_optimal_pixel_format;
-use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice,
-    MTLParallelRenderCommandEncoder, MTLPixelFormat, MTLRenderCommandEncoder, MTLTexture,
-    MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead,
-    MTLTextureUsageShaderWrite,
-};
+use icrate::Metal::{MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat, MTLStorageModePrivate, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead, MTLTextureUsageShaderWrite};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{ScaleFramebuffer, ViewportSize};
+use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 
@@ -60,18 +55,17 @@ impl OwnedTexture {
                     select_optimal_pixel_format(format),
                     size.width as usize,
                     size.height as usize,
-                    max_miplevels <= 1,
+                    max_miplevels > 1,
                 );
 
             descriptor.setSampleCount(1);
-            // descriptor.setMipmapLevelCount(if max_miplevels <= 1 {
-            //     size.calculate_miplevels() as usize
-            // } else {
-            //     1
-            // });
+            descriptor.setMipmapLevelCount(if max_miplevels > 1 {
+                size.calculate_miplevels() as usize
+            } else {
+                1
+            });
 
-            descriptor.setMipmapLevelCount(1);
-
+            descriptor.setStorageMode(MTLStorageModePrivate);
             descriptor.setUsage(
                 MTLTextureUsageShaderRead
                     | MTLTextureUsageShaderWrite
@@ -142,7 +136,7 @@ impl OwnedTexture {
         let mipmapper = cmd
             .blitCommandEncoder()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
-        // mipmapper.generateMipmapsForTexture(&self.texture);
+        mipmapper.generateMipmapsForTexture(&self.texture);
         mipmapper.endEncoding();
         Ok(())
     }
