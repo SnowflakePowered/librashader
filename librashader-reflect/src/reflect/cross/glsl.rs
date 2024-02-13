@@ -28,9 +28,6 @@ impl CompileShader<GLSL> for CrossReflect<spirv_cross::glsl::Target> {
         let vertex_resources = self.vertex.get_shader_resources()?;
         let fragment_resources = self.fragment.get_shader_resources()?;
 
-        for res in &vertex_resources.stage_inputs {
-            self.vertex.unset_decoration(res.id, Decoration::Location)?;
-        }
         for res in &vertex_resources.stage_outputs {
             // let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
             // self.vertex
