@@ -346,7 +346,7 @@ impl FilterChainVulkan {
             passes,
             &semantics,
             frames_in_flight,
-            options.map_or(false, |o| o.use_render_pass),
+            options.map_or(false, |o| o.use_dynamic_rendering),
             disable_cache,
         )?;
 
@@ -412,7 +412,7 @@ impl FilterChainVulkan {
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
         frames_in_flight: u32,
-        use_render_pass: bool,
+        use_dynamic_rendering: bool,
         disable_cache: bool,
     ) -> error::Result<Box<[FilterPass]>> {
         let frames_in_flight = std::cmp::max(1, frames_in_flight);
@@ -440,7 +440,7 @@ impl FilterChainVulkan {
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
-                let render_pass_format = if !use_render_pass {
+                let render_pass_format = if use_dynamic_rendering {
                     vk::Format::UNDEFINED
                 } else if let Some(format) = config.get_format_override() {
                     format.into()
