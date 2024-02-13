@@ -15,14 +15,14 @@
 //! called with appropriate input and output parameters to draw a frame with the shader effect applied.
 //!
 //! ## Runtimes
-//! Currently available runtimes are wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA), Direct3D 11, and Direct3D 12.
-//!
-//! The Vulkan runtime requires [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
-//! by default, unless [`FilterChainOptions::use_render_pass`](crate::runtime::vk::FilterChainOptions) is explicitly set. Note that dynamic rendering
-//! will bring the best performance.
+//! librashader supports all modern graphics runtimes, including wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA),
+//! Direct3D 11, Direct3D 12, and Metal.
 //!
 //! The Direct3D 12 runtime requires support for [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes), which
 //! have been available since Windows 10, version 1809.
+//!
+//! The Vulkan runtime can use [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
+//! for improved performance, if the underlying hardware supports it.
 //!
 //! wgpu support is not available in the librashader C API.
 //!
@@ -34,7 +34,7 @@
 //! | Direct3D 11  | ✔        | `d3d11`                 |
 //! | Direct3D 12  | ✔        | `d3d12`                 |
 //! | wgpu        | ✔        |  `wgpu`                 |
-//! | Metal       | ❌        |                         |
+//! | Metal       | ✔        |  `metal`                |
 //!
 //! ## C API
 //! For documentation on the librashader C API, see [librashader-capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
