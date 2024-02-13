@@ -1,13 +1,7 @@
-use crate::gl::DrawQuad;
+use crate::gl::FINAL_VBO_DATA;
+use crate::gl::{DrawQuad, OpenGLVertex};
 use gl::types::{GLsizei, GLsizeiptr, GLuint};
-
-#[rustfmt::skip]
-static QUAD_VBO_DATA: &[f32; 16] = &[
-    0.0, 0.0, 0.0, 0.0,
-    1.0, 0.0, 1.0, 0.0,
-    0.0, 1.0, 0.0, 1.0,
-    1.0, 1.0, 1.0, 1.0,
-];
+use std::mem::offset_of;
 
 pub struct Gl3DrawQuad {
     vbo: GLuint,
@@ -24,8 +18,8 @@ impl DrawQuad for Gl3DrawQuad {
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                std::mem::size_of_val(QUAD_VBO_DATA) as GLsizeiptr,
-                QUAD_VBO_DATA.as_ptr().cast(),
+                4 * std::mem::size_of::<OpenGLVertex>() as GLsizeiptr,
+                FINAL_VBO_DATA.as_ptr().cast(),
                 gl::STATIC_DRAW,
             );
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -51,16 +45,16 @@ impl DrawQuad for Gl3DrawQuad {
                 2,
                 gl::FLOAT,
                 gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as GLsizei,
-                sptr::invalid(0),
+                std::mem::size_of::<OpenGLVertex>() as GLsizei,
+                sptr::invalid(offset_of!(OpenGLVertex, position)),
             );
             gl::VertexAttribPointer(
                 1,
                 2,
                 gl::FLOAT,
                 gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as GLsizei,
-                sptr::invalid(2 * std::mem::size_of::<f32>()),
+                std::mem::size_of::<OpenGLVertex>() as GLsizei,
+                sptr::invalid(offset_of!(OpenGLVertex, position)),
             );
         }
     }

@@ -7,6 +7,7 @@ use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
+use bytemuck::{Pod, Zeroable};
 pub use framebuffer::GLFramebuffer;
 use gl::types::{GLenum, GLuint};
 use librashader_common::{ImageFormat, Size};
@@ -16,6 +17,33 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::uniforms::UniformStorageAccess;
 use rustc_hash::FxHashMap;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
+
+pub(crate) struct OpenGLVertex {
+    pub position: [f32; 2],
+    pub texcoord: [f32; 2],
+}
+
+pub(crate) static FINAL_VBO_DATA: &[OpenGLVertex; 4] = &[
+    OpenGLVertex {
+        position: [0.0, 0.0],
+        texcoord: [0.0, 0.0],
+    },
+    OpenGLVertex {
+        position: [1.0, 0.0],
+        texcoord: [1.0, 0.0],
+    },
+    OpenGLVertex {
+        position: [0.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    OpenGLVertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
+];
 
 pub(crate) trait LoadLut {
     fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, InputTexture>>;
