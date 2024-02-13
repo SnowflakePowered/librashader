@@ -29,6 +29,7 @@ use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
+use librashader_runtime::quad::QuadType;
 
 #[rustfmt::skip]
 pub static GL_MVP_DEFAULT: &[f32; 16] = &[
@@ -293,7 +294,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
-        self.draw_quad.bind_vertices();
+        self.draw_quad.bind_vertices(QuadType::Offscreen);
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -360,7 +361,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::offscreen(target, viewport.mvp.unwrap_or(GL_MVP_DEFAULT)),
+                RenderTarget::identity(target),
+
+                // RenderTarget::offscreen(target, viewport.mvp.unwrap_or(GL_MVP_DEFAULT)),
             );
 
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
@@ -368,6 +371,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source = target;
         }
 
+        self.draw_quad.bind_vertices(QuadType::Final);
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {

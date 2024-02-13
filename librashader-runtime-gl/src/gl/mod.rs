@@ -17,16 +17,39 @@ use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::uniforms::UniformStorageAccess;
+use array_concat::concat_arrays;
+use librashader_runtime::quad::QuadType;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
 
+// OpenGL does office expansion
 pub(crate) struct OpenGLVertex {
     pub position: [f32; 2],
     pub texcoord: [f32; 2],
 }
 
-pub(crate) static FINAL_VBO_DATA: &[OpenGLVertex; 4] = &[
+static OFFSCREEN_VBO_DATA: &[OpenGLVertex; 4] = &[
+    OpenGLVertex {
+        position: [-1.0, -1.0],
+        texcoord: [0.0, 0.0],
+    },
+    OpenGLVertex {
+        position: [1.0, -1.0],
+        texcoord: [1.0, 0.0],
+    },
+    OpenGLVertex {
+        position: [-1.0, 1.0],
+        texcoord: [0.0, 1.0],
+    },
+    OpenGLVertex {
+        position: [1.0, 1.0],
+        texcoord: [1.0, 1.0],
+    },
+];
+
+
+static FINAL_VBO_DATA: &[OpenGLVertex; 4] = &[
     OpenGLVertex {
         position: [0.0, 0.0],
         texcoord: [0.0, 0.0],
@@ -58,7 +81,7 @@ pub(crate) trait CompileProgram {
 
 pub(crate) trait DrawQuad {
     fn new() -> Self;
-    fn bind_vertices(&self);
+    fn bind_vertices(&self, quad_type: QuadType);
     fn unbind_vertices(&self);
 }
 
