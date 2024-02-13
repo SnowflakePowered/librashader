@@ -1,13 +1,22 @@
-use std::mem::offset_of;
+use crate::draw_quad::MetalVertex;
 use crate::error::{FilterChainError, Result};
+use crate::select_optimal_pixel_format;
 use icrate::Foundation::NSString;
-use icrate::Metal::{MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLClearColor, MTLCommandBuffer, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat, MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor, MTLVertexFormatFloat2, MTLVertexFormatFloat4, MTLVertexStepFunctionPerVertex, MTLViewport};
+use icrate::Metal::{
+    MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLClearColor, MTLCommandBuffer,
+    MTLCommandEncoder, MTLDevice, MTLFunction, MTLLibrary, MTLLoadActionDontCare, MTLPixelFormat,
+    MTLPrimitiveTopologyClassTriangle, MTLRenderCommandEncoder, MTLRenderPassDescriptor,
+    MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor,
+    MTLRenderPipelineState, MTLScissorRect, MTLStoreActionStore, MTLTexture,
+    MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor,
+    MTLVertexFormatFloat2, MTLVertexFormatFloat4, MTLVertexStepFunctionPerVertex, MTLViewport,
+};
 use librashader_reflect::back::msl::{CrossMslContext, NagaMslContext};
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_runtime::render_target::RenderTarget;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use crate::draw_quad::MetalVertex;
+use std::mem::offset_of;
 
 /// This is only really plausible for SPIRV-Cross, for Naga we need to supply the next plausible binding.
 pub const VERTEX_BUFFER_INDEX: usize = 4;
@@ -99,10 +108,10 @@ impl PipelineLayoutObjects {
     }
 
     unsafe fn create_color_attachments(
+        ca: Id<MTLRenderPipelineColorAttachmentDescriptor>,
         format: MTLPixelFormat,
     ) -> Id<MTLRenderPipelineColorAttachmentDescriptor> {
-        let ca = MTLRenderPipelineColorAttachmentDescriptor::new();
-        ca.setPixelFormat(format);
+        ca.setPixelFormat(select_optimal_pixel_format(format));
         ca.setBlendingEnabled(false);
         ca.setSourceAlphaBlendFactor(MTLBlendFactorSourceAlpha);
         ca.setSourceRGBBlendFactor(MTLBlendFactorSourceAlpha);
@@ -121,14 +130,11 @@ impl PipelineLayoutObjects {
 
         unsafe {
             let vertex = Self::create_vertex_descriptor();
-            let ca = Self::create_color_attachments(format);
-
             descriptor.setInputPrimitiveTopology(MTLPrimitiveTopologyClassTriangle);
             descriptor.setVertexDescriptor(Some(&vertex));
 
-            descriptor
-                .colorAttachments()
-                .setObject_atIndexedSubscript(Some(&ca), 0);
+            let ca = descriptor.colorAttachments().objectAtIndexedSubscript(0);
+            Self::create_color_attachments(ca, format);
 
             descriptor.setRasterSampleCount(1);
 
@@ -172,8 +178,7 @@ impl MetalGraphicsPipeline {
     ) -> Result<Id<ProtocolObject<dyn MTLRenderCommandEncoder>>> {
         unsafe {
             let descriptor = MTLRenderPassDescriptor::new();
-            let ca = descriptor.colorAttachments()
-                .objectAtIndexedSubscript(0);
+            let ca = descriptor.colorAttachments().objectAtIndexedSubscript(0);
             ca.setLoadAction(MTLLoadActionDontCare);
             ca.setStoreAction(MTLStoreActionStore);
             ca.setTexture(Some(output.output));
@@ -181,6 +186,9 @@ impl MetalGraphicsPipeline {
             let rpass = buffer
                 .renderCommandEncoderWithDescriptor(&descriptor)
                 .ok_or(FilterChainError::FailedToCreateRenderPass)?;
+
+            rpass.setLabel(Some(&*NSString::from_str("librashader rpass")));
+            rpass.setRenderPipelineState(&self.render_pipeline);
 
             rpass.setScissorRect(MTLScissorRect {
                 x: output.x as usize,
@@ -197,8 +205,6 @@ impl MetalGraphicsPipeline {
                 znear: 0.0,
                 zfar: 1.0,
             });
-
-            rpass.setRenderPipelineState(&self.render_pipeline);
 
             Ok(rpass)
         }

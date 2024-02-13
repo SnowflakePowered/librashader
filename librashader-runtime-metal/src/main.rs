@@ -3,7 +3,12 @@
 use core::{cell::OnceCell, ptr::NonNull};
 use std::sync::RwLock;
 
-use icrate::Metal::{MTLBlitCommandEncoder, MTLClearColor, MTLPixelFormatRGBA8Unorm, MTLTexture, MTLTextureDescriptor, MTLTextureUsagePixelFormatView, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead};
+use icrate::Foundation::NSString;
+use icrate::Metal::{
+    MTLBlitCommandEncoder, MTLClearColor, MTLPixelFormatRGBA8Unorm, MTLResource, MTLTexture,
+    MTLTextureDescriptor, MTLTextureUsagePixelFormatView, MTLTextureUsageRenderTarget,
+    MTLTextureUsageShaderRead,
+};
 use icrate::{
     AppKit::{
         NSApplication, NSApplicationActivationPolicyRegular, NSApplicationDelegate,
@@ -218,11 +223,10 @@ declare_class!(
             let pipeline_state = device
                 .newRenderPipelineStateWithDescriptor_error(&pipeline_descriptor)
                 .expect("Failed to create a pipeline state.");
+            // let preset = ShaderPreset::try_parse("./test/shaders_slang/crt/crt-lottes.slangp").unwrap();
 
-                       // let preset = ShaderPreset::try_parse("./test/shaders_slang/crt/crt-lottes.slangp").unwrap();
-
-           // let preset = ShaderPreset::try_parse("./test/shaders_slang/crt/crt-lottes.slangp").unwrap();
-  let preset = ShaderPreset::try_parse("./test/basic.slangp").unwrap();
+           let preset = ShaderPreset::try_parse("./test/shaders_slang/crt/crt-royale.slangp").unwrap();
+  // let preset = ShaderPreset::try_parse("./test/basic.slangp").unwrap();
 
         let filter_chain = FilterChainMetal::load_from_preset(
             preset,
@@ -389,11 +393,16 @@ declare_class!(
                 .newTextureWithDescriptor(&tex_desc)
                 .unwrap();
 
+                frontbuffer
+                    .setLabel(Some(&*NSString::from_str("librashader frontbuffer")));
+
                 let backbuffer = command_queue
                 .device()
                 .newTextureWithDescriptor(&tex_desc)
                 .unwrap();
 
+                     backbuffer
+                    .setLabel(Some(&*NSString::from_str("librashader backbuffer")));
                   let blit = command_buffer
                 .blitCommandEncoder()
                 .unwrap();
