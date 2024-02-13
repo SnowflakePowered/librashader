@@ -114,7 +114,7 @@ config_struct! {
 #[derive(Default, Debug, Clone)]
 pub struct filter_chain_vk_opt_t {
     /// The librashader API version.
-    pub version: usize,
+    pub version: LIBRASHADER_API_VERSION,
     /// The number of frames in flight to keep. If zero, defaults to three.
     pub frames_in_flight: u32,
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
