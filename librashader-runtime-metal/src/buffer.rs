@@ -1,8 +1,8 @@
 use crate::error;
 use crate::error::FilterChainError;
-use icrate::Foundation::NSRange;
+use icrate::Foundation::{NSRange, NSString};
 use icrate::Metal::{
-    MTLBuffer, MTLDevice, MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
+    MTLBuffer, MTLDevice, MTLResource, MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
 };
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
@@ -20,7 +20,11 @@ impl AsRef<ProtocolObject<dyn MTLBuffer>> for MetalBuffer {
 }
 
 impl MetalBuffer {
-    pub fn new(device: &ProtocolObject<dyn MTLDevice>, size: usize) -> error::Result<Self> {
+    pub fn new(
+        device: &ProtocolObject<dyn MTLDevice>,
+        size: usize,
+        label: &str,
+    ) -> error::Result<Self> {
         let resource_mode = if cfg!(target_os = "ios") {
             MTLResourceStorageModeShared
         } else {
@@ -30,6 +34,9 @@ impl MetalBuffer {
         let buffer = device
             .newBufferWithLength_options(size, resource_mode)
             .ok_or(FilterChainError::BufferError)?;
+
+        buffer.setLabel(Some(&*NSString::from_str(label)));
+
         Ok(Self { buffer, size })
     }
 
