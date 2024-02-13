@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.2.0-beta.12"
+version = "0.2.0-beta.13"
 dependencies = [
  "bitflags 2.4.2",
  "bytemuck",
