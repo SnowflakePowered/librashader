@@ -39,7 +39,6 @@ const OFFSCREEN_VBO_DATA: [MetalVertex; 4] = [
     },
 ];
 
-
 const FINAL_VBO_DATA: [MetalVertex; 4] = [
     MetalVertex {
         position: [0.0, 0.0, 0.0, 1.0],
@@ -130,9 +129,7 @@ impl DrawQuad {
 
         unsafe {
             cmd.setVertexBuffer_offset_atIndex(Some(&self.buffer), 0, VERTEX_BUFFER_INDEX);
-            cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip,
-                                                       offset,
-                                                       4);
+            cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip, offset, 4);
         }
     }
 }
