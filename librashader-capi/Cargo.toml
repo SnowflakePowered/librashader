@@ -3,7 +3,7 @@ name = "librashader-capi"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.9"
+version = "0.2.0-beta.11"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -16,15 +16,21 @@ crate-type = [ "cdylib", "staticlib" ]
 
 [features]
 default = ["runtime-all" ]
-runtime-all = ["runtime-opengl", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan"]
+runtime-all = ["runtime-opengl", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan", "runtime-metal"]
 runtime-opengl = ["gl", "librashader/runtime-gl"]
 runtime-d3d11 = ["windows", "librashader/runtime-d3d11", "windows/Win32_Graphics_Direct3D11"]
 runtime-d3d12 = ["windows", "librashader/runtime-d3d12", "windows/Win32_Graphics_Direct3D12"]
 runtime-vulkan = ["ash", "librashader/runtime-vk"]
-runtime-metal = ["icrate", "objc2", "librashader/runtime-metal"]
+runtime-metal = ["__cbindgen_internal_objc", "librashader/runtime-metal"]
+
+__cbindgen_internal = ["runtime-all"]
+
+# make runtime-metal depend on this, so its automatically implied.
+# this will make cbindgen generate __OBJC__ ifdefs for metal functions.
+__cbindgen_internal_objc = ["icrate", "objc2"]
 
 [dependencies]
-librashader = { path = "../librashader", version = "0.2.0-beta.9" }
+librashader = { path = "../librashader", version = "0.2.0-beta.11" }
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }

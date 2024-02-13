@@ -4,7 +4,6 @@ use icrate::Metal::{MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatB
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
-use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
 use std::ptr::NonNull;

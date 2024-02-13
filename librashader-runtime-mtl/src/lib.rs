@@ -21,7 +21,7 @@ pub mod options;
 use librashader_runtime::impl_filter_chain_parameters;
 impl_filter_chain_parameters!(FilterChainMetal);
 
-pub use texture::MetalOutputView;
+pub use texture::MetalTextureRef;
 
 fn select_optimal_pixel_format(format: MTLPixelFormat) -> MTLPixelFormat {
     if format == MTLPixelFormatRGBA8Unorm {

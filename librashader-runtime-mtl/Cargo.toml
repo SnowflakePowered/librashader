@@ -3,7 +3,7 @@ name = "librashader-runtime-mtl"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.9"
+version = "0.2.0-beta.11"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -14,11 +14,11 @@ description = "RetroArch shaders for all."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-librashader-common = { path = "../librashader-common", features = ["metal"], version = "0.2.0-beta.7" }
-librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.7" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.7" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.7" }
-librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.7" }
+librashader-common = { path = "../librashader-common", features = ["metal"], version = "0.2.0-beta.11" }
+librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.11" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.11" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.11" }
+librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.11" }
 
 
 rustc-hash = "1.1.0"
@@ -33,13 +33,14 @@ path = "tests/hello_triangle/main.rs"
 harness = false
 
 [package.metadata.docs.rs]
-features = ["librashader-cache/docsrs"]
+targets = ["x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ]}
+icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ] }
 objc2 = { version = "0.5.0", features = ["apple"] }
 
 [features]
+
 run_test = ["icrate/AppKit", "icrate/AppKit_all", "icrate/Foundation", "icrate/Foundation_all", "icrate/MetalKit", "icrate/MetalKit_all"]
 
 #[lib]
