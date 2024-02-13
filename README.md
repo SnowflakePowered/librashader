@@ -14,21 +14,19 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 For end-users, librashader is available from the [Open Build Service](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader) for a variety of Linux distributions and platforms. Windows users can grab the latest DLL from [GitHub Releases](https://github.com/SnowflakePowered/librashader/releases).
 
 ## Supported Render APIs
-librashader supports OpenGL 3, OpenGL 4.6, Vulkan, Direct3D 11, and Direct3D 12.  Metal and WebGPU
-are not currently supported (but pull-requests are welcome). librashader does not support legacy render
+librashader supports all modern graphics runtimes, including wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA), 
+Direct3D 11, Direct3D 12, and Metal. librashader does not support legacy render
 APIs such as older versions of OpenGL, or legacy versions of Direct3D.
 
 | **API**     | **Status** | **`librashader` feature** |
-|-------------|------------|---------------------------|
-| OpenGL 3.3+ | ✔          | `gl`                      |
-| OpenGL 4.6  | ✔          | `gl`                      |
-| Vulkan      | ✔          | `vk`                      |
-| Direct3D 11 | ✔          | `d3d11`                   |
-| Direct3D 12 | ✔          | `d3d12`                   |
-| wgpu        | ✔          | `wgpu`                    |
-| Metal       | ❌         |                           |
-
-✔ = Render API is supported &mdash; ❌ Render API is not supported
+|-------------|-----------|---------------------------|
+| OpenGL 3.3+ | ✔         | `gl`                      |
+| OpenGL 4.6  | ✔         | `gl`                      |
+| Vulkan      | ✔         | `vk`                      |
+| Direct3D 11 | ✔         | `d3d11`                   |
+| Direct3D 12 | ✔         | `d3d12`                   |
+| Metal       | ✔         | `metal`                   |
+| wgpu        | ✔         | `wgpu`                    |
 
 ## Usage
 
@@ -158,9 +156,9 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
   * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For GPUs released within the last 5 years, this may improve performance.
 * Vulkan
-  * The Vulkan runtime uses [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html) by default.
-    This extension must be enabled at device creation. Explicit render passes can be used by configuring filter chain options, but may have reduced performance 
-    compared to dynamic rendering.
+  * The Vulkan runtime can use [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html).
+    This extension must be enabled at device creation. 
+    Dynamic rendering may have improved performance when enabled, and supported by the host hardware.
   * Allocations within the runtime are done through [gpu-allocator](https://github.com/Traverse-Research/gpu-allocator) rather than handled manually.
 * Direct3D 11
   * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
@@ -170,6 +168,8 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * For maximum compatibility with shaders, a shader compile pipeline based on [`spirv-to-dxil`](https://github.com/SnowflakePowered/spirv-to-dxil-rs) is used, with the SPIRV-Cross HLSL pipeline used as a fallback. 
     This brings shader compatibility beyond what the RetroArch Direct3D 12 driver provides. The HLSL pipeline fallback may be removed in the future as `spirv-to-dxil` improves.
   * The Direct3D 12 runtime requires `dxil.dll` and `dxcompiler.dll` from the [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler).
+* Metal
+  * The Metal runtime uses the same VBOs as the other non-OpenGL runtimes as well as the identity matrix MVP for intermediate passes. RetroArch's Metal driver uses only the final VBO.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
