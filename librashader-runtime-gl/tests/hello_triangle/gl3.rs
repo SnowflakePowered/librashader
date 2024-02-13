@@ -174,14 +174,14 @@ void main()
 }";
     let shader_program = compile_program(VERT_SHADER, FRAG_SHADER);
 
-    unsafe {
-        gl::ObjectLabel(
-            gl::SHADER,
-            shader_program,
-            -1,
-            b"color_shader\0".as_ptr().cast(),
-        );
-    }
+    // unsafe {
+    //     gl::ObjectLabel(
+    //         gl::SHADER,
+    //         shader_program,
+    //         -1,
+    //         b"color_shader\0".as_ptr().cast(),
+    //     );
+    // }
 
     let vertices = &[
         // positions      // colors
@@ -192,7 +192,7 @@ void main()
     let mut vbo: gl::types::GLuint = 0;
     unsafe {
         gl::GenBuffers(1, &mut vbo);
-        gl::ObjectLabel(gl::BUFFER, vbo, -1, b"triangle_vbo\0".as_ptr().cast());
+        // gl::ObjectLabel(gl::BUFFER, vbo, -1, b"triangle_vbo\0".as_ptr().cast());
     }
 
     unsafe {
@@ -211,7 +211,7 @@ void main()
     let mut vao: gl::types::GLuint = 0;
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
-        gl::ObjectLabel(gl::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
+        // gl::ObjectLabel(gl::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
     }
 
     unsafe {
@@ -280,23 +280,23 @@ pub fn do_loop(
         gl::GenFramebuffers(1, &mut rendered_framebuffer);
         gl::BindFramebuffer(gl::FRAMEBUFFER, rendered_framebuffer);
 
-        gl::ObjectLabel(
-            gl::FRAMEBUFFER,
-            rendered_framebuffer,
-            -1,
-            b"rendered_framebuffer\0".as_ptr().cast(),
-        );
+        // gl::ObjectLabel(
+        //     gl::FRAMEBUFFER,
+        //     rendered_framebuffer,
+        //     -1,
+        //     b"rendered_framebuffer\0".as_ptr().cast(),
+        // );
 
         // make tetxure
         gl::GenTextures(1, &mut rendered_texture);
         gl::BindTexture(gl::TEXTURE_2D, rendered_texture);
 
-        gl::ObjectLabel(
-            gl::TEXTURE,
-            rendered_texture,
-            -1,
-            b"rendered_texture\0".as_ptr().cast(),
-        );
+        // gl::ObjectLabel(
+        //     gl::TEXTURE,
+        //     rendered_texture,
+        //     -1,
+        //     b"rendered_texture\0".as_ptr().cast(),
+        // );
 
         // empty image
         gl::TexStorage2D(
@@ -356,23 +356,23 @@ pub fn do_loop(
         gl::GenFramebuffers(1, &mut output_framebuffer_handle);
         gl::BindFramebuffer(gl::FRAMEBUFFER, output_framebuffer_handle);
 
-        gl::ObjectLabel(
-            gl::FRAMEBUFFER,
-            output_framebuffer_handle,
-            -1,
-            b"output_framebuffer\0".as_ptr().cast(),
-        );
+        // gl::ObjectLabel(
+        //     gl::FRAMEBUFFER,
+        //     output_framebuffer_handle,
+        //     -1,
+        //     b"output_framebuffer\0".as_ptr().cast(),
+        // );
 
         // make tetxure
         gl::GenTextures(1, &mut output_texture);
         gl::BindTexture(gl::TEXTURE_2D, output_texture);
 
-        gl::ObjectLabel(
-            gl::TEXTURE,
-            output_texture,
-            -1,
-            b"output_texture\0".as_ptr().cast(),
-        );
+        // gl::ObjectLabel(
+        //     gl::TEXTURE,
+        //     output_texture,
+        //     -1,
+        //     b"output_texture\0".as_ptr().cast(),
+        // );
 
         // empty image
         gl::TexStorage2D(
