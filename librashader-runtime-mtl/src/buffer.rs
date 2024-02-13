@@ -1,8 +1,9 @@
 use crate::error;
 use crate::error::FilterChainError;
-use icrate::Foundation::NSString;
+use icrate::Foundation::{NSRange, NSString};
 use icrate::Metal::{
-    MTLBuffer, MTLDevice, MTLResource, MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
+    MTLBuffer, MTLDevice, MTLResource, MTLResourceOptions, MTLResourceStorageModeManaged,
+    MTLResourceStorageModeShared,
 };
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
@@ -11,6 +12,7 @@ use std::ops::{Deref, DerefMut};
 pub struct MetalBuffer {
     buffer: Id<ProtocolObject<dyn MTLBuffer>>,
     size: usize,
+    storage_mode: MTLResourceOptions,
 }
 
 impl AsRef<ProtocolObject<dyn MTLBuffer>> for MetalBuffer {
@@ -25,27 +27,33 @@ impl MetalBuffer {
         size: usize,
         label: &str,
     ) -> error::Result<Self> {
-        let resource_mode = if cfg!(target_os = "ios") {
+        let storage_mode = if cfg!(all(target_arch = "aarch64", target_vendor = "apple")) {
             MTLResourceStorageModeShared
         } else {
             MTLResourceStorageModeManaged
         };
 
         let buffer = device
-            .newBufferWithLength_options(size, resource_mode)
+            .newBufferWithLength_options(size, storage_mode)
             .ok_or(FilterChainError::BufferError)?;
 
         buffer.setLabel(Some(&*NSString::from_str(label)));
 
-        Ok(Self { buffer, size })
+        Ok(Self {
+            buffer,
+            size,
+            storage_mode,
+        })
     }
 
     pub fn flush(&self) {
         // We don't know what was actually written to so...
-        // self.buffer.didModifyRange(NSRange {
-        //     location: 0,
-        //     length: self.size,
-        // })
+        if self.storage_mode == MTLResourceStorageModeManaged {
+            self.buffer.didModifyRange(NSRange {
+                location: 0,
+                length: self.size,
+            })
+        }
     }
 }
 
