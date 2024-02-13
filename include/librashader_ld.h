@@ -37,6 +37,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // #define LIBRA_RUNTIME_D3D12
 // #endif
 
+// #if (defined(__APPLE__) && defined(__OBJC__))
+// #define LIBRA_RUNTIME_METAL
+// #endif
+
 #if defined(_WIN32)
 #include <windows.h>
 #define _LIBRASHADER_ASSIGN(HMOD, INSTANCE, NAME)               \
@@ -388,6 +392,59 @@ libra_error_t __librashader__noop_d3d12_filter_chain_get_active_pass_count(
     return NULL;
 }
 #endif
+
+#if defined(LIBRA_RUNTIME_METAL)
+libra_error_t __librashader__noop_mtl_filter_chain_create(
+    libra_shader_preset_t *preset, id<MTLCommandQueue> queue,
+    const struct filter_chain_mtl_opt_t *options,
+    libra_mtl_filter_chain_t *out) {
+    *out = NULL;
+    return NULL;
+}
+
+libra_error_t __librashader__noop_mtl_filter_chain_create_deferred(
+    libra_shader_preset_t *preset, id<MTLCommandQueue> queue,
+    id<MTLCommandBuffer> command_buffer,
+    const struct filter_chain_mtl_opt_t *options,
+    libra_mtl_filter_chain_t *out) {
+    *out = NULL;
+    return NULL;
+}
+
+libra_error_t __librashader__noop_mtl_filter_chain_frame(
+    libra_mtl_filter_chain_t *chain, id<MTLCommandBuffer> command_buffer,
+    size_t frame_count, id<MTLTexture> image, struct libra_viewport_t viewport,
+    id<MTLTexture> output, const float *mvp,
+    const struct frame_mtl_opt_t *opt) {
+    return NULL;
+}
+
+libra_error_t __librashader__mtl_filter_chain_free(
+    libra_mtl_filter_chain_t *chain) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_mtl_filter_chain_set_param(
+    libra_mtl_filter_chain_t *chain, const char *param_name, float value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_mtl_filter_chain_get_param(
+    libra_mtl_filter_chain_t *chain, const char *param_name, float *out) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_mtl_filter_chain_set_active_pass_count(
+    libra_mtl_filter_chain_t *chain, uint32_t value) {
+    return NULL;
+}
+
+libra_error_t __librashader__noop_mtl_filter_chain_get_active_pass_count(
+    libra_mtl_filter_chain_t *chain, uint32_t *out) {
+    return NULL;
+}
+#endif
+
 typedef struct libra_instance_t {
     /// Get the supported ABI version of the loaded instance.
     ///
@@ -1106,6 +1163,104 @@ typedef struct libra_instance_t {
     PFN_libra_d3d12_filter_chain_set_param d3d12_filter_chain_set_param;
 #endif
 
+#if defined(LIBRA_RUNTIME_METAL)
+    /// Create the filter chain given the shader preset.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    PFN_libra_mtl_filter_chain_create mtl_filter_chain_create;
+
+    /// Create the filter chain given the shader preset deferring and GPU-side
+    /// initialization
+    /// to the caller. This function therefore requires no external
+    /// synchronization of the device queue.
+    ///
+    /// The shader preset is immediately invalidated and must be recreated after
+    /// the filter chain is created.
+    ///
+    /// If this function is not loaded, `out` will unconditionally be set to
+    /// null. If this function returns an error, the state of `out` is
+    /// unspecified.
+    ///
+    /// ## Safety:
+    /// - `preset` must be either null, or valid and aligned.
+    /// - `options` must be either null, or valid and aligned.
+    /// - `device` must not be null.
+    /// - `out` must be aligned, but may be null, invalid, or uninitialized.
+    /// - `cmd` must not be null.
+    ///
+    /// The provided command list must be ready for recording and contain no
+    /// prior commands. The caller is responsible for ending the command list
+    /// and immediately submitting it to a graphics queue. The command list must
+    /// be completely executed before calling `libra_mtl_filter_chain_frame`
+    PFN_libra_mtl_filter_chain_create_deferred mtl_filter_chain_create_deferred;
+
+    /// Draw a frame with the given parameters for the given filter chain.
+    ///
+    /// ## Safety
+    /// - `chain` may be null, invalid, but not uninitialized. If `chain` is
+    /// null or invalid, this
+    ///    function will return an error.
+    /// - `mvp` may be null, or if it is not null, must be an aligned pointer to
+    /// 16 consecutive `float`
+    ///    values for the model view projection matrix.
+    /// - `opt` may be null, or if it is not null, must be an aligned pointer to
+    /// a valid `frame_mtl_opt_t`
+    ///    struct.
+    PFN_libra_mtl_filter_chain_frame mtl_filter_chain_frame;
+
+    /// Free a D3D11 filter chain.
+    ///
+    /// The resulting value in `chain` then becomes null.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_mtl_filter_chain_t`.
+    PFN_libra_mtl_filter_chain_free mtl_filter_chain_free;
+
+    /// Gets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_mtl_filter_chain_t`.
+    PFN_libra_mtl_filter_chain_get_active_pass_count
+        mtl_filter_chain_get_active_pass_count;
+
+    /// Sets the number of active passes for this chain.
+    ///
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_mtl_filter_chain_t`.
+    PFN_libra_mtl_filter_chain_set_active_pass_count
+        mtl_filter_chain_set_active_pass_count;
+
+    /// Gets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_mtl_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    PFN_libra_mtl_filter_chain_get_param mtl_filter_chain_get_param;
+
+    /// Sets a parameter for the filter chain.
+    ///
+    /// If the parameter does not exist, returns an error.
+    /// ## Safety
+    /// - `chain` must be either null or a valid and aligned pointer to an
+    /// initialized `libra_mtl_filter_chain_t`.
+    /// - `param_name` must be either null or a null terminated string.
+    PFN_libra_mtl_filter_chain_set_param mtl_filter_chain_set_param;
+#endif
+
     /// Helper flag for if the librashader instance was loaded.
     ///
     /// This flag is not indicative of whether any functions were loaded
@@ -1237,6 +1392,22 @@ libra_instance_t __librashader_make_null_instance() {
         .d3d12_filter_chain_set_param =
             __librashader__noop_d3d12_filter_chain_set_param,
 #endif
+
+#if defined(LIBRA_RUNTIME_METAL)
+        .mtl_filter_chain_create = __librashader__noop_mtl_filter_chain_create,
+        .mtl_filter_chain_create_deferred =
+            __librashader__noop_mtl_filter_chain_create_deferred,
+        .mtl_filter_chain_frame = __librashader__noop_mtl_filter_chain_frame,
+        .mtl_filter_chain_free = __librashader__noop_mtl_filter_chain_free,
+        .mtl_filter_chain_get_active_pass_count =
+            __librashader__noop_mtl_filter_chain_get_active_pass_count,
+        .mtl_filter_chain_set_active_pass_count =
+            __librashader__noop_mtl_filter_chain_set_active_pass_count,
+        .mtl_filter_chain_get_param =
+            __librashader__noop_mtl_filter_chain_get_param,
+        .mtl_filter_chain_set_param =
+            __librashader__noop_mtl_filter_chain_set_param,
+#endif
         .instance_loaded = false,
     };
 }
@@ -1357,6 +1528,20 @@ libra_instance_t librashader_load_instance() {
                         d3d12_filter_chain_get_active_pass_count);
     _LIBRASHADER_ASSIGN(librashader, instance,
                         d3d12_filter_chain_set_active_pass_count);
+#endif
+
+#if defined(__APPLE__) && defined(LIBRA_RUNTIME_METAL)
+    _LIBRASHADER_ASSIGN(librashader, instance, mtl_filter_chain_create);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        mtl_filter_chain_create_deferred);
+    _LIBRASHADER_ASSIGN(librashader, instance, mtl_filter_chain_frame);
+    _LIBRASHADER_ASSIGN(librashader, instance, mtl_filter_chain_free);
+    _LIBRASHADER_ASSIGN(librashader, instance, mtl_filter_chain_get_param);
+    _LIBRASHADER_ASSIGN(librashader, instance, mtl_filter_chain_set_param);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        mtl_filter_chain_get_active_pass_count);
+    _LIBRASHADER_ASSIGN(librashader, instance,
+                        mtl_filter_chain_set_active_pass_count);
 #endif
     instance.instance_loaded = true;
     return instance;
