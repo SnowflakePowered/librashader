@@ -78,9 +78,9 @@ typedef void *_LIBRASHADER_IMPL_HANDLE;
 
 #include "librashader.h"
 
-size_t __librashader__noop_instance_abi_version() { return 0; }
+size_t __librashader__noop_instance_abi_version(void) { return 0; }
 
-size_t __librashader__noop_instance_api_version() { return 0; }
+size_t __librashader__noop_instance_api_version(void) { return 0; }
 
 LIBRA_ERRNO __librashader__noop_error_errno(libra_error_t error) {
     return LIBRA_ERRNO_UNKNOWN_ERROR;
@@ -1282,134 +1282,143 @@ typedef struct libra_instance_t {
     bool instance_loaded;
 } libra_instance_t;
 
-libra_instance_t __librashader_make_null_instance() {
-    return libra_instance_t {
-        .instance_abi_version = __librashader__noop_instance_abi_version,
-        .instance_api_version = __librashader__noop_instance_api_version,
+libra_instance_t __librashader_make_null_instance(void) {
+    libra_instance_t instance;
 
-        .preset_ctx_create = __librashader__noop_preset_ctx_create,
-        .preset_ctx_free = __librashader__noop_preset_ctx_free,
-        .preset_ctx_set_core_name =
-            __librashader__noop_preset_ctx_set_core_name,
-        .preset_ctx_set_content_dir =
-            __librashader__noop_preset_ctx_set_content_dir,
-        .preset_ctx_set_param = __librashader__noop_preset_ctx_set_param,
-        .preset_ctx_set_runtime = __librashader__noop_preset_ctx_set_runtime,
-        .preset_ctx_set_core_rotation =
-            __librashader__noop_preset_ctx_set_core_rotation,
-        .preset_ctx_set_user_rotation =
-            __librashader__noop_preset_ctx_set_user_rotation,
-        .preset_ctx_set_screen_orientation =
-            __librashader__noop_preset_ctx_set_screen_orientation,
-        .preset_ctx_set_allow_rotation =
-            __librashader__noop_preset_ctx_set_allow_rotation,
-        .preset_ctx_set_view_aspect_orientation =
-            __librashader__noop_preset_ctx_set_view_aspect_orientation,
-        .preset_ctx_set_core_aspect_orientation =
-            __librashader__noop_preset_ctx_set_core_aspect_orientation,
+    instance.instance_abi_version = __librashader__noop_instance_abi_version;
+    instance.instance_api_version = __librashader__noop_instance_api_version;
 
-        .preset_create = __librashader__noop_preset_create,
-        .preset_create_with_context =
-            __librashader__noop_preset_create_with_context,
-        .preset_free = __librashader__noop_preset_free,
-        .preset_set_param = __librashader__noop_preset_set_param,
-        .preset_get_param = __librashader__noop_preset_get_param,
-        .preset_print = __librashader__noop_preset_print,
-        .preset_get_runtime_params =
-            __librashader__noop_preset_get_runtime_params,
-        .preset_free_runtime_params =
-            __librashader__noop_preset_free_runtime_params,
+    instance.preset_ctx_create = __librashader__noop_preset_ctx_create;
+    instance.preset_ctx_free = __librashader__noop_preset_ctx_free;
+    instance.preset_ctx_set_core_name =
+        __librashader__noop_preset_ctx_set_core_name;
+    instance.preset_ctx_set_content_dir =
+        __librashader__noop_preset_ctx_set_content_dir;
+    instance.preset_ctx_set_param = __librashader__noop_preset_ctx_set_param;
+    instance.preset_ctx_set_runtime =
+        __librashader__noop_preset_ctx_set_runtime;
+    instance.preset_ctx_set_core_rotation =
+        __librashader__noop_preset_ctx_set_core_rotation;
+    instance.preset_ctx_set_user_rotation =
+        __librashader__noop_preset_ctx_set_user_rotation;
+    instance.preset_ctx_set_screen_orientation =
+        __librashader__noop_preset_ctx_set_screen_orientation;
+    instance.preset_ctx_set_allow_rotation =
+        __librashader__noop_preset_ctx_set_allow_rotation;
+    instance.preset_ctx_set_view_aspect_orientation =
+        __librashader__noop_preset_ctx_set_view_aspect_orientation;
+    instance.preset_ctx_set_core_aspect_orientation =
+        __librashader__noop_preset_ctx_set_core_aspect_orientation;
 
-        .error_errno = __librashader__noop_error_errno,
-        .error_print = __librashader__noop_error_print,
-        .error_free = __librashader__noop_error_free,
-        .error_write = __librashader__noop_error_write,
-        .error_free_string = __librashader__noop_error_free_string,
+    instance.preset_create = __librashader__noop_preset_create;
+    instance.preset_create_with_context =
+        __librashader__noop_preset_create_with_context;
+    instance.preset_free = __librashader__noop_preset_free;
+    instance.preset_set_param = __librashader__noop_preset_set_param;
+    instance.preset_get_param = __librashader__noop_preset_get_param;
+    instance.preset_print = __librashader__noop_preset_print;
+    instance.preset_get_runtime_params =
+        __librashader__noop_preset_get_runtime_params;
+    instance.preset_free_runtime_params =
+        __librashader__noop_preset_free_runtime_params;
+
+    instance.error_errno = __librashader__noop_error_errno;
+    instance.error_print = __librashader__noop_error_print;
+    instance.error_free = __librashader__noop_error_free;
+    instance.error_write = __librashader__noop_error_write;
+    instance.error_free_string = __librashader__noop_error_free_string;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-        .gl_init_context = __librashader__noop_gl_init_context,
-        .gl_filter_chain_create = __librashader__noop_gl_filter_chain_create,
-        .gl_filter_chain_frame = __librashader__noop_gl_filter_chain_frame,
-        .gl_filter_chain_free = __librashader__noop_gl_filter_chain_free,
-        .gl_filter_chain_get_active_pass_count =
-            __librashader__noop_gl_filter_chain_get_active_pass_count,
-        .gl_filter_chain_set_active_pass_count =
-            __librashader__noop_gl_filter_chain_set_active_pass_count,
-        .gl_filter_chain_get_param =
-            __librashader__noop_gl_filter_chain_get_param,
-        .gl_filter_chain_set_param =
-            __librashader__noop_gl_filter_chain_set_param,
+    instance.gl_init_context = __librashader__noop_gl_init_context;
+    instance.gl_filter_chain_create =
+        __librashader__noop_gl_filter_chain_create;
+    instance.gl_filter_chain_frame = __librashader__noop_gl_filter_chain_frame;
+    instance.gl_filter_chain_free = __librashader__noop_gl_filter_chain_free;
+    instance.gl_filter_chain_get_active_pass_count =
+        __librashader__noop_gl_filter_chain_get_active_pass_count;
+    instance.gl_filter_chain_set_active_pass_count =
+        __librashader__noop_gl_filter_chain_set_active_pass_count;
+    instance.gl_filter_chain_get_param =
+        __librashader__noop_gl_filter_chain_get_param;
+    instance.gl_filter_chain_set_param =
+        __librashader__noop_gl_filter_chain_set_param;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-        .vk_filter_chain_create = __librashader__noop_vk_filter_chain_create,
-        .vk_filter_chain_create_deferred =
-            __librashader__noop_vk_filter_chain_create_deferred,
-        .vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame,
-        .vk_filter_chain_free = __librashader__noop_vk_filter_chain_free,
-        .vk_filter_chain_get_active_pass_count =
-            __librashader__noop_vk_filter_chain_get_active_pass_count,
-        .vk_filter_chain_set_active_pass_count =
-            __librashader__noop_vk_filter_chain_set_active_pass_count,
-        .vk_filter_chain_get_param =
-            __librashader__noop_vk_filter_chain_get_param,
-        .vk_filter_chain_set_param =
-            __librashader__noop_vk_filter_chain_set_param,
+    instance.vk_filter_chain_create =
+        __librashader__noop_vk_filter_chain_create;
+    instance.vk_filter_chain_create_deferred =
+        __librashader__noop_vk_filter_chain_create_deferred;
+    instance.vk_filter_chain_frame = __librashader__noop_vk_filter_chain_frame;
+    instance.vk_filter_chain_free = __librashader__noop_vk_filter_chain_free;
+    instance.vk_filter_chain_get_active_pass_count =
+        __librashader__noop_vk_filter_chain_get_active_pass_count;
+    instance.vk_filter_chain_set_active_pass_count =
+        __librashader__noop_vk_filter_chain_set_active_pass_count;
+    instance.vk_filter_chain_get_param =
+        __librashader__noop_vk_filter_chain_get_param;
+    instance.vk_filter_chain_set_param =
+        __librashader__noop_vk_filter_chain_set_param;
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D11)
-        .d3d11_filter_chain_create =
-            __librashader__noop_d3d11_filter_chain_create,
-        .d3d11_filter_chain_create_deferred =
-            __librashader__noop_d3d11_filter_chain_create_deferred,
-        .d3d11_filter_chain_frame =
-            __librashader__noop_d3d11_filter_chain_frame,
-        .d3d11_filter_chain_free = __librashader__noop_d3d11_filter_chain_free,
-        .d3d11_filter_chain_get_active_pass_count =
-            __librashader__noop_d3d11_filter_chain_get_active_pass_count,
-        .d3d11_filter_chain_set_active_pass_count =
-            __librashader__noop_d3d11_filter_chain_set_active_pass_count,
-        .d3d11_filter_chain_get_param =
-            __librashader__noop_d3d11_filter_chain_get_param,
-        .d3d11_filter_chain_set_param =
-            __librashader__noop_d3d11_filter_chain_set_param,
+    instance.d3d11_filter_chain_create =
+        __librashader__noop_d3d11_filter_chain_create;
+    instance.d3d11_filter_chain_create_deferred =
+        __librashader__noop_d3d11_filter_chain_create_deferred;
+    instance.d3d11_filter_chain_frame =
+        __librashader__noop_d3d11_filter_chain_frame;
+    instance.d3d11_filter_chain_free =
+        __librashader__noop_d3d11_filter_chain_free;
+    instance.d3d11_filter_chain_get_active_pass_count =
+        __librashader__noop_d3d11_filter_chain_get_active_pass_count;
+    instance.d3d11_filter_chain_set_active_pass_count =
+        __librashader__noop_d3d11_filter_chain_set_active_pass_count;
+    instance.d3d11_filter_chain_get_param =
+        __librashader__noop_d3d11_filter_chain_get_param;
+    instance.d3d11_filter_chain_set_param =
+        __librashader__noop_d3d11_filter_chain_set_param;
 #endif
 
 #if defined(LIBRA_RUNTIME_D3D12)
-        .d3d12_filter_chain_create =
-            __librashader__noop_d3d12_filter_chain_create,
-        .d3d12_filter_chain_create_deferred =
-            __librashader__noop_d3d12_filter_chain_create_deferred,
-        .d3d12_filter_chain_frame =
-            __librashader__noop_d3d12_filter_chain_frame,
-        .d3d12_filter_chain_free = __librashader__noop_d3d12_filter_chain_free,
-        .d3d12_filter_chain_get_active_pass_count =
-            __librashader__noop_d3d12_filter_chain_get_active_pass_count,
-        .d3d12_filter_chain_set_active_pass_count =
-            __librashader__noop_d3d12_filter_chain_set_active_pass_count,
-        .d3d12_filter_chain_get_param =
-            __librashader__noop_d3d12_filter_chain_get_param,
-        .d3d12_filter_chain_set_param =
-            __librashader__noop_d3d12_filter_chain_set_param,
+    instance.d3d12_filter_chain_create =
+        __librashader__noop_d3d12_filter_chain_create;
+    instance.d3d12_filter_chain_create_deferred =
+        __librashader__noop_d3d12_filter_chain_create_deferred;
+    instance.d3d12_filter_chain_frame =
+        __librashader__noop_d3d12_filter_chain_frame;
+    instance.d3d12_filter_chain_free =
+        __librashader__noop_d3d12_filter_chain_free;
+    instance.d3d12_filter_chain_get_active_pass_count =
+        __librashader__noop_d3d12_filter_chain_get_active_pass_count;
+    instance.d3d12_filter_chain_set_active_pass_count =
+        __librashader__noop_d3d12_filter_chain_set_active_pass_count;
+    instance.d3d12_filter_chain_get_param =
+        __librashader__noop_d3d12_filter_chain_get_param;
+    instance.d3d12_filter_chain_set_param =
+        __librashader__noop_d3d12_filter_chain_set_param;
 #endif
 
 #if defined(LIBRA_RUNTIME_METAL)
-        .mtl_filter_chain_create = __librashader__noop_mtl_filter_chain_create,
-        .mtl_filter_chain_create_deferred =
-            __librashader__noop_mtl_filter_chain_create_deferred,
-        .mtl_filter_chain_frame = __librashader__noop_mtl_filter_chain_frame,
-        .mtl_filter_chain_free = __librashader__noop_mtl_filter_chain_free,
-        .mtl_filter_chain_get_active_pass_count =
-            __librashader__noop_mtl_filter_chain_get_active_pass_count,
-        .mtl_filter_chain_set_active_pass_count =
-            __librashader__noop_mtl_filter_chain_set_active_pass_count,
-        .mtl_filter_chain_get_param =
-            __librashader__noop_mtl_filter_chain_get_param,
-        .mtl_filter_chain_set_param =
-            __librashader__noop_mtl_filter_chain_set_param,
+    instance.mtl_filter_chain_create =
+        __librashader__noop_mtl_filter_chain_create;
+    instance.mtl_filter_chain_create_deferred =
+        __librashader__noop_mtl_filter_chain_create_deferred;
+    instance.mtl_filter_chain_frame =
+        __librashader__noop_mtl_filter_chain_frame;
+    instance.mtl_filter_chain_free = __librashader__noop_mtl_filter_chain_free;
+    instance.mtl_filter_chain_get_active_pass_count =
+        __librashader__noop_mtl_filter_chain_get_active_pass_count;
+    instance.mtl_filter_chain_set_active_pass_count =
+        __librashader__noop_mtl_filter_chain_set_active_pass_count;
+    instance.mtl_filter_chain_get_param =
+        __librashader__noop_mtl_filter_chain_get_param;
+    instance.mtl_filter_chain_set_param =
+        __librashader__noop_mtl_filter_chain_set_param;
 #endif
-        .instance_loaded = false,
-    };
+    instance.instance_loaded = false;
+
+    return instance;
 }
 
 /// Load an instance of librashader in the OS-dependent search path of the
@@ -1424,11 +1433,11 @@ libra_instance_t __librashader_make_null_instance() {
 /// If any symbol fails to load, the function will be set to a no-op function.
 ///
 /// \return An `libra_instance_t` struct with loaded function pointers.
-libra_instance_t librashader_load_instance();
+libra_instance_t librashader_load_instance(void);
 
 #if defined(_WIN32) || defined(__linux__) || defined(__unix__) || \
     defined(__APPLE__)
-libra_instance_t librashader_load_instance() {
+libra_instance_t librashader_load_instance(void) {
     _LIBRASHADER_IMPL_HANDLE librashader = _LIBRASHADER_LOAD;
     libra_instance_t instance = __librashader_make_null_instance();
     if (librashader == 0) {
