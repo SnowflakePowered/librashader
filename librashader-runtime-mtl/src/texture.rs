@@ -7,11 +7,12 @@ use icrate::Metal::{
 };
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
+use librashader_runtime::scaling::{ScaleFramebuffer, ViewportSize};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 
 pub type MetalTexture = Id<ProtocolObject<dyn MTLTexture>>;
+pub type MetalOutputView<'a> = &'a ProtocolObject<dyn MTLTexture>;
 
 pub struct OwnedTexture {
     pub(crate) texture: MetalTexture,
