@@ -4,7 +4,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.12"
+version = "0.2.0-beta.14"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -13,19 +13,19 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-librashader-common = { path = "../librashader-common", version = "0.2.0-beta.12" }
-librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.12" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.12" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.13" }
-librashader-runtime  = { path = "../librashader-runtime", version = "0.2.0-beta.12" }
-librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.2.0-beta.12", optional = true }
-librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = "0.2.0-beta.12", optional = true }
-librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.2.0-beta.12", optional = true }
-librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.2.0-beta.12", optional = true }
-librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.2.0-beta.12", optional = true }
-librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.2.0-beta.12", optional = true }
+librashader-common = { path = "../librashader-common", version = "0.2.0-beta.14" }
+librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.14" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.14" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.14" }
+librashader-runtime  = { path = "../librashader-runtime", version = "0.2.0-beta.14" }
+librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.2.0-beta.14", optional = true }
+librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = "0.2.0-beta.14", optional = true }
+librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.2.0-beta.14", optional = true }
+librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.2.0-beta.14", optional = true }
+librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.2.0-beta.14", optional = true }
+librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.2.0-beta.14", optional = true }
 
-librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.12" }
+librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.14" }
 
 ash = { version = "0.37", optional = true }
 wgpu = { version = "0.19", optional = true }

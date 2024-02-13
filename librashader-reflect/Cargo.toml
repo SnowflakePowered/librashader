@@ -3,7 +3,7 @@ name = "librashader-reflect"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.13"
+version = "0.2.0-beta.14"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -19,9 +19,9 @@ thiserror = "1.0.37"
 bitflags = "2.4.2"
 rustc-hash = "1.1.0"
 
-librashader-common = { path = "../librashader-common", version = "0.2.0-beta.12" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.12" }
-librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.12" }
+librashader-common = { path = "../librashader-common", version = "0.2.0-beta.14" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.14" }
+librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.14" }
 
 spirv_cross = { package = "librashader-spirv-cross", version = "0.25.1", optional = true, features = ["msl", "glsl", "hlsl"] }
 
