@@ -3,7 +3,10 @@
 use core::{cell::OnceCell, ptr::NonNull};
 use std::sync::RwLock;
 
-use icrate::Metal::{MTLBlitCommandEncoder, MTLClearColor, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget};
+use icrate::Metal::{
+    MTLBlitCommandEncoder, MTLClearColor, MTLTexture, MTLTextureDescriptor,
+    MTLTextureUsageRenderTarget,
+};
 use icrate::{
     AppKit::{
         NSApplication, NSApplicationActivationPolicyRegular, NSApplicationDelegate,
