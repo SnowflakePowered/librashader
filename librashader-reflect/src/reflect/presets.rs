@@ -23,7 +23,7 @@ use rustc_hash::FxHashMap;
 /// use librashader_reflect::reflect::cross::SpirvCross;
 /// use librashader_reflect::reflect::presets::ShaderPassArtifact;
 ///
-/// type VulkanPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross<GLSL>>>;
+/// type VulkanPassMeta = ShaderPassArtifact<impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross>>;
 /// ```
 ///
 /// This allows a runtime to not name the backing type of the compiled artifact if not necessary.
@@ -36,7 +36,7 @@ impl<T: OutputTarget> CompilePresetTarget for T {}
 pub trait CompilePresetTarget: OutputTarget {
     /// Compile passes of a shader preset given the applicable
     /// shader output target, compilation type, and resulting error.
-    fn compile_preset_passes<C, I, R, E>(
+    fn compile_preset_passes<I, R, E>(
         passes: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
     ) -> Result<
@@ -50,18 +50,18 @@ pub trait CompilePresetTarget: OutputTarget {
         I: ShaderReflectObject,
         Self: Sized,
         Self: FromCompilation<I, R>,
-        C: ShaderInputCompiler<I>,
+        I::Compiler: ShaderInputCompiler<I>,
         E: From<PreprocessError>,
         E: From<ShaderReflectError>,
         E: From<ShaderCompileError>,
     {
-        compile_preset_passes::<Self, C, I, R, E>(passes, textures)
+        compile_preset_passes::<Self, I, R, E>(passes, textures)
     }
 }
 
 /// Compile passes of a shader preset given the applicable
 /// shader output target, compilation type, and resulting error.
-fn compile_preset_passes<T, C, I, R, E>(
+fn compile_preset_passes<T, I, R, E>(
     passes: Vec<ShaderPassConfig>,
     textures: &[TextureConfig],
 ) -> Result<
@@ -75,7 +75,7 @@ where
     I: ShaderReflectObject,
     T: OutputTarget,
     T: FromCompilation<I, R>,
-    C: ShaderInputCompiler<I>,
+    I::Compiler: ShaderInputCompiler<I>,
     E: From<PreprocessError>,
     E: From<ShaderReflectError>,
     E: From<ShaderCompileError>,
@@ -88,7 +88,7 @@ where
         .map(|shader| {
             let source: ShaderSource = ShaderSource::load(&shader.name)?;
 
-            let compiled = C::compile(&source)?;
+            let compiled = I::Compiler::compile(&source)?;
             let reflect = T::from_compilation(compiled)?;
 
             for parameter in source.parameters.values() {

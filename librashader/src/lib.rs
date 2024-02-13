@@ -100,11 +100,10 @@ pub mod preprocess {
 /// use librashader::presets::ShaderPreset;
 /// use librashader::reflect::{CompileReflectShader, FromCompilation, CompilePresetTarget, ShaderPassArtifact};
 /// use librashader::reflect::targets::SPIRV;
-/// use librashader::reflect::Glslang;
 /// use librashader::reflect::semantics::ShaderSemantics;
 /// use librashader_reflect::front::{ShaderInputCompiler, SpirvCompilation};
 /// use librashader_reflect::reflect::cross::SpirvCross;
-/// type Artifact = impl CompileReflectShader<SPIRV, Glslang, SpirvCross>;
+/// type Artifact = impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross>;
 /// type ShaderPassMeta = ShaderPassArtifact<Artifact>;
 ///
 /// // Compile single shader
@@ -112,7 +111,7 @@ pub mod preprocess {
 ///         source: &ShaderSource,
 ///     ) -> Result<Artifact, Box<dyn Error>>
 /// {
-///     let compilation = Glslang::compile(&source)?;
+///     let compilation = SpirvCompilation::compile(&source)?;
 ///     let spirv = SPIRV::from_compilation(compilation)?;
 ///     Ok(spirv)
 /// }
@@ -120,7 +119,7 @@ pub mod preprocess {
 /// // Compile preset
 /// pub fn compile_preset(preset: ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), Box<dyn Error>>
 /// {
-///     let (passes, semantics) = SPIRV::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, Box<dyn Error>>(
+///     let (passes, semantics) = SPIRV::compile_preset_passes::<SpirvCompilation, SpirvCross, Box<dyn Error>>(
 ///     preset.shaders, &preset.textures)?;
 ///     Ok((passes, semantics))
 /// }
@@ -131,7 +130,7 @@ pub mod preprocess {
 /// [naga](https://docs.rs/naga/latest/naga/index.html), a pure-Rust shader compiler, when it has
 /// matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
 ///
-/// In the meanwhile, the only supported input compiler is [Glslang](crate::reflect::Glslang),
+/// In the meanwhile, the only supported input compiler is [SpirvCompilation](crate::reflect::SpirvCompilation),
 /// which does compilation of GLSL to SPIR-V via [glslang](https://github.com/KhronosGroup/glslang/).
 pub mod reflect {
     /// Supported shader compiler targets.
@@ -152,7 +151,7 @@ pub mod reflect {
         FromCompilation, ShaderCompilerOutput,
     };
 
-    pub use librashader_reflect::front::{Glslang, ShaderReflectObject, SpirvCompilation};
+    pub use librashader_reflect::front::{ShaderReflectObject, SpirvCompilation};
 
     /// Reflection via SPIRV-Cross.
     #[cfg(feature = "reflect-cross")]

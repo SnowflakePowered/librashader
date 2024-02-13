@@ -1,7 +1,7 @@
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::WGSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::{Glslang, SpirvCompilation};
+use librashader_reflect::front::{SpirvCompilation};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
@@ -44,7 +44,7 @@ fn compile_passes(
     textures: &[TextureConfig],
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) =
-        WGSL::compile_preset_passes::<Glslang, SpirvCompilation, Naga, FilterChainError>(
+        WGSL::compile_preset_passes::<SpirvCompilation, Naga, FilterChainError>(
             shaders, &textures,
         )?;
     Ok((passes, semantics))

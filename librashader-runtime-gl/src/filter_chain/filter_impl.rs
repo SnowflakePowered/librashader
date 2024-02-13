@@ -16,7 +16,7 @@ use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::glsl::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::{Glslang, SpirvCompilation};
+use librashader_reflect::front::{SpirvCompilation};
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
 use librashader_cache::CachedCompilation;
@@ -108,13 +108,12 @@ fn compile_passes(
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
         GLSL::compile_preset_passes::<
-            Glslang,
             CachedCompilation<SpirvCompilation>,
             SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        GLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
+        GLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };
