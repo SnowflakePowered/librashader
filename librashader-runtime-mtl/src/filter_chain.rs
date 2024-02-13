@@ -10,8 +10,9 @@ use crate::samplers::SamplerSet;
 use crate::texture::{get_texture_size, InputTexture, MetalOutputView, OwnedTexture};
 use icrate::Foundation::NSString;
 use icrate::Metal::{
-    MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLPixelFormat,
-    MTLPixelFormatRGBA8Unorm, MTLResource, MTLTexture,
+    MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLLoadActionClear,
+    MTLPixelFormat, MTLPixelFormatRGBA8Unorm, MTLRenderPassDescriptor, MTLResource,
+    MTLStoreActionDontCare, MTLStoreActionStore, MTLTexture,
 };
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
@@ -320,22 +321,49 @@ impl FilterChainMetal {
     }
 
     /// Records shader rendering commands to the provided command encoder.
+    ///
+    /// SAFETY: The `MTLCommandBuffer` provided must not have an active encoder.
     pub fn frame(
         &mut self,
         input: &ProtocolObject<dyn MTLTexture>,
         viewport: &Viewport<MetalOutputView>,
-        cmd_buffer: &ProtocolObject<dyn MTLCommandBuffer>,
+        cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         frame_count: usize,
         options: Option<&FrameOptionsMetal>,
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
         let passes = &mut self.passes[0..max];
         if let Some(options) = &options {
+            let desc = unsafe {
+                let desc = MTLRenderPassDescriptor::new();
+                desc.colorAttachments()
+                    .objectAtIndexedSubscript(0)
+                    .setLoadAction(MTLLoadActionClear);
+
+                desc.colorAttachments()
+                    .objectAtIndexedSubscript(0)
+                    .setStoreAction(MTLStoreActionDontCare);
+                desc
+            };
+
+            let clear_desc = unsafe { MTLRenderPassDescriptor::new() };
             if options.clear_history {
-                for history in &mut self.history_framebuffers {
-                    history.clear(cmd_buffer);
+                for (index, history) in self.history_framebuffers.iter().enumerate() {
+                    unsafe {
+                        let ca = clear_desc
+                            .colorAttachments()
+                            .objectAtIndexedSubscript(index);
+                        ca.setTexture(Some(&history.texture));
+                        ca.setLoadAction(MTLLoadActionClear);
+                        ca.setStoreAction(MTLStoreActionStore);
+                    }
                 }
             }
+
+            let clearpass = cmd
+                .renderCommandEncoderWithDescriptor(&desc)
+                .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
+            clearpass.endEncoding();
         }
         if passes.is_empty() {
             return Ok(());
@@ -410,7 +438,7 @@ impl FilterChainMetal {
 
             let out = RenderTarget::identity(target.texture.as_ref());
             pass.draw(
-                &cmd_buffer,
+                &cmd,
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
@@ -423,7 +451,7 @@ impl FilterChainMetal {
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
-                target.generate_mipmaps(&cmd_buffer)?;
+                target.generate_mipmaps(&cmd)?;
             }
 
             source = self.common.output_textures[index]
@@ -448,7 +476,7 @@ impl FilterChainMetal {
             let output_image = viewport.output;
             let out = RenderTarget::viewport_with_output(output_image, viewport);
             pass.draw(
-                &cmd_buffer,
+                &cmd,
                 passes_len - 1,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
@@ -461,7 +489,7 @@ impl FilterChainMetal {
             )?;
         }
 
-        self.push_history(&input, &cmd_buffer)?;
+        self.push_history(&input, &cmd)?;
         self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
