@@ -7,7 +7,7 @@ use crate::graphics_pipeline::MetalGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsMetal, FrameOptionsMetal};
 use crate::samplers::SamplerSet;
-use crate::texture::{get_texture_size, InputTexture, MetalOutputView, OwnedTexture};
+use crate::texture::{get_texture_size, InputTexture, MetalTextureRef, OwnedTexture};
 use icrate::Foundation::NSString;
 use icrate::Metal::{
     MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLLoadActionClear,
@@ -326,7 +326,7 @@ impl FilterChainMetal {
     pub fn frame(
         &mut self,
         input: &ProtocolObject<dyn MTLTexture>,
-        viewport: &Viewport<MetalOutputView>,
+        viewport: &Viewport<MetalTextureRef>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         frame_count: usize,
         options: Option<&FrameOptionsMetal>,
@@ -368,8 +368,6 @@ impl FilterChainMetal {
         if passes.is_empty() {
             return Ok(());
         }
-
-        // let original_image_view = input.create_view(&wgpu::TextureViewDescriptor::default());
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
