@@ -1,6 +1,10 @@
 use crate::error::{FilterChainError, Result};
 use crate::select_optimal_pixel_format;
-use icrate::Metal::{MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat, MTLStorageModePrivate, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead, MTLTextureUsageShaderWrite};
+use icrate::Metal::{
+    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat,
+    MTLStorageModePrivate, MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget,
+    MTLTextureUsageShaderRead, MTLTextureUsageShaderWrite,
+};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};

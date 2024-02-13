@@ -14,7 +14,7 @@ pub struct CachedCompilation<T> {
     compilation: T,
 }
 
-impl<T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> {}
+impl<T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> { type Compiler = T::Compiler; }
 
 impl<T: ShaderReflectObject + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
     ShaderInputCompiler<CachedCompilation<T>> for Glslang
