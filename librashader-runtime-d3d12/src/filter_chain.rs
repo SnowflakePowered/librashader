@@ -18,7 +18,7 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::{Glslang, SpirvCompilation};
+use librashader_reflect::front::{SpirvCompilation};
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::{ShaderSemantics, MAX_BINDINGS_COUNT};
 use librashader_reflect::reflect::ReflectShader;
@@ -155,13 +155,12 @@ fn compile_passes_dxil(
 ) -> Result<(Vec<DxilShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
         DXIL::compile_preset_passes::<
-            Glslang,
             CachedCompilation<SpirvCompilation>,
             SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        DXIL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
+        DXIL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };
@@ -177,13 +176,12 @@ fn compile_passes_hlsl(
 ) -> Result<(Vec<HlslShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) = if !disable_cache {
         HLSL::compile_preset_passes::<
-            Glslang,
             CachedCompilation<SpirvCompilation>,
             SpirvCross,
             FilterChainError,
         >(shaders, &textures)?
     } else {
-        HLSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
+        HLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?
     };

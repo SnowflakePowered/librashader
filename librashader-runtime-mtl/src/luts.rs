@@ -1,6 +1,10 @@
 use crate::error::{FilterChainError, Result};
 use crate::texture::InputTexture;
-use icrate::Metal::{MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion, MTLResourceStorageModeManaged, MTLResourceStorageModeShared, MTLSize, MTLTexture, MTLTextureDescriptor, MTLTextureUsageShaderRead};
+use icrate::Metal::{
+    MTLBlitCommandEncoder, MTLDevice, MTLOrigin, MTLPixelFormatBGRA8Unorm, MTLRegion,
+    MTLResourceStorageModeManaged, MTLResourceStorageModeShared, MTLSize, MTLTexture,
+    MTLTextureDescriptor, MTLTextureUsageShaderRead,
+};
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
@@ -39,12 +43,13 @@ impl LutTexture {
                 1
             });
 
-            descriptor
-                .setStorageMode(if cfg!(all(target_arch = "aarch64", target_vendor = "apple")) {
+            descriptor.setStorageMode(
+                if cfg!(all(target_arch = "aarch64", target_vendor = "apple")) {
                     MTLResourceStorageModeShared
                 } else {
                     MTLResourceStorageModeManaged
-                });
+                },
+            );
 
             descriptor.setUsage(MTLTextureUsageShaderRead);
 

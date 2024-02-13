@@ -20,7 +20,7 @@ use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::msl::MslVersion;
 use librashader_reflect::back::targets::MSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::{Glslang, SpirvCompilation};
+use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
@@ -47,7 +47,7 @@ fn compile_passes(
     textures: &[TextureConfig],
 ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
     let (passes, semantics) =
-        MSL::compile_preset_passes::<Glslang, SpirvCompilation, SpirvCross, FilterChainError>(
+        MSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
             shaders, &textures,
         )?;
     Ok((passes, semantics))
@@ -396,7 +396,7 @@ impl FilterChainMetal {
         source
             .texture
             .setLabel(Some(&*NSString::from_str("librashader_sourcetex")));
-        
+
         // swap output and feedback **before** recording command buffers
         std::mem::swap(
             &mut self.output_framebuffers,
