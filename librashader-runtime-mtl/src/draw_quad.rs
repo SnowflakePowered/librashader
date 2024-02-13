@@ -58,24 +58,6 @@ const FINAL_VBO_DATA: [MetalVertex; 4] = [
     },
 ];
 
-#[rustfmt::skip]
-const VBO_OFFSCREEN: [f32; 16] = [
-    // Offscreen
-    -1.0f32, -1.0, 0.0, 0.0,
-    -1.0, 1.0, 0.0, 1.0,
-    1.0, -1.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0,
-];
-
-#[rustfmt::skip]
-const VBO_DEFAULT_FINAL: [f32; 16] = [
-    // Final
-    0.0f32, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 1.0,
-    1.0, 0.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0,
-];
-
 const VBO_DATA: [MetalVertex; 8] = concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {

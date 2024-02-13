@@ -1,6 +1,6 @@
 use crate::error;
 use crate::error::FilterChainError;
-use icrate::Foundation::{NSRange, NSString};
+use icrate::Foundation::NSString;
 use icrate::Metal::{
     MTLBuffer, MTLDevice, MTLResource, MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
 };
@@ -28,7 +28,7 @@ impl MetalBuffer {
         let resource_mode = if cfg!(target_os = "ios") {
             MTLResourceStorageModeShared
         } else {
-            MTLResourceStorageModeShared
+            MTLResourceStorageModeManaged
         };
 
         let buffer = device

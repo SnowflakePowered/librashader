@@ -1506,6 +1506,7 @@ name = "librashader"
 version = "0.2.0-beta.9"
 dependencies = [
  "ash",
+ "icrate 0.1.0",
  "librashader-cache",
  "librashader-common 0.2.0-beta.9",
  "librashader-preprocess",
@@ -1515,8 +1516,10 @@ dependencies = [
  "librashader-runtime-d3d11",
  "librashader-runtime-d3d12",
  "librashader-runtime-gl",
+ "librashader-runtime-mtl",
  "librashader-runtime-vk",
  "librashader-runtime-wgpu",
+ "objc2 0.5.0",
  "wgpu",
  "wgpu-types",
  "windows 0.48.0",
@@ -1725,8 +1728,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "librashader-runtime-metal"
-version = "0.2.0-beta.7"
+name = "librashader-runtime-mtl"
+version = "0.2.0-beta.9"
 dependencies = [
  "array-concat",
  "bytemuck",

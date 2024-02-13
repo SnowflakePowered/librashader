@@ -7,7 +7,7 @@ use crate::graphics_pipeline::MetalGraphicsPipeline;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsMetal, FrameOptionsMetal};
 use crate::samplers::SamplerSet;
-use crate::texture::{get_texture_size, InputTexture, OwnedTexture};
+use crate::texture::{get_texture_size, InputTexture, MetalOutputView, OwnedTexture};
 use icrate::Foundation::NSString;
 use icrate::Metal::{
     MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLPixelFormat,
@@ -133,7 +133,7 @@ impl FilterChainMetal {
             .map(|texture| Image::<BGRA8>::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(device, &mipmapper, image, texture)?;
+            let texture = LutTexture::new(device, image, texture)?;
             luts.insert(index, texture);
         }
 
@@ -323,7 +323,7 @@ impl FilterChainMetal {
     pub fn frame(
         &mut self,
         input: &ProtocolObject<dyn MTLTexture>,
-        viewport: &Viewport<&ProtocolObject<dyn MTLTexture>>,
+        viewport: &Viewport<MetalOutputView>,
         cmd_buffer: &ProtocolObject<dyn MTLCommandBuffer>,
         frame_count: usize,
         options: Option<&FrameOptionsMetal>,
