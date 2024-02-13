@@ -2,6 +2,7 @@ use crate::buffer::MetalBuffer;
 use crate::error;
 use crate::filter_chain::FilterCommon;
 use crate::graphics_pipeline::MetalGraphicsPipeline;
+use crate::options::FrameOptionsMetal;
 use crate::samplers::SamplerSet;
 use crate::texture::{get_texture_size, InputTexture};
 use icrate::Metal::{MTLCommandBuffer, MTLCommandEncoder, MTLRenderCommandEncoder, MTLTexture};
@@ -17,7 +18,6 @@ use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use objc2::runtime::ProtocolObject;
 use rustc_hash::FxHashMap;
-use crate::options::FrameOptionsMetal;
 
 impl TextureInput for InputTexture {
     fn size(&self) -> Size<u32> {
@@ -106,12 +106,12 @@ impl FilterPass {
             unsafe {
                 // SPIRV-Cross always has PCB bound to 1. Naga is arbitrary but their compilation provides the next free binding for drawquad.
                 cmd.setVertexBuffer_offset_atIndex(
-                    Some(self.uniform_storage.inner_ubo().as_ref()),
+                    Some(self.uniform_storage.inner_push().as_ref()),
                     0,
                     pcb.binding.unwrap_or(1) as usize,
                 );
                 cmd.setFragmentBuffer_offset_atIndex(
-                    Some(self.uniform_storage.inner_ubo().as_ref()),
+                    Some(self.uniform_storage.inner_push().as_ref()),
                     0,
                     pcb.binding.unwrap_or(1) as usize,
                 )

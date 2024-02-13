@@ -11,8 +11,23 @@ mod samplers;
 mod texture;
 
 pub use filter_chain::FilterChainMetal;
+use icrate::Metal::{
+    MTLPixelFormat, MTLPixelFormatBGRA8Unorm, MTLPixelFormatBGRA8Unorm_sRGB,
+    MTLPixelFormatRGBA8Unorm, MTLPixelFormatRGBA8Unorm_sRGB,
+};
 
 pub mod error;
 pub mod options;
 use librashader_runtime::impl_filter_chain_parameters;
 impl_filter_chain_parameters!(FilterChainMetal);
+
+fn select_optimal_pixel_format(format: MTLPixelFormat) -> MTLPixelFormat {
+    if format == MTLPixelFormatRGBA8Unorm {
+        return MTLPixelFormatBGRA8Unorm;
+    }
+
+    if format == MTLPixelFormatRGBA8Unorm_sRGB {
+        return MTLPixelFormatBGRA8Unorm_sRGB;
+    }
+    return format;
+}

@@ -1,4 +1,5 @@
 use crate::error::{FilterChainError, Result};
+use crate::select_optimal_pixel_format;
 use icrate::Metal::{
     MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat,
     MTLTexture, MTLTextureDescriptor, MTLTextureUsageRenderTarget, MTLTextureUsageShaderRead,
@@ -54,7 +55,7 @@ impl OwnedTexture {
         let descriptor = unsafe {
             let descriptor =
                 MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
-                    format,
+                    select_optimal_pixel_format(format),
                     size.width as usize,
                     size.height as usize,
                     max_miplevels <= 1,
@@ -102,7 +103,7 @@ impl OwnedTexture {
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
-            || format != self.texture.pixelFormat()
+            || format != select_optimal_pixel_format(format)
         {
             let mut new = OwnedTexture::new(device, size, self.max_miplevels, format)?;
             std::mem::swap(self, &mut new);

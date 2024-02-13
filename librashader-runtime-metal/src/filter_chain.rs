@@ -8,9 +8,10 @@ use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsMetal, FrameOptionsMetal};
 use crate::samplers::SamplerSet;
 use crate::texture::{get_texture_size, InputTexture, OwnedTexture};
+use icrate::Foundation::NSString;
 use icrate::Metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice,
-    MTLPixelFormat, MTLPixelFormatRGBA8Unorm, MTLTexture,
+    MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLPixelFormat,
+    MTLPixelFormatRGBA8Unorm, MTLResource, MTLTexture,
 };
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
@@ -59,7 +60,7 @@ pub struct FilterChainMetal {
     feedback_framebuffers: Box<[OwnedTexture]>,
     history_framebuffers: VecDeque<OwnedTexture>,
     disable_mipmaps: bool,
-    default_options: FrameOptionsMetal
+    default_options: FrameOptionsMetal,
 }
 
 impl Debug for FilterChainMetal {
@@ -160,8 +161,8 @@ impl FilterChainMetal {
                     .map_or(0, |push| push.size);
 
                 let uniform_storage = UniformStorage::new_with_storage(
-                    MetalBuffer::new(&device, ubo_size)?,
-                    MetalBuffer::new(&device, push_size as usize)?,
+                    MetalBuffer::new(&device, ubo_size, "ubo")?,
+                    MetalBuffer::new(&device, push_size as usize, "pcb")?,
                 );
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
@@ -366,6 +367,9 @@ impl FilterChainMetal {
 
         let mut source = original.try_clone()?;
 
+        source
+            .texture
+            .setLabel(Some(&*NSString::from_str("sourcetex")));
         // swap output and feedback **before** recording command buffers
         std::mem::swap(
             &mut self.output_framebuffers,
@@ -404,8 +408,7 @@ impl FilterChainMetal {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let out =
-                RenderTarget::identity(target.texture.as_ref());
+            let out = RenderTarget::identity(target.texture.as_ref());
             pass.draw(
                 &cmd_buffer,
                 index,
