@@ -1,7 +1,8 @@
 use crate::gl::FINAL_VBO_DATA;
 use crate::gl::{DrawQuad, OpenGLVertex};
 use gl::types::{GLint, GLsizeiptr, GLuint};
-use std::mem::offset_of;
+use bytemuck::offset_of;
+
 pub struct Gl46DrawQuad {
     vbo: GLuint,
     vao: GLuint,
