@@ -183,7 +183,7 @@ and are more a heads-up for integrating librashader into your project.
 ## Versioning
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader)
 ![C ABI](https://img.shields.io/badge/ABI%20version-1-yellowgreen)
-![C API](https://img.shields.io/badge/API%20version-0-blue)
+![C API](https://img.shields.io/badge/API%20version-1-blue)
 
 
 librashader typically follows [Semantic Versioning](https://semver.org/) with respect to the Rust API, where a minor version
