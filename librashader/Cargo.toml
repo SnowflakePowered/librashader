@@ -28,7 +28,7 @@ librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.2.
 librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.11" }
 
 ash = { version = "0.37", optional = true }
-wgpu = { version = "0.19", optional = true }
+wgpu = { version = "0.19", default-features = false, optional = true }
 wgpu-types = { version = "0.19", optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
