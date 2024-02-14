@@ -11,7 +11,8 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 ![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg) 
 
 ## Installation
-For end-users, librashader is available from the [Open Build Service](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader) for a variety of Linux distributions and platforms. Windows users can grab the latest DLL from [GitHub Releases](https://github.com/SnowflakePowered/librashader/releases).
+For end-users, librashader is available from the [Open Build Service](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader) for a variety of Linux distributions and platforms.
+Windows and macOS users can grab the latest binaries from [GitHub Releases](https://github.com/SnowflakePowered/librashader/releases).
 
 ## Supported Render APIs
 librashader supports all modern graphics runtimes, including wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA), 
@@ -35,13 +36,14 @@ The C API is geared more towards integration with existing projects. The Rust `l
 of the internals if you wish to use parts of librashader piecemeal.
 
 The librashader C API is best used by including `librashader_ld.h` in your project, which implements a loader that dynamically
-loads the librashader (`librashader.so` or `librashader.dll`) implementation in the search path. 
+loads the librashader (`librashader.so`, `librashader.dll`, or `librashader.dylib`) implementation in the search path. 
 
 
 ### C compatibility
 The recommended way of integrating `librashader` is by the `librashader_ld` single header library which implements
-a dynamic loader for `librashader.dll` / `librashader.so`. See the [versioning policy](https://github.com/SnowflakePowered/librashader#versioning)
-for details on how librashader handles C ABI and API stability with regards to library updates.
+a dynamic loader for `librashader.dll` / `librashader.so` / `librashader.dylib`. See the [versioning policy](https://github.com/SnowflakePowered/librashader#versioning)
+for details on how librashader handles C ABI and API stability with regards to library updates. You can also link dynamically
+with just `librashader.h` and the equivalent of `-lrashader`.
 
 Linking statically against `librashader.h` is possible, but is not officially supported. You will need to ensure
 linkage parameters are correct in order to successfully link with `librashader.lib` or `librashader.a`.
@@ -224,13 +226,13 @@ are more permissively licensed, and may allow you to use librashader in your per
 licensed or proprietary project.
 
 To facilitate easier use of librashader in projects incompatible with MPL-2.0, `librashader_ld`
-implements a loader which thunks its calls to any `librashader.so` or `librashader.dll`
+implements a loader which thunks its calls to any `librashader.so`, `librashader.dll`, or `librashader.dylib`.
 library found in the load path. A non-MPL-2.0 compatible project may link against
-`librashader_ld` to use the librashader runtime, *provided that `librashader.so` or `librashader.dll` 
+`librashader_ld` to use the librashader runtime, *provided that `librashader.so`, `librashader.dll` or `librashader.dylib`
 are distributed under the restrictions of MPLv2*.
 
 Note that this means that if your project is unable to comply with the requirements of MPL-2.0, 
-you **can not distribute `librashader.so` or `librashader.dll`** alongside your project. 
+you **can not distribute `librashader.so`, `librashader.dll` or `librashader.dylib`** alongside your project. 
 The end user must obtain the implementation of librashader themselves. For more information, 
 see the [MPL 2.0 FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).
 
