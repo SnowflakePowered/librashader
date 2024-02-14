@@ -17,18 +17,19 @@ librashader-common = { path = "../librashader-common", version = "0.2.0-beta.11"
 librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.11" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.11" }
 librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.11" }
+librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.11" }
 librashader-runtime  = { path = "../librashader-runtime", version = "0.2.0-beta.11" }
 librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.2.0-beta.11", optional = true }
 librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = "0.2.0-beta.11", optional = true }
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.2.0-beta.11", optional = true }
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.2.0-beta.11", optional = true }
-librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.2.0-beta.11", optional = true }
 librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.2.0-beta.11", optional = true }
 
-librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.11" }
-
 ash = { version = "0.37", optional = true }
+
+[target.'cfg(not(all(target_vendor="apple", docsrs)))'.dependencies]
 wgpu = { version = "0.19", default-features = false, optional = true }
+librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.2.0-beta.11", optional = true }
 wgpu-types = { version = "0.19", optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
@@ -74,4 +75,5 @@ docsrs = ["librashader-cache/docsrs", "objc2/unstable-docsrs"]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
-features = [ "librashader-cache/docsrs", "objc2/unstable-docsrs"]
+features = ["docsrs"]
+rustdoc-args = ["--cfg", "docsrs"]
