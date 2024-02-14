@@ -463,7 +463,7 @@ typedef struct _filter_chain_mtl *libra_mtl_filter_chain_t;
 #endif
 
 #if (defined(__APPLE__) && defined(LIBRA_RUNTIME_METAL) && defined(__OBJC__))
-/// Options for each Vulkan shader frame.
+/// Options for each Metal shader frame.
 typedef struct frame_mtl_opt_t {
     /// The librashader API version.
     LIBRASHADER_API_VERSION version;
@@ -1746,7 +1746,7 @@ libra_error_t libra_mtl_filter_chain_get_active_pass_count(
 #endif
 
 #if (defined(__APPLE__) && defined(LIBRA_RUNTIME_METAL) && defined(__OBJC__))
-/// Free a Vulkan filter chain.
+/// Free a Metal filter chain.
 ///
 /// The resulting value in `chain` then becomes null.
 /// ## Safety
@@ -1835,6 +1835,7 @@ libra_error_t libra_preset_ctx_set_param(libra_preset_ctx_t *context,
 /// - GLCore
 /// - Direct3D11
 /// - Direct3D12
+/// - Metal
 ///
 /// This will also set the appropriate video driver extensions.
 ///

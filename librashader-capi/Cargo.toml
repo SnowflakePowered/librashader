@@ -52,5 +52,11 @@ icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ], optional = t
 objc2 = { version = "0.5.0", features = ["apple"] , optional = true }
 
 [package.metadata.docs.rs]
-targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
+targets = [ "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "aarch64-apple-ios",
+    "i686-pc-windows-msvc",
+    "i686-unknown-linux-gnu", ]
 features = ["librashader/docsrs"]

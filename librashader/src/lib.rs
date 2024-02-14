@@ -283,7 +283,7 @@ pub mod runtime {
 
     #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
     #[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
-    /// Shader runtime for Metal
+    /// Shader runtime for Metal.
     pub mod mtl {
         pub use librashader_runtime_mtl::{
             error,
@@ -296,7 +296,7 @@ pub mod runtime {
 
     #[cfg(feature = "runtime-wgpu")]
     #[doc(cfg(feature = "runtime-wgpu"))]
-    /// Shader runtime for wgpu
+    /// Shader runtime for wgpu.
     #[cfg_attr(all(feature = "runtime-wgpu", all(target_vendor = "apple", feature = "docsrs")), 
         doc = "\n\nThe wgpu runtime is available on macOS and iOS, but technical reasons prevent them from rendering on docs.rs.
 \n\n This is because wgpu on macOS and iOS link to [metal-rs](https://github.com/gfx-rs/metal-rs), which can not build on docs.rs.

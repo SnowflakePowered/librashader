@@ -48,7 +48,7 @@ linkage parameters are correct in order to successfully link with `librashader.l
 The [corrosion](https://github.com/corrosion-rs/) CMake package is highly recommended.
 
 ### Thread safety
-Except for the Metsl runtime, in general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
+Except for the Metal runtime, in general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
 **external synchronization** of the filter chain object.
 
 Filter chains can be created from any thread, but requires external synchronization of the graphics device queue where applicable
