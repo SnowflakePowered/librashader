@@ -48,7 +48,7 @@ linkage parameters are correct in order to successfully link with `librashader.l
 The [corrosion](https://github.com/corrosion-rs/) CMake package is highly recommended.
 
 ### Thread safety
-In general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
+Except for the Metsl runtime, in general, it is **safe** to create a filter chain instance from a different thread, but drawing frames requires
 **external synchronization** of the filter chain object.
 
 Filter chains can be created from any thread, but requires external synchronization of the graphics device queue where applicable
@@ -59,6 +59,9 @@ submitting the recorded commands to the graphics device queue, and **ensuring th
 OpenGL has an additional restriction where creating the filter chain instance in a different thread is safe **if and only if**
 the thread local OpenGL context is initialized to the same context as the drawing thread. Support for deferral of GPU resource initialization
 is not available to OpenGL.
+
+The Metal runtime is **not thread safe**. However you can still defer submission of GPU resource initialization through the
+`filter_chain_create_deferred` function.
 
 ### Quad vertices and rotations
 All runtimes except OpenGL render with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
@@ -123,9 +126,12 @@ The following Rust examples show how to use each librashader runtime.
 * [OpenGL](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-gl/tests/triangle.rs)
 * [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/tests/triangle.rs)
 * [Direct3D 12](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d12/tests/triangle.rs)
+* [wgpu](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-wgpu/tests/hello_triangle.rs)
 
-Some basic examples on using the C API are also provided in the [librashader-capi-tests](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/librashader-capi-tests)
-directory.
+Some basic examples on using the C API are also provided.
+
+* [Direct3D 11](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/librashader-capi-tests)
+* [Metal with Objective-C](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/objctest)
 
 ## Compatibility
 
