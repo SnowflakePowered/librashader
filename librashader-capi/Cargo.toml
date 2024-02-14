@@ -30,13 +30,18 @@ __cbindgen_internal = ["runtime-all"]
 __cbindgen_internal_objc = ["icrate", "objc2"]
 
 [dependencies]
-librashader = { path = "../librashader", version = "0.2.0-beta.11" }
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
 rustc-hash = "1.1.0"
 ash = { version = "0.37", optional = true }
 spirv_cross = { package = "librashader-spirv-cross", version = "0.25.1" }
+
+[dependencies.librashader]
+path = "../librashader"
+version = "0.2.0-beta.11"
+default-features = false
+features = ["presets", "preprocess"]
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.48.0"
