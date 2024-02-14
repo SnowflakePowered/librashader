@@ -3,7 +3,7 @@ name = "librashader-runtime-vk"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.11"
+version = "0.2.0-beta.17"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -14,12 +14,12 @@ description = "RetroArch shaders for all."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-librashader-common = { path = "../librashader-common", features = ["vulkan"], version = "0.2.0-beta.11" }
-librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.11" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.11" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.11" }
-librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.11" }
-librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.11" }
+librashader-common = { path = "../librashader-common", features = ["vulkan"], version = "0.2.0-beta.17" }
+librashader-presets = { path = "../librashader-presets", version = "0.2.0-beta.17" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-beta.17" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-beta.17" }
+librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-beta.17" }
+librashader-cache = { path = "../librashader-cache", version = "0.2.0-beta.17" }
 
 rustc-hash = "1.1.0"
 bytemuck = { version = "1.12.3", features = ["derive"] }
