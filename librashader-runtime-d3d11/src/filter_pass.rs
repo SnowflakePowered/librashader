@@ -9,7 +9,7 @@ use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_reflect::reflect::ShaderReflection;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
@@ -39,7 +39,7 @@ pub struct FilterPass {
     pub vertex_layout: ID3D11InputLayout,
     pub pixel_shader: ID3D11PixelShader,
 
-    pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
+    pub uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
 
     pub uniform_storage: UniformStorage,
     pub uniform_buffer: Option<ConstantBufferBinding>,

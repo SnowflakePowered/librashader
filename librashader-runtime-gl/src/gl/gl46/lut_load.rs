@@ -7,12 +7,12 @@ use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
 use rayon::prelude::*;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, InputTexture>> {
-        let mut luts = FxHashMap::default();
+    fn load_luts(textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>> {
+        let mut luts = FastHashMap::default();
         let pixel_unpack = unsafe {
             let mut binding = 0;
             gl::GetIntegerv(gl::PIXEL_UNPACK_BUFFER_BINDING, &mut binding);

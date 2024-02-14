@@ -1244,12 +1244,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "halfbrown"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5681137554ddff44396e5f149892c769d45301dd9aa19c51602a89ee214cb0ec"
+dependencies = [
+ "hashbrown 0.13.2",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
  "ahash 0.7.8",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
+dependencies = [
+ "ahash 0.8.7",
 ]
 
 [[package]]
@@ -1580,8 +1598,10 @@ version = "0.2.0-rc.1"
 dependencies = [
  "ash",
  "gl",
+ "halfbrown",
  "icrate 0.1.0",
  "num-traits",
+ "rustc-hash",
  "wgpu-types",
  "windows 0.48.0",
 ]
@@ -1596,7 +1616,6 @@ dependencies = [
  "librashader-presets 0.1.4",
  "nom",
  "rayon",
- "rustc-hash",
  "thiserror",
 ]
 
@@ -1625,7 +1644,6 @@ dependencies = [
  "once_cell",
  "os_str_bytes",
  "regex",
- "rustc-hash",
  "rustversion",
  "thiserror",
 ]
@@ -1663,7 +1681,7 @@ dependencies = [
  "librashader-presets 0.2.0-rc.1",
  "librashader-reflect",
  "num-traits",
- "rustc-hash",
+ "tinymap",
 ]
 
 [[package]]
@@ -1680,7 +1698,6 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "rayon",
- "rustc-hash",
  "thiserror",
  "windows 0.48.0",
 ]
@@ -1702,7 +1719,6 @@ dependencies = [
  "librashader-runtime",
  "parking_lot",
  "rayon",
- "rustc-hash",
  "thiserror",
  "widestring",
  "windows 0.48.0",
@@ -1724,7 +1740,6 @@ dependencies = [
  "librashader-runtime",
  "librashader-spirv-cross",
  "rayon",
- "rustc-hash",
  "sptr",
  "thiserror",
 ]
@@ -1743,7 +1758,6 @@ dependencies = [
  "librashader-runtime",
  "objc2 0.5.0",
  "rayon",
- "rustc-hash",
  "thiserror",
 ]
 
@@ -1767,7 +1781,6 @@ dependencies = [
  "parking_lot",
  "raw-window-handle 0.5.2",
  "rayon",
- "rustc-hash",
  "thiserror",
  "winit",
 ]
@@ -1790,7 +1803,6 @@ dependencies = [
  "pollster",
  "raw-window-handle 0.6.0",
  "rayon",
- "rustc-hash",
  "thiserror",
  "wgpu",
  "winit",
@@ -2991,6 +3003,21 @@ dependencies = [
  "bytemuck",
  "strict-num",
 ]
+
+[[package]]
+name = "tinymap"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "606a25fa775ecddf21f83f373a0724423f364b5aaacac14f0cce4cf4c976ff43"
+dependencies = [
+ "tinyvec",
+]
+
+[[package]]
+name = "tinyvec"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87cc5ceb3875bb20c2890005a4e226a4651264a5c75edb2421b52861a0a0cb50"
 
 [[package]]
 name = "toml"

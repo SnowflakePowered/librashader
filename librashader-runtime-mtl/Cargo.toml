@@ -20,8 +20,6 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.0-
 librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-rc.1" }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-rc.1" }
 
-
-rustc-hash = "1.1.0"
 thiserror = "1.0"
 array-concat = "0.5.2"
 bytemuck = { version = "1.12.3", features = ["derive"] }

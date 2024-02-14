@@ -11,7 +11,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 
@@ -64,14 +64,14 @@ pub struct FilterChainWgpu {
 
 pub struct FilterMutable {
     pub passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>,
+    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputImage>]>,
     pub feedback_textures: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
-    pub luts: FxHashMap<usize, LutTexture>,
+    pub luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub config: FilterMutable,
     pub internal_frame_count: i32,
@@ -216,8 +216,8 @@ impl FilterChainWgpu {
         mipmapper: &mut MipmapGen,
         sampler_set: &SamplerSet,
         textures: &[TextureConfig],
-    ) -> error::Result<FxHashMap<usize, LutTexture>> {
-        let mut luts = FxHashMap::default();
+    ) -> error::Result<FastHashMap<usize, LutTexture>> {
+        let mut luts = FastHashMap::default();
 
         #[cfg(not(target_arch = "wasm32"))]
         let images_iter = textures.par_iter();

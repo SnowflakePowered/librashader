@@ -27,7 +27,7 @@ use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 
 #[rustfmt::skip]
@@ -51,7 +51,7 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
 pub(crate) struct FilterCommon {
     // semantics: ReflectSemantics,
     pub config: FilterMutable,
-    pub luts: FxHashMap<usize, InputTexture>,
+    pub luts: FastHashMap<usize, InputTexture>,
     pub samplers: SamplerSet,
     pub output_textures: Box<[InputTexture]>,
     pub feedback_textures: Box<[InputTexture]>,
@@ -61,7 +61,7 @@ pub(crate) struct FilterCommon {
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>,
+    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {

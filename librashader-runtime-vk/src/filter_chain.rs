@@ -26,7 +26,7 @@ use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use parking_lot::RwLock;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::path::Path;
@@ -130,11 +130,11 @@ pub struct FilterChainVulkan {
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>,
+    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 pub(crate) struct FilterCommon {
-    pub(crate) luts: FxHashMap<usize, LutTexture>,
+    pub(crate) luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub(crate) draw_quad: DrawQuad,
     pub output_textures: Box<[Option<InputImage>]>,
@@ -482,8 +482,8 @@ impl FilterChainVulkan {
         vulkan: &VulkanObjects,
         command_buffer: vk::CommandBuffer,
         textures: &[TextureConfig],
-    ) -> error::Result<FxHashMap<usize, LutTexture>> {
-        let mut luts = FxHashMap::default();
+    ) -> error::Result<FastHashMap<usize, LutTexture>> {
+        let mut luts = FastHashMap::default();
         let images = textures
             .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))

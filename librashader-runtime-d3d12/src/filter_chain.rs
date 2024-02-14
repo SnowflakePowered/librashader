@@ -26,7 +26,7 @@ use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 use std::mem::ManuallyDrop;
 use std::path::Path;
@@ -57,7 +57,7 @@ const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>,
+    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 /// A Direct3D 12 filter chain.
@@ -89,7 +89,7 @@ pub(crate) struct FilterCommon {
     pub history_textures: Box<[Option<InputTexture>]>,
     pub config: FilterMutable,
     // pub disable_mipmaps: bool,
-    pub luts: FxHashMap<usize, LutTexture>,
+    pub luts: FastHashMap<usize, LutTexture>,
     pub mipmap_gen: D3D12MipmapGen,
     pub root_signature: D3D12RootSignature,
     pub draw_quad: DrawQuad,
@@ -371,11 +371,11 @@ impl FilterChainD3D12 {
         mipmap_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
         gc: &mut FrameResiduals,
         textures: &[TextureConfig],
-    ) -> error::Result<FxHashMap<usize, LutTexture>> {
+    ) -> error::Result<FastHashMap<usize, LutTexture>> {
         // use separate mipgen to load luts.
         let mipmap_gen = D3D12MipmapGen::new(device, true)?;
 
-        let mut luts = FxHashMap::default();
+        let mut luts = FastHashMap::default();
         let images = textures
             .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))

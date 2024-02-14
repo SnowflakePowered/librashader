@@ -7,7 +7,7 @@ use crate::reflect::semantics::{
 };
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{ShaderPassConfig, TextureConfig};
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -80,8 +80,8 @@ where
     E: From<ShaderReflectError>,
     E: From<ShaderCompileError>,
 {
-    let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
-    let mut texture_semantics: FxHashMap<String, Semantic<TextureSemantics>> = Default::default();
+    let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
+    let mut texture_semantics: FastHashMap<String, Semantic<TextureSemantics>> = Default::default();
 
     let passes = passes
         .into_iter()
@@ -119,8 +119,8 @@ where
 
 /// Insert the available semantics for the input pass config into the provided semantic maps.
 fn insert_pass_semantics(
-    uniform_semantics: &mut FxHashMap<String, UniformSemantic>,
-    texture_semantics: &mut FxHashMap<String, Semantic<TextureSemantics>>,
+    uniform_semantics: &mut FastHashMap<String, UniformSemantic>,
+    texture_semantics: &mut FastHashMap<String, Semantic<TextureSemantics>>,
     config: &ShaderPassConfig,
 ) {
     let Some(alias) = &config.alias else {
@@ -170,8 +170,8 @@ fn insert_pass_semantics(
 /// Insert the available semantics for the input texture config into the provided semantic maps.
 fn insert_lut_semantics(
     textures: &[TextureConfig],
-    uniform_semantics: &mut FxHashMap<String, UniformSemantic>,
-    texture_semantics: &mut FxHashMap<String, Semantic<TextureSemantics>>,
+    uniform_semantics: &mut FastHashMap<String, UniformSemantic>,
+    texture_semantics: &mut FastHashMap<String, Semantic<TextureSemantics>>,
 ) {
     for (index, texture) in textures.iter().enumerate() {
         texture_semantics.insert(

@@ -8,7 +8,7 @@ use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, Unif
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::render_target::RenderTarget;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
@@ -36,7 +36,7 @@ pub(crate) struct FilterPass<T: GLInterface> {
     pub ubo_location: UniformLocation<GLuint>,
     pub ubo_ring: Option<T::UboRing>,
     pub(crate) uniform_storage: GlUniformStorage,
-    pub uniform_bindings: FxHashMap<UniformBinding, UniformOffset>,
+    pub uniform_bindings: FastHashMap<UniformBinding, UniformOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
 }
