@@ -20,14 +20,17 @@ use objc2::runtime::ProtocolObject;
 
 use crate::LIBRASHADER_API_VERSION;
 
+/// An alias to a `id<MTLCommandQueue>` protocol object pointer.
 pub type PMTLCommandQueue = *const ProtocolObject<dyn MTLCommandQueue>;
 
+/// An alias to a `id<MTLCommandBuffer>` protocol object pointer.
 pub type PMTLCommandBuffer = *const ProtocolObject<dyn MTLCommandBuffer>;
 
+/// An alias to a `id<MTLTexture>` protocol object pointer.
 pub type PMTLTexture = *const ProtocolObject<dyn MTLTexture>;
 
 
-/// Options for each Vulkan shader frame.
+/// Options for each Metal shader frame.
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
 pub struct frame_mtl_opt_t {
@@ -301,7 +304,7 @@ extern_fn! {
 }
 
 extern_fn! {
-    /// Free a Vulkan filter chain.
+    /// Free a Metal filter chain.
     ///
     /// The resulting value in `chain` then becomes null.
     /// ## Safety
