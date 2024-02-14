@@ -6,14 +6,14 @@ use icrate::Metal::{
 use librashader_common::{FilterMode, WrapMode};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 use crate::error::{FilterChainError, Result};
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
     samplers:
-        FxHashMap<(WrapMode, FilterMode, FilterMode), Id<ProtocolObject<dyn MTLSamplerState>>>,
+        FastHashMap<(WrapMode, FilterMode, FilterMode), Id<ProtocolObject<dyn MTLSamplerState>>>,
 }
 
 impl SamplerSet {
@@ -37,7 +37,7 @@ impl SamplerSet {
     }
 
     pub fn new(device: &ProtocolObject<dyn MTLDevice>) -> Result<SamplerSet> {
-        let mut samplers = FxHashMap::default();
+        let mut samplers = FastHashMap::default();
         let wrap_modes = &[
             WrapMode::ClampToBorder,
             WrapMode::ClampToEdge,

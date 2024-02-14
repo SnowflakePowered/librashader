@@ -29,6 +29,9 @@ pub mod metal;
 
 mod viewport;
 
+#[doc(hidden)]
+pub mod map;
+
 pub use viewport::Viewport;
 
 use num_traits::AsPrimitive;

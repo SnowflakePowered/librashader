@@ -16,7 +16,7 @@ use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::uniforms::UniformStorageAccess;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
@@ -46,7 +46,7 @@ pub(crate) static FINAL_VBO_DATA: &[OpenGLVertex; 4] = &[
 ];
 
 pub(crate) trait LoadLut {
-    fn load_luts(textures: &[TextureConfig]) -> Result<FxHashMap<usize, InputTexture>>;
+    fn load_luts(textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>>;
 }
 
 pub(crate) trait CompileProgram {

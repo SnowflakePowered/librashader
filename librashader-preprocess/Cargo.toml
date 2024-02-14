@@ -15,7 +15,6 @@ description = "RetroArch shaders for all."
 thiserror = "1.0.37"
 nom = "7.1.1"
 librashader-common = { path = "../librashader-common", version = "0.2.0-rc.1" }
-rustc-hash = "1.1.0"
 encoding_rs = "0.8.31"
 
 [features]

@@ -35,7 +35,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use rayon::prelude::*;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 use std::fmt::{Debug, Formatter};
 use std::path::Path;
@@ -72,14 +72,14 @@ impl Debug for FilterChainMetal {
 
 pub struct FilterMutable {
     pub passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>,
+    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputTexture>]>,
     pub feedback_textures: Box<[Option<InputTexture>]>,
     pub history_textures: Box<[Option<InputTexture>]>,
-    pub luts: FxHashMap<usize, LutTexture>,
+    pub luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub config: FilterMutable,
     pub internal_frame_count: i32,
@@ -122,8 +122,8 @@ impl FilterChainMetal {
         device: &ProtocolObject<dyn MTLDevice>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         textures: &[TextureConfig],
-    ) -> error::Result<FxHashMap<usize, LutTexture>> {
-        let mut luts = FxHashMap::default();
+    ) -> error::Result<FastHashMap<usize, LutTexture>> {
+        let mut luts = FastHashMap::default();
 
         let mipmapper = cmd
             .blitCommandEncoder()

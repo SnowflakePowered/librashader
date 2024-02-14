@@ -21,7 +21,6 @@ librashader-reflect = { path = "../librashader-reflect", version = "0.2.0-rc.1" 
 librashader-runtime = { path = "../librashader-runtime" , version = "0.2.0-rc.1" }
 librashader-cache = { path = "../librashader-cache", version = "0.2.0-rc.1" }
 
-rustc-hash = "1.1.0"
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
 ash = { version = "0.37", features = ["debug"] }

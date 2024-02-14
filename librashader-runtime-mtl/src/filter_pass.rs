@@ -17,7 +17,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use objc2::runtime::ProtocolObject;
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 
 impl TextureInput for InputTexture {
     fn size(&self) -> Size<u32> {
@@ -53,7 +53,7 @@ pub struct FilterPass {
     pub reflection: ShaderReflection,
     pub(crate) uniform_storage:
         UniformStorage<NoUniformBinder, Option<()>, MetalBuffer, MetalBuffer>,
-    pub uniform_bindings: FxHashMap<UniformBinding, MemberOffset>,
+    pub uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
     pub graphics_pipeline: MetalGraphicsPipeline,

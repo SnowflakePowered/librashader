@@ -8,7 +8,7 @@ use librashader_reflect::front::{SpirvCompilation};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
-use rustc_hash::FxHashMap;
+use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 
 use std::path::Path;
@@ -44,7 +44,7 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
 
 pub struct FilterMutable {
     pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FxHashMap<String, f32>,
+    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 /// A Direct3D 11 filter chain.
@@ -65,7 +65,7 @@ pub(crate) struct Direct3D11 {
 
 pub(crate) struct FilterCommon {
     pub(crate) d3d11: Direct3D11,
-    pub(crate) luts: FxHashMap<usize, LutTexture>,
+    pub(crate) luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub output_textures: Box<[Option<InputTexture>]>,
     pub feedback_textures: Box<[Option<InputTexture>]>,
@@ -355,8 +355,8 @@ impl FilterChainD3D11 {
         device: &ID3D11Device,
         context: &ID3D11DeviceContext,
         textures: &[TextureConfig],
-    ) -> error::Result<FxHashMap<usize, LutTexture>> {
-        let mut luts = FxHashMap::default();
+    ) -> error::Result<FastHashMap<usize, LutTexture>> {
+        let mut luts = FastHashMap::default();
         let images = textures
             .par_iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))

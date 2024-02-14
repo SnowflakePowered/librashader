@@ -6,11 +6,11 @@
 //! [RetroArch#15023](https://github.com/libretro/RetroArch/pull/15023).
 use once_cell::sync::Lazy;
 use regex::bytes::Regex;
-use rustc_hash::FxHashMap;
 use std::collections::VecDeque;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::path::{Component, Path, PathBuf};
+use librashader_common::map::FastHashMap;
 
 /// Valid video driver or runtime. This list is non-exhaustive.
 #[repr(u32)]
@@ -326,8 +326,8 @@ impl WildcardContext {
         }
     }
 
-    pub fn to_hashmap(mut self) -> FxHashMap<String, String> {
-        let mut map = FxHashMap::default();
+    pub fn to_hashmap(mut self) -> FastHashMap<String, String> {
+        let mut map = FastHashMap::default();
         let last_user_rot = self
             .0
             .iter()
@@ -361,7 +361,7 @@ impl WildcardContext {
 }
 
 #[rustversion::since(1.74)]
-pub(crate) fn apply_context(path: &mut PathBuf, context: &FxHashMap<String, String>) {
+pub(crate) fn apply_context(path: &mut PathBuf, context: &FastHashMap<String, String>) {
     use std::ffi::{OsStr, OsString};
 
     static WILDCARD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("\\$([A-Z-_]+)\\$").unwrap());
@@ -409,7 +409,7 @@ pub(crate) fn apply_context(path: &mut PathBuf, context: &FxHashMap<String, Stri
 }
 
 #[rustversion::before(1.74)]
-pub(crate) fn apply_context(path: &mut PathBuf, context: &FxHashMap<String, String>) {
+pub(crate) fn apply_context(path: &mut PathBuf, context: &FastHashMap<String, String>) {
     use os_str_bytes::RawOsStr;
     static WILDCARD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("\\$([A-Z-_]+)\\$").unwrap());
     if context.is_empty() {
