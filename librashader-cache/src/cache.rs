@@ -46,7 +46,7 @@ pub(crate) mod internal {
     pub(crate) fn get_cache() -> Result<Persy, Box<dyn Error>> {
         let cache_dir = get_cache_dir()?;
         let conn = Persy::open_or_create_with(&cache_dir.join("librashader.db.1"), Config::new(), |persy| {
-            let mut tx = persy.begin()?;
+            let tx = persy.begin()?;
             tx.commit()?;
             Ok(())
         })?;
