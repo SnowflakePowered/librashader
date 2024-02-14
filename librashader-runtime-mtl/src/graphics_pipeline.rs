@@ -16,7 +16,7 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_runtime::render_target::RenderTarget;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use std::mem::offset_of;
+use bytemuck::offset_of;
 
 /// This is only really plausible for SPIRV-Cross, for Naga we need to supply the next plausible binding.
 pub const VERTEX_BUFFER_INDEX: usize = 4;
