@@ -295,7 +295,13 @@ pub mod runtime {
     #[cfg(feature = "runtime-wgpu")]
     #[doc(cfg(feature = "runtime-wgpu"))]
     /// Shader runtime for wgpu
+    #[cfg_attr(all(feature = "runtime-wgpu", all(target_vendor = "apple", feature = "docsrs")), 
+        doc = "\n\nThe wgpu runtime is available on macOS and iOS, but technical reasons prevent them from rendering on docs.rs.
+\n\n This is because wgpu on macOS and iOS link to [metal-rs](https://github.com/gfx-rs/metal-rs), which can not build on docs.rs.
+ See [SSheldon/rustc-objc-exception#13](https://github.com/SSheldon/rust-objc-exception/issues/13) for more details. 
+\n\n The wgpu runtime is identical for all supported operating systems, so please refer to documentation from another operating system.")]
     pub mod wgpu {
+        #[cfg(not(all(target_vendor = "apple", feature = "docsrs")))]
         pub use librashader_runtime_wgpu::{
             error,
             options::{
