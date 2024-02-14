@@ -3,7 +3,7 @@ name = "librashader-capi"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-beta.15"
+version = "0.2.0-beta.16"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -30,7 +30,7 @@ __cbindgen_internal = ["runtime-all"]
 __cbindgen_internal_objc = ["icrate", "objc2"]
 
 [dependencies]
-librashader = { path = "../librashader", version = "0.2.0-beta.15" }
+librashader = { path = "../librashader", version = "0.2.0-beta.16" }
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
