@@ -46,7 +46,6 @@
 //!
 //! In the meanwhile, the only supported compilation type is [GlslangCompilation](crate::front::SpirvCompilation),
 //! which does transpilation via [glslang](https://github.com/KhronosGroup/glslang) and [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross).
-#![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(let_chains)]
 
