@@ -379,7 +379,7 @@ declare_class!(
                     .texture()
                     .unwrap();
 
- let tex_desc = MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
+     let tex_desc = MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
                     texture.pixelFormat(),
                     texture.width(),
                     texture.height(),
