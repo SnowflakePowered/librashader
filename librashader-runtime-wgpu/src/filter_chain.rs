@@ -15,6 +15,7 @@ use rayon::prelude::*;
 use std::collections::VecDeque;
 use std::path::Path;
 
+use rayon::ThreadPoolBuilder;
 use std::sync::Arc;
 
 use crate::buffer::WgpuStagedBuffer;
@@ -267,63 +268,73 @@ impl FilterChainWgpu {
         #[cfg(target_arch = "wasm32")]
         let passes_iter = passes.into_iter();
 
-        let filters: Vec<error::Result<FilterPass>> = passes_iter
-            .enumerate()
-            .map(|(index, (config, source, mut reflect))| {
-                let reflection = reflect.reflect(index, semantics)?;
-                let wgsl = reflect.compile(NagaLoweringOptions {
-                    write_pcb_as_ubo: true,
-                    sampler_bind_group: 1,
-                })?;
+        let thread_pool = ThreadPoolBuilder::new()
+            .stack_size(10 * 1048576)
+            .build()
+            .unwrap();
 
-                let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
-                let push_size = reflection
-                    .push_constant
-                    .as_ref()
-                    .map_or(0, |push| push.size as wgpu::BufferAddress);
+        let filters = thread_pool.install(|| {
+            let filters: Vec<error::Result<FilterPass>> = passes_iter
+                .enumerate()
+                .map(|(index, (config, source, mut reflect))| {
+                    let reflection = reflect.reflect(index, semantics)?;
+                    let wgsl = reflect.compile(NagaLoweringOptions {
+                        write_pcb_as_ubo: true,
+                        sampler_bind_group: 1,
+                    })?;
 
-                let uniform_storage = UniformStorage::new_with_storage(
-                    WgpuStagedBuffer::new(
-                        &device,
-                        wgpu::BufferUsages::UNIFORM,
-                        ubo_size as wgpu::BufferAddress,
-                        Some("ubo"),
-                    ),
-                    WgpuStagedBuffer::new(
-                        &device,
-                        wgpu::BufferUsages::UNIFORM,
-                        push_size as wgpu::BufferAddress,
-                        Some("push"),
-                    ),
-                );
+                    let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
+                    let push_size = reflection
+                        .push_constant
+                        .as_ref()
+                        .map_or(0, |push| push.size as wgpu::BufferAddress);
 
-                let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
+                    let uniform_storage = UniformStorage::new_with_storage(
+                        WgpuStagedBuffer::new(
+                            &device,
+                            wgpu::BufferUsages::UNIFORM,
+                            ubo_size as wgpu::BufferAddress,
+                            Some("ubo"),
+                        ),
+                        WgpuStagedBuffer::new(
+                            &device,
+                            wgpu::BufferUsages::UNIFORM,
+                            push_size as wgpu::BufferAddress,
+                            Some("push"),
+                        ),
+                    );
 
-                let render_pass_format: Option<TextureFormat> =
-                    if let Some(format) = config.get_format_override() {
-                        format.into()
-                    } else {
-                        source.format.into()
-                    };
+                    let uniform_bindings =
+                        reflection.meta.create_binding_map(|param| param.offset());
 
-                let graphics_pipeline = WgpuGraphicsPipeline::new(
-                    Arc::clone(&device),
-                    &wgsl,
-                    &reflection,
-                    render_pass_format.unwrap_or(TextureFormat::Rgba8Unorm),
-                );
+                    let render_pass_format: Option<TextureFormat> =
+                        if let Some(format) = config.get_format_override() {
+                            format.into()
+                        } else {
+                            source.format.into()
+                        };
 
-                Ok(FilterPass {
-                    device: Arc::clone(&device),
-                    reflection,
-                    uniform_storage,
-                    uniform_bindings,
-                    source,
-                    config,
-                    graphics_pipeline,
+                    let graphics_pipeline = WgpuGraphicsPipeline::new(
+                        Arc::clone(&device),
+                        &wgsl,
+                        &reflection,
+                        render_pass_format.unwrap_or(TextureFormat::Rgba8Unorm),
+                    );
+
+                    Ok(FilterPass {
+                        device: Arc::clone(&device),
+                        reflection,
+                        uniform_storage,
+                        uniform_bindings,
+                        source,
+                        config,
+                        graphics_pipeline,
+                    })
                 })
-            })
-            .collect();
+                .collect();
+            filters
+        });
+
         //
         let filters: error::Result<Vec<FilterPass>> = filters.into_iter().collect();
         let filters = filters?;
