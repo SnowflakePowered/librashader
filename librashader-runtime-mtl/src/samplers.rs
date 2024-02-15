@@ -3,10 +3,10 @@ use icrate::Metal::{
     MTLSamplerBorderColorTransparentBlack, MTLSamplerDescriptor, MTLSamplerMinMagFilter,
     MTLSamplerState,
 };
+use librashader_common::map::FastHashMap;
 use librashader_common::{FilterMode, WrapMode};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use librashader_common::map::FastHashMap;
 
 use crate::error::{FilterChainError, Result};
 

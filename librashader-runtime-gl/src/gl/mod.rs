@@ -10,13 +10,13 @@ use crate::texture::InputTexture;
 use bytemuck::{Pod, Zeroable};
 pub use framebuffer::GLFramebuffer;
 use gl::types::{GLenum, GLuint};
+use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, TextureConfig};
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::uniforms::UniformStorageAccess;
-use librashader_common::map::FastHashMap;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]

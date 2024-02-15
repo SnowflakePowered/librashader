@@ -1,7 +1,7 @@
 use crate::descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot, SamplerPaletteHeap};
 use crate::error;
-use librashader_common::{FilterMode, WrapMode};
 use librashader_common::map::FastHashMap;
+use librashader_common::{FilterMode, WrapMode};
 use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, D3D12_SAMPLER_DESC,

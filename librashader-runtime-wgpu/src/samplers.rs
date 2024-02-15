@@ -1,5 +1,5 @@
-use librashader_common::{FilterMode, WrapMode};
 use librashader_common::map::FastHashMap;
+use librashader_common::{FilterMode, WrapMode};
 use std::sync::Arc;
 use wgpu::{Sampler, SamplerBorderColor, SamplerDescriptor};
 

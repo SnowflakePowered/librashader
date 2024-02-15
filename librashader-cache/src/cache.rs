@@ -6,7 +6,7 @@ pub(crate) mod internal {
     use std::error::Error;
     use std::path::PathBuf;
 
-    use persy::{Config, Persy, ByteVec, ValueMode};
+    use persy::{ByteVec, Config, Persy, ValueMode};
 
     pub(crate) fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
         let cache_dir = if let Some(cache_dir) =
@@ -45,11 +45,15 @@ pub(crate) mod internal {
 
     pub(crate) fn get_cache() -> Result<Persy, Box<dyn Error>> {
         let cache_dir = get_cache_dir()?;
-        let conn = Persy::open_or_create_with(&cache_dir.join("librashader.db.1"), Config::new(), |persy| {
-            let tx = persy.begin()?;
-            tx.commit()?;
-            Ok(())
-        })?;
+        let conn = Persy::open_or_create_with(
+            &cache_dir.join("librashader.db.1"),
+            Config::new(),
+            |persy| {
+                let tx = persy.begin()?;
+                tx.commit()?;
+                Ok(())
+            },
+        )?;
         Ok(conn)
     }
 
@@ -59,14 +63,19 @@ pub(crate) mod internal {
         key: &[u8],
     ) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
         if !conn.exists_index(index)? {
-           return Ok(None);
+            return Ok(None);
         }
 
         let value = conn.get::<_, ByteVec>(index, &ByteVec::from(key))?.next();
         Ok(value.map(|v| v.to_vec()))
     }
 
-    pub(crate) fn set_blob(conn: &Persy, index: &str, key: &[u8], value: &[u8]) -> Result<(), Box<dyn Error>> {
+    pub(crate) fn set_blob(
+        conn: &Persy,
+        index: &str,
+        key: &[u8],
+        value: &[u8],
+    ) -> Result<(), Box<dyn Error>> {
         let mut tx = conn.begin()?;
         if !tx.exists_index(index)? {
             tx.create_index::<ByteVec, ByteVec>(index, ValueMode::Replace)?;

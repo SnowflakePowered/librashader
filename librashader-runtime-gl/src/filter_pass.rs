@@ -1,6 +1,7 @@
 use gl::types::{GLint, GLsizei, GLuint};
 use librashader_reflect::reflect::ShaderReflection;
 
+use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -8,7 +9,6 @@ use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, Unif
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::render_target::RenderTarget;
-use librashader_common::map::FastHashMap;
 
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;

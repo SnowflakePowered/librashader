@@ -1,4 +1,5 @@
 use crate::uniforms::{BindUniform, NoUniformBinder, UniformStorage};
+use librashader_common::map::FastHashMap;
 use librashader_common::Size;
 use librashader_preprocess::ShaderParameter;
 use librashader_reflect::reflect::semantics::{
@@ -6,7 +7,6 @@ use librashader_reflect::reflect::semantics::{
     UniformMeta, UniqueSemantics,
 };
 use std::ops::{Deref, DerefMut};
-use librashader_common::map::FastHashMap;
 
 /// Trait for input textures used during uniform binding,
 pub trait TextureInput {

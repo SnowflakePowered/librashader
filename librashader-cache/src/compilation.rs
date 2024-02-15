@@ -14,7 +14,9 @@ pub struct CachedCompilation<T> {
     compilation: T,
 }
 
-impl<T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> { type Compiler = T::Compiler; }
+impl<T: ShaderReflectObject> ShaderReflectObject for CachedCompilation<T> {
+    type Compiler = T::Compiler;
+}
 
 impl<T: ShaderReflectObject + for<'de> serde::Deserialize<'de> + serde::Serialize + Clone>
     ShaderInputCompiler<CachedCompilation<T>> for Glslang
@@ -39,7 +41,9 @@ where
         };
 
         let compilation = 'cached: {
-            if let Ok(Some(cached)) = crate::cache::internal::get_blob(&cache, "spirv", key.as_bytes()) {
+            if let Ok(Some(cached)) =
+                crate::cache::internal::get_blob(&cache, "spirv", key.as_bytes())
+            {
                 let decoded =
                     bincode::serde::decode_from_slice(&cached, bincode::config::standard())
                         .map(|(compilation, _)| CachedCompilation { compilation })
@@ -58,7 +62,9 @@ where
         if let Ok(updated) =
             bincode::serde::encode_to_vec(&compilation.compilation, bincode::config::standard())
         {
-            let Ok(()) = crate::cache::internal::set_blob(&cache, "spirv", key.as_bytes(), &updated) else {
+            let Ok(()) =
+                crate::cache::internal::set_blob(&cache, "spirv", key.as_bytes(), &updated)
+            else {
                 return Ok(compilation);
             };
         }

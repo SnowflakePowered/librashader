@@ -15,8 +15,8 @@ mod stage;
 
 use crate::include::read_source;
 pub use error::*;
-use librashader_common::ImageFormat;
 use librashader_common::map::FastHashMap;
+use librashader_common::ImageFormat;
 use std::path::Path;
 
 /// The source file for a single shader pass.
