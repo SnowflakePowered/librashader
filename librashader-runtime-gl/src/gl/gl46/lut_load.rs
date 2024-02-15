@@ -3,11 +3,11 @@ use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
 use crate::texture::InputTexture;
 use gl::types::{GLsizei, GLuint};
+use librashader_common::map::FastHashMap;
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
 use rayon::prelude::*;
-use librashader_common::map::FastHashMap;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {

@@ -10,12 +10,12 @@ use nom::IResult;
 use num_traits::cast::ToPrimitive;
 
 use crate::parse::token::do_lex;
+use librashader_common::map::FastHashMap;
 use librashader_common::{FilterMode, WrapMode};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use librashader_common::map::FastHashMap;
 
 use crate::context::{apply_context, WildcardContext};
 use crate::extract_if::MakeExtractIf;

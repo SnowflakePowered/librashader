@@ -6,6 +6,7 @@ use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::options::FrameOptionsWgpu;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
+use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -18,7 +19,6 @@ use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
-use librashader_common::map::FastHashMap;
 use std::sync::Arc;
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, BufferBinding, ShaderStages};
 

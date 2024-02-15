@@ -1,13 +1,11 @@
 use crate::ctypes::{
-    config_struct, libra_shader_preset_t, libra_viewport_t, libra_mtl_filter_chain_t, FromUninit,
+    config_struct, libra_mtl_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::mtl::{
-    FilterChain, FilterChainOptions, FrameOptions,
-};
+use librashader::runtime::mtl::{FilterChain, FilterChainOptions, FrameOptions};
+use std::ffi::c_char;
 use std::ffi::CStr;
-use std::ffi::{c_char};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
@@ -28,7 +26,6 @@ pub type PMTLCommandBuffer = *const ProtocolObject<dyn MTLCommandBuffer>;
 
 /// An alias to a `id<MTLTexture>` protocol object pointer.
 pub type PMTLTexture = *const ProtocolObject<dyn MTLTexture>;
-
 
 /// Options for each Metal shader frame.
 #[repr(C)]

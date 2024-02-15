@@ -7,6 +7,7 @@ use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use crate::{error, VulkanImage};
 use ash::vk;
+use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -19,7 +20,6 @@ use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
-use librashader_common::map::FastHashMap;
 use std::sync::Arc;
 
 pub struct FilterPass {

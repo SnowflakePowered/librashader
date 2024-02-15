@@ -1,7 +1,8 @@
+use librashader_common::map::FastHashMap;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::WGSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::{SpirvCompilation};
+use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
@@ -11,7 +12,6 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
-use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 use std::path::Path;
 

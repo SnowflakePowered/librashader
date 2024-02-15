@@ -1,7 +1,7 @@
 use crate::error;
 use ash::vk;
-use librashader_common::{FilterMode, WrapMode};
 use librashader_common::map::FastHashMap;
+use librashader_common::{FilterMode, WrapMode};
 use std::sync::Arc;
 
 pub struct VulkanSampler {

@@ -4,13 +4,13 @@
 //!
 //! Implements wildcard replacement of shader paths specified in
 //! [RetroArch#15023](https://github.com/libretro/RetroArch/pull/15023).
+use librashader_common::map::FastHashMap;
 use once_cell::sync::Lazy;
 use regex::bytes::Regex;
 use std::collections::VecDeque;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::path::{Component, Path, PathBuf};
-use librashader_common::map::FastHashMap;
 
 /// Valid video driver or runtime. This list is non-exhaustive.
 #[repr(u32)]

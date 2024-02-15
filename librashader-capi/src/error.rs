@@ -192,7 +192,7 @@ impl LibrashaderError {
             #[cfg(feature = "runtime-vulkan")]
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
-            LibrashaderError::MetalFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR
+            LibrashaderError::MetalFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
         }
     }
     pub(crate) const fn ok() -> libra_error_t {

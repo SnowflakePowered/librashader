@@ -16,10 +16,11 @@ use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::glsl::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
-use librashader_reflect::front::{SpirvCompilation};
+use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
 use librashader_cache::CachedCompilation;
+use librashader_common::map::FastHashMap;
 use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
@@ -27,7 +28,6 @@ use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
-use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 
 #[rustfmt::skip]

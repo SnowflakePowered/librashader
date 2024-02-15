@@ -1,6 +1,7 @@
 use crate::draw_quad::MetalVertex;
 use crate::error::{FilterChainError, Result};
 use crate::select_optimal_pixel_format;
+use bytemuck::offset_of;
 use icrate::Foundation::NSString;
 use icrate::Metal::{
     MTLBlendFactorOneMinusSourceAlpha, MTLBlendFactorSourceAlpha, MTLCommandBuffer,
@@ -16,7 +17,6 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_runtime::render_target::RenderTarget;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
-use bytemuck::offset_of;
 
 /// This is only really plausible for SPIRV-Cross, for Naga we need to supply the next plausible binding.
 pub const VERTEX_BUFFER_INDEX: usize = 4;

@@ -1,6 +1,6 @@
 use gl::types::{GLenum, GLint, GLuint};
-use librashader_common::{FilterMode, WrapMode};
 use librashader_common::map::FastHashMap;
+use librashader_common::{FilterMode, WrapMode};
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.

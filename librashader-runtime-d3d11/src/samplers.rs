@@ -1,6 +1,6 @@
 use crate::error::{assume_d3d11_init, Result};
-use librashader_common::{FilterMode, WrapMode};
 use librashader_common::map::FastHashMap;
+use librashader_common::{FilterMode, WrapMode};
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Device, ID3D11SamplerState, D3D11_COMPARISON_NEVER, D3D11_FLOAT32_MAX,
     D3D11_SAMPLER_DESC, D3D11_TEXTURE_ADDRESS_MODE,

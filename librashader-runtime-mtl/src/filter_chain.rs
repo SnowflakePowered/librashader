@@ -14,6 +14,7 @@ use icrate::Metal::{
     MTLPixelFormat, MTLPixelFormatRGBA8Unorm, MTLRenderPassDescriptor, MTLResource,
     MTLStoreActionDontCare, MTLStoreActionStore, MTLTexture,
 };
+use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -35,7 +36,6 @@ use librashader_runtime::uniforms::UniformStorage;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use rayon::prelude::*;
-use librashader_common::map::FastHashMap;
 use std::collections::VecDeque;
 use std::fmt::{Debug, Formatter};
 use std::path::Path;

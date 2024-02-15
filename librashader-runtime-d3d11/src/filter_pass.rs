@@ -2,6 +2,7 @@ use crate::filter_chain::FilterCommon;
 use crate::options::FrameOptionsD3D11;
 use crate::texture::InputTexture;
 
+use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -9,7 +10,6 @@ use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_common::map::FastHashMap;
 
 use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;

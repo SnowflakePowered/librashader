@@ -5,9 +5,9 @@ use crate::front::{ShaderInputCompiler, ShaderReflectObject};
 use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
+use librashader_common::map::FastHashMap;
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{ShaderPassConfig, TextureConfig};
-use librashader_common::map::FastHashMap;
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
