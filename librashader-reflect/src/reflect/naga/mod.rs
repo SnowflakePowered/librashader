@@ -1,17 +1,21 @@
 mod lower_samplers;
 pub mod msl;
 pub mod spirv;
+mod trim_unused_inputs;
 pub mod wgsl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
+use bitflags::Flags;
 
 use crate::front::SpirvCompilation;
+use naga::valid::{Capabilities, ModuleInfo, ValidationFlags, Validator};
 use naga::{
-    AddressSpace, Binding, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar,
-    ScalarKind, TypeInner, VectorSize,
+    AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding,
+    Scalar, ScalarKind, StructMember, TypeInner, VectorSize,
 };
 use rspirv::binary::Assemble;
 use rspirv::dr::Builder;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
@@ -602,6 +606,41 @@ impl NagaReflect {
         Ok(())
     }
 
+    fn collect_uniform_names(
+        module: &Module,
+        buffer_handle: Handle<GlobalVariable>,
+        blame: SemanticErrorBlame,
+    ) -> Result<FxHashSet<&StructMember>, ShaderReflectError> {
+        let mut names = FxHashSet::default();
+        let ubo = &module.global_variables[buffer_handle];
+
+        let TypeInner::Struct { members, .. } = &module.types[ubo.ty].inner else {
+            return Err(blame.error(SemanticsErrorKind::InvalidResourceType));
+        };
+
+        // struct access is AccessIndex
+        for (_, fun) in module.functions.iter() {
+            for (_, expr) in fun.expressions.iter() {
+                let &Expression::AccessIndex { base, index } = expr else {
+                    continue;
+                };
+
+                let &Expression::GlobalVariable(base) = &fun.expressions[base] else {
+                    continue;
+                };
+
+                if base == buffer_handle {
+                    let member = members
+                        .get(index as usize)
+                        .ok_or(blame.error(SemanticsErrorKind::InvalidRange(index)))?;
+                    names.insert(member);
+                }
+            }
+        }
+
+        Ok(names)
+    }
+
     fn reflect_buffer_struct_members(
         module: &Module,
         resource: Handle<GlobalVariable>,
@@ -611,7 +650,10 @@ impl NagaReflect {
         offset_type: UniformMemberBlock,
         blame: SemanticErrorBlame,
     ) -> Result<(), ShaderReflectError> {
+        let reachable = Self::collect_uniform_names(&module, resource, blame)?;
+
         let resource = &module.global_variables[resource];
+
         let TypeInner::Struct { members, .. } = &module.types[resource.ty].inner else {
             return Err(blame.error(SemanticsErrorKind::InvalidResourceType));
         };
@@ -620,6 +662,11 @@ impl NagaReflect {
             let Some(name) = member.name.clone() else {
                 return Err(blame.error(SemanticsErrorKind::InvalidRange(member.offset)));
             };
+
+            if !reachable.contains(member) {
+                continue;
+            }
+
             let member_type = &module.types[member.ty].inner;
 
             if let Some(parameter) = semantics.uniform_semantics.get_unique_semantic(&name) {
@@ -884,7 +931,6 @@ impl ReflectShader for NagaReflect {
             });
 
         let push_constant = self.reflect_push_constant_buffer(vertex_push, fragment_push)?;
-
         let mut meta = BindingMeta::default();
 
         if let Some(ubo) = vertex_ubo {
@@ -965,6 +1011,10 @@ impl ReflectShader for NagaReflect {
 
 #[cfg(test)]
 mod test {
+    use crate::reflect::semantics::{Semantic, TextureSemantics, UniformSemantic};
+    use librashader_common::map::FastHashMap;
+    use librashader_preprocess::ShaderSource;
+    use librashader_presets::ShaderPreset;
 
     // #[test]
     // pub fn test_into() {
@@ -982,5 +1032,20 @@ mod test {
     //         .collect();
     //
     //     println!("{outputs:#?}");
+    // }
+
+    // #[test]
+    // pub fn mega_bezel_reflect() {
+    //     let preset = ShaderPreset::try_parse(
+    //         "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+    //     )
+    //         .unwrap();
+    //
+    //     let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
+    //     let mut texture_semantics: FastHashMap<String, Semantic<TextureSemantics>> = Default::default();
+    //
+    //
+    //
+    //
     // }
 }
