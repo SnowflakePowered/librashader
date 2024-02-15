@@ -1524,6 +1524,7 @@ name = "librashader"
 version = "0.2.0-rc.2"
 dependencies = [
  "ash",
+ "halfbrown",
  "icrate 0.1.0",
  "librashader-cache",
  "librashader-common 0.2.0-rc.2",

@@ -26,6 +26,7 @@ librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.2.0-
 librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.2.0-rc.2", optional = true }
 
 ash = { version = "0.37", optional = true }
+halfbrown = "0.2.4"
 
 [target.'cfg(not(all(target_vendor="apple", docsrs)))'.dependencies]
 wgpu = { version = "0.19", default-features = false, optional = true }
