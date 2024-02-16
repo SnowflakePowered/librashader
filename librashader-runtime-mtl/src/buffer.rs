@@ -24,13 +24,18 @@ impl AsRef<ProtocolObject<dyn MTLBuffer>> for MetalBuffer {
 impl MetalBuffer {
     pub fn new(
         device: &ProtocolObject<dyn MTLDevice>,
-        size: usize,
+        mut size: usize,
         label: &str,
     ) -> error::Result<Self> {
         let storage_mode = if cfg!(all(target_arch = "aarch64", target_vendor = "apple")) {
             MTLResourceStorageModeShared
         } else {
             MTLResourceStorageModeManaged
+        };
+
+        // Can't create buffer of size 0.
+        if size == 0 {
+            size = 16;
         };
 
         let buffer = device
