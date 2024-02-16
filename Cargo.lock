@@ -1548,6 +1548,7 @@ dependencies = [
  "objc2 0.5.0",
  "paste",
  "rustc-hash",
+ "sptr",
  "thiserror",
  "windows 0.48.0",
 ]
