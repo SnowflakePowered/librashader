@@ -133,7 +133,10 @@ impl OwnedTexture {
         unsafe {
             encoder.copyFromTexture_toTexture(other, &self.texture);
         }
-        encoder.generateMipmapsForTexture(&self.texture);
+
+        if self.texture.mipmapLevelCount() > 1 {
+            encoder.generateMipmapsForTexture(&self.texture);
+        }
 
         Ok(())
     }
@@ -142,7 +145,9 @@ impl OwnedTexture {
         let mipmapper = cmd
             .blitCommandEncoder()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
-        mipmapper.generateMipmapsForTexture(&self.texture);
+        if self.texture.mipmapLevelCount() > 1 {
+            mipmapper.generateMipmapsForTexture(&self.texture);
+        }
         mipmapper.endEncoding();
         Ok(())
     }

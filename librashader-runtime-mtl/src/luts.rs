@@ -79,7 +79,7 @@ impl LutTexture {
             )
         }
 
-        if config.mipmap {
+        if config.mipmap && texture.mipmapLevelCount() > 1 {
             mipmapper.generateMipmapsForTexture(&texture);
         }
 
