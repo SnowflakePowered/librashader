@@ -206,12 +206,12 @@ impl LibrashaderError {
 
 macro_rules! assert_non_null {
     ($value:ident) => {
-        if $value.is_null() || !$value.is_aligned() {
+        if $value.is_null() || !$crate::ffi::ptr_is_aligned($value) {
             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
     };
     (noexport $value:ident) => {
-        if $value.is_null() || !$value.is_aligned() {
+        if $value.is_null() || !$crate::ffi::ptr_is_aligned($value) {
             return Err($crate::error::LibrashaderError::InvalidParameter(
                 stringify!($value),
             ));

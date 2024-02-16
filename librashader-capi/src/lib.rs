@@ -65,10 +65,10 @@
 
 #![allow(non_camel_case_types)]
 #![feature(try_blocks)]
-#![feature(pointer_is_aligned)]
-#![feature(vec_into_raw_parts)]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![deny(deprecated)]
+
+extern crate alloc;
 
 pub mod ctypes;
 pub mod error;
