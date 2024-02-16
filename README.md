@@ -217,6 +217,15 @@ The `SONAME` of `librashader.so` when installed via package manager is set to `L
 The above does not apply to releases of librashader prior to `0.1.0`, which were allowed to break API and ABI compatibility
 in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VERSION` or `LIBRASHADER_CURRENT_ABI`.
 
+### MSRV Policy
+
+While librashader requires nightly Rust, the following MSRV policy is enforced for unstable library features.
+
+* Windows and macOS: **latest** nightly
+* Linux: **1.70**
+
+A CI job runs weekly to ensure librashader continues to build on nightly. Note that the MSRV is only intended to ease distribution on Linux and is allowed to change any time. It generally tracks the latest version of Rust available in the latest version of Ubuntu, but this may change with no warning in a patch release.
+
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
 the reflection library, and the runtimes, are all licensed under the Mozilla Public License version 2.0.
