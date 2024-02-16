@@ -264,16 +264,11 @@ impl FilterChainWgpu {
         semantics: &ShaderSemantics,
     ) -> error::Result<Box<[FilterPass]>> {
         #[cfg(not(target_arch = "wasm32"))]
-        let passes_iter = passes.into_par_iter();
-        #[cfg(target_arch = "wasm32")]
-        let passes_iter = passes.into_iter();
+        let filter_creation_fn = || {
+            let passes_iter = passes.into_par_iter();
+            #[cfg(target_arch = "wasm32")]
+            let passes_iter = passes.into_iter();
 
-        let thread_pool = ThreadPoolBuilder::new()
-            .stack_size(10 * 1048576)
-            .build()
-            .unwrap();
-
-        let filters = thread_pool.install(|| {
             let filters: Vec<error::Result<FilterPass>> = passes_iter
                 .enumerate()
                 .map(|(index, (config, source, mut reflect))| {
@@ -333,9 +328,22 @@ impl FilterChainWgpu {
                 })
                 .collect();
             filters
-        });
+        };
 
-        //
+        #[cfg(target_arch = "wasm32")]
+        let filters = filter_creation_fn();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let filters = if let Ok(thread_pool) = ThreadPoolBuilder::new()
+            // naga compilations can possibly use degenerate stack sizes.
+            .stack_size(10 * 1048576)
+            .build()
+        {
+            thread_pool.install(|| filter_creation_fn())
+        } else {
+            filter_creation_fn()
+        };
+
         let filters: error::Result<Vec<FilterPass>> = filters.into_iter().collect();
         let filters = filters?;
         Ok(filters.into_boxed_slice())
