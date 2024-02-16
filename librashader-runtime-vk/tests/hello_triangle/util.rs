@@ -1,9 +1,9 @@
 use ash::vk;
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
 
+use gpu_allocator::AllocationSizes;
 use parking_lot::RwLock;
 use std::sync::Arc;
-use gpu_allocator::AllocationSizes;
 
 #[inline(always)]
 pub unsafe fn vulkan_image_layout_transition_levels(
@@ -57,7 +57,7 @@ pub fn create_allocator(
         physical_device,
         debug_settings: Default::default(),
         buffer_device_address: false,
-        allocation_sizes: AllocationSizes::default()
+        allocation_sizes: AllocationSizes::default(),
     })
     .unwrap();
     Arc::new(RwLock::new(alloc))

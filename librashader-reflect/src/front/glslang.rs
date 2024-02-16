@@ -1,5 +1,5 @@
 use crate::error::ShaderCompileError;
-use glslang::{CompilerOptions, ShaderInput, ShaderOptions};
+use glslang::{CompilerOptions, ShaderInput};
 use librashader_preprocess::ShaderSource;
 
 use crate::front::{ShaderInputCompiler, SpirvCompilation};

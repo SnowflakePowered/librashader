@@ -1,9 +1,9 @@
 use ash::vk;
 use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
 
+use gpu_allocator::AllocationSizes;
 use parking_lot::RwLock;
 use std::sync::Arc;
-use gpu_allocator::AllocationSizes;
 
 use crate::error;
 use crate::error::FilterChainError;
