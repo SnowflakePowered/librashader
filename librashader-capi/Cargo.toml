@@ -3,7 +3,7 @@ name = "librashader-capi"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.0-rc.2"
+version = "0.2.0-rc.3"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -40,7 +40,7 @@ sptr = "0.3.2"
 
 [dependencies.librashader]
 path = "../librashader"
-version = "0.2.0-rc.2"
+version = "0.2.0-rc.3"
 default-features = false
 features = ["presets", "preprocess"]
 
