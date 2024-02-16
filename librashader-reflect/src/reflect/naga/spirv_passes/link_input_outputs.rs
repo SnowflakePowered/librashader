@@ -1,12 +1,10 @@
 use rspirv::dr::{Builder, Module, Operand};
 use rustc_hash::{FxHashMap, FxHashSet};
-use spirv::{Op, StorageClass};
+use spirv::{Decoration, Op, StorageClass};
 
 pub struct LinkInputs<'a> {
     pub frag_builder: &'a mut Builder,
-    pub vert: &'a Module,
-
-    pub inputs: FxHashMap<spirv::Word, spirv::Word>,
+    pub inputs: FxHashSet<spirv::Word>,
 }
 
 impl<'a> LinkInputs<'a> {
@@ -16,37 +14,62 @@ impl<'a> LinkInputs<'a> {
                 return None;
             }
 
-            eprintln!("{:?}", op);
-            return None;
+            let Some(Operand::Decoration(Decoration::Location)) = op.operands.get(1) else {
+                return None;
+            };
+
+            let Some(&Operand::IdRef(target)) = op.operands.get(0) else {
+                return None;
+            };
+
+            if target != id {
+                return None;
+            }
+
+            let Some(&Operand::LiteralBit32(binding)) = op.operands.get(2) else {
+                return None;
+            };
+            return Some(binding);
         })
     }
 
     pub fn new(vert: &'a Module, frag: &'a mut Builder) -> Self {
-        let mut inputs = FxHashMap::default();
-
+        let mut inputs = FxHashSet::default();
+        let mut bindings = FxHashMap::default();
         for global in frag.module_ref().types_global_values.iter() {
             if global.class.opcode == spirv::Op::Variable
                 && global.operands[0] == Operand::StorageClass(StorageClass::Input)
             {
                 if let Some(id) = global.result_id {
-                    inputs.insert(id, 0);
+                    let Some(location) = Self::find_location(frag.module_ref(), id) else {
+                        continue;
+                    };
+
+                    inputs.insert(id);
+                    bindings.insert(location, id);
                 }
             }
         }
 
-        // for global in vert.types_global_values.iter() {
-        //     if global.class.opcode == spirv::Op::Variable
-        //         && global.operands[0] == Operand::StorageClass(StorageClass::Output)
-        //     {
-        //         if let Some(id) = global.result_id {
-        //             inputs.insert(id, 0);
-        //         }
-        //     }
-        // }
+        for global in vert.types_global_values.iter() {
+            if global.class.opcode == spirv::Op::Variable
+                && global.operands[0] == Operand::StorageClass(StorageClass::Output)
+            {
+                if let Some(id) = global.result_id {
+                    let Some(location) = Self::find_location(vert, id) else {
+                        continue;
+                    };
+                    if let Some(frag_ref) = bindings.get(&location) {
+                        // if something is bound to the same location in the vertex shader,
+                        // we're good.
+                        inputs.remove(&frag_ref);
+                    }
+                }
+            }
+        }
 
         let mut val = Self {
             frag_builder: frag,
-            vert,
             inputs,
         };
         val
@@ -60,7 +83,7 @@ impl<'a> LinkInputs<'a> {
             for param in &function.parameters {
                 for op in &param.operands {
                     if let Some(word) = op.id_ref_any() {
-                        if self.inputs.contains_key(&word) {
+                        if self.inputs.contains(&word) {
                             self.inputs.remove(&word);
                         }
                     }
@@ -71,7 +94,7 @@ impl<'a> LinkInputs<'a> {
                 for inst in &block.instructions {
                     for op in &inst.operands {
                         if let Some(word) = op.id_ref_any() {
-                            if self.inputs.contains_key(&word) {
+                            if self.inputs.contains(&word) {
                                 self.inputs.remove(&word);
                             }
                         }
@@ -85,7 +108,7 @@ impl<'a> LinkInputs<'a> {
         self.frag_builder.module_mut().debug_names.retain(|instr| {
             for op in &instr.operands {
                 if let Some(word) = op.id_ref_any() {
-                    if self.inputs.contains_key(&word) {
+                    if self.inputs.contains(&word) {
                         return false;
                     }
                 }
@@ -96,7 +119,7 @@ impl<'a> LinkInputs<'a> {
         self.frag_builder.module_mut().annotations.retain(|instr| {
             for op in &instr.operands {
                 if let Some(word) = op.id_ref_any() {
-                    if self.inputs.contains_key(&word) {
+                    if self.inputs.contains(&word) {
                         return false;
                     }
                 }
@@ -107,7 +130,7 @@ impl<'a> LinkInputs<'a> {
         for entry_point in self.frag_builder.module_mut().entry_points.iter_mut() {
             entry_point.operands.retain(|op| {
                 if let Some(word) = op.id_ref_any() {
-                    if self.inputs.contains_key(&word) {
+                    if self.inputs.contains(&word) {
                         return false;
                     }
                 }
@@ -123,7 +146,7 @@ impl<'a> LinkInputs<'a> {
                     return true;
                 };
 
-                !self.inputs.contains_key(&id)
+                !self.inputs.contains(&id)
             });
     }
 }

@@ -5,7 +5,7 @@ use crate::error::ShaderCompileError;
 use crate::reflect::naga::{NagaLoweringOptions, NagaReflect};
 use naga::back::wgsl::WriterFlags;
 use naga::valid::{Capabilities, ModuleInfo, ValidationFlags, Validator};
-use naga::{Expression, Module, Statement};
+use naga::Module;
 
 impl CompileShader<WGSL> for NagaReflect {
     type Options = NagaLoweringOptions;
