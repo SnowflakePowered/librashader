@@ -4,7 +4,6 @@ mod spirv_passes;
 pub mod wgsl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
-use bitflags::Flags;
 
 use crate::front::SpirvCompilation;
 use naga::{

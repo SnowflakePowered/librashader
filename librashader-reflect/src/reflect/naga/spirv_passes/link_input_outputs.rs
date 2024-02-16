@@ -68,11 +68,10 @@ impl<'a> LinkInputs<'a> {
             }
         }
 
-        let mut val = Self {
+        Self {
             frag_builder: frag,
             inputs,
-        };
-        val
+        }
     }
 
     pub fn do_pass(&mut self) {
