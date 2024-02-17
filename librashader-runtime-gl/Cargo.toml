@@ -24,7 +24,6 @@ gl = "0.14.0"
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
 rayon = "1.6.1"
-concat-arrays = "0.1.2"
 
 sptr = "0.3"
 
