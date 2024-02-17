@@ -258,7 +258,7 @@ impl WgpuGraphicsPipeline {
             output.y,
             output.output.size.width as f32,
             output.output.size.height as f32,
-            1.0,
+            0.0,
             1.0,
         );
 
