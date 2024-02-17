@@ -1,5 +1,5 @@
-use crate::gl::{FINAL_VBO_DATA, };
 use crate::gl::{DrawQuad, OpenGLVertex};
+use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use bytemuck::offset_of;
 use gl::types::{GLint, GLintptr, GLsizeiptr, GLuint};
 use librashader_runtime::quad::QuadType;
@@ -18,8 +18,8 @@ impl DrawQuad for Gl46DrawQuad {
             gl::CreateBuffers(2, vbo.as_mut_ptr());
             gl::NamedBufferData(
                 vbo[0],
-                std::mem::size_of_val(FINAL_VBO_DATA) as GLsizeiptr,
-                FINAL_VBO_DATA.as_ptr().cast(),
+                std::mem::size_of_val(OFFSCREEN_VBO_DATA) as GLsizeiptr,
+                OFFSCREEN_VBO_DATA.as_ptr().cast(),
                 gl::STATIC_DRAW,
             );
 
@@ -38,7 +38,7 @@ impl DrawQuad for Gl46DrawQuad {
             gl::VertexArrayAttribFormat(
                 vao,
                 0,
-                2,
+                4,
                 gl::FLOAT,
                 gl::FALSE,
                 offset_of!(OpenGLVertex, position) as GLuint,
@@ -62,7 +62,7 @@ impl DrawQuad for Gl46DrawQuad {
     fn bind_vertices(&self, quad_type: QuadType) {
         let buffer_index = match quad_type {
             QuadType::Offscreen => 0,
-            QuadType::Final => 1
+            QuadType::Final => 1,
         };
 
         unsafe {

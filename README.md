@@ -66,7 +66,7 @@ The Metal runtime is **not thread safe**. However you can still defer submission
 `filter_chain_create_deferred` function.
 
 ### Quad vertices and rotations
-All runtimes except OpenGL render with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
+All runtimes render with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
 Quad VBO with range `[0, 1]` and the following projection matrix by default.
 
 ```rust
@@ -159,10 +159,12 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * Sampler objects are used rather than `glTexParameter`.
   * Sampler inputs and outputs are not renamed. This is useful for debugging shaders in RenderDoc.
   * UBO and Push Constant Buffer sizes are padded to 16-byte boundaries.
+  * The OpenGL runtime uses the same VBOs as the other runtimes as well as the identity matrix MVP for intermediate passes. RetroArch's OpenGL driver uses only the final VBO.
 * OpenGL 4.6+
   * All caveats from the OpenGL 3.3+ section should be considered.
   * Should work on OpenGL 4.5 but this is not guaranteed. The OpenGL 4.6 runtime may eventually switch to using `ARB_spirv_extensions` for loading shaders, and this will not be marked as a breaking change.
   * The OpenGL 4.6 runtime uses Direct State Access to minimize changes to the OpenGL state. For GPUs released within the last 5 years, this may improve performance.
+  * The OpenGL runtime uses the same VBOs as the other runtimes as well as the identity matrix MVP for intermediate passes. RetroArch's OpenGL driver uses only the final VBO.
 * Vulkan
   * The Vulkan runtime can use [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html).
     This extension must be enabled at device creation. 
@@ -177,7 +179,7 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     This brings shader compatibility beyond what the RetroArch Direct3D 12 driver provides. The HLSL pipeline fallback may be removed in the future as `spirv-to-dxil` improves.
   * The Direct3D 12 runtime requires `dxil.dll` and `dxcompiler.dll` from the [DirectX Shader Compiler](https://github.com/microsoft/DirectXShaderCompiler).
 * Metal
-  * The Metal runtime uses the same VBOs as the other non-OpenGL runtimes as well as the identity matrix MVP for intermediate passes. RetroArch's Metal driver uses only the final VBO.
+  * The Metal runtime uses the same VBOs as the other runtimes as well as the identity matrix MVP for intermediate passes. RetroArch's Metal driver uses only the final VBO.
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.

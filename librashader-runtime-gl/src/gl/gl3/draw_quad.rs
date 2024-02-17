@@ -1,5 +1,5 @@
-use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use crate::gl::{DrawQuad, OpenGLVertex};
+use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use bytemuck::offset_of;
 use gl::types::{GLsizei, GLsizeiptr, GLuint};
 use librashader_runtime::quad::QuadType;
@@ -31,7 +31,6 @@ impl DrawQuad for Gl3DrawQuad {
                 gl::STATIC_DRAW,
             );
 
-
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::GenVertexArrays(1, &mut vao);
         }
@@ -42,7 +41,7 @@ impl DrawQuad for Gl3DrawQuad {
     fn bind_vertices(&self, quad_type: QuadType) {
         let buffer_index = match quad_type {
             QuadType::Offscreen => 0,
-            QuadType::Final => 1
+            QuadType::Final => 1,
         };
 
         unsafe {
@@ -57,7 +56,7 @@ impl DrawQuad for Gl3DrawQuad {
             // that are inexpressible in Rust
             gl::VertexAttribPointer(
                 0,
-                2,
+                4,
                 gl::FLOAT,
                 gl::FALSE,
                 std::mem::size_of::<OpenGLVertex>() as GLsizei,
@@ -69,7 +68,7 @@ impl DrawQuad for Gl3DrawQuad {
                 gl::FLOAT,
                 gl::FALSE,
                 std::mem::size_of::<OpenGLVertex>() as GLsizei,
-                sptr::invalid(offset_of!(OpenGLVertex, position)),
+                sptr::invalid(offset_of!(OpenGLVertex, texcoord)),
             );
         }
     }
