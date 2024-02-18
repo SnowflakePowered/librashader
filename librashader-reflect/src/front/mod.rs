@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 mod glslang;
 
+/// The output of a shader compiler that is reflectable.
 pub trait ShaderReflectObject: Sized {
     /// The compiler that produces this reflect object.
     type Compiler;
