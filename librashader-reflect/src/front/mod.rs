@@ -1,6 +1,7 @@
 use crate::error::ShaderCompileError;
 use librashader_preprocess::ShaderSource;
 use serde::{Deserialize, Serialize};
+pub(crate) mod spirv_passes;
 
 mod glslang;
 
