@@ -489,8 +489,7 @@ impl FilterChainD3D12 {
                     .into();
 
                     // incredibly cursed.
-                    let (reflection, graphics_pipeline) = if !force_hlsl
-                        && let Ok(graphics_pipeline) = D3D12GraphicsPipeline::new_from_dxil(
+                    let (reflection, graphics_pipeline) = if let Ok(graphics_pipeline) = D3D12GraphicsPipeline::new_from_dxil(
                             device,
                             library,
                             validator,
@@ -498,7 +497,7 @@ impl FilterChainD3D12 {
                             root_signature,
                             render_format,
                             disable_cache,
-                        ) {
+                        ) && !force_hlsl {
                         (dxil_reflection, graphics_pipeline)
                     } else {
                         let hlsl_reflection = hlsl.reflect(index, semantics)?;

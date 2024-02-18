@@ -36,7 +36,7 @@ matches = { version = "0.1.10", features = [] }
 rustc-hash = "1.1.0"
 
 [target.'cfg(windows)'.dependencies.spirv-to-dxil]
-version = "0.4"
+version = "0.4.7"
 optional = true
 
 [features]
