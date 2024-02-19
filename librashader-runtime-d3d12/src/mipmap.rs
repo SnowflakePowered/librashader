@@ -6,7 +6,9 @@ use librashader_common::Size;
 use librashader_runtime::scaling::MipmapSize;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
-use windows::Win32::Graphics::Direct3D::Dxc::{CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance};
+use windows::Win32::Graphics::Direct3D::Dxc::{
+    CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance,
+};
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12DescriptorHeap, ID3D12Device, ID3D12GraphicsCommandList, ID3D12PipelineState,
     ID3D12Resource, ID3D12RootSignature, D3D12_COMPUTE_PIPELINE_STATE_DESC,
@@ -94,8 +96,7 @@ impl D3D12MipmapGen {
             let library = DxcCreateInstance(&CLSID_DxcLibrary)?;
             let validator = DxcCreateInstance(&CLSID_DxcValidator)?;
 
-            let blob =
-                dxc_validate_shader(&library, &validator, GENERATE_MIPMAPS_CS)?;
+            let blob = dxc_validate_shader(&library, &validator, GENERATE_MIPMAPS_CS)?;
 
             let blob =
                 std::slice::from_raw_parts(blob.GetBufferPointer().cast(), blob.GetBufferSize());
