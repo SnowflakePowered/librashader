@@ -88,7 +88,7 @@ jobs:
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1.0.6
         with:
-          toolchain: nightly
+          toolchain: nightly-2024-01-15 # pinned because it seems like there's a segfault on nightly
           override: true
           target: aarch64-pc-windows-msvc
       - name: Build dynamic library
