@@ -75,3 +75,26 @@ jobs:
       with:
         name: ${{ format('librashader-aarch64-ubuntu-{0}-{1}', github.sha, matrix.profile) }}
         path: ${{ format('target/aarch64-unknown-linux-gnu/{0}/librashader.*', matrix.profile) }}
+  build-windows-arm64:
+    strategy:
+      matrix:
+        profile: ['debug', 'release', 'optimized']
+      fail-fast: false
+    runs-on: windows-latest
+    name: aarch64-windows
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: nightly
+          override: true
+          target: aarch64-pc-windows-msvc
+      - name: Build dynamic library
+        run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target aarch64-pc-windows-msvc
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ format('librashader-aarch64-windows-{0}-{1}', github.sha, matrix.profile) }}
+          path: ${{ format('target/aarch64-pc-windows-msvc/{0}/librashader.*', matrix.profile) }}
