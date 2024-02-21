@@ -141,9 +141,9 @@ pub mod reflect {
         pub use librashader_reflect::back::targets::DXIL;
         pub use librashader_reflect::back::targets::GLSL;
         pub use librashader_reflect::back::targets::HLSL;
+        pub use librashader_reflect::back::targets::MSL;
         pub use librashader_reflect::back::targets::SPIRV;
         pub use librashader_reflect::back::targets::WGSL;
-        pub use librashader_reflect::back::targets::MSL;
     }
 
     pub use librashader_reflect::error::*;

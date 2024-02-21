@@ -741,6 +741,7 @@ mod test {
 
     use crate::front::{Glslang, ShaderInputCompiler};
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
+    use librashader_common::map::FastHashMap;
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl;
     use spirv_cross::glsl::{CompilerOptions, Version};
@@ -748,7 +749,7 @@ mod test {
     #[test]
     pub fn test_into() {
         let result = ShaderSource::load("../test/basic.slang").unwrap();
-        let mut uniform_semantics: FxHashMap<String, UniformSemantic> = Default::default();
+        let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
 
         for (_index, param) in result.parameters.iter().enumerate() {
             uniform_semantics.insert(
