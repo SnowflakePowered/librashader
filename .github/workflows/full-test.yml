@@ -1,0 +1,35 @@
+name: integration test shader reflection
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  approve-full-test:
+    name: "approval"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve
+        run: echo Full test suite needs approval by a maintainer
+  test:
+    environment:
+      name: full-test
+    runs-on: windows-latest
+    needs: [approve-full-test]
+    continue-on-error: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: nightly
+          override: true
+      - name: Test
+        run: cargo test -p librashader --test reflect -- --nocapture
