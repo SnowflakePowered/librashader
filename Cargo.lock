@@ -1462,6 +1462,7 @@ name = "librashader"
 version = "0.2.2"
 dependencies = [
  "ash",
+ "glob",
  "halfbrown",
  "icrate 0.1.0",
  "librashader-cache",
@@ -1477,6 +1478,8 @@ dependencies = [
  "librashader-runtime-vk",
  "librashader-runtime-wgpu",
  "objc2 0.5.0",
+ "once_cell",
+ "rayon",
  "wgpu",
  "wgpu-types",
  "windows 0.48.0",
