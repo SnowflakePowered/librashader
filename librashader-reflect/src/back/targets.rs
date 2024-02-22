@@ -5,17 +5,22 @@ pub trait OutputTarget {
 }
 
 /// Shader compiler target for GLSL.
+#[derive(Debug)]
 pub struct GLSL;
 /// Shader compiler target for HLSL.
+#[derive(Debug)]
 pub struct HLSL;
 /// Shader compiler target for SPIR-V.
+#[derive(Debug)]
 pub struct SPIRV;
 /// Shader compiler target for MSL.
+#[derive(Debug)]
 pub struct MSL;
 /// Shader compiler target for DXIL.
 ///
 /// The resulting DXIL object is always unvalidated and
 /// must be validated using platform APIs before usage.
+#[derive(Debug)]
 pub struct DXIL;
 
 /// Shader compiler target for WGSL.

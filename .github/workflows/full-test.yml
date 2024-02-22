@@ -32,4 +32,4 @@ jobs:
           toolchain: nightly
           override: true
       - name: Test
-        run: cargo test -p librashader --test reflect -- --nocapture
+        run: cargo test -p librashader --features=github-ci --test reflect -- --nocapture

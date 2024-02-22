@@ -25,9 +25,18 @@ fn collect_all_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
         .into_par_iter()
         .filter_map(|entry| {
             if let Ok(path) = entry {
-                if let Ok(preset) = ShaderPreset::try_parse(&path) {
-                    println!("[INFO] Parsing preset {path:?}");
-                    return Some((path, preset));
+                match ShaderPreset::try_parse(&path) {
+                    Ok(preset) => {
+                        println!("[INFO] Parsing preset {path:?}");
+                        return Some((path, preset));
+                    }
+                    Err(e) => {
+                        #[cfg(feature = "github-ci")]
+                        println!(
+                            "::warning file={},title=Failed to parse preset::{e:?}",
+                            path.display()
+                        )
+                    }
                 }
             }
             return None;
@@ -62,28 +71,80 @@ pub fn preprocess_all_slang_presets_parsed() {
                     path.display(),
                     e
                 );
+
+                #[cfg(feature = "github-ci")]
+                println!(
+                    "::warning file={},title=Failed to preprocess shader::{e:?}",
+                    path.display()
+                )
             }
         })
     }
 }
 
-fn compile_presets<O: OutputTarget, R>()
+trait TypeDebug {
+    const DEBUG: &'static str;
+}
+
+impl TypeDebug for Naga {
+    const DEBUG: &'static str = "Naga";
+}
+
+impl TypeDebug for SpirvCross {
+    const DEBUG: &'static str = "SpirvCross";
+}
+
+impl TypeDebug for DXIL {
+    const DEBUG: &'static str = "DXIL";
+}
+
+impl TypeDebug for HLSL {
+    const DEBUG: &'static str = "HLSL";
+}
+
+impl TypeDebug for WGSL {
+    const DEBUG: &'static str = "WGSL";
+}
+
+impl TypeDebug for SPIRV {
+    const DEBUG: &'static str = "SPIRV";
+}
+
+impl TypeDebug for GLSL {
+    const DEBUG: &'static str = "GLSL";
+}
+
+impl TypeDebug for MSL {
+    const DEBUG: &'static str = "MSL";
+}
+
+fn compile_presets<O: OutputTarget, R: TypeDebug>()
 where
     O: Sized,
     O: FromCompilation<SpirvCompilation, R>,
+    O: TypeDebug,
 {
     let presets = ALL_SLANG_PRESETS.read().unwrap();
     presets.par_iter().for_each(|(path, preset)| {
         println!(
-            "[INFO] Compiling {path:?} into {} reflecting with {}",
-            std::any::type_name::<O>(),
-            std::any::type_name::<R>()
+            "[INFO] Compiling {} into {} reflecting with {}",
+            path.display(),
+            O::DEBUG,
+            R::DEBUG
         );
         if let Err(e) = O::compile_preset_passes::<SpirvCompilation, R, Box<dyn Error>>(
             preset.shaders.clone(),
             &preset.textures,
         ) {
             eprintln!("[ERROR] {:?} ({path:?})", e);
+
+            #[cfg(feature = "github-ci")]
+            println!(
+                "::warning file={},title=Failed to reflect {} with {}::{e}",
+                path.display(),
+                O::DEBUG,
+                R::DEBUG
+            )
         }
     });
 }
