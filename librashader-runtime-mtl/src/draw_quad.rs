@@ -1,10 +1,9 @@
 use array_concat::concat_arrays;
-use bytemuck::{Pod, Zeroable};
 use icrate::Metal::{
     MTLBuffer, MTLDevice, MTLPrimitiveTypeTriangleStrip, MTLRenderCommandEncoder,
     MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
 };
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use std::ffi::c_void;
@@ -13,52 +12,45 @@ use std::ptr::NonNull;
 use crate::error::{FilterChainError, Result};
 use crate::graphics_pipeline::VERTEX_BUFFER_INDEX;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
-pub(crate) struct MetalVertex {
-    pub position: [f32; 4],
-    pub texcoord: [f32; 2],
-}
-
-const OFFSCREEN_VBO_DATA: [MetalVertex; 4] = [
-    MetalVertex {
+const OFFSCREEN_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
         position: [-1.0, -1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    MetalVertex {
+    VertexInput {
         position: [-1.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    MetalVertex {
+    VertexInput {
         position: [1.0, -1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
-    MetalVertex {
+    VertexInput {
         position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
 ];
 
-const FINAL_VBO_DATA: [MetalVertex; 4] = [
-    MetalVertex {
+const FINAL_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
         position: [0.0, 0.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    MetalVertex {
+    VertexInput {
         position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    MetalVertex {
+    VertexInput {
         position: [1.0, 0.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
-    MetalVertex {
+    VertexInput {
         position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
 ];
 
-const VBO_DATA: [MetalVertex; 8] = concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
+const VBO_DATA: [VertexInput; 8] = concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
     buffer: Id<ProtocolObject<dyn MTLBuffer>>,

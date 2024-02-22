@@ -1,3 +1,5 @@
+use bytemuck::{Pod, Zeroable};
+
 /// Different type of quad to render to depending on pass type
 pub enum QuadType {
     /// Offscreen, intermediate passes.
@@ -23,3 +25,13 @@ pub static DEFAULT_MVP: &[f32; 16] = &[
     0.0, 0.0, 0.0, 0.0,
     -1.0, -1.0, 0.0, 1.0,
 ];
+
+/// The vertex inputs to a slang shader
+///
+/// See [IO interface variables](https://github.com/libretro/slang-shaders?tab=readme-ov-file#io-interface-variables)
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
+pub struct VertexInput {
+    pub position: [f32; 4], // vec4 position
+    pub texcoord: [f32; 2], // vec2 texcoord;
+}

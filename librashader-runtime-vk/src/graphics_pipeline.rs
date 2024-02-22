@@ -5,14 +5,15 @@ use crate::error::FilterChainError;
 use crate::framebuffer::OutputImage;
 use crate::render_pass::VulkanRenderPass;
 use ash::vk::PushConstantRange;
+use bytemuck::offset_of;
 use librashader_cache::cache_pipeline;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_reflect::reflect::ShaderReflection;
+use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
 use std::sync::Arc;
-
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 pub struct PipelineDescriptors {
@@ -201,19 +202,19 @@ impl VulkanGraphicsPipeline {
                 location: 0,
                 binding: 0,
                 format: vk::Format::R32G32_SFLOAT,
-                offset: 0,
+                offset: offset_of!(VertexInput, position) as u32,
             },
             vk::VertexInputAttributeDescription {
                 location: 1,
                 binding: 0,
                 format: vk::Format::R32G32_SFLOAT,
-                offset: (2 * std::mem::size_of::<f32>()) as u32,
+                offset: offset_of!(VertexInput, texcoord) as u32,
             },
         ];
 
         let input_binding = vk::VertexInputBindingDescription::builder()
             .binding(0)
-            .stride(4 * std::mem::size_of::<f32>() as u32)
+            .stride(std::mem::size_of::<VertexInput>() as u32)
             .input_rate(vk::VertexInputRate::VERTEX);
 
         let input_binding = [*input_binding];

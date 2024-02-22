@@ -2,7 +2,7 @@ use crate::error;
 use crate::error::assume_d3d11_init;
 use array_concat::concat_arrays;
 use bytemuck::offset_of;
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 use windows::Win32::Graphics::Direct3D11::{
@@ -12,52 +12,45 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default)]
-struct D3D11Vertex {
-    position: [f32; 2],
-    texcoord: [f32; 2],
-}
-
-const OFFSCREEN_VBO_DATA: [D3D11Vertex; 4] = [
-    D3D11Vertex {
-        position: [-1.0, -1.0],
+const OFFSCREEN_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
+        position: [-1.0, -1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    D3D11Vertex {
-        position: [-1.0, 1.0],
+    VertexInput {
+        position: [-1.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    D3D11Vertex {
-        position: [1.0, -1.0],
+    VertexInput {
+        position: [1.0, -1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
-    D3D11Vertex {
-        position: [1.0, 1.0],
+    VertexInput {
+        position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
 ];
 
-const FINAL_VBO_DATA: [D3D11Vertex; 4] = [
-    D3D11Vertex {
-        position: [0.0, 0.0],
+const FINAL_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
+        position: [0.0, 0.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    D3D11Vertex {
-        position: [0.0, 1.0],
+    VertexInput {
+        position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    D3D11Vertex {
-        position: [1.0, 0.0],
+    VertexInput {
+        position: [1.0, 0.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
-    D3D11Vertex {
-        position: [1.0, 1.0],
+    VertexInput {
+        position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
 ];
 
-static VBO_DATA: &[D3D11Vertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
+static VBO_DATA: &[VertexInput; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub(crate) struct DrawQuad {
     stride: u32,
@@ -70,7 +63,7 @@ impl DrawQuad {
             let mut vbo = None;
             device.CreateBuffer(
                 &D3D11_BUFFER_DESC {
-                    ByteWidth: 2 * std::mem::size_of::<[D3D11Vertex; 4]>() as u32,
+                    ByteWidth: 2 * std::mem::size_of::<[VertexInput; 4]>() as u32,
                     Usage: D3D11_USAGE_IMMUTABLE,
                     BindFlags: D3D11_BIND_VERTEX_BUFFER,
                     CPUAccessFlags: Default::default(),
@@ -88,7 +81,7 @@ impl DrawQuad {
 
             Ok(DrawQuad {
                 vbo,
-                stride: std::mem::size_of::<D3D11Vertex>() as u32,
+                stride: std::mem::size_of::<VertexInput>() as u32,
             })
         }
     }
@@ -125,7 +118,7 @@ impl DrawQuad {
                 SemanticIndex: 0,
                 Format: DXGI_FORMAT_R32G32_FLOAT,
                 InputSlot: 0,
-                AlignedByteOffset: offset_of!(D3D11Vertex, position) as u32,
+                AlignedByteOffset: offset_of!(VertexInput, position) as u32,
                 InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
                 InstanceDataStepRate: 0,
             },
@@ -134,7 +127,7 @@ impl DrawQuad {
                 SemanticIndex: 1,
                 Format: DXGI_FORMAT_R32G32_FLOAT,
                 InputSlot: 0,
-                AlignedByteOffset: offset_of!(D3D11Vertex, texcoord) as u32,
+                AlignedByteOffset: offset_of!(VertexInput, texcoord) as u32,
                 InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
                 InstanceDataStepRate: 0,
             },

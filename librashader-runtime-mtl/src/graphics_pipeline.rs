@@ -1,4 +1,3 @@
-use crate::draw_quad::MetalVertex;
 use crate::error::{FilterChainError, Result};
 use crate::select_optimal_pixel_format;
 use bytemuck::offset_of;
@@ -14,7 +13,9 @@ use icrate::Metal::{
 };
 use librashader_reflect::back::msl::{CrossMslContext, NagaMslContext};
 use librashader_reflect::back::ShaderCompilerOutput;
+use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
+
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 
@@ -90,18 +91,18 @@ impl PipelineLayoutObjects {
         // hopefully metal fills in vertices otherwise we'll need to use the vec4 stuff.
         position.setFormat(MTLVertexFormatFloat4);
         position.setBufferIndex(VERTEX_BUFFER_INDEX);
-        position.setOffset(offset_of!(MetalVertex, position));
+        position.setOffset(offset_of!(VertexInput, position));
 
         texcoord.setFormat(MTLVertexFormatFloat2);
         texcoord.setBufferIndex(VERTEX_BUFFER_INDEX);
-        texcoord.setOffset(offset_of!(MetalVertex, texcoord));
+        texcoord.setOffset(offset_of!(VertexInput, texcoord));
 
         attributes.setObject_atIndexedSubscript(Some(&position), 0);
 
         attributes.setObject_atIndexedSubscript(Some(&texcoord), 1);
 
         binding.setStepFunction(MTLVertexStepFunctionPerVertex);
-        binding.setStride(std::mem::size_of::<MetalVertex>());
+        binding.setStride(std::mem::size_of::<VertexInput>());
         layouts.setObject_atIndexedSubscript(Some(&binding), VERTEX_BUFFER_INDEX);
 
         descriptor
