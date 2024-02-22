@@ -1,8 +1,8 @@
-use crate::gl::{DrawQuad, OpenGLVertex};
+use crate::gl::DrawQuad;
 use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use bytemuck::offset_of;
 use gl::types::{GLsizei, GLsizeiptr, GLuint};
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 pub struct Gl3DrawQuad {
     vbo: [GLuint; 2],
     vao: GLuint,
@@ -59,16 +59,16 @@ impl DrawQuad for Gl3DrawQuad {
                 4,
                 gl::FLOAT,
                 gl::FALSE,
-                std::mem::size_of::<OpenGLVertex>() as GLsizei,
-                sptr::invalid(offset_of!(OpenGLVertex, position)),
+                std::mem::size_of::<VertexInput>() as GLsizei,
+                sptr::invalid(offset_of!(VertexInput, position)),
             );
             gl::VertexAttribPointer(
                 1,
                 2,
                 gl::FLOAT,
                 gl::FALSE,
-                std::mem::size_of::<OpenGLVertex>() as GLsizei,
-                sptr::invalid(offset_of!(OpenGLVertex, texcoord)),
+                std::mem::size_of::<VertexInput>() as GLsizei,
+                sptr::invalid(offset_of!(VertexInput, texcoord)),
             );
         }
     }

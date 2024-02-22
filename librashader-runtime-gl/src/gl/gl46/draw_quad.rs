@@ -1,8 +1,8 @@
-use crate::gl::{DrawQuad, OpenGLVertex};
+use crate::gl::DrawQuad;
 use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use bytemuck::offset_of;
 use gl::types::{GLint, GLsizeiptr, GLuint};
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 
 pub struct Gl46DrawQuad {
     vbo: [GLuint; 2],
@@ -41,7 +41,7 @@ impl DrawQuad for Gl46DrawQuad {
                 4,
                 gl::FLOAT,
                 gl::FALSE,
-                offset_of!(OpenGLVertex, position) as GLuint,
+                offset_of!(VertexInput, position) as GLuint,
             );
             gl::VertexArrayAttribFormat(
                 vao,
@@ -49,7 +49,7 @@ impl DrawQuad for Gl46DrawQuad {
                 2,
                 gl::FLOAT,
                 gl::FALSE,
-                offset_of!(OpenGLVertex, texcoord) as GLuint,
+                offset_of!(VertexInput, texcoord) as GLuint,
             );
 
             gl::VertexArrayAttribBinding(vao, 0, 0);
@@ -71,7 +71,7 @@ impl DrawQuad for Gl46DrawQuad {
                 0,
                 self.vbo[buffer_index],
                 0,
-                std::mem::size_of::<OpenGLVertex>() as GLint,
+                std::mem::size_of::<VertexInput>() as GLint,
             );
 
             gl::BindVertexArray(self.vao);

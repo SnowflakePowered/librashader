@@ -2,59 +2,50 @@ use crate::error;
 use crate::memory::VulkanBuffer;
 use array_concat::concat_arrays;
 use ash::vk;
-use bytemuck::{Pod, Zeroable};
 use gpu_allocator::vulkan::Allocator;
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-// Vulkan does vertex expansion
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
-struct VulkanVertex {
-    position: [f32; 2],
-    texcoord: [f32; 2],
-}
-
-const OFFSCREEN_VBO_DATA: [VulkanVertex; 4] = [
-    VulkanVertex {
-        position: [-1.0, -1.0],
+const OFFSCREEN_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
+        position: [-1.0, -1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    VulkanVertex {
-        position: [-1.0, 1.0],
+    VertexInput {
+        position: [-1.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    VulkanVertex {
-        position: [1.0, -1.0],
+    VertexInput {
+        position: [1.0, -1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
-    VulkanVertex {
-        position: [1.0, 1.0],
+    VertexInput {
+        position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
 ];
 
-const FINAL_VBO_DATA: [VulkanVertex; 4] = [
-    VulkanVertex {
-        position: [0.0, 0.0],
+const FINAL_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
+        position: [0.0, 0.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    VulkanVertex {
-        position: [0.0, 1.0],
+    VertexInput {
+        position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    VulkanVertex {
-        position: [1.0, 0.0],
+    VertexInput {
+        position: [1.0, 0.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
-    VulkanVertex {
-        position: [1.0, 1.0],
+    VertexInput {
+        position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
 ];
 
-static VBO_DATA: &[VulkanVertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
+static VBO_DATA: &[VertexInput; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
     buffer: VulkanBuffer,
@@ -70,7 +61,7 @@ impl DrawQuad {
             device,
             allocator,
             vk::BufferUsageFlags::VERTEX_BUFFER,
-            std::mem::size_of::<[VulkanVertex; 8]>(),
+            std::mem::size_of::<[VertexInput; 8]>(),
         )?;
 
         {

@@ -1,10 +1,10 @@
-use crate::draw_quad::WgpuVertex;
 use crate::framebuffer::WgpuOutputView;
 use crate::util;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::render_target::RenderTarget;
+use librashader_runtime::quad::VertexInput;
 use std::borrow::Cow;
 use std::sync::Arc;
 use wgpu::{
@@ -153,18 +153,18 @@ impl PipelineLayoutObjects {
                     module: &self.vertex,
                     entry_point: &self.vertex_entry_name,
                     buffers: &[VertexBufferLayout {
-                        array_stride: std::mem::size_of::<WgpuVertex>() as wgpu::BufferAddress,
+                        array_stride: std::mem::size_of::<VertexInput>() as wgpu::BufferAddress,
                         step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &[
                             wgpu::VertexAttribute {
                                 format: wgpu::VertexFormat::Float32x4,
-                                offset: bytemuck::offset_of!(WgpuVertex, position)
+                                offset: bytemuck::offset_of!(VertexInput, position)
                                     as wgpu::BufferAddress,
                                 shader_location: 0,
                             },
                             wgpu::VertexAttribute {
                                 format: wgpu::VertexFormat::Float32x2,
-                                offset: bytemuck::offset_of!(WgpuVertex, texcoord)
+                                offset: bytemuck::offset_of!(VertexInput, texcoord)
                                     as wgpu::BufferAddress,
                                 shader_location: 1,
                             },

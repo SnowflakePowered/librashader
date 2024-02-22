@@ -1591,6 +1591,7 @@ dependencies = [
 name = "librashader-runtime"
 version = "0.2.2"
 dependencies = [
+ "array-concat",
  "bytemuck",
  "image",
  "librashader-common",

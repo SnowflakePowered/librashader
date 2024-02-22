@@ -7,7 +7,6 @@ use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
-use bytemuck::{Pod, Zeroable};
 pub use framebuffer::GLFramebuffer;
 use gl::types::{GLenum, GLuint};
 use librashader_common::map::FastHashMap;
@@ -16,50 +15,42 @@ use librashader_presets::{Scale2D, TextureConfig};
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 use librashader_runtime::uniforms::UniformStorageAccess;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
-
-pub(crate) struct OpenGLVertex {
-    pub position: [f32; 4],
-    pub texcoord: [f32; 2],
-}
-
-static OFFSCREEN_VBO_DATA: &[OpenGLVertex; 4] = &[
-    OpenGLVertex {
+static OFFSCREEN_VBO_DATA: &[VertexInput; 4] = &[
+    VertexInput {
         position: [-1.0, -1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    OpenGLVertex {
+    VertexInput {
         position: [1.0, -1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
-    OpenGLVertex {
+    VertexInput {
         position: [-1.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    OpenGLVertex {
+    VertexInput {
         position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
 ];
 
-static FINAL_VBO_DATA: &[OpenGLVertex; 4] = &[
-    OpenGLVertex {
+static FINAL_VBO_DATA: &[VertexInput; 4] = &[
+    VertexInput {
         position: [0.0, 0.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    OpenGLVertex {
+    VertexInput {
         position: [1.0, 0.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
-    OpenGLVertex {
+    VertexInput {
         position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    OpenGLVertex {
+    VertexInput {
         position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },

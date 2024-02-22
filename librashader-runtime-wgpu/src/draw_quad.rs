@@ -1,57 +1,47 @@
 use array_concat::concat_arrays;
-use bytemuck::{Pod, Zeroable};
-use librashader_runtime::quad::QuadType;
+use librashader_runtime::quad::{QuadType, VertexInput};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{Buffer, Device, RenderPass};
 
-// As per https://www.w3.org/TR/webgpu/#vertex-processing,
-// WGPU does vertex expansion
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default, Zeroable, Pod)]
-pub struct WgpuVertex {
-    pub position: [f32; 4],
-    pub texcoord: [f32; 2],
-}
-
-const OFFSCREEN_VBO_DATA: [WgpuVertex; 4] = [
-    WgpuVertex {
+const OFFSCREEN_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
         position: [-1.0, -1.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    WgpuVertex {
+    VertexInput {
         position: [-1.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    WgpuVertex {
+    VertexInput {
         position: [1.0, -1.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
-    WgpuVertex {
+    VertexInput {
         position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
 ];
 
-const FINAL_VBO_DATA: [WgpuVertex; 4] = [
-    WgpuVertex {
+const FINAL_VBO_DATA: [VertexInput; 4] = [
+    VertexInput {
         position: [0.0, 0.0, 0.0, 1.0],
         texcoord: [0.0, 0.0],
     },
-    WgpuVertex {
+    VertexInput {
         position: [0.0, 1.0, 0.0, 1.0],
         texcoord: [0.0, 1.0],
     },
-    WgpuVertex {
+    VertexInput {
         position: [1.0, 0.0, 0.0, 1.0],
         texcoord: [1.0, 0.0],
     },
-    WgpuVertex {
+    VertexInput {
         position: [1.0, 1.0, 0.0, 1.0],
         texcoord: [1.0, 1.0],
     },
 ];
 
-static VBO_DATA: &[WgpuVertex; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
+static VBO_DATA: &[VertexInput; 8] = &concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
     buffer: Buffer,
