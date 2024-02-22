@@ -16,31 +16,24 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R32G32_FLOAT;
 struct D3D12Vertex {
     position: [f32; 2],
     texcoord: [f32; 2],
-    color: [f32; 4],
 }
-
-const CLEAR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
 const OFFSCREEN_VBO_DATA: [D3D12Vertex; 4] = [
     D3D12Vertex {
         position: [-1.0, -1.0],
         texcoord: [0.0, 1.0],
-        color: CLEAR,
     },
     D3D12Vertex {
         position: [-1.0, 1.0],
         texcoord: [0.0, 0.0],
-        color: CLEAR,
     },
     D3D12Vertex {
         position: [1.0, -1.0],
         texcoord: [1.0, 1.0],
-        color: CLEAR,
     },
     D3D12Vertex {
         position: [1.0, 1.0],
         texcoord: [1.0, 0.0],
-        color: CLEAR,
     },
 ];
 
@@ -48,22 +41,18 @@ const FINAL_VBO_DATA: [D3D12Vertex; 4] = [
     D3D12Vertex {
         position: [0.0, 0.0],
         texcoord: [0.0, 1.0],
-        color: CLEAR,
     },
     D3D12Vertex {
         position: [0.0, 1.0],
         texcoord: [0.0, 0.0],
-        color: CLEAR,
     },
     D3D12Vertex {
         position: [1.0, 0.0],
         texcoord: [1.0, 1.0],
-        color: CLEAR,
     },
     D3D12Vertex {
         position: [1.0, 1.0],
         texcoord: [1.0, 0.0],
-        color: CLEAR,
     },
 ];
 
