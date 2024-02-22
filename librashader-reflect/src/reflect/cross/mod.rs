@@ -11,6 +11,7 @@ use crate::reflect::semantics::{
     MAX_BINDINGS_COUNT, MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{align_uniform_size, ReflectShader};
+use std::fmt::{Debug};
 use std::ops::Deref;
 
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
@@ -19,6 +20,7 @@ use spirv_cross::ErrorCode;
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 
 /// Reflect shaders under SPIRV-Cross semantics.
+#[derive(Debug)]
 pub struct SpirvCross;
 
 // This is "probably" OK.
