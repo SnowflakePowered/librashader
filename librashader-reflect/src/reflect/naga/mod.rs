@@ -3,6 +3,7 @@ pub mod spirv;
 pub mod wgsl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
+use std::fmt::{Debug};
 
 use crate::front::SpirvCompilation;
 use naga::{
@@ -27,8 +28,8 @@ use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
 ///
 /// The Naga reflector will lower combined image samplers to split,
 /// with the same bind point on descriptor group 1.
+#[derive(Debug)]
 pub struct Naga;
-
 #[derive(Debug)]
 pub(crate) struct NagaReflect {
     pub(crate) vertex: Module,
