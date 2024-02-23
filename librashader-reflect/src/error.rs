@@ -11,40 +11,40 @@ pub enum ShaderCompileError {
     NagaCompileError(Vec<naga::front::glsl::Error>),
 
     /// Compilation error from glslang.
-    #[error("glslang")]
+    #[error("error when compiling with glslang: {0}")]
     GlslangError(#[from] glslang::error::GlslangError),
 
     /// Error when initializing the glslang compiler.
-    #[error("glslang init")]
+    #[error("error when initializing glslang")]
     CompilerInitError,
 
     /// Error when transpiling from spirv-cross.
-    #[error("cross")]
+    #[error("spirv-cross error: {0:?}")]
     SpirvCrossCompileError(#[from] spirv_cross::ErrorCode),
 
     /// Error when transpiling from spirv-to-dxil
     #[cfg(all(target_os = "windows", feature = "dxil"))]
-    #[error("spirv-to-dxil")]
+    #[error("spirv-to-dxil error: {0:?}")]
     SpirvToDxilCompileError(#[from] spirv_to_dxil::SpirvToDxilError),
 
     /// Error when transpiling from naga
     #[cfg(all(feature = "wgsl", feature = "naga"))]
-    #[error("naga-wgsl")]
+    #[error("naga error when compiling wgsl: {0:?}")]
     NagaWgslError(#[from] naga::back::wgsl::Error),
 
     /// Error when transpiling from naga
     #[cfg(feature = "naga")]
-    #[error("naga-spv")]
+    #[error("naga error when compiling spirv: {0:?}")]
     NagaSpvError(#[from] naga::back::spv::Error),
 
     /// Error when transpiling from naga
     #[cfg(all(feature = "naga", feature = "msl"))]
-    #[error("naga-spv")]
+    #[error("naga error when compiling msl: {0:?}")]
     NagaMslError(#[from] naga::back::msl::Error),
 
     /// Error when transpiling from naga
     #[cfg(any(feature = "naga", feature = "wgsl"))]
-    #[error("naga-wgsl")]
+    #[error("naga validation error: {0}")]
     NagaValidationError(#[from] naga::WithSpan<naga::valid::ValidationError>),
 }
 
@@ -86,23 +86,23 @@ pub enum SemanticsErrorKind {
 #[derive(Error, Debug)]
 pub enum ShaderReflectError {
     /// Reflection error from spirv-cross.
-    #[error("spirv")]
+    #[error("spirv cross error: {0}")]
     SpirvCrossError(#[from] spirv_cross::ErrorCode),
     /// Error when validating vertex shader semantics.
-    #[error("error when verifying vertex semantics")]
+    #[error("error when verifying vertex semantics: {0:?}")]
     VertexSemanticError(SemanticsErrorKind),
     /// Error when validating fragment shader semantics.
-    #[error("error when verifying texture semantics")]
+    #[error("error when verifying texture semantics {0:?}")]
     FragmentSemanticError(SemanticsErrorKind),
     /// The vertex and fragment shader must have the same UBO binding location.
-    #[error("vertex and fragment shader must have same binding")]
+    #[error("vertex and fragment shader must have same UBO binding. declared {vertex} in vertex, got {fragment} in fragment")]
     MismatchedUniformBuffer { vertex: u32, fragment: u32 },
     /// The filter chain was found to be non causal. A pass tried to access the target output
     /// in the future.
-    #[error("filter chain is non causal")]
+    #[error("filter chain is non causal: tried to access target {target} in pass {pass}")]
     NonCausalFilterChain { pass: usize, target: usize },
     /// The offset of the given uniform did not match up in both the vertex and fragment shader.
-    #[error("mismatched offset")]
+    #[error("the offset of {semantic} was declared as {expected} but found as {received} in pass {pass}")]
     MismatchedOffset {
         semantic: String,
         expected: usize,
@@ -111,7 +111,7 @@ pub enum ShaderReflectError {
         pass: usize,
     },
     /// The size of the given uniform did not match up in both the vertex and fragment shader.
-    #[error("mismatched component")]
+    #[error("the size of {semantic} was found declared as {vertex} in vertex shader but found as {fragment} in fragment in pass {pass}")]
     MismatchedSize {
         semantic: String,
         vertex: u32,
@@ -119,15 +119,15 @@ pub enum ShaderReflectError {
         pass: usize,
     },
     /// The binding number is already in use.
-    #[error("the binding is already in use")]
+    #[error("binding {0} is already in use")]
     BindingInUse(u32),
     /// Error when transpiling from naga
     #[cfg(feature = "naga")]
-    #[error("naga-spv")]
+    #[error("naga spirv error: {0}")]
     NagaInputError(#[from] naga::front::spv::Error),
     /// Error when transpiling from naga
     #[cfg(feature = "naga")]
-    #[error("naga-spv")]
+    #[error("naga validation error: {0}")]
     NagaReflectError(#[from] naga::WithSpan<naga::valid::ValidationError>),
 }
 

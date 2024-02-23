@@ -3,7 +3,7 @@ pub mod spirv;
 pub mod wgsl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
-use std::fmt::{Debug};
+use std::fmt::Debug;
 
 use crate::front::SpirvCompilation;
 use naga::{
