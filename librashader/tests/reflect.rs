@@ -140,7 +140,7 @@ where
 
             #[cfg(feature = "github-ci")]
             println!(
-                "::warning file={},title=Failed to reflect {} with {}::{e}",
+                "::warning file={},title=Failed to reflect {} with {}::{e:?}",
                 path.display(),
                 O::DEBUG,
                 R::DEBUG
