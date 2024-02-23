@@ -1,8 +1,6 @@
 name: integration test shader reflection
 
 on:
-  push:
-    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 env:
@@ -14,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Approve
-        run: echo Full test suite needs approval by a maintainer
+        run: echo Full test suite for PRs needs approval by a maintainer
   test:
     environment:
       name: full-test
@@ -23,13 +21,12 @@ jobs:
     continue-on-error: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly
-          override: true
       - name: Test
         run: cargo test -p librashader --features=github-ci --test reflect -- --nocapture

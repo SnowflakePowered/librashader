@@ -27,13 +27,14 @@ fn collect_all_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
             if let Ok(path) = entry {
                 match ShaderPreset::try_parse(&path) {
                     Ok(preset) => {
+                        #[cfg(not(feature = "github-ci"))]
                         println!("[INFO] Parsing preset {path:?}");
                         return Some((path, preset));
                     }
                     Err(e) => {
                         #[cfg(feature = "github-ci")]
                         println!(
-                            "::warning file={},title=Failed to parse preset::{e:?}",
+                            "::warning title=Failed to parse preset::{e:?} ({})",
                             path.display()
                         )
                     }
@@ -65,6 +66,7 @@ pub fn preprocess_all_slang_presets_parsed() {
     for (path, preset) in presets {
         preset.shaders.into_par_iter().for_each(|shader| {
             if let Err(e) = ShaderSource::load(&shader.name) {
+                #[cfg(not(feature = "github-ci"))]
                 eprintln!(
                     "[ERROR] Failed to preprocess shader {} from preset {}: {:?}",
                     shader.name.display(),
@@ -74,7 +76,7 @@ pub fn preprocess_all_slang_presets_parsed() {
 
                 #[cfg(feature = "github-ci")]
                 println!(
-                    "::warning file={},title=Failed to preprocess shader::{e:?}",
+                    "::warning title=Failed to preprocess shader::{e:?}, ({})",
                     path.display()
                 )
             }
@@ -126,6 +128,7 @@ where
 {
     let presets = ALL_SLANG_PRESETS.read().unwrap();
     presets.par_iter().for_each(|(path, preset)| {
+        #[cfg(not(feature = "github-ci"))]
         println!(
             "[INFO] Compiling {} into {} reflecting with {}",
             path.display(),
@@ -136,14 +139,15 @@ where
             preset.shaders.clone(),
             &preset.textures,
         ) {
+            #[cfg(not(feature = "github-ci"))]
             eprintln!("[ERROR] {:?} ({path:?})", e);
 
             #[cfg(feature = "github-ci")]
             println!(
-                "::warning file={},title=Failed to reflect {} with {}::{e:?}",
-                path.display(),
+                "::warning title=Failed to reflect {} with {}::{e:?} ({})",
                 O::DEBUG,
-                R::DEBUG
+                R::DEBUG,
+                path.display()
             )
         }
     });

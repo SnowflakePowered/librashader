@@ -1,0 +1,24 @@
+name: integration test shader reflection
+
+on:
+  push:
+    branches: [ "master" ]
+  schedule:
+    - cron: "0 0 * * 6"
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  test:
+    runs-on: windows-latest
+    continue-on-error: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+      - name: Test
+        run: cargo test -p librashader --features=github-ci --test reflect -- --nocapture
