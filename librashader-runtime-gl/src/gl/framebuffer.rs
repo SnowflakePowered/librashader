@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use glow::HasContext;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
@@ -20,7 +20,7 @@ pub struct GLFramebuffer {
     pub(crate) max_levels: u32,
     pub(crate) mip_levels: u32,
     pub(crate) is_raw: bool,
-    pub(crate) ctx: Rc<glow::Context>
+    pub(crate) ctx: Arc<glow::Context>
 }
 
 impl GLFramebuffer {
@@ -28,7 +28,7 @@ impl GLFramebuffer {
     ///
     /// The framebuffer will not be deleted when this struct is dropped.
     pub fn new_from_raw(
-        ctx: Rc<glow::Context>,
+        ctx: Arc<glow::Context>,
         texture: Option<glow::Texture>,
         fbo: Option<glow::Framebuffer>,
         format: u32,

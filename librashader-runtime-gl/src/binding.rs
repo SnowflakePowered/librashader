@@ -1,5 +1,4 @@
 use glow::HasContext;
-use gl::types::GLint;
 use librashader_reflect::reflect::semantics::{BindingStage, UniformMemberBlock};
 use librashader_runtime::uniforms::{BindUniform, UniformScalar, UniformStorage};
 
