@@ -3,7 +3,6 @@ use crate::binding::UniformLocation;
 use crate::error::FilterChainError;
 use crate::gl::CompileProgram;
 use crate::util;
-use gl::types::{GLint, GLsizei, GLuint};
 use librashader_cache::Cacheable;
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
@@ -32,7 +31,7 @@ impl Cacheable for GlProgramBinary {
     }
 
     fn to_bytes(&self) -> Option<Vec<u8>> {
-        let Some(binary) = self.0 else {
+        let Some(binary) = &self.0 else {
             None
         };
 
@@ -47,7 +46,7 @@ impl CompileProgram for Gl4CompileProgram {
         context: &glow::Context,
         glsl: ShaderCompilerOutput<String, CrossGlslContext>,
         cache: bool,
-    ) -> crate::error::Result<(glow::Program, UniformLocation<Option<glow::UniformLocation>>)> {
+    ) -> crate::error::Result<(glow::Program, UniformLocation<Option<u32>>)> {
         unsafe fn compile_shader(context: &glow::Context, resources: &CrossGlslContext, vertex: &str, fragment: &str) -> crate::error::Result<glow::Program> {
             let vertex_resources = resources.artifact.vertex.get_shader_resources()?;;
             let vertex = util::gl_compile_shader(context, glow::VERTEX_SHADER, vertex)?;
@@ -109,16 +108,14 @@ impl CompileProgram for Gl4CompileProgram {
             for (name, binding) in &glsl.context.sampler_bindings {
                 let location = context.get_uniform_location(program, name.as_str());
                 if let Some(location) = location {
-                    gl::ProgramUniform1i(program, location, *binding as GLint);
+                    context.program_uniform_1_i32(program, Some(&location), *binding as i32);
                 }
             }
 
             UniformLocation {
-                vertex: context.get_uniform_block_index(program, "LIBRA_UBO_VERTEX")
-                    .and_then(|v| glow::UniformLocation::from(NativeUniformLocation(v))),
-                fragment: gl::GetUniformBlockIndex(
-                    program,
-                    b"LIBRA_UBO_FRAGMENT\0".as_ptr().cast(),
+                vertex: context.get_uniform_block_index(program, "LIBRA_UBO_VERTEX"),
+                fragment: context.get_uniform_block_index(
+                    program, "LIBRA_UBO_FRAGMENT",
                 ),
             }
         };

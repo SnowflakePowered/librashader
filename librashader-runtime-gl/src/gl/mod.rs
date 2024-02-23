@@ -3,12 +3,11 @@ pub(crate) mod gl3;
 pub(crate) mod gl46;
 
 use crate::binding::UniformLocation;
-use crate::error::Result;
+use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 pub use framebuffer::GLFramebuffer;
-use gl::types::{GLenum, GLuint};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, TextureConfig};
@@ -65,7 +64,7 @@ pub(crate) trait CompileProgram {
         context: &glow::Context,
         shader: ShaderCompilerOutput<String, CrossGlslContext>,
         cache: bool,
-    ) -> Result<(glow::Program, UniformLocation<Option<glow::UniformLocation>>)>;
+    ) -> Result<(glow::Program, UniformLocation<Option<u32>>)>;
 }
 
 pub(crate) trait DrawQuad {
@@ -75,11 +74,12 @@ pub(crate) trait DrawQuad {
 }
 
 pub(crate) trait UboRing<const SIZE: usize> {
-    fn new(buffer_size: u32) -> Self;
+    fn new(context: &glow::Context, buffer_size: u32) -> Result<Self, FilterChainError>;
     fn bind_for_frame(
         &mut self,
+        context: &glow::Context,
         ubo: &BufferReflection<u32>,
-        ubo_location: &UniformLocation<u32>,
+        ubo_location: &UniformLocation<Option<u32>>,
         storage: &impl UniformStorageAccess,
     );
 }

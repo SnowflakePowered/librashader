@@ -9,7 +9,6 @@ use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, GLImage};
-use gl::types::GLuint;
 use librashader_common::Viewport;
 
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -30,7 +29,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
-use glow::HasContext;
+use glow::{HasContext, NativeUniformLocation};
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -118,14 +117,15 @@ impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub(crate) unsafe fn load_from_preset(
         preset: ShaderPreset,
+        context: glow::Context,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
-        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(o.glsl_version));
+        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(&context, o.glsl_version));
 
         // initialize passes
-        let filters = Self::init_passes(version, passes, &semantics, disable_cache)?;
+        let filters = Self::init_passes(&context, version, passes, &semantics, disable_cache)?;
 
         let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
         let default_wrap = filters
@@ -133,7 +133,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .map(|f| f.config.wrap_mode)
             .unwrap_or_default();
 
-        let samplers = SamplerSet::new();
+        let samplers = SamplerSet::new(&context);
 
         // load luts
         let luts = T::LoadLut::load_luts(&preset.textures)?;
@@ -186,12 +186,14 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 output_textures,
                 feedback_textures,
                 history_textures,
+                context,
             },
             default_options: Default::default(),
         })
     }
 
     fn init_passes(
+        context: &glow::Context,
         version: GlslVersion,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
@@ -204,7 +206,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let reflection = reflect.reflect(index, semantics)?;
             let glsl = reflect.compile(version)?;
 
-            let (program, ubo_location) = T::CompileShader::compile_program(glsl, !disable_cache)?;
+            let (program, ubo_location) = T::CompileShader::compile_program(context, glsl, !disable_cache)?;
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
                 let ring = UboRing::new(ubo.size);
@@ -223,7 +225,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
             let uniform_bindings = reflection.meta.create_binding_map(|param| {
                 UniformOffset::new(
-                    Self::reflect_uniform_location(program, param),
+                    Self::reflect_uniform_location(&context, program, param),
                     param.offset(),
                 )
             });
