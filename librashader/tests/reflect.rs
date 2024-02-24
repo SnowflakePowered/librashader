@@ -18,7 +18,7 @@ use once_cell::sync::Lazy;
 static ALL_SLANG_PRESETS: Lazy<RwLock<Vec<(PathBuf, ShaderPreset)>>> =
     Lazy::new(|| RwLock::new(collect_all_loadable_slang_presets()));
 
-fn collect_all_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
+fn collect_all_slang_presets(collect_is_error: bool) -> Vec<(PathBuf, ShaderPreset)> {
     let presets = glob("../test/shaders_slang/**/*.slangp")
         .unwrap()
         .collect::<Vec<_>>()
@@ -32,11 +32,13 @@ fn collect_all_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
                         return Some((path, preset));
                     }
                     Err(e) => {
-                        #[cfg(feature = "github-ci")]
-                        println!(
-                            "::warning title=Failed to parse preset::{e:?} ({})",
-                            path.display()
-                        )
+                        if collect_is_error {
+                            #[cfg(feature = "github-ci")]
+                            println!(
+                                "::error title=Failed to parse preset::{e:?} ({})",
+                                path.display()
+                            )
+                        }
                     }
                 }
             }
@@ -48,7 +50,7 @@ fn collect_all_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
 }
 
 fn collect_all_loadable_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
-    let mut presets = collect_all_slang_presets();
+    let mut presets = collect_all_slang_presets(false);
     presets.retain(|(_, preset)| {
         !preset
             .shaders
@@ -61,7 +63,7 @@ fn collect_all_loadable_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
 
 #[test]
 pub fn preprocess_all_slang_presets_parsed() {
-    let presets = collect_all_slang_presets();
+    let presets = collect_all_slang_presets(true);
 
     for (path, preset) in presets {
         preset.shaders.into_par_iter().for_each(|shader| {
@@ -144,7 +146,7 @@ where
 
             #[cfg(feature = "github-ci")]
             println!(
-                "::warning title=Failed to reflect {} with {}::{e:?} ({})",
+                "::error title=Failed to reflect {} with {}::{e:?} ({})",
                 O::DEBUG,
                 R::DEBUG,
                 path.display()
