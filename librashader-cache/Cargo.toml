@@ -23,7 +23,7 @@ persy = "1.4.7"
 bytemuck = "1.13.0"
 
 [target.'cfg(windows)'.dependencies.windows]
-version = "0.48.0"
+workspace = true
 features = [
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D_Fxc",
