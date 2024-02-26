@@ -34,7 +34,7 @@ librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.
 wgpu-types = { version = "0.19", optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
-version = "0.48.0"
+workspace = true
 optional = true
 
 [target.'cfg(target_vendor="apple")'.dependencies]

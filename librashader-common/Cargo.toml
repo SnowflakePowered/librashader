@@ -31,7 +31,7 @@ halfbrown = "0.2.4"
 
 [target.'cfg(windows)'.dependencies.windows]
 optional = true
-version = "0.48.0"
+workspace = true
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi_Common",
