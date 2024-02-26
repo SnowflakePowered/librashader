@@ -1482,7 +1482,7 @@ dependencies = [
  "rayon",
  "wgpu",
  "wgpu-types",
- "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]
@@ -1506,7 +1506,7 @@ dependencies = [
  "platform-dirs",
  "serde",
  "thiserror",
- "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]
@@ -1523,7 +1523,7 @@ dependencies = [
  "rustc-hash",
  "sptr",
  "thiserror",
- "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]
@@ -1537,7 +1537,7 @@ dependencies = [
  "num-traits",
  "rustc-hash",
  "wgpu-types",
- "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]
@@ -1621,6 +1621,7 @@ dependencies = [
  "rayon",
  "thiserror",
  "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]
@@ -1644,6 +1645,7 @@ dependencies = [
  "thiserror",
  "widestring",
  "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]

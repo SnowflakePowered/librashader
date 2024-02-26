@@ -17,6 +17,9 @@ members = [
     "librashader-build-script"]
 resolver = "2"
 
+[workspace.dependencies]
+windows = "0.52.0"
+
 [workspace.metadata.release]
 
 [profile.optimized]
