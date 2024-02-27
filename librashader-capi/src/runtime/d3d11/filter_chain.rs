@@ -40,11 +40,20 @@ pub struct filter_chain_d3d11_opt_t {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+
+    /// Force the HLSL shader pipeline. This will force the usage of the slower,
+    /// Fxc shader compiler.
+    pub force_hlsl_pipeline: bool,
+
+    /// Force the SPIR-V to DXBC pipeline, disabling the HLSL pipeline.
+    /// If this is true, overrides `force_hlsl_pipeline`.
+    pub force_spirv_pipeline: bool,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d11_opt_t {
         0 => [force_no_mipmaps, disable_cache];
+        2 => [force_hlsl_pipeline, force_spirv_pipeline];
     }
 }
 

@@ -17,7 +17,10 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 ///     - Added rotation, total_subframes, current_subframes to frame options
 ///     - Added preset context API
 ///     - Added Metal runtime API
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 1;
+/// - API version 2: 0.3.0
+///     - Added spirv-to-dxbc options for Direct3D 11
+///     - Added force spirv-to-dxil options for Direct3D 12
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 2;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.
