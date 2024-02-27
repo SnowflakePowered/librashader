@@ -13,4 +13,10 @@ pub struct FilterChainOptionsD3D11 {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+    /// Force the HLSL shader pipeline. This will force the usage of the slower,
+    /// Fxc shader compiler.
+    pub force_hlsl_pipeline: bool,
+    /// Force the SPIR-V to DXBC pipeline, disabling the HLSL pipeline.
+    /// If this is true, overrides `force_hlsl_pipeline`.
+    pub force_spirv_pipeline: bool,
 }
