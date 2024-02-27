@@ -238,7 +238,7 @@ and are more a heads-up for integrating librashader into your project.
 
 ## Versioning
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader)
-![C ABI](https://img.shields.io/badge/ABI%20version-2-yellowgreen)
+![C ABI](https://img.shields.io/badge/ABI%20version-1-yellowgreen)
 ![C API](https://img.shields.io/badge/API%20version-2-blue)
 
 
@@ -249,8 +249,8 @@ number bump indicates a 'breaking change' during `0.x.y`, and a non-'breaking ch
 The C API is instead versioned separately with two monotonically increasing version numbers exported to the librashader
 C headers
 
-- [`LIBRASHADER_CURRENT_VERSION`](https://github.com/SnowflakePowered/librashader/blob/f8de1fa2ee75270e5655284edf39ea070d6ec6f5/librashader-capi/src/version.rs#L16) specifies the *API* version exported by the librashader implementation.
-- [`LIBRASHADER_CURRENT_ABI`](https://github.com/SnowflakePowered/librashader/blob/f8de1fa2ee75270e5655284edf39ea070d6ec6f5/librashader-capi/src/version.rs#L29) specifies the *ABI* version exported by the librashader implementation.
+- [`LIBRASHADER_CURRENT_VERSION`](https://github.com/SnowflakePowered/librashader/blob/8a9adebb96c50816e2a38565e3a0b968b84370dc/librashader-capi/src/version.rs#L20) specifies the *API* version exported by the librashader implementation.
+- [`LIBRASHADER_CURRENT_ABI`](https://github.com/SnowflakePowered/librashader/blob/8a9adebb96c50816e2a38565e3a0b968b84370dc/librashader-capi/src/version.rs#L33 specifies the *ABI* version exported by the librashader implementation.
 
 An increase in `LIBRASHADER_CURRENT_VERSION` is guaranteed to be **backwards compatible for the same `LIBRASHADER_CURRENT_ABI`**.
 It somewhat corresponds to a "minor" version in semantic versioning terminology, except that it is always monotonically increasing.
