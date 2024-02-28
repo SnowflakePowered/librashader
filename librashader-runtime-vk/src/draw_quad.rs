@@ -4,7 +4,7 @@ use array_concat::concat_arrays;
 use ash::vk;
 use gpu_allocator::vulkan::Allocator;
 use librashader_runtime::quad::{QuadType, VertexInput};
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use std::sync::Arc;
 
 const OFFSCREEN_VBO_DATA: [VertexInput; 4] = [
@@ -54,7 +54,7 @@ pub struct DrawQuad {
 impl DrawQuad {
     pub fn new(
         device: &Arc<ash::Device>,
-        allocator: &Arc<RwLock<Allocator>>,
+        allocator: &Arc<Mutex<Allocator>>,
     ) -> error::Result<DrawQuad> {
         let mut buffer = VulkanBuffer::new(
             device,
