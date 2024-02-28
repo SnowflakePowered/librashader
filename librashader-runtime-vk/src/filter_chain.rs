@@ -26,7 +26,7 @@ use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::path::Path;
@@ -43,7 +43,7 @@ use rayon::prelude::*;
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
     pub(crate) device: Arc<ash::Device>,
-    pub(crate) alloc: Arc<RwLock<Allocator>>,
+    pub(crate) alloc: Arc<Mutex<Allocator>>,
     queue: vk::Queue,
     // pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
 }
