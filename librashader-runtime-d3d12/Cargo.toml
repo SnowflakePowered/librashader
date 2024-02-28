@@ -20,7 +20,6 @@ librashader-runtime = { path = "../librashader-runtime", version = "0.2.3" }
 librashader-cache = { path = "../librashader-cache", version = "0.2.3", features = ["d3d"] }
 
 thiserror = "1.0.37"
-parking_lot = "0.12.1"
 
 bytemuck = { version = "1.12.3", features = ["derive"] }
 array-init = "2.1.0"
