@@ -2,6 +2,7 @@ mod framebuffer;
 pub(crate) mod gl3;
 pub(crate) mod gl46;
 
+use std::sync::Arc;
 use crate::binding::UniformLocation;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
@@ -15,6 +16,7 @@ use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::quad::{QuadType, VertexInput};
+use librashader_runtime::scaling::ViewportSize;
 use librashader_runtime::uniforms::UniformStorageAccess;
 
 static OFFSCREEN_VBO_DATA: &[VertexInput; 4] = &[
@@ -69,13 +71,13 @@ pub(crate) trait CompileProgram {
 }
 
 pub(crate) trait DrawQuad {
-    fn new() -> Self;
-    fn bind_vertices(&self, quad_type: QuadType);
-    fn unbind_vertices(&self);
+    fn new(context: &glow::Context,) -> Result<Self>;
+    fn bind_vertices(&self, context: &glow::Context, quad_type: QuadType);
+    fn unbind_vertices(&self, context: &glow::Context,);
 }
 
 pub(crate) trait UboRing<const SIZE: usize> {
-    fn new(context: &glow::Context, buffer_size: u32) -> Result<Self, FilterChainError>;
+    fn new(context: &glow::Context, buffer_size: u32) -> Result<Self>;
     fn bind_for_frame(
         &mut self,
         context: &glow::Context,
@@ -86,7 +88,7 @@ pub(crate) trait UboRing<const SIZE: usize> {
 }
 
 pub(crate) trait FramebufferInterface {
-    fn new(max_levels: u32) -> GLFramebuffer;
+    fn new(context: &Arc<glow::Context>, max_levels: u32) -> Result<GLFramebuffer>;
     fn scale(
         fb: &mut GLFramebuffer,
         scaling: Scale2D,
@@ -95,7 +97,35 @@ pub(crate) trait FramebufferInterface {
         source_size: &Size<u32>,
         original_size: &Size<u32>,
         mipmap: bool,
-    ) -> Result<Size<u32>>;
+    ) -> Result<Size<u32>> {
+        if fb.is_raw {
+            return Ok(fb.size);
+        }
+
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
+
+        if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {
+            fb.size = size;
+
+            if mipmap {
+                fb.max_levels = u32::MAX;
+            } else {
+                fb.max_levels = 1
+            }
+
+            Self::init(
+                fb,
+                size,
+                if format == ImageFormat::Unknown {
+                    ImageFormat::R8G8B8A8Unorm
+                } else {
+                    format
+                },
+            )?;
+        }
+        Ok(size)
+    }
+    
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);
     fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()>;
     fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<u32>) -> Result<()>;

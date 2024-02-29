@@ -138,7 +138,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // load luts
         let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
 
-        let framebuffer_gen = || Ok::<_, FilterChainError>(T::FramebufferInterface::new(1));
+        let framebuffer_gen = || T::FramebufferInterface::new(&context, 1);
         let input_gen = || InputTexture {
             image: Default::default(),
             filter: default_filter,
@@ -163,7 +163,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         // create vertex objects
-        let draw_quad = T::DrawQuad::new();
+        let draw_quad = T::DrawQuad::new(&context)?;
 
         Ok(FilterChainImpl {
             passes: filters,
@@ -249,7 +249,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 // eprintln!("[history] resizing");
-                T::FramebufferInterface::init(&mut back, input.size, input.format)?;
+                T::FramebufferInterface::init(&self.common.context, &mut back, input.size, input.format)?;
             }
 
             back.copy_from::<T::FramebufferInterface>(input)?;
@@ -288,7 +288,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
-        self.draw_quad.bind_vertices(QuadType::Offscreen);
+        self.draw_quad.bind_vertices(&self.common.context, QuadType::Offscreen);
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -341,7 +341,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        self.draw_quad.bind_vertices(QuadType::Offscreen);
+        self.draw_quad.bind_vertices(&self.common.context, QuadType::Offscreen);
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             source.filter = pass.config.filter;
@@ -364,7 +364,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source = target;
         }
 
-        self.draw_quad.bind_vertices(QuadType::Final);
+        self.draw_quad.bind_vertices(&self.common.context, QuadType::Final);
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
@@ -395,7 +395,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         self.push_history(input)?;
 
-        self.draw_quad.unbind_vertices();
+        self.draw_quad.unbind_vertices(&self.common.context);
 
         Ok(())
     }

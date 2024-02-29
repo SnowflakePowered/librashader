@@ -3,7 +3,6 @@ use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
 use crate::texture::InputTexture;
-use gl::types::{GLsizei, GLuint};
 use librashader_common::map::FastHashMap;
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
