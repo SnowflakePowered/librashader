@@ -1,4 +1,4 @@
-use crate::filter_chain::filter_impl::FilterChainImpl;
+use crate::filter_chain::chain::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
 use crate::gl::GLInterface;
 use crate::FilterChainGL;

@@ -56,7 +56,8 @@ static FINAL_VBO_DATA: &[VertexInput; 4] = &[
 ];
 
 pub(crate) trait LoadLut {
-    fn load_luts(textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>>;
+    fn load_luts( context: &glow::Context,
+                  textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>>;
 }
 
 pub(crate) trait CompileProgram {

@@ -1,3 +1,4 @@
+use glow::HasContext;
 use crate::gl::BindTexture;
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
@@ -6,18 +7,18 @@ use librashader_reflect::reflect::semantics::TextureBinding;
 pub struct Gl46BindTexture;
 
 impl BindTexture for Gl46BindTexture {
-    fn bind_texture(samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture) {
+    fn bind_texture(context: &glow::Context, samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture) {
         unsafe {
             // eprintln!("setting {} to texunit {}", texture.image.handle, binding.binding);
-            gl::BindTextureUnit(binding.binding, texture.image.handle);
-            gl::BindSampler(
-                binding.binding,
-                samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter),
-            );
+            context.bind_texture_unit(binding.binding, texture.image.handle);
+            context.bind_sampler(binding.binding, Some(samplers.get(texture.wrap_mode, texture.filter, texture.mip_filter)))
         }
     }
 
-    fn gen_mipmaps(texture: &InputTexture) {
-        unsafe { gl::GenerateTextureMipmap(texture.image.handle) }
+    fn gen_mipmaps(context: &glow::Context, texture: &InputTexture) {
+        if let Some(texture)  =texture.image.handle {
+            unsafe { context.generate_texture_mipmap(texture) }
+        }
+
     }
 }

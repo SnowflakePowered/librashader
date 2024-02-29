@@ -17,7 +17,7 @@ impl<const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
         for i in 0..SIZE {
             unsafe {
                 let buffer = context.create_named_buffer()?;
-                context.named_buffer_data_size(buffer, buffer_size, glow::STREAM_DRAW);
+                context.named_buffer_data_size(buffer, buffer_size as i32, glow::STREAM_DRAW);
                 ring.items_mut()[i] = buffer;
             }
         }
@@ -28,21 +28,20 @@ impl<const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
     fn bind_for_frame(
         &mut self,
         context: &glow::Context,
-        ubo: &BufferReflection<u32>,
+        _ubo: &BufferReflection<u32>,
         ubo_location: &UniformLocation<Option<u32>>,
         storage: &impl UniformStorageAccess,
     ) {
-        let size = ubo.size;
-        let buffer = self.ring.current();
+        let buffer = *self.ring.current();
 
         unsafe {
-            gl::NamedBufferSubData(*buffer, 0, size as GLsizeiptr, storage.ubo_pointer().cast());
+            context.named_buffer_sub_data_u8_slice(buffer, 0, storage.ubo_slice());
 
-            if ubo_location.vertex != gl::INVALID_INDEX {
-                gl::BindBufferBase(gl::UNIFORM_BUFFER, ubo_location.vertex, *buffer);
+            if let Some(vertex) = ubo_location.vertex && vertex != glow::INVALID_INDEX {
+                context.bind_buffer_base(glow::UNIFORM_BUFFER, vertex, Some(buffer));
             }
-            if ubo_location.fragment != gl::INVALID_INDEX {
-                gl::BindBufferBase(gl::UNIFORM_BUFFER, ubo_location.fragment, *buffer);
+            if let Some(fragment) = ubo_location.fragment && fragment!= glow::INVALID_INDEX {
+                context.bind_buffer_base(glow::UNIFORM_BUFFER, fragment, Some(buffer));
             }
         }
         self.ring.next()
