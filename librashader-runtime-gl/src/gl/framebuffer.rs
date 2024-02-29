@@ -14,7 +14,7 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 #[derive(Debug)]
 pub struct GLFramebuffer {
     pub(crate) image: Option<glow::Texture>,
-    pub(crate) fbo: Option<glow::Framebuffer>,
+    pub(crate) fbo: glow::Framebuffer,
     pub(crate) size: Size<u32>,
     pub(crate) format: u32,
     pub(crate) max_levels: u32,
@@ -30,7 +30,7 @@ impl GLFramebuffer {
     pub fn new_from_raw(
         ctx: Arc<glow::Context>,
         texture: Option<glow::Texture>,
-        fbo: Option<glow::Framebuffer>,
+        fbo: glow::Framebuffer,
         format: u32,
         size: Size<u32>,
         miplevels: u32,

@@ -32,41 +32,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             is_raw: false,
         }
     }
-
-    fn scale(
-        fb: &mut GLFramebuffer,
-        scaling: Scale2D,
-        format: ImageFormat,
-        viewport_size: &Size<u32>,
-        source_size: &Size<u32>,
-        original_size: &Size<u32>,
-        mipmap: bool,
-    ) -> Result<Size<u32>> {
-        if fb.is_raw {
-            return Ok(fb.size);
-        }
-
-        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
-
-        if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {
-            fb.size = size;
-            if mipmap {
-                fb.max_levels = u32::MAX;
-            } else {
-                fb.max_levels = 1
-            }
-            Self::init(
-                fb,
-                size,
-                if format == ImageFormat::Unknown {
-                    ImageFormat::R8G8B8A8Unorm
-                } else {
-                    format
-                },
-            )?;
-        }
-        Ok(size)
-    }
+    
     fn clear<const REBIND: bool>(fb: &GLFramebuffer) {
         unsafe {
             if REBIND {
