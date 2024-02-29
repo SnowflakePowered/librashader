@@ -2,17 +2,17 @@ use std::panic::catch_unwind;
 use std::path::Path;
 
 use crate::error::{FilterChainError, Result};
-use crate::filter_chain::filter_impl::FilterChainImpl;
+use crate::filter_chain::chain::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 use crate::{GLFramebuffer, GLImage};
 use librashader_presets::ShaderPreset;
 
-mod filter_impl;
+mod chain;
 mod inner;
 mod parameters;
 
-pub(crate) use filter_impl::FilterCommon;
+pub(crate) use chain::FilterCommon;
 use librashader_common::Viewport;
 use librashader_presets::context::VideoDriver;
 

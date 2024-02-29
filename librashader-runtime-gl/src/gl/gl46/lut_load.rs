@@ -1,3 +1,4 @@
+use glow::{HasContext, PixelUnpackData};
 use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
@@ -11,17 +12,13 @@ use rayon::prelude::*;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
-    fn load_luts(textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>> {
+    fn load_luts(context: &glow::Context, textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>> {
         let mut luts = FastHashMap::default();
-        let pixel_unpack = unsafe {
-            let mut binding = 0;
-            gl::GetIntegerv(gl::PIXEL_UNPACK_BUFFER_BINDING, &mut binding);
-            binding
-        };
 
-        unsafe {
-            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
-        }
+        // don't need this for texture api..
+        // unsafe {
+        //     context.bind_buffer(glow::PIXEL_UNPACK_BUFFER, None);
+        // }
 
         let images = textures
             .par_iter()
@@ -35,36 +32,36 @@ impl LoadLut for Gl46LutLoad {
                 1u32
             };
 
-            let mut handle = 0;
             unsafe {
-                gl::CreateTextures(gl::TEXTURE_2D, 1, &mut handle);
+                let handle = context
+                    .create_texture()?;
 
-                gl::TextureStorage2D(
+                context.texture_storage_2d(
                     handle,
-                    levels as GLsizei,
-                    gl::RGBA8,
-                    image.size.width as GLsizei,
-                    image.size.height as GLsizei,
+                    levels as i32,
+                    glow::RGBA8,
+                    image.size.width as i32,
+                    image.size.height as i32
                 );
 
-                gl::PixelStorei(gl::UNPACK_ROW_LENGTH, 0);
-                gl::PixelStorei(gl::UNPACK_ALIGNMENT, 4);
+                context.pixel_store_i32(glow::UNPACK_ROW_LENGTH, 0);
+                context.pixel_store_i32(glow::UNPACK_ALIGNMENT, 4);
 
-                gl::TextureSubImage2D(
+                context.texture_sub_image_2d(
                     handle,
                     0,
                     0,
                     0,
-                    image.size.width as GLsizei,
-                    image.size.height as GLsizei,
-                    gl::RGBA,
-                    gl::UNSIGNED_BYTE,
-                    image.bytes.as_ptr().cast(),
+                    image.size.width as i32,
+                    image.size.height as i32,
+                    glow::RGBA,
+                    glow::UNSIGNED_BYTE,
+                    PixelUnpackData::Slice(&image.bytes),
                 );
 
                 let mipmap = levels > 1;
                 if mipmap {
-                    gl::GenerateTextureMipmap(handle);
+                    context.generate_texture_mipmap(handle);
                 }
             }
 
@@ -73,7 +70,7 @@ impl LoadLut for Gl46LutLoad {
                 InputTexture {
                     image: GLImage {
                         handle,
-                        format: gl::RGBA8,
+                        format: glow::RGBA8,
                         size: image.size,
                     },
                     filter: texture.filter_mode,
@@ -83,9 +80,9 @@ impl LoadLut for Gl46LutLoad {
             );
         }
 
-        unsafe {
-            gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pixel_unpack as GLuint);
-        };
+        // unsafe {
+        //     context.bind_buffer(glow::PIXEL_UNPACK_BUFFER, pixel_unpack);
+        // };
         Ok(luts)
     }
 }

@@ -136,7 +136,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let samplers = SamplerSet::new(&context);
 
         // load luts
-        let luts = T::LoadLut::load_luts(&preset.textures)?;
+        let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
 
         let framebuffer_gen = || Ok::<_, FilterChainError>(T::FramebufferInterface::new(1));
         let input_gen = || InputTexture {
@@ -209,7 +209,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let (program, ubo_location) = T::CompileShader::compile_program(context, glsl, !disable_cache)?;
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let ring = UboRing::new(ubo.size);
+                let ring = T:: UboRing::new(&context, ubo.size);
                 Some(ring)
             } else {
                 None
