@@ -1,4 +1,4 @@
-use crate::texture::{D3D11InputView, InputTexture, LutTexture};
+use crate::texture::{D3D11InputView, InputTexture};
 use librashader_common::{ImageFormat, Size, Viewport};
 
 use librashader_common::map::FastHashMap;
@@ -18,6 +18,7 @@ use crate::error::{assume_d3d11_init, FilterChainError};
 use crate::filter_pass::{ConstantBufferBinding, FilterPass};
 use crate::framebuffer::OwnedImage;
 use crate::graphics_pipeline::D3D11State;
+use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::samplers::SamplerSet;
 use crate::util::d3d11_compile_bound_shader;
