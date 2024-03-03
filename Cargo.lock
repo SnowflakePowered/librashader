@@ -1646,6 +1646,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-runtime-d3d9"
+version = "0.2.4"
+dependencies = [
+ "array-concat",
+ "bytemuck",
+ "gfx-maths",
+ "librashader-cache",
+ "librashader-common",
+ "librashader-preprocess",
+ "librashader-presets",
+ "librashader-reflect",
+ "librashader-runtime",
+ "num-traits",
+ "thiserror",
+ "windows",
+]
+
+[[package]]
 name = "librashader-runtime-gl"
 version = "0.2.6"
 dependencies = [

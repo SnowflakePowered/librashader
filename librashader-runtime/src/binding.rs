@@ -15,7 +15,7 @@ pub trait TextureInput {
 }
 
 /// A uniform member offset with context that needs to be resolved.
-pub trait ContextOffset<H, C, D=()>
+pub trait ContextOffset<H, C, D = ()>
 where
     H: BindUniform<C, f32, D>,
     H: BindUniform<C, u32, D>,
@@ -124,7 +124,12 @@ where
     ) {
         // Bind MVP
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::MVP.into()) {
-            uniform_storage.bind_mat4(offset.offset(), uniform_inputs.mvp, offset.context(), device);
+            uniform_storage.bind_mat4(
+                offset.offset(),
+                uniform_inputs.mvp,
+                offset.context(),
+                device,
+            );
         }
 
         // Bind OutputSize
@@ -133,7 +138,7 @@ where
                 offset.offset(),
                 uniform_inputs.framebuffer_size,
                 offset.context(),
-                device
+                device,
             );
         }
 
@@ -143,7 +148,7 @@ where
                 offset.offset(),
                 uniform_inputs.viewport_size,
                 offset.context(),
-                device
+                device,
             );
         }
 
@@ -153,7 +158,7 @@ where
                 offset.offset(),
                 uniform_inputs.frame_count,
                 offset.context(),
-                device
+                device,
             );
         }
 
@@ -163,13 +168,18 @@ where
                 offset.offset(),
                 uniform_inputs.frame_direction,
                 offset.context(),
-                device
+                device,
             );
         }
 
         // bind Rotation
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::Rotation.into()) {
-            uniform_storage.bind_scalar(offset.offset(), uniform_inputs.rotation, offset.context(), device);
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                uniform_inputs.rotation,
+                offset.context(),
+                device,
+            );
         }
 
         // bind TotalSubFrames
@@ -178,7 +188,7 @@ where
                 offset.offset(),
                 uniform_inputs.total_subframes,
                 offset.context(),
-                device
+                device,
             );
         }
 
@@ -188,7 +198,7 @@ where
                 offset.offset(),
                 uniform_inputs.current_subframe,
                 offset.context(),
-                device
+                device,
             );
         }
 
@@ -246,7 +256,12 @@ where
                     .semantics(index + 1)
                     .into(),
             ) {
-                uniform_storage.bind_vec4(offset.offset(), history.size(), offset.context(), device);
+                uniform_storage.bind_vec4(
+                    offset.offset(),
+                    history.size(),
+                    offset.context(),
+                    device,
+                );
             }
         }
 
@@ -289,7 +304,12 @@ where
             if let Some(offset) =
                 uniform_bindings.get(&TextureSemantics::PassFeedback.semantics(index).into())
             {
-                uniform_storage.bind_vec4(offset.offset(), feedback.size(), offset.context(), device);
+                uniform_storage.bind_vec4(
+                    offset.offset(),
+                    feedback.size(),
+                    offset.context(),
+                    device,
+                );
             }
         }
 
