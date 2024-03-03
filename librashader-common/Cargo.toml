@@ -14,6 +14,7 @@ description = "RetroArch shaders for all."
 [features]
 default = []
 opengl = ["gl"]
+d3d9 = ["windows"]
 d3d11 = ["windows", "dxgi"]
 d3d12 = ["windows", "dxgi"]
 dxgi = ["windows"]
@@ -36,6 +37,7 @@ features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D9",
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Direct3D12",
 ]

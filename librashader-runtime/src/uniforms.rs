@@ -69,7 +69,7 @@ impl<T, D> BindUniform<Option<()>, T, D> for NoUniformBinder {
 }
 
 /// A helper to bind uniform variables to UBO or Push Constant Buffers.
-pub struct UniformStorage<H = NoUniformBinder, C = Option<()>, U = Box<[u8]>, P = Box<[u8]>, D=()>
+pub struct UniformStorage<H = NoUniformBinder, C = Option<()>, U = Box<[u8]>, P = Box<[u8]>, D = ()>
 where
     U: Deref<Target = [u8]> + DerefMut,
     P: Deref<Target = [u8]> + DerefMut,
@@ -78,7 +78,7 @@ where
     push: P,
     _h: PhantomData<H>,
     _c: PhantomData<C>,
-    _d: PhantomData<D>
+    _d: PhantomData<D>,
 }
 
 impl<H, C, U, P, D> UniformStorage<H, C, U, P, D>
@@ -118,8 +118,13 @@ where
 
     /// Bind a scalar to the given offset.
     #[inline(always)]
-    pub fn bind_scalar<T: UniformScalar>(&mut self, offset: MemberOffset, value: T, ctx: C, device: &D)
-    where
+    pub fn bind_scalar<T: UniformScalar>(
+        &mut self,
+        offset: MemberOffset,
+        value: T,
+        ctx: C,
+        device: &D,
+    ) where
         H: BindUniform<C, T, D>,
     {
         for ty in UniformMemberBlock::TYPES {
@@ -193,7 +198,13 @@ where
     }
     /// Bind a `vec4` to the given offset.
     #[inline(always)]
-    pub fn bind_vec4(&mut self, offset: MemberOffset, value: impl Into<[f32; 4]>, ctx: C, device: &D) {
+    pub fn bind_vec4(
+        &mut self,
+        offset: MemberOffset,
+        value: impl Into<[f32; 4]>,
+        ctx: C,
+        device: &D,
+    ) {
         let vec4 = value.into();
 
         for ty in UniformMemberBlock::TYPES {

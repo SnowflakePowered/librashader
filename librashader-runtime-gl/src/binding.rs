@@ -63,7 +63,12 @@ impl<T> BindUniform<VariableLocation, T, ()> for GlUniformBinder
 where
     T: GlUniformScalar,
 {
-    fn bind_uniform(block: UniformMemberBlock, value: T, location: VariableLocation, _: &()) -> Option<()> {
+    fn bind_uniform(
+        block: UniformMemberBlock,
+        value: T,
+        location: VariableLocation,
+        _: &(),
+    ) -> Option<()> {
         if let Some(location) = location.location(block)
             && location.bindable()
         {
@@ -89,7 +94,7 @@ impl BindUniform<VariableLocation, &[f32; 4], ()> for GlUniformBinder {
         block: UniformMemberBlock,
         vec4: &[f32; 4],
         location: VariableLocation,
-        _: &()
+        _: &(),
     ) -> Option<()> {
         if let Some(location) = location.location(block)
             && location.bindable()
@@ -114,7 +119,7 @@ impl BindUniform<VariableLocation, &[f32; 16], ()> for GlUniformBinder {
         block: UniformMemberBlock,
         mat4: &[f32; 16],
         location: VariableLocation,
-        _: &()
+        _: &(),
     ) -> Option<()> {
         if let Some(location) = location.location(block)
             && location.bindable()
