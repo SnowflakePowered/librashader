@@ -80,12 +80,8 @@ impl FramebufferInterface for Gl3Framebuffer {
             }
         }
     }
-    fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()> {
-        // todo: may want to use a shader and draw a quad to be faster.
-        if image.size != fb.size || image.format != fb.format {
-            Self::init(fb, image.size, image.format)?;
-        }
 
+    unsafe fn copy_from_unchecked(fb: &GLFramebuffer, image: &GLImage, flip_y: bool) -> Result<()> {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fb.fbo);
 
@@ -112,9 +108,9 @@ impl FramebufferInterface for Gl3Framebuffer {
                 fb.size.width as GLint,
                 fb.size.height as GLint,
                 0,
-                0,
+                if flip_y { fb.size.height as GLint } else { 0 },
                 fb.size.width as GLint,
-                fb.size.height as GLint,
+                if flip_y { 0 } else { fb.size.height as GLint },
                 gl::COLOR_BUFFER_BIT,
                 gl::NEAREST,
             );
