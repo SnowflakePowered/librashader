@@ -67,8 +67,34 @@ impl GLFramebuffer {
         )
     }
 
-    pub(crate) fn copy_from<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<()> {
-        T::copy_from(self, image)
+    pub(crate) unsafe fn copy_from_unchecked<T: FramebufferInterface>(
+        &self,
+        image: &GLImage,
+        flip_y: bool,
+    ) -> Result<()> {
+        // SAFETY: checked size above.
+        unsafe { T::copy_from_unchecked(self, image, flip_y) }
+    }
+
+    pub(crate) fn right_size<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<()> {
+        if image.size != self.size || image.format != self.format {
+            T::init(self, image.size, image.format)?;
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn copy_from<T: FramebufferInterface>(
+        &mut self,
+        image: &GLImage,
+        flip_y: bool,
+    ) -> Result<()> {
+        if image.size != self.size || image.format != self.format {
+            T::init(self, image.size, image.format)?;
+        }
+
+        // SAFETY: checked size above.
+        unsafe { self.copy_from_unchecked::<T>(image, flip_y) }
     }
 
     pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputTexture {

@@ -95,7 +95,7 @@ pub(crate) trait FramebufferInterface {
         mipmap: bool,
     ) -> Result<Size<u32>>;
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);
-    fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()>;
+    unsafe fn copy_from_unchecked(fb: &GLFramebuffer, image: &GLImage, flip_y: bool) -> Result<()>;
     fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<GLenum>) -> Result<()>;
 }
 
