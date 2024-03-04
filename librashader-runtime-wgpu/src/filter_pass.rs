@@ -26,7 +26,7 @@ pub struct FilterPass {
     pub device: Arc<wgpu::Device>,
     pub reflection: ShaderReflection,
     pub(crate) uniform_storage:
-        UniformStorage<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuffer>,
+        UniformStorage<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuffer, Arc<wgpu::Device>>,
     pub uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,

@@ -24,7 +24,7 @@ use std::sync::Arc;
 
 pub struct FilterPass {
     pub reflection: ShaderReflection,
-    pub(crate) uniform_storage: UniformStorage<NoUniformBinder, Option<()>, RawVulkanBuffer>,
+    pub(crate) uniform_storage: UniformStorage<NoUniformBinder, Option<()>, RawVulkanBuffer, Box<[u8]>, Arc<ash::Device>>,
     pub uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
     pub config: ShaderPassConfig,
