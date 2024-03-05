@@ -9,8 +9,7 @@ fn triangle_gl() {
 
     unsafe {
         let mut filter = FilterChainGL::load_from_path(
-            "../test/shaders_slang/crt/crt-hyllian.slangp",
-            // "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: false,
@@ -31,7 +30,7 @@ fn triangle_gl46() {
         let mut filter = FilterChainGL::load_from_path(
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             // "../test/slang-shaders/test/history.slangp",
-            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             // "../test/shadersslang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
