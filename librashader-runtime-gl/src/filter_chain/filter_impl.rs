@@ -30,6 +30,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
+use crate::blitter::Blitter;
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -39,6 +40,9 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     feedback_framebuffers: Box<[GLFramebuffer]>,
     history_framebuffers: VecDeque<GLFramebuffer>,
     default_options: FrameOptionsGL,
+    scratch_in: GLFramebuffer,
+    // blitter: Blitter
+    blitter: Blitter,
 }
 
 pub(crate) struct FilterCommon {
@@ -165,6 +169,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // create vertex objects
         let draw_quad = T::DrawQuad::new();
 
+        let scratch_in = T::FramebufferInterface::new(1);
+
         Ok(FilterChainImpl {
             passes: filters,
             output_framebuffers,
@@ -188,6 +194,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 history_textures,
             },
             default_options: Default::default(),
+            scratch_in,
+            blitter: Blitter::new()?
         })
     }
 
@@ -309,10 +317,11 @@ impl<T: GLInterface> FilterChainImpl<T> {
         //     wrap_mode,
         // };
 
-        let mut flipped = T::FramebufferInterface::new(1);
-        flipped.copy_from::<T::FramebufferInterface>(&input, true)?;
+        self.blitter.blit::<T>(&self.common.samplers, &self.draw_quad, &mut self.scratch_in, &input, true)?;
 
-        let original = flipped.as_texture(filter, wrap_mode);
+        // self.scratch_in.copy_from::<T::FramebufferInterface>(&input, true)?;
+
+        let original = self.scratch_in.as_texture(filter, wrap_mode);
 
         let mut source = original;
 
@@ -373,8 +382,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
             // Need to flip the output, so we'll render to a backbuffer before blitting back to the viewport.
-            let mut output = T::FramebufferInterface::new(1);
-            output.right_size::<T::FramebufferInterface>(
+
+            let target = &mut self.output_framebuffers[passes_len - 1];
+            target.right_size::<T::FramebufferInterface>(
                 &viewport
                     .output
                     .as_texture(FilterMode::Linear, WrapMode::ClampToEdge)
@@ -393,22 +403,35 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::viewport_with_output(&output, viewport),
+                RenderTarget::viewport_with_output(target, viewport),
             );
-            self.common.output_textures[passes_len - 1] =
-                output.as_texture(pass.config.filter, pass.config.wrap_mode);
 
-            // SAFETY: viewport should be the same size as output texture.
-            unsafe {
-                viewport
-                    .output
-                    .copy_from_unchecked::<T::FramebufferInterface>(
-                        &output
-                            .as_texture(pass.config.filter, pass.config.wrap_mode)
-                            .image,
-                        true,
-                    )?;
-            }
+            // unsafe {
+            //     viewport
+            //         .output
+            //         .copy_from_unchecked::<T::FramebufferInterface>(
+            //             &self.common.output_textures[passes_len - 1].image,
+            //             true,
+            //         )?;
+            // }
+
+            self.blitter.blit_unchecked(&self.common.samplers,
+                                        &self.draw_quad,
+                                        &viewport.output, target.image, true);
+
+            let output = target.as_texture(pass.config.filter, pass.config.wrap_mode);
+            self.common.output_textures[passes_len - 1] = output;
+
+            // // SAFETY: viewport should be the same size as output texture.
+            // self.blitter.blit_unchecked(&self.common.samplers, &self.draw_quad, &viewport.output, &output.image);
+            // unsafe {
+            //     viewport
+            //         .output
+            //         .copy_from_unchecked::<T::FramebufferInterface>(
+            //             &self.common.output_textures[passes_len - 1].image,
+            //             true,
+            //         )?;
+            // }
         }
 
         // swap feedback framebuffers with output

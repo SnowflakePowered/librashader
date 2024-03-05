@@ -2,7 +2,7 @@ use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::InputTexture;
-use gl::types::{GLenum, GLuint};
+use gl::types::{GLenum, GLsizei, GLuint};
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -43,6 +43,11 @@ impl GLFramebuffer {
         }
     }
 
+    pub(crate) fn debug_setname(&self, name: &str) {
+        unsafe {
+            gl::ObjectLabel(gl::TEXTURE, self.image, name.len() as GLsizei, name.as_ptr().cast());
+        }
+    }
     pub(crate) fn clear<T: FramebufferInterface, const REBIND: bool>(&self) {
         T::clear::<REBIND>(self)
     }
@@ -86,15 +91,15 @@ impl GLFramebuffer {
 
     pub(crate) fn copy_from<T: FramebufferInterface>(
         &mut self,
-        image: &GLImage,
+        source: &GLImage,
         flip_y: bool,
     ) -> Result<()> {
-        if image.size != self.size || image.format != self.format {
-            T::init(self, image.size, image.format)?;
+        if source.size != self.size || source.format != self.format {
+            T::init(self, source.size, source.format)?;
         }
 
         // SAFETY: checked size above.
-        unsafe { self.copy_from_unchecked::<T>(image, flip_y) }
+        unsafe { self.copy_from_unchecked::<T>(source, flip_y) }
     }
 
     pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputTexture {

@@ -85,6 +85,7 @@ pub(crate) trait UboRing<const SIZE: usize> {
 
 pub(crate) trait FramebufferInterface {
     fn new(max_levels: u32) -> GLFramebuffer;
+
     fn scale(
         fb: &mut GLFramebuffer,
         scaling: Scale2D,

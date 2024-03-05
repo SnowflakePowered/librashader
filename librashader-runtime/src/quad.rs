@@ -17,6 +17,15 @@ pub static IDENTITY_MVP: &[f32; 16] = &[
     0.0, 0.0, 0.0, 1.0,
 ];
 
+#[rustfmt::skip]
+pub static IDENTITY_MVP_FLIPY: &[f32; 16] = &[
+    1.0, 0.0, 0.0, 0.0,
+    0.0, -1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0,
+];
+
+
 /// Default MVP for use when rendering to the render target.
 #[rustfmt::skip]
 pub static DEFAULT_MVP: &[f32; 16] = &[

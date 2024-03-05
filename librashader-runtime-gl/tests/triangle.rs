@@ -15,7 +15,7 @@ fn triangle_gl() {
                 glsl_version: 0,
                 use_dsa: false,
                 force_no_mipmaps: false,
-                disable_cache: false,
+                disable_cache: true,
             }),
         )
         // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
@@ -37,7 +37,7 @@ fn triangle_gl46() {
                 glsl_version: 0,
                 use_dsa: true,
                 force_no_mipmaps: false,
-                disable_cache: false,
+                disable_cache: true,
             }),
         )
         // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
