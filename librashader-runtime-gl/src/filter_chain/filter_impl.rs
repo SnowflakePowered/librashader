@@ -10,7 +10,7 @@ use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, GLImage};
 use gl::types::GLuint;
-use librashader_common::{FilterMode, Viewport, WrapMode};
+use librashader_common::Viewport;
 
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::glsl::GlslVersion;
@@ -250,7 +250,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 T::FramebufferInterface::init(&mut back, input.size, input.format)?;
             }
 
-            back.copy_from::<T::FramebufferInterface>(input, false)?;
+            back.copy_from::<T::FramebufferInterface>(input)?;
             self.history_framebuffers.push_front(back)
         }
 
@@ -302,17 +302,12 @@ impl<T: GLInterface> FilterChainImpl<T> {
         }
 
         // shader_gl3: 2067
-        // let original = InputTexture {
-        //     image: *input,
-        //     filter,
-        //     mip_filter: filter,
-        //     wrap_mode,
-        // };
-
-        let mut flipped = T::FramebufferInterface::new(1);
-        flipped.copy_from::<T::FramebufferInterface>(&input, true)?;
-
-        let original = flipped.as_texture(filter, wrap_mode);
+        let original = InputTexture {
+            image: *input,
+            filter,
+            mip_filter: filter,
+            wrap_mode,
+        };
 
         let mut source = original;
 
@@ -368,19 +363,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
         }
 
         self.draw_quad.bind_vertices(QuadType::Final);
-
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
-            // Need to flip the output, so we'll render to a backbuffer before blitting back to the viewport.
-            let mut output = T::FramebufferInterface::new(1);
-            output.right_size::<T::FramebufferInterface>(
-                &viewport
-                    .output
-                    .as_texture(FilterMode::Linear, WrapMode::ClampToEdge)
-                    .image,
-            )?;
-
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
@@ -393,22 +378,11 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::viewport_with_output(&output, viewport),
+                RenderTarget::viewport(viewport),
             );
-            self.common.output_textures[passes_len - 1] =
-                output.as_texture(pass.config.filter, pass.config.wrap_mode);
-
-            // SAFETY: viewport should be the same size as output texture.
-            unsafe {
-                viewport
-                    .output
-                    .copy_from_unchecked::<T::FramebufferInterface>(
-                        &output
-                            .as_texture(pass.config.filter, pass.config.wrap_mode)
-                            .image,
-                        true,
-                    )?;
-            }
+            self.common.output_textures[passes_len - 1] = viewport
+                .output
+                .as_texture(pass.config.filter, pass.config.wrap_mode);
         }
 
         // swap feedback framebuffers with output
@@ -418,6 +392,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         );
 
         self.push_history(input)?;
+
         self.draw_quad.unbind_vertices();
 
         Ok(())
