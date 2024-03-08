@@ -30,15 +30,17 @@
 //! wgpu support is not available in the librashader C API.
 //!
 //! | **API**     | **Status** | **`librashader` feature** |
-//! |-------------|------------|---------------------------|
-//! | OpenGL 3.3+ | ✔         | `gl`                      |
-//! | OpenGL 4.6  | ✔         | `gl`                      |
-//! | Vulkan      | ✔         | `vk`                     |
-//! | Direct3D 9  | ⚠️        | `d3d9`                 |
-//! | Direct3D 11  | ✔        | `d3d11`                 |
-//! | Direct3D 12  | ✔        | `d3d12`                 |
-//! | wgpu        | ✔        |  `wgpu`                 |
-//! | Metal       | ✔        |  `metal`                |
+//! |-------------|-----------|---------------------------|
+//! | OpenGL 3.3+ | ✅        | `gl`                      |
+//! | OpenGL 4.6  | ✅        | `gl`                      |
+//! | Vulkan      | ✅        | `vk`                      |
+//! | Direct3D 9  | ⚠️        | `d3d9`                   |
+//! | Direct3D 11 | ✅        | `d3d11`                   |
+//! | Direct3D 12 | ✅        | `d3d12`                   |
+//! | Metal       | ✅        | `metal`                   |
+//! | wgpu        | 🆗         | `wgpu`                    |
+//!
+//! ✅ Full Support &mdash; 🆗 Secondary Support &mdash; ⚠️ ️Experimental Support
 //!
 //! ## C API
 //! For documentation on the librashader C API, see [librashader-capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
