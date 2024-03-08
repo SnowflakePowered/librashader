@@ -17,17 +17,6 @@ use windows::Win32::Graphics::Direct3D11::{
 use crate::LIBRASHADER_API_VERSION;
 use librashader::runtime::{FilterChainParameters, Viewport};
 
-/// Direct3D 11 parameters for the source image.
-#[repr(C)]
-pub struct libra_source_image_d3d11_t {
-    /// A shader resource view into the source image
-    pub handle: ManuallyDrop<ID3D11ShaderResourceView>,
-    /// This is currently ignored.
-    pub width: u32,
-    /// This is currently ignored.
-    pub height: u32,
-}
-
 /// Options for Direct3D 11 filter chain creation.
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
@@ -214,7 +203,7 @@ extern_fn! {
         // so ManuallyDrop<Option<ID3D11DeviceContext>> doesn't generate correct bindings.
         device_context: Option<ManuallyDrop<ID3D11DeviceContext>>,
         frame_count: usize,
-        image: libra_source_image_d3d11_t,
+        image: ManuallyDrop<ID3D11ShaderResourceView>,
         viewport: libra_viewport_t,
         out: ManuallyDrop<ID3D11RenderTargetView>,
         mvp: *const f32,
@@ -244,7 +233,7 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         unsafe {
-            chain.frame(device_context.as_deref(), image.handle.deref(), &viewport, frame_count, options.as_ref())?;
+            chain.frame(device_context.as_deref(), image.deref(), &viewport, frame_count, options.as_ref())?;
         }
     }
 }
