@@ -26,11 +26,11 @@ pub struct libra_source_image_d3d12_t {
     pub resource: ManuallyDrop<ID3D12Resource>,
     /// A CPU descriptor handle to a shader resource view of the image.
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    /// The format of the image.
+    /// This is currently ignored.
     pub format: DXGI_FORMAT,
-    /// The width of the source image.
+    /// This is currently ignored.
     pub width: u32,
-    /// The height of the source image.
+    /// This is currently ignored.
     pub height: u32,
 }
 
@@ -104,8 +104,6 @@ impl TryFrom<libra_source_image_d3d12_t> for D3D12InputImage {
         Ok(D3D12InputImage {
             resource: ManuallyDrop::into_inner(resource),
             descriptor: value.descriptor,
-            size: Size::new(value.width, value.height),
-            format: value.format,
         })
     }
 }
