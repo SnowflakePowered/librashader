@@ -257,7 +257,7 @@ pub mod runtime {
             options::{
                 FilterChainOptionsD3D11 as FilterChainOptions, FrameOptionsD3D11 as FrameOptions,
             },
-            D3D11InputView, D3D11OutputView, FilterChainD3D11 as FilterChain,
+            FilterChainD3D11 as FilterChain,
         };
     }
 
