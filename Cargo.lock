@@ -1473,6 +1473,7 @@ dependencies = [
  "librashader-runtime",
  "librashader-runtime-d3d11",
  "librashader-runtime-d3d12",
+ "librashader-runtime-d3d9",
  "librashader-runtime-gl",
  "librashader-runtime-mtl",
  "librashader-runtime-vk",
@@ -1647,7 +1648,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d9"
-version = "0.2.4"
+version = "0.2.6"
 dependencies = [
  "array-concat",
  "bytemuck",

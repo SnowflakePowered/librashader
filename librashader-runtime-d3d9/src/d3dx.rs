@@ -33,6 +33,8 @@ pub mod raw {
     }
 }
 
+#[allow(dead_code)]
+#[allow(non_snake_case)]
 #[inline]
 pub unsafe fn D3DXCompileShader<P1, P2, P3>(
     psrcdata: *const c_void,
@@ -69,6 +71,8 @@ where
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ID3DXConstantTable(windows::core::IUnknown);
+
+#[allow(dead_code)]
 impl ID3DXConstantTable {
     #[allow(non_snake_case)]
     pub unsafe fn GetShaderConstantTable(
@@ -370,6 +374,7 @@ pub struct D3DXCONSTANT_DESC {
 #[derive(PartialEq, Eq, Debug)]
 #[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
+#[allow(dead_code)]
 pub enum D3DXREGISTER_SET {
     D3DXRS_BOOL = 0,
     D3DXRS_INT4 = 1,
@@ -382,6 +387,7 @@ pub enum D3DXREGISTER_SET {
 #[derive(PartialEq, Eq, Debug)]
 #[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
+#[allow(dead_code)]
 pub enum D3DXPARAMETER_CLASS {
     D3DXPC_SCALAR = 0,
     D3DXPC_VECTOR = 1,
@@ -396,6 +402,7 @@ pub enum D3DXPARAMETER_CLASS {
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
+#[allow(dead_code)]
 pub enum D3DXPARAMETER_TYPE {
     D3DXPT_VOID = 0,
     D3DXPT_BOOL = 1,

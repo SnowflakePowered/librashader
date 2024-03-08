@@ -24,6 +24,9 @@
 //! The Vulkan runtime can use [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
 //! for improved performance, if the underlying hardware supports it.
 //!
+//! Direct3D 9 support is experimental and is not guaranteed to work with all shaders. In particular, history and feedback is currently not supported.
+//! Many shaders will also fail to compile due to missing or insufficient features in Direct3D 9.
+//!
 //! wgpu support is not available in the librashader C API.
 //!
 //! | **API**     | **Status** | **`librashader` feature** |
@@ -31,6 +34,7 @@
 //! | OpenGL 3.3+ | ✔         | `gl`                      |
 //! | OpenGL 4.6  | ✔         | `gl`                      |
 //! | Vulkan      | ✔         | `vk`                     |
+//! | Direct3D 9  | ⚠️        | `d3d9`                 |
 //! | Direct3D 11  | ✔        | `d3d11`                 |
 //! | Direct3D 12  | ✔        | `d3d12`                 |
 //! | wgpu        | ✔        |  `wgpu`                 |
@@ -267,6 +271,19 @@ pub mod runtime {
                 FilterChainOptionsD3D12 as FilterChainOptions, FrameOptionsD3D12 as FrameOptions,
             },
             D3D12InputImage, D3D12OutputView, FilterChainD3D12 as FilterChain,
+        };
+    }
+
+    #[cfg(all(target_os = "windows", feature = "runtime-d3d9"))]
+    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))]
+    /// Shader runtime for Direct3D 9.
+    pub mod d3d9 {
+        pub use librashader_runtime_d3d9::{
+            error,
+            options::{
+                FilterChainOptionsD3D9 as FilterChainOptions, FrameOptionsD3D9 as FrameOptions,
+            },
+            FilterChainD3D9 as FilterChain,
         };
     }
 

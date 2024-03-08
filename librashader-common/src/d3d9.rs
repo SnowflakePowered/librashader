@@ -44,7 +44,6 @@ impl From<Direct3D9::D3DFORMAT> for ImageFormat {
     }
 }
 
-
 impl From<WrapMode> for Direct3D9::D3DTEXTUREADDRESS {
     fn from(value: WrapMode) -> Self {
         match value {
