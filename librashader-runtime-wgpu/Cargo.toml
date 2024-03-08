@@ -20,7 +20,7 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.6"
 librashader-reflect = { path = "../librashader-reflect", version = "0.2.6", features = ["wgsl"], default-features = false }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.2.6" }
 
-wgpu = { version = "0.19.0", default-features = false, features = ["wgsl"] }
+wgpu = { version = "0.19.3", default-features = false, features = ["wgsl"] }
 image = "0.24.7"
 thiserror = "1.0.50"
 bytemuck = { version = "1.14.0", features = ["derive"] }
