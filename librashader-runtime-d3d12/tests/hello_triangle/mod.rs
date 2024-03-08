@@ -624,11 +624,6 @@ pub mod d3d12_hello_triangle {
                     D3D12InputImage {
                         resource: resources.framebuffer.clone(),
                         descriptor: framebuffer,
-                        size: Size::new(
-                            resources.viewport.Width as u32,
-                            resources.viewport.Height as u32,
-                        ),
-                        format: DXGI_FORMAT_R8G8B8A8_UNORM,
                     },
                     &Viewport {
                         x: 0.0,
