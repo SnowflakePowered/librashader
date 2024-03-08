@@ -12,8 +12,7 @@ use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 // const FILTER_PATH: &str =
 //     "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID].slangp";
 
-const FILTER_PATH: &str =
-    "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
+const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 
 // const FILTER_PATH: &str = "../test/slang-shaders/test/history.slangp";
 // const FILTER_PATH: &str = "../test/slang-shaders/test/feedback.slangp";
@@ -61,7 +60,7 @@ fn triangle_d3d11() {
         FILTER_PATH,
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
-            disable_cache: false,
+            disable_cache: true,
         }),
         // replace below with 'None' for the triangle
         // None,
