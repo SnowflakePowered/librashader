@@ -2,17 +2,17 @@
 #![feature(type_alias_impl_trait)]
 #![feature(error_generic_member_access)]
 mod binding;
+mod d3dx;
 mod draw_quad;
+pub mod error;
 mod filter_chain;
 mod filter_pass;
 mod graphics_pipeline;
 mod luts;
+pub mod options;
 mod samplers;
 mod texture;
 mod util;
-mod d3dx;
-pub mod error;
-pub mod options;
 
 use librashader_runtime::impl_filter_chain_parameters;
 impl_filter_chain_parameters!(FilterChainD3D9);

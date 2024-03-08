@@ -8,7 +8,7 @@ use librashader_runtime::binding::TextureInput;
 use librashader_runtime::scaling::{ScaleFramebuffer, ViewportSize};
 use windows::Win32::Graphics::Direct3D9::{
     IDirect3DDevice9, IDirect3DSurface9, IDirect3DTexture9, D3DCLEAR_TARGET, D3DFORMAT,
-    D3DPOOL_DEFAULT, D3DTEXF_LINEAR, D3DUSAGE_DYNAMIC, D3DUSAGE_RENDERTARGET,
+    D3DPOOL_DEFAULT, D3DTEXF_LINEAR, D3DUSAGE_RENDERTARGET,
 };
 
 /// An image view for use as a shader resource.
