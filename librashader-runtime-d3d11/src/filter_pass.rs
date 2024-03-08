@@ -16,13 +16,14 @@ use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Buffer, ID3D11DeviceContext, ID3D11InputLayout, ID3D11PixelShader, ID3D11SamplerState,
-    ID3D11ShaderResourceView, ID3D11VertexShader, D3D11_MAPPED_SUBRESOURCE,
-    D3D11_MAP_WRITE_DISCARD, D3D11_VIEWPORT,
+    ID3D11Buffer, ID3D11DeviceContext, ID3D11InputLayout, ID3D11PixelShader,
+    ID3D11RenderTargetView, ID3D11SamplerState, ID3D11ShaderResourceView, ID3D11VertexShader,
+    D3D11_MAPPED_SUBRESOURCE, D3D11_MAP_WRITE_DISCARD, D3D11_VIEWPORT,
 };
 
+use crate::error;
 use crate::samplers::SamplerSet;
-use crate::{error, D3D11OutputView};
+use crate::util::GetSize;
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 
 pub struct ConstantBufferBinding {
@@ -55,7 +56,7 @@ const NULL_TEXTURES: &[Option<ID3D11ShaderResourceView>; 16] = &[
 
 impl TextureInput for InputTexture {
     fn size(&self) -> Size<u32> {
-        self.view.size
+        self.view.size().unwrap_or(Size::default())
     }
 }
 
@@ -77,7 +78,7 @@ impl BindSemantics for FilterPass {
         _device: &Self::DeviceContext,
     ) {
         let (texture_binding, sampler_binding) = descriptors;
-        texture_binding[binding.binding as usize] = Some(texture.view.handle.clone());
+        texture_binding[binding.binding as usize] = Some(texture.view.clone());
         sampler_binding[binding.binding as usize] =
             Some(samplers.get(texture.wrap_mode, texture.filter).clone());
     }
@@ -149,15 +150,15 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         options: &FrameOptionsD3D11,
-        viewport: &Viewport<D3D11OutputView>,
+        viewport: &Viewport<ID3D11RenderTargetView>,
         original: &InputTexture,
         source: &InputTexture,
-        output: RenderTarget<D3D11OutputView>,
+        output: RenderTarget<ID3D11RenderTargetView>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         if self.config.mipmap_input && !parent.disable_mipmaps {
             unsafe {
-                ctx.GenerateMips(&source.view.handle);
+                ctx.GenerateMips(&source.view);
             }
         }
         unsafe {
@@ -170,14 +171,17 @@ impl FilterPass {
         let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
         let descriptors = (&mut textures, &mut samplers);
 
+        let output_size = output.output.size()?;
+        let viewport_size = viewport.output.size()?;
+
         self.build_semantics(
             pass_index,
             parent,
             output.mvp,
             frame_count,
             options,
-            output.output.size,
-            viewport.output.size,
+            output_size,
+            viewport_size,
             descriptors,
             original,
             source,
@@ -241,15 +245,16 @@ impl FilterPass {
                 std::mem::size_of::<Option<windows::core::IUnknown>>()
                     == std::mem::size_of::<windows::core::IUnknown>()
             );
+
             ctx.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
             ctx.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
 
-            ctx.OMSetRenderTargets(Some(&[Some(output.output.handle.clone())]), None);
+            ctx.OMSetRenderTargets(Some(&[Some(output.output.clone())]), None);
             ctx.RSSetViewports(Some(&[D3D11_VIEWPORT {
                 TopLeftX: output.x,
                 TopLeftY: output.y,
-                Width: output.output.size.width as f32,
-                Height: output.output.size.height as f32,
+                Width: output_size.width as f32,
+                Height: output_size.height as f32,
                 MinDepth: 0.0,
                 MaxDepth: 1.0,
             }]))

@@ -4,11 +4,12 @@ use crate::ctypes::{
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use librashader::runtime::d3d11::{
-    D3D11InputView, D3D11OutputView, FilterChain, FilterChainOptions, FrameOptions,
+    FilterChain, FilterChainOptions, FrameOptions,
 };
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
+use std::ops::Deref;
 use std::ptr::NonNull;
 use std::slice;
 use windows::Win32::Graphics::Direct3D11::{
@@ -23,23 +24,10 @@ use librashader::runtime::{FilterChainParameters, Size, Viewport};
 pub struct libra_source_image_d3d11_t {
     /// A shader resource view into the source image
     pub handle: ManuallyDrop<ID3D11ShaderResourceView>,
-    /// The width of the source image.
+    /// This is currently ignored.
     pub width: u32,
-    /// The height of the source image.
+    /// This is currently ignored.
     pub height: u32,
-}
-
-impl TryFrom<libra_source_image_d3d11_t> for D3D11InputView {
-    type Error = LibrashaderError;
-
-    fn try_from(value: libra_source_image_d3d11_t) -> Result<Self, Self::Error> {
-        let handle = value.handle.clone();
-
-        Ok(D3D11InputView {
-            handle: ManuallyDrop::into_inner(handle),
-            size: Size::new(value.width, value.height),
-        })
-    }
 }
 
 /// Options for Direct3D 11 filter chain creation.
@@ -251,19 +239,14 @@ extern_fn! {
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
-            output: D3D11OutputView {
-                size: Size::new(viewport.width, viewport.height),
-                handle: ManuallyDrop::into_inner(out.clone()),
-            },
+            output: ManuallyDrop::into_inner(out.clone()),
             mvp,
         };
 
         let options = options.map(FromUninit::from_uninit);
 
-        let image = image.try_into()?;
-
         unsafe {
-            chain.frame(device_context.as_deref(), image, &viewport, frame_count, options.as_ref())?;
+            chain.frame(device_context.as_deref(), image.handle.deref(), &viewport, frame_count, options.as_ref())?;
         }
     }
 }

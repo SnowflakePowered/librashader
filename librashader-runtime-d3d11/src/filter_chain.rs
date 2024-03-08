@@ -1,4 +1,4 @@
-use crate::texture::{D3D11InputView, InputTexture};
+use crate::texture::InputTexture;
 use librashader_common::{ImageFormat, Size, Viewport};
 
 use librashader_common::map::FastHashMap;
@@ -21,8 +21,8 @@ use crate::graphics_pipeline::D3D11State;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::samplers::SamplerSet;
-use crate::util::d3d11_compile_bound_shader;
-use crate::{error, util, D3D11OutputView};
+use crate::util::{d3d11_compile_bound_shader, GetSize};
+use crate::{error, util};
 use librashader_cache::cache_shader_object;
 use librashader_cache::CachedCompilation;
 use librashader_presets::context::VideoDriver;
@@ -36,7 +36,8 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
 use rayon::prelude::*;
 use windows::Win32::Graphics::Direct3D11::{
-    ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
+    ID3D11Buffer, ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView,
+    ID3D11ShaderResourceView, D3D11_BIND_CONSTANT_BUFFER, D3D11_BUFFER_DESC,
     D3D11_CPU_ACCESS_WRITE, D3D11_CREATE_DEVICE_SINGLETHREADED, D3D11_RESOURCE_MISC_GENERATE_MIPS,
     D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_USAGE_DYNAMIC,
 };
@@ -347,7 +348,7 @@ impl FilterChainD3D11 {
     fn push_history(
         &mut self,
         ctx: &ID3D11DeviceContext,
-        input: &D3D11InputView,
+        input: &ID3D11ShaderResourceView,
     ) -> error::Result<()> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             back.copy_from(ctx, input)?;
@@ -399,8 +400,8 @@ impl FilterChainD3D11 {
     pub unsafe fn frame(
         &mut self,
         ctx: Option<&ID3D11DeviceContext>,
-        input: D3D11InputView,
-        viewport: &Viewport<D3D11OutputView>,
+        input: &ID3D11ShaderResourceView,
+        viewport: &Viewport<ID3D11RenderTargetView>,
         frame_count: usize,
         options: Option<&FrameOptionsD3D11>,
     ) -> error::Result<()> {
@@ -447,8 +448,8 @@ impl FilterChainD3D11 {
         // rescale render buffers to ensure all bindings are valid.
         OwnedImage::scale_framebuffers(
             source.size(),
-            viewport.output.size,
-            original.view.size,
+            viewport.output.size()?,
+            original.view.size()?,
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
@@ -481,7 +482,6 @@ impl FilterChainD3D11 {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             let target = &self.output_framebuffers[index];
-            let size = target.size;
             pass.draw(
                 ctx,
                 index,
@@ -491,15 +491,12 @@ impl FilterChainD3D11 {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::identity(&target.as_output()?),
+                RenderTarget::identity(&target.create_render_target_view()?),
                 QuadType::Offscreen,
             )?;
 
             source = InputTexture {
-                view: D3D11InputView {
-                    handle: target.create_shader_resource_view()?,
-                    size,
-                },
+                view: target.create_shader_resource_view()?,
                 filter: pass.config.filter,
                 wrap_mode: pass.config.wrap_mode,
             };
