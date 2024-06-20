@@ -246,7 +246,6 @@ pub mod d3d11_hello_triangle {
     use librashader_runtime::image::Image;
     use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
     use librashader_runtime_d3d11::FilterChainD3D11;
-    use librashader_runtime_d3d11::{D3D11InputView, D3D11OutputView};
     use std::slice;
     use std::time::Instant;
     use texture::ExampleTexture;
@@ -572,23 +571,11 @@ pub mod d3d11_hello_triangle {
                 self.filter
                     .frame(
                         None,
-                        D3D11InputView {
-                            handle: srv,
-                            size: Size {
-                                width: tex2d_desc.Width,
-                                height: tex2d_desc.Height,
-                            },
-                        },
+                        &srv,
                         &Viewport {
                             x: 0f32,
                             y: 0f32,
-                            output: D3D11OutputView {
-                                size: Size {
-                                    width: backbuffer_desc.Width,
-                                    height: backbuffer_desc.Height,
-                                },
-                                handle: resources.backbuffer_rtv.as_ref().unwrap().clone(),
-                            },
+                            output: resources.backbuffer_rtv.as_ref().unwrap().clone(),
                             mvp: None,
                         },
                         resources.frame_count,

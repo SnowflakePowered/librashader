@@ -25,5 +25,3 @@ use librashader_runtime::impl_filter_chain_parameters;
 impl_filter_chain_parameters!(FilterChainD3D11);
 
 pub use filter_chain::FilterChainD3D11;
-pub use texture::D3D11InputView;
-pub use texture::D3D11OutputView;

@@ -8,8 +8,6 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 pub struct D3D12InputImage {
     pub resource: ID3D12Resource,
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    pub size: Size<u32>,
-    pub format: DXGI_FORMAT,
 }
 
 #[derive(Clone)]
@@ -117,11 +115,12 @@ impl InputTexture {
         filter: FilterMode,
         wrap_mode: WrapMode,
     ) -> InputTexture {
+        let desc = unsafe { image.resource.GetDesc() };
         InputTexture {
             resource: image.resource,
             descriptor: InputDescriptor::Raw(image.descriptor),
-            size: image.size,
-            format: image.format,
+            size: Size::new(desc.Width as u32, desc.Height),
+            format: desc.Format,
             wrap_mode,
             filter,
         }
