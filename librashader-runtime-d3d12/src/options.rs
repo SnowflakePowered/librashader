@@ -18,4 +18,8 @@ pub struct FilterChainOptionsD3D12 {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+
+    /// Force the SPIR-V to DXIL pipeline, disabling the HLSL pipeline.
+    /// If this is true, overrides `force_hlsl_pipeline`.
+    pub force_spirv_pipeline: bool,
 }

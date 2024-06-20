@@ -146,29 +146,85 @@ where
 }
 
 macro_rules! config_set_field {
-    ($options:ident.$field:ident <- $ptr:ident) => {
+    (@POINTER $options:ident.$field:ident <- $ptr:ident) => {
         $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+    };
+    (@POINTER @NEGATIVE $options:ident.$field:ident <- $ptr:ident) => {
+        $options.$field = unsafe { !::std::ptr::addr_of!((*$ptr).$field).read() };
+    };
+    (@LITERAL $options:ident.$field:ident <- $value:literal) => {
+        $options.$field = $value;
     };
 }
 
 macro_rules! config_version_set {
-    ($version:literal => [$($field:ident),+ $(,)?] ($options:ident <- $ptr:ident)) => {
-        let version = unsafe { ::std::ptr::addr_of!((*$ptr).version).read() };
+    // "optimized" version for normal behaviour
+    (@ROOT $realver:ident $version:literal => [$($field:ident),+ $(,)?] ($options:ident <- $ptr:ident)) => {
         #[allow(unused_comparisons)]
-        if version >= $version {
-            $($crate::ctypes::config_set_field!($options.$field <- $ptr);)+
+        if $realver >= $version {
+            $($crate::ctypes::config_set_field!(@POINTER $options.$field <- $ptr);)+
         }
-    }
+    };
+
+    // Repeater
+    (@ROOT $realver:ident $version:literal => [$($field:tt),+ $(,)?] ($options:ident <- $ptr:ident)) => {
+        $(crate::ctypes::config_version_set!(@SINGLE $realver $version => [$field] ($options <- $ptr));)+
+    };
+
+    // Allow overriding default value with a literal for older versions
+    (@SINGLE $realver:ident $version:literal => [($field:ident: $value:literal)] ($options:ident <- $ptr:ident)) => {
+        #[allow(unused_comparisons)]
+        if $realver >= $version {
+            $crate::ctypes::config_set_field!(@LITERAL $options.$field <- $value);
+        }
+    };
+
+    // Allow negation of prior variables that is version dependent.
+    (@SINGLE $realver:ident $version:literal => [(!$field:ident)] ($options:ident <- $ptr:ident)) => {
+        #[allow(unused_comparisons)]
+        if $realver >= $version {
+            $crate::ctypes::config_set_field!(@POINTER @NEGATIVE $options.$field <- $ptr);
+        }
+    };
+
+    (@SINGLE $realver:ident $version:literal => [$field:ident] ($options:ident <- $ptr:ident)) => {
+        #[allow(unused_comparisons)]
+        if $realver >= $version {
+            $crate::ctypes::config_set_field!(@POINTER $options.$field <- $ptr);
+        }
+    };
 }
 
+/// Macro to declare a configuration struct, with options to change behaviour based on
+/// API version.
+///
+/// For example following declaration does the following
+///
+/// * Declare `frames_in_flight`, `use_dynamic_rendering` for API version 0, with the following forward compatibility statements
+///     * Inverts the behaviour of `use_dynamic_rendering` compared to API version 1.
+///     * `disable_cache` is defaulted to `true` for API version 0, regardless of `Default::default`
+///        but is not declared for API 0.
+/// * Declare `use_dynamic_rendering` with normal behaviour, and `disable_cache` for API version 1.
+/// * All fields that are undeclared inherit `Default::default`
+///
+/// ```rust
+/// config_struct! {
+///     impl FilterChainOptions => filter_chain_vk_opt_t {
+///         0 => [frames_in_flight, (!use_dynamic_rendering), (disable_cache: true)];
+///         1 => [use_dynamic_rendering, disable_cache];
+///     }
+/// }
+/// ```
 macro_rules! config_struct {
-    (impl $rust:ty => $capi:ty {$($version:literal => [$($field:ident),+ $(,)?]);+ $(;)?}) => {
+    (impl $rust:ty => $capi:ty {$($version:literal => [$($field:tt),+]);+ $(;)?}) => {
         impl $crate::ctypes::FromUninit<$rust> for $capi {
             fn from_uninit(value: ::std::mem::MaybeUninit<Self>) -> $rust {
                 let ptr = value.as_ptr();
+                let version = unsafe { ::std::ptr::addr_of!((*ptr).version).read() };
+
                 let mut options = <$rust>::default();
                 $(
-                    $crate::ctypes::config_version_set!($version => [$($field),+] (options <- ptr));
+                    $crate::ctypes::config_version_set!(@ROOT version $version => [$($field),+] (options <- ptr));
                 )+
                 options
             }
