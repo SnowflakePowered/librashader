@@ -39,7 +39,7 @@ workspace = true
 optional = true
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ], optional = true}
+objc2-metal = { version = "0.2.0" , features = [ "all" ], optional = true}
 objc2 = { version = "0.5.0", features = ["apple"] , optional = true }
 
 [features]
@@ -58,7 +58,7 @@ runtime-d3d9 = [ "runtime", "reflect-cross", "librashader-common/d3d9", "librash
 
 runtime-vk = ["runtime", "reflect-cross", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
 runtime-wgpu = [ "runtime", "reflect-naga", "librashader-common/wgpu", "librashader-runtime-wgpu", "wgpu", "wgpu-types" ]
-runtime-metal = [ "runtime", "reflect-naga",  "reflect-cross", "librashader-common/metal", "librashader-runtime-mtl", "icrate", "objc2" ]
+runtime-metal = [ "runtime", "reflect-naga",  "reflect-cross", "librashader-common/metal", "librashader-runtime-mtl", "objc2-metal", "objc2" ]
 
 # reflection
 reflect-cross = ["reflect", "librashader-reflect/cross"]
@@ -75,7 +75,7 @@ internal = []
 full = ["runtime-all", "reflect-all", "preprocess", "presets"]
 
 # cache hack
-docsrs = ["librashader-cache/docsrs", "objc2/unstable-docsrs"]
+docsrs = ["librashader-cache/docsrs"]
 
 # emits warning messages in tests
 github-ci = []

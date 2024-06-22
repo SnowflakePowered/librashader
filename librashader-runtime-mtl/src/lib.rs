@@ -11,10 +11,7 @@ mod samplers;
 mod texture;
 
 pub use filter_chain::FilterChainMetal;
-use icrate::Metal::{
-    MTLPixelFormat, MTLPixelFormatBGRA8Unorm, MTLPixelFormatBGRA8Unorm_sRGB,
-    MTLPixelFormatRGBA8Unorm, MTLPixelFormatRGBA8Unorm_sRGB,
-};
+use objc2_metal::MTLPixelFormat;
 
 pub mod error;
 pub mod options;
@@ -24,12 +21,12 @@ impl_filter_chain_parameters!(FilterChainMetal);
 pub use texture::MetalTextureRef;
 
 fn select_optimal_pixel_format(format: MTLPixelFormat) -> MTLPixelFormat {
-    if format == MTLPixelFormatRGBA8Unorm {
-        return MTLPixelFormatBGRA8Unorm;
+    if format == MTLPixelFormat::RGBA8Unorm {
+        return MTLPixelFormat::BGRA8Unorm;
     }
 
-    if format == MTLPixelFormatRGBA8Unorm_sRGB {
-        return MTLPixelFormatBGRA8Unorm_sRGB;
+    if format == MTLPixelFormat::RGBA8Unorm_sRGB {
+        return MTLPixelFormat::BGRA8Unorm_sRGB;
     }
     return format;
 }

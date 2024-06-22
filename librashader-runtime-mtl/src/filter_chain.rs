@@ -8,12 +8,6 @@ use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsMetal, FrameOptionsMetal};
 use crate::samplers::SamplerSet;
 use crate::texture::{get_texture_size, InputTexture, MetalTextureRef, OwnedTexture};
-use icrate::Foundation::NSString;
-use icrate::Metal::{
-    MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLLoadActionClear,
-    MTLPixelFormat, MTLPixelFormatRGBA8Unorm, MTLRenderPassDescriptor, MTLResource,
-    MTLStoreActionDontCare, MTLStoreActionStore, MTLTexture,
-};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
@@ -35,6 +29,11 @@ use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
 use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::NSString;
+use objc2_metal::{
+    MTLCommandBuffer, MTLCommandEncoder, MTLCommandQueue, MTLDevice, MTLLoadAction, MTLPixelFormat,
+    MTLRenderPassDescriptor, MTLResource, MTLStoreAction, MTLTexture,
+};
 use rayon::prelude::*;
 use std::collections::VecDeque;
 use std::fmt::{Debug, Formatter};
@@ -184,8 +183,8 @@ impl FilterChainMetal {
                 let graphics_pipeline = MetalGraphicsPipeline::new(
                     &device,
                     &msl,
-                    if render_pass_format == 0 {
-                        MTLPixelFormatRGBA8Unorm
+                    if render_pass_format == MTLPixelFormat(0) {
+                        MTLPixelFormat::RGBA8Unorm
                     } else {
                         render_pass_format
                     },
@@ -344,11 +343,11 @@ impl FilterChainMetal {
                 let desc = MTLRenderPassDescriptor::new();
                 desc.colorAttachments()
                     .objectAtIndexedSubscript(0)
-                    .setLoadAction(MTLLoadActionClear);
+                    .setLoadAction(MTLLoadAction::Clear);
 
                 desc.colorAttachments()
                     .objectAtIndexedSubscript(0)
-                    .setStoreAction(MTLStoreActionDontCare);
+                    .setStoreAction(MTLStoreAction::DontCare);
                 desc
             };
 
@@ -360,8 +359,8 @@ impl FilterChainMetal {
                             .colorAttachments()
                             .objectAtIndexedSubscript(index);
                         ca.setTexture(Some(&history.texture));
-                        ca.setLoadAction(MTLLoadActionClear);
-                        ca.setStoreAction(MTLStoreActionStore);
+                        ca.setLoadAction(MTLLoadAction::Clear);
+                        ca.setStoreAction(MTLStoreAction::Store);
                     }
                 }
             }
