@@ -32,7 +32,7 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 
 indexmap = { version = "2.1.0", features = [] }
 matches = { version = "0.1.10", features = [] }
-rustc-hash = "1.1.0"
+rustc-hash = "2.0.0"
 
 [target.'cfg(windows)'.dependencies.spirv-to-dxil]
 version = "0.4.7"

@@ -35,7 +35,7 @@ __cbindgen_internal_objc = ["objc2-metal", "objc2"]
 thiserror = "1.0.37"
 paste = "1.0.9"
 gl = { version = "0.14.0", optional = true }
-rustc-hash = "1.1.0"
+rustc-hash = "2.0.0"
 ash = { version = "0.37", optional = true }
 spirv_cross = { package = "librashader-spirv-cross", version = "0.25.1" }
 sptr = "0.3.2"
