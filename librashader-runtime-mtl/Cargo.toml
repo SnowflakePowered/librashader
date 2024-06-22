@@ -34,12 +34,14 @@ harness = false
 targets = ["x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-icrate = { version = "0.1.0" , features = [ "Metal", "Metal_all" ] }
+objc2-metal = { version = "0.2", features = ["all"] }
+objc2-foundation = { version = "0.2", features = ["NSError"] }
+
 objc2 = { version = "0.5.0", features = ["apple"] }
 
 [features]
 
-run_test = ["icrate/AppKit", "icrate/AppKit_all", "icrate/Foundation", "icrate/Foundation_all", "icrate/MetalKit", "icrate/MetalKit_all"]
+# run_test = ["icrate/AppKit", "i "icrate/Foundation_all", "icrate/MetalKit", "icrate/MetalKit_all"]
 
 #[lib]
 #crate-type = ["lib", "staticlib"]
