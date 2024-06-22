@@ -5,7 +5,6 @@ use crate::graphics_pipeline::MetalGraphicsPipeline;
 use crate::options::FrameOptionsMetal;
 use crate::samplers::SamplerSet;
 use crate::texture::{get_texture_size, InputTexture};
-use icrate::Metal::{MTLCommandBuffer, MTLCommandEncoder, MTLRenderCommandEncoder, MTLTexture};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
@@ -18,6 +17,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use objc2::runtime::ProtocolObject;
+use objc2_metal::{MTLCommandBuffer, MTLCommandEncoder, MTLRenderCommandEncoder, MTLTexture};
 
 impl TextureInput for InputTexture {
     fn size(&self) -> Size<u32> {

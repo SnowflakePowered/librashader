@@ -13,8 +13,8 @@ use std::slice;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 
-use icrate::Metal::{MTLCommandBuffer, MTLCommandQueue, MTLTexture};
 use objc2::runtime::ProtocolObject;
+use objc2_metal::{MTLCommandBuffer, MTLCommandQueue, MTLTexture};
 
 use crate::LIBRASHADER_API_VERSION;
 

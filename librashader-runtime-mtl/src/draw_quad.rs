@@ -1,11 +1,10 @@
 use array_concat::concat_arrays;
-use icrate::Metal::{
-    MTLBuffer, MTLDevice, MTLPrimitiveTypeTriangleStrip, MTLRenderCommandEncoder,
-    MTLResourceStorageModeManaged, MTLResourceStorageModeShared,
-};
 use librashader_runtime::quad::{QuadType, VertexInput};
-use objc2::rc::Id;
+use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_metal::{
+    MTLBuffer, MTLDevice, MTLPrimitiveType, MTLRenderCommandEncoder, MTLResourceOptions,
+};
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
@@ -53,7 +52,7 @@ const FINAL_VBO_DATA: [VertexInput; 4] = [
 const VBO_DATA: [VertexInput; 8] = concat_arrays!(OFFSCREEN_VBO_DATA, FINAL_VBO_DATA);
 
 pub struct DrawQuad {
-    buffer: Id<ProtocolObject<dyn MTLBuffer>>,
+    buffer: Retained<ProtocolObject<dyn MTLBuffer>>,
 }
 
 impl DrawQuad {
@@ -83,9 +82,9 @@ impl DrawQuad {
                     NonNull::new_unchecked(vbo_data.as_ptr() as *mut c_void),
                     vbo_data.len(),
                     if cfg!(target_os = "ios") {
-                        MTLResourceStorageModeShared
+                        MTLResourceOptions::MTLResourceStorageModeShared
                     } else {
-                        MTLResourceStorageModeManaged
+                        MTLResourceOptions::MTLResourceStorageModeManaged
                     },
                 )
                 .ok_or(FilterChainError::BufferError)?
@@ -103,7 +102,7 @@ impl DrawQuad {
 
         unsafe {
             cmd.setVertexBuffer_offset_atIndex(Some(&self.buffer), 0, VERTEX_BUFFER_INDEX);
-            cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveTypeTriangleStrip, offset, 4);
+            cmd.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveType::TriangleStrip, offset, 4);
         }
     }
 }
