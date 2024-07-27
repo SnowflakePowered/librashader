@@ -47,7 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #import <Metal/Metal.h>
 #endif
 #if defined(LIBRA_RUNTIME_VULKAN)
-#include <vulkan\vulkan.h>
+#include <vulkan/vulkan.h>
 #endif
 
 

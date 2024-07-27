@@ -45,7 +45,7 @@ after_includes = """
 #import <Metal/Metal.h>
 #endif
 #if defined(LIBRA_RUNTIME_VULKAN)
-#include <vulkan\\vulkan.h>
+#include <vulkan/vulkan.h>
 #endif
 """
 
