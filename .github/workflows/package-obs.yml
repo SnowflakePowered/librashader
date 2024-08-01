@@ -27,10 +27,6 @@ jobs:
             spec: librashader.spec
             can_fail: true
             name: Ubuntu 23.10 (.deb)
-          - repo: Arch
-            spec: PKGBUILD
-            can_fail: false
-            name: Arch (PKGBUILD)
     runs-on: ubuntu-latest
     needs: [approve-obs-build]
     continue-on-error: ${{ matrix.can_fail }}

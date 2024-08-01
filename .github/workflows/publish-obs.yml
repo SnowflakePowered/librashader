@@ -18,9 +18,6 @@ jobs:
           - repo: xUbuntu_23.10
             spec: librashader.spec
             can_fail: true
-          - repo: Arch
-            spec: PKGBUILD
-            can_fail: false
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.can_fail }}
     container:
