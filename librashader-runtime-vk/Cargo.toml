@@ -23,8 +23,8 @@ librashader-cache = { path = "../librashader-cache", version = "0.2.8" }
 
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
-ash = { version = "0.37", features = ["debug"] }
-gpu-allocator = { version = "0.25.0", default-features = false, features = ["vulkan"] }
+ash = { version = "0.38", features = ["debug"] }
+gpu-allocator = { version = "0.27.0", default-features = false, features = ["vulkan"] }
 parking_lot = "0.12.1"
 rayon = "1.6.1"
 array-concat = "0.5.2"
@@ -32,9 +32,9 @@ array-concat = "0.5.2"
 [dev-dependencies]
 num = "0.4.0"
 glfw = "0.49.0"
-winit = {  version = "0.29.10", features = ["rwh_05"] }
-raw-window-handle = "0.5"
-ash-window = "0.12.0"
+winit = {  version = "0.29.10", features = ["rwh_06"] }
+raw-window-handle = "0.6.2"
+ash-window = "0.13.0"
 
 [package.metadata.docs.rs]
 features = ["librashader-cache/docsrs"]

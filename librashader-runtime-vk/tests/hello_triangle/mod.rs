@@ -91,7 +91,7 @@ impl VulkanWindow {
             },
         }];
 
-        let render_pass_begin = vk::RenderPassBeginInfo::builder()
+        let render_pass_begin = vk::RenderPassBeginInfo::default()
             .render_pass(vulkan.pipeline.renderpass)
             .framebuffer(framebuffer)
             .render_area(vk::Rect2D {
@@ -284,7 +284,7 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED,
             // );
             //
-            // let blit_subresource = vk::ImageSubresourceLayers::builder()
+            // let blit_subresource = vk::ImageSubresourceLayers::default()
             //     .layer_count(1)
             //     .aspect_mask(vk::ImageAspectFlags::COLOR)
             //     ;
@@ -344,7 +344,7 @@ impl VulkanWindow {
 
             let stage_mask = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
             let cmd = [cmd];
-            let submit_info = [*vk::SubmitInfo::builder()
+            let submit_info = [vk::SubmitInfo::default()
                 .wait_dst_stage_mask(&stage_mask)
                 .wait_semaphores(&image_available)
                 .signal_semaphores(&render_finished)
@@ -358,7 +358,7 @@ impl VulkanWindow {
 
             let swapchain_index = [swapchain_index];
             let swapchain = [vulkan.swapchain.swapchain];
-            let present_info = vk::PresentInfoKHR::builder()
+            let present_info = vk::PresentInfoKHR::default()
                 .wait_semaphores(&render_finished)
                 .swapchains(&swapchain)
                 .image_indices(&swapchain_index);

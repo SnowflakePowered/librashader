@@ -69,7 +69,7 @@ impl VulkanBuffer {
         size: usize,
     ) -> error::Result<VulkanBuffer> {
         unsafe {
-            let buffer_info = vk::BufferCreateInfo::builder()
+            let buffer_info = vk::BufferCreateInfo::default()
                 .size(size as vk::DeviceSize)
                 .usage(usage)
                 .sharing_mode(vk::SharingMode::EXCLUSIVE);
@@ -161,13 +161,12 @@ impl RawVulkanBuffer {
         storage: &impl UniformStorageAccess,
     ) -> error::Result<()> {
         unsafe {
-            let buffer_info = vk::DescriptorBufferInfo::builder()
+            let buffer_info = [vk::DescriptorBufferInfo::default()
                 .buffer(self.buffer.handle)
                 .offset(0)
-                .range(storage.ubo_slice().len() as vk::DeviceSize);
+                .range(storage.ubo_slice().len() as vk::DeviceSize)];
 
-            let buffer_info = [*buffer_info];
-            let write_info = vk::WriteDescriptorSet::builder()
+            let write_info = vk::WriteDescriptorSet::default()
                 .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
                 .dst_set(descriptor_set)
                 .dst_binding(binding)
@@ -176,7 +175,7 @@ impl RawVulkanBuffer {
 
             self.buffer
                 .device
-                .update_descriptor_sets(&[*write_info], &[])
+                .update_descriptor_sets(&[write_info], &[])
         }
         Ok(())
     }

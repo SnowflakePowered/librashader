@@ -55,20 +55,20 @@ impl BindSemantics<NoUniformBinder, Option<()>, RawVulkanBuffer> for FilterPass 
         device: &Self::DeviceContext,
     ) {
         let sampler = samplers.get(texture.wrap_mode, texture.filter_mode, texture.mip_filter);
-        let image_info = vk::DescriptorImageInfo::builder()
+        let image_info = vk::DescriptorImageInfo::default()
             .sampler(sampler.handle)
             .image_view(texture.image_view)
             .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL);
 
-        let image_info = [*image_info];
-        let write_desc = vk::WriteDescriptorSet::builder()
+        let image_info = [image_info];
+        let write_desc = vk::WriteDescriptorSet::default()
             .dst_set(*descriptors)
             .dst_binding(binding.binding)
             .dst_array_element(0)
             .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
             .image_info(&image_info);
         unsafe {
-            device.update_descriptor_sets(&[*write_desc], &[]);
+            device.update_descriptor_sets(&[write_desc], &[]);
         }
     }
 }

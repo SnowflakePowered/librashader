@@ -67,7 +67,7 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
     fn try_from(vulkan: VulkanInstance) -> Result<Self, FilterChainError> {
         unsafe {
             let instance = ash::Instance::load(
-                &vk::StaticFn {
+                &ash::StaticFn {
                     get_instance_proc_addr: vulkan.get_instance_proc_addr,
                 },
                 vulkan.instance,
@@ -270,7 +270,7 @@ impl FilterChainVulkan {
 
         let command_pool = unsafe {
             device.create_command_pool(
-                &vk::CommandPoolCreateInfo::builder()
+                &vk::CommandPoolCreateInfo::default()
                     .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER),
                 None,
             )?
@@ -279,7 +279,7 @@ impl FilterChainVulkan {
         let command_buffer = unsafe {
             // panic safety: command buffer count = 1
             device.allocate_command_buffers(
-                &vk::CommandBufferAllocateInfo::builder()
+                &vk::CommandBufferAllocateInfo::default()
                     .command_pool(command_pool)
                     .level(vk::CommandBufferLevel::PRIMARY)
                     .command_buffer_count(1),
@@ -289,7 +289,7 @@ impl FilterChainVulkan {
         unsafe {
             device.begin_command_buffer(
                 command_buffer,
-                &vk::CommandBufferBeginInfo::builder()
+                &vk::CommandBufferBeginInfo::default()
                     .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT),
             )?
         }
@@ -307,9 +307,9 @@ impl FilterChainVulkan {
             device.end_command_buffer(command_buffer)?;
 
             let buffers = [command_buffer];
-            let submit_info = vk::SubmitInfo::builder().command_buffers(&buffers);
+            let submit_info = vk::SubmitInfo::default().command_buffers(&buffers);
 
-            device.queue_submit(queue, &[*submit_info], vk::Fence::null())?;
+            device.queue_submit(queue, &[submit_info], vk::Fence::null())?;
             device.queue_wait_idle(queue)?;
             device.free_command_buffers(command_pool, &buffers);
             device.destroy_command_pool(command_pool, None);
@@ -592,18 +592,18 @@ impl FilterChainVulkan {
         }
 
         let original_image_view = unsafe {
-            let create_info = vk::ImageViewCreateInfo::builder()
+            let create_info = vk::ImageViewCreateInfo::default()
                 .image(input.image)
                 .format(input.format)
                 .view_type(vk::ImageViewType::TYPE_2D)
                 .subresource_range(
-                    *vk::ImageSubresourceRange::builder()
+                    vk::ImageSubresourceRange::default()
                         .aspect_mask(vk::ImageAspectFlags::COLOR)
                         .level_count(1)
                         .layer_count(1),
                 )
                 .components(
-                    *vk::ComponentMapping::builder()
+                    vk::ComponentMapping::default()
                         .r(vk::ComponentSwizzle::R)
                         .g(vk::ComponentSwizzle::G)
                         .b(vk::ComponentSwizzle::B)

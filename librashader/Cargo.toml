@@ -26,7 +26,7 @@ librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.2.8"
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.2.8", optional = true }
 librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.2.8", optional = true }
 
-ash = { version = "0.37", optional = true }
+ash = { version = "0.38", optional = true }
 halfbrown = "0.2.4"
 
 [target.'cfg(not(all(target_vendor="apple", docsrs)))'.dependencies]
