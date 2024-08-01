@@ -25,7 +25,7 @@ use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
-use wgpu::{Device, TextureFormat};
+use wgpu::{AdapterInfo, Device, TextureFormat};
 
 use crate::error;
 use crate::error::FilterChainError;
@@ -144,8 +144,17 @@ impl FilterChainWgpu {
     ) -> error::Result<FilterChainWgpu> {
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
-        // // initialize passes
-        let filters = Self::init_passes(Arc::clone(&device), passes, &semantics)?;
+        // cache is opt-in for wgpu, not opt-out because of feature requirements.
+        let disable_cache = options.map_or(true, |o| !o.enable_cache);
+
+        // initialize passes
+        let filters = Self::init_passes(
+            Arc::clone(&device),
+            passes,
+            &semantics,
+            options.and_then(|o| o.adapter_info.as_ref()),
+            disable_cache,
+        )?;
 
         let samplers = SamplerSet::new(&device);
         let mut mipmapper = MipmapGen::new(Arc::clone(&device));
@@ -268,6 +277,8 @@ impl FilterChainWgpu {
         device: Arc<Device>,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
+        adapter_info: Option<&wgpu::AdapterInfo>,
+        disable_cache: bool,
     ) -> error::Result<Box<[FilterPass]>> {
         #[cfg(not(target_arch = "wasm32"))]
         let filter_creation_fn = || {
@@ -320,6 +331,8 @@ impl FilterChainWgpu {
                         &wgsl,
                         &reflection,
                         render_pass_format.unwrap_or(TextureFormat::Rgba8Unorm),
+                        adapter_info,
+                        disable_cache,
                     );
 
                     Ok(FilterPass {
