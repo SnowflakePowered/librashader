@@ -198,6 +198,8 @@ impl PipelineLayoutObjects {
                     alpha_to_coverage_enabled: false,
                 },
                 multiview: None,
+                // todo: WGPU pipeline caching!!
+                cache: None,
             })
     }
 }

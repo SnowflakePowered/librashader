@@ -57,6 +57,8 @@ impl CompileShader<MSL> for NagaReflect {
 
             let pipeline_options = PipelineOptions {
                 allow_and_force_point_size: false,
+                vertex_pulling_transform: false,
+                vertex_buffer_mappings: vec![],
             };
 
             let msl = naga::back::msl::write_string(&module, &info, &options, &pipeline_options)?;
