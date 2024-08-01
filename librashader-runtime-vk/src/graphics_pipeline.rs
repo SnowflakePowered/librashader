@@ -16,13 +16,13 @@ use std::ffi::CStr;
 use std::sync::Arc;
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
-pub struct PipelineDescriptors {
+pub struct PipelineDescriptors<'a> {
     pub replicas: u32,
-    pub layout_bindings: Vec<vk::DescriptorSetLayoutBinding>,
+    pub layout_bindings: Vec<vk::DescriptorSetLayoutBinding<'a>>,
     pub pool_sizes: Vec<vk::DescriptorPoolSize>,
 }
 
-impl PipelineDescriptors {
+impl PipelineDescriptors<'_> {
     pub fn new(duplicates: u32) -> Self {
         Self {
             replicas: duplicates,
@@ -43,6 +43,7 @@ impl PipelineDescriptors {
                 descriptor_count: 1,
                 stage_flags: ubo_mask,
                 p_immutable_samplers: std::ptr::null(),
+                _marker: Default::default(),
             });
 
             self.pool_sizes.push(vk::DescriptorPoolSize {
@@ -61,6 +62,7 @@ impl PipelineDescriptors {
                 descriptor_count: 1,
                 stage_flags: texture_mask,
                 p_immutable_samplers: std::ptr::null(),
+                _marker: Default::default(),
             });
 
             self.pool_sizes.push(vk::DescriptorPoolSize {
@@ -80,7 +82,7 @@ impl PipelineDescriptors {
     ) -> error::Result<vk::DescriptorSetLayout> {
         unsafe {
             let layout = device.create_descriptor_set_layout(
-                &vk::DescriptorSetLayoutCreateInfo::builder().bindings(self.bindings()),
+                &vk::DescriptorSetLayoutCreateInfo::default().bindings(self.bindings()),
                 None,
             )?;
             Ok(layout)
@@ -90,9 +92,9 @@ impl PipelineDescriptors {
 
 pub struct PipelineLayoutObjects {
     pub layout: vk::PipelineLayout,
-    pub pool: vk::DescriptorPool,
     pub descriptor_sets: Vec<vk::DescriptorSet>,
-    pub descriptor_set_layout: [vk::DescriptorSetLayout; 1],
+    pub _pool: vk::DescriptorPool,
+    pub _descriptor_set_layout: [vk::DescriptorSetLayout; 1],
 }
 
 impl PipelineLayoutObjects {
@@ -108,11 +110,11 @@ impl PipelineLayoutObjects {
         let descriptor_set_layout = [descriptors.create_descriptor_set_layout(device)?];
 
         let pipeline_create_info =
-            vk::PipelineLayoutCreateInfo::builder().set_layouts(&descriptor_set_layout);
+            vk::PipelineLayoutCreateInfo::default().set_layouts(&descriptor_set_layout);
 
         let push_constant_range = reflection.push_constant.as_ref().map(|push_constant| {
             let stage_mask = util::binding_stage_to_vulkan_stage(push_constant.stage_mask);
-            [*vk::PushConstantRange::builder()
+            [vk::PushConstantRange::default()
                 .stage_flags(stage_mask)
                 .size(push_constant.size)]
         });
@@ -124,14 +126,14 @@ impl PipelineLayoutObjects {
 
         let layout = unsafe { device.create_pipeline_layout(&pipeline_create_info, None)? };
 
-        let pool_info = vk::DescriptorPoolCreateInfo::builder()
+        let pool_info = vk::DescriptorPoolCreateInfo::default()
             .max_sets(replicas)
             .pool_sizes(&descriptors.pool_sizes);
 
         let pool = unsafe { device.create_descriptor_pool(&pool_info, None)? };
 
         let mut descriptor_sets = Vec::new();
-        let alloc_info = vk::DescriptorSetAllocateInfo::builder()
+        let alloc_info = vk::DescriptorSetAllocateInfo::default()
             .descriptor_pool(pool)
             .set_layouts(&descriptor_set_layout);
 
@@ -145,9 +147,9 @@ impl PipelineLayoutObjects {
 
         Ok(PipelineLayoutObjects {
             layout,
-            descriptor_set_layout,
+            _descriptor_set_layout: descriptor_set_layout,
             descriptor_sets,
-            pool,
+            _pool: pool,
         })
     }
 }
@@ -194,7 +196,7 @@ impl VulkanGraphicsPipeline {
         fragment_module: &VulkanShaderModule,
         render_pass: Option<&VulkanRenderPass>,
     ) -> error::Result<vk::Pipeline> {
-        let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::builder()
+        let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP);
 
         let vao_state = [
@@ -212,17 +214,17 @@ impl VulkanGraphicsPipeline {
             },
         ];
 
-        let input_binding = vk::VertexInputBindingDescription::builder()
+        let input_binding = vk::VertexInputBindingDescription::default()
             .binding(0)
             .stride(std::mem::size_of::<VertexInput>() as u32)
             .input_rate(vk::VertexInputRate::VERTEX);
 
-        let input_binding = [*input_binding];
-        let pipeline_input_state = vk::PipelineVertexInputStateCreateInfo::builder()
+        let input_binding = [input_binding];
+        let pipeline_input_state = vk::PipelineVertexInputStateCreateInfo::default()
             .vertex_binding_descriptions(&input_binding)
             .vertex_attribute_descriptions(&vao_state);
 
-        let raster_state = vk::PipelineRasterizationStateCreateInfo::builder()
+        let raster_state = vk::PipelineRasterizationStateCreateInfo::default()
             .polygon_mode(vk::PolygonMode::FILL)
             .cull_mode(vk::CullModeFlags::NONE)
             .front_face(vk::FrontFace::COUNTER_CLOCKWISE)
@@ -231,19 +233,19 @@ impl VulkanGraphicsPipeline {
             .depth_bias_enable(false)
             .line_width(1.0);
 
-        let attachments = vk::PipelineColorBlendAttachmentState::builder()
+        let attachments = vk::PipelineColorBlendAttachmentState::default()
             .blend_enable(false)
             .color_write_mask(vk::ColorComponentFlags::from_raw(0xf));
 
-        let attachments = [*attachments];
+        let attachments = [attachments];
         let blend_state =
-            vk::PipelineColorBlendStateCreateInfo::builder().attachments(&attachments);
+            vk::PipelineColorBlendStateCreateInfo::default().attachments(&attachments);
 
-        let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
+        let viewport_state = vk::PipelineViewportStateCreateInfo::default()
             .viewport_count(1)
             .scissor_count(1);
 
-        let depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo::builder()
+        let depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo::default()
             .depth_test_enable(false)
             .depth_write_enable(false)
             .stencil_test_enable(false)
@@ -251,25 +253,24 @@ impl VulkanGraphicsPipeline {
             .min_depth_bounds(1.0)
             .max_depth_bounds(1.0);
 
-        let multisample_state = vk::PipelineMultisampleStateCreateInfo::builder()
+        let multisample_state = vk::PipelineMultisampleStateCreateInfo::default()
             .rasterization_samples(vk::SampleCountFlags::TYPE_1);
 
         let states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-        let dynamic_state = vk::PipelineDynamicStateCreateInfo::builder().dynamic_states(&states);
+        let dynamic_state = vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&states);
 
         let shader_stages = [
-            vk::PipelineShaderStageCreateInfo::builder()
+            vk::PipelineShaderStageCreateInfo::default()
                 .stage(vk::ShaderStageFlags::VERTEX)
                 .name(ENTRY_POINT)
                 .module(vertex_module.shader),
-            vk::PipelineShaderStageCreateInfo::builder()
+            vk::PipelineShaderStageCreateInfo::default()
                 .stage(vk::ShaderStageFlags::FRAGMENT)
                 .name(ENTRY_POINT)
                 .module(fragment_module.shader),
         ];
 
-        let shader_stages = [*shader_stages[0], *shader_stages[1]];
-        let mut pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
+        let mut pipeline_info = vk::GraphicsPipelineCreateInfo::default()
             .stages(&shader_stages)
             .vertex_input_state(&pipeline_input_state)
             .input_assembly_state(&input_assembly)
@@ -288,7 +289,7 @@ impl VulkanGraphicsPipeline {
         let pipeline = unsafe {
             // panic_safety: if this is successful this should return 1 pipelines.
             device
-                .create_graphics_pipelines(*cache, &[*pipeline_info], None)
+                .create_graphics_pipelines(*cache, &[pipeline_info], None)
                 .map_err(|e| e.1)?[0]
         };
 
@@ -306,9 +307,9 @@ impl VulkanGraphicsPipeline {
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
 
         let vertex_info =
-            vk::ShaderModuleCreateInfo::builder().code(shader_assembly.vertex.as_ref());
+            vk::ShaderModuleCreateInfo::default().code(shader_assembly.vertex.as_ref());
         let fragment_info =
-            vk::ShaderModuleCreateInfo::builder().code(shader_assembly.fragment.as_ref());
+            vk::ShaderModuleCreateInfo::default().code(shader_assembly.fragment.as_ref());
 
         let vertex_module = VulkanShaderModule::new(device, &vertex_info)?;
         let fragment_module = VulkanShaderModule::new(device, &fragment_info)?;
@@ -325,7 +326,7 @@ impl VulkanGraphicsPipeline {
             "vulkan",
             &[&shader_assembly.vertex, &shader_assembly.fragment],
             |pipeline_data| {
-                let mut cache_info = vk::PipelineCacheCreateInfo::builder();
+                let mut cache_info = vk::PipelineCacheCreateInfo::default();
                 if let Some(pipeline_data) = pipeline_data.as_ref() {
                     cache_info = cache_info.initial_data(pipeline_data);
                 }
@@ -394,7 +395,7 @@ impl VulkanGraphicsPipeline {
             let attachments = [output.output.image_view];
             let framebuffer = unsafe {
                 self.device.create_framebuffer(
-                    &vk::FramebufferCreateInfo::builder()
+                    &vk::FramebufferCreateInfo::default()
                         .render_pass(render_pass.handle)
                         .attachments(&attachments)
                         .width(output.output.size.width)
@@ -410,7 +411,7 @@ impl VulkanGraphicsPipeline {
                 },
             }];
 
-            let render_pass_info = vk::RenderPassBeginInfo::builder()
+            let render_pass_info = vk::RenderPassBeginInfo::default()
                 .framebuffer(framebuffer)
                 .render_pass(render_pass.handle)
                 .clear_values(&clear_values)
@@ -428,14 +429,13 @@ impl VulkanGraphicsPipeline {
             }
             Ok(Some(framebuffer))
         } else {
-            let attachments = vk::RenderingAttachmentInfo::builder()
+            let attachments = [vk::RenderingAttachmentInfo::default()
                 .load_op(vk::AttachmentLoadOp::DONT_CARE)
                 .store_op(vk::AttachmentStoreOp::STORE)
                 .image_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-                .image_view(output.output.image_view);
-            let attachments = [*attachments];
+                .image_view(output.output.image_view)];
 
-            let rendering_info = vk::RenderingInfo::builder()
+            let rendering_info = vk::RenderingInfo::default()
                 .layer_count(1)
                 .render_area(vk::Rect2D {
                     offset: vk::Offset2D { x: 0, y: 0 },
