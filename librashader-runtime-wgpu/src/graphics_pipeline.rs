@@ -1,11 +1,14 @@
+use crate::error::FilterChainError;
 use crate::framebuffer::WgpuOutputView;
 use crate::util;
+use librashader_cache::cache_pipeline;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
 use std::borrow::Cow;
+use std::convert::Infallible;
 use std::sync::Arc;
 use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
@@ -18,6 +21,7 @@ use wgpu::{
 pub struct WgpuGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
     render_pipeline: wgpu::RenderPipeline,
+    cache: Option<wgpu::PipelineCache>,
     pub format: wgpu::TextureFormat,
 }
 
@@ -144,7 +148,11 @@ impl PipelineLayoutObjects {
         }
     }
 
-    pub fn create_pipeline(&self, framebuffer_format: TextureFormat) -> wgpu::RenderPipeline {
+    pub fn create_pipeline(
+        &self,
+        framebuffer_format: TextureFormat,
+        cache: Option<&wgpu::PipelineCache>,
+    ) -> wgpu::RenderPipeline {
         self.device
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("Render Pipeline"),
@@ -198,8 +206,7 @@ impl PipelineLayoutObjects {
                     alpha_to_coverage_enabled: false,
                 },
                 multiview: None,
-                // todo: WGPU pipeline caching!!
-                cache: None,
+                cache,
             })
     }
 }
@@ -210,18 +217,50 @@ impl WgpuGraphicsPipeline {
         shader_assembly: &ShaderCompilerOutput<String, NagaWgslContext>,
         reflection: &ShaderReflection,
         render_pass_format: TextureFormat,
+        adapter_info: Option<&wgpu::AdapterInfo>,
+        bypass_cache: bool,
     ) -> Self {
+        let cache = if bypass_cache {
+            None
+        } else {
+            let name = adapter_info
+                .and_then(|o| wgpu::util::pipeline_cache_key(o))
+                .unwrap_or_else(|| String::from("wgpu"));
+
+            cache_pipeline(
+                &name,
+                &[
+                    &shader_assembly.vertex.as_str(),
+                    &shader_assembly.fragment.as_str(),
+                ],
+                |pipeline_data| {
+                    let descriptor = wgpu::PipelineCacheDescriptor {
+                        label: Some("librashader-wgpu"),
+                        data: pipeline_data.as_deref(),
+                        fallback: true,
+                    };
+
+                    let cache = unsafe { device.create_pipeline_cache(&descriptor) };
+                    Ok::<_, Infallible>(cache)
+                },
+                |cache| Ok(cache.get_data()),
+                bypass_cache,
+            )
+            .ok()
+        };
+
         let layout = PipelineLayoutObjects::new(reflection, shader_assembly, device);
-        let render_pipeline = layout.create_pipeline(render_pass_format);
+        let render_pipeline = layout.create_pipeline(render_pass_format, cache.as_ref());
         Self {
             layout,
             render_pipeline,
             format: render_pass_format,
+            cache,
         }
     }
 
     pub fn recompile(&mut self, format: TextureFormat) {
-        let render_pipeline = self.layout.create_pipeline(format);
+        let render_pipeline = self.layout.create_pipeline(format, self.cache.as_ref());
         self.render_pipeline = render_pipeline;
     }
 

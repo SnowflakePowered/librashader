@@ -1876,6 +1876,7 @@ dependencies = [
  "config",
  "env_logger",
  "image",
+ "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
