@@ -36,6 +36,8 @@ impl MipmapGen {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            // todo: caching!!
+            cache: None,
         });
 
         pipeline
