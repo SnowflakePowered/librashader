@@ -44,6 +44,10 @@ pub struct libra_output_image_vk_t {
     pub handle: vk::Image,
     /// The `VkFormat` of the output image.
     pub format: vk::Format,
+    /// The width of the output image.
+    pub width: u32,
+    /// The height of the output image.
+    pub height: u32,
 }
 
 /// Handles required to instantiate vulkan
@@ -268,7 +272,7 @@ extern_fn! {
         let image: VulkanImage = image.into();
         let output = VulkanImage {
             image: out.handle,
-            size: Size::new(viewport.width, viewport.height),
+            size: Size::new(out.width, out.height),
             format: out.format
         };
         let mvp = if mvp.is_null() {
