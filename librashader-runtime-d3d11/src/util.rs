@@ -2,7 +2,7 @@ use crate::error;
 use crate::error::assume_d3d11_init;
 use librashader_common::Size;
 use std::slice;
-use windows::core::{ComInterface, PCSTR};
+use windows::core::{Interface, PCSTR};
 use windows::Win32::Graphics::Direct3D::Fxc::{
     D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION,
 };
@@ -147,7 +147,7 @@ pub fn d3d11_compile_bound_shader<'a, T, L>(
     factory: ShaderFactory<'a, L, T>,
 ) -> error::Result<T>
 where
-    L: windows::core::IntoParam<ID3D11ClassLinkage>,
+    L: windows::core::Param<ID3D11ClassLinkage>,
 {
     unsafe {
         // SAFETY: slice as valid for as long as vs_blob is alive.

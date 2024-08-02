@@ -1,25 +1,7 @@
 use crate::error::Result;
 use crate::framebuffer::OwnedImage;
 use librashader_common::{FilterMode, WrapMode};
-use windows::Win32::Graphics::Direct3D11::{ID3D11RenderTargetView, ID3D11ShaderResourceView};
-
-/// An image view for use as a shader resource.
-///
-/// Contains an `ID3D11ShaderResourceView`, and a size.
-#[derive(Debug, Clone)]
-pub struct D3D11InputView {
-    /// A handle to the shader resource view.
-    pub handle: ID3D11ShaderResourceView,
-}
-
-/// An image view for use as a render target.
-///
-/// Contains an `ID3D11RenderTargetView`, and a size.
-#[derive(Debug, Clone)]
-pub struct D3D11OutputView {
-    /// A handle to the render target view.
-    pub handle: ID3D11RenderTargetView,
-}
+use windows::Win32::Graphics::Direct3D11::{ID3D11ShaderResourceView};
 
 #[derive(Debug, Clone)]
 pub struct InputTexture {
