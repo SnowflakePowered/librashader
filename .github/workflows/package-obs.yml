@@ -19,14 +19,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - repo: Fedora_39
+          - repo: Fedora_40
             spec: librashader.spec
             can_fail: true
-            name: Fedora 39 (.rpm)
-          - repo: xUbuntu_23.10
+            name: Fedora 40 (.rpm)
+          - repo: xUbuntu_24.04
             spec: librashader.spec
             can_fail: true
-            name: Ubuntu 23.10 (.deb)
+            name: Ubuntu 24.04 (.deb)
     runs-on: ubuntu-latest
     needs: [approve-obs-build]
     continue-on-error: ${{ matrix.can_fail }}

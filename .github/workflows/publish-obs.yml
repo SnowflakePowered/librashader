@@ -12,10 +12,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - repo: Fedora_39
+          - repo: Fedora_40
             spec: librashader.spec
             can_fail: true
-          - repo: xUbuntu_23.10
+          - repo: xUbuntu_24.04
             spec: librashader.spec
             can_fail: true
     runs-on: ubuntu-latest
