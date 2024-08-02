@@ -289,6 +289,10 @@ extern_fn! {
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             output,
             mvp,
         };

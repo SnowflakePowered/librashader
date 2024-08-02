@@ -127,10 +127,8 @@ impl<'a> State<'a> {
         let preset =
             ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
 
-        // let preset = ShaderPreset::try_parse(
-        //     "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-        // )
-        // .unwrap();
+        // let preset =
+        //     ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
 
         let chain = FilterChainWgpu::load_from_preset(
             preset,
@@ -300,6 +298,7 @@ impl<'a> State<'a> {
                         filter_output.size().into(),
                         filter_output.format(),
                     ),
+                    size: filter_output.size().into(),
                 },
                 &mut encoder,
                 self.frame_count,

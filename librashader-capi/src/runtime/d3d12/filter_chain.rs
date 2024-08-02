@@ -256,7 +256,13 @@ extern_fn! {
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
-            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(out.width, out.height), out.format) },
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
+            output: unsafe {
+                D3D12OutputView::new_from_raw(out.descriptor,
+                    Size::new(out.width, out.height), out.format) },
             mvp,
         };
 

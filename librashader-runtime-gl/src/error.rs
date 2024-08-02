@@ -38,6 +38,8 @@ pub enum FilterChainError {
     GlInvalidFramebuffer,
     #[error("opengl error: {0}")]
     GlError(String),
+    #[error("unreachable")]
+    Infallible(#[from] std::convert::Infallible),
 }
 
 /// Result type for OpenGL filter chains.

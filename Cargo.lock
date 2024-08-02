@@ -1543,6 +1543,7 @@ dependencies = [
  "glow 0.14.1",
  "halfbrown",
  "num-traits",
+ "objc2 0.5.2",
  "objc2-metal",
  "rustc-hash 2.0.0",
  "smartstring",

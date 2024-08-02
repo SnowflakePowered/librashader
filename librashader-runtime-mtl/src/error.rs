@@ -36,6 +36,8 @@ pub enum FilterChainError {
     FailedToCreateTexture,
     #[error("couldn't create command buffer")]
     FailedToCreateCommandBuffer,
+    #[error("unreachable")]
+    Infallible(#[from] std::convert::Infallible),
 }
 
 /// Result type for Metal filter chains.

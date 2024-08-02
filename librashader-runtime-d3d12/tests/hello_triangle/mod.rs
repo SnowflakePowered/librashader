@@ -635,6 +635,10 @@ pub mod d3d12_hello_triangle {
                             ),
                             DXGI_FORMAT_R8G8B8A8_UNORM,
                         ),
+                        size: Size::new(
+                            resources.viewport.Width as u32,
+                            resources.viewport.Height as u32,
+                        ),
                     },
                     frame_count,
                     None,
