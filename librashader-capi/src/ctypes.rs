@@ -125,17 +125,13 @@ use librashader::runtime::mtl::FilterChain as FilterChainMetal;
 ))]
 pub type libra_mtl_filter_chain_t = Option<NonNull<FilterChainMetal>>;
 
-/// Defines the output viewport for a rendered frame.
+/// Defines the output origin for a rendered frame.
 #[repr(C)]
-pub struct libra_viewport_t {
+pub struct libra_origin_t {
     /// The x offset in the viewport framebuffer to begin rendering from.
     pub x: f32,
     /// The y offset in the viewport framebuffer to begin rendering from.
     pub y: f32,
-    /// The width of the viewport framebuffer.
-    pub width: u32,
-    /// The height of the viewport framebuffer.
-    pub height: u32,
 }
 
 pub(crate) trait FromUninit<T>
