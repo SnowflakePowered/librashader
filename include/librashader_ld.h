@@ -207,7 +207,7 @@ libra_error_t __librashader__noop_gl_filter_chain_create(
 
 libra_error_t __librashader__noop_gl_filter_chain_frame(
     libra_gl_filter_chain_t *chain, size_t frame_count,
-    struct libra_source_image_gl_t image, struct libra_viewport_t viewport,
+    struct libra_source_image_gl_t image, struct libra_origin_t origin,
     struct libra_output_framebuffer_gl_t out, const float *mvp,
     const struct frame_gl_opt_t *opt) {
     return NULL;
@@ -258,7 +258,7 @@ libra_error_t __librashader__noop_vk_filter_chain_create_deferred(
 libra_error_t __librashader__noop_vk_filter_chain_frame(
     libra_vk_filter_chain_t *chain, VkCommandBuffer command_buffer,
     size_t frame_count, struct libra_source_image_vk_t image,
-    struct libra_viewport_t viewport, struct libra_output_image_vk_t out,
+    struct libra_origin_t origin, struct libra_output_image_vk_t out,
     const float *mvp, const struct frame_vk_opt_t *opt) {
     return NULL;
 }
@@ -309,8 +309,8 @@ libra_error_t __librashader__noop_d3d11_filter_chain_create_deferred(
 
 libra_error_t __librashader__noop_d3d11_filter_chain_frame(
     libra_d3d11_filter_chain_t *chain, ID3D11DeviceContext *device_context,
-    size_t frame_count, struct libra_source_image_d3d11_t image,
-    struct libra_viewport_t viewport, ID3D11RenderTargetView *out,
+    size_t frame_count, ID3D11ShaderResourceView * image,
+    struct libra_origin_t origin, ID3D11RenderTargetView *out,
     const float *mvp, const struct frame_d3d11_opt_t *opt) {
     return NULL;
 }
@@ -362,7 +362,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_create_deferred(
 libra_error_t __librashader__noop_d3d12_filter_chain_frame(
     libra_d3d12_filter_chain_t *chain, ID3D12GraphicsCommandList *command_list,
     size_t frame_count, struct libra_source_image_d3d12_t image,
-    struct libra_viewport_t viewport, struct libra_output_image_d3d12_t out,
+    struct libra_origin_t origin, struct libra_output_image_d3d12_t out,
     const float *mvp, const struct frame_d3d12_opt_t *opt) {
     return NULL;
 }
@@ -404,7 +404,7 @@ libra_error_t __librashader__noop_d3d9_filter_chain_create(
 
 libra_error_t __librashader__noop_d3d9_filter_chain_frame(
     libra_d3d9_filter_chain_t *chain, size_t frame_count,
-    IDirect3DTexture9 *image, struct libra_viewport_t viewport,
+    IDirect3DTexture9 *image, struct libra_origin_t origin,
     IDirect3DSurface9 * out, const float *mvp,
     const struct frame_d3d9_opt_t *opt) {
     return NULL;
@@ -456,7 +456,7 @@ libra_error_t __librashader__noop_mtl_filter_chain_create_deferred(
 
 libra_error_t __librashader__noop_mtl_filter_chain_frame(
     libra_mtl_filter_chain_t *chain, id<MTLCommandBuffer> command_buffer,
-    size_t frame_count, id<MTLTexture> image, struct libra_viewport_t viewport,
+    size_t frame_count, id<MTLTexture> image, struct libra_origin_t origin,
     id<MTLTexture> output, const float *mvp,
     const struct frame_mtl_opt_t *opt) {
     return NULL;
