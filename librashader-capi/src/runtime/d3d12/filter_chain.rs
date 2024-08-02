@@ -35,6 +35,10 @@ pub struct libra_output_image_d3d12_t {
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
     /// The format of the image.
     pub format: DXGI_FORMAT,
+    /// The width of the output image.
+    pub width: u32,
+    /// The height of the output image.
+    pub height: u32,
 }
 
 /// Options for each Direct3D 12 shader frame.
@@ -252,7 +256,7 @@ extern_fn! {
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
-            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(viewport.width, viewport.height), out.format) },
+            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(out.width, out.height), out.format) },
             mvp,
         };
 
