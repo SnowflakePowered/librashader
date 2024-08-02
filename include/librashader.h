@@ -208,17 +208,13 @@ typedef struct libra_source_image_gl_t {
 } libra_source_image_gl_t;
 #endif
 
-/// Defines the output viewport for a rendered frame.
-typedef struct libra_viewport_t {
+/// Defines the output origin for a rendered frame.
+typedef struct libra_origin_t {
   /// The x offset in the viewport framebuffer to begin rendering from.
   float x;
   /// The y offset in the viewport framebuffer to begin rendering from.
   float y;
-  /// The width of the viewport framebuffer.
-  uint32_t width;
-  /// The height of the viewport framebuffer.
-  uint32_t height;
-} libra_viewport_t;
+} libra_origin_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the output framebuffer.
@@ -229,6 +225,10 @@ typedef struct libra_output_framebuffer_gl_t {
   uint32_t texture;
   /// The format of the output framebuffer.
   uint32_t format;
+  /// The width of the output image.
+  uint32_t width;
+  /// The height of the output image.
+  uint32_t height;
 } libra_output_framebuffer_gl_t;
 #endif
 
@@ -313,6 +313,10 @@ typedef struct libra_output_image_vk_t {
   VkImage handle;
   /// The `VkFormat` of the output image.
   VkFormat format;
+  /// The width of the output image.
+  uint32_t width;
+  /// The height of the output image.
+  uint32_t height;
 } libra_output_image_vk_t;
 #endif
 
@@ -352,18 +356,6 @@ typedef struct filter_chain_d3d11_opt_t {
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
 /// A handle to a Direct3D 11 filter chain.
 typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
-#endif
-
-#if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
-/// Direct3D 11 parameters for the source image.
-typedef struct libra_source_image_d3d11_t {
-  /// A shader resource view into the source image
-  ID3D11ShaderResourceView * handle;
-  /// The width of the source image.
-  uint32_t width;
-  /// The height of the source image.
-  uint32_t height;
-} libra_source_image_d3d11_t;
 #endif
 
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
@@ -452,12 +444,6 @@ typedef struct libra_source_image_d3d12_t {
   ID3D12Resource * resource;
   /// A CPU descriptor handle to a shader resource view of the image.
   D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
-  /// The format of the image.
-  DXGI_FORMAT format;
-  /// The width of the source image.
-  uint32_t width;
-  /// The height of the source image.
-  uint32_t height;
 } libra_source_image_d3d12_t;
 #endif
 
@@ -468,6 +454,10 @@ typedef struct libra_output_image_d3d12_t {
   D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
   /// The format of the image.
   DXGI_FORMAT format;
+  /// The width of the output image.
+  uint32_t width;
+  /// The height of the output image.
+  uint32_t height;
 } libra_output_image_d3d12_t;
 #endif
 
@@ -664,7 +654,7 @@ typedef libra_error_t (*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t 
 typedef libra_error_t (*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t *chain,
                                                          size_t frame_count,
                                                          struct libra_source_image_gl_t image,
-                                                         struct libra_viewport_t viewport,
+                                                         struct libra_origin_t origin,
                                                          struct libra_output_framebuffer_gl_t out,
                                                          const float *mvp,
                                                          const struct frame_gl_opt_t *opt);
@@ -732,7 +722,7 @@ typedef libra_error_t (*PFN_libra_vk_filter_chain_frame)(libra_vk_filter_chain_t
                                                          VkCommandBuffer command_buffer,
                                                          size_t frame_count,
                                                          struct libra_source_image_vk_t image,
-                                                         struct libra_viewport_t viewport,
+                                                         struct libra_origin_t origin,
                                                          struct libra_output_image_vk_t out,
                                                          const float *mvp,
                                                          const struct frame_vk_opt_t *opt);
@@ -799,8 +789,8 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_create_deferred)(libra_shad
 typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t *chain,
                                                             ID3D11DeviceContext * device_context,
                                                             size_t frame_count,
-                                                            struct libra_source_image_d3d11_t image,
-                                                            struct libra_viewport_t viewport,
+                                                            ID3D11ShaderResourceView * image,
+                                                            struct libra_origin_t origin,
                                                             ID3D11RenderTargetView * out,
                                                             const float *mvp,
                                                             const struct frame_d3d11_opt_t *options);
@@ -857,7 +847,7 @@ typedef libra_error_t (*PFN_libra_d3d9_filter_chain_create)(libra_shader_preset_
 typedef libra_error_t (*PFN_libra_d3d9_filter_chain_frame)(libra_d3d9_filter_chain_t *chain,
                                                            size_t frame_count,
                                                            IDirect3DTexture9 * image,
-                                                           struct libra_viewport_t viewport,
+                                                           struct libra_origin_t origin,
                                                            IDirect3DSurface9 * out,
                                                            const float *mvp,
                                                            const struct frame_d3d9_opt_t *options);
@@ -925,7 +915,7 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_frame)(libra_d3d12_filter_c
                                                             ID3D12GraphicsCommandList * command_list,
                                                             size_t frame_count,
                                                             struct libra_source_image_d3d12_t image,
-                                                            struct libra_viewport_t viewport,
+                                                            struct libra_origin_t origin,
                                                             struct libra_output_image_d3d12_t out,
                                                             const float *mvp,
                                                             const struct frame_d3d12_opt_t *options);
@@ -993,7 +983,7 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_frame)(libra_mtl_filter_chain
                                                           id<MTLCommandBuffer> command_buffer,
                                                           size_t frame_count,
                                                           id<MTLTexture> image,
-                                                          struct libra_viewport_t viewport,
+                                                          struct libra_origin_t origin,
                                                           id<MTLTexture> output,
                                                           const float *mvp,
                                                           const struct frame_mtl_opt_t *opt);
@@ -1048,7 +1038,10 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 ///     - Added rotation, total_subframes, current_subframes to frame options
 ///     - Added preset context API
 ///     - Added Metal runtime API
-#define LIBRASHADER_CURRENT_VERSION 1
+/// - API Version 2: 0.4.0
+///     - Replaced libra_viewport_t with libra_origin_t to better reflect API usage.
+///     - Reduced unneeded texture metadata for certain runtimes.
+#define LIBRASHADER_CURRENT_VERSION 2
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.
@@ -1061,7 +1054,8 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 /// ## ABI Versions
 /// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
-#define LIBRASHADER_CURRENT_ABI 1
+/// - ABI version 2: 0.4.0
+#define LIBRASHADER_CURRENT_ABI 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -1243,7 +1237,7 @@ libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
 libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
                                           size_t frame_count,
                                           struct libra_source_image_gl_t image,
-                                          struct libra_viewport_t viewport,
+                                          struct libra_origin_t origin,
                                           struct libra_output_framebuffer_gl_t out,
                                           const float *mvp,
                                           const struct frame_gl_opt_t *opt);
@@ -1369,7 +1363,7 @@ libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
                                           VkCommandBuffer command_buffer,
                                           size_t frame_count,
                                           struct libra_source_image_vk_t image,
-                                          struct libra_viewport_t viewport,
+                                          struct libra_origin_t origin,
                                           struct libra_output_image_vk_t out,
                                           const float *mvp,
                                           const struct frame_vk_opt_t *opt);
@@ -1499,8 +1493,8 @@ libra_error_t libra_d3d11_filter_chain_create_deferred(libra_shader_preset_t *pr
 libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
                                              ID3D11DeviceContext * device_context,
                                              size_t frame_count,
-                                             struct libra_source_image_d3d11_t image,
-                                             struct libra_viewport_t viewport,
+                                             ID3D11ShaderResourceView * image,
+                                             struct libra_origin_t origin,
                                              ID3D11RenderTargetView * out,
                                              const float *mvp,
                                              const struct frame_d3d11_opt_t *options);
@@ -1577,9 +1571,6 @@ libra_error_t libra_d3d9_filter_chain_create(libra_shader_preset_t *preset,
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D9))
 /// Draw a frame with the given parameters for the given filter chain.
 ///
-/// If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
-/// it will record commands onto the provided context. If the context is deferred, librashader
-/// will not finalize command lists. The context must otherwise be associated with the `Id3d9Device`
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -1589,16 +1580,13 @@ libra_error_t libra_d3d9_filter_chain_create(libra_shader_preset_t *preset,
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d9_opt_t`
 ///    struct.
 /// - `out` must not be null.
-/// - `image.handle` must not be null.
-/// - If `device_context` is null, commands will be recorded onto the immediate context of the `Id3d9Device`
-///   this filter chain was created with. The context must otherwise be associated with the `Id3d9Device`
-///   the filter chain was created with.
+/// - `image` must not be null.
 /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
 ///   thread at a time may call this function.
 libra_error_t libra_d3d9_filter_chain_frame(libra_d3d9_filter_chain_t *chain,
                                             size_t frame_count,
                                             IDirect3DTexture9 * image,
-                                            struct libra_viewport_t viewport,
+                                            struct libra_origin_t origin,
                                             IDirect3DSurface9 * out,
                                             const float *mvp,
                                             const struct frame_d3d9_opt_t *options);
@@ -1724,7 +1712,7 @@ libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
                                              ID3D12GraphicsCommandList * command_list,
                                              size_t frame_count,
                                              struct libra_source_image_d3d12_t image,
-                                             struct libra_viewport_t viewport,
+                                             struct libra_origin_t origin,
                                              struct libra_output_image_d3d12_t out,
                                              const float *mvp,
                                              const struct frame_d3d12_opt_t *options);
@@ -1844,7 +1832,7 @@ libra_error_t libra_mtl_filter_chain_frame(libra_mtl_filter_chain_t *chain,
                                            id<MTLCommandBuffer> command_buffer,
                                            size_t frame_count,
                                            id<MTLTexture> image,
-                                           struct libra_viewport_t viewport,
+                                           struct libra_origin_t origin,
                                            id<MTLTexture> output,
                                            const float *mvp,
                                            const struct frame_mtl_opt_t *opt);
