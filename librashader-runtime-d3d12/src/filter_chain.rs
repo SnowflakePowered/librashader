@@ -30,7 +30,7 @@ use librashader_runtime::uniforms::UniformStorage;
 use std::collections::VecDeque;
 use std::mem::ManuallyDrop;
 use std::path::Path;
-use windows::core::ComInterface;
+use windows::core::Interface;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler,

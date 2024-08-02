@@ -9,7 +9,7 @@ use librashader_reflect::back::ShaderCompilerOutput;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use widestring::u16cstr;
-use windows::core::ComInterface;
+use windows::core::Interface;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcLibrary, DxcCreateInstance, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,

@@ -109,7 +109,8 @@ where
         )
     };
 
-    sample.bind_to_window(&hwnd)?;
+    let hwnd = hwnd?;
+    sample.bind_to_window(&hwnd).unwrap();
     unsafe { ShowWindow(hwnd, SW_SHOW) };
 
     loop {
@@ -187,8 +188,7 @@ fn get_hardware_adapter(factory: &IDXGIFactory4) -> Result<IDXGIAdapter1> {
     for i in 0.. {
         let adapter = unsafe { factory.EnumAdapters1(i)? };
 
-        let mut desc = Default::default();
-        unsafe { adapter.GetDesc1(&mut desc)? };
+        let mut desc = unsafe { adapter.GetDesc1()? };
 
         if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32) != DXGI_ADAPTER_FLAG_NONE.0 as u32 {
             // Don't select the Basic Render Driver adapter. If you want a
@@ -529,7 +529,7 @@ pub mod d3d12_hello_triangle {
                 unsafe { resources.command_queue.ExecuteCommandLists(&[command_list]) };
 
                 // Present the frame.
-                unsafe { resources.swap_chain.Present(1, 0) }.ok().unwrap();
+                unsafe { resources.swap_chain.Present(1, DXGI_PRESENT::default()) }.ok().unwrap();
 
                 wait_for_previous_frame(resources);
                 self.framecount += 1;

@@ -24,6 +24,8 @@ bytemuck = "1.12.3"
 array-concat = "0.5.2"
 num-traits = "0.2.18"
 
+windows-core = "0.58.0"
+
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
 features = [

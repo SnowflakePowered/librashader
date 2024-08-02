@@ -4,7 +4,7 @@ use crate::error::assume_d3d12_init;
 use std::mem::ManuallyDrop;
 use std::u64;
 use widestring::{u16cstr, U16CStr};
-use windows::core::{ComInterface, PCWSTR};
+use windows::core::{Interface, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
     DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
     DXC_CP_UTF8,

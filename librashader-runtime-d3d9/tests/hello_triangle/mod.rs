@@ -89,6 +89,7 @@ where
         )
     };
 
+    let hwnd = hwnd?;
     sample.bind_to_window(&hwnd).unwrap();
     unsafe { ShowWindow(hwnd, SW_SHOW) };
 

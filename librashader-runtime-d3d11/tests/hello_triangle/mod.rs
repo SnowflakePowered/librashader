@@ -144,6 +144,7 @@ where
         )
     };
 
+    let hwnd = hwnd?;
     sample.bind_to_window(&hwnd).unwrap();
     unsafe { ShowWindow(hwnd, SW_SHOW) };
 
@@ -436,7 +437,7 @@ pub mod d3d11_hello_triangle {
                     drop(resources.backbuffer.take());
                     resources
                         .swapchain
-                        .ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0)
+                        .ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG(0))
                         .unwrap_or_else(|f| eprintln!("{f:?}"));
                     let (rtv, backbuffer) = create_rtv(&self.device, &resources.swapchain)?;
 
@@ -593,7 +594,7 @@ pub mod d3d11_hello_triangle {
             }
 
             unsafe {
-                resources.swapchain.Present(0, 0).ok()?;
+                resources.swapchain.Present(0, DXGI_PRESENT::default()).ok()?;
             }
             resources.frame_count += 1;
             Ok(())
