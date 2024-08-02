@@ -1,6 +1,6 @@
 use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
 use d3d12_descriptor_heap::D3D12DescriptorHeapSlot;
-use librashader_common::{FilterMode, Size, WrapMode};
+use librashader_common::{FilterMode, GetSize, Size, WrapMode};
 use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
@@ -130,5 +130,13 @@ impl InputTexture {
 impl AsRef<InputTexture> for InputTexture {
     fn as_ref(&self) -> &InputTexture {
         self
+    }
+}
+
+impl GetSize<u32> for D3D12OutputView {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        Ok(self.size)
     }
 }

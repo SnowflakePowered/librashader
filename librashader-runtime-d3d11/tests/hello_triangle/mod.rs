@@ -243,7 +243,7 @@ pub mod d3d11_hello_triangle {
     use super::*;
     use std::path::Path;
 
-    use librashader_common::{FilterMode, ImageFormat, Size, Viewport, WrapMode};
+    use librashader_common::{FilterMode, GetSize, ImageFormat, Size, Viewport, WrapMode};
     use librashader_runtime::image::Image;
     use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
     use librashader_runtime_d3d11::FilterChainD3D11;
@@ -569,6 +569,8 @@ pub mod d3d11_hello_triangle {
                 let srv = input_srv.unwrap();
 
                 // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
+                let output = resources.backbuffer_rtv.as_ref().unwrap().clone();
+                let size = output.size().unwrap();
                 self.filter
                     .frame(
                         None,
@@ -576,8 +578,9 @@ pub mod d3d11_hello_triangle {
                         &Viewport {
                             x: 0f32,
                             y: 0f32,
-                            output: resources.backbuffer_rtv.as_ref().unwrap().clone(),
+                            output,
                             mvp: None,
+                            size,
                         },
                         resources.frame_count,
                         None,

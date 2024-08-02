@@ -26,6 +26,8 @@ pub enum FilterChainError {
     HeapError(#[from] D3D12DescriptorHeapError),
     #[error("allocation error")]
     AllocationError(#[from] gpu_allocator::AllocationError),
+    #[error("unreachable")]
+    Infallible(#[from] std::convert::Infallible),
 }
 
 /// Result type for Direct3D 12 filter chains.
