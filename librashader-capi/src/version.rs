@@ -17,7 +17,10 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 ///     - Added rotation, total_subframes, current_subframes to frame options
 ///     - Added preset context API
 ///     - Added Metal runtime API
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 1;
+/// - API Version 2: 0.4.0
+///     - Replaced libra_viewport_t with libra_origin_t to better reflect API usage.
+///     - Reduced unneeded texture metadata for certain runtimes.
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 2;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.
@@ -30,6 +33,7 @@ pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 1;
 /// ## ABI Versions
 /// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
+/// - ABI version 2: 0.4.0
 pub const LIBRASHADER_CURRENT_ABI: LIBRASHADER_ABI_VERSION = 1;
 
 /// Function pointer definition for libra_abi_version
