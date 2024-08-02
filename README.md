@@ -222,7 +222,7 @@ in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VE
 While librashader requires nightly Rust, the following MSRV policy is enforced for unstable library features.
 
 * Windows and macOS: **latest** nightly
-* Linux: **1.70**
+* Linux: **1.76**
 
 A CI job runs weekly to ensure librashader continues to build on nightly. Note that the MSRV is only intended to ease distribution on Linux and is allowed to change any time. It generally tracks the latest version of Rust available in the latest version of Ubuntu, but this may change with no warning in a patch release.
 
