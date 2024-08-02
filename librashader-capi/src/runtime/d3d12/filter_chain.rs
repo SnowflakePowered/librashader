@@ -26,12 +26,6 @@ pub struct libra_source_image_d3d12_t {
     pub resource: ManuallyDrop<ID3D12Resource>,
     /// A CPU descriptor handle to a shader resource view of the image.
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    /// This is currently ignored.
-    pub format: DXGI_FORMAT,
-    /// This is currently ignored.
-    pub width: u32,
-    /// This is currently ignored.
-    pub height: u32,
 }
 
 /// Direct3D 12 parameters for the output image.
