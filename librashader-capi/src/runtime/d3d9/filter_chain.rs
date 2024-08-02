@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_d3d9_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+    config_struct, libra_d3d9_filter_chain_t, libra_shader_preset_t, libra_origin_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -124,7 +124,7 @@ extern_fn! {
         chain: *mut libra_d3d9_filter_chain_t,
         frame_count: usize,
         image: ManuallyDrop<IDirect3DTexture9>,
-        viewport: libra_viewport_t,
+        origin: libra_origin_t,
         out: ManuallyDrop<IDirect3DSurface9>,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d9_opt_t>
@@ -144,8 +144,8 @@ extern_fn! {
         };
 
         let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
+            x: origin.x,
+            y: origin.y,
             output: ManuallyDrop::into_inner(out.clone()),
             mvp,
         };
