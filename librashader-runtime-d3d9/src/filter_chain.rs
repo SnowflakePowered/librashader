@@ -32,7 +32,7 @@ use std::collections::VecDeque;
 
 use std::path::Path;
 
-use crate::util::GetSize;
+use librashader_common::GetSize;
 
 use windows::Win32::Graphics::Direct3D9::{IDirect3DDevice9, IDirect3DSurface9, IDirect3DTexture9};
 
@@ -377,7 +377,7 @@ impl FilterChainD3D9 {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::identity(&target_rtv),
+                RenderTarget::identity(&target_rtv)?,
                 QuadType::Offscreen,
             )?;
 

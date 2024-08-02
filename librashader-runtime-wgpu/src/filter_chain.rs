@@ -452,7 +452,7 @@ impl FilterChainWgpu {
 
             let target = &self.output_framebuffers[index];
             let output_image = WgpuOutputView::from(target);
-            let out = RenderTarget::identity(&output_image);
+            let out = RenderTarget::identity(&output_image)?;
 
             pass.draw(
                 cmd,

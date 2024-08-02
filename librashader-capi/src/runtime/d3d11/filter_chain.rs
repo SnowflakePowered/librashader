@@ -15,7 +15,7 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::{FilterChainParameters, Viewport};
+use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Options for Direct3D 11 filter chain creation.
 #[repr(C)]
@@ -227,6 +227,10 @@ extern_fn! {
             x: viewport.x,
             y: viewport.y,
             output: ManuallyDrop::into_inner(out.clone()),
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             mvp,
         };
 

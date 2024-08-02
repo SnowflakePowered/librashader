@@ -3,7 +3,7 @@ use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::InputTexture;
 use glow::HasContext;
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{FilterMode, GetSize, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::sync::Arc;
@@ -126,5 +126,13 @@ impl<T: FramebufferInterface> ScaleFramebuffer<T> for GLFramebuffer {
             original_size,
             should_mipmap,
         )
+    }
+}
+
+impl GetSize<u32> for GLFramebuffer {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> std::result::Result<Size<u32>, Self::Error> {
+        Ok(self.size)
     }
 }

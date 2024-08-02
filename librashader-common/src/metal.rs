@@ -1,6 +1,8 @@
-use crate::{FilterMode, ImageFormat, Size, WrapMode};
+use crate::{FilterMode, GetSize, ImageFormat, Size, WrapMode};
+use objc2::runtime::ProtocolObject;
 use objc2_metal::{
-    MTLPixelFormat, MTLSamplerAddressMode, MTLSamplerMinMagFilter, MTLSamplerMipFilter, MTLViewport,
+    MTLPixelFormat, MTLSamplerAddressMode, MTLSamplerMinMagFilter, MTLSamplerMipFilter, MTLTexture,
+    MTLViewport,
 };
 
 impl From<ImageFormat> for MTLPixelFormat {
@@ -90,5 +92,18 @@ impl FilterMode {
             FilterMode::Linear => MTLSamplerMipFilter::Linear,
             FilterMode::Nearest => MTLSamplerMipFilter::Nearest,
         }
+    }
+}
+
+impl GetSize<u32> for ProtocolObject<dyn MTLTexture> {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        let height = self.height();
+        let width = self.width();
+        Ok(Size {
+            height: height as u32,
+            width: width as u32,
+        })
     }
 }

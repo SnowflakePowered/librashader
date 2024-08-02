@@ -20,7 +20,7 @@ d3d12 = ["windows", "dxgi"]
 dxgi = ["windows"]
 vulkan = ["ash"]
 wgpu = ["wgpu-types"]
-metal = ["objc2-metal"]
+metal = ["objc2", "objc2-metal"]
 
 [dependencies]
 num-traits = "0.2.15"
@@ -43,6 +43,13 @@ features = [
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Direct3D12",
 ]
+
+
+[target.'cfg(target_vendor="apple")'.dependencies.objc2]
+optional = true
+workspace = true
+features = ["apple"]
+
 
 [target.'cfg(target_vendor="apple")'.dependencies.objc2-metal]
 optional = true

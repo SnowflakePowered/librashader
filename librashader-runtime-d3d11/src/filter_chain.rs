@@ -21,10 +21,11 @@ use crate::graphics_pipeline::D3D11State;
 use crate::luts::LutTexture;
 use crate::options::{FilterChainOptionsD3D11, FrameOptionsD3D11};
 use crate::samplers::SamplerSet;
-use crate::util::{d3d11_compile_bound_shader, GetSize};
+use crate::util::d3d11_compile_bound_shader;
 use crate::{error, util};
 use librashader_cache::cache_shader_object;
 use librashader_cache::CachedCompilation;
+use librashader_common::GetSize;
 use librashader_presets::context::VideoDriver;
 use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
@@ -490,7 +491,7 @@ impl FilterChainD3D11 {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::identity(&target.create_render_target_view()?),
+                RenderTarget::identity(&target.create_render_target_view()?)?,
                 QuadType::Offscreen,
             )?;
 
