@@ -41,6 +41,10 @@ pub struct libra_output_framebuffer_gl_t {
     pub texture: u32,
     /// The format of the output framebuffer.
     pub format: u32,
+    /// The width of the output image.
+    pub width: u32,
+    /// The height of the output image.
+    pub height: u32,
 }
 
 impl From<libra_source_image_gl_t> for GLImage {
@@ -202,7 +206,8 @@ extern_fn! {
         };
 
         let opt = opt.map(FromUninit::from_uninit);
-        let framebuffer = GLFramebuffer::new_from_raw(out.texture, out.fbo, out.format, Size::new(viewport.width, viewport.height), 1);
+        let framebuffer = GLFramebuffer::new_from_raw(out.texture, out.fbo, out.format,
+            Size::new(out.width, out.height), 1);
         let viewport = Viewport {
             x: viewport.x,
             y: viewport.y,
