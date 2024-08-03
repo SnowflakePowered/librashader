@@ -3,7 +3,7 @@ name = "librashader-runtime-d3d12"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.2.8"
+version = "0.3.0"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -12,12 +12,12 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-librashader-common = { path = "../librashader-common", features = ["d3d12"], version = "0.2.8" }
-librashader-presets = { path = "../librashader-presets", version = "0.2.8" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.2.8" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.2.8", features = ["dxil"]  }
-librashader-runtime = { path = "../librashader-runtime", version = "0.2.8" }
-librashader-cache = { path = "../librashader-cache", version = "0.2.8", features = ["d3d"] }
+librashader-common = { path = "../librashader-common", features = ["d3d12"], version = "0.3.0" }
+librashader-presets = { path = "../librashader-presets", version = "0.3.0" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.3.0" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.3.0", features = ["dxil"]  }
+librashader-runtime = { path = "../librashader-runtime", version = "0.3.0" }
+librashader-cache = { path = "../librashader-cache", version = "0.3.0", features = ["d3d"] }
 
 thiserror = "1.0.37"
 
