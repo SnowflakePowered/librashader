@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t, FromUninit,
+    config_struct, libra_shader_preset_t, libra_origin_t, libra_vk_filter_chain_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -44,6 +44,10 @@ pub struct libra_output_image_vk_t {
     pub handle: vk::Image,
     /// The `VkFormat` of the output image.
     pub format: vk::Format,
+    /// The width of the output image.
+    pub width: u32,
+    /// The height of the output image.
+    pub height: u32,
 }
 
 /// Handles required to instantiate vulkan
@@ -259,7 +263,7 @@ extern_fn! {
         command_buffer: vk::CommandBuffer,
         frame_count: usize,
         image: libra_source_image_vk_t,
-        viewport: libra_viewport_t,
+        origin: libra_origin_t,
         out: libra_output_image_vk_t,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_vk_opt_t>
@@ -268,7 +272,7 @@ extern_fn! {
         let image: VulkanImage = image.into();
         let output = VulkanImage {
             image: out.handle,
-            size: Size::new(viewport.width, viewport.height),
+            size: Size::new(out.width, out.height),
             format: out.format
         };
         let mvp = if mvp.is_null() {
@@ -283,8 +287,8 @@ extern_fn! {
         };
         let opt = opt.map(FromUninit::from_uninit);
         let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
+            x: origin.x,
+            y: origin.y,
             output,
             mvp,
         };

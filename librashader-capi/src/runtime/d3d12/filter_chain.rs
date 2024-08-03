@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+    config_struct, libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_origin_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -26,12 +26,6 @@ pub struct libra_source_image_d3d12_t {
     pub resource: ManuallyDrop<ID3D12Resource>,
     /// A CPU descriptor handle to a shader resource view of the image.
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    /// This is currently ignored.
-    pub format: DXGI_FORMAT,
-    /// This is currently ignored.
-    pub width: u32,
-    /// This is currently ignored.
-    pub height: u32,
 }
 
 /// Direct3D 12 parameters for the output image.
@@ -41,6 +35,10 @@ pub struct libra_output_image_d3d12_t {
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
     /// The format of the image.
     pub format: DXGI_FORMAT,
+    /// The width of the output image.
+    pub width: u32,
+    /// The height of the output image.
+    pub height: u32,
 }
 
 /// Options for each Direct3D 12 shader frame.
@@ -235,7 +233,7 @@ extern_fn! {
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,
         frame_count: usize,
         image: libra_source_image_d3d12_t,
-        viewport: libra_viewport_t,
+        origin: libra_origin_t,
         out: libra_output_image_d3d12_t,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d12_opt_t>
@@ -256,9 +254,9 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
-            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(viewport.width, viewport.height), out.format) },
+            x: origin.x,
+            y: origin.y,
+            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(out.width, out.height), out.format) },
             mvp,
         };
 

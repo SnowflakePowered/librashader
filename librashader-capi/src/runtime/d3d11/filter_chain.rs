@@ -1,11 +1,9 @@
 use crate::ctypes::{
-    config_struct, libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+    config_struct, libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_origin_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::d3d11::{
-    FilterChain, FilterChainOptions, FrameOptions,
-};
+use librashader::runtime::d3d11::{FilterChain, FilterChainOptions, FrameOptions};
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
@@ -17,18 +15,7 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::{FilterChainParameters, Size, Viewport};
-
-/// Direct3D 11 parameters for the source image.
-#[repr(C)]
-pub struct libra_source_image_d3d11_t {
-    /// A shader resource view into the source image
-    pub handle: ManuallyDrop<ID3D11ShaderResourceView>,
-    /// This is currently ignored.
-    pub width: u32,
-    /// This is currently ignored.
-    pub height: u32,
-}
+use librashader::runtime::{FilterChainParameters, Viewport};
 
 /// Options for Direct3D 11 filter chain creation.
 #[repr(C)]
@@ -216,8 +203,8 @@ extern_fn! {
         // so ManuallyDrop<Option<ID3D11DeviceContext>> doesn't generate correct bindings.
         device_context: Option<ManuallyDrop<ID3D11DeviceContext>>,
         frame_count: usize,
-        image: libra_source_image_d3d11_t,
-        viewport: libra_viewport_t,
+        image: ManuallyDrop<ID3D11ShaderResourceView>,
+        origin: libra_origin_t,
         out: ManuallyDrop<ID3D11RenderTargetView>,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d11_opt_t>
@@ -237,8 +224,8 @@ extern_fn! {
         };
 
         let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
+            x: origin.x,
+            y: origin.y,
             output: ManuallyDrop::into_inner(out.clone()),
             mvp,
         };
@@ -246,7 +233,7 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         unsafe {
-            chain.frame(device_context.as_deref(), image.handle.deref(), &viewport, frame_count, options.as_ref())?;
+            chain.frame(device_context.as_deref(), image.deref(), &viewport, frame_count, options.as_ref())?;
         }
     }
 }
