@@ -18,6 +18,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
+use glow::{HasContext, NativeUniformLocation};
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
 use librashader_reflect::reflect::cross::SpirvCross;
@@ -29,7 +30,6 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
-use glow::{HasContext, NativeUniformLocation};
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -59,7 +59,11 @@ pub struct FilterMutable {
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
-    fn reflect_uniform_location(ctx: &glow::Context, pipeline: glow::Program, meta: &dyn UniformMeta) -> VariableLocation {
+    fn reflect_uniform_location(
+        ctx: &glow::Context,
+        pipeline: glow::Program,
+        meta: &dyn UniformMeta,
+    ) -> VariableLocation {
         let mut location = VariableLocation {
             ubo: None,
             push: None,
@@ -128,7 +132,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
-        let version = options.map_or_else(gl_get_version, |o| gl_u16_to_version(&context, o.glsl_version));
+        let version = options.map_or_else(gl_get_version, |o| {
+            gl_u16_to_version(&context, o.glsl_version)
+        });
 
         // initialize passes
         let filters = Self::init_passes(&context, version, passes, &semantics, disable_cache)?;
@@ -139,7 +145,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .map(|f| f.config.wrap_mode)
             .unwrap_or_default();
 
-        let samplers = SamplerSet::new(&context);
+        let samplers = SamplerSet::new(&context)?;
 
         // load luts
         let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
@@ -212,10 +218,11 @@ impl<T: GLInterface> FilterChainImpl<T> {
             let reflection = reflect.reflect(index, semantics)?;
             let glsl = reflect.compile(version)?;
 
-            let (program, ubo_location) = T::CompileShader::compile_program(context, glsl, !disable_cache)?;
+            let (program, ubo_location) =
+                T::CompileShader::compile_program(context, glsl, !disable_cache)?;
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let ring = T:: UboRing::new(&context, ubo.size);
+                let ring = T::UboRing::new(&context, ubo.size);
                 Some(ring)
             } else {
                 None
@@ -255,7 +262,12 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 // eprintln!("[history] resizing");
-                T::FramebufferInterface::init(&self.common.context, &mut back, input.size, input.format)?;
+                T::FramebufferInterface::init(
+                    &self.common.context,
+                    &mut back,
+                    input.size,
+                    input.format,
+                )?;
             }
 
             back.copy_from::<T::FramebufferInterface>(input)?;
@@ -294,7 +306,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         // do not need to rebind FBO 0 here since first `draw` will
         // bind automatically.
-        self.draw_quad.bind_vertices(&self.common.context, QuadType::Offscreen);
+        self.draw_quad
+            .bind_vertices(&self.common.context, QuadType::Offscreen);
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;
@@ -347,7 +360,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let passes_len = passes.len();
         let (pass, last) = passes.split_at_mut(passes_len - 1);
 
-        self.draw_quad.bind_vertices(&self.common.context, QuadType::Offscreen);
+        self.draw_quad
+            .bind_vertices(&self.common.context, QuadType::Offscreen);
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
             source.filter = pass.config.filter;
@@ -370,7 +384,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source = target;
         }
 
-        self.draw_quad.bind_vertices(&self.common.context, QuadType::Final);
+        self.draw_quad
+            .bind_vertices(&self.common.context, QuadType::Final);
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {

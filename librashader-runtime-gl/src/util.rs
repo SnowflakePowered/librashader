@@ -1,23 +1,29 @@
-use glow::HasContext;
 use gl::types::{GLenum, GLuint};
+use glow::HasContext;
 
 use crate::error;
 use crate::error::FilterChainError;
 use librashader_reflect::back::glsl::GlslVersion;
 
-pub unsafe fn gl_compile_shader(context: &glow::Context, stage: u32, source: &str) -> error::Result<glow::Shader> {
-    let shader = context.create_shader(stage)
-        .map_err(|_| FilterChainError::GlCompileError)?;
+pub fn gl_compile_shader(
+    context: &glow::Context,
+    stage: u32,
+    source: &str,
+) -> error::Result<glow::Shader> {
+    unsafe {
+        let shader = context
+            .create_shader(stage)
+            .map_err(|_| FilterChainError::GlCompileError)?;
 
-    context.shader_source(shader, &source);
-    context.compile_shader(shader);
-    let compile_status = context.get_shader_compile_status(shader);
+        context.shader_source(shader, &source);
+        context.compile_shader(shader);
+        let compile_status = context.get_shader_compile_status(shader);
 
-    if !compile_status {
-        Err(FilterChainError::GlCompileError)
-    }
-    else {
-        Ok(shader)
+        if !compile_status {
+            Err(FilterChainError::GlCompileError)
+        } else {
+            Ok(shader)
+        }
     }
 }
 

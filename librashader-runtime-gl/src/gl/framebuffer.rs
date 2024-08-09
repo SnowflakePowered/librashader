@@ -1,12 +1,12 @@
-use std::sync::Arc;
-use glow::HasContext;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::FramebufferInterface;
 use crate::texture::InputTexture;
+use glow::HasContext;
 use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::ScaleFramebuffer;
+use std::sync::Arc;
 
 /// A handle to an OpenGL FBO and its backing texture with format and size information.
 ///
@@ -20,7 +20,7 @@ pub struct GLFramebuffer {
     pub(crate) max_levels: u32,
     pub(crate) mip_levels: u32,
     pub(crate) is_raw: bool,
-    pub(crate) ctx: Arc<glow::Context>
+    pub(crate) ctx: Arc<glow::Context>,
 }
 
 impl GLFramebuffer {
@@ -60,7 +60,9 @@ impl GLFramebuffer {
         original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
+        let ctx = Arc::clone(&self.ctx);
         T::scale(
+            &ctx,
             self,
             scaling,
             format,

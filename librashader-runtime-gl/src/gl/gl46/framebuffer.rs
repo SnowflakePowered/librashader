@@ -1,22 +1,20 @@
-use std::sync::Arc;
-use glow::HasContext;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::GLFramebuffer;
 use crate::gl::FramebufferInterface;
 use gl::types::{GLenum, GLint, GLsizei};
+use glow::HasContext;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ViewportSize};
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Gl46Framebuffer;
 
 impl FramebufferInterface for Gl46Framebuffer {
     fn new(context: &Arc<glow::Context>, max_levels: u32) -> GLFramebuffer {
-        let mut framebuffer = unsafe {
-            context.create_framebuffer()?
-        };
+        let mut framebuffer = unsafe { context.create_framebuffer()? };
 
         GLFramebuffer {
             image: None,
@@ -29,7 +27,7 @@ impl FramebufferInterface for Gl46Framebuffer {
             mip_levels: 0,
             fbo: framebuffer,
             is_raw: false,
-            ctx: Arc::clone(&context)
+            ctx: Arc::clone(&context),
         }
     }
 
@@ -80,7 +78,12 @@ impl FramebufferInterface for Gl46Framebuffer {
 
         Ok(())
     }
-    fn init(fb: &mut GLFramebuffer, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
+    fn init(
+        context: &glow::Context,
+        fb: &mut GLFramebuffer,
+        mut size: Size<u32>,
+        format: impl Into<GLenum>,
+    ) -> Result<()> {
         if fb.is_raw {
             return Ok(());
         }

@@ -34,6 +34,8 @@ pub enum FilterChainError {
     GlSamplerError,
     #[error("opengl could not create samplers")]
     GlProgramError,
+    #[error("opengl error: {0}")]
+    GlError(String)
 }
 
 /// Result type for OpenGL filter chains.

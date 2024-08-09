@@ -32,7 +32,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             is_raw: false,
         }
     }
-    
+
     fn clear<const REBIND: bool>(fb: &GLFramebuffer) {
         unsafe {
             if REBIND {
@@ -116,7 +116,12 @@ impl FramebufferInterface for Gl3Framebuffer {
 
         Ok(())
     }
-    fn init(fb: &mut GLFramebuffer, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
+    fn init(
+        context: &glow::Context,
+        fb: &mut GLFramebuffer,
+        mut size: Size<u32>,
+        format: impl Into<GLenum>,
+    ) -> Result<()> {
         if fb.is_raw {
             return Ok(());
         }

@@ -1,8 +1,9 @@
-use glow::HasContext;
+use crate::error::FilterChainError;
 use gl::types::{GLenum, GLint, GLuint};
+use glow::HasContext;
 use librashader_common::map::FastHashMap;
 use librashader_common::{FilterMode, WrapMode};
-use crate::error::FilterChainError;
+use crate::error;
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
@@ -22,16 +23,26 @@ impl SamplerSet {
         }
     }
 
-    fn make_sampler(context: &glow::Context, sampler: glow::Sampler, wrap: WrapMode, filter: FilterMode, mip: FilterMode) {
+    fn make_sampler(
+        context: &glow::Context,
+        sampler: glow::Sampler,
+        wrap: WrapMode,
+        filter: FilterMode,
+        mip: FilterMode,
+    ) {
         unsafe {
             context.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_S, wrap.into());
             context.sampler_parameter_i32(sampler, glow::TEXTURE_WRAP_T, wrap.into());
             context.sampler_parameter_i32(sampler, glow::TEXTURE_MAG_FILTER, filter.into());
-            context.sampler_parameter_i32(sampler, glow::TEXTURE_MIN_FILTER, filter.gl_mip(mip) as i32);
+            context.sampler_parameter_i32(
+                sampler,
+                glow::TEXTURE_MIN_FILTER,
+                filter.gl_mip(mip) as i32,
+            );
         }
     }
 
-    pub fn new(context: &glow::Context) -> SamplerSet {
+    pub fn new(context: &glow::Context) -> error::Result<SamplerSet> {
         let mut samplers = FastHashMap::default();
         let wrap_modes = &[
             WrapMode::ClampToBorder,
@@ -44,10 +55,17 @@ impl SamplerSet {
                 for mip_filter in &[FilterMode::Linear, FilterMode::Nearest] {
                     let mut sampler = 0;
                     unsafe {
-                        let sampler = context.create_sampler()
+                        let sampler = context
+                            .create_sampler()
                             .map_err(|_| FilterChainError::GlSamplerError)?;
 
-                        SamplerSet::make_sampler(context, sampler, *wrap_mode, *filter_mode, *mip_filter);
+                        SamplerSet::make_sampler(
+                            context,
+                            sampler,
+                            *wrap_mode,
+                            *filter_mode,
+                            *mip_filter,
+                        );
 
                         samplers.insert((*wrap_mode, *filter_mode, *mip_filter), sampler);
                     }

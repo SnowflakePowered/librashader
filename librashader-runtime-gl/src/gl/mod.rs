@@ -2,7 +2,6 @@ mod framebuffer;
 pub(crate) mod gl3;
 pub(crate) mod gl46;
 
-use std::sync::Arc;
 use crate::binding::UniformLocation;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
@@ -18,6 +17,7 @@ use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_runtime::quad::{QuadType, VertexInput};
 use librashader_runtime::scaling::ViewportSize;
 use librashader_runtime::uniforms::UniformStorageAccess;
+use std::sync::Arc;
 
 static OFFSCREEN_VBO_DATA: &[VertexInput; 4] = &[
     VertexInput {
@@ -58,8 +58,10 @@ static FINAL_VBO_DATA: &[VertexInput; 4] = &[
 ];
 
 pub(crate) trait LoadLut {
-    fn load_luts( context: &glow::Context,
-                  textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>>;
+    fn load_luts(
+        context: &glow::Context,
+        textures: &[TextureConfig],
+    ) -> Result<FastHashMap<usize, InputTexture>>;
 }
 
 pub(crate) trait CompileProgram {
@@ -71,9 +73,9 @@ pub(crate) trait CompileProgram {
 }
 
 pub(crate) trait DrawQuad {
-    fn new(context: &glow::Context,) -> Result<Self>;
+    fn new(context: &glow::Context) -> Result<Self>;
     fn bind_vertices(&self, context: &glow::Context, quad_type: QuadType);
-    fn unbind_vertices(&self, context: &glow::Context,);
+    fn unbind_vertices(&self, context: &glow::Context);
 }
 
 pub(crate) trait UboRing<const SIZE: usize> {
@@ -90,6 +92,7 @@ pub(crate) trait UboRing<const SIZE: usize> {
 pub(crate) trait FramebufferInterface {
     fn new(context: &Arc<glow::Context>, max_levels: u32) -> Result<GLFramebuffer>;
     fn scale(
+        context: &glow::Context,
         fb: &mut GLFramebuffer,
         scaling: Scale2D,
         format: ImageFormat,
@@ -114,6 +117,7 @@ pub(crate) trait FramebufferInterface {
             }
 
             Self::init(
+                context,
                 fb,
                 size,
                 if format == ImageFormat::Unknown {
@@ -125,14 +129,24 @@ pub(crate) trait FramebufferInterface {
         }
         Ok(size)
     }
-    
+
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);
     fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()>;
-    fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<u32>) -> Result<()>;
+    fn init(
+        context: &glow::Context,
+        fb: &mut GLFramebuffer,
+        size: Size<u32>,
+        format: impl Into<u32>,
+    ) -> Result<()>;
 }
 
 pub(crate) trait BindTexture {
-    fn bind_texture(context: &glow::Context, samplers: &SamplerSet, binding: &TextureBinding, texture: &InputTexture);
+    fn bind_texture(
+        context: &glow::Context,
+        samplers: &SamplerSet,
+        binding: &TextureBinding,
+        texture: &InputTexture,
+    );
     fn gen_mipmaps(context: &glow::Context, texture: &InputTexture);
 }
 

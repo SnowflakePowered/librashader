@@ -94,10 +94,10 @@ impl<T: GLInterface> FilterPass<T> {
         }
 
         unsafe {
-            parent.context
-                .bind_framebuffer(glow::FRAMEBUFFER, framebuffer.fbo);
-            parent.context
-                .use_program(Some(self.program));
+            parent
+                .context
+                .bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer.fbo));
+            parent.context.use_program(Some(self.program));
         }
 
         self.build_semantics(
@@ -112,21 +112,29 @@ impl<T: GLInterface> FilterPass<T> {
             source,
         );
 
-        if self.ubo_location.vertex.is_some_and(|index| index != glow::INVALID_INDEX)
-            && self.ubo_location.fragment.is_some_and(|index| index != glow::INVALID_INDEX)
+        if self
+            .ubo_location
+            .vertex
+            .is_some_and(|index| index != glow::INVALID_INDEX)
+            && self
+                .ubo_location
+                .fragment
+                .is_some_and(|index| index != glow::INVALID_INDEX)
         {
             if let (Some(ubo), Some(ring)) = (&self.reflection.ubo, &mut self.ubo_ring) {
-                ring.bind_for_frame(ubo, &self.ubo_location, &self.uniform_storage)
+                ring.bind_for_frame(&parent.context, ubo, &self.ubo_location, &self.uniform_storage)
             }
         }
 
         unsafe {
             framebuffer.clear::<T::FramebufferInterface, false>();
             let framebuffer_size = framebuffer.size;
-            parent
-                .context
-                .viewport(output.x, output.y, framebuffer_size.width as i32, framebuffer_size.width as i32);
-
+            parent.context.viewport(
+                output.x,
+                output.y,
+                framebuffer_size.width as i32,
+                framebuffer_size.width as i32,
+            );
 
             if framebuffer.format == glow::SRGB8_ALPHA8 {
                 parent.context.enable(glow::FRAMEBUFFER_SRGB);
@@ -134,17 +142,12 @@ impl<T: GLInterface> FilterPass<T> {
                 parent.context.disable(glow::FRAMEBUFFER_SRGB);
             }
 
-            parent.context
-                .disable(glow::CULL_FACE);
-            parent.context
-                .disable(glow::BLEND);
-            parent.context
-                .disable(glow::DEPTH_TEST);
+            parent.context.disable(glow::CULL_FACE);
+            parent.context.disable(glow::BLEND);
+            parent.context.disable(glow::DEPTH_TEST);
 
-            parent.context
-                .draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
-            parent.context
-                .disable(glow::FRAMEBUFFER_SRGB);
+            parent.context.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+            parent.context.disable(glow::FRAMEBUFFER_SRGB);
             parent.context.bind_framebuffer(glow::FRAMEBUFFER, None);
         }
     }

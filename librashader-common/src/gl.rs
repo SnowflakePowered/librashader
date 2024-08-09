@@ -38,22 +38,22 @@ impl From<ImageFormat> for u32 {
     }
 }
 
-impl From<WrapMode> for u32 {
+impl From<WrapMode> for i32 {
     fn from(value: WrapMode) -> Self {
         match value {
-            WrapMode::ClampToBorder => glow::CLAMP_TO_BORDER,
-            WrapMode::ClampToEdge => glow::CLAMP_TO_EDGE,
-            WrapMode::Repeat => glow::REPEAT,
-            WrapMode::MirroredRepeat => glow::MIRRORED_REPEAT,
+            WrapMode::ClampToBorder => glow::CLAMP_TO_BORDER as i32,
+            WrapMode::ClampToEdge => glow::CLAMP_TO_EDGE as i32,
+            WrapMode::Repeat => glow::REPEAT as i32,
+            WrapMode::MirroredRepeat => glow::MIRRORED_REPEAT as i32,
         }
     }
 }
 
-impl From<FilterMode> for u32 {
+impl From<FilterMode> for i32 {
     fn from(value: FilterMode) -> Self {
         match value {
-            FilterMode::Linear => glow::LINEAR,
-            _ => glow::NEAREST,
+            FilterMode::Linear => glow::LINEAR as i32,
+            _ => glow::NEAREST as i32,
         }
     }
 }

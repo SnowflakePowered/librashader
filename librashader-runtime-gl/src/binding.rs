@@ -9,7 +9,10 @@ pub struct VariableLocation {
 }
 
 impl VariableLocation {
-    pub fn location(&self, offset_type: UniformMemberBlock) -> Option<UniformLocation<Option<glow::UniformLocation>>> {
+    pub fn location(
+        &self,
+        offset_type: UniformMemberBlock,
+    ) -> Option<UniformLocation<Option<glow::UniformLocation>>> {
         match offset_type {
             UniformMemberBlock::Ubo => self.ubo,
             UniformMemberBlock::PushConstant => self.push,
@@ -30,15 +33,14 @@ impl UniformLocation<Option<glow::UniformLocation>> {
             if let Some(fragment) = self.fragment {
                 validity = validity || fragment.0 >= 0;
             } else {
-                false
+                return false
             }
-
         }
         if stage.contains(BindingStage::VERTEX) {
             if let Some(vertex) = self.vertex {
                 validity = validity || vertex.0 >= 0;
             } else {
-                false
+                return false
             }
         }
         validity
@@ -49,42 +51,49 @@ impl UniformLocation<Option<glow::UniformLocation>> {
     }
 }
 
-pub(crate) type GlUniformStorage = UniformStorage<GlUniformBinder, VariableLocation>;
+pub(crate) type GlUniformStorage = UniformStorage<GlUniformBinder, VariableLocation, Box<[u8]>, Box<[u8]>, glow::Context>;
 
 pub trait GlUniformScalar: UniformScalar {
     const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> ();
 }
 
 impl GlUniformScalar for f32 {
-    const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> () = glow::Context::uniform_1_f32;
+    const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> () =
+        glow::Context::uniform_1_f32;
 }
 
 impl GlUniformScalar for i32 {
-    const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> () = glow::Context::uniform_1_i32;
+    const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> () =
+        glow::Context::uniform_1_i32;
 }
 
 impl GlUniformScalar for u32 {
-    const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> () = glow::Context::uniform_1_u32;
+    const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> () =
+        glow::Context::uniform_1_u32;
 }
 
 pub(crate) struct GlUniformBinder;
-impl<'a, T> BindUniform<(&'a glow::Context, VariableLocation), T, ()> for GlUniformBinder
+impl<T> BindUniform<VariableLocation, T, glow::Context> for GlUniformBinder
 where
     T: GlUniformScalar,
 {
-    fn bind_uniform(block: UniformMemberBlock, value: T, ctx: (&'a glow::Context, VariableLocation), _: &()) -> Option<()> {
-        let (ctx, location) = ctx;
+    fn bind_uniform(
+        block: UniformMemberBlock,
+        value: T,
+        location: VariableLocation,
+        device: &glow::Context,
+    ) -> Option<()> {
         if let Some(location) = location.location(block)
             && location.bindable()
         {
             if location.is_valid(BindingStage::VERTEX) {
                 unsafe {
-                    T::FACTORY(ctx, location.vertex.as_ref(), value);
+                    T::FACTORY(device, location.vertex.as_ref(), value);
                 }
             }
             if location.is_valid(BindingStage::FRAGMENT) {
                 unsafe {
-                    T::FACTORY(ctx, location.fragment.as_ref(), value);
+                    T::FACTORY(device, location.fragment.as_ref(), value);
                 }
             }
             Some(())
@@ -94,23 +103,22 @@ where
     }
 }
 
-impl<'a> BindUniform<(&'a glow::Context, VariableLocation), &[f32; 4], ()> for GlUniformBinder {
+impl BindUniform<VariableLocation, &[f32; 4], glow::Context> for GlUniformBinder {
     fn bind_uniform(
         block: UniformMemberBlock,
         vec4: &[f32; 4],
-        ctx: (&'a glow::Context, VariableLocation),
-        _: &()
+        location: VariableLocation,
+        device: &glow::Context,
     ) -> Option<()> {
-        let (ctx, location) = ctx;
         if let Some(location) = location.location(block)
             && location.bindable()
         {
             unsafe {
                 if location.is_valid(BindingStage::VERTEX) {
-                    ctx.uniform_4_f32_slice(location.vertex.as_ref(), vec4);
+                    device.uniform_4_f32_slice(location.vertex.as_ref(), vec4);
                 }
                 if location.is_valid(BindingStage::FRAGMENT) {
-                    ctx.uniform_4_f32_slice(location.fragment.as_ref(), vec4);
+                    device.uniform_4_f32_slice(location.fragment.as_ref(), vec4);
                 }
             }
             Some(())
@@ -120,23 +128,22 @@ impl<'a> BindUniform<(&'a glow::Context, VariableLocation), &[f32; 4], ()> for G
     }
 }
 
-impl<'a> BindUniform<(&'a glow::Context, VariableLocation), &[f32; 16], ()> for GlUniformBinder {
+impl BindUniform<VariableLocation, &[f32; 16], glow::Context> for GlUniformBinder {
     fn bind_uniform(
         block: UniformMemberBlock,
         mat4: &[f32; 16],
-        ctx: (&'a glow::Context, VariableLocation),
-        _: &()
+        location: VariableLocation,
+        device: &glow::Context,
     ) -> Option<()> {
-        let (ctx, location) = ctx;
         if let Some(location) = location.location(block)
             && location.bindable()
         {
             unsafe {
                 if location.is_valid(BindingStage::VERTEX) {
-                    ctx.uniform_matrix_4_f32_slice(location.vertex.as_ref(), false, mat4);
+                    device.uniform_matrix_4_f32_slice(location.vertex.as_ref(), false, mat4);
                 }
                 if location.is_valid(BindingStage::FRAGMENT) {
-                    ctx.uniform_matrix_4_f32_slice(location.fragment.as_ref(), false, mat4);
+                    device.uniform_matrix_4_f32_slice(location.fragment.as_ref(), false, mat4);
                 }
             }
             Some(())

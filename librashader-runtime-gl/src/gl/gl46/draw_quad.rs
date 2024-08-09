@@ -1,22 +1,27 @@
 use crate::gl::DrawQuad;
 use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use bytemuck::offset_of;
-use glow::{Context, HasContext};
 use gl::types::{GLint, GLsizeiptr, GLuint};
+use glow::{Context, HasContext};
 use librashader_runtime::quad::{QuadType, VertexInput};
+use crate::error;
+use crate::error::FilterChainError;
 
 pub struct Gl46DrawQuad {
-    vbo: [glow::Context::Buffer; 2],
-    vao: glow::Context::VertexArray,
+    vbo: [glow::Buffer; 2],
+    vao: glow::VertexArray,
 }
 
 impl DrawQuad for Gl46DrawQuad {
-    fn new(context: &glow::Context) -> Self {
+    fn new(context: &glow::Context) -> error::Result<Self> {
         let mut vbo;
-        let mut vao ;
+        let mut vao;
 
         unsafe {
-            vbo = [context.create_named_buffer()?, context.create_named_buffer()?];
+            vbo = [
+                context.create_named_buffer().map_err(FilterChainError::GlError)?,
+                context.create_named_buffer().map_err(FilterChainError::GlError)?,
+            ];
 
             context.named_buffer_data_u8_slice(
                 vbo[0],
@@ -30,10 +35,9 @@ impl DrawQuad for Gl46DrawQuad {
                 glow::STATIC_DRAW,
             );
 
-            vao = context.create_vertex_array()?;
+            vao = context.create_vertex_array().map_err(FilterChainError::GlError)?;
             context.enable_vertex_array_attrib(vao, 0);
             context.enable_vertex_array_attrib(vao, 1);
-
 
             context.vertex_array_attrib_format_f32(
                 vao,

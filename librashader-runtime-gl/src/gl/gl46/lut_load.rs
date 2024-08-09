@@ -1,8 +1,8 @@
-use glow::{HasContext, PixelUnpackData};
-use crate::error::Result;
+use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::LoadLut;
 use crate::texture::InputTexture;
+use glow::{HasContext, PixelUnpackData};
 use librashader_common::map::FastHashMap;
 use librashader_presets::TextureConfig;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
@@ -11,7 +11,10 @@ use rayon::prelude::*;
 
 pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
-    fn load_luts(context: &glow::Context, textures: &[TextureConfig]) -> Result<FastHashMap<usize, InputTexture>> {
+    fn load_luts(
+        context: &glow::Context,
+        textures: &[TextureConfig],
+    ) -> Result<FastHashMap<usize, InputTexture>> {
         let mut luts = FastHashMap::default();
 
         // don't need this for texture api..
@@ -31,16 +34,15 @@ impl LoadLut for Gl46LutLoad {
                 1u32
             };
 
-            unsafe {
-                let handle = context
-                    .create_texture()?;
+            let handle = unsafe {
+                let handle = context.create_texture().map_err(FilterChainError::GlError)?;
 
                 context.texture_storage_2d(
                     handle,
                     levels as i32,
                     glow::RGBA8,
                     image.size.width as i32,
-                    image.size.height as i32
+                    image.size.height as i32,
                 );
 
                 context.pixel_store_i32(glow::UNPACK_ROW_LENGTH, 0);
@@ -62,13 +64,15 @@ impl LoadLut for Gl46LutLoad {
                 if mipmap {
                     context.generate_texture_mipmap(handle);
                 }
-            }
+
+                handle
+            };
 
             luts.insert(
                 index,
                 InputTexture {
                     image: GLImage {
-                        handle,
+                        handle: Some(handle),
                         format: glow::RGBA8,
                         size: image.size,
                     },
