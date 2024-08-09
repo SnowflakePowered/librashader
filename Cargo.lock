@@ -1668,7 +1668,7 @@ name = "librashader-capi"
 version = "0.3.0"
 dependencies = [
  "ash",
- "gl",
+ "glow 0.14.0",
  "librashader",
  "librashader-spirv-cross",
  "objc2 0.5.2",

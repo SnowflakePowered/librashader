@@ -1,6 +1,6 @@
 use std::panic::catch_unwind;
 use std::path::Path;
-
+use std::sync::Arc;
 use crate::error::{FilterChainError, Result};
 use crate::filter_chain::chain::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
@@ -77,5 +77,14 @@ impl FilterChainGL {
                 p.frame(frame_count, viewport, input, options)
             },
         }
+    }
+
+    /// Get the GL context associated with this filter chain
+    pub fn get_context(&self) -> &Arc<glow::Context> {
+        match &self.filter {
+            FilterChainDispatch::DirectStateAccess(p) => &p.common.context,
+            FilterChainDispatch::Compatibility(p) => &p.common.context
+        }
+
     }
 }
