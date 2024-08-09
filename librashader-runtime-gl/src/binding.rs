@@ -28,7 +28,6 @@ pub struct UniformLocation<T> {
 }
 
 impl UniformLocation<Option<glow::UniformLocation>> {
-
     #[allow(unused_comparisons)]
     pub fn is_valid(&self, stage: BindingStage) -> bool {
         // since glow::UniformLocation is None or NonZeroU32,

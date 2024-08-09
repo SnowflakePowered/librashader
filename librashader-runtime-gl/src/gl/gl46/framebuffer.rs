@@ -102,7 +102,7 @@ impl FramebufferInterface for Gl46Framebuffer {
 
             let image = fb
                 .ctx
-                .create_named_texture(gl::TEXTURE_2D)
+                .create_named_texture(glow::TEXTURE_2D)
                 .map_err(FilterChainError::GlError)?;
 
             if size.width == 0 {
@@ -172,7 +172,7 @@ impl FramebufferInterface for Gl46Framebuffer {
 
                         fb.ctx.named_framebuffer_texture(
                             Some(fb.fbo),
-                            gl::COLOR_ATTACHMENT0,
+                            glow::COLOR_ATTACHMENT0,
                             fb.image,
                             0,
                         );
