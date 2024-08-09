@@ -23,7 +23,7 @@ use crate::extract_if::MakeExtractIf;
 #[derive(Debug)]
 pub enum Value {
     ShaderCount(i32),
-    FeedbackPass(i32),
+    FeedbackPass(#[allow(unused)] i32),
     Shader(i32, PathBuf),
     ScaleX(i32, ScaleFactor),
     ScaleY(i32, ScaleFactor),

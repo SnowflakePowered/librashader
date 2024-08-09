@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::framebuffer::OwnedImage;
 use librashader_common::{FilterMode, WrapMode};
-use windows::Win32::Graphics::Direct3D11::{ID3D11ShaderResourceView};
+use windows::Win32::Graphics::Direct3D11::ID3D11ShaderResourceView;
 
 #[derive(Debug, Clone)]
 pub struct InputTexture {

@@ -25,7 +25,7 @@ use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
-use wgpu::{AdapterInfo, Device, TextureFormat};
+use wgpu::{Device, TextureFormat};
 
 use crate::error;
 use crate::error::FilterChainError;

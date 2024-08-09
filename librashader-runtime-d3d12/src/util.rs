@@ -21,7 +21,6 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::*;
-use librashader_common::Size;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -386,20 +385,5 @@ unsafe fn memcpy_subresource(
                 );
             }
         }
-    }
-}
-
-
-pub(crate) trait GetSize {
-    fn size(&self) -> Size<u32>;
-}
-
-impl GetSize for ID3D12Resource {
-    fn size(&self) -> Size<u32> {
-        let desc =  unsafe {
-            self.GetDesc()
-        };
-
-        Size::new(desc.Width as u32, desc.Height)
     }
 }

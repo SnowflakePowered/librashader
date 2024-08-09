@@ -1,4 +1,3 @@
-use crate::error::FilterChainError;
 use crate::framebuffer::WgpuOutputView;
 use crate::util;
 use librashader_cache::cache_pipeline;

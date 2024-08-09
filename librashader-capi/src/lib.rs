@@ -75,7 +75,7 @@ pub mod error;
 mod ffi;
 pub mod presets;
 
-#[cfg(feature = "reflect")]
+#[cfg(feature = "reflect-unstable")]
 #[doc(hidden)]
 pub mod reflect;
 
