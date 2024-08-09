@@ -128,7 +128,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub(crate) unsafe fn load_from_preset(
         preset: ShaderPreset,
-        context: glow::Context,
+        context: Arc<glow::Context>,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
@@ -152,7 +152,6 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // load luts
         let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
 
-        let context = Arc::new(context);
         let framebuffer_gen = || T::FramebufferInterface::new(&context, 1);
         let input_gen = || InputTexture {
             image: Default::default(),
