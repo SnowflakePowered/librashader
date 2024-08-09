@@ -34,7 +34,7 @@ pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 2;
 /// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
 /// - ABI version 2: 0.4.0
-pub const LIBRASHADER_CURRENT_ABI: LIBRASHADER_ABI_VERSION = 1;
+pub const LIBRASHADER_CURRENT_ABI: LIBRASHADER_ABI_VERSION = 2;
 
 /// Function pointer definition for libra_abi_version
 pub type PFN_libra_instance_abi_version = extern "C" fn() -> LIBRASHADER_ABI_VERSION;

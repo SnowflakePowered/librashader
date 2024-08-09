@@ -34,6 +34,8 @@ pub enum FilterChainError {
     GlSamplerError,
     #[error("opengl could not create samplers")]
     GlProgramError,
+    #[error("an invalid framebuffer was provided to frame")]
+    GlInvalidFramebuffer,
     #[error("opengl error: {0}")]
     GlError(String),
 }

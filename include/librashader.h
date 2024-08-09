@@ -636,14 +636,9 @@ typedef int32_t (*PFN_libra_error_free_string)(char **out);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Function pointer definition for
-///libra_gl_init_context
-typedef libra_error_t (*PFN_libra_gl_init_context)(libra_gl_loader_t loader);
-#endif
-
-#if defined(LIBRA_RUNTIME_OPENGL)
-/// Function pointer definition for
 ///libra_gl_filter_chain_create
 typedef libra_error_t (*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t *preset,
+                                                          libra_gl_loader_t loader,
                                                           const struct filter_chain_gl_opt_t *options,
                                                           libra_gl_filter_chain_t *out);
 #endif
@@ -1192,20 +1187,6 @@ libra_error_t libra_preset_get_runtime_params(libra_shader_preset_t *preset,
 libra_error_t libra_preset_free_runtime_params(struct libra_preset_param_list_t preset);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-/// Initialize the OpenGL Context for librashader.
-///
-/// This only has to be done once throughout the lifetime of the application,
-/// unless for whatever reason you switch OpenGL loaders mid-flight.
-///
-/// ## Safety
-/// Attempting to create a filter chain will fail if the GL context is not initialized.
-///
-/// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
-/// chain objects, and drawing with them causes immediate undefined behaviour.
-libra_error_t libra_gl_init_context(libra_gl_loader_t loader);
-#endif
-
-#if defined(LIBRA_RUNTIME_OPENGL)
 /// Create the filter chain given the shader preset.
 ///
 /// The shader preset is immediately invalidated and must be recreated after
@@ -1216,6 +1197,7 @@ libra_error_t libra_gl_init_context(libra_gl_loader_t loader);
 /// - `options` must be either null, or valid and aligned.
 /// - `out` must be aligned, but may be null, invalid, or uninitialized.
 libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
+                                           libra_gl_loader_t loader,
                                            const struct filter_chain_gl_opt_t *options,
                                            libra_gl_filter_chain_t *out);
 #endif

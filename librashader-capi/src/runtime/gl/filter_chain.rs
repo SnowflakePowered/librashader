@@ -7,12 +7,14 @@ use librashader::runtime::gl::{
     FilterChain, FilterChainOptions, FrameOptions, GLFramebuffer, GLImage,
 };
 use std::ffi::CStr;
-use std::ffi::{c_char, c_void, CString};
+use std::ffi::{c_char, c_void};
 use std::mem::MaybeUninit;
+use std::num::NonZeroU32;
 use std::ptr::NonNull;
 use std::slice;
-
+use std::sync::Arc;
 use crate::LIBRASHADER_API_VERSION;
+use librashader::runtime::gl::error::FilterChainError;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 
@@ -49,8 +51,12 @@ pub struct libra_output_framebuffer_gl_t {
 
 impl From<libra_source_image_gl_t> for GLImage {
     fn from(value: libra_source_image_gl_t) -> Self {
+        let handle = NonZeroU32::try_from(value.handle)
+            .ok()
+            .map(glow::NativeTexture);
+
         GLImage {
-            handle: value.handle,
+            handle,
             format: value.format,
             size: Size::new(value.width, value.height),
         }
@@ -109,27 +115,6 @@ config_struct! {
 }
 
 extern_fn! {
-    /// Initialize the OpenGL Context for librashader.
-    ///
-    /// This only has to be done once throughout the lifetime of the application,
-    /// unless for whatever reason you switch OpenGL loaders mid-flight.
-    ///
-    /// ## Safety
-    /// Attempting to create a filter chain will fail if the GL context is not initialized.
-    ///
-    /// Reinitializing the OpenGL context with a different loader immediately invalidates previous filter
-    /// chain objects, and drawing with them causes immediate undefined behaviour.
-    raw fn libra_gl_init_context(loader: libra_gl_loader_t) {
-        gl::load_with(|s| unsafe {
-            let proc_name = CString::new(s).unwrap_unchecked();
-            loader(proc_name.as_ptr())
-        });
-
-        LibrashaderError::ok()
-    }
-}
-
-extern_fn! {
     /// Create the filter chain given the shader preset.
     ///
     /// The shader preset is immediately invalidated and must be recreated after
@@ -141,6 +126,7 @@ extern_fn! {
     /// - `out` must be aligned, but may be null, invalid, or uninitialized.
     fn libra_gl_filter_chain_create(
         preset: *mut libra_shader_preset_t,
+        loader: libra_gl_loader_t,
         options: *const MaybeUninit<filter_chain_gl_opt_t>,
         out: *mut MaybeUninit<libra_gl_filter_chain_t>
     ) {
@@ -160,7 +146,11 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         unsafe {
-            let chain = FilterChain::load_from_preset(*preset, options.as_ref())?;
+            let context = glow::Context::from_loader_function_cstr(
+                |proc_name| loader(proc_name.as_ptr()));
+
+            let chain = FilterChain::load_from_preset(Arc::new(context),
+                *preset, options.as_ref())?;
 
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
@@ -206,8 +196,19 @@ extern_fn! {
         };
 
         let opt = opt.map(FromUninit::from_uninit);
-        let framebuffer = GLFramebuffer::new_from_raw(out.texture, out.fbo, out.format,
-            Size::new(out.width, out.height), 1);
+
+        let texture = NonZeroU32::try_from(out.texture)
+            .ok()
+            .map(glow::NativeTexture);
+
+        let fbo = NonZeroU32::try_from(out.fbo)
+            .ok()
+            .map(glow::NativeFramebuffer)
+            .ok_or(FilterChainError::GlInvalidFramebuffer)?;
+
+        let framebuffer = GLFramebuffer::new_from_raw(Arc::clone(chain.get_context()),
+            texture, fbo, out.format, Size::new(out.width, out.height), 1);
+
         let viewport = Viewport {
             x: origin.x,
             y: origin.y,
