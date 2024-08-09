@@ -194,12 +194,9 @@ libra_error_t __librashader__noop_preset_free_runtime_params(
     return NULL;
 }
 #if defined(LIBRA_RUNTIME_OPENGL)
-libra_error_t __librashader__noop_gl_init_context(libra_gl_loader_t loader) {
-    return NULL;
-}
-
 libra_error_t __librashader__noop_gl_filter_chain_create(
-    libra_shader_preset_t *preset, const struct filter_chain_gl_opt_t *options,
+    libra_shader_preset_t *preset, libra_gl_loader_t loader,
+    const struct filter_chain_gl_opt_t *options,
     libra_gl_filter_chain_t *out) {
     *out = NULL;
     return NULL;
@@ -799,17 +796,6 @@ typedef struct libra_instance_t {
     PFN_libra_error_free_string error_free_string;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    /// Initialize the OpenGL Context for librashader.
-    ///
-    /// ## Safety
-    /// Attempting to create a filter chain will fail if the context is not
-    /// initialized.
-    ///
-    /// Reinitializing the OpenGL context with a different loader immediately
-    /// invalidates previous filter chain objects, and drawing with them causes
-    /// immediate undefined behaviour.
-    PFN_libra_gl_init_context gl_init_context;
-
     /// Create the filter chain given the shader preset.
     ///
     /// The shader preset is immediately invalidated and must be recreated after
@@ -1445,7 +1431,6 @@ libra_instance_t __librashader_make_null_instance(void) {
     instance.error_free_string = __librashader__noop_error_free_string;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    instance.gl_init_context = __librashader__noop_gl_init_context;
     instance.gl_filter_chain_create =
         __librashader__noop_gl_filter_chain_create;
     instance.gl_filter_chain_frame = __librashader__noop_gl_filter_chain_frame;
@@ -1620,7 +1605,6 @@ libra_instance_t librashader_load_instance(void) {
     _LIBRASHADER_ASSIGN(librashader, instance, error_free_string);
 
 #if defined(LIBRA_RUNTIME_OPENGL)
-    _LIBRASHADER_ASSIGN(librashader, instance, gl_init_context);
     _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_create);
     _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_frame);
     _LIBRASHADER_ASSIGN(librashader, instance, gl_filter_chain_free);
