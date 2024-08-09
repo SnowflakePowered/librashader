@@ -24,7 +24,7 @@ pub struct FilterChainGL {
 impl FilterChainGL {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub unsafe fn load_from_preset(
-        ctx: glow::Context,
+        ctx: Arc<glow::Context>,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
@@ -47,7 +47,7 @@ impl FilterChainGL {
 
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path(
-        ctx: glow::Context,
+        ctx: Arc<glow::Context>,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
