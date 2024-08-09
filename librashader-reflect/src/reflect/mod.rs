@@ -12,6 +12,7 @@ pub mod presets;
 
 mod helper;
 
+/// Reflection via naga.
 #[cfg(feature = "naga")]
 pub mod naga;
 
