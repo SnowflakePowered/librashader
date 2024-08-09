@@ -1,5 +1,10 @@
+#[doc(hidden)]
 pub mod msl;
+
+#[doc(hidden)]
 pub mod spirv;
+
+#[doc(hidden)]
 pub mod wgsl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
@@ -28,6 +33,8 @@ use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
 ///
 /// The Naga reflector will lower combined image samplers to split,
 /// with the same bind point on descriptor group 1.
+///
+/// Naga supports WGSL, SPIR-V, and MSL targets.
 #[derive(Debug)]
 pub struct Naga;
 #[derive(Debug)]

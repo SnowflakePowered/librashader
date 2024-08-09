@@ -1,5 +1,10 @@
+#[doc(hidden)]
 pub mod glsl;
+
+#[doc(hidden)]
 pub mod hlsl;
+
+#[doc(hidden)]
 pub mod msl;
 
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
@@ -20,6 +25,8 @@ use spirv_cross::ErrorCode;
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 
 /// Reflect shaders under SPIRV-Cross semantics.
+///
+/// SPIRV-Cross supports GLSL, HLSL, SPIR-V, and MSL targets.
 #[derive(Debug)]
 pub struct SpirvCross;
 
