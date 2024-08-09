@@ -1,9 +1,8 @@
+use crate::error;
 use crate::error::FilterChainError;
-use gl::types::{GLenum, GLint, GLuint};
 use glow::HasContext;
 use librashader_common::map::FastHashMap;
 use librashader_common::{FilterMode, WrapMode};
-use crate::error;
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
@@ -53,7 +52,6 @@ impl SamplerSet {
         for wrap_mode in wrap_modes {
             for filter_mode in &[FilterMode::Linear, FilterMode::Nearest] {
                 for mip_filter in &[FilterMode::Linear, FilterMode::Nearest] {
-                    let mut sampler = 0;
                     unsafe {
                         let sampler = context
                             .create_sampler()
@@ -75,6 +73,6 @@ impl SamplerSet {
 
         // assert all samplers were created.
         assert_eq!(samplers.len(), wrap_modes.len() * 2 * 2);
-        SamplerSet { samplers }
+        Ok(SamplerSet { samplers })
     }
 }

@@ -47,7 +47,7 @@ impl TextureInput for InputTexture {
     }
 }
 
-impl ContextOffset<GlUniformBinder, VariableLocation> for UniformOffset {
+impl ContextOffset<GlUniformBinder, VariableLocation, glow::Context> for UniformOffset {
     fn offset(&self) -> MemberOffset {
         self.offset
     }
@@ -122,7 +122,12 @@ impl<T: GLInterface> FilterPass<T> {
                 .is_some_and(|index| index != glow::INVALID_INDEX)
         {
             if let (Some(ubo), Some(ring)) = (&self.reflection.ubo, &mut self.ubo_ring) {
-                ring.bind_for_frame(&parent.context, ubo, &self.ubo_location, &self.uniform_storage)
+                ring.bind_for_frame(
+                    &parent.context,
+                    ubo,
+                    &self.ubo_location,
+                    &self.uniform_storage,
+                )
             }
         }
 

@@ -24,6 +24,7 @@ pub struct FilterChainGL {
 impl FilterChainGL {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub unsafe fn load_from_preset(
+        ctx: glow::Context,
         preset: ShaderPreset,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
@@ -33,13 +34,13 @@ impl FilterChainGL {
             {
                 return Ok(Self {
                     filter: FilterChainDispatch::DirectStateAccess(unsafe {
-                        FilterChainImpl::load_from_preset(preset, Some(options))?
+                        FilterChainImpl::load_from_preset(preset, ctx, Some(options))?
                     }),
                 });
             }
             Ok(Self {
                 filter: FilterChainDispatch::Compatibility(unsafe {
-                    FilterChainImpl::load_from_preset(preset, options)?
+                    FilterChainImpl::load_from_preset(preset, ctx, options)?
                 }),
             })
         });
@@ -48,12 +49,13 @@ impl FilterChainGL {
 
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path(
+        ctx: glow::Context,
         path: impl AsRef<Path>,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         // load passes from preset
         let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::GlCore)?;
-        unsafe { Self::load_from_preset(preset, options) }
+        unsafe { Self::load_from_preset(ctx, preset, options) }
     }
 
     /// Process a frame with the input image.

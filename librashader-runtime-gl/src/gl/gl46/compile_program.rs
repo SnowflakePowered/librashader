@@ -2,11 +2,11 @@ use crate::binding::UniformLocation;
 use crate::error::FilterChainError;
 use crate::gl::CompileProgram;
 use crate::util;
-use glow::{HasContext, NativeUniformLocation};
+use glow::HasContext;
 use librashader_cache::Cacheable;
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use spirv_cross::spirv::{Decoration, ShaderResources};
+use spirv_cross::spirv::Decoration;
 
 pub struct Gl4CompileProgram;
 

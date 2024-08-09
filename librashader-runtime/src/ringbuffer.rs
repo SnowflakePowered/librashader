@@ -57,10 +57,7 @@ where
     T: Copy,
 {
     pub fn from_array(items: [T; SIZE]) -> Self {
-        Self {
-            items,
-            index: 0,
-        }
+        Self { items, index: 0 }
     }
 
     /// Get a borrow to all the items in this ring buffer.

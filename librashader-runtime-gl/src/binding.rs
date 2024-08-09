@@ -33,14 +33,14 @@ impl UniformLocation<Option<glow::UniformLocation>> {
             if let Some(fragment) = self.fragment {
                 validity = validity || fragment.0 >= 0;
             } else {
-                return false
+                return false;
             }
         }
         if stage.contains(BindingStage::VERTEX) {
             if let Some(vertex) = self.vertex {
                 validity = validity || vertex.0 >= 0;
             } else {
-                return false
+                return false;
             }
         }
         validity
@@ -51,7 +51,8 @@ impl UniformLocation<Option<glow::UniformLocation>> {
     }
 }
 
-pub(crate) type GlUniformStorage = UniformStorage<GlUniformBinder, VariableLocation, Box<[u8]>, Box<[u8]>, glow::Context>;
+pub(crate) type GlUniformStorage =
+    UniformStorage<GlUniformBinder, VariableLocation, Box<[u8]>, Box<[u8]>, glow::Context>;
 
 pub trait GlUniformScalar: UniformScalar {
     const FACTORY: unsafe fn(&glow::Context, Option<&glow::UniformLocation>, Self) -> ();

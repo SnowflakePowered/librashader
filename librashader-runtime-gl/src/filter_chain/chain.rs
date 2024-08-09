@@ -18,7 +18,7 @@ use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 
-use glow::{HasContext, NativeUniformLocation};
+use glow::HasContext;
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
 use librashader_reflect::reflect::cross::SpirvCross;
@@ -30,6 +30,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
@@ -50,7 +51,7 @@ pub(crate) struct FilterCommon {
     pub feedback_textures: Box<[InputTexture]>,
     pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
-    pub context: glow::Context,
+    pub context: Arc<glow::Context>,
 }
 
 pub struct FilterMutable {
@@ -132,9 +133,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
-        let version = options.map_or_else(gl_get_version, |o| {
-            gl_u16_to_version(&context, o.glsl_version)
-        });
+        let version = options.map_or_else(
+            || gl_get_version(&context),
+            |o| gl_u16_to_version(&context, o.glsl_version),
+        );
 
         // initialize passes
         let filters = Self::init_passes(&context, version, passes, &semantics, disable_cache)?;
@@ -150,6 +152,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // load luts
         let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
 
+        let context = Arc::new(context);
         let framebuffer_gen = || T::FramebufferInterface::new(&context, 1);
         let input_gen = || InputTexture {
             image: Default::default(),
@@ -222,7 +225,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 T::CompileShader::compile_program(context, glsl, !disable_cache)?;
 
             let ubo_ring = if let Some(ubo) = &reflection.ubo {
-                let ring = T::UboRing::new(&context, ubo.size);
+                let ring = T::UboRing::new(&context, ubo.size)?;
                 Some(ring)
             } else {
                 None
@@ -262,12 +265,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             if back.size != input.size || (input.format != 0 && input.format != back.format) {
                 // eprintln!("[history] resizing");
-                T::FramebufferInterface::init(
-                    &self.common.context,
-                    &mut back,
-                    input.size,
-                    input.format,
-                )?;
+                T::FramebufferInterface::init(&mut back, input.size, input.format)?;
             }
 
             back.copy_from::<T::FramebufferInterface>(input)?;

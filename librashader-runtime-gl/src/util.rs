@@ -1,4 +1,3 @@
-use gl::types::{GLenum, GLuint};
 use glow::HasContext;
 
 use crate::error;

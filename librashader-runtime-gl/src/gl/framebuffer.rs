@@ -60,9 +60,7 @@ impl GLFramebuffer {
         original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
-        let ctx = Arc::clone(&self.ctx);
         T::scale(
-            &ctx,
             self,
             scaling,
             format,
@@ -80,7 +78,7 @@ impl GLFramebuffer {
     pub(crate) fn as_texture(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputTexture {
         InputTexture {
             image: GLImage {
-                handle: Some(self.image),
+                handle: self.image,
                 format: self.format,
                 size: self.size,
             },
@@ -98,9 +96,7 @@ impl Drop for GLFramebuffer {
         }
 
         unsafe {
-            if let Some(fbo) = self.fbo {
-                self.ctx.delete_framebuffer(fbo);
-            }
+            self.ctx.delete_framebuffer(self.fbo);
             if let Some(image) = self.image {
                 self.ctx.delete_texture(image);
             }

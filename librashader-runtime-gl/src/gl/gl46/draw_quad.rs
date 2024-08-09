@@ -1,11 +1,10 @@
+use crate::error;
+use crate::error::FilterChainError;
 use crate::gl::DrawQuad;
 use crate::gl::{FINAL_VBO_DATA, OFFSCREEN_VBO_DATA};
 use bytemuck::offset_of;
-use gl::types::{GLint, GLsizeiptr, GLuint};
 use glow::{Context, HasContext};
 use librashader_runtime::quad::{QuadType, VertexInput};
-use crate::error;
-use crate::error::FilterChainError;
 
 pub struct Gl46DrawQuad {
     vbo: [glow::Buffer; 2],
@@ -14,13 +13,17 @@ pub struct Gl46DrawQuad {
 
 impl DrawQuad for Gl46DrawQuad {
     fn new(context: &glow::Context) -> error::Result<Self> {
-        let mut vbo;
-        let mut vao;
+        let vbo;
+        let vao;
 
         unsafe {
             vbo = [
-                context.create_named_buffer().map_err(FilterChainError::GlError)?,
-                context.create_named_buffer().map_err(FilterChainError::GlError)?,
+                context
+                    .create_named_buffer()
+                    .map_err(FilterChainError::GlError)?,
+                context
+                    .create_named_buffer()
+                    .map_err(FilterChainError::GlError)?,
             ];
 
             context.named_buffer_data_u8_slice(
@@ -35,7 +38,9 @@ impl DrawQuad for Gl46DrawQuad {
                 glow::STATIC_DRAW,
             );
 
-            vao = context.create_vertex_array().map_err(FilterChainError::GlError)?;
+            vao = context
+                .create_vertex_array()
+                .map_err(FilterChainError::GlError)?;
             context.enable_vertex_array_attrib(vao, 0);
             context.enable_vertex_array_attrib(vao, 1);
 
@@ -60,7 +65,7 @@ impl DrawQuad for Gl46DrawQuad {
             context.vertex_array_attrib_binding_f32(vao, 1, 0);
         }
 
-        Self { vbo, vao }
+        Ok(Self { vbo, vao })
     }
 
     fn bind_vertices(&self, context: &glow::Context, quad_type: QuadType) {

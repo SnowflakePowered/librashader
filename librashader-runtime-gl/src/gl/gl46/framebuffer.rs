@@ -1,3 +1,4 @@
+use crate::error;
 use crate::error::{FilterChainError, Result};
 use crate::framebuffer::GLImage;
 use crate::gl::framebuffer::GLFramebuffer;
@@ -5,18 +6,21 @@ use crate::gl::FramebufferInterface;
 use gl::types::{GLenum, GLint, GLsizei};
 use glow::HasContext;
 use librashader_common::{ImageFormat, Size};
-use librashader_presets::Scale2D;
-use librashader_runtime::scaling::{MipmapSize, ViewportSize};
+use librashader_runtime::scaling::MipmapSize;
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Gl46Framebuffer;
 
 impl FramebufferInterface for Gl46Framebuffer {
-    fn new(context: &Arc<glow::Context>, max_levels: u32) -> GLFramebuffer {
-        let mut framebuffer = unsafe { context.create_framebuffer()? };
+    fn new(context: &Arc<glow::Context>, max_levels: u32) -> error::Result<GLFramebuffer> {
+        let framebuffer = unsafe {
+            context
+                .create_framebuffer()
+                .map_err(FilterChainError::GlError)?
+        };
 
-        GLFramebuffer {
+        Ok(GLFramebuffer {
             image: None,
             size: Size {
                 width: 1,
@@ -28,7 +32,7 @@ impl FramebufferInterface for Gl46Framebuffer {
             fbo: framebuffer,
             is_raw: false,
             ctx: Arc::clone(&context),
-        }
+        })
     }
 
     fn clear<const REBIND: bool>(fb: &GLFramebuffer) {
@@ -78,12 +82,7 @@ impl FramebufferInterface for Gl46Framebuffer {
 
         Ok(())
     }
-    fn init(
-        context: &glow::Context,
-        fb: &mut GLFramebuffer,
-        mut size: Size<u32>,
-        format: impl Into<GLenum>,
-    ) -> Result<()> {
+    fn init(fb: &mut GLFramebuffer, mut size: Size<u32>, format: impl Into<GLenum>) -> Result<()> {
         if fb.is_raw {
             return Ok(());
         }

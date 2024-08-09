@@ -1,4 +1,3 @@
-use gl::types::{GLenum, GLuint};
 use librashader_common::Size;
 
 /// A handle to an OpenGL texture with format and size information.

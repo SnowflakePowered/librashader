@@ -3,7 +3,7 @@ pub(crate) mod gl3;
 pub(crate) mod gl46;
 
 use crate::binding::UniformLocation;
-use crate::error::{FilterChainError, Result};
+use crate::error::Result;
 use crate::framebuffer::GLImage;
 use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
@@ -73,13 +73,17 @@ pub(crate) trait CompileProgram {
 }
 
 pub(crate) trait DrawQuad {
-    fn new(context: &glow::Context) -> Result<Self>;
+    fn new(context: &glow::Context) -> Result<Self>
+    where
+        Self: Sized;
     fn bind_vertices(&self, context: &glow::Context, quad_type: QuadType);
     fn unbind_vertices(&self, context: &glow::Context);
 }
 
 pub(crate) trait UboRing<const SIZE: usize> {
-    fn new(context: &glow::Context, buffer_size: u32) -> Result<Self>;
+    fn new(context: &glow::Context, buffer_size: u32) -> Result<Self>
+    where
+        Self: Sized;
     fn bind_for_frame(
         &mut self,
         context: &glow::Context,
@@ -92,7 +96,6 @@ pub(crate) trait UboRing<const SIZE: usize> {
 pub(crate) trait FramebufferInterface {
     fn new(context: &Arc<glow::Context>, max_levels: u32) -> Result<GLFramebuffer>;
     fn scale(
-        context: &glow::Context,
         fb: &mut GLFramebuffer,
         scaling: Scale2D,
         format: ImageFormat,
@@ -117,7 +120,6 @@ pub(crate) trait FramebufferInterface {
             }
 
             Self::init(
-                context,
                 fb,
                 size,
                 if format == ImageFormat::Unknown {
@@ -132,12 +134,7 @@ pub(crate) trait FramebufferInterface {
 
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);
     fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()>;
-    fn init(
-        context: &glow::Context,
-        fb: &mut GLFramebuffer,
-        size: Size<u32>,
-        format: impl Into<u32>,
-    ) -> Result<()>;
+    fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<u32>) -> Result<()>;
 }
 
 pub(crate) trait BindTexture {

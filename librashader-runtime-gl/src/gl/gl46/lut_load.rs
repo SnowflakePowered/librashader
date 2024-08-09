@@ -17,10 +17,7 @@ impl LoadLut for Gl46LutLoad {
     ) -> Result<FastHashMap<usize, InputTexture>> {
         let mut luts = FastHashMap::default();
 
-        // don't need this for texture api..
-        // unsafe {
-        //     context.bind_buffer(glow::PIXEL_UNPACK_BUFFER, None);
-        // }
+        // don't need this for texture DSA api.
 
         let images = textures
             .par_iter()
@@ -35,7 +32,9 @@ impl LoadLut for Gl46LutLoad {
             };
 
             let handle = unsafe {
-                let handle = context.create_texture().map_err(FilterChainError::GlError)?;
+                let handle = context
+                    .create_texture()
+                    .map_err(FilterChainError::GlError)?;
 
                 context.texture_storage_2d(
                     handle,
