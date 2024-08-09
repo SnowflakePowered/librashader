@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ShaderCompileError {
     /// Compile error from naga.
-    #[cfg(feature = "unstable-naga")]
+    #[cfg(feature = "unstable-naga-in")]
     #[error("shader")]
     NagaCompileError(Vec<naga::front::glsl::Error>),
 
@@ -131,7 +131,7 @@ pub enum ShaderReflectError {
     NagaReflectError(#[from] naga::WithSpan<naga::valid::ValidationError>),
 }
 
-#[cfg(feature = "unstable-naga")]
+#[cfg(feature = "unstable-naga-in")]
 impl From<Vec<naga::front::glsl::Error>> for ShaderCompileError {
     fn from(err: Vec<naga::front::glsl::Error>) -> Self {
         ShaderCompileError::NagaCompileError(err)

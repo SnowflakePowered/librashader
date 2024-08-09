@@ -529,7 +529,9 @@ pub mod d3d12_hello_triangle {
                 unsafe { resources.command_queue.ExecuteCommandLists(&[command_list]) };
 
                 // Present the frame.
-                unsafe { resources.swap_chain.Present(1, DXGI_PRESENT::default()) }.ok().unwrap();
+                unsafe { resources.swap_chain.Present(1, DXGI_PRESENT::default()) }
+                    .ok()
+                    .unwrap();
 
                 wait_for_previous_frame(resources);
                 self.framecount += 1;

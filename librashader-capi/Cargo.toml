@@ -25,6 +25,8 @@ runtime-d3d9 = ["windows", "librashader/runtime-d3d9", "windows/Win32_Graphics_D
 runtime-vulkan = ["ash", "librashader/runtime-vk"]
 runtime-metal = ["__cbindgen_internal_objc", "librashader/runtime-metal"]
 
+reflect-unstable = []
+
 __cbindgen_internal = ["runtime-all"]
 
 # make runtime-metal depend on this, so its automatically implied.

@@ -46,3 +46,5 @@ cross = [ "spirv_cross", "spirv_cross/glsl", "spirv_cross/hlsl", "spirv_cross/ms
 naga = [ "rspirv", "spirv", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
 serialize = [ "serde" ]
 msl = [ "spirv_cross/msl", "naga/msl-out" ]
+
+unstable-naga-in = ["naga/glsl-in"]

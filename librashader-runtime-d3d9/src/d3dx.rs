@@ -68,7 +68,11 @@ where
     .ok()
 }
 
-windows::core::imp::define_interface!(ID3DXConstantTable, ID3DXConstantTable_Vtbl, 0xab3c758f_93e_4356_b7_62_4d_b1_8f_1b_3a1);
+windows::core::imp::define_interface!(
+    ID3DXConstantTable,
+    ID3DXConstantTable_Vtbl,
+    0xab3c758f_93e_4356_b7_62_4d_b1_8f_1b_3a1
+);
 
 #[allow(dead_code)]
 impl ID3DXConstantTable {

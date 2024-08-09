@@ -3,9 +3,7 @@ use crate::ctypes::{
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::runtime::d3d11::{
-    FilterChain, FilterChainOptions, FrameOptions,
-};
+use librashader::runtime::d3d11::{FilterChain, FilterChainOptions, FrameOptions};
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
@@ -17,7 +15,7 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::{FilterChainParameters, Size, Viewport};
+use librashader::runtime::{FilterChainParameters, Viewport};
 
 /// Direct3D 11 parameters for the source image.
 #[repr(C)]

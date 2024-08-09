@@ -24,6 +24,9 @@ bytemuck = "1.12.3"
 rayon = "1.6.1"
 array-concat = "0.5.2"
 
+[features]
+debug-shader = []
+
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
 features = [
