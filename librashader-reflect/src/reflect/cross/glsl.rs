@@ -119,8 +119,7 @@ impl CompileShader<GLSL> for CrossReflect<spirv_cross::glsl::Target> {
                 .unset_decoration(res.id, Decoration::DescriptorSet)?;
             self.fragment
                 .unset_decoration(res.id, Decoration::Binding)?;
-            let mut name = res.name;
-            texture_fixups.push((name, binding));
+            texture_fixups.push((res.name, binding));
         }
 
         Ok(ShaderCompilerOutput {

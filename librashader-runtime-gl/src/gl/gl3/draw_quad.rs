@@ -25,7 +25,7 @@ impl DrawQuad for Gl3DrawQuad {
 
             ctx.bind_buffer(glow::ARRAY_BUFFER, Some(vbo[0]));
             ctx.buffer_data_u8_slice(
-                gl::ARRAY_BUFFER,
+                glow::ARRAY_BUFFER,
                 bytemuck::cast_slice(OFFSCREEN_VBO_DATA),
                 glow::STATIC_DRAW,
             );
@@ -33,7 +33,7 @@ impl DrawQuad for Gl3DrawQuad {
             ctx.bind_buffer(glow::ARRAY_BUFFER, Some(vbo[1]));
 
             ctx.buffer_data_u8_slice(
-                gl::ARRAY_BUFFER,
+                glow::ARRAY_BUFFER,
                 bytemuck::cast_slice(FINAL_VBO_DATA),
                 glow::STATIC_DRAW,
             );
@@ -64,7 +64,7 @@ impl DrawQuad for Gl3DrawQuad {
             ctx.vertex_attrib_pointer_f32(
                 0,
                 4,
-                gl::FLOAT,
+                glow::FLOAT,
                 false,
                 std::mem::size_of::<VertexInput>() as i32,
                 offset_of!(VertexInput, position) as i32,
@@ -73,7 +73,7 @@ impl DrawQuad for Gl3DrawQuad {
             ctx.vertex_attrib_pointer_f32(
                 1,
                 2,
-                gl::FLOAT,
+                glow::FLOAT,
                 false,
                 std::mem::size_of::<VertexInput>() as i32,
                 offset_of!(VertexInput, texcoord) as i32,
@@ -95,15 +95,15 @@ impl DrawQuad for Gl3DrawQuad {
 //     fn drop(&mut self) {
 //         unsafe {
 //             if let Some(vbo) = self.vbo {
-//                 gl::DeleteBuffers(1, &self.vbo[0]);
+//                 glow::DeleteBuffers(1, &self.vbo[0]);
 //             }
 //
 //             if self.vbo[1] != 0 {
-//                 gl::DeleteBuffers(1, &self.vbo[1]);
+//                 glow::DeleteBuffers(1, &self.vbo[1]);
 //             }
 //
 //             if self.vao != 0 {
-//                 gl::DeleteVertexArrays(1, &self.vao)
+//                 glow::DeleteVertexArrays(1, &self.vao)
 //             }
 //         }
 //     }

@@ -1,7 +1,7 @@
-use std::fmt::Display;
 use glow::HasContext;
 use librashader_reflect::reflect::semantics::{BindingStage, UniformMemberBlock};
 use librashader_runtime::uniforms::{BindUniform, UniformScalar, UniformStorage};
+use std::fmt::Display;
 
 #[derive(Debug, Copy, Clone)]
 pub struct VariableLocation {
@@ -33,7 +33,7 @@ impl UniformLocation<Option<glow::UniformLocation>> {
         // since glow::UniformLocation is None or NonZeroU32,
         // is_some is sufficient for validity
         (stage.contains(BindingStage::FRAGMENT) && self.fragment.is_some())
-                || (stage.contains(BindingStage::VERTEX) && self.vertex.is_some())
+            || (stage.contains(BindingStage::VERTEX) && self.vertex.is_some())
     }
 
     pub fn bindable(&self) -> bool {

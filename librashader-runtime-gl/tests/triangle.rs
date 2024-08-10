@@ -36,10 +36,9 @@ fn triangle_gl46() {
             // "../test/slang-shaders/test/history.slangp",
             // "../test/basic.slangp",
             "../test/shaders_slang/crt/crt-royale.slangp",
-
             // "../test/shadersslang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             Some(&FilterChainOptionsGL {
-                glsl_version:330,
+                glsl_version: 330,
                 use_dsa: true,
                 force_no_mipmaps: false,
                 disable_cache: false,

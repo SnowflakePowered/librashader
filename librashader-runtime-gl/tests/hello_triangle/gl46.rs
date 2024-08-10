@@ -83,7 +83,7 @@ void main()
     let shader_program = super::compile_program(&gl, VERT_SHADER, FRAG_SHADER);
 
     unsafe {
-        gl.object_label(gl::SHADER, shader_program.0.get(), Some("color_shader"));
+        gl.object_label(glow::SHADER, shader_program.0.get(), Some("color_shader"));
     }
 
     let vertices = &[
@@ -92,39 +92,39 @@ void main()
         -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
         0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
     ];
-    let mut vbo = unsafe { gl.create_named_buffer().unwrap() };
+    let vbo = unsafe { gl.create_named_buffer().unwrap() };
 
     unsafe {
-        gl.object_label(gl::BUFFER, vbo.0.get(), Some("triangle_vbo"));
+        gl.object_label(glow::BUFFER, vbo.0.get(), Some("triangle_vbo"));
     }
 
     unsafe {
         gl.named_buffer_data_u8_slice(
             vbo,
             bytemuck::cast_slice(vertices),
-            gl::STATIC_DRAW, // usage
+            glow::STATIC_DRAW, // usage
         );
     }
 
     // set up vertex array object
 
-    let mut vao = unsafe { gl.create_named_vertex_array().unwrap() };
+    let vao = unsafe { gl.create_named_vertex_array().unwrap() };
 
     // todo: figure this shit out
     unsafe {
-        // gl.object_label(gl::VERTEX_ARRAY, vao.0.get(), Some("triangle_vao"));
+        // gl.object_label(glow::VERTEX_ARRAY, vao.0.get(), Some("triangle_vao"));
 
         gl.vertex_array_vertex_buffer(vao, 0, Some(vbo), 0, 6 * std::mem::size_of::<f32>() as i32);
 
         gl.enable_vertex_array_attrib(vao, 0); // this is "layout (location = 0)" in vertex shader
-        gl.vertex_array_attrib_format_f32(vao, 0, 3, gl::FLOAT, false, 0);
+        gl.vertex_array_attrib_format_f32(vao, 0, 3, glow::FLOAT, false, 0);
 
         gl.enable_vertex_array_attrib(vao, 1);
         gl.vertex_array_attrib_format_f32(
             vao,
             1,
             3,
-            gl::FLOAT,
+            glow::FLOAT,
             false,
             3 * std::mem::size_of::<f32>() as u32,
         );
@@ -163,12 +163,12 @@ pub fn do_loop(
 ) {
     let mut framecount = 0;
     let rendered_framebuffer;
-    let mut rendered_texture;
-    let mut quad_vbuf;
+    let rendered_texture;
+    let quad_vbuf;
 
-    let mut output_texture;
-    let mut output_framebuffer_handle;
-    let mut output_quad_vbuf;
+    let output_texture;
+    let output_framebuffer_handle;
+    let output_quad_vbuf;
 
     unsafe {
         // do frmaebuffer
@@ -224,7 +224,7 @@ pub fn do_loop(
             0,
         );
 
-        gl.named_framebuffer_draw_buffer(Some(rendered_framebuffer), gl::COLOR_ATTACHMENT0);
+        gl.named_framebuffer_draw_buffer(Some(rendered_framebuffer), glow::COLOR_ATTACHMENT0);
 
         if gl.check_named_framebuffer_status(Some(rendered_framebuffer), glow::FRAMEBUFFER)
             != glow::FRAMEBUFFER_COMPLETE
@@ -313,7 +313,7 @@ pub fn do_loop(
         gl.named_buffer_data_u8_slice(
             output_quad_vbuf,
             bytemuck::cast_slice(&fullscreen_fbo),
-            gl::STATIC_DRAW,
+            glow::STATIC_DRAW,
         );
     }
 
@@ -368,7 +368,7 @@ void main()
 
             gl.clear_named_framebuffer_f32_slice(
                 Some(rendered_framebuffer),
-                gl::COLOR,
+                glow::COLOR,
                 0,
                 &[0.3f32, 0.4, 0.6, 1.0],
             );

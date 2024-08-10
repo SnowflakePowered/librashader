@@ -1,6 +1,4 @@
-use gl::types::{GLenum, GLsizei, GLuint};
 use glow::HasContext;
-use std::ffi::c_void;
 
 pub mod gl3;
 pub mod gl46;
@@ -17,7 +15,7 @@ pub fn compile_program(gl: &glow::Context, vertex: &str, fragment: &str) -> glow
         }
     }
 
-    let fragment_shader = unsafe { gl.create_shader(gl::FRAGMENT_SHADER).unwrap() };
+    let fragment_shader = unsafe { gl.create_shader(glow::FRAGMENT_SHADER).unwrap() };
     unsafe {
         gl.shader_source(fragment_shader, &fragment);
         gl.compile_shader(fragment_shader);
@@ -48,12 +46,6 @@ pub fn compile_program(gl: &glow::Context, vertex: &str, fragment: &str) -> glow
     shader_program
 }
 
-fn debug_callback(
-    _source: GLenum,
-    _err_type: GLenum,
-    _id: GLuint,
-    _severity: GLenum,
-    message: &str,
-) {
+fn debug_callback(_source: u32, _err_type: u32, _id: u32, _severity: u32, message: &str) {
     println!("[gl] {message:?}");
 }

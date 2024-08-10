@@ -18,7 +18,7 @@ impl<const SIZE: usize> UboRing<SIZE> for Gl3UboRing<SIZE> {
         let items: [glow::Buffer; SIZE] = array::try_from_fn(|_| unsafe {
             let buffer = ctx.create_buffer().map(|buffer| {
                 ctx.bind_buffer(glow::UNIFORM_BUFFER, Some(buffer));
-                ctx.buffer_data_size(glow::UNIFORM_BUFFER, buffer_size as i32, gl::STREAM_DRAW);
+                ctx.buffer_data_size(glow::UNIFORM_BUFFER, buffer_size as i32, glow::STREAM_DRAW);
                 ctx.bind_buffer(glow::UNIFORM_BUFFER, None);
                 buffer
             });

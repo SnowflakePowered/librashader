@@ -1,6 +1,5 @@
 //! OpenGL shader runtime errors.
 
-use gl::types::GLenum;
 use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
@@ -11,7 +10,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum FilterChainError {
     #[error("fbo initialization error")]
-    FramebufferInit(GLenum),
+    FramebufferInit(u32),
     #[error("SPIRV reflection error")]
     SpirvCrossReflectError(#[from] spirv_cross::ErrorCode),
     #[error("shader preset parse error")]

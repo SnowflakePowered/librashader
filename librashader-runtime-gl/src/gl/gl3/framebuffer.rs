@@ -45,7 +45,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             fb.ctx.clear_color(0.0, 0.0, 0.0, 0.0);
             fb.ctx.clear(glow::COLOR_BUFFER_BIT);
             if REBIND {
-                fb.ctx.bind_framebuffer(gl::FRAMEBUFFER, None);
+                fb.ctx.bind_framebuffer(glow::FRAMEBUFFER, None);
             }
         }
     }
@@ -143,7 +143,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             }
 
             fb.image = Some(fb.ctx.create_texture().map_err(FilterChainError::GlError)?);
-            fb.ctx.bind_texture(gl::TEXTURE_2D, fb.image);
+            fb.ctx.bind_texture(glow::TEXTURE_2D, fb.image);
 
             if size.width == 0 {
                 size.width = 1;
@@ -176,7 +176,7 @@ impl FramebufferInterface for Gl3Framebuffer {
                 0,
             );
 
-            let status = fb.ctx.check_framebuffer_status(gl::FRAMEBUFFER);
+            let status = fb.ctx.check_framebuffer_status(glow::FRAMEBUFFER);
             if status != glow::FRAMEBUFFER_COMPLETE {
                 match status {
                     glow::FRAMEBUFFER_UNSUPPORTED => {
@@ -221,7 +221,7 @@ impl FramebufferInterface for Gl3Framebuffer {
                         );
 
                         // fb.init =
-                        //     gl::CheckFramebufferStatus(gl::FRAMEBUFFER) == gl::FRAMEBUFFER_COMPLETE;
+                        //     glow::CheckFramebufferStatus(glow::FRAMEBUFFER) == glow::FRAMEBUFFER_COMPLETE;
                     }
                     _ => return Err(FilterChainError::FramebufferInit(status)),
                 }

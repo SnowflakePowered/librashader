@@ -34,7 +34,7 @@ impl LoadLut for Gl3LutLoad {
             let handle = unsafe {
                 let handle = ctx.create_texture().map_err(FilterChainError::GlError)?;
 
-                ctx.bind_texture(gl::TEXTURE_2D, Some(handle));
+                ctx.bind_texture(glow::TEXTURE_2D, Some(handle));
                 ctx.tex_storage_2d(
                     glow::TEXTURE_2D,
                     levels as i32,
@@ -45,7 +45,7 @@ impl LoadLut for Gl3LutLoad {
 
                 ctx.pixel_store_i32(glow::UNPACK_ROW_LENGTH, 0);
                 ctx.pixel_store_i32(glow::UNPACK_ALIGNMENT, 4);
-                ctx.bind_buffer(gl::PIXEL_UNPACK_BUFFER, None);
+                ctx.bind_buffer(glow::PIXEL_UNPACK_BUFFER, None);
 
                 ctx.tex_sub_image_2d(
                     glow::TEXTURE_2D,
@@ -61,10 +61,10 @@ impl LoadLut for Gl3LutLoad {
 
                 let mipmap = levels > 1;
                 if mipmap {
-                    ctx.generate_mipmap(gl::TEXTURE_2D);
+                    ctx.generate_mipmap(glow::TEXTURE_2D);
                 }
 
-                ctx.bind_texture(gl::TEXTURE_2D, None);
+                ctx.bind_texture(glow::TEXTURE_2D, None);
                 handle
             };
 
@@ -73,7 +73,7 @@ impl LoadLut for Gl3LutLoad {
                 InputTexture {
                     image: GLImage {
                         handle: Some(handle),
-                        format: gl::RGBA8,
+                        format: glow::RGBA8,
                         size: image.size,
                     },
                     filter: texture.filter_mode,
@@ -89,7 +89,7 @@ impl LoadLut for Gl3LutLoad {
                 .ok()
                 .map(glow::NativeBuffer);
 
-            ctx.bind_buffer(gl::PIXEL_UNPACK_BUFFER, pixel_unpack);
+            ctx.bind_buffer(glow::PIXEL_UNPACK_BUFFER, pixel_unpack);
         };
         Ok(luts)
     }

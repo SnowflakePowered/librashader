@@ -97,7 +97,7 @@ void main()
         -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
         0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
     ];
-    let mut vbo;
+    let vbo;
     unsafe {
         vbo = gl.create_buffer().unwrap();
         // glow::ObjectLabel(glow::BUFFER, vbo, -1, b"triangle_vbo\0".as_ptr().cast());
@@ -115,7 +115,7 @@ void main()
 
     // set up vertex array object
 
-    let mut vao;
+    let vao;
     unsafe {
         vao = gl.create_vertex_array().unwrap();
         // glow::ObjectLabel(glow::VERTEX_ARRAY, vao, -1, b"triangle_vao\0".as_ptr().cast());
@@ -178,13 +178,13 @@ pub fn do_loop(
     filter: &mut FilterChainGL,
 ) {
     let mut framecount = 0;
-    let mut rendered_framebuffer;
-    let mut rendered_texture;
-    let mut quad_vbuf;
+    let rendered_framebuffer;
+    let rendered_texture;
+    let quad_vbuf;
 
-    let mut output_texture;
-    let mut output_framebuffer_handle;
-    let mut output_quad_vbuf;
+    let output_texture;
+    let output_framebuffer_handle;
+    let output_quad_vbuf;
 
     unsafe {
         // do frmaebuffer
@@ -377,7 +377,7 @@ void main()
 }";
 
     let quad_programid = super::compile_program(gl, VERT_SHADER, FRAG_SHADER);
-    let mut quad_vao;
+    let quad_vao;
     unsafe {
         quad_vao = gl.create_vertex_array().unwrap();
     }
@@ -462,8 +462,6 @@ void main()
         window.swap_buffers();
     }
 }
-
-pub struct Color(f32, f32, f32, f32);
 
 fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     use glfw::Action;

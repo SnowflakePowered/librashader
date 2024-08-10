@@ -56,16 +56,20 @@ impl FramebufferInterface for Gl46Framebuffer {
         }
 
         unsafe {
-            // gl::NamedFramebufferDrawBuffer(fb.handle, gl::COLOR_ATTACHMENT1);
+            // glow::NamedFramebufferDrawBuffer(fb.handle, glow::COLOR_ATTACHMENT1);
             fb.ctx
                 .named_framebuffer_read_buffer(Some(fb.fbo), glow::COLOR_ATTACHMENT0);
             fb.ctx
                 .named_framebuffer_draw_buffer(Some(fb.fbo), glow::COLOR_ATTACHMENT1);
 
+            fb.ctx.named_framebuffer_texture(
+                Some(fb.fbo),
+                glow::COLOR_ATTACHMENT0,
+                image.handle,
+                0,
+            );
             fb.ctx
-                .named_framebuffer_texture(Some(fb.fbo), gl::COLOR_ATTACHMENT0, image.handle, 0);
-            fb.ctx
-                .named_framebuffer_texture(Some(fb.fbo), gl::COLOR_ATTACHMENT1, fb.image, 0);
+                .named_framebuffer_texture(Some(fb.fbo), glow::COLOR_ATTACHMENT1, fb.image, 0);
 
             fb.ctx.blit_named_framebuffer(
                 Some(fb.fbo),
@@ -96,7 +100,7 @@ impl FramebufferInterface for Gl46Framebuffer {
             // reset the framebuffer image
             if let Some(image) = fb.image {
                 fb.ctx
-                    .named_framebuffer_texture(Some(fb.fbo), gl::COLOR_ATTACHMENT0, None, 0);
+                    .named_framebuffer_texture(Some(fb.fbo), glow::COLOR_ATTACHMENT0, None, 0);
                 fb.ctx.delete_texture(image);
             }
 
@@ -131,17 +135,17 @@ impl FramebufferInterface for Gl46Framebuffer {
             fb.image = Some(image);
 
             fb.ctx
-                .named_framebuffer_texture(Some(fb.fbo), gl::COLOR_ATTACHMENT0, fb.image, 0);
+                .named_framebuffer_texture(Some(fb.fbo), glow::COLOR_ATTACHMENT0, fb.image, 0);
 
             let status = fb
                 .ctx
-                .check_named_framebuffer_status(Some(fb.fbo), gl::FRAMEBUFFER);
+                .check_named_framebuffer_status(Some(fb.fbo), glow::FRAMEBUFFER);
             if status != glow::FRAMEBUFFER_COMPLETE {
                 match status {
                     glow::FRAMEBUFFER_UNSUPPORTED => {
                         fb.ctx.named_framebuffer_texture(
                             Some(fb.fbo),
-                            gl::COLOR_ATTACHMENT0,
+                            glow::COLOR_ATTACHMENT0,
                             None,
                             0,
                         );
@@ -149,7 +153,7 @@ impl FramebufferInterface for Gl46Framebuffer {
 
                         let image = fb
                             .ctx
-                            .create_named_texture(gl::TEXTURE_2D)
+                            .create_named_texture(glow::TEXTURE_2D)
                             .map_err(FilterChainError::GlError)?;
 
                         fb.mip_levels = size.calculate_miplevels();
