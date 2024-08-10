@@ -67,8 +67,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let offset = meta.offset();
 
         if offset.ubo.is_some() {
-            let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}\0", meta.id());
-            let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}\0", meta.id());
+            let vert_name = format!("LIBRA_UBO_VERTEX_INSTANCE.{}", meta.id());
+            let frag_name = format!("LIBRA_UBO_FRAGMENT_INSTANCE.{}", meta.id());
             unsafe {
                 let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
                 let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
@@ -78,8 +78,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         }
 
         if offset.push.is_some() {
-            let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}\0", meta.id());
-            let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}\0", meta.id());
+            let vert_name = format!("LIBRA_PUSH_VERTEX_INSTANCE.{}", meta.id());
+            let frag_name = format!("LIBRA_PUSH_FRAGMENT_INSTANCE.{}", meta.id());
             unsafe {
                 let vertex = gl::GetUniformLocation(pipeline, vert_name.as_ptr().cast());
                 let fragment = gl::GetUniformLocation(pipeline, frag_name.as_ptr().cast());
