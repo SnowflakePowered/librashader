@@ -17,7 +17,7 @@ crate-type = [ "cdylib", "staticlib" ]
 [features]
 default = ["runtime-all" ]
 runtime-all = ["runtime-opengl", "runtime-d3d9", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan", "runtime-metal"]
-runtime-opengl = ["gl", "librashader/runtime-gl"]
+runtime-opengl = ["glow", "librashader/runtime-gl"]
 runtime-d3d11 = ["windows", "librashader/runtime-d3d11", "windows/Win32_Graphics_Direct3D11"]
 runtime-d3d12 = ["windows", "librashader/runtime-d3d12", "windows/Win32_Graphics_Direct3D12"]
 runtime-d3d9 = ["windows", "librashader/runtime-d3d9", "windows/Win32_Graphics_Direct3D9"]
@@ -38,11 +38,11 @@ __cbindgen_internal_objc = ["objc2-metal", "objc2"]
 [dependencies]
 thiserror = "1.0.37"
 paste = "1.0.9"
-gl = { version = "0.14.0", optional = true }
 rustc-hash = "2.0.0"
 
 sptr = "0.3.2"
 
+glow = { workspace = true, optional = true }
 ash = { workspace = true, optional = true }
 
 [dependencies.librashader]
