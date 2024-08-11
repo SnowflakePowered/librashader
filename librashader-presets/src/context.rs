@@ -207,6 +207,7 @@ impl ContextItem {
         }
     }
 
+    /// The wildcard key associated with the context item.
     pub fn key(&self) -> &str {
         match self {
             ContextItem::ContentDirectory(_) => "CONTENT-DIR",
