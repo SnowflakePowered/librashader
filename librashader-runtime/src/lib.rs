@@ -7,8 +7,6 @@
 //! If you are _writing_ a librashader runtime implementation, using these traits and helpers will
 //! help in maintaining consistent behaviour in binding semantics and image handling.
 
-extern crate core;
-
 /// Scaling helpers.
 pub mod scaling;
 
