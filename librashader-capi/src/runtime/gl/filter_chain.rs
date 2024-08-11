@@ -311,6 +311,7 @@ extern_fn! {
     /// The resulting value in `chain` then becomes null.
     /// ## Safety
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+    /// - The context that the filter chain was initialized with **must be current** before freeing the filter chain.
     fn libra_gl_filter_chain_free(
         chain: *mut libra_gl_filter_chain_t
     ) {
