@@ -259,9 +259,6 @@ pub mod runtime {
     /// Shader runtime for OpenGL 3.3+.
     ///
     /// DSA support requires OpenGL 4.6.
-    ///
-    /// The OpenGL runtime requires `gl` to be
-    /// initialized with [`gl::load_with`](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
     pub mod gl {
         pub use librashader_runtime_gl::{
             error,
