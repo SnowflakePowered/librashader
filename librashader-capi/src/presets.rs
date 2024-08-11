@@ -14,11 +14,10 @@ const _: () = crate::assert_thread_safe::<ShaderPreset>();
 pub struct libra_preset_param_list_t {
     /// A pointer to the parameter
     pub parameters: *const libra_preset_param_t,
-    /// The number of parameters in the list.
+    /// The number of parameters in the list. This field
+    /// is readonly, and changing it will lead to undefined
+    /// behaviour on free.
     pub length: u64,
-    /// For internal use only.
-    /// Changing this causes immediate undefined behaviour on freeing this parameter list.
-    pub _internal_alloc: u64,
 }
 
 /// A preset parameter.
@@ -226,7 +225,6 @@ extern_fn! {
             out.write(MaybeUninit::new(libra_preset_param_list_t {
                 parameters: parts,
                 length: len as u64,
-                _internal_alloc: 0,
             }));
         }
     }

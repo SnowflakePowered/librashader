@@ -155,11 +155,9 @@ typedef struct libra_preset_param_t {
 typedef struct libra_preset_param_list_t {
   /// A pointer to the parameter
   const struct libra_preset_param_t *parameters;
-  /// The number of parameters in the list.
+  /// The number of parameters in the list. This field is readonly,
+  /// changing it will lead to undefined behaviour on free.
   uint64_t length;
-  /// For internal use only.
-  /// Changing this causes immediate undefined behaviour on freeing this parameter list.
-  uint64_t _internal_alloc;
 } libra_preset_param_list_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
