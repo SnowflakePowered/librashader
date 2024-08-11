@@ -21,8 +21,6 @@ num-traits = "0.2.15"
 array-concat = "0.5.2"
 arc-swap = "1.7.1"
 
-tinymap = "0.4.0"
-
 [dependencies.image]
 version = "0.25.1"
 features = [
