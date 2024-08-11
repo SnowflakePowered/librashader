@@ -433,9 +433,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.18"
+version = "1.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b62ac837cdb5cb22e10a256099b4fc502b1dfe560cb282963a974d7abd80e476"
+checksum = "45bcde016d64c21da4be18b655631e5ab6d3107607e71a73a9f53eb48aae23fb"
 dependencies = [
  "jobserver",
  "libc",
@@ -1046,15 +1046,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gl"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a94edab108827d67608095e269cf862e60d920f144a5026d3dbcfd8b877fb404"
-dependencies = [
- "gl_generator",
-]
-
-[[package]]
 name = "gl_generator"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1120,8 +1111,9 @@ dependencies = [
 
 [[package]]
 name = "glow"
-version = "0.14.0"
-source = "git+https://github.com/grovesNL/glow/#eb44a878a756d5ddce8505158690ec9bd272be8f"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f4a888dbe8181a7535853469c21c67ca9a1cea9460b16808fc018ea9e55d248"
 dependencies = [
  "js-sys",
  "slotmap",
@@ -1532,7 +1524,7 @@ name = "librashader-capi"
 version = "0.4.5"
 dependencies = [
  "ash",
- "gl",
+ "glow 0.14.1",
  "librashader",
  "objc2 0.5.2",
  "objc2-metal",
@@ -1548,7 +1540,7 @@ name = "librashader-common"
 version = "0.4.5"
 dependencies = [
  "ash",
- "glow 0.14.0",
+ "glow 0.14.1",
  "halfbrown",
  "num-traits",
  "objc2-metal",
@@ -1690,7 +1682,7 @@ version = "0.4.5"
 dependencies = [
  "bytemuck",
  "glfw 0.47.0",
- "glow 0.14.0",
+ "glow 0.14.1",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
@@ -2223,9 +2215,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33ea5043e58958ee56f3e15a90aee535795cd7dfd319846288d93c5b57d85cbe"
+checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "orbclient"
@@ -2923,9 +2915,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-cross-sys"
-version = "0.4.0"
+version = "0.4.1+f84c1fb"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3aaad7cc693a12f8da9fd481ac938fdd0fc1b2e73b9f710eb723d3e7f5607f0a"
+checksum = "c2846aa1f6cab3f453b307236526786c9580fdc7b7121b52fbf85e8ce58bab42"
 dependencies = [
  "bytemuck",
  "cc",
@@ -2936,9 +2928,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-cross2"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca2c78dd7b37f600f6254e95c435b81f5f0201b96d26e263646999f7a3669c19"
+checksum = "54e021b0cd4fd7e4f26205efabbd5fa7b591173d5439ad4d48e3b950566ab824"
 dependencies = [
  "bitflags 2.6.0",
  "bytemuck",
@@ -3136,9 +3128,9 @@ checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
 
 [[package]]
 name = "toml_edit"
-version = "0.22.20"
+version = "0.22.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d"
+checksum = "3b072cee73c449a636ffd6f32bd8de3a9f7119139aff882f44943ce2986dc5cf"
 dependencies = [
  "indexmap 2.5.0",
  "toml_datetime",
