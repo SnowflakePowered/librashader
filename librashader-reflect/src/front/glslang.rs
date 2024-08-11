@@ -1,5 +1,5 @@
 use crate::error::ShaderCompileError;
-use glslang::{CompilerOptions, ShaderInput};
+use glslang::{CompilerOptions, ShaderInput, ShaderMessage};
 use librashader_preprocess::ShaderSource;
 use rspirv::binary::Assemble;
 use rspirv::dr::Builder;
@@ -25,6 +25,7 @@ pub(crate) fn compile_spirv(source: &ShaderSource) -> Result<SpirvCompilation, S
             spirv_version: glslang::SpirvVersion::SPIRV1_0,
         },
         version_profile: None,
+        messages: ShaderMessage::DEFAULT,
     };
 
     let vertex = glslang::ShaderSource::from(source.vertex.as_str());

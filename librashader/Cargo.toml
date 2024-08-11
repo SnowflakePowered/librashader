@@ -30,16 +30,16 @@ librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.
 ash = { version = "0.38", optional = true }
 halfbrown = "0.2.4"
 
-wgpu = { version = "22", default-features = false, optional = true }
-wgpu-types = { version = "22", optional = true }
+wgpu = { workspace = true, default-features = false, optional = true }
+wgpu-types = {  workspace = true, optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
 optional = true
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-objc2-metal = { version = "0.2.0" , features = [ "all" ], optional = true}
-objc2 = { version = "0.5.0", features = ["apple"] , optional = true }
+objc2-metal = { workspace = true, optional = true}
+objc2 = { workspace = true, features = ["apple"] , optional = true }
 
 [features]
 # core features and definitions
