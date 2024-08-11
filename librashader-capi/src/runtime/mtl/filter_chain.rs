@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_mtl_filter_chain_t, libra_shader_preset_t, libra_origin_t, FromUninit,
+    config_struct, libra_mtl_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;

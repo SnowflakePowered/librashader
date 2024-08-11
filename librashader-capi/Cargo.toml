@@ -36,11 +36,13 @@ __cbindgen_internal_objc = ["objc2-metal", "objc2"]
 [dependencies]
 thiserror = "1.0.37"
 paste = "1.0.9"
-glow = { version = "0.14", git = "https://github.com/chyyran/glow/", branch = "feat-named-framebuffer", optional = true }
 rustc-hash = "2.0.0"
-ash = { version = "0.38", optional = true }
-spirv_cross = { package = "librashader-spirv-cross", version = "0.25.1" }
+
 sptr = "0.3.2"
+
+glow = { workspace = true, optional = true }
+ash = { workspace = true, optional = true }
+spirv_cross = { workspace = true }
 
 [dependencies.librashader]
 path = "../librashader"

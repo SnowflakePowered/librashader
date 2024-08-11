@@ -23,11 +23,12 @@ librashader-cache = { path = "../librashader-cache", version = "0.3.0" }
 
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
-ash = { version = "0.38", features = ["debug"] }
 gpu-allocator = { version = "0.27.0", default-features = false, features = ["vulkan"] }
 parking_lot = "0.12.1"
 rayon = "1.6.1"
 array-concat = "0.5.2"
+
+ash = { workspace = true, features = ["debug"] }
 
 [dev-dependencies]
 num = "0.4.0"

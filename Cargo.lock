@@ -1178,9 +1178,9 @@ dependencies = [
 
 [[package]]
 name = "glslang"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6287b8071643d2f88055233b1ecfec954819cd5f91ff4095d5f2e2739a37b3a"
+checksum = "2619e3eeccf510123b2a38e129dbb4f6c5259a28d58b1e462ff00397176f00dc"
 dependencies = [
  "glslang-sys",
  "once_cell",
@@ -1190,9 +1190,9 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b300c41d883992fe736cae5ce49ea588f690d9822ecc876595fa1b8cdf2be70"
+checksum = "f487792c51b944793232a9928eb9bdb36fe5eff8e868a151b86a8b5168efc724"
 dependencies = [
  "cc",
  "glob",
@@ -1733,7 +1733,6 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "num-traits",
- "tinymap",
 ]
 
 [[package]]
@@ -1880,9 +1879,9 @@ dependencies = [
 
 [[package]]
 name = "librashader-spirv-cross"
-version = "0.25.2"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72bb5d2c53ff2b518de2cd127997a5bf1846ffc07980d812b0af44105bcd3b7e"
+checksum = "4603464191d79d8ce9fe81f7925dfa5b74060b15be51608525f0758f6d88e238"
 dependencies = [
  "build-target",
  "cc",
@@ -3262,21 +3261,6 @@ dependencies = [
  "bytemuck",
  "strict-num",
 ]
-
-[[package]]
-name = "tinymap"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "606a25fa775ecddf21f83f373a0724423f364b5aaacac14f0cce4cf4c976ff43"
-dependencies = [
- "tinyvec",
-]
-
-[[package]]
-name = "tinyvec"
-version = "1.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "445e881f4f6d382d5f27c034e25eb92edd7c784ceab92a0937db7f2e9471b938"
 
 [[package]]
 name = "toml"

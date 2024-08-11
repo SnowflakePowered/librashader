@@ -1,11 +1,15 @@
 use crate::ctypes::{
-    config_struct, libra_gl_filter_chain_t, libra_shader_preset_t, libra_origin_t, FromUninit,
+    config_struct, libra_gl_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
+use crate::LIBRASHADER_API_VERSION;
+use librashader::runtime::gl::error::FilterChainError;
 use librashader::runtime::gl::{
     FilterChain, FilterChainOptions, FrameOptions, GLFramebuffer, GLImage,
 };
+use librashader::runtime::FilterChainParameters;
+use librashader::runtime::{Size, Viewport};
 use std::ffi::CStr;
 use std::ffi::{c_char, c_void};
 use std::mem::MaybeUninit;
@@ -13,10 +17,6 @@ use std::num::NonZeroU32;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::Arc;
-use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::gl::error::FilterChainError;
-use librashader::runtime::FilterChainParameters;
-use librashader::runtime::{Size, Viewport};
 
 /// A GL function loader that librashader needs to be initialized with.
 pub type libra_gl_loader_t = unsafe extern "system" fn(*const c_char) -> *const c_void;

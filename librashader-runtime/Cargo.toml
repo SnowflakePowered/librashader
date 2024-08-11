@@ -20,8 +20,6 @@ bytemuck = {  version = "1.12.3", features = ["derive"] }
 num-traits = "0.2.15"
 array-concat = "0.5.2"
 
-tinymap = "0.4.0"
-
 [dependencies.image]
 version = "0.25.1"
 features = [

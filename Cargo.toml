@@ -19,6 +19,15 @@ resolver = "2"
 
 [workspace.dependencies]
 windows = "0.58.0"
+ash = "0.38"
+glow = { version = "0.14", git = "https://github.com/chyyran/glow/", branch = "feat-named-framebuffer" }
+spirv_cross = { package = "librashader-spirv-cross", version = "0.26" }
+
+objc2-metal = { version = "0.2" }
+objc2 = { version = "0.5.0" }
+
+wgpu = { version = "22" }
+wgpu-types = { version = "22" }
 
 [workspace.metadata.release]
 

@@ -25,22 +25,21 @@ librashader-runtime-d3d9  = { path = "../librashader-runtime-d3d9", version = "0
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.3.0", optional = true }
 librashader-runtime-vk = { path = "../librashader-runtime-vk", version = "0.3.0", optional = true }
 librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.3.0", optional = true }
+librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.3.0", optional = true }
 
 ash = { version = "0.38", optional = true }
 halfbrown = "0.2.4"
 
-[target.'cfg(not(all(target_vendor="apple", docsrs)))'.dependencies]
-wgpu = { version = "22", default-features = false, optional = true }
-librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.3.0", optional = true }
-wgpu-types = { version = "22", optional = true }
+wgpu = { workspace = true, default-features = false, optional = true }
+wgpu-types = {  workspace = true, optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
 optional = true
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-objc2-metal = { version = "0.2.0" , features = [ "all" ], optional = true}
-objc2 = { version = "0.5.0", features = ["apple"] , optional = true }
+objc2-metal = { workspace = true, optional = true}
+objc2 = { workspace = true, features = ["apple"] , optional = true }
 
 [features]
 # core features and definitions

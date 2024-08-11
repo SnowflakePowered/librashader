@@ -23,12 +23,13 @@ wgpu = ["wgpu-types"]
 metal = ["objc2-metal"]
 
 [dependencies]
-glow = { version = "0.14", optional = true }
-ash = { version = "0.38", optional = true }
-wgpu-types = { version = "22", optional = true }
 num-traits = "0.2.15"
 rustc-hash = "2.0.0"
 halfbrown = "0.2.4"
+
+glow = { version = "0.14", optional = true }
+ash = { workspace = true, optional = true }
+wgpu-types = { workspace = true, optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 optional = true
@@ -44,5 +45,5 @@ features = [
 
 [target.'cfg(target_vendor="apple")'.dependencies.objc2-metal]
 optional = true
-version = "0.2.0"
+workspace = true
 features = ["MTLPixelFormat", "MTLRenderCommandEncoder", "MTLSampler"]
