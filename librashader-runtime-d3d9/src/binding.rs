@@ -62,7 +62,7 @@ impl ConstantRegister {
             .iter()
             .find_map(|(mangled_name, register)| {
                 if context
-                    .fragment_buffers
+                    .vertex_buffers
                     .contains_uniform(uniform_name, mangled_name)
                 {
                     Some(register)
