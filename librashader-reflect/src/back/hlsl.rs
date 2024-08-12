@@ -87,6 +87,11 @@ impl HlslBufferAssignments {
             }
         }
 
+        // Sometimes SPIRV-cross will assign variables to "global"
+        if Self::find_mangled_name("global", uniform_name, mangled_name) {
+            return true;
+        }
+
         return false;
     }
 }
