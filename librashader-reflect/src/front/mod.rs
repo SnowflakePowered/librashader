@@ -32,12 +32,6 @@ pub struct SpirvCompilation {
     pub(crate) fragment: Vec<u32>,
 }
 
-impl SpirvCompilation {
-    /// Tries to compile SPIR-V from the provided shader source.
-    pub fn compile(source: &ShaderSource) -> Result<Self, ShaderCompileError> {
-        glslang::compile_spirv(source)
-    }
-}
 
 impl TryFrom<&ShaderSource> for SpirvCompilation {
     type Error = ShaderCompileError;
