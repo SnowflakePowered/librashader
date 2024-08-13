@@ -1,8 +1,16 @@
 use crate::Size;
 
 /// The rendering output of a filter chain.
+///
+/// Viewport coordinates are relative to the coordinate system of the
+/// target runtime. For correct results, `x` and `y`  should almost always be
+/// 0, and `size` should be the same as the size of the output texture.
+///
+/// Size uniforms will always be passed the full size of the output texture,
+/// regardless of the user-specified viewport size.
 pub struct Viewport<'a, T> {
-    /// The x offset to start rendering from.
+    /// The x offset to start rendering from. For correct results, this should almost
+    /// always be 0 to indicate the origin.
     pub x: f32,
     /// The y offset to begin rendering from.
     pub y: f32,
