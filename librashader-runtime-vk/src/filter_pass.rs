@@ -183,13 +183,13 @@ impl FilterPass {
                         x: output.x as i32,
                         y: output.y as i32,
                     },
-                    extent: output.output.size.into(),
+                    extent: output.size.into(),
                 }],
             );
 
             parent
                 .device
-                .cmd_set_viewport(cmd, 0, &[output.output.size.into()]);
+                .cmd_set_viewport(cmd, 0, &[output.size.into()]);
             parent.draw_quad.draw_quad(&parent.device, cmd, vbo_type);
             self.graphics_pipeline.end_rendering(cmd);
         }

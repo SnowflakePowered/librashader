@@ -23,7 +23,7 @@ use swapchain::VulkanSwapchain;
 use syncobjects::SyncObjects;
 use vulkan_base::VulkanBase;
 
-use librashader_common::Viewport;
+use librashader_common::{Size, Viewport};
 
 use librashader_runtime_vk::options::FrameOptionsVulkan;
 use winit::event::{Event, WindowEvent};

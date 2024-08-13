@@ -570,17 +570,20 @@ pub mod d3d11_hello_triangle {
 
                 // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
                 let output = resources.backbuffer_rtv.as_ref().unwrap().clone();
-                let size = output.size().unwrap();
+                let size: Size<u32> = output.size().unwrap();
                 self.filter
                     .frame(
                         None,
                         &srv,
                         &Viewport {
-                            x: 0f32,
-                            y: 0f32,
+                            x: 100f32,
+                            y: 100f32,
                             output,
                             mvp: None,
-                            size,
+                            size: Size {
+                                width: size.width - 200,
+                                height: size.height - 200,
+                            },
                         },
                         resources.frame_count,
                         None,
