@@ -7,11 +7,14 @@ use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
 use crate::reflect::cross::glsl::GlslReflect;
 use crate::reflect::cross::SpirvCross;
-pub use spirv_to_dxil::DxilObject;
+use crate::reflect::ReflectShader;
+pub use spirv_to_dxil::dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
-use spirv_to_dxil::{
-    PushConstantBufferConfig, RuntimeConfig, RuntimeDataBufferConfig, ShaderStage, ValidatorVersion,
+use spirv_to_dxil::dxil::{
+    RuntimeConfig,
 };
+
+use spirv_to_dxil::{ShaderStage, BufferBinding, ValidatorVersion};
 
 impl OutputTarget for DXIL {
     type Output = DxilObject;
@@ -72,11 +75,11 @@ impl CompileShader<DXIL> for WriteSpirV {
         let sm = options.unwrap_or(ShaderModel::ShaderModel6_0);
 
         let config = RuntimeConfig {
-            runtime_data_cbv: RuntimeDataBufferConfig {
+            runtime_data_cbv: BufferBinding {
                 register_space: 0,
                 base_shader_register: u32::MAX,
             },
-            push_constant_cbv: PushConstantBufferConfig {
+            push_constant_cbv: BufferBinding {
                 register_space: 0,
                 base_shader_register: 1,
             },
@@ -85,7 +88,7 @@ impl CompileShader<DXIL> for WriteSpirV {
         };
 
         // todo: do we want to allow other entry point names?
-        let vertex = spirv_to_dxil::spirv_to_dxil(
+        let vertex = spirv_to_dxil::dxil::spirv_to_dxil(
             &self.vertex,
             None,
             "main",
@@ -95,7 +98,7 @@ impl CompileShader<DXIL> for WriteSpirV {
         )
         .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
-        let fragment = spirv_to_dxil::spirv_to_dxil(
+        let fragment = spirv_to_dxil::dxil::spirv_to_dxil(
             &self.fragment,
             None,
             "main",

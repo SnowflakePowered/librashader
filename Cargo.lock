@@ -1733,7 +1733,7 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
- "mach-siegbert-vogt-dxcsa",
+ "mach-siegbert-vogt-dxcsa 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot",
  "rayon",
  "thiserror 2.0.18",
@@ -1902,6 +1902,13 @@ name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
+
+[[package]]
+name = "mach-siegbert-vogt-dxcsa"
+version = "0.1.3"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "mach-siegbert-vogt-dxcsa"
@@ -3242,11 +3249,9 @@ dependencies = [
 [[package]]
 name = "spirv-to-dxil"
 version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a3fb4188c288f0bcf2d6e18a74647a6346ce974c7751ca075de89e4949d4b0e"
 dependencies = [
  "bytemuck",
- "mach-siegbert-vogt-dxcsa",
+ "mach-siegbert-vogt-dxcsa 0.1.3",
  "spirv-to-dxil-sys",
  "thiserror 1.0.69",
 ]
@@ -3254,9 +3259,8 @@ dependencies = [
 [[package]]
 name = "spirv-to-dxil-sys"
 version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "037a06e11f21b121d2aff4575185e1f61486908d1202f91d55997b05fdc51140"
 dependencies = [
+ "blake3",
  "build-target",
  "bytemuck",
  "cc",

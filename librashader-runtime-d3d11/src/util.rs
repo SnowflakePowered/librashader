@@ -8,6 +8,7 @@ use windows::Win32::Graphics::Direct3D::Fxc::{
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+use librashader_cache::Cacheable;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -120,11 +121,7 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             None,
             PCSTR(entry.as_ptr()),
             PCSTR(version.as_ptr()),
-            if cfg!(feature = "debug-shader") {
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-            } else {
-                D3DCOMPILE_OPTIMIZATION_LEVEL3
-            },
+            D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
             0,
             &mut blob,
             None,
@@ -134,6 +131,11 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
         Ok(blob)
     }
 }
+
+pub fn d3d_blob_from_shader(source: &[u8]) -> error::Result<ID3DBlob> {
+    Ok(ID3DBlob::from_bytes(source).unwrap())
+}
+
 
 pub type ShaderFactory<'a, L, T> = unsafe fn(
     &'a ID3D11Device,

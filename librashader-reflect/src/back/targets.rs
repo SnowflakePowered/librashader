@@ -23,6 +23,13 @@ pub struct MSL;
 #[derive(Debug)]
 pub struct DXIL;
 
+/// Shader compiler target for DXBC (SM5.x).
+///
+/// The resulting DXBC object is always unvalidated and
+/// must be validated using platform APIs before usage.
+#[derive(Debug)]
+pub struct DXBC;
+
 /// Shader compiler target for WGSL.
 ///
 /// The resulting WGSL will split sampler2Ds into

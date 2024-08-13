@@ -7,6 +7,9 @@ pub mod spirv;
 pub mod targets;
 pub mod wgsl;
 
+#[cfg(all(target_os = "windows"))]
+pub mod dxbc;
+
 use crate::back::targets::OutputTarget;
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::reflect::semantics::ShaderSemantics;

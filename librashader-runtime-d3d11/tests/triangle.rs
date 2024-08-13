@@ -19,6 +19,8 @@ use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 
 // const FILTER_PATH: &str = "../test/aspect.slangp";
 const FILTER_PATH: &str = "../test/shaders_slang/sonkun/slot-mask/flat-screen/1080p/test.slangp";
+// const FILTER_PATH: &str = "../test/basic.slangp";
+const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-nes-mini.slangp";
 
 const IMAGE_PATH: &str = "../triangle.png";
 #[test]
@@ -38,6 +40,8 @@ fn triangle_d3d11_args() {
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
             disable_cache: false,
+            force_hlsl_pipeline: false,
+            force_spirv_pipeline: true,
         }),
         // replace below with 'None' for the triangle
         Some(image),
@@ -63,6 +67,8 @@ fn triangle_d3d11() {
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
             disable_cache: true,
+            force_hlsl_pipeline: false,
+            force_spirv_pipeline: true,
         }),
         // replace below with 'None' for the triangle
         None,
