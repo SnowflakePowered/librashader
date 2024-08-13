@@ -12,10 +12,10 @@ use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 // const FILTER_PATH: &str =
 //     "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID].slangp";
 
-const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+// const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 
-// const FILTER_PATH: &str = "../test/slang-shaders/test/history.slangp";
-// const FILTER_PATH: &str = "../test/slang-shaders/test/feedback.slangp";
+// const FILTER_PATH: &str = "../test/basic.slangp";
+const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-nes-mini.slangp";
 
 // const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 const IMAGE_PATH: &str = "../triangle.png";
@@ -36,6 +36,8 @@ fn triangle_d3d11_args() {
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
             disable_cache: false,
+            force_hlsl_pipeline: false,
+            force_spirv_pipeline: true,
         }),
         // replace below with 'None' for the triangle
         Some(image),
@@ -61,6 +63,8 @@ fn triangle_d3d11() {
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
             disable_cache: true,
+            force_hlsl_pipeline: false,
+            force_spirv_pipeline: true,
         }),
         // replace below with 'None' for the triangle
         // None,

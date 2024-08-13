@@ -10,7 +10,7 @@ use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use std::collections::VecDeque;
-
+use std::ops::Deref;
 use std::path::Path;
 
 use crate::draw_quad::DrawQuad;
@@ -77,26 +77,21 @@ pub(crate) struct FilterCommon {
 }
 
 mod compile {
+    use librashader_reflect::back::targets::DXBC;
     use super::*;
     pub type ShaderPassMeta =
-        ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>;
+        ShaderPassArtifact<impl CompileReflectShader<DXBC, SpirvCompilation, SpirvCross> + Send>;
 
     pub fn compile_passes(
         shaders: Vec<ShaderPassConfig>,
         textures: &[TextureConfig],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
-        let (passes, semantics) = if !disable_cache {
-            HLSL::compile_preset_passes::<
-                CachedCompilation<SpirvCompilation>,
-                SpirvCross,
-                FilterChainError,
-            >(shaders, &textures)?
-        } else {
-            HLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
-            )?
-        };
+        let (passes, semantics) =  DXBC::compile_preset_passes::<
+            SpirvCompilation,
+            SpirvCross,
+            FilterChainError,
+        >(shaders, &textures)?;
 
         Ok((passes, semantics))
     }
@@ -250,9 +245,9 @@ impl FilterChainD3D11 {
             let hlsl = reflect.compile(None)?;
 
             let (vs, vertex_dxbc) = cache_shader_object(
-                "dxbc",
-                &[hlsl.vertex.as_bytes()],
-                |&[bytes]| util::d3d_compile_shader(bytes, b"main\0", b"vs_5_0\0"),
+                "dxbc_spirv",
+                &[hlsl.vertex.deref()],
+                |&[bytes]| util::d3d_blob_from_shader(bytes.as_ref()),
                 |blob| {
                     Ok((
                         d3d11_compile_bound_shader(
@@ -271,9 +266,9 @@ impl FilterChainD3D11 {
             let vao = util::d3d11_create_input_layout(device, &ia_desc, &vertex_dxbc)?;
 
             let ps = cache_shader_object(
-                "dxbc",
-                &[hlsl.fragment.as_bytes()],
-                |&[bytes]| util::d3d_compile_shader(bytes, b"main\0", b"ps_5_0\0"),
+                "dxbc_spirv",
+                &[hlsl.fragment.deref()],
+                |&[bytes]|  util::d3d_blob_from_shader(bytes.as_ref()),
                 |blob| {
                     d3d11_compile_bound_shader(device, &blob, None, ID3D11Device::CreatePixelShader)
                 },

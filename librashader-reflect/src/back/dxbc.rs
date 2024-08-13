@@ -1,29 +1,25 @@
 use crate::back::spirv::WriteSpirV;
-use crate::back::targets::{OutputTarget, DXIL};
+use crate::back::targets::{OutputTarget, DXBC};
 use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
 use crate::reflect::cross::glsl::GlslReflect;
 use crate::reflect::cross::SpirvCross;
 use crate::reflect::ReflectShader;
-pub use spirv_to_dxil::dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
-use spirv_to_dxil::dxil::{
-    RuntimeConfig,
-};
 
-use spirv_to_dxil::{ShaderStage, BufferBinding, ValidatorVersion};
-
-impl OutputTarget for DXIL {
-    type Output = DxilObject;
+use spirv_to_dxil::{ShaderStage, BufferBinding};
+use spirv_to_dxil::dxbc::{RuntimeConfig, DxbcObject};
+impl OutputTarget for DXBC {
+    type Output = DxbcObject;
 }
 
-impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
-    type Target = DXIL;
+impl FromCompilation<SpirvCompilation, SpirvCross> for DXBC {
+    type Target = DXBC;
     type Options = Option<ShaderModel>;
     type Context = ();
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-        + ReflectShader;
+    + ReflectShader;
 
     fn from_compilation(
         compile: SpirvCompilation,
@@ -40,15 +36,15 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     }
 }
 
-impl CompileShader<DXIL> for WriteSpirV {
+impl CompileShader<DXBC> for WriteSpirV {
     type Options = Option<ShaderModel>;
     type Context = ();
 
     fn compile(
         self,
         options: Self::Options,
-    ) -> Result<ShaderCompilerOutput<DxilObject, Self::Context>, ShaderCompileError> {
-        let sm = options.unwrap_or(ShaderModel::ShaderModel6_0);
+    ) -> Result<ShaderCompilerOutput<DxbcObject, Self::Context>, ShaderCompileError> {
+        let sm = options.unwrap_or(ShaderModel::ShaderModel5_0);
 
         let config = RuntimeConfig {
             runtime_data_cbv: BufferBinding {
@@ -64,25 +60,23 @@ impl CompileShader<DXIL> for WriteSpirV {
         };
 
         // todo: do we want to allow other entry point names?
-        let vertex = spirv_to_dxil::dxil::spirv_to_dxil(
+        let vertex = spirv_to_dxil::dxbc::spirv_to_dxbc(
             &self.vertex,
             None,
             "main",
             ShaderStage::Vertex,
-            ValidatorVersion::None,
             &config,
         )
-        .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
+            .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
-        let fragment = spirv_to_dxil::dxil::spirv_to_dxil(
+        let fragment = spirv_to_dxil::dxbc::spirv_to_dxbc(
             &self.fragment,
             None,
             "main",
             ShaderStage::Fragment,
-            ValidatorVersion::None,
             &config,
         )
-        .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
+            .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
         Ok(ShaderCompilerOutput {
             vertex,
