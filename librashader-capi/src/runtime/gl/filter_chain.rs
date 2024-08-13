@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_gl_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
+    config_struct, libra_gl_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -177,7 +177,7 @@ extern_fn! {
         chain: *mut libra_gl_filter_chain_t,
         frame_count: usize,
         image: libra_source_image_gl_t,
-        origin: libra_origin_t,
+        viewport: libra_viewport_t,
         out: libra_output_framebuffer_gl_t,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_gl_opt_t>,
@@ -210,9 +210,13 @@ extern_fn! {
             texture, fbo, out.format, Size::new(out.width, out.height), 1);
 
         let viewport = Viewport {
-            x: origin.x,
-            y: origin.y,
+            x: viewport.x,
+            y: viewport.y,
             output: &framebuffer,
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             mvp,
         };
 

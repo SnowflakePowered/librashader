@@ -29,3 +29,4 @@ impl AsRef<InputTexture> for InputTexture {
         self
     }
 }
+

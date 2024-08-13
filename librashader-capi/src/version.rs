@@ -18,8 +18,8 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 ///     - Added preset context API
 ///     - Added Metal runtime API
 /// - API Version 2: 0.4.0
-///     - Replaced libra_viewport_t with libra_origin_t to better reflect API usage.
-///     - Reduced unneeded texture metadata for certain runtimes.
+///     - Properly split viewport size with the render target texture size
+///
 pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 2;
 
 /// The current version of the librashader ABI.

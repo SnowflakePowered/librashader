@@ -1,8 +1,7 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
-use librashader_common::Size;
 use std::slice;
-use windows::core::{Interface, PCSTR};
+use windows::core::{PCSTR};
 use windows::Win32::Graphics::Direct3D::Fxc::{
     D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION,
 };
@@ -174,41 +173,5 @@ pub fn d3d11_create_input_layout(
         device.CreateInputLayout(desc, dxil, Some(&mut input_layout))?;
         assume_d3d11_init!(input_layout, "CreateInputLayout");
         Ok(input_layout)
-    }
-}
-
-pub(crate) trait GetSize {
-    fn size(&self) -> error::Result<Size<u32>>;
-}
-
-impl GetSize for ID3D11RenderTargetView {
-    fn size(&self) -> error::Result<Size<u32>> {
-        let parent = unsafe { self.GetResource()?.cast::<ID3D11Texture2D>()? };
-
-        let mut desc = Default::default();
-        unsafe {
-            parent.GetDesc(&mut desc);
-        }
-
-        Ok(Size {
-            height: desc.Height,
-            width: desc.Width,
-        })
-    }
-}
-
-impl GetSize for ID3D11ShaderResourceView {
-    fn size(&self) -> error::Result<Size<u32>> {
-        let parent = unsafe { self.GetResource()?.cast::<ID3D11Texture2D>()? };
-
-        let mut desc = Default::default();
-        unsafe {
-            parent.GetDesc(&mut desc);
-        }
-
-        Ok(Size {
-            height: desc.Height,
-            width: desc.Width,
-        })
     }
 }

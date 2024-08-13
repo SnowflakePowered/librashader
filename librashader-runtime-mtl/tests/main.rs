@@ -414,7 +414,8 @@ declare_class!(
                         x: 0.0,
                         y: 0.0,
                         mvp: None,
-                        output: &backbuffer
+                        output: &backbuffer,
+                        size: backbuffer.size().unwrap()
                     }, &command_buffer, 1, None)
                 .expect("frame");
 

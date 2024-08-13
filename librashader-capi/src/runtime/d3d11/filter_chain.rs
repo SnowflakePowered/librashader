@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_d3d11_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
+    config_struct, libra_d3d11_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -15,7 +15,7 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::{FilterChainParameters, Viewport};
+use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Options for Direct3D 11 filter chain creation.
 #[repr(C)]
@@ -204,7 +204,7 @@ extern_fn! {
         device_context: Option<ManuallyDrop<ID3D11DeviceContext>>,
         frame_count: usize,
         image: ManuallyDrop<ID3D11ShaderResourceView>,
-        origin: libra_origin_t,
+        viewport: libra_viewport_t,
         out: ManuallyDrop<ID3D11RenderTargetView>,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d11_opt_t>
@@ -224,9 +224,13 @@ extern_fn! {
         };
 
         let viewport = Viewport {
-            x: origin.x,
-            y: origin.y,
+            x: viewport.x,
+            y: viewport.y,
             output: ManuallyDrop::into_inner(out.clone()),
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             mvp,
         };
 

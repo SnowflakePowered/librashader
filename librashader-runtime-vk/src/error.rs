@@ -4,7 +4,6 @@ use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
-use std::convert::Infallible;
 use thiserror::Error;
 
 /// Cumulative error type for Vulkan filter chains.
@@ -28,13 +27,10 @@ pub enum FilterChainError {
     AllocationError(#[from] AllocationError),
     #[error("allocation is already freed")]
     AllocationDoesNotExist,
+    #[error("unreachable")]
+    Infallible(#[from] std::convert::Infallible)
 }
 
-impl From<Infallible> for FilterChainError {
-    fn from(_value: Infallible) -> Self {
-        panic!("uninhabited error")
-    }
-}
 
 /// Result type for Vulkan filter chains.
 pub type Result<T> = std::result::Result<T, FilterChainError>;

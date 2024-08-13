@@ -38,7 +38,7 @@ pub mod map;
 
 pub use viewport::Viewport;
 
-use num_traits::AsPrimitive;
+use num_traits::{AsPrimitive, Num};
 use std::convert::Infallible;
 use std::str::FromStr;
 
@@ -212,5 +212,24 @@ where
             1.0 / value.width.as_(),
             1.0 / value.height.as_(),
         ]
+    }
+}
+
+/// Trait for surface or texture objects that can fetch size.
+pub trait GetSize<C: Num> {
+    type Error;
+    /// Fetch the size of the object
+    fn size(&self) -> Result<Size<C>, Self::Error>;
+}
+
+impl<T: GetSize<u32>> GetSize<f32> for T {
+    type Error = T::Error;
+
+    fn size(&self) -> Result<Size<f32>, Self::Error> {
+        let size = <T as GetSize<u32>>::size(self)?;
+        Ok(Size {
+            width: size.width as f32,
+            height: size.height as f32,
+        })
     }
 }

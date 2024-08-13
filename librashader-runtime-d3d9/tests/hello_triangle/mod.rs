@@ -194,7 +194,7 @@ pub mod d3d9_hello_triangle {
 
     use std::path::{Path, PathBuf};
 
-    use librashader_common::Viewport;
+    use librashader_common::{GetSize, Viewport};
     use librashader_runtime::quad::IDENTITY_MVP;
     use librashader_runtime_d3d9::options::FilterChainOptionsD3D9;
     use librashader_runtime_d3d9::FilterChainD3D9;
@@ -415,6 +415,7 @@ pub mod d3d9_hello_triangle {
                             y: 0.0,
                             mvp: None,
                             output: backbuffer.clone(),
+                            size: backbuffer.size().unwrap()
                         },
                         0,
                         None,

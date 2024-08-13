@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_d3d12_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
+    config_struct, libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -233,7 +233,7 @@ extern_fn! {
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,
         frame_count: usize,
         image: libra_source_image_d3d12_t,
-        origin: libra_origin_t,
+        viewport: libra_viewport_t,
         out: libra_output_image_d3d12_t,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d12_opt_t>
@@ -254,9 +254,15 @@ extern_fn! {
 
         let options = options.map(FromUninit::from_uninit);
         let viewport = Viewport {
-            x: origin.x,
-            y: origin.y,
-            output: unsafe { D3D12OutputView::new_from_raw(out.descriptor, Size::new(out.width, out.height), out.format) },
+            x: viewport.x,
+            y: viewport.y,
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
+            output: unsafe {
+                D3D12OutputView::new_from_raw(out.descriptor,
+                    Size::new(out.width, out.height), out.format) },
             mvp,
         };
 

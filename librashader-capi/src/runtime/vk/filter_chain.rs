@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_origin_t, libra_shader_preset_t, libra_vk_filter_chain_t, FromUninit,
+    config_struct, libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -263,7 +263,7 @@ extern_fn! {
         command_buffer: vk::CommandBuffer,
         frame_count: usize,
         image: libra_source_image_vk_t,
-        origin: libra_origin_t,
+        viewport: libra_viewport_t,
         out: libra_output_image_vk_t,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_vk_opt_t>
@@ -287,8 +287,12 @@ extern_fn! {
         };
         let opt = opt.map(FromUninit::from_uninit);
         let viewport = Viewport {
-            x: origin.x,
-            y: origin.y,
+            x: viewport.x,
+            y: viewport.y,
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             output,
             mvp,
         };

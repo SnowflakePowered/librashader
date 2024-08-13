@@ -685,7 +685,7 @@ impl FilterChainVulkan {
             source.mip_filter = pass.config.filter;
 
             let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
-            let out = RenderTarget::identity(&output_image);
+            let out = RenderTarget::identity(&output_image)?;
 
             let residual_fb = pass.draw(
                 cmd,

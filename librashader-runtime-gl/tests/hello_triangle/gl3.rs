@@ -4,7 +4,7 @@ use std::sync::Arc;
 use glfw::{Context, Glfw, Window, WindowEvent};
 
 use glow::HasContext;
-use librashader_common::{Size, Viewport};
+use librashader_common::{GetSize, Size, Viewport};
 
 use librashader_runtime_gl::{FilterChainGL, GLFramebuffer, GLImage};
 
@@ -429,6 +429,7 @@ void main()
             y: 0f32,
             output: &output,
             mvp: None,
+            size: output.size().unwrap(),
         };
 
         let rendered = GLImage {

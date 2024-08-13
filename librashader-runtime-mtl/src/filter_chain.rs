@@ -440,7 +440,7 @@ impl FilterChainMetal {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let out = RenderTarget::identity(target.texture.as_ref());
+            let out = RenderTarget::identity(target.texture.as_ref())?;
             pass.draw(
                 &cmd,
                 index,

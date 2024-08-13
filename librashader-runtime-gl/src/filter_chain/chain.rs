@@ -373,7 +373,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::identity(target),
+                RenderTarget::identity(target)?,
             );
 
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);

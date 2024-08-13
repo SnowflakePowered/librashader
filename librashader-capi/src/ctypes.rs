@@ -127,11 +127,17 @@ pub type libra_mtl_filter_chain_t = Option<NonNull<FilterChainMetal>>;
 
 /// Defines the output origin for a rendered frame.
 #[repr(C)]
-pub struct libra_origin_t {
+pub struct libra_viewport_t {
     /// The x offset in the viewport framebuffer to begin rendering from.
     pub x: f32,
     /// The y offset in the viewport framebuffer to begin rendering from.
     pub y: f32,
+    /// The width extent of the viewport framebuffer to end rendering, relative to
+    /// the origin specified by x.
+    pub width: u32,
+    /// The height extent of the viewport framebuffer to end rendering, relative to
+    /// the origin specified by y.
+    pub height: u32,
 }
 
 pub(crate) trait FromUninit<T>

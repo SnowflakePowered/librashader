@@ -5,6 +5,7 @@ use crate::options::FrameOptionsD3D9;
 use crate::samplers::SamplerSet;
 use crate::texture::D3D9InputTexture;
 use librashader_common::map::FastHashMap;
+use librashader_common::GetSize;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::ShaderPassConfig;
@@ -16,7 +17,6 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use windows::Win32::Foundation::{FALSE, TRUE};
 
-use crate::util::GetSize;
 use windows::Win32::Graphics::Direct3D9::{
     IDirect3DDevice9, IDirect3DPixelShader9, IDirect3DSurface9, IDirect3DVertexShader9,
     D3DCLEAR_TARGET, D3DRS_SRGBWRITEENABLE, D3DSAMP_SRGBTEXTURE, D3DVIEWPORT9,

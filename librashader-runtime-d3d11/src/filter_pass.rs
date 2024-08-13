@@ -23,7 +23,7 @@ use windows::Win32::Graphics::Direct3D11::{
 
 use crate::error;
 use crate::samplers::SamplerSet;
-use crate::util::GetSize;
+use librashader_common::GetSize;
 use librashader_runtime::uniforms::{UniformStorage, UniformStorageAccess};
 
 pub struct ConstantBufferBinding {

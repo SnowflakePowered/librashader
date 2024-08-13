@@ -18,6 +18,8 @@ pub enum FilterChainError {
     ShaderReflectError(#[from] ShaderReflectError),
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
+    #[error("unreachable")]
+    Infallible(#[from] std::convert::Infallible)
 }
 
 /// Result type for wgpu filter chains.

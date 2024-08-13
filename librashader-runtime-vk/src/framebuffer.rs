@@ -1,7 +1,7 @@
 use crate::texture::VulkanImage;
 use crate::{error, util};
 use ash::vk;
-use librashader_common::Size;
+use librashader_common::{GetSize, Size};
 
 #[derive(Clone)]
 pub(crate) struct OutputImage {
@@ -77,5 +77,14 @@ impl OutputImage {
                 vk::QUEUE_FAMILY_IGNORED,
             )
         }
+    }
+}
+
+
+impl GetSize<u32> for OutputImage {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        Ok(self.size)
     }
 }

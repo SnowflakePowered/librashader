@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_d3d9_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
+    config_struct, libra_d3d9_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -12,7 +12,7 @@ use std::slice;
 use windows::Win32::Graphics::Direct3D9::{IDirect3DDevice9, IDirect3DSurface9, IDirect3DTexture9};
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::{FilterChainParameters, Viewport};
+use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Options for Direct3D 11 filter chain creation.
 #[repr(C)]
@@ -124,7 +124,7 @@ extern_fn! {
         chain: *mut libra_d3d9_filter_chain_t,
         frame_count: usize,
         image: ManuallyDrop<IDirect3DTexture9>,
-        origin: libra_origin_t,
+        viewport: libra_viewport_t,
         out: ManuallyDrop<IDirect3DSurface9>,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d9_opt_t>
@@ -144,9 +144,13 @@ extern_fn! {
         };
 
         let viewport = Viewport {
-            x: origin.x,
-            y: origin.y,
+            x: viewport.x,
+            y: viewport.y,
             output: ManuallyDrop::into_inner(out.clone()),
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             mvp,
         };
 

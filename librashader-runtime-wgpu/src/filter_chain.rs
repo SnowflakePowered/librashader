@@ -457,7 +457,7 @@ impl FilterChainWgpu {
             source.mip_filter = pass.config.filter;
 
             let output_image = WgpuOutputView::from(target);
-            let out = RenderTarget::identity(&output_image);
+            let out = RenderTarget::identity(&output_image)?;
 
             pass.draw(
                 cmd,

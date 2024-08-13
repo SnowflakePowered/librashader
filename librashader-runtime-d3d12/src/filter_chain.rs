@@ -737,7 +737,7 @@ impl FilterChainD3D12 {
             );
 
             let view = target.create_render_target_view(&mut self.rtv_heap)?;
-            let out = RenderTarget::identity(&view);
+            let out = RenderTarget::identity(&view)?;
 
             pass.draw(
                 cmd,

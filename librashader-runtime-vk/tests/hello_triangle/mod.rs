@@ -253,6 +253,7 @@ impl VulkanWindow {
                             format: vulkan.swapchain.format.format,
                         },
                         mvp: None,
+                        size: vulkan.swapchain.extent.into()
                     },
                     cmd,
                     frame,

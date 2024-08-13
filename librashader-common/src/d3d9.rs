@@ -1,4 +1,4 @@
-use crate::{FilterMode, ImageFormat, WrapMode};
+use crate::{FilterMode, GetSize, ImageFormat, Size, WrapMode};
 use windows::Win32::Graphics::Direct3D9;
 //
 impl From<ImageFormat> for Direct3D9::D3DFORMAT {
@@ -63,6 +63,39 @@ impl From<FilterMode> for Direct3D9::D3DTEXTUREFILTER {
         }
     }
 }
+
+impl GetSize<u32> for Direct3D9::IDirect3DSurface9 {
+    type Error = windows::core::Error;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        let mut desc = Default::default();
+        unsafe {
+            self.GetDesc(&mut desc)?;
+        }
+
+        Ok(Size {
+            height: desc.Height,
+            width: desc.Width,
+        })
+    }
+}
+
+impl GetSize<u32> for Direct3D9::IDirect3DTexture9 {
+    type Error = windows::core::Error;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        let mut desc = Default::default();
+        unsafe {
+            self.GetLevelDesc(0, &mut desc)?;
+        }
+
+        Ok(Size {
+            height: desc.Height,
+            width: desc.Width,
+        })
+    }
+}
+
 
 // impl FilterMode {
 //     /// Get the mipmap filtering mode for the given combination.

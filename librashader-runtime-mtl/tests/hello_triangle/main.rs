@@ -24,13 +24,14 @@ use icrate::{
     },
     MetalKit::{MTKView, MTKViewDelegate},
 };
-use librashader_common::Viewport;
+use librashader_common::{GetSize, Viewport};
 use librashader_presets::ShaderPreset;
 use librashader_runtime_metal::FilterChainMetal;
 use objc2::{
     declare_class, msg_send_id, mutability::MainThreadOnly, rc::Id, runtime::ProtocolObject,
     ClassType, DeclaredClass,
 };
+use objc2_metal::{MTLBlitCommandEncoder, MTLCommandBuffer};
 
 #[rustfmt::skip]
 const SHADERS: &str = r#"
@@ -405,6 +406,7 @@ declare_class!(
                         y: 0.0,
                         mvp: None,
                         output: &backbuffer
+                        size: backbuffer.size().unwrap()
                     }, &command_buffer, 1, None)
                 .expect("frame");
 

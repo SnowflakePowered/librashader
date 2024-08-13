@@ -1,3 +1,5 @@
+use crate::Size;
+
 /// The rendering output of a filter chain.
 pub struct Viewport<'a, T> {
     /// The x offset to start rendering from.
@@ -9,4 +11,7 @@ pub struct Viewport<'a, T> {
     pub mvp: Option<&'a [f32; 16]>,
     /// The output handle to render the final image to.
     pub output: T,
+    /// The extent of the viewport size starting from the origin defined
+    /// by x and y.
+    pub size: Size<u32>
 }

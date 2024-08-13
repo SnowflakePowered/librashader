@@ -1,5 +1,5 @@
 use crate::ctypes::{
-    config_struct, libra_mtl_filter_chain_t, libra_origin_t, libra_shader_preset_t, FromUninit,
+    config_struct, libra_mtl_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -189,7 +189,7 @@ extern_fn! {
         command_buffer: PMTLCommandBuffer,
         frame_count: usize,
         image: PMTLTexture,
-        origin: libra_origin_t,
+        viewport: libra_viewport_t,
         output: PMTLTexture,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_mtl_opt_t>
@@ -208,8 +208,12 @@ extern_fn! {
         };
         let opt = opt.map(FromUninit::from_uninit);
         let viewport = Viewport {
-            x: origin.x,
-            y: origin.y,
+            x: viewport.x,
+            y: viewport.y,
+            size: Size {
+                height: viewport.height,
+                width: viewport.width
+            },
             output,
             mvp,
         };
