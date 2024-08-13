@@ -1,3 +1,4 @@
+use windows::Win32::Foundation::RECT;
 use crate::filter_chain::FilterCommon;
 use crate::options::FrameOptionsD3D11;
 use crate::texture::InputTexture;
@@ -253,18 +254,24 @@ impl FilterPass {
             ctx.RSSetViewports(Some(&[D3D11_VIEWPORT {
                 TopLeftX: output.x,
                 TopLeftY: output.y,
-                Width: output_size.width as f32,
-                Height: output_size.height as f32,
+                Width: output.size.width as f32,
+                Height: output.size.height as f32,
                 MinDepth: 0.0,
                 MaxDepth: 1.0,
-            }]))
+            }]));
+            ctx.RSSetScissorRects(Some(&[RECT {
+                left: output.x as i32,
+                top: output.y as i32,
+                right: output.size.width as i32,
+                bottom: output.size.height as i32,
+            }]));
         }
 
         parent.draw_quad.draw_quad(ctx, vbo_type);
 
         unsafe {
             // unbind resources.
-            ctx.PSSetShaderResources(0, Some(std::mem::transmute(NULL_TEXTURES.as_ref())));
+            ctx.PSSetShaderResources(0, Some(NULL_TEXTURES));
             ctx.OMSetRenderTargets(None, None);
         }
         Ok(())

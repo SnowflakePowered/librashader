@@ -40,6 +40,7 @@ pub use viewport::Viewport;
 
 use num_traits::{AsPrimitive, Num};
 use std::convert::Infallible;
+use std::ops::{Add, Sub};
 use std::str::FromStr;
 
 #[repr(u32)]
@@ -197,6 +198,51 @@ impl<T> Size<T> {
     /// Create a new `Size<T>` with the given width and height.
     pub fn new(width: T, height: T) -> Self {
         Size { width, height }
+    }
+}
+
+impl<T: Sub<Output=T>> Sub for Size<T> {
+    type Output = Size<T>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            width: self.width - rhs.width,
+            height: self.height - rhs.height
+        }
+    }
+}
+
+impl<T: Sub<T, Output=T> + Copy> Sub<T> for Size<T> {
+    type Output = Size<T>;
+
+    fn sub(self, rhs: T) -> Self::Output {
+        Self {
+            width: self.width - rhs,
+            height: self.height - rhs
+        }
+    }
+}
+
+
+impl<T: Add<Output=T>> Add for Size<T> {
+    type Output = Size<T>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            width: self.width + rhs.width,
+            height: self.height + rhs.height
+        }
+    }
+}
+
+impl<T: Add<T, Output=T> + Copy> Add<T> for Size<T> {
+    type Output = Size<T>;
+
+    fn add(self, rhs: T) -> Self::Output {
+        Self {
+            width: self.width + rhs,
+            height: self.height + rhs
+        }
     }
 }
 

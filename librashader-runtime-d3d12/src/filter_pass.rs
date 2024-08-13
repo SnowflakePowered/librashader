@@ -204,17 +204,17 @@ impl FilterPass {
             cmd.RSSetViewports(&[D3D12_VIEWPORT {
                 TopLeftX: output.x,
                 TopLeftY: output.y,
-                Width: output.output.size.width as f32,
-                Height: output.output.size.height as f32,
+                Width: output.size.width as f32,
+                Height: output.size.height as f32,
                 MinDepth: 0.0,
                 MaxDepth: 1.0,
             }]);
 
             cmd.RSSetScissorRects(&[RECT {
-                left: 0,
-                top: 0,
-                right: output.output.size.width as i32,
-                bottom: output.output.size.height as i32,
+                left: output.x as i32,
+                top: output.y as i32,
+                right: output.size.width as i32,
+                bottom: output.size.height as i32,
             }]);
 
             parent.draw_quad.draw_quad(&cmd, vbo_type)

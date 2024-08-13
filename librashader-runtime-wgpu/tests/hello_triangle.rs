@@ -4,7 +4,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use librashader_common::Viewport;
+use librashader_common::{Size, Viewport};
 use librashader_presets::ShaderPreset;
 use librashader_runtime_wgpu::FilterChainWgpu;
 use wgpu::util::DeviceExt;
@@ -291,15 +291,15 @@ impl<'a> State<'a> {
             .frame(
                 Arc::clone(&render_output),
                 &Viewport {
-                    x: 0.0,
-                    y: 0.0,
+                    x: 100.0,
+                    y: 100.0,
                     mvp: None,
                     output: librashader_runtime_wgpu::WgpuOutputView::new_from_raw(
                         &filter_view,
                         filter_output.size().into(),
                         filter_output.format(),
                     ),
-                    size: filter_output.size().into(),
+                    size: (Size::from(filter_output.size())) - 200,
                 },
                 &mut encoder,
                 self.frame_count,

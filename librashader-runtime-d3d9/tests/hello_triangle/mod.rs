@@ -406,16 +406,17 @@ pub mod d3d9_hello_triangle {
 
                 resources.device.EndScene()?;
 
+
                 resources
                     .filter
                     .frame(
                         resources.renderbuffer.clone(),
                         &Viewport {
-                            x: 0.0,
-                            y: 0.0,
+                            x: 100f32,
+                            y: 100f32,
                             mvp: None,
                             output: backbuffer.clone(),
-                            size: backbuffer.size().unwrap()
+                            size: backbuffer.size().unwrap() - 200
                         },
                         0,
                         None,

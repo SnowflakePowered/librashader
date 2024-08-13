@@ -291,15 +291,15 @@ impl WgpuGraphicsPipeline {
         render_pass.set_scissor_rect(
             output.x as u32,
             output.y as u32,
-            output.output.size.width,
-            output.output.size.height,
+            output.size.width,
+            output.size.height,
         );
 
         render_pass.set_viewport(
             output.x,
             output.y,
-            output.output.size.width as f32,
-            output.output.size.height as f32,
+            output.size.width as f32,
+            output.size.height as f32,
             0.0,
             1.0,
         );

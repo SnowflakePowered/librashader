@@ -391,11 +391,11 @@ void main()
         }
 
         let viewport = Viewport {
-            x: 0f32,
-            y: 0f32,
+            x: 50f32,
+            y: 50f32,
             output: &output,
             mvp: None,
-            size: output.size().unwrap()
+            size: output.size().unwrap() - 100
         };
 
         let rendered = GLImage {

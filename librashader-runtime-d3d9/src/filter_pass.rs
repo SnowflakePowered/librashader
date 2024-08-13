@@ -193,8 +193,8 @@ impl FilterPass {
             device.SetViewport(&D3DVIEWPORT9 {
                 X: output.x as u32,
                 Y: output.y as u32,
-                Width: output_size.width,
-                Height: output_size.height,
+                Width: output.size.width,
+                Height: output.size.height,
                 MinZ: 0.0,
                 MaxZ: 1.0,
             })?;

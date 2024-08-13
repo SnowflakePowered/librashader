@@ -23,7 +23,7 @@ use swapchain::VulkanSwapchain;
 use syncobjects::SyncObjects;
 use vulkan_base::VulkanBase;
 
-use librashader_common::Viewport;
+use librashader_common::{Size, Viewport};
 
 use librashader_runtime_vk::options::FrameOptionsVulkan;
 use winit::event::{Event, WindowEvent};
@@ -245,15 +245,15 @@ impl VulkanWindow {
                         format: vulkan.swapchain.format.format,
                     },
                     &Viewport {
-                        x: 0.0,
-                        y: 0.0,
+                        x: 100.0,
+                        y: 100.0,
                         output: VulkanImage {
                             size: vulkan.swapchain.extent.into(),
                             image: swapchain_image,
                             format: vulkan.swapchain.format.format,
                         },
                         mvp: None,
-                        size: vulkan.swapchain.extent.into()
+                        size: Size::from(vulkan.swapchain.extent) - 100
                     },
                     cmd,
                     frame,

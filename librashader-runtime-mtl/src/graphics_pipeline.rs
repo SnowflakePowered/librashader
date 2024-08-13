@@ -193,15 +193,15 @@ impl MetalGraphicsPipeline {
             rpass.setScissorRect(MTLScissorRect {
                 x: output.x as usize,
                 y: output.y as usize,
-                width: output.output.width(),
-                height: output.output.height(),
+                width: output.size.width as usize,
+                height: output.size.height as usize
             });
 
             rpass.setViewport(MTLViewport {
                 originX: output.x as f64,
                 originY: output.y as f64,
-                width: output.output.width() as f64,
-                height: output.output.height() as f64,
+                width: output.size.width as f64,
+                height: output.size.height as f64,
                 znear: 0.0,
                 zfar: 1.0,
             });

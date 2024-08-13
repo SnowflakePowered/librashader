@@ -133,12 +133,11 @@ impl<T: GLInterface> FilterPass<T> {
 
         unsafe {
             framebuffer.clear::<T::FramebufferInterface, false>();
-            let framebuffer_size = framebuffer.size;
             parent.context.viewport(
                 output.x,
                 output.y,
-                framebuffer_size.width as i32,
-                framebuffer_size.height as i32,
+                output.size.width as i32,
+                output.size.height as i32,
             );
 
             if framebuffer.format == glow::SRGB8_ALPHA8 {
