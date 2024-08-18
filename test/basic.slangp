@@ -1,5 +1,5 @@
 shaders = "2"
-shader0 = "basic.slang"
+shader0 = "basic_with_maxscale.slang"
 wrap_mode0 = "clamp_to_border"
 mipmap_input0 = "true"
 alias0 = ""
