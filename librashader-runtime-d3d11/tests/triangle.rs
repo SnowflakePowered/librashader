@@ -14,8 +14,8 @@ use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 
 // const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 
-// const FILTER_PATH: &str = "../test/basic.slangp";
-const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-nes-mini.slangp";
+const FILTER_PATH: &str = "../test/basic.slangp";
+// const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-geom.slangp";
 
 // const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 const IMAGE_PATH: &str = "../triangle.png";

@@ -3128,6 +3128,7 @@ dependencies = [
 name = "spirv-to-dxil-sys"
 version = "0.4.7"
 dependencies = [
+ "blake3",
  "build-target",
  "bytemuck",
  "cc",
