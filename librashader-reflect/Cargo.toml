@@ -40,7 +40,7 @@ optional = true
 path = "../../spirv-to-dxil-rs/spirv-to-dxil"
 
 [features]
-default = ["cross", "naga", "serialize", "wgsl", "msl"]
+default = ["cross", "naga", "serialize", "wgsl", "msl", "dxil"]
 dxil = ["spirv_cross/hlsl", "spirv-to-dxil"]
 wgsl = ["cross", "naga/wgsl-out", "spirv", "rspirv"]
 cross = [ "spirv_cross", "spirv_cross/glsl", "spirv_cross/hlsl", "spirv_cross/msl" ]

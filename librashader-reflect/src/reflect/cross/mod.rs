@@ -744,6 +744,8 @@ where
 
 #[cfg(test)]
 mod test {
+    use std::fs::File;
+    use std::io::Write;
     use crate::reflect::cross::CrossReflect;
     use crate::reflect::ReflectShader;
     use rustc_hash::FxHashMap;
@@ -761,7 +763,7 @@ mod test {
 
     #[test]
     pub fn test_into() {
-        let result = ShaderSource::load("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic_with_maxscale.slang").unwrap();
         let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
 
         for (_index, param) in result.parameters.iter().enumerate() {
@@ -774,6 +776,11 @@ mod test {
             );
         }
         let spirv = Glslang::compile(&result).unwrap();
+        File::create("basic_with_maxscale.vert.spv")
+            .unwrap()
+            .write_all(bytemuck::cast_slice(spirv.vertex.as_slice()))
+            .unwrap();
+
         let mut reflect = CrossReflect::<hlsl::Target>::try_from(&spirv).unwrap();
         let shader_reflection = reflect
             .reflect(
