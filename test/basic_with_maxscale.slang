@@ -29,12 +29,15 @@ void main()
    vec2 vec = vec2(x, y);
 // vec2 vec = vec2(0.0, 0.0);
 
-   float A     = dot(vec, vec) + 1.0;
-   float r     =  max(abs(2.0*acos(A)), 0.01);
+   // A = 1.0 when vec = vec2(x, y);
+   // A = 1.0 when vec = vec2(0.0, 0.0);
+   float A = dot(vec, vec) + 1.0;
 
-   // This is inf when vec = vec2(x, y);
-   // but 200 when vec2(0.0, 0.0);
-   test = 1.0 / sin(r/2.0);
+   // b = 3.14159 when vec = vec2(x, y);
+   // b = 0.0 when vec = vec2(0.0, 0.0);
+   float B = acos(A);
+
+   test = B;
 }
 
 #pragma stage fragment
