@@ -822,11 +822,11 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::fs::File;
-    use std::io::Write;
     use crate::reflect::cross::CrossReflect;
     use crate::reflect::ReflectShader;
     use rustc_hash::FxHashMap;
+    use std::fs::File;
+    use std::io::Write;
 
     use crate::back::hlsl::CrossHlslContext;
     use crate::back::targets::HLSL;

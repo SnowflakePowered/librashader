@@ -74,17 +74,17 @@ pub(crate) struct FilterCommon {
 }
 
 mod compile {
-    use librashader_reflect::back::targets::DXBC;
     use super::*;
     use librashader_pack::{PassResource, TextureResource};
 
     #[cfg(not(feature = "stable"))]
+    use librashader_reflect::back::targets::DXBC;
     pub type ShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<DXBC, SpirvCompilation, SpirvCross> + Send>;
 
     #[cfg(feature = "stable")]
     pub type ShaderPassMeta = ShaderPassArtifact<
-        Box<dyn CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>,
+        Box<dyn CompileReflectShader<DXBC, SpirvCompilation, SpirvCross> + Send>,
     >;
 
     #[cfg_attr(not(feature = "stable"), define_opaque(ShaderPassMeta))]
@@ -93,11 +93,10 @@ mod compile {
         textures: &[TextureResource],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
-        let (passes, semantics) =  DXBC::compile_preset_passes::<
-            SpirvCompilation,
-            SpirvCross,
-            FilterChainError,
-        >(shaders, &textures)?;
+        let (passes, semantics) =
+            DXBC::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
+                shaders, &textures,
+            )?;
 
         Ok((passes, semantics))
     }
@@ -309,7 +308,7 @@ impl FilterChainD3D11 {
             let ps = cache_shader_object(
                 "dxbc_spirv",
                 &[hlsl.fragment.deref()],
-                |&[bytes]|  util::d3d_blob_from_shader(bytes.as_ref()),
+                |&[bytes]| util::d3d_blob_from_shader(bytes.as_ref()),
                 |blob| {
                     d3d11_compile_bound_shader(device, &blob, None, ID3D11Device::CreatePixelShader)
                 },

@@ -8,8 +8,8 @@ use crate::reflect::cross::SpirvCross;
 use crate::reflect::ReflectShader;
 pub use spirv_to_dxil::ShaderModel;
 
-use spirv_to_dxil::{ShaderStage, BufferBinding};
-use spirv_to_dxil::dxbc::{RuntimeConfig, DxbcObject};
+use spirv_to_dxil::dxbc::{DxbcObject, RuntimeConfig};
+use spirv_to_dxil::{BufferBinding, ShaderStage};
 impl OutputTarget for DXBC {
     type Output = DxbcObject;
 }
@@ -19,7 +19,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for DXBC {
     type Options = Option<ShaderModel>;
     type Context = ();
     type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-    + ReflectShader;
+        + ReflectShader;
 
     fn from_compilation(
         compile: SpirvCompilation,
@@ -67,7 +67,7 @@ impl CompileShader<DXBC> for WriteSpirV {
             ShaderStage::Vertex,
             &config,
         )
-            .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
+        .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
         let fragment = spirv_to_dxil::dxbc::spirv_to_dxbc(
             &self.fragment,
@@ -76,7 +76,7 @@ impl CompileShader<DXBC> for WriteSpirV {
             ShaderStage::Fragment,
             &config,
         )
-            .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
+        .map_err(ShaderCompileError::SpirvToDxilCompileError)?;
 
         Ok(ShaderCompilerOutput {
             vertex,

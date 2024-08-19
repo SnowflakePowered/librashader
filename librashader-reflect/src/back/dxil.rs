@@ -9,12 +9,10 @@ use crate::reflect::cross::glsl::GlslReflect;
 use crate::reflect::cross::SpirvCross;
 use crate::reflect::ReflectShader;
 pub use spirv_to_dxil::dxil::DxilObject;
+use spirv_to_dxil::dxil::RuntimeConfig;
 pub use spirv_to_dxil::ShaderModel;
-use spirv_to_dxil::dxil::{
-    RuntimeConfig,
-};
 
-use spirv_to_dxil::{ShaderStage, BufferBinding, ValidatorVersion};
+use spirv_to_dxil::{BufferBinding, ShaderStage, ValidatorVersion};
 
 impl OutputTarget for DXIL {
     type Output = DxilObject;

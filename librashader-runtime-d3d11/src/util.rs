@@ -1,5 +1,7 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
+use librashader_cache::Cacheable;
+use librashader_common::Size;
 use std::slice;
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::Fxc::{
@@ -8,7 +10,6 @@ use windows::Win32::Graphics::Direct3D::Fxc::{
 use windows::Win32::Graphics::Direct3D::ID3DBlob;
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
-use librashader_cache::Cacheable;
 
 /// wtf retroarch?
 const DXGI_FORMAT_EX_A4R4G4B4_UNORM: DXGI_FORMAT = DXGI_FORMAT(1000);
@@ -135,7 +136,6 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
 pub fn d3d_blob_from_shader(source: &[u8]) -> error::Result<ID3DBlob> {
     Ok(ID3DBlob::from_bytes(source).unwrap())
 }
-
 
 pub type ShaderFactory<'a, L, T> = unsafe fn(
     &'a ID3D11Device,
