@@ -12,7 +12,7 @@ use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 // const FILTER_PATH: &str =
 //     "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID].slangp";
 
-// const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 
 // const FILTER_PATH: &str = "../test/slang-shaders/test/history.slangp";
 // const FILTER_PATH: &str = "../test/shaders_slang/test/feedback.slangp";

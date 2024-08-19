@@ -838,7 +838,7 @@ mod test {
 
     #[test]
     pub fn test_into() {
-        let result = ShaderSource::load("../test/basic_with_maxscale.slang").unwrap();
+        let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-geom.slang").unwrap();
         let mut uniform_semantics: FastHashMap<_, UniformSemantic> = Default::default();
 
         for (_index, param) in result.parameters.iter().enumerate() {
@@ -851,7 +851,7 @@ mod test {
             );
         }
         let spirv = Glslang::compile(&result).unwrap();
-        File::create("basic_with_maxscale.vert.spv")
+        File::create("crt-geom.vert.spv")
             .unwrap()
             .write_all(bytemuck::cast_slice(spirv.vertex.as_slice()))
             .unwrap();

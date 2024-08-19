@@ -299,7 +299,8 @@ pub mod d3d12_hello_triangle {
                     Some(
                         &librashader_runtime_d3d12::options::FilterChainOptionsD3D12 {
                             disable_cache: true,
-                            force_hlsl_pipeline: false,
+                            force_hlsl_pipeline: true,
+                            // force_spirv_pipeline: true,
                             force_no_mipmaps: false,
                             ..Default::default()
                         },

@@ -1,0 +1,53 @@
+ps_5_0
+      dcl_globalFlags refactoringAllowed
+      dcl_constantbuffer cb1[4], dynamicIndexed
+      dcl_sampler _Source_sampler (s2), mode_default
+      dcl_resource_texture2d (float,float,float,float) Source (t2)
+      dcl_input_ps linear v0.xy
+      dcl_temps 40
+      dcl_output o0.xyzw
+   0: sample_indexable r0.xyzw, v0.xyzw, Source.xyzw, _Source_sampler
+   1: add r1.x, l(1.0000), cb1[3].x
+   2: mul r2.x, r0.x, l(0.2000)
+   3: mul r3.x, r0.y, l(0.2000)
+   4: mul r4.x, r0.z, l(0.2000)
+   5: add r5.x, r1.x, -r2.x
+   6: add r6.x, r1.x, -r3.x
+   7: add r7.x, r1.x, -r4.x
+   8: mul r8.x, r5.x, r0.x
+   9: mul r9.x, r6.x, r0.y
+  10: mul r10.x, r7.x, r0.z
+  11: add r11.x, l(1.0000), -cb1[3].x
+  12: mul r12.x, r0.x, l(0.1000)
+  13: mul r13.x, r0.y, l(0.1000)
+  14: mul r14.x, r0.z, l(0.1000)
+  15: add r15.x, r11.x, r12.x
+  16: add r16.x, r11.x, r13.x
+  17: add r17.x, r11.x, r14.x
+  18: mul r18.x, r15.x, r0.x
+  19: mul r19.x, r16.x, r0.y
+  20: mul r20.x, r17.x, r0.z
+  21: mul r21.x, v0.y, cb1[3].x
+  22: mul r22.x, r21.x, cb1[0].x
+  23: div r23.x, r22.x, l(2.0000)
+  24: round_ni r24.x, r23.x
+  25: mul r25.x, l(2.0000), r24.x
+  26: add r26.x, r22.x, -r25.x
+  27: lt r27.x, r26.x, l(1.0000)
+  28: itof r28.x, r27.x
+  29: add r29.x, l(1.0000), -r28.x
+  30: mul r30.x, r18.x, r28.x
+  31: mul r31.x, r19.x, r28.x
+  32: mul r32.x, r20.x, r28.x
+  33: mul r33.x, r8.x, r29.x
+  34: mul r34.x, r9.x, r29.x
+  35: mul r35.x, r10.x, r29.x
+  36: add r36.x, r30.x, r33.x
+  37: add r37.x, r31.x, r34.x
+  38: add r38.x, r32.x, r35.x
+  39: mov r39.x, r36.x
+  40: mov r39.y, r37.x
+  41: mov r39.z, r38.x
+  42: mov r39.w, l(1.0000)
+  43: mov o0.xyzw, r39.xyzw
+  44: ret

@@ -1,0 +1,290 @@
+shader: MESA_SHADER_VERTEX
+source_blake3: {0xe7d85b33, 0x95d74660, 0x410b5655, 0xa64891fc, 0x09d77d77, 0x095764ee, 0xba1375da, 0xdc747f33}
+internal: false
+stage: 0
+next_stage: 0
+num_ubos: 1
+inputs_read: 15-16
+outputs_written: 0,32-34
+subgroup_size: 0
+bit_sizes_float: 0x20
+bit_sizes_int: 0x21
+inputs: 0
+outputs: 0
+uniforms: 12
+decl_var shader_in INTERP_MODE_NONE none vec4 Position (VERT_ATTRIB_GENERIC0.xyzw, 0, 0)
+decl_var shader_in INTERP_MODE_NONE none vec2 TexCoord (VERT_ATTRIB_GENERIC1.xy, 1, 0)
+decl_var shader_out INTERP_MODE_NONE none vec4 .gl_Position (VARYING_SLOT_POS.xyzw, 3, 0)
+decl_var shader_out INTERP_MODE_NONE none vec2 vTexCoord (VARYING_SLOT_VAR0.xy, 0, 0)
+decl_var shader_out INTERP_MODE_NONE none vec2 sinangle (VARYING_SLOT_VAR1.xy, 1, 0)
+decl_var shader_out INTERP_MODE_NONE none vec3 stretch (VARYING_SLOT_VAR2.xyz, 2, 0)
+decl_var ubo INTERP_MODE_NONE none UBO  (~0, 0, 0)
+decl_var ubo INTERP_MODE_NONE none block push_constants (0, 0, 1)
+decl_var push_const INTERP_MODE_NONE none Push registers
+decl_function main (0 params)
+
+impl main {
+    block b0:    // preds:
+    32      %0 = load_const (0x00000000)
+    32x4    %1 = @load_input (%0 (0x0)) (base=0, range=1, component=0, dest_type=float32, io location=VERT_ATTRIB_GENERI
+C0 slots=1)  // Position
+    32      %2 = load_const (0x00000000)
+    32x2    %3 = @load_input (%2 (0x0)) (base=1, range=1, component=0, dest_type=float32, io location=VERT_ATTRIB_GENERI
+C1 slots=1)  // TexCoord
+    32x2    %4 = load_const (0x3f800000, 0x3f400000) = (1.000000, 0.750000)
+    32      %5 = load_const (0x00000000 = 0.000000)
+    32x2    %6 = @vulkan_resource_index (%5 (0.000000)) (desc_set=0, binding=0, desc_type=UBO)
+    32x2    %7 = @load_vulkan_descriptor (%6) (desc_type=UBO)
+    32      %8 = load_const (0x00000004)
+    32      %9 = mov %7.x
+    32     %10 = ushr %7.y, %8 (0x4)
+    32x4   %11 = @load_ubo_vec4 (%9, %10) (access=none, base=0, component=0)
+    32     %12 = load_const (0x00000010 = 16)
+    32     %13 = iadd %7.y, %12 (0x10)
+    32     %14 = ushr %13, %8 (0x4)
+    32x4   %15 = @load_ubo_vec4 (%9, %14) (access=none, base=0, component=0)
+    32     %16 = load_const (0x00000020 = 32)
+    32     %17 = iadd %7.y, %16 (0x20)
+    32     %18 = ushr %17, %8 (0x4)
+    32x4   %19 = @load_ubo_vec4 (%9, %18) (access=none, base=0, component=0)
+    32     %20 = load_const (0x00000030 = 48)
+    32     %21 = iadd %7.y, %20 (0x30)
+    32     %22 = ushr %21, %8 (0x4)
+    32x4   %23 = @load_ubo_vec4 (%9, %22) (access=none, base=0, component=0)
+    32     %24 = fmul %23.x, %1.w
+    32     %25 = fmul %23.y, %1.w
+    32     %26 = fmul %23.z, %1.w
+    32     %27 = fmul %23.w, %1.w
+    32     %28 = fmul %19.x, %1.z
+    32     %29 = fadd %28, %24
+    32     %30 = fmul %19.y, %1.z
+    32     %31 = fadd %30, %25
+    32     %32 = fmul %19.z, %1.z
+    32     %33 = fadd %32, %26
+    32     %34 = fmul %19.w, %1.z
+    32     %35 = fadd %34, %27
+    32     %36 = fmul %15.x, %1.y
+    32     %37 = fadd %36, %29
+    32     %38 = fmul %15.y, %1.y
+    32     %39 = fadd %38, %31
+    32     %40 = fmul %15.z, %1.y
+    32     %41 = fadd %40, %33
+    32     %42 = fmul %15.w, %1.y
+    32     %43 = fadd %42, %35
+    32     %44 = fmul %11.x, %1.x
+    32     %45 = fadd %44, %37
+    32     %46 = fmul %11.y, %1.x
+    32     %47 = fadd %46, %39
+    32     %48 = fmul %11.z, %1.x
+    32     %49 = fadd %48, %41
+    32     %50 = fmul %11.w, %1.x
+    32     %51 = fadd %50, %43
+    32x4   %52 = vec4 %45, %47, %49, %51
+    32x2   %53 = @vulkan_resource_index (%5 (0.000000)) (desc_set=30, binding=1, desc_type=UBO)
+    32x2   %54 = @load_vulkan_descriptor (%53) (desc_type=UBO)
+    32     %55 = mov %54.x
+    32     %56 = @load_ubo_vec4 (%55, %5 (0.000000)) (access=none, base=0, component=1)
+    32     %57 = @load_ubo_vec4 (%55, %5 (0.000000)) (access=none, base=0, component=2)
+    32x2   %58 = vec2 %56, %57
+    32     %59 = load_const (0xc0000000 = -2.000000)
+    32     %60 = fmul %56, %59 (-2.000000)
+    32     %61 = fmul %57, %59 (-2.000000)
+    32     %62 = load_const (0x40151eb8 = 2.330000)
+    32     %63 = fdiv %60, %62 (2.330000)
+    32     %64 = fdiv %61, %62 (2.330000)
+    32x2   %65 = vec2 %63, %64
+    32     %66 = fdot2 %65, %65
+    32     %67 = load_const (0x40100000 = 2.250000)
+    32     %68 = fadd %66, %67 (2.250000)
+    32     %69 = fdot2 %65, %58
+    32     %70 = load_const (0x3fc00000 = 1.500000)
+    32     %71 = load_const (0xbfc00000 = -1.500000)
+    32     %72 = fadd %69, %71 (-1.500000)
+    32     %73 = load_const (0x40000000 = 2.000000)
+    32     %74 = fmul %73 (2.000000), %72
+    32     %75 = load_const (0xc0100000 = -2.250000)
+    32     %76 = fadd %74, %75 (-2.250000)
+    32     %77 = fmul %73 (2.000000), %76
+    32     %78 = load_const (0xbf800000 = -1.000000)
+    32     %79 = fmul %77, %78 (-1.000000)
+    32     %80 = fmul %77, %77
+    32     %81 = load_const (0x40800000 = 4.000000)
+    32     %82 = load_const (0x42040000 = 33.000000)
+    32     %83 = fmul %82 (33.000000), %68
+    32     %84 = fsub %80, %83
+    32     %85 = fsqrt %84
+    32     %86 = fsub %79, %85
+    32     %87 = fmul %73 (2.000000), %68
+    32     %88 = fdiv %86, %87
+    32     %89 = fmul %88, %63
+    32     %90 = fmul %88, %64
+    32x2   %91 = load_const (0xc0000000, 0xc0000000) = (-2.000000, -2.000000)
+    32     %92 = fmul %91 (-2.000000, -2.000000).x, %56
+    32     %93 = fmul %91 (-2.000000, -2.000000).y, %57
+    32     %94 = fsub %89, %92
+    32     %95 = fsub %90, %93
+    32x2   %96 = load_const (0x40000000, 0x40000000) = (2.000000, 2.000000)
+    32     %97 = fdiv %94, %96 (2.000000, 2.000000).x
+    32     %98 = fdiv %95, %96 (2.000000, 2.000000).y
+    32x2   %99 = vec2 %97, %98
+    32    %100 = fdot2 %58, %58
+    32    %101 = load_const (0x3f800000 = 1.000000)
+    32    %102 = fadd %100, %101 (1.000000)
+    32    %103 = fdot2 %99, %58
+    32    %104 = fmul %59 (-2.000000), %103
+    32    %105 = fdot2 %99, %99
+    32    %106 = load_const (0xbf800000 = -1.000000)
+    32    %107 = fadd %105, %106 (-1.000000)
+    32    %108 = fmul %104, %104
+    32    %109 = fmul %81 (4.000000), %102
+    32    %110 = fmul %109, %107
+    32    %111 = fsub %108, %110
+    32    %112 = fsqrt %111
+    32    %113 = fsub %112, %104
+    32    %114 = fmul %73 (2.000000), %102
+    32    %115 = fdiv %113, %114
+    32    %116 = fmul %56, %115
+    32    %117 = fmul %57, %115
+    32    %118 = fsub %97, %116
+    32    %119 = fsub %98, %117
+    32    %120 = fabs %115
+    32    %121 = load_const (0x3da68d87 = 0.081325)
+    32    %122 = load_const (0xbcc19a5f = -0.023633)
+    32    %123 = fmul %120, %122 (-0.023633)
+    32    %124 = fadd %123, %121 (0.081325)
+    32    %125 = load_const (0xbe5bc094 = -0.214602)
+    32    %126 = fmul %120, %124
+    32    %127 = fadd %126, %125 (-0.214602)
+    32    %128 = load_const (0x3fc90fdb = 1.570796)
+    32    %129 = fmul %120, %127
+    32    %130 = fadd %129, %128 (1.570796)
+    32    %131 = fsub %101 (1.000000), %120
+    32    %132 = fsqrt %131
+    32    %133 = fmul %132, %130
+    32    %134 = fsub %128 (1.570796), %133
+    1     %135 = flt! %5 (0.000000), %115
+    32    %136 = b2f32 %135
+    1     %137 = flt! %115, %5 (0.000000)
+    32    %138 = b2f32 %137
+    32    %139 = fsub %136, %138
+    32    %140 = fmul %139, %134
+    32    %141 = fsub %128 (1.570796), %140
+    32    %142 = fmul %73 (2.000000), %141
+    32    %143 = fabs %142
+    32    %144 = load_const (0x358637bd = 0.000001)
+    32    %145 = fmax %143, %144 (0.000001)
+    32    %146 = fmul %118, %145
+    32    %147 = fmul %119, %145
+    32    %148 = fdiv %145, %73 (2.000000)
+    32    %149 = fsin %148
+    32    %150 = fdiv %146, %149
+    32    %151 = fdiv %147, %149
+    32    %152 = load_const (0x3f000000 = 0.500000)
+    32x2  %153 = load_const (0x3f000000, 0x3ec00000) = (0.500000, 0.375000)
+    32    %154 = load_const (0xbf000000 = -0.500000)
+    32x2  %155 = vec2 %154 (0xbf000000), %151
+    32    %156 = fdot2 %155, %155
+    32    %157 = fsqrt %156
+    32    %158 = fmax %157, %144 (0.000001)
+    32    %159 = fdiv %158, %73 (2.000000)
+    32    %160 = fsin %159
+    32    %161 = fdiv %160, %158
+    32    %162 = fmul %154 (-0.500000), %161
+    32    %163 = fmul %151, %161
+    32x2  %164 = vec2 %162, %163
+    32    %165 = fcos %159
+    32    %166 = fsub %101 (1.000000), %165
+    32    %167 = load_const (0x3fe00000 = 1.750000)
+    32    %168 = fsub %167 (1.750000), %165
+    32    %169 = fdot2 %164, %58
+    32    %170 = fadd %168, %169
+    32    %171 = fmul %56, %166
+    32    %172 = fsub %162, %171
+    32    %173 = fmul %172, %70 (1.500000)
+    32    %174 = fdiv %173, %170
+    32    %175 = load_const (0xbec00000 = -0.375000)
+    32x2  %176 = vec2 %150, %175 (0xbec00000)
+    32    %177 = fdot2 %176, %176
+    32    %178 = fsqrt %177
+    32    %179 = fmax %178, %144 (0.000001)
+    32    %180 = fdiv %179, %73 (2.000000)
+    32    %181 = fsin %180
+    32    %182 = fdiv %181, %179
+    32    %183 = fmul %150, %182
+    32    %184 = fmul %175 (-0.375000), %182
+    32x2  %185 = vec2 %183, %184
+    32    %186 = fcos %180
+    32    %187 = fsub %101 (1.000000), %186
+    32    %188 = fsub %167 (1.750000), %186
+    32    %189 = fdot2 %185, %58
+    32    %190 = fadd %188, %189
+    32    %191 = fmul %57, %187
+    32    %192 = fsub %184, %191
+    32    %193 = fmul %192, %70 (1.500000)
+    32    %194 = fdiv %193, %190
+    32    %195 = fdiv %174, %4 (1.000000, 0.750000).x
+    32    %196 = fdiv %194, %4 (1.000000, 0.750000).y
+    32x2  %197 = vec2 %153 (0x3f000000, 0x3ec00000).x, %151
+    32    %198 = fdot2 %197, %197
+    32    %199 = fsqrt %198
+    32    %200 = fmax %199, %144 (0.000001)
+    32    %201 = fdiv %200, %73 (2.000000)
+    32    %202 = fsin %201
+    32    %203 = fdiv %202, %200
+    32    %204 = fmul %153 (0.500000, 0.375000).x, %203
+    32    %205 = fmul %151, %203
+    32x2  %206 = vec2 %204, %205
+    32    %207 = fcos %201
+    32    %208 = fsub %101 (1.000000), %207
+    32    %209 = fsub %167 (1.750000), %207
+    32    %210 = fdot2 %206, %58
+    32    %211 = fadd %209, %210
+    32    %212 = fmul %56, %208
+    32    %213 = fsub %204, %212
+    32    %214 = fmul %213, %70 (1.500000)
+    32    %215 = fdiv %214, %211
+    32x2  %216 = vec2 %150, %153 (0x3f000000, 0x3ec00000).y
+    32    %217 = fdot2 %216, %216
+    32    %218 = fsqrt %217
+    32    %219 = fmax %218, %144 (0.000001)
+    32    %220 = fdiv %219, %73 (2.000000)
+    32    %221 = fsin %220
+    32    %222 = fdiv %221, %219
+    32    %223 = fmul %150, %222
+    32    %224 = fmul %153 (0.500000, 0.375000).y, %222
+    32x2  %225 = vec2 %223, %224
+    32    %226 = fcos %220
+    32    %227 = fsub %101 (1.000000), %226
+    32    %228 = fsub %167 (1.750000), %226
+    32    %229 = fdot2 %225, %58
+    32    %230 = fadd %228, %229
+    32    %231 = fmul %57, %227
+    32    %232 = fsub %224, %231
+    32    %233 = fmul %232, %70 (1.500000)
+    32    %234 = fdiv %233, %230
+    32    %235 = fdiv %215, %4 (1.000000, 0.750000).x
+    32    %236 = fdiv %234, %4 (1.000000, 0.750000).y
+    32    %237 = fadd %235, %195
+    32    %238 = fadd %236, %196
+    32    %239 = fmul %152 (0.500000), %237
+    32    %240 = load_const (0x3ec00000 = 0.375000)
+    32    %241 = fmul %240 (0.375000), %238
+    32    %242 = fsub %235, %195
+    32    %243 = fsub %236, %196
+    32    %244 = fmax %242, %243
+    32x3  %245 = vec3 %239, %241, %244
+    32    %246 = load_const (0x00000000)
+                 @store_output (%58, %246 (0x0)) (base=1, range=1, wrmask=xy, component=0, src_type=float32, io location
+=VARYING_SLOT_VAR1 slots=1, xfb(), xfb2())  // sinangle
+    32    %247 = load_const (0x00000000)
+                 @store_output (%3, %247 (0x0)) (base=0, range=1, wrmask=xy, component=0, src_type=float32, io location=
+VARYING_SLOT_VAR0 slots=1, xfb(), xfb2())  // vTexCoord
+    32    %248 = load_const (0x00000000)
+                 @store_output (%245, %248 (0x0)) (base=2, range=1, wrmask=xyz, component=0, src_type=float32, io locati
+on=VARYING_SLOT_VAR2 slots=1, xfb(), xfb2())  // stretch
+    32    %249 = load_const (0x00000000)
+                 @store_output (%52, %249 (0x0)) (base=3, range=1, wrmask=xyzw, component=0, src_type=float32, io locati
+on=VARYING_SLOT_POS slots=1, xfb(), xfb2())  // .gl_Position
+                 // succs: b1
+    block b1:
+}
