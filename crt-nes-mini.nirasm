@@ -1,0 +1,90 @@
+shader: MESA_SHADER_FRAGMENT
+source_blake3: {0x4ab50c8e, 0xb054fb9e, 0x31c19e0d, 0xd82622d9, 0xee9b4ca8, 0x2dd34743, 0xb8351389, 0x4ba8ab5b}
+internal: false
+stage: 4
+next_stage: 0
+num_textures: 2
+inputs_read: 32
+outputs_written: 4
+subgroup_size: 0
+bit_sizes_float: 0x20
+bit_sizes_int: 0x21
+needs_quad_helper_invocations: true
+origin_upper_left: true
+inputs: 0
+outputs: 0
+uniforms: 64
+decl_var uniform INTERP_MODE_NONE restrict sampler Source (~0, 0, 2)
+decl_var uniform INTERP_MODE_NONE restrict texture2D Source#0 (~0, 0, 2)
+decl_var shader_in INTERP_MODE_NONE none vec2 vTexCoord (VARYING_SLOT_VAR0.xy, 0, 0)
+decl_var shader_out INTERP_MODE_NONE none vec4 FragColor (FRAG_RESULT_DATA0.xyzw, 0, 0)
+decl_var ubo INTERP_MODE_NONE none block push_constants (0, 0, 1)
+decl_var push_const INTERP_MODE_NONE none Push params
+decl_function main (0 params)
+
+impl main {
+    block b0:   // preds:
+    32     %0 = load_const (0x00000000)
+    32x2   %1 = @load_input (%0 (0x0)) (base=0, range=1, component=0, dest_type=float32, io location=VARYING_SLOT_VAR0 s
+lots=1)  // vTexCoord
+    32     %2 = deref_var &Source#0 (uniform texture2D)
+    32     %3 = deref_var &Source (uniform sampler)
+    32x4   %4 = (float32)tex %2 (texture_deref), %3 (sampler_deref), %1 (coord)
+    32     %5 = load_const (0x00000000 = 0.000000)
+    32x2   %6 = @vulkan_resource_index (%5 (0x0)) (desc_set=30, binding=1, desc_type=UBO)
+    32x2   %7 = @load_vulkan_descriptor (%6) (desc_type=UBO)
+    32     %8 = mov %7.x
+    32     %9 = load_const (0x00000003 = 0.000000)
+    32    %10 = @load_ubo_vec4 (%8, %9 (0x3)) (access=none, base=0, component=1)
+    32    %11 = load_const (0x3f800000 = 1.000000)
+    32    %12 = fadd %11 (1.000000), %10
+    32    %13 = load_const (0x3e4ccccd = 0.200000)
+    32    %14 = fmul %4.x, %13 (0.200000)
+    32    %15 = fmul %4.y, %13 (0.200000)
+    32    %16 = fmul %4.z, %13 (0.200000)
+    32    %17 = fsub %12, %14
+    32    %18 = fsub %12, %15
+    32    %19 = fsub %12, %16
+    32    %20 = fmul %17, %4.x
+    32    %21 = fmul %18, %4.y
+    32    %22 = fmul %19, %4.z
+    32    %23 = @load_ubo_vec4 (%8, %9 (0x3)) (access=none, base=0, component=2)
+    32    %24 = fsub %11 (1.000000), %23
+    32    %25 = load_const (0x3dcccccd = 0.100000)
+    32    %26 = fmul %4.x, %25 (0.100000)
+    32    %27 = fmul %4.y, %25 (0.100000)
+    32    %28 = fmul %4.z, %25 (0.100000)
+    32    %29 = fadd %24, %26
+    32    %30 = fadd %24, %27
+    32    %31 = fadd %24, %28
+    32    %32 = fmul %29, %4.x
+    32    %33 = fmul %30, %4.y
+    32    %34 = fmul %31, %4.z
+    32    %35 = @load_ubo_vec4 (%8, %9 (0x3)) (access=none, base=0, component=3)
+    32    %36 = fmul %1.y, %35
+    32    %37 = @load_ubo_vec4 (%8, %5 (0x0)) (access=none, base=0, component=1)
+    32    %38 = fmul %36, %37
+    32    %39 = load_const (0x40000000 = 2.000000)
+    32    %40 = fdiv %38, %39 (2.000000)
+    32    %41 = ffloor %40
+    32    %42 = fmul %39 (2.000000), %41
+    32    %43 = fsub %38, %42
+    1     %44 = flt! %43, %11 (1.000000)
+    32    %45 = b2f32! %44
+    32    %46 = fsub %11 (1.000000), %45
+    32    %47 = fmul %32, %45
+    32    %48 = fmul %33, %45
+    32    %49 = fmul %34, %45
+    32    %50 = fmul %20, %46
+    32    %51 = fmul %21, %46
+    32    %52 = fmul %22, %46
+    32    %53 = fadd %47, %50
+    32    %54 = fadd %48, %51
+    32    %55 = fadd %49, %52
+    32x4  %56 = vec4 %53, %54, %55, %11 (0x3f800000)
+    32    %57 = load_const (0x00000000)
+                @store_output (%56, %57 (0x0)) (base=0, range=1, wrmask=xyzw, component=0, src_type=float32, io location
+=FRAG_RESULT_DATA0 slots=1, xfb(), xfb2())  // FragColor
+                // succs: b1
+    block b1:
+}

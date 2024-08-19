@@ -1,0 +1,118 @@
+Shader hash f65af927-8d5edbc2-c4a32412-e32c0ccc
+
+OUTPUT: 4.7e-9, 1.7e-09, 0.97145
+vs_5_0
+      dcl_globalFlags refactoringAllowed
+      dcl_constantbuffer cb0[4] (UBO), immediateIndexed
+      dcl_constantbuffer cb1[1] (Push), immediateIndexed
+      dcl_input v0.xyzw
+      dcl_input v1.xy
+      dcl_output o0.xy
+      dcl_output o0.zw
+      dcl_output o1.xyz
+      dcl_output_siv o2.xyzw, position
+      dcl_temps 4
+   0: mov o0.xy, v1.xyxx
+   1: mov o0.zw, cb1[0].yyyz
+   2: mul r0.xyzw, l(-2.0000, -2.0000, -0.8571, -0.8571), cb1[0].yzyz
+   3: dp2 r1.x, r0.zwzz, cb1[0].yzyy
+   4: add r1.x, r1.x, l(-1.5000)
+   5: mad r1.x, r1.x, l(2.0000), l(-2.2500)
+   6: dp2 r1.z, r0.zwzz, r0.zwzz
+   7: add r1.z, r1.z, l(2.2500)
+   8: mul r1.w, r1.z, l(33.0000)
+   9: add r1.yz, r1.xxzx, r1.xxzx
+  10: mad r1.y, r1.y, r1.y, -r1.w
+  11: sqrt r1.y, r1.y
+  12: mad r1.x, -r1.x, l(2.0000), -r1.y
+  13: div r1.x, r1.x, r1.z
+  14: mad r0.xy, r1.xxxx, r0.zwzz, -r0.xyxx
+  15: mul r0.xy, r0.xyxx, l(0.5000, 0.5000, 0.0000, 0.0000)
+  16: dp2 r0.z, r0.xyxx, r0.xyxx
+  17: dp2 r0.w, cb1[0].yzyy, cb1[0].yzyy
+  18: add r0.zw, r0.zzzw, l(0.0000, 0.0000, -1.0000, 1.0000)
+  19: mul r0.z, r0.w, r0.z
+  20: add r0.w, r0.w, r0.w
+  21: mul r0.z, r0.z, l(4.0000)
+  22: dp2 r1.x, r0.xyxx, cb1[0].yzyy
+  23: mul r1.y, r1.x, l(-2.0000)
+  24: mad r0.z, r1.y, r1.y, -r0.z
+  25: sqrt r0.z, r0.z
+  26: mad r0.z, -r1.x, l(-2.0000), r0.z
+  27: div r0.z, r0.z, r0.w
+  28: mad r0.w, abs(r0.z), l(-0.0187), l(0.0743)
+  29: mad r0.w, r0.w, abs(r0.z), l(-0.2121)
+  30: mad r0.w, r0.w, abs(r0.z), l(1.5707)
+  31: add r1.x, -abs(r0.z), l(1.0000)
+  32: sqrt r1.x, r1.x
+  33: mul r1.y, r0.w, r1.x
+  34: mad r1.y, r1.y, l(-2.0000), l(3.1416)
+  35: lt r1.z, r0.z, -r0.z
+  36: mad r0.xy, -cb1[0].yzyy, r0.zzzz, r0.xyxx
+  37: and r0.z, r1.z, r1.y
+  38: mad r0.z, r0.w, r1.x, r0.z
+  39: add r0.z, r0.z, r0.z
+  40: max r0.z, r0.z, l(0.0000)
+  41: mul r0.xy, r0.zzzz, r0.xyxx
+  42: mul r0.z, r0.z, l(0.5000)
+  43: sincos r0.z, null, r0.z
+  44: div r0.yz, r0.yyxy, r0.zzzz
+  45: mov r0.xw, l(-0.5000, 0.0000, 0.0000, -0.3750)
+  46: dp2 r1.x, r0.xyxx, r0.xyxx
+  47: sqrt r1.x, r1.x
+  48: mul r1.y, r1.x, l(0.5000)
+  49: sincos r2.x, r3.x, r1.y
+  50: div r1.x, r2.x, r1.x
+  51: add r1.yz, -r3.xxxx, l(0.0000, 1.0000, 1.7500, 0.0000)
+  52: mul r1.xw, r0.xxxy, r1.xxxx
+  53: dp2 r1.w, r1.xwxx, cb1[0].yzyy
+  54: mad r1.x, -registers_x_tilt.x, r1.y, r1.x
+  55: add r1.y, r1.w, r1.z
+  56: mul r1.x, r1.x, l(1.5000)
+  57: div r1.x, r1.x, r1.y
+  58: dp2 r1.z, r0.zwzz, r0.zwzz
+  59: sqrt r1.z, r1.z
+  60: mul r1.w, r1.z, l(0.5000)
+  61: sincos r2.x, r3.x, r1.w
+  62: div r1.z, r2.x, r1.z
+  63: add r2.xy, -r3.xxxx, l(1.0000, 1.7500, 0.0000, 0.0000)
+  64: mul r1.zw, r0.zzzw, r1.zzzz
+  65: dp2 r1.z, r1.zwzz, cb1[0].yzyy
+  66: mad r1.w, -registers_y_tilt.x, r2.x, r1.w
+  67: add r1.z, r1.z, r2.y
+  68: mul r1.w, r1.w, l(1.5000)
+  69: div r1.y, r1.w, r1.z
+  70: mov r0.xw, l(0.5000, 0.0000, 0.0000, 0.3750)
+  71: dp2 r1.z, r0.xyxx, r0.xyxx
+  72: sqrt r1.z, r1.z
+  73: mul r1.xyw, r1.xyxz, l(1.0000, 1.3333, 0.0000, 0.5000)
+  74: sincos r2.x, r3.x, r1.w
+  75: div r1.z, r2.x, r1.z
+  76: add r2.xy, -r3.xxxx, l(1.0000, 1.7500, 0.0000, 0.0000)
+  77: mul r0.xy, r0.xyxx, r1.zzzz
+  78: dp2 r0.y, r0.xyxx, cb1[0].yzyy
+  79: mad r0.x, -registers_x_tilt.x, r2.x, r0.x
+  80: add r0.y, r0.y, r2.y
+  81: mul r0.x, r0.x, l(1.5000)
+  82: div r0.x, r0.x, r0.y
+  83: dp2 r1.z, r0.zwzz, r0.zwzz
+  84: sqrt r1.z, r1.z
+  85: mul r1.w, r1.z, l(0.5000)
+  86: sincos r2.x, r3.x, r1.w
+  87: div r1.z, r2.x, r1.z
+  88: add r2.xy, -r3.xxxx, l(1.0000, 1.7500, 0.0000, 0.0000)
+  89: mul r0.zw, r0.zzzw, r1.zzzz
+  90: dp2 r0.z, r0.zwzz, cb1[0].yzyy
+  91: mad r0.w, -registers_y_tilt.x, r2.x, r0.w
+  92: add r0.z, r0.z, r2.y
+  93: mul r0.w, r0.w, l(1.5000)
+  94: div r0.y, r0.w, r0.z
+  95: mad r0.zw, r0.xxxy, l(0.0000, 0.0000, 1.0000, 1.3333), r1.xxxy
+  96: mad r0.xy, r0.xyxx, l(1.0000, 1.3333, 0.0000, 0.0000), -r1.xyxx
+  97: max o1.z, r0.y, r0.x
+  98: mul o1.xy, r0.zwzz, l(0.5000, 0.3750, 0.0000, 0.0000)
+  99: mul r0.xyzw, v0.yyyy, _263_MVP[1].xyzw
+ 100: mad r0.xyzw, v0.xxxx, _263_MVP[0].xyzw, r0.xyzw
+ 101: mad r0.xyzw, v0.zzzz, _263_MVP[2].xyzw, r0.xyzw
+ 102: mad o2.xyzw, v0.wwww, _263_MVP[3].xyzw, r0.xyzw
+ 103: ret
