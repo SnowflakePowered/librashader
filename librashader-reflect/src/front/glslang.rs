@@ -41,12 +41,11 @@ pub(crate) fn compile_spirv(source: &ShaderSource) -> Result<SpirvCompilation, S
     let vertex = load_module(&vertex);
     let fragment = load_module(&fragment);
     let mut fragment = Builder::new_from_module(fragment);
-    let mut vertex = Builder::new_from_module(vertex);
 
-    let mut pass = link_input_outputs::LinkInputs::new(&mut vertex, &mut fragment, false);
+    let mut pass = link_input_outputs::LinkInputs::new(&vertex, &mut fragment);
     pass.do_pass();
 
-    let vertex = vertex.module().assemble();
+    let vertex = vertex.assemble();
     let fragment = fragment.module().assemble();
 
     Ok(SpirvCompilation { vertex, fragment })
