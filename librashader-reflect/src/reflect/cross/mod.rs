@@ -744,11 +744,11 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::fs::File;
-    use std::io::Write;
     use crate::reflect::cross::CrossReflect;
     use crate::reflect::ReflectShader;
     use rustc_hash::FxHashMap;
+    use std::fs::File;
+    use std::io::Write;
 
     use crate::back::hlsl::CrossHlslContext;
     use crate::back::targets::HLSL;
@@ -763,7 +763,8 @@ mod test {
 
     #[test]
     pub fn test_into() {
-        let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-geom.slang").unwrap();
+        let result =
+            ShaderSource::load("../test/shaders_slang/crt/shaders/crt-geom.slang").unwrap();
         let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
 
         for (_index, param) in result.parameters.iter().enumerate() {
