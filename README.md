@@ -151,6 +151,9 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   `mipmap_input0 = "true"`.
 * The preset parser is a substantially stricter implementation that the one in RetroArch. Not all shader presets may be
   compatible. If you find this is the case, please file an issue so a workaround can be added.
+* Shaders are [pre-linked at the SPIR-V level](https://github.com/SnowflakePowered/librashader/blob/master/librashader-reflect/src/front/spirv_passes/link_input_outputs.rs) before being
+  passed to the driver. Unused inputs in the fragment shader are removed, and the corresponding input in the vertex shader
+  is downgraded to a global variable. 
 ### Runtime specific differences
 * OpenGL
   * Copying of in-flight framebuffer contents to history is done via `glBlitFramebuffer` rather than drawing a quad into an intermediate FBO.
