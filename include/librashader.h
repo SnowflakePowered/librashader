@@ -155,8 +155,9 @@ typedef struct libra_preset_param_t {
 typedef struct libra_preset_param_list_t {
   /// A pointer to the parameter
   const struct libra_preset_param_t *parameters;
-  /// The number of parameters in the list. This field is readonly,
-  /// changing it will lead to undefined behaviour on free.
+  /// The number of parameters in the list. This field
+  /// is readonly, and changing it will lead to undefined
+  /// behaviour on free.
   uint64_t length;
 } libra_preset_param_list_t;
 
@@ -206,15 +207,17 @@ typedef struct libra_source_image_gl_t {
 } libra_source_image_gl_t;
 #endif
 
-/// Defines the output viewport for a rendered frame.
+/// Defines the output origin for a rendered frame.
 typedef struct libra_viewport_t {
   /// The x offset in the viewport framebuffer to begin rendering from.
   float x;
   /// The y offset in the viewport framebuffer to begin rendering from.
   float y;
-  /// The width of the viewport framebuffer.
+  /// The width extent of the viewport framebuffer to end rendering, relative to
+  /// the origin specified by x.
   uint32_t width;
-  /// The height of the viewport framebuffer.
+  /// The height extent of the viewport framebuffer to end rendering, relative to
+  /// the origin specified by y.
   uint32_t height;
 } libra_viewport_t;
 
@@ -227,6 +230,10 @@ typedef struct libra_output_framebuffer_gl_t {
   uint32_t texture;
   /// The format of the output framebuffer.
   uint32_t format;
+  /// The width of the output image.
+  uint32_t width;
+  /// The height of the output image.
+  uint32_t height;
 } libra_output_framebuffer_gl_t;
 #endif
 
@@ -311,6 +318,10 @@ typedef struct libra_output_image_vk_t {
   VkImage handle;
   /// The `VkFormat` of the output image.
   VkFormat format;
+  /// The width of the output image.
+  uint32_t width;
+  /// The height of the output image.
+  uint32_t height;
 } libra_output_image_vk_t;
 #endif
 
@@ -350,18 +361,6 @@ typedef struct filter_chain_d3d11_opt_t {
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
 /// A handle to a Direct3D 11 filter chain.
 typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
-#endif
-
-#if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
-/// Direct3D 11 parameters for the source image.
-typedef struct libra_source_image_d3d11_t {
-  /// A shader resource view into the source image
-  ID3D11ShaderResourceView * handle;
-  /// This is currently ignored.
-  uint32_t width;
-  /// This is currently ignored.
-  uint32_t height;
-} libra_source_image_d3d11_t;
 #endif
 
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
@@ -450,12 +449,6 @@ typedef struct libra_source_image_d3d12_t {
   ID3D12Resource * resource;
   /// A CPU descriptor handle to a shader resource view of the image.
   D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
-  /// This is currently ignored.
-  DXGI_FORMAT format;
-  /// This is currently ignored.
-  uint32_t width;
-  /// This is currently ignored.
-  uint32_t height;
 } libra_source_image_d3d12_t;
 #endif
 
@@ -466,6 +459,10 @@ typedef struct libra_output_image_d3d12_t {
   D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
   /// The format of the image.
   DXGI_FORMAT format;
+  /// The width of the output image.
+  uint32_t width;
+  /// The height of the output image.
+  uint32_t height;
 } libra_output_image_d3d12_t;
 #endif
 
@@ -792,7 +789,7 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_create_deferred)(libra_shad
 typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_chain_t *chain,
                                                             ID3D11DeviceContext * device_context,
                                                             size_t frame_count,
-                                                            struct libra_source_image_d3d11_t image,
+                                                            ID3D11ShaderResourceView * image,
                                                             struct libra_viewport_t viewport,
                                                             ID3D11RenderTargetView * out,
                                                             const float *mvp,
@@ -1054,7 +1051,8 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 /// ## ABI Versions
 /// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
-#define LIBRASHADER_CURRENT_ABI 1
+/// - ABI version 2: 0.4.0
+#define LIBRASHADER_CURRENT_ABI 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -1277,6 +1275,7 @@ libra_error_t libra_gl_filter_chain_get_active_pass_count(libra_gl_filter_chain_
 /// The resulting value in `chain` then becomes null.
 /// ## Safety
 /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
+/// - The context that the filter chain was initialized with **must be current** before freeing the filter chain.
 libra_error_t libra_gl_filter_chain_free(libra_gl_filter_chain_t *chain);
 #endif
 
@@ -1479,7 +1478,7 @@ libra_error_t libra_d3d11_filter_chain_create_deferred(libra_shader_preset_t *pr
 libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
                                              ID3D11DeviceContext * device_context,
                                              size_t frame_count,
-                                             struct libra_source_image_d3d11_t image,
+                                             ID3D11ShaderResourceView * image,
                                              struct libra_viewport_t viewport,
                                              ID3D11RenderTargetView * out,
                                              const float *mvp,
@@ -1891,7 +1890,7 @@ LIBRASHADER_API_VERSION libra_instance_api_version(void);
 ///
 /// These automatically inferred variables, as well as all other variables can be overridden with
 /// `libra_preset_ctx_set_param`, but the expected string values must be provided.
-/// See <https://github.com/libretro/RetroArch/pull/15023> for a list of expected string values.
+/// See https://github.com/libretro/RetroArch/pull/15023 for a list of expected string values.
 ///
 /// No variables can be removed once added to the context, however subsequent calls to set the same
 /// variable will overwrite the expected variable.
@@ -2003,7 +2002,7 @@ libra_error_t libra_preset_ctx_set_core_aspect_orientation(libra_preset_ctx_t *c
                                                            LIBRA_PRESET_CTX_ORIENTATION value);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
-#endif /* __LIBRASHADER_H__ */
+#endif  /* __LIBRASHADER_H__ */

@@ -306,7 +306,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_create_deferred(
 
 libra_error_t __librashader__noop_d3d11_filter_chain_frame(
     libra_d3d11_filter_chain_t *chain, ID3D11DeviceContext *device_context,
-    size_t frame_count, struct libra_source_image_d3d11_t image,
+    size_t frame_count, ID3D11ShaderResourceView *image,
     struct libra_viewport_t viewport, ID3D11RenderTargetView *out,
     const float *mvp, const struct frame_d3d11_opt_t *opt) {
     return NULL;
