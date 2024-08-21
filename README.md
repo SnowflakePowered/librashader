@@ -22,21 +22,22 @@ librashader does not support legacy render APIs such as older versions of OpenGL
 support for Direct3D 9.
 
 | **API**     | **Status** | **`librashader` feature** |
-|-------------|------------|---------------------------|
-| OpenGL 3.3+ | ✅          | `gl`                      |
-| OpenGL 4.6  | ✅          | `gl`                      |
-| Vulkan      | ✅          | `vk`                      |
-| Direct3D 9  | ⚠️         | `d3d9`                    |
-| Direct3D 11 | ✅          | `d3d11`                   |
-| Direct3D 12 | ✅          | `d3d12`                   |
-| Metal       | ✅          | `metal`                   |
-| wgpu        | 🆗         | `wgpu`                    |
+|-------------|------------|--------------------------|
+| OpenGL 3.3+ | ✅         | `gl`                     |
+| OpenGL 4.6  | ✅         | `gl`                     |
+| Vulkan      | ✅         | `vk`                     |
+| Direct3D 9  | 🆗️         |`d3d9`                    |
+| Direct3D 11 | ✅         | `d3d11`                  |
+| Direct3D 12 | ✅         | `d3d12`                  |
+| Metal       | ✅         | `metal`                  |
+| wgpu        | 🆗         | `wgpu`                   |
 
-✅ Full Support &mdash; 🆗 Secondary Support &mdash; ⚠️ ️Experimental Support
+✅ Full Support &mdash; 🆗 Secondary Support 
 
-wgpu may not support all shaders due to restrictions from WGSL. Direct3D 9 support is experimental and does not fully
-support features such as previous frame feedback or history, as well as being unable to support shaders that need Direct3D 10+
-only features. 
+Shader compatibility is not guaranteed on render APIs with secondary support. 
+
+wgpu has restrictions on shaders that can not be converted to WGSL, such as those that use `inverse`. Direct3D 9 does not support
+shaders that need Direct3D 10+ only features, or shaders that can not be compiled to [Shader Model 3.0](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/shader-model-3).
 
 ## Usage
 
@@ -74,6 +75,7 @@ is not available to OpenGL.
 The Metal runtime is **not thread safe**. However you can still defer submission of GPU resource initialization through the
 `filter_chain_create_deferred` function.
 
+The Direct3D 9 API is not thread safe, unless `D3DCREATE_MULTITHREADED` is enabled at device creation.
 ### Quad vertices and rotations
 All runtimes render intermediate passes with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
 Quad VBO with range `[0, 1]` and the following projection matrix by default.
@@ -127,6 +129,7 @@ The following Rust examples show how to use each librashader runtime.
 * [Direct3D 11](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d11/tests/triangle.rs)
 * [Direct3D 12](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d12/tests/triangle.rs)
 * [wgpu](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-wgpu/tests/hello_triangle.rs)
+* [Direct3D 9](https://github.com/SnowflakePowered/librashader/blob/master/librashader-runtime-d3d9/tests/triangle.rs)
 
 Some basic examples on using the C API are also provided.
 
