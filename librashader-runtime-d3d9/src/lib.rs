@@ -1,6 +1,5 @@
 #![cfg(target_os = "windows")]
 #![feature(type_alias_impl_trait)]
-#![feature(error_generic_member_access)]
 mod binding;
 mod d3dx;
 mod draw_quad;
