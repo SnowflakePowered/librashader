@@ -8,12 +8,8 @@
 //!
 //! Re-exported as [`librashader::presets`](https://docs.rs/librashader/latest/librashader/presets/index.html).
 
-#![allow(stable_features)]
-#![allow(unstable_name_collisions)]
-
 pub mod context;
 mod error;
-mod extract_if;
 mod parse;
 mod preset;
 

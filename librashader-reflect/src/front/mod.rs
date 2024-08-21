@@ -32,7 +32,6 @@ pub struct SpirvCompilation {
     pub(crate) fragment: Vec<u32>,
 }
 
-
 impl TryFrom<&ShaderSource> for SpirvCompilation {
     type Error = ShaderCompileError;
 
