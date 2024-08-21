@@ -4,7 +4,6 @@ use librashader_preprocess::PreprocessError;
 use librashader_presets::ParsePresetError;
 use librashader_reflect::error::{ShaderCompileError, ShaderReflectError};
 use librashader_runtime::image::ImageError;
-use std::backtrace::Backtrace;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -14,11 +13,7 @@ pub enum FilterChainError {
     #[error("invariant assumption about d3d11 did not hold. report this as an issue.")]
     Direct3DOperationError(&'static str),
     #[error("direct3d driver error")]
-    Direct3DError {
-        #[from]
-        error: windows::core::Error,
-        backtrace: Backtrace,
-    },
+    Direct3DError(#[from] windows::core::Error),
     #[error("shader preset parse error")]
     ShaderPresetError(#[from] ParsePresetError),
     #[error("shader preprocess error")]
