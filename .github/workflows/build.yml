@@ -86,8 +86,7 @@ jobs:
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly-2024-01-15 # pinned because it seems like there's a segfault on nightly
-          override: true
+          toolchain: nightly
           targets: aarch64-pc-windows-msvc
       - name: Build dynamic library
         run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target aarch64-pc-windows-msvc
@@ -96,3 +95,25 @@ jobs:
         with:
           name: ${{ format('librashader-aarch64-windows-{0}-{1}', github.sha, matrix.profile) }}
           path: ${{ format('target/aarch64-pc-windows-msvc/{0}/librashader.*', matrix.profile) }}
+  build-windows-7:
+    strategy:
+      matrix:
+        profile: ['debug', 'release', 'optimized']
+      fail-fast: false
+    runs-on: windows-latest
+    name: x86_64-win7-windows
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: rust-src
+      - name: Build dynamic library
+        run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target x86_64-win7-windows-msvc -- -Zbuild-std
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ format('librashader-x86_64-win7-windows-{0}-{1}', github.sha, matrix.profile) }}
+          path: ${{ format('target/x86_64-win7-windows-msvc/{0}/librashader.*', matrix.profile) }}
