@@ -1,4 +1,4 @@
-use crate::Size;
+use crate::{GetSize, Size};
 
 /// The rendering output of a filter chain.
 ///
@@ -22,4 +22,25 @@ pub struct Viewport<'a, T> {
     /// The extent of the viewport size starting from the origin defined
     /// by x and y.
     pub size: Size<u32>,
+}
+
+impl<'a, T: GetSize<u32>> Viewport<'a, T> {
+    /// Create a new viewport from an output that can be sized.
+    ///
+    /// This will create a viewport that spans the entire output texture,
+    /// which will give correct results in the general case.
+    #[inline(always)]
+    pub fn new_render_target_sized_origin(
+        output: T,
+        mvp: Option<&'a [f32; 16]>,
+    ) -> Result<Viewport<'a, T>, T::Error> {
+        let size = output.size()?;
+        Ok(Self {
+            x: 0.0,
+            y: 0.0,
+            mvp,
+            output,
+            size,
+        })
+    }
 }

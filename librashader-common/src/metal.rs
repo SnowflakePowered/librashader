@@ -107,3 +107,16 @@ impl GetSize<u32> for ProtocolObject<dyn MTLTexture> {
         })
     }
 }
+
+impl GetSize<u32> for &ProtocolObject<dyn MTLTexture> {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        let height = self.height();
+        let width = self.width();
+        Ok(Size {
+            height: height as u32,
+            width: width as u32,
+        })
+    }
+}

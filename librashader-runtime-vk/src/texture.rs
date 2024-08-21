@@ -7,7 +7,7 @@ use parking_lot::Mutex;
 use std::sync::Arc;
 
 use crate::error::FilterChainError;
-use librashader_common::{FilterMode, ImageFormat, Size, WrapMode};
+use librashader_common::{FilterMode, GetSize, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 
@@ -533,5 +533,13 @@ impl ScaleFramebuffer for OwnedImage {
             should_mipmap,
             context.clone(),
         )
+    }
+}
+
+impl GetSize<u32> for VulkanImage {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        Ok(self.size)
     }
 }

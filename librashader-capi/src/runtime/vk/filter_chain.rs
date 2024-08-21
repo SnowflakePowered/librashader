@@ -24,29 +24,16 @@ pub use ash::vk::PFN_vkGetInstanceProcAddr;
 pub type libra_PFN_vkGetInstanceProcAddr =
     unsafe extern "system" fn(instance: *mut c_void, p_name: *const c_char);
 
-/// Vulkan parameters for the source image.
+/// Vulkan parameters for an image.
 #[repr(C)]
-pub struct libra_source_image_vk_t {
-    /// A raw `VkImage` handle to the source image.
+pub struct libra_image_vk_t {
+    /// A raw `VkImage` handle.
     pub handle: vk::Image,
-    /// The `VkFormat` of the source image.
+    /// The `VkFormat` of the `VkImage`.
     pub format: vk::Format,
-    /// The width of the source image.
+    /// The width of the `VkImage`.
     pub width: u32,
-    /// The height of the source image.
-    pub height: u32,
-}
-
-/// Vulkan parameters for the output image.
-#[repr(C)]
-pub struct libra_output_image_vk_t {
-    /// A raw `VkImage` handle to the output image.
-    pub handle: vk::Image,
-    /// The `VkFormat` of the output image.
-    pub format: vk::Format,
-    /// The width of the output image.
-    pub width: u32,
-    /// The height of the output image.
+    /// The height of the `VkImage`.
     pub height: u32,
 }
 
@@ -66,8 +53,8 @@ pub struct libra_device_vk_t {
     pub entry: vk::PFN_vkGetInstanceProcAddr,
 }
 
-impl From<libra_source_image_vk_t> for VulkanImage {
-    fn from(value: libra_source_image_vk_t) -> Self {
+impl From<libra_image_vk_t> for VulkanImage {
+    fn from(value: libra_image_vk_t) -> Self {
         VulkanImage {
             size: Size::new(value.width, value.height),
             image: value.handle,
@@ -240,12 +227,30 @@ extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command buffer.
     ///
-    /// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
-    /// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
-    ///
-    /// librashader **will not** create a pipeline barrier for the final pass. The output image will
-    /// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
+    /// librashader **will not** create a pipeline barrier for the final pass. The output image must be
+    /// in `VK_COLOR_ATTACHMENT_OPTIMAL`, and will remain so after all shader passes. The caller must transition
     /// the output image to the final layout.
+    ///
+    /// ## Parameters
+    ///
+    /// - `chain` is a handle to the filter chain.
+    /// - `command_buffer` is a `VkCommandBuffer` handle to record draw commands to.
+    ///    The provided command buffer must be ready for recording and contain no prior commands
+    /// - `frame_count` is the number of frames passed to the shader
+    /// - `image` is a `libra_image_vk_t`, containing a `VkImage` handle, it's format and size information,
+    ///    to an image that will serve as the source image for the frame. The input image must be in
+    ///    the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
+    /// - `out` is a `libra_image_vk_t`, containing a `VkImage` handle, it's format and size information,
+    ///    for the render target of the frame. The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
+    ///    The output image will remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes.
+    ///
+    /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+    ///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+    ///    entire render target will be used.
+    /// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+    ///    be passed to the shader.
+    /// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+    ///    passed in. It may be null, in which case default options for the filter chain are used.
     ///
     /// ## Safety
     /// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.
@@ -262,9 +267,9 @@ extern_fn! {
         chain: *mut libra_vk_filter_chain_t,
         command_buffer: vk::CommandBuffer,
         frame_count: usize,
-        image: libra_source_image_vk_t,
-        viewport: libra_viewport_t,
-        out: libra_output_image_vk_t,
+        image: libra_image_vk_t,
+        out: libra_image_vk_t,
+        viewport: *const libra_viewport_t,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_vk_opt_t>
     ) mut |chain| {
@@ -286,15 +291,21 @@ extern_fn! {
             Some(unsafe { opt.read() })
         };
         let opt = opt.map(FromUninit::from_uninit);
-        let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
-            size: Size {
-                height: viewport.height,
-                width: viewport.width
-            },
-            output,
-            mvp,
+
+        let viewport = if viewport.is_null() {
+            Viewport::new_render_target_sized_origin(output, mvp)?
+        } else {
+            let viewport = unsafe { viewport.read() };
+            Viewport {
+                x: viewport.x,
+                y: viewport.y,
+                output,
+                size: Size {
+                    height: viewport.height,
+                    width: viewport.width
+                },
+                mvp,
+            }
         };
 
         unsafe {

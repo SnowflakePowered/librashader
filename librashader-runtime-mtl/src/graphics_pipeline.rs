@@ -208,7 +208,7 @@ impl MetalGraphicsPipeline {
                 x: output.x as usize,
                 y: output.y as usize,
                 width: output.size.width as usize,
-                height: output.size.height as usize
+                height: output.size.height as usize,
             });
 
             rpass.setViewport(MTLViewport {

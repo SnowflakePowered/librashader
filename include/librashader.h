@@ -207,20 +207,6 @@ typedef struct libra_source_image_gl_t {
 } libra_source_image_gl_t;
 #endif
 
-/// Defines the output origin for a rendered frame.
-typedef struct libra_viewport_t {
-  /// The x offset in the viewport framebuffer to begin rendering from.
-  float x;
-  /// The y offset in the viewport framebuffer to begin rendering from.
-  float y;
-  /// The width extent of the viewport framebuffer to end rendering, relative to
-  /// the origin specified by x.
-  uint32_t width;
-  /// The height extent of the viewport framebuffer to end rendering, relative to
-  /// the origin specified by y.
-  uint32_t height;
-} libra_viewport_t;
-
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// OpenGL parameters for the output framebuffer.
 typedef struct libra_output_framebuffer_gl_t {
@@ -236,6 +222,20 @@ typedef struct libra_output_framebuffer_gl_t {
   uint32_t height;
 } libra_output_framebuffer_gl_t;
 #endif
+
+/// Defines the output origin for a rendered frame.
+typedef struct libra_viewport_t {
+  /// The x offset in the viewport framebuffer to begin rendering from.
+  float x;
+  /// The y offset in the viewport framebuffer to begin rendering from.
+  float y;
+  /// The width extent of the viewport framebuffer to end rendering, relative to
+  /// the origin specified by x.
+  uint32_t width;
+  /// The height extent of the viewport framebuffer to end rendering, relative to
+  /// the origin specified by y.
+  uint32_t height;
+} libra_viewport_t;
 
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Options for each OpenGL shader frame.
@@ -298,31 +298,17 @@ typedef struct _filter_chain_vk *libra_vk_filter_chain_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
-/// Vulkan parameters for the source image.
-typedef struct libra_source_image_vk_t {
-  /// A raw `VkImage` handle to the source image.
+/// Vulkan parameters for an image.
+typedef struct libra_image_vk_t {
+  /// A raw `VkImage` handle.
   VkImage handle;
-  /// The `VkFormat` of the source image.
+  /// The `VkFormat` of the `VkImage`.
   VkFormat format;
-  /// The width of the source image.
+  /// The width of the `VkImage`.
   uint32_t width;
-  /// The height of the source image.
+  /// The height of the `VkImage`.
   uint32_t height;
-} libra_source_image_vk_t;
-#endif
-
-#if defined(LIBRA_RUNTIME_VULKAN)
-/// Vulkan parameters for the output image.
-typedef struct libra_output_image_vk_t {
-  /// A raw `VkImage` handle to the output image.
-  VkImage handle;
-  /// The `VkFormat` of the output image.
-  VkFormat format;
-  /// The width of the output image.
-  uint32_t width;
-  /// The height of the output image.
-  uint32_t height;
-} libra_output_image_vk_t;
+} libra_image_vk_t;
 #endif
 
 #if defined(LIBRA_RUNTIME_VULKAN)
@@ -654,8 +640,8 @@ typedef libra_error_t (*PFN_libra_gl_filter_chain_create)(libra_shader_preset_t 
 typedef libra_error_t (*PFN_libra_gl_filter_chain_frame)(libra_gl_filter_chain_t *chain,
                                                          size_t frame_count,
                                                          struct libra_source_image_gl_t image,
-                                                         struct libra_viewport_t viewport,
                                                          struct libra_output_framebuffer_gl_t out,
+                                                         const struct libra_viewport_t *viewport,
                                                          const float *mvp,
                                                          const struct frame_gl_opt_t *opt);
 #endif
@@ -721,9 +707,9 @@ typedef libra_error_t (*PFN_libra_vk_filter_chain_create_deferred)(libra_shader_
 typedef libra_error_t (*PFN_libra_vk_filter_chain_frame)(libra_vk_filter_chain_t *chain,
                                                          VkCommandBuffer command_buffer,
                                                          size_t frame_count,
-                                                         struct libra_source_image_vk_t image,
-                                                         struct libra_viewport_t viewport,
-                                                         struct libra_output_image_vk_t out,
+                                                         struct libra_image_vk_t image,
+                                                         struct libra_image_vk_t out,
+                                                         const struct libra_viewport_t *viewport,
                                                          const float *mvp,
                                                          const struct frame_vk_opt_t *opt);
 #endif
@@ -790,8 +776,8 @@ typedef libra_error_t (*PFN_libra_d3d11_filter_chain_frame)(libra_d3d11_filter_c
                                                             ID3D11DeviceContext * device_context,
                                                             size_t frame_count,
                                                             ID3D11ShaderResourceView * image,
-                                                            struct libra_viewport_t viewport,
                                                             ID3D11RenderTargetView * out,
+                                                            const struct libra_viewport_t *viewport,
                                                             const float *mvp,
                                                             const struct frame_d3d11_opt_t *options);
 #endif
@@ -847,8 +833,8 @@ typedef libra_error_t (*PFN_libra_d3d9_filter_chain_create)(libra_shader_preset_
 typedef libra_error_t (*PFN_libra_d3d9_filter_chain_frame)(libra_d3d9_filter_chain_t *chain,
                                                            size_t frame_count,
                                                            IDirect3DTexture9 * image,
-                                                           struct libra_viewport_t viewport,
                                                            IDirect3DSurface9 * out,
+                                                           const struct libra_viewport_t *viewport,
                                                            const float *mvp,
                                                            const struct frame_d3d9_opt_t *options);
 #endif
@@ -915,8 +901,8 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_frame)(libra_d3d12_filter_c
                                                             ID3D12GraphicsCommandList * command_list,
                                                             size_t frame_count,
                                                             struct libra_source_image_d3d12_t image,
-                                                            struct libra_viewport_t viewport,
                                                             struct libra_output_image_d3d12_t out,
+                                                            const struct libra_viewport_t *viewport,
                                                             const float *mvp,
                                                             const struct frame_d3d12_opt_t *options);
 #endif
@@ -983,8 +969,8 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_frame)(libra_mtl_filter_chain
                                                           id<MTLCommandBuffer> command_buffer,
                                                           size_t frame_count,
                                                           id<MTLTexture> image,
-                                                          struct libra_viewport_t viewport,
                                                           id<MTLTexture> output,
+                                                          const struct libra_viewport_t *viewport,
                                                           const float *mvp,
                                                           const struct frame_mtl_opt_t *opt);
 #endif
@@ -1207,6 +1193,23 @@ libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Draw a frame with the given parameters for the given filter chain.
 ///
+/// ## Parameters
+///
+/// - `chain` is a handle to the filter chain.
+/// - `frame_count` is the number of frames passed to the shader
+/// - `image` is a `libra_source_image_gl_t`, containing the name of a Texture, format, and size information to
+///    to an image that will serve as the source image for the frame.
+/// - `out` is a `libra_output_framebuffer_gl_t`, containing the name of a Framebuffer, the name of a Texture, format,
+///    and size information for the render target of the frame.
+///
+/// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+///    entire render target will be used.
+/// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+///    be passed to the shader.
+/// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+///    passed in. It may be null, in which case default options for the filter chain are used.
+///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
 ///    function will return an error.
@@ -1221,8 +1224,8 @@ libra_error_t libra_gl_filter_chain_create(libra_shader_preset_t *preset,
 libra_error_t libra_gl_filter_chain_frame(libra_gl_filter_chain_t *chain,
                                           size_t frame_count,
                                           struct libra_source_image_gl_t image,
-                                          struct libra_viewport_t viewport,
                                           struct libra_output_framebuffer_gl_t out,
+                                          const struct libra_viewport_t *viewport,
                                           const float *mvp,
                                           const struct frame_gl_opt_t *opt);
 #endif
@@ -1326,12 +1329,30 @@ libra_error_t libra_vk_filter_chain_create_deferred(libra_shader_preset_t *prese
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command buffer.
 ///
-/// * The input image must be in the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
-/// * The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
-///
-/// librashader **will not** create a pipeline barrier for the final pass. The output image will
-/// remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes. The caller must transition
+/// librashader **will not** create a pipeline barrier for the final pass. The output image must be
+/// in `VK_COLOR_ATTACHMENT_OPTIMAL`, and will remain so after all shader passes. The caller must transition
 /// the output image to the final layout.
+///
+/// ## Parameters
+///
+/// - `chain` is a handle to the filter chain.
+/// - `command_buffer` is a `VkCommandBuffer` handle to record draw commands to.
+///    The provided command buffer must be ready for recording and contain no prior commands
+/// - `frame_count` is the number of frames passed to the shader
+/// - `image` is a `libra_image_vk_t`, containing a `VkImage` handle, it's format and size information,
+///    to an image that will serve as the source image for the frame. The input image must be in
+///    the `VK_SHADER_READ_ONLY_OPTIMAL` layout.
+/// - `out` is a `libra_image_vk_t`, containing a `VkImage` handle, it's format and size information,
+///    for the render target of the frame. The output image must be in `VK_COLOR_ATTACHMENT_OPTIMAL` layout.
+///    The output image will remain in `VK_COLOR_ATTACHMENT_OPTIMAL` after all shader passes.
+///
+/// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+///    entire render target will be used.
+/// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+///    be passed to the shader.
+/// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+///    passed in. It may be null, in which case default options for the filter chain are used.
 ///
 /// ## Safety
 /// - `libra_vk_filter_chain_frame` **must not be called within a RenderPass**.
@@ -1347,9 +1368,9 @@ libra_error_t libra_vk_filter_chain_create_deferred(libra_shader_preset_t *prese
 libra_error_t libra_vk_filter_chain_frame(libra_vk_filter_chain_t *chain,
                                           VkCommandBuffer command_buffer,
                                           size_t frame_count,
-                                          struct libra_source_image_vk_t image,
-                                          struct libra_viewport_t viewport,
-                                          struct libra_output_image_vk_t out,
+                                          struct libra_image_vk_t image,
+                                          struct libra_image_vk_t out,
+                                          const struct libra_viewport_t *viewport,
                                           const float *mvp,
                                           const struct frame_vk_opt_t *opt);
 #endif
@@ -1457,9 +1478,26 @@ libra_error_t libra_d3d11_filter_chain_create_deferred(libra_shader_preset_t *pr
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D11))
 /// Draw a frame with the given parameters for the given filter chain.
 ///
-/// If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
-/// it will record commands onto the provided context. If the context is deferred, librashader
-/// will not finalize command lists. The context must otherwise be associated with the `ID3D11Device`
+/// ## Parameters
+///
+/// - `chain` is a handle to the filter chain.
+/// - `device_context` is the ID3D11DeviceContext used to record draw commands to.
+///    If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
+///    it will record commands onto the provided context. If the context is deferred, librashader
+///    will not finalize command lists. The context must otherwise be associated with the `ID3D11Device`
+///    the filter chain was created with.
+///
+/// - `frame_count` is the number of frames passed to the shader
+/// - `image` is a pointer to a `ID3D11ShaderResourceView` that will serve as the source image for the frame.
+/// - `out` is a pointer to a `ID3D11RenderTargetView` that will serve as the render target for the frame.
+///
+/// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+///    entire render target will be used.
+/// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+///    be passed to the shader.
+/// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+///    passed in. It may be null, in which case default options for the filter chain are used.
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -1479,8 +1517,8 @@ libra_error_t libra_d3d11_filter_chain_frame(libra_d3d11_filter_chain_t *chain,
                                              ID3D11DeviceContext * device_context,
                                              size_t frame_count,
                                              ID3D11ShaderResourceView * image,
-                                             struct libra_viewport_t viewport,
                                              ID3D11RenderTargetView * out,
+                                             const struct libra_viewport_t *viewport,
                                              const float *mvp,
                                              const struct frame_d3d11_opt_t *options);
 #endif
@@ -1556,10 +1594,24 @@ libra_error_t libra_d3d9_filter_chain_create(libra_shader_preset_t *preset,
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D9))
 /// Draw a frame with the given parameters for the given filter chain.
 ///
+/// ## Parameters
+/// - `chain` is a handle to the filter chain.
+/// - `frame_count` is the number of frames passed to the shader
+/// - `image` is a pointer to a `IDirect3DTexture9` that will serve as the source image for the frame.
+/// - `out` is a pointer to a `IDirect3DSurface9` that will serve as the render target for the frame.
+///
+/// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+///    entire render target will be used.
+/// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+///    be passed to the shader.
+/// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+///    passed in. It may be null, in which case default options for the filter chain are used.
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
 ///    function will return an error.
+/// - `viewport` may be null, or if it is not null, must be an aligned pointer to an instance of `libra_viewport_t`.
 /// - `mvp` may be null, or if it is not null, must be an aligned pointer to 16 consecutive `float`
 ///    values for the model view projection matrix.
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d9_opt_t`
@@ -1571,8 +1623,8 @@ libra_error_t libra_d3d9_filter_chain_create(libra_shader_preset_t *preset,
 libra_error_t libra_d3d9_filter_chain_frame(libra_d3d9_filter_chain_t *chain,
                                             size_t frame_count,
                                             IDirect3DTexture9 * image,
-                                            struct libra_viewport_t viewport,
                                             IDirect3DSurface9 * out,
+                                            const struct libra_viewport_t *viewport,
                                             const float *mvp,
                                             const struct frame_d3d9_opt_t *options);
 #endif
@@ -1673,12 +1725,30 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command list.
 ///
-/// * The input image must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state.
-/// * The output image must be in `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state.
-///
 /// librashader **will not** create a resource barrier for the final pass. The output image will
 /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
 /// the output image to the final resource state.
+///
+/// ## Parameters
+///
+/// - `chain` is a handle to the filter chain.
+/// - `command_list` is a `ID3D12GraphicsCommandList` to record draw commands to.
+///    The provided command list must be open and associated with the `ID3D12Device` this filter chain was created with.
+/// - `frame_count` is the number of frames passed to the shader
+/// - `image` is a `libra_source_image_d3d12_t`, containing a `ID3D12Resource` pointer and CPU descriptor
+///    to an image that will serve as the source image for the frame. The input image must be in the
+///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout.
+/// - `out` is a `libra_output_image_d3d12_t`, containing a CPU descriptor handle, format, and size information
+///    for the render target of the frame. The output image must be in
+///    `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state or equivalent barrier layout.
+///
+/// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+///    entire render target will be used.
+/// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+///    be passed to the shader.
+/// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+///    passed in. It may be null, in which case default options for the filter chain are used.
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -1697,8 +1767,8 @@ libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
                                              ID3D12GraphicsCommandList * command_list,
                                              size_t frame_count,
                                              struct libra_source_image_d3d12_t image,
-                                             struct libra_viewport_t viewport,
                                              struct libra_output_image_d3d12_t out,
+                                             const struct libra_viewport_t *viewport,
                                              const float *mvp,
                                              const struct frame_d3d12_opt_t *options);
 #endif
@@ -1802,6 +1872,22 @@ libra_error_t libra_mtl_filter_chain_create_deferred(libra_shader_preset_t *pres
 #if (defined(__APPLE__) && defined(LIBRA_RUNTIME_METAL) && defined(__OBJC__))
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command buffer.
+/// ## Parameters
+///
+/// - `chain` is a handle to the filter chain.
+/// - `command_buffer` is a `MTLCommandBuffer` handle to record draw commands to.
+///    The provided command buffer must be ready for encoding and contain no prior commands
+/// - `frame_count` is the number of frames passed to the shader
+/// - `image` is a `id<MTLTexture>` that will serve as the source image for the frame.
+/// - `out` is a `id<MTLTexture>` that is the render target of the frame.
+///
+/// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+///    entire render target will be used.
+/// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+///    be passed to the shader.
+/// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+///    passed in. It may be null, in which case default options for the filter chain are used.
 ///
 /// ## Safety
 /// - `command_buffer` must be a valid reference to a `MTLCommandBuffer` that is not already encoding.
@@ -1817,8 +1903,8 @@ libra_error_t libra_mtl_filter_chain_frame(libra_mtl_filter_chain_t *chain,
                                            id<MTLCommandBuffer> command_buffer,
                                            size_t frame_count,
                                            id<MTLTexture> image,
-                                           struct libra_viewport_t viewport,
                                            id<MTLTexture> output,
+                                           const struct libra_viewport_t *viewport,
                                            const float *mvp,
                                            const struct frame_mtl_opt_t *opt);
 #endif
