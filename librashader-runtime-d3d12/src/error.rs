@@ -6,6 +6,7 @@ use thiserror::Error;
 
 /// Cumulative error type for Direct3D12 filter chains.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum FilterChainError {
     #[error("invariant assumption about d3d12 did not hold. report this as an issue.")]
     Direct3DOperationError(&'static str),
