@@ -15,8 +15,8 @@
 //! called with appropriate input and output parameters to draw a frame with the shader effect applied.
 //!
 //! ## Runtimes
-//! librashader supports all modern graphics runtimes, including wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA),
-//! Direct3D 11, Direct3D 12, and Metal.
+//! librashader supports most modern graphics runtimes, including Vulkan, OpenGL 3.3+ and 4.6 (with DSA),
+//! Direct3D 11, Direct3D 12, and Metal. Secondary support is available for wgpu and Direct3D 9.
 //!
 //! The Direct3D 12 runtime requires support for [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes), which
 //! have been available since Windows 10, version 1809.
@@ -24,8 +24,11 @@
 //! The Vulkan runtime can use [`VK_KHR_dynamic_rendering`](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_KHR_dynamic_rendering.html)
 //! for improved performance, if the underlying hardware supports it.
 //!
-//! Direct3D 9 support is experimental and is not guaranteed to work with all shaders. In particular, history and feedback is currently not supported.
-//! Many shaders will also fail to compile due to missing or insufficient features in Direct3D 9.
+//! Shader compatibility is not guaranteed on render APIs with secondary support.
+//!
+//! wgpu has restrictions on shaders that can not be converted to WGSL, such as those that use `inverse`.
+//! Direct3D 9 does not support shaders that need Direct3D 10+ only features, or shaders that can not be
+//! compiled to [Shader Model 3.0](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/shader-model-3).
 //!
 //! wgpu support is not available in the librashader C API.
 //!
@@ -34,13 +37,13 @@
 //! | OpenGL 3.3+ | ✅        | `gl`                      |
 //! | OpenGL 4.6  | ✅        | `gl`                      |
 //! | Vulkan      | ✅        | `vk`                      |
-//! | Direct3D 9  | ⚠️        | `d3d9`                   |
+//! | Direct3D 9  | 🆗️        | `d3d9`                   |
 //! | Direct3D 11 | ✅        | `d3d11`                   |
 //! | Direct3D 12 | ✅        | `d3d12`                   |
 //! | Metal       | ✅        | `metal`                   |
 //! | wgpu        | 🆗         | `wgpu`                    |
 //!
-//! ✅ Full Support &mdash; 🆗 Secondary Support &mdash; ⚠️ ️Experimental Support
+//! ✅ Full Support &mdash; 🆗 Secondary Support
 //!
 //! ## C API
 //! For documentation on the librashader C API, see [librashader-capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
