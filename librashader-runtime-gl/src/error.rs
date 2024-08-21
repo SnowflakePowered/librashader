@@ -8,6 +8,7 @@ use thiserror::Error;
 
 /// Cumulative error type for OpenGL filter chains.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum FilterChainError {
     #[error("fbo initialization error")]
     FramebufferInit(u32),
