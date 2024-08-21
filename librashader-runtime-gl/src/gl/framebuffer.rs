@@ -136,3 +136,11 @@ impl GetSize<u32> for GLFramebuffer {
         Ok(self.size)
     }
 }
+
+impl GetSize<u32> for &GLFramebuffer {
+    type Error = std::convert::Infallible;
+
+    fn size(&self) -> std::result::Result<Size<u32>, Self::Error> {
+        Ok(self.size)
+    }
+}

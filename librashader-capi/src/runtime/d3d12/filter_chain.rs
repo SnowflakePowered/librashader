@@ -208,12 +208,30 @@ extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command list.
     ///
-    /// * The input image must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state.
-    /// * The output image must be in `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state.
-    ///
     /// librashader **will not** create a resource barrier for the final pass. The output image will
     /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
     /// the output image to the final resource state.
+    ///
+    /// ## Parameters
+    ///
+    /// - `chain` is a handle to the filter chain.
+    /// - `command_list` is a `ID3D12GraphicsCommandList` to record draw commands to.
+    ///    The provided command list must be open and associated with the `ID3D12Device` this filter chain was created with.
+    /// - `frame_count` is the number of frames passed to the shader
+    /// - `image` is a `libra_source_image_d3d12_t`, containing a `ID3D12Resource` pointer and CPU descriptor
+    ///    to an image that will serve as the source image for the frame. The input image must be in the
+    ///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout.
+    /// - `out` is a `libra_output_image_d3d12_t`, containing a CPU descriptor handle, format, and size information
+    ///    for the render target of the frame. The output image must be in
+    ///    `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state or equivalent barrier layout.
+    ///
+    /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+    ///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+    ///    entire render target will be used.
+    /// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+    ///    be passed to the shader.
+    /// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+    ///    passed in. It may be null, in which case default options for the filter chain are used.
     ///
     /// ## Safety
     /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -233,8 +251,8 @@ extern_fn! {
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,
         frame_count: usize,
         image: libra_source_image_d3d12_t,
-        viewport: libra_viewport_t,
         out: libra_output_image_d3d12_t,
+        viewport: *const libra_viewport_t,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d12_opt_t>
     ) mut |chain| {
@@ -253,17 +271,28 @@ extern_fn! {
         };
 
         let options = options.map(FromUninit::from_uninit);
-        let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
-            size: Size {
-                height: viewport.height,
-                width: viewport.width
-            },
-            output: unsafe {
-                D3D12OutputView::new_from_raw(out.descriptor,
-                    Size::new(out.width, out.height), out.format) },
-            mvp,
+
+        let output = unsafe {
+            D3D12OutputView::new_from_raw(
+                out.descriptor,
+                Size::new(out.width, out.height),
+                out.format)
+        };
+
+        let viewport = if viewport.is_null() {
+            Viewport::new_render_target_sized_origin(output, mvp)?
+        } else {
+            let viewport = unsafe { viewport.read() };
+            Viewport {
+                x: viewport.x,
+                y: viewport.y,
+                output,
+                size: Size {
+                    height: viewport.height,
+                    width: viewport.width
+                },
+                mvp,
+            }
         };
 
         let image = image.try_into()?;

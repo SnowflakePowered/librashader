@@ -173,6 +173,22 @@ extern_fn! {
 extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command buffer.
+    /// ## Parameters
+    ///
+    /// - `chain` is a handle to the filter chain.
+    /// - `command_buffer` is a `MTLCommandBuffer` handle to record draw commands to.
+    ///    The provided command buffer must be ready for encoding and contain no prior commands
+    /// - `frame_count` is the number of frames passed to the shader
+    /// - `image` is a `id<MTLTexture>` that will serve as the source image for the frame.
+    /// - `out` is a `id<MTLTexture>` that is the render target of the frame.
+    ///
+    /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+    ///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+    ///    entire render target will be used.
+    /// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+    ///    be passed to the shader.
+    /// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+    ///    passed in. It may be null, in which case default options for the filter chain are used.
     ///
     /// ## Safety
     /// - `command_buffer` must be a valid reference to a `MTLCommandBuffer` that is not already encoding.
@@ -189,8 +205,8 @@ extern_fn! {
         command_buffer: PMTLCommandBuffer,
         frame_count: usize,
         image: PMTLTexture,
-        viewport: libra_viewport_t,
         output: PMTLTexture,
+        viewport: *const libra_viewport_t,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_mtl_opt_t>
     ) |command_buffer, image, output|; mut |chain|  {
@@ -207,15 +223,21 @@ extern_fn! {
             Some(unsafe { opt.read() })
         };
         let opt = opt.map(FromUninit::from_uninit);
-        let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
-            size: Size {
-                height: viewport.height,
-                width: viewport.width
-            },
-            output,
-            mvp,
+
+        let viewport = if viewport.is_null() {
+            Viewport::new_render_target_sized_origin(output, mvp)?
+        } else {
+            let viewport = unsafe { viewport.read() };
+            Viewport {
+                x: viewport.x,
+                y: viewport.y,
+                output,
+                size: Size {
+                    height: viewport.height,
+                    width: viewport.width
+                },
+                mvp,
+            }
         };
 
         chain.frame(&image, &viewport, command_buffer, frame_count, opt.as_ref())?;
