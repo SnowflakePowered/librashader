@@ -201,47 +201,46 @@ impl<T> Size<T> {
     }
 }
 
-impl<T: Sub<Output=T>> Sub for Size<T> {
+impl<T: Sub<Output = T>> Sub for Size<T> {
     type Output = Size<T>;
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             width: self.width - rhs.width,
-            height: self.height - rhs.height
+            height: self.height - rhs.height,
         }
     }
 }
 
-impl<T: Sub<T, Output=T> + Copy> Sub<T> for Size<T> {
+impl<T: Sub<T, Output = T> + Copy> Sub<T> for Size<T> {
     type Output = Size<T>;
 
     fn sub(self, rhs: T) -> Self::Output {
         Self {
             width: self.width - rhs,
-            height: self.height - rhs
+            height: self.height - rhs,
         }
     }
 }
 
-
-impl<T: Add<Output=T>> Add for Size<T> {
+impl<T: Add<Output = T>> Add for Size<T> {
     type Output = Size<T>;
 
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             width: self.width + rhs.width,
-            height: self.height + rhs.height
+            height: self.height + rhs.height,
         }
     }
 }
 
-impl<T: Add<T, Output=T> + Copy> Add<T> for Size<T> {
+impl<T: Add<T, Output = T> + Copy> Add<T> for Size<T> {
     type Output = Size<T>;
 
     fn add(self, rhs: T) -> Self::Output {
         Self {
             width: self.width + rhs,
-            height: self.height + rhs
+            height: self.height + rhs,
         }
     }
 }

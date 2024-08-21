@@ -15,6 +15,7 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 
 use crate::LIBRASHADER_API_VERSION;
+use librashader::runtime::d3d11::error::FilterChainError;
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
 
 /// Options for Direct3D 11 filter chain creation.
@@ -178,10 +179,26 @@ const _: () = assert!(
 extern_fn! {
     /// Draw a frame with the given parameters for the given filter chain.
     ///
-    /// If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
-    /// it will record commands onto the provided context. If the context is deferred, librashader
-    /// will not finalize command lists. The context must otherwise be associated with the `ID3D11Device`
-    //  the filter chain was created with.
+    /// ## Parameters
+    ///
+    /// - `chain` is a handle to the filter chain.
+    /// - `device_context` is the ID3D11DeviceContext used to record draw commands to.
+    ///    If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
+    ///    it will record commands onto the provided context. If the context is deferred, librashader
+    ///    will not finalize command lists. The context must otherwise be associated with the `ID3D11Device`
+    ///    the filter chain was created with.
+    ///
+    /// - `frame_count` is the number of frames passed to the shader
+    /// - `image` is a pointer to a `ID3D11ShaderResourceView` that will serve as the source image for the frame.
+    /// - `out` is a pointer to a `ID3D11RenderTargetView` that will serve as the render target for the frame.
+    ///
+    /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
+    ///    will be applied to the render target. It may be null, in which case a default viewport spanning the
+    ///    entire render target will be used.
+    /// - `mvp` is a pointer to an array of 16 `float` values to specify the model view projection matrix to
+    ///    be passed to the shader.
+    /// - `options` is a pointer to options for the frame. Valid options are dependent on the `LIBRASHADER_API_VERSION`
+    ///    passed in. It may be null, in which case default options for the filter chain are used.
     ///
     /// ## Safety
     /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -204,8 +221,8 @@ extern_fn! {
         device_context: Option<ManuallyDrop<ID3D11DeviceContext>>,
         frame_count: usize,
         image: ManuallyDrop<ID3D11ShaderResourceView>,
-        viewport: libra_viewport_t,
         out: ManuallyDrop<ID3D11RenderTargetView>,
+        viewport: *const libra_viewport_t,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d11_opt_t>
     ) mut |chain| {
@@ -223,15 +240,21 @@ extern_fn! {
             Some(unsafe { options.read() })
         };
 
-        let viewport = Viewport {
-            x: viewport.x,
-            y: viewport.y,
-            output: ManuallyDrop::into_inner(out.clone()),
-            size: Size {
-                height: viewport.height,
-                width: viewport.width
-            },
-            mvp,
+        let viewport = if viewport.is_null() {
+            Viewport::new_render_target_sized_origin(ManuallyDrop::into_inner(out.clone()), mvp)
+                .map_err(|e| LibrashaderError::D3D11FilterError(FilterChainError::Direct3DError(e)))?
+        } else {
+            let viewport = unsafe { viewport.read() };
+            Viewport {
+                x: viewport.x,
+                y: viewport.y,
+                output: ManuallyDrop::into_inner(out.clone()),
+                size: Size {
+                    height: viewport.height,
+                    width: viewport.width
+                },
+                mvp,
+            }
         };
 
         let options = options.map(FromUninit::from_uninit);

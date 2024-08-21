@@ -1,7 +1,7 @@
-use windows::Win32::Foundation::RECT;
 use crate::filter_chain::FilterCommon;
 use crate::options::FrameOptionsD3D11;
 use crate::texture::InputTexture;
+use windows::Win32::Foundation::RECT;
 
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};

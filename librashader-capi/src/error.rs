@@ -61,6 +61,8 @@ pub enum LibrashaderError {
     #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
     #[error("There was an error in the Metal filter chain.")]
     MetalFilterError(#[from] librashader::runtime::mtl::error::FilterChainError),
+    #[error("This error is not reachable")]
+    Infallible(#[from] std::convert::Infallible),
 }
 
 /// Error codes for librashader error types.
@@ -211,6 +213,7 @@ impl LibrashaderError {
             LibrashaderError::VulkanFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
             #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
             LibrashaderError::MetalFilterError(_) => LIBRA_ERRNO::RUNTIME_ERROR,
+            LibrashaderError::Infallible(_) => LIBRA_ERRNO::UNKNOWN_ERROR,
         }
     }
     pub(crate) const fn ok() -> libra_error_t {
