@@ -7,6 +7,7 @@ use thiserror::Error;
 
 /// Cumulative error type for wgpu filter chains.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum FilterChainError {
     #[error("shader preset parse error")]
     ShaderPresetError(#[from] ParsePresetError),
