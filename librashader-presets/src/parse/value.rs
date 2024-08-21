@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::context::{apply_context, WildcardContext};
-use crate::extract_if::MakeExtractIf;
+use vec_extract_if_polyfill::MakeExtractIf;
 
 #[derive(Debug)]
 pub enum Value {
@@ -195,8 +195,10 @@ fn load_child_reference_strings(
                 .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
 
             let mut new_tokens = do_lex(&reference_contents)?;
-            let new_references: Vec<PathBuf> = new_tokens
-                .extract_if(|token| *token.key.fragment() == "#reference")
+            let new_references: Vec<PathBuf> =
+                MakeExtractIf::extract_if(&mut new_tokens, |token| {
+                    *token.key.fragment() == "#reference"
+                })
                 .map(|value| PathBuf::from(*value.value.fragment()))
                 .collect();
 
@@ -250,10 +252,10 @@ pub fn parse_values(
         root_path.pop();
     }
 
-    let references: Vec<PathBuf> = tokens
-        .extract_if(|token| *token.key.fragment() == "#reference")
-        .map(|value| PathBuf::from(*value.value.fragment()))
-        .collect();
+    let references: Vec<PathBuf> =
+        MakeExtractIf::extract_if(&mut tokens, |token| *token.key.fragment() == "#reference")
+            .map(|value| PathBuf::from(*value.value.fragment()))
+            .collect();
 
     // unfortunately we need to lex twice because there's no way to know the references ahead of time.
     // the returned references should have context applied
@@ -275,7 +277,9 @@ pub fn parse_values(
     // collect all possible parameter names.
     let mut parameter_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
-        for token in tokens.extract_if(|token| *token.key.fragment() == "parameters") {
+        for token in
+            MakeExtractIf::extract_if(tokens, |token| *token.key.fragment() == "parameters")
+        {
             let parameter_name_string: &str = token.value.fragment();
             for parameter_name in parameter_name_string.split(';') {
                 parameter_names.push(parameter_name);
@@ -286,7 +290,8 @@ pub fn parse_values(
     // collect all possible texture names.
     let mut texture_names: Vec<&str> = Vec::new();
     for (_, tokens) in all_tokens.iter_mut() {
-        for token in tokens.extract_if(|token| *token.key.fragment() == "textures") {
+        for token in MakeExtractIf::extract_if(tokens, |token| *token.key.fragment() == "textures")
+        {
             let texture_name_string: &str = token.value.fragment();
             for texture_name in texture_name_string.split(';') {
                 texture_names.push(texture_name);
@@ -297,7 +302,9 @@ pub fn parse_values(
     let mut values = Vec::new();
     // resolve shader paths.
     for (path, tokens) in all_tokens.iter_mut() {
-        for token in tokens.extract_if(|token| parse_indexed_key("shader", token.key).is_ok()) {
+        for token in MakeExtractIf::extract_if(tokens, |token| {
+            parse_indexed_key("shader", token.key).is_ok()
+        }) {
             let (_, index) = parse_indexed_key("shader", token.key).map_err(|e| match e {
                 nom::Err::Error(e) | nom::Err::Failure(e) => {
                     let input: Span = e.input;
@@ -328,7 +335,9 @@ pub fn parse_values(
     // resolve texture paths
     let mut textures = Vec::new();
     for (path, tokens) in all_tokens.iter_mut() {
-        for token in tokens.extract_if(|token| texture_names.contains(token.key.fragment())) {
+        for token in
+            MakeExtractIf::extract_if(tokens, |token| texture_names.contains(token.key.fragment()))
+        {
             let mut relative_path = path.to_path_buf();
             relative_path.push(*token.value.fragment());
             relative_path

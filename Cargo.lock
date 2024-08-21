@@ -1706,6 +1706,7 @@ dependencies = [
  "once_cell",
  "regex",
  "thiserror",
+ "vec_extract_if_polyfill",
 ]
 
 [[package]]
@@ -3417,6 +3418,12 @@ dependencies = [
  "num-traits",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "vec_extract_if_polyfill"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40c9cb5fb67c2692310b6eb3fce7dd4b6e4c9a75be4f2f46b27f0b2b7799759c"
 
 [[package]]
 name = "version-compare"

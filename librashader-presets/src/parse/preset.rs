@@ -1,42 +1,42 @@
-use crate::extract_if::MakeExtractIf;
 use crate::parse::remove_if;
 use crate::parse::value::Value;
 use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPreset, TextureConfig};
+use vec_extract_if_polyfill::MakeExtractIf;
 
 pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
-    let textures: Vec<TextureConfig> = values
-        .extract_if(|f| matches!(*f, Value::Texture { .. }))
-        .map(|value| {
-            if let Value::Texture {
-                name,
-                filter_mode,
-                wrap_mode,
-                mipmap,
-                path,
-            } = value
-            {
-                TextureConfig {
+    let textures: Vec<TextureConfig> =
+        MakeExtractIf::extract_if(&mut values, |f| matches!(*f, Value::Texture { .. }))
+            .map(|value| {
+                if let Value::Texture {
                     name,
-                    path,
-                    wrap_mode,
                     filter_mode,
+                    wrap_mode,
                     mipmap,
+                    path,
+                } = value
+                {
+                    TextureConfig {
+                        name,
+                        path,
+                        wrap_mode,
+                        filter_mode,
+                        mipmap,
+                    }
+                } else {
+                    unreachable!("values should all be of type Texture")
                 }
-            } else {
-                unreachable!("values should all be of type Texture")
-            }
-        })
-        .collect();
-    let parameters: Vec<ParameterConfig> = values
-        .extract_if(|f| matches!(*f, Value::Parameter { .. }))
-        .map(|value| {
-            if let Value::Parameter(name, value) = value {
-                ParameterConfig { name, value }
-            } else {
-                unreachable!("values should be all of type parameters")
-            }
-        })
-        .collect();
+            })
+            .collect();
+    let parameters: Vec<ParameterConfig> =
+        MakeExtractIf::extract_if(&mut values, |f| matches!(*f, Value::Parameter { .. }))
+            .map(|value| {
+                if let Value::Parameter(name, value) = value {
+                    ParameterConfig { name, value }
+                } else {
+                    unreachable!("values should be all of type parameters")
+                }
+            })
+            .collect();
 
     let mut shaders = Vec::new();
     let shader_count =
@@ -64,9 +64,9 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
             &mut values,
             |v| matches!(*v, Value::Shader(shader_index, _) if shader_index == shader),
         ) {
-            let shader_values: Vec<Value> = values
-                .extract_if(|v| v.shader_index() == Some(shader))
-                .collect();
+            let shader_values: Vec<Value> =
+                MakeExtractIf::extract_if(&mut values, |v| v.shader_index() == Some(shader))
+                    .collect();
             let scale_type = shader_values.iter().find_map(|f| match f {
                 Value::ScaleType(_, value) => Some(*value),
                 _ => None,
