@@ -92,6 +92,8 @@ impl<P: PixelFormat> Image<P> {
     }
 }
 
+// load-bearing #[inline(always)], without it llvm will not vectorize.
+#[inline(always)]
 fn swizzle_pixels(pixels: &mut Vec<u8>, swizzle: &'static [usize; 32]) {
     assert!(pixels.len() % 4 == 0);
     let mut chunks = pixels.chunks_exact_mut(32);
@@ -104,7 +106,12 @@ fn swizzle_pixels(pixels: &mut Vec<u8>, swizzle: &'static [usize; 32]) {
 
     let remainder = chunks.into_remainder();
     for chunk in remainder.chunks_exact_mut(4) {
-        let argb = [chunk[3], chunk[0], chunk[1], chunk[2]];
+        let argb = [
+            chunk[swizzle[0]],
+            chunk[swizzle[1]],
+            chunk[swizzle[2]],
+            chunk[swizzle[3]],
+        ];
         chunk.copy_from_slice(&argb[..])
     }
 }
