@@ -506,11 +506,10 @@ impl FilterChainMetal {
                 )?;
             }
 
-            let output_image = viewport.output;
-            let out = RenderTarget::viewport_with_output(output_image, viewport);
+            let out = RenderTarget::viewport(viewport);
             pass.draw(
                 &cmd,
-                passes_len - 1,
+                index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
                 options,
