@@ -240,15 +240,8 @@ impl FilterPass {
         }
 
         unsafe {
-            // SAFETY: Niche optimization for Option<NonNull<T>>
-            // Assumes that IUnknown is defined as IUnknown(std::ptr::NonNull<std::ffi::c_void>)
-            const _: () = assert!(
-                std::mem::size_of::<Option<windows::core::IUnknown>>()
-                    == std::mem::size_of::<windows::core::IUnknown>()
-            );
-
-            ctx.PSSetShaderResources(0, Some(std::mem::transmute(textures.as_ref())));
-            ctx.PSSetSamplers(0, Some(std::mem::transmute(samplers.as_ref())));
+            ctx.PSSetShaderResources(0, Some(&textures));
+            ctx.PSSetSamplers(0, Some(&samplers));
 
             ctx.OMSetRenderTargets(Some(&[Some(output.output.clone())]), None);
             ctx.RSSetViewports(Some(&[D3D11_VIEWPORT {
