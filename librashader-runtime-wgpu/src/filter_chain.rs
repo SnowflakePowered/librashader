@@ -513,8 +513,7 @@ impl FilterChainWgpu {
                 )?;
             }
 
-            let output_image = &viewport.output;
-            let out = RenderTarget::viewport_with_output(output_image, viewport);
+            let out = RenderTarget::viewport(viewport);
             pass.draw(
                 cmd,
                 index,
