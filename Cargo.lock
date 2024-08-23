@@ -1472,6 +1472,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "image-compare"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96cd73af13ae2e7220a1c02fe7d6bb53be50612ba7fabbb5c88e7753645f1f3c"
+dependencies = [
+ "image",
+ "itertools",
+ "rayon",
+ "thiserror",
+]
+
+[[package]]
 name = "image-webp"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1952,10 +1964,13 @@ dependencies = [
  "ash",
  "gfx-maths",
  "image",
+ "image-compare",
  "librashader",
  "librashader-runtime",
  "objc2 0.5.2",
  "objc2-metal",
+ "parking_lot",
+ "pollster",
  "wgpu",
  "wgpu-types",
  "windows 0.58.0",
