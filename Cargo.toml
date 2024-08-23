@@ -14,7 +14,7 @@ members = [
     "librashader-runtime-wgpu",
     "librashader-cache",
     "librashader-capi",
-    "librashader-build-script", "librashader-runtime-d3d9"]
+    "librashader-build-script", "librashader-runtime-d3d9", "librashader-test"]
 resolver = "2"
 
 [workspace.dependencies]
