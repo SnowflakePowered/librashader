@@ -15,9 +15,9 @@ use std::slice;
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 
-use ash::vk;
-
 use crate::LIBRASHADER_API_VERSION;
+use ash::vk;
+use ash::vk::Handle;
 pub use ash::vk::PFN_vkGetInstanceProcAddr;
 
 /// A Vulkan instance function loader that the Vulkan filter chain needs to be initialized with.
@@ -49,8 +49,11 @@ pub struct libra_device_vk_t {
     /// A raw `VkDevice` handle
     /// for the device attached to the instance that will perform rendering.
     pub device: vk::Device,
+    /// The queue to use, if this is `NULL`, then
+    /// a suitable queue will be chosen. This must be a graphics queue.
+    pub queue: vk::Queue,
     /// The entry loader for the Vulkan library.
-    pub entry: vk::PFN_vkGetInstanceProcAddr,
+    pub entry: Option<vk::PFN_vkGetInstanceProcAddr>,
 }
 
 impl From<libra_image_vk_t> for VulkanImage {
@@ -65,11 +68,18 @@ impl From<libra_image_vk_t> for VulkanImage {
 
 impl From<libra_device_vk_t> for VulkanInstance {
     fn from(value: libra_device_vk_t) -> Self {
+        let queue = if value.queue.is_null() {
+            None
+        } else {
+            Some(value.queue)
+        };
+
         VulkanInstance {
             device: value.device,
             instance: value.instance,
             physical_device: value.physical_device,
             get_instance_proc_addr: value.entry,
+            queue,
         }
     }
 }

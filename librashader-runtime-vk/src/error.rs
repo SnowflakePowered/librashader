@@ -10,6 +10,8 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum FilterChainError {
+    #[error("a vulkan handle that is required to be not null is null")]
+    HandleIsNull,
     #[error("shader preset parse error")]
     ShaderPresetError(#[from] ParsePresetError),
     #[error("shader preprocess error")]

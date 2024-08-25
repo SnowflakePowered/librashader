@@ -268,6 +268,9 @@ typedef struct libra_device_vk_t {
   /// A raw `VkDevice` handle
   /// for the device attached to the instance that will perform rendering.
   VkDevice device;
+  /// The queue to use, if this is `NULL`, then
+  /// a suitable queue will be chosen.
+  VkQueue queue;
   /// The entry loader for the Vulkan library.
   PFN_vkGetInstanceProcAddr entry;
 } libra_device_vk_t;
