@@ -13,39 +13,38 @@ use crate::{error, memory, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
 
+use ash::vk::Handle;
 use gpu_allocator::vulkan::Allocator;
+use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
+use librashader_presets::context::VideoDriver;
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
+use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
+use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
+use librashader_runtime::render_target::RenderTarget;
+use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
 use parking_lot::Mutex;
+use rayon::prelude::*;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
-
-use librashader_cache::CachedCompilation;
-use librashader_presets::context::VideoDriver;
-use librashader_reflect::reflect::cross::SpirvCross;
-use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::render_target::RenderTarget;
-use librashader_runtime::scaling::ScaleFramebuffer;
-use rayon::prelude::*;
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
     pub(crate) device: Arc<ash::Device>,
     pub(crate) alloc: Arc<Mutex<Allocator>>,
     queue: vk::Queue,
-    // pub(crate) memory_properties: vk::PhysicalDeviceMemoryProperties,
 }
 
 /// A collection of handles needed to access the Vulkan instance.
@@ -58,27 +57,43 @@ pub struct VulkanInstance {
     /// A `VkPhysicalDevice` handle.
     pub physical_device: vk::PhysicalDevice,
     /// A function pointer to the Vulkan library entry point.
-    pub get_instance_proc_addr: vk::PFN_vkGetInstanceProcAddr,
+    /// If this is `None`, [`FilterChainError::HandleIsNull`] will be returned.
+    pub get_instance_proc_addr: Option<vk::PFN_vkGetInstanceProcAddr>,
+    /// The graphics queue to use to submit commands. If this is `None`,
+    /// a queue will be chosen.
+    pub queue: Option<vk::Queue>,
 }
 
 impl TryFrom<VulkanInstance> for VulkanObjects {
     type Error = FilterChainError;
 
     fn try_from(vulkan: VulkanInstance) -> Result<Self, FilterChainError> {
+        if vulkan.queue.is_some_and(|q| q.is_null())
+            || vulkan.device.is_null()
+            || vulkan.instance.is_null()
+        {
+            return Err(FilterChainError::HandleIsNull);
+        };
+
+        let Some(get_instance_proc_addr) = vulkan.get_instance_proc_addr else {
+            return Err(FilterChainError::HandleIsNull);
+        };
+
         unsafe {
             let instance = ash::Instance::load(
                 &ash::StaticFn {
-                    get_instance_proc_addr: vulkan.get_instance_proc_addr,
+                    get_instance_proc_addr,
                 },
                 vulkan.instance,
             );
 
             let device = ash::Device::load(instance.fp_v1_0(), vulkan.device);
 
-            let queue = get_graphics_queue(&instance, &device, vulkan.physical_device);
-
-            // let memory_properties =
-            //     instance.get_physical_device_memory_properties(vulkan.physical_device);
+            let queue = vulkan.queue.unwrap_or(get_graphics_queue(
+                &instance,
+                &device,
+                vulkan.physical_device,
+            ));
 
             let alloc = memory::create_allocator(device.clone(), instance, vulkan.physical_device)?;
 
@@ -86,8 +101,6 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
                 device: Arc::new(device),
                 alloc,
                 queue,
-                // memory_properties,
-                // debug,
             })
         }
     }
@@ -97,11 +110,13 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects
     type Error = FilterChainError;
 
     fn try_from(value: (vk::PhysicalDevice, ash::Instance, ash::Device)) -> error::Result<Self> {
+        if value.0.is_null() {
+            return Err(FilterChainError::HandleIsNull);
+        }
+
         let device = value.2;
 
         let queue = get_graphics_queue(&value.1, &device, value.0);
-
-        // let memory_properties = value.1.get_physical_device_memory_properties(value.0);
 
         let alloc = memory::create_allocator(device.clone(), value.1, value.0)?;
 
@@ -109,8 +124,33 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects
             alloc,
             device: Arc::new(device),
             queue,
-            // memory_properties,
-            // debug: value.3,
+        })
+    }
+}
+
+impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device, vk::Queue)> for VulkanObjects {
+    type Error = FilterChainError;
+
+    fn try_from(
+        value: (vk::PhysicalDevice, ash::Instance, ash::Device, vk::Queue),
+    ) -> error::Result<Self> {
+        if value.0.is_null() {
+            return Err(FilterChainError::HandleIsNull);
+        }
+
+        let device = value.2;
+        let queue = if value.3.is_null() {
+            get_graphics_queue(&value.1, &device, value.0)
+        } else {
+            value.3
+        };
+
+        let alloc = memory::create_allocator(device.clone(), value.1, value.0)?;
+
+        Ok(VulkanObjects {
+            alloc,
+            device: Arc::new(device),
+            queue,
         })
     }
 }
