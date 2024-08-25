@@ -1265,6 +1265,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror",
+ "windows 0.58.0",
 ]
 
 [[package]]
@@ -1774,6 +1775,7 @@ dependencies = [
  "bitvec",
  "bytemuck",
  "gfx-maths",
+ "gpu-allocator 0.27.0",
  "librashader-cache",
  "librashader-common",
  "librashader-preprocess",
@@ -1781,6 +1783,7 @@ dependencies = [
  "librashader-reflect",
  "librashader-runtime",
  "mach-siegbert-vogt-dxcsa",
+ "parking_lot",
  "rayon",
  "thiserror",
  "widestring",
