@@ -42,9 +42,12 @@ use std::sync::Arc;
 
 /// A Vulkan device and metadata that is required by the shader runtime.
 pub struct VulkanObjects {
-    pub(crate) device: Arc<ash::Device>,
-    pub(crate) alloc: Arc<Mutex<Allocator>>,
-    queue: vk::Queue,
+    /// The handle to the initialized `ash::Device`
+    pub device: Arc<ash::Device>,
+    /// The instance of the `gpu-allocator` to use.
+    pub alloc: Arc<Mutex<Allocator>>,
+    /// The graphics queue to do work on.
+    pub queue: vk::Queue,
 }
 
 /// A collection of handles needed to access the Vulkan instance.

@@ -1,4 +1,5 @@
 pub mod d3d11;
+pub mod vk;
 pub mod wgpu;
 
 use std::path::Path;
@@ -27,7 +28,10 @@ mod test {
     use std::fs::File;
 
     const IMAGE_PATH: &str = "../triangle.png";
-    const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+    // const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+
+    const FILTER_PATH: &str =
+        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
 
     #[test]
     pub fn test_d3d11() -> anyhow::Result<()> {
@@ -44,6 +48,16 @@ mod test {
         let wgpu = super::wgpu::Wgpu::new(IMAGE_PATH)?;
         let image = wgpu.render(FILTER_PATH, 100)?;
 
+        let out = File::create("out.png")?;
+        image.write_with_encoder(PngEncoder::new(out))?;
+        Ok(())
+    }
+
+    #[test]
+    pub fn test_vk() -> anyhow::Result<()> {
+        let vulkan = super::vk::Vulkan::new(IMAGE_PATH)?;
+        let image = vulkan.render(FILTER_PATH, 100)?;
+        //
         let out = File::create("out.png")?;
         image.write_with_encoder(PngEncoder::new(out))?;
         Ok(())
