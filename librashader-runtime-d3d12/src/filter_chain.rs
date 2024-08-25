@@ -14,6 +14,7 @@ use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
+use gpu_allocator::d3d12::{Allocator, AllocatorCreateDesc, ID3D12DeviceVersion};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
@@ -27,9 +28,11 @@ use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::image::{Image, ImageError, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
+use parking_lot::Mutex;
 use std::collections::VecDeque;
 use std::mem::ManuallyDrop;
 use std::path::Path;
+use std::sync::Arc;
 use windows::core::Interface;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::Dxc::{
@@ -93,6 +96,7 @@ pub(crate) struct FilterCommon {
     pub mipmap_gen: D3D12MipmapGen,
     pub root_signature: D3D12RootSignature,
     pub draw_quad: DrawQuad,
+    allocator: Arc<Mutex<Allocator>>,
 }
 
 pub(crate) struct FrameResiduals {
@@ -275,7 +279,13 @@ impl FilterChainD3D12 {
         let samplers = SamplerSet::new(device)?;
         let mipmap_gen = D3D12MipmapGen::new(device, false)?;
 
-        let draw_quad = DrawQuad::new(device)?;
+        let allocator = Arc::new(Mutex::new(Allocator::new(&AllocatorCreateDesc {
+            device: ID3D12DeviceVersion::Device(device.clone()),
+            debug_settings: Default::default(),
+            allocation_sizes: Default::default(),
+        })?));
+
+        let draw_quad = DrawQuad::new(&allocator)?;
         let mut staging_heap = D3D12DescriptorHeap::new(
             device,
             (MAX_BINDINGS_COUNT as usize) * shader_count
@@ -294,6 +304,7 @@ impl FilterChainD3D12 {
         let (texture_heap, sampler_heap, filters, mut mipmap_heap) = FilterChainD3D12::init_passes(
             device,
             &root_signature,
+            &allocator,
             passes,
             hlsl_passes,
             &semantics,
@@ -306,6 +317,7 @@ impl FilterChainD3D12 {
         let luts = FilterChainD3D12::load_luts(
             device,
             cmd,
+            &allocator,
             &mut staging_heap,
             &mut mipmap_heap,
             &mut residuals,
@@ -315,6 +327,7 @@ impl FilterChainD3D12 {
         let framebuffer_gen = || {
             OwnedImage::new(
                 device,
+                &allocator,
                 Size::new(1, 1),
                 ImageFormat::R8G8B8A8Unorm.into(),
                 false,
@@ -341,6 +354,7 @@ impl FilterChainD3D12 {
             common: FilterCommon {
                 d3d12: device.clone(),
                 samplers,
+                allocator: allocator,
                 output_textures,
                 feedback_textures,
                 luts,
@@ -375,6 +389,7 @@ impl FilterChainD3D12 {
     fn load_luts(
         device: &ID3D12Device,
         cmd: &ID3D12GraphicsCommandList,
+        allocator: &Arc<Mutex<Allocator>>,
         staging_heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         mipmap_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
         gc: &mut FrameResiduals,
@@ -392,6 +407,7 @@ impl FilterChainD3D12 {
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
             let texture = LutTexture::new(
                 device,
+                allocator,
                 staging_heap,
                 cmd,
                 &image,
@@ -425,6 +441,7 @@ impl FilterChainD3D12 {
     fn init_passes(
         device: &ID3D12Device,
         root_signature: &D3D12RootSignature,
+        allocator: &Arc<Mutex<Allocator>>,
         passes: Vec<DxilShaderPassMeta>,
         hlsl_passes: Vec<HlslShaderPassMeta>,
         semantics: &ShaderSemantics,
@@ -535,8 +552,8 @@ impl FilterChainD3D12 {
                         .map_or(1, |push| push.size as usize);
 
                     let uniform_storage = UniformStorage::new_with_storage(
-                        RawD3D12Buffer::new(D3D12Buffer::new(device, ubo_size)?)?,
-                        RawD3D12Buffer::new(D3D12Buffer::new(device, push_size)?)?,
+                        RawD3D12Buffer::new(D3D12Buffer::new(allocator, ubo_size)?)?,
+                        RawD3D12Buffer::new(D3D12Buffer::new(allocator, push_size)?)?,
                     );
 
                     let uniform_bindings =
@@ -584,7 +601,13 @@ impl FilterChainD3D12 {
                 // old back will get dropped.. do we need to defer?
                 let _old_back = std::mem::replace(
                     &mut back,
-                    OwnedImage::new(&self.common.d3d12, input.size, input.format, false)?,
+                    OwnedImage::new(
+                        &self.common.d3d12,
+                        &self.common.allocator,
+                        input.size,
+                        input.format,
+                        false,
+                    )?,
                 );
             }
             unsafe {
@@ -731,7 +754,7 @@ impl FilterChainD3D12 {
 
             util::d3d12_resource_transition(
                 cmd,
-                &target.handle,
+                &target.handle.resource(),
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
             );
@@ -754,7 +777,7 @@ impl FilterChainD3D12 {
 
             util::d3d12_resource_transition(
                 cmd,
-                &target.handle,
+                &target.handle.resource(),
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             );
@@ -765,7 +788,7 @@ impl FilterChainD3D12 {
                     &mut self.mipmap_heap,
                     |ctx| {
                         ctx.generate_mipmaps(
-                            &target.handle,
+                            &target.handle.resource(),
                             target.max_mipmap,
                             target.size,
                             target.format.into(),

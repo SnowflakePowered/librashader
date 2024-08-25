@@ -1,20 +1,25 @@
 use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
 use crate::error;
-use crate::error::assume_d3d12_init;
 use crate::filter_chain::FrameResiduals;
 use crate::mipmap::MipmapGenContext;
 use crate::texture::InputTexture;
 use crate::util::{d3d12_get_closest_format, d3d12_resource_transition, d3d12_update_subresources};
+use gpu_allocator::d3d12::{
+    Allocator, Resource, ResourceCategory, ResourceCreateDesc, ResourceStateOrBarrierLayout,
+    ResourceType,
+};
+use gpu_allocator::MemoryLocation;
 use librashader_common::{FilterMode, ImageFormat, WrapMode};
 use librashader_runtime::image::Image;
 use librashader_runtime::scaling::MipmapSize;
+use parking_lot::Mutex;
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
+use std::sync::Arc;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-    D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
-    D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE,
-    D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES,
-    D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_UNKNOWN,
+    ID3D12Device, ID3D12GraphicsCommandList, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP,
+    D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D,
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER,
     D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
     D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -25,15 +30,19 @@ use windows::Win32::Graphics::Direct3D12::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
 pub struct LutTexture {
-    resource: ID3D12Resource,
+    resource: ManuallyDrop<Resource>,
     view: InputTexture,
     miplevels: Option<u16>,
-    _staging: ID3D12Resource,
+    // Staging heap needs to be kept alive until the command list is submitted, which is
+    // really annoying. We could probably do better but it's safer to keep it around.
+    staging: ManuallyDrop<Resource>,
+    allocator: Arc<Mutex<Allocator>>,
 }
 
 impl LutTexture {
     pub(crate) fn new(
         device: &ID3D12Device,
+        allocator: &Arc<Mutex<Allocator>>,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         cmd: &ID3D12GraphicsCommandList,
         source: &Image,
@@ -74,24 +83,19 @@ impl LutTexture {
         let descriptor = heap.alloc_slot()?;
 
         // create handles on GPU
-        let mut resource: Option<ID3D12Resource> = None;
-        unsafe {
-            device.CreateCommittedResource(
-                &D3D12_HEAP_PROPERTIES {
-                    Type: D3D12_HEAP_TYPE_DEFAULT,
-                    CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                    MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
-                    CreationNodeMask: 1,
-                    VisibleNodeMask: 1,
-                },
-                D3D12_HEAP_FLAG_NONE,
-                &desc,
+        let resource = allocator.lock().create_resource(&ResourceCreateDesc {
+            name: "lut alloc",
+            memory_location: MemoryLocation::GpuOnly,
+            resource_category: ResourceCategory::OtherTexture,
+            resource_desc: &desc,
+            castable_formats: &[],
+            clear_value: None,
+            initial_state_or_layout: ResourceStateOrBarrierLayout::ResourceState(
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                None,
-                &mut resource,
-            )?;
-        }
-        assume_d3d12_init!(resource, "CreateCommittedResource");
+            ),
+            resource_type: &ResourceType::Placed,
+        })?;
+
         unsafe {
             let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: desc.Format,
@@ -106,7 +110,7 @@ impl LutTexture {
             };
 
             device.CreateShaderResourceView(
-                &resource,
+                resource.resource(),
                 Some(&srv_desc),
                 *descriptor.deref().as_ref(),
             );
@@ -139,25 +143,40 @@ impl LutTexture {
             buffer_desc.SampleDesc.Count = 1;
             buffer_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         }
-        let mut upload: Option<ID3D12Resource> = None;
 
-        unsafe {
-            device.CreateCommittedResource(
-                &D3D12_HEAP_PROPERTIES {
-                    Type: D3D12_HEAP_TYPE_UPLOAD,
-                    CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                    MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
-                    CreationNodeMask: 1,
-                    VisibleNodeMask: 1,
-                },
-                D3D12_HEAP_FLAG_NONE,
-                &buffer_desc,
+        let upload = allocator.lock().create_resource(&ResourceCreateDesc {
+            name: "lut staging",
+            memory_location: MemoryLocation::CpuToGpu,
+            resource_category: ResourceCategory::Buffer,
+            resource_desc: &buffer_desc,
+            castable_formats: &[],
+            clear_value: None,
+            initial_state_or_layout: ResourceStateOrBarrierLayout::ResourceState(
                 D3D12_RESOURCE_STATE_GENERIC_READ,
-                None,
-                &mut upload,
-            )?;
-        }
-        assume_d3d12_init!(upload, "CreateCommittedResource");
+            ),
+            resource_type: &ResourceType::Placed,
+        })?;
+
+        //
+        // let mut upload: Option<ID3D12Resource> = None;
+        //
+        // unsafe {
+        //     device.CreateCommittedResource(
+        //         &D3D12_HEAP_PROPERTIES {
+        //             Type: D3D12_HEAP_TYPE_UPLOAD,
+        //             CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        //             MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
+        //             CreationNodeMask: 1,
+        //             VisibleNodeMask: 1,
+        //         },
+        //         D3D12_HEAP_FLAG_NONE,
+        //         &buffer_desc,
+        //         D3D12_RESOURCE_STATE_GENERIC_READ,
+        //         None,
+        //         &mut upload,
+        //     )?;
+        // }
+        // assume_d3d12_init!(upload, "CreateCommittedResource");
 
         let subresource = [D3D12_SUBRESOURCE_DATA {
             pData: source.bytes.as_ptr().cast(),
@@ -167,22 +186,31 @@ impl LutTexture {
 
         d3d12_resource_transition(
             cmd,
-            &resource,
+            &resource.resource(),
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_COPY_DEST,
         );
 
-        d3d12_update_subresources(cmd, &resource, &upload, 0, 0, 1, &subresource, gc)?;
+        d3d12_update_subresources(
+            cmd,
+            &resource.resource(),
+            &upload.resource(),
+            0,
+            0,
+            1,
+            &subresource,
+            gc,
+        )?;
 
         d3d12_resource_transition(
             cmd,
-            &resource,
+            &resource.resource(),
             D3D12_RESOURCE_STATE_COPY_DEST,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
         );
 
         let view = InputTexture::new(
-            resource.clone(),
+            resource.resource().clone(),
             descriptor,
             source.size,
             ImageFormat::R8G8B8A8Unorm.into(),
@@ -190,17 +218,18 @@ impl LutTexture {
             wrap_mode,
         );
         Ok(LutTexture {
-            resource,
-            _staging: upload,
+            resource: ManuallyDrop::new(resource),
+            staging: ManuallyDrop::new(upload),
             view,
             miplevels: if mipmap { Some(miplevels) } else { None },
+            allocator: Arc::clone(&allocator),
         })
     }
 
     pub fn generate_mipmaps(&self, gen_mips: &mut MipmapGenContext) -> error::Result<()> {
         if let Some(miplevels) = self.miplevels {
             gen_mips.generate_mipmaps(
-                &self.resource,
+                &self.resource.resource(),
                 miplevels,
                 self.view.size,
                 ImageFormat::R8G8B8A8Unorm.into(),
@@ -214,5 +243,19 @@ impl LutTexture {
 impl AsRef<InputTexture> for LutTexture {
     fn as_ref(&self) -> &InputTexture {
         &self.view
+    }
+}
+
+impl Drop for LutTexture {
+    fn drop(&mut self) {
+        let resource = unsafe { ManuallyDrop::take(&mut self.resource) };
+        if let Err(e) = self.allocator.lock().free_resource(resource) {
+            println!("librashader-runtime-d3d12: [warn] failed to deallocate lut buffer memory {e}")
+        }
+
+        let staging = unsafe { ManuallyDrop::take(&mut self.staging) };
+        if let Err(e) = self.allocator.lock().free_resource(staging) {
+            println!("librashader-runtime-d3d12: [warn] failed to deallocate lut staging buffer memory {e}")
+        }
     }
 }

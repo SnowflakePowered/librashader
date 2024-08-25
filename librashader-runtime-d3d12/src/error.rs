@@ -5,7 +5,7 @@ use thiserror::Error;
 /// Cumulative error type for Direct3D12 filter chains.
 #[derive(Error, Debug)]
 pub enum FilterChainError {
-    #[error("invariant assumption about d3d11 did not hold. report this as an issue.")]
+    #[error("invariant assumption about d3d12 did not hold. report this as an issue.")]
     Direct3DOperationError(&'static str),
     #[error("direct3d driver error")]
     Direct3DError(#[from] windows::core::Error),
@@ -21,6 +21,8 @@ pub enum FilterChainError {
     LutLoadError(#[from] ImageError),
     #[error("heap overflow")]
     DescriptorHeapOverflow(usize),
+    #[error("allocation error")]
+    AllocationError(#[from] gpu_allocator::AllocationError),
 }
 
 /// Result type for Direct3D 12 filter chains.
