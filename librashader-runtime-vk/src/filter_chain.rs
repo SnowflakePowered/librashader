@@ -9,7 +9,7 @@ use crate::options::{FilterChainOptionsVulkan, FrameOptionsVulkan};
 use crate::queue_selection::get_graphics_queue;
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
-use crate::{error, util};
+use crate::{error, memory, util};
 use ash::vk;
 use librashader_common::{ImageFormat, Size, Viewport};
 
@@ -80,7 +80,7 @@ impl TryFrom<VulkanInstance> for VulkanObjects {
             // let memory_properties =
             //     instance.get_physical_device_memory_properties(vulkan.physical_device);
 
-            let alloc = util::create_allocator(device.clone(), instance, vulkan.physical_device)?;
+            let alloc = memory::create_allocator(device.clone(), instance, vulkan.physical_device)?;
 
             Ok(VulkanObjects {
                 device: Arc::new(device),
@@ -103,7 +103,7 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device)> for VulkanObjects
 
         // let memory_properties = value.1.get_physical_device_memory_properties(value.0);
 
-        let alloc = util::create_allocator(device.clone(), value.1, value.0)?;
+        let alloc = memory::create_allocator(device.clone(), value.1, value.0)?;
 
         Ok(VulkanObjects {
             alloc,
