@@ -237,6 +237,16 @@ impl VulkanWindow {
             //     vk::QUEUE_FAMILY_IGNORED
             // );
 
+            let viewport = Viewport::new_render_target_sized_origin(
+                VulkanImage {
+                    size: vulkan.swapchain.extent.into(),
+                    image: swapchain_image,
+                    format: vulkan.swapchain.format.format,
+                },
+                None,
+            )
+            .unwrap();
+
             filter
                 .frame(
                     &VulkanImage {
@@ -244,17 +254,7 @@ impl VulkanWindow {
                         image: framebuffer_image,
                         format: vulkan.swapchain.format.format,
                     },
-                    &Viewport {
-                        x: 0.0,
-                        y: 0.0,
-                        output: VulkanImage {
-                            size: vulkan.swapchain.extent.into(),
-                            image: swapchain_image,
-                            format: vulkan.swapchain.format.format,
-                        },
-                        mvp: None,
-                        size: vulkan.swapchain.extent.into(),
-                    },
+                    &viewport,
                     cmd,
                     frame,
                     Some(&FrameOptionsVulkan {
