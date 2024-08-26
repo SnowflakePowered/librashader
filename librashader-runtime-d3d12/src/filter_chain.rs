@@ -43,7 +43,9 @@ use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12Resource, D3D12_COMMAND_LIST_TYPE_DIRECT,
     D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_FENCE_FLAG_NONE,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+    D3D12_RESOURCE_BARRIER_TYPE_UAV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_UNKNOWN;
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFINITE};
@@ -104,6 +106,7 @@ pub(crate) struct FrameResiduals {
     mipmaps: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
     mipmap_luts: Vec<D3D12MipmapGen>,
     resources: Vec<ManuallyDrop<Option<ID3D12Resource>>>,
+    resource_barriers: Vec<D3D12_RESOURCE_BARRIER>,
 }
 
 impl FrameResiduals {
@@ -113,6 +116,7 @@ impl FrameResiduals {
             mipmaps: Vec::new(),
             mipmap_luts: Vec::new(),
             resources: Vec::new(),
+            resource_barriers: Vec::new(),
         }
     }
 
@@ -135,11 +139,29 @@ impl FrameResiduals {
         self.resources.push(resource)
     }
 
+    /// Disposition only handles transition barriers, but it is not unsafe because
+    /// other things just leak and leakign is not unsafe,
+    pub fn dispose_barriers(&mut self, barrier: impl IntoIterator<Item = D3D12_RESOURCE_BARRIER>) {
+        self.resource_barriers.extend(barrier);
+    }
+
     pub fn dispose(&mut self) {
         self.outputs.clear();
         self.mipmaps.clear();
         for resource in self.resources.drain(..) {
             drop(ManuallyDrop::into_inner(resource))
+        }
+        for barrier in self.resource_barriers.drain(..) {
+            if barrier.Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION {
+                if let Some(resource) = unsafe { barrier.Anonymous.Transition }.pResource.take() {
+                    drop(resource)
+                }
+            } else if barrier.Type == D3D12_RESOURCE_BARRIER_TYPE_UAV {
+                if let Some(resource) = unsafe { barrier.Anonymous.UAV }.pResource.take() {
+                    drop(resource)
+                }
+            }
+            // other barrier types should be handled manually
         }
     }
 }
@@ -430,10 +452,7 @@ impl FilterChainD3D12 {
 
         gc.dispose_mipmap_handles(residual_mipmap);
         gc.dispose_mipmap_gen(mipmap_gen);
-
-        for barrier in residual_barrier {
-            gc.dispose_resource(barrier.pResource)
-        }
+        gc.dispose_barriers(residual_barrier);
 
         Ok(luts)
     }
@@ -640,7 +659,7 @@ impl FilterChainD3D12 {
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &mut self.history_framebuffers {
-                    framebuffer.clear(cmd, &mut self.rtv_heap)?;
+                    framebuffer.clear(cmd, &mut self.rtv_heap, &mut self.residuals)?;
                 }
             }
         }
@@ -752,12 +771,13 @@ impl FilterChainD3D12 {
                 )?;
             }
 
-            util::d3d12_resource_transition(
-                cmd,
-                &target.handle.resource(),
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                D3D12_RESOURCE_STATE_RENDER_TARGET,
-            );
+            self.residuals
+                .dispose_barriers(util::d3d12_resource_transition(
+                    cmd,
+                    &target.handle.resource(),
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    D3D12_RESOURCE_STATE_RENDER_TARGET,
+                ));
 
             let view = target.create_render_target_view(&mut self.rtv_heap)?;
             let out = RenderTarget::identity(&view);
@@ -775,15 +795,16 @@ impl FilterChainD3D12 {
                 QuadType::Offscreen,
             )?;
 
-            util::d3d12_resource_transition(
-                cmd,
-                &target.handle.resource(),
-                D3D12_RESOURCE_STATE_RENDER_TARGET,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            );
+            self.residuals
+                .dispose_barriers(util::d3d12_resource_transition(
+                    cmd,
+                    &target.handle.resource(),
+                    D3D12_RESOURCE_STATE_RENDER_TARGET,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                ));
 
             if target.max_mipmap > 1 && !self.disable_mipmaps {
-                let (residuals, residual_uav) = self.common.mipmap_gen.mipmapping_context(
+                let (residuals, residual_barriers) = self.common.mipmap_gen.mipmapping_context(
                     cmd,
                     &mut self.mipmap_heap,
                     |ctx| {
@@ -798,9 +819,7 @@ impl FilterChainD3D12 {
                 )?;
 
                 self.residuals.dispose_mipmap_handles(residuals);
-                for uav in residual_uav {
-                    self.residuals.dispose_resource(uav.pResource)
-                }
+                self.residuals.dispose_barriers(residual_barriers);
             }
 
             self.residuals.dispose_output(view.descriptor);

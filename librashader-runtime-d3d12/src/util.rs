@@ -180,22 +180,7 @@ pub fn dxc_validate_shader(
     }
 }
 
-#[inline(always)]
-pub fn d3d12_resource_transition(
-    cmd: &ID3D12GraphicsCommandList,
-    resource: &ID3D12Resource,
-    before: D3D12_RESOURCE_STATES,
-    after: D3D12_RESOURCE_STATES,
-) {
-    d3d12_resource_transition_subresource(
-        cmd,
-        resource,
-        before,
-        after,
-        D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-    );
-}
-
+#[must_use = "Resource Barrier must be disposed"]
 pub fn d3d12_get_resource_transition_subresource(
     resource: &ID3D12Resource,
     before: D3D12_RESOURCE_STATES,
@@ -216,6 +201,24 @@ pub fn d3d12_get_resource_transition_subresource(
     }
 }
 
+#[must_use = "Resource Barrier must be disposed"]
+#[inline(always)]
+pub fn d3d12_resource_transition(
+    cmd: &ID3D12GraphicsCommandList,
+    resource: &ID3D12Resource,
+    before: D3D12_RESOURCE_STATES,
+    after: D3D12_RESOURCE_STATES,
+) -> [D3D12_RESOURCE_BARRIER; 1] {
+    d3d12_resource_transition_subresource(
+        cmd,
+        resource,
+        before,
+        after,
+        D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+    )
+}
+
+#[must_use = "Resource Barrier must be disposed"]
 #[inline(always)]
 pub fn d3d12_resource_transition_subresource(
     cmd: &ID3D12GraphicsCommandList,
@@ -223,7 +226,7 @@ pub fn d3d12_resource_transition_subresource(
     before: D3D12_RESOURCE_STATES,
     after: D3D12_RESOURCE_STATES,
     subresource: u32,
-) {
+) -> [D3D12_RESOURCE_BARRIER; 1] {
     let barrier = [d3d12_get_resource_transition_subresource(
         resource,
         before,
@@ -231,6 +234,7 @@ pub fn d3d12_resource_transition_subresource(
         subresource,
     )];
     unsafe { cmd.ResourceBarrier(&barrier) }
+    barrier
 }
 
 pub(crate) fn d3d12_update_subresources(
