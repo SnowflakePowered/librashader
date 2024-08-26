@@ -42,7 +42,7 @@ pub struct MipmapGenContext<'a> {
     cmd: &'a ID3D12GraphicsCommandList,
     heap: &'a mut D3D12DescriptorHeap<ResourceWorkHeap>,
     residuals: Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
-    residual_uav_descs: Vec<D3D12_RESOURCE_UAV_BARRIER>,
+    residual_barriers: Vec<D3D12_RESOURCE_BARRIER>,
 }
 
 impl<'a> MipmapGenContext<'a> {
@@ -56,7 +56,7 @@ impl<'a> MipmapGenContext<'a> {
             cmd,
             heap,
             residuals: Vec::new(),
-            residual_uav_descs: Vec::new(),
+            residual_barriers: Vec::new(),
         }
     }
 
@@ -74,7 +74,7 @@ impl<'a> MipmapGenContext<'a> {
                 .gen
                 .generate_mipmaps(self.cmd, resource, miplevels, size, format, self.heap)?;
             self.residuals.extend(residuals_heap);
-            self.residual_uav_descs.extend(residual_barriers);
+            self.residual_barriers.extend(residual_barriers);
         }
 
         Ok(())
@@ -84,9 +84,9 @@ impl<'a> MipmapGenContext<'a> {
         self,
     ) -> (
         Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
-        Vec<D3D12_RESOURCE_UAV_BARRIER>,
+        Vec<D3D12_RESOURCE_BARRIER>,
     ) {
-        (self.residuals, self.residual_uav_descs)
+        (self.residuals, self.residual_barriers)
     }
 }
 
@@ -153,7 +153,7 @@ impl D3D12MipmapGen {
     ) -> Result<
         (
             Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
-            Vec<D3D12_RESOURCE_UAV_BARRIER>,
+            Vec<D3D12_RESOURCE_BARRIER>,
         ),
         E,
     >
@@ -188,7 +188,7 @@ impl D3D12MipmapGen {
         work_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
     ) -> error::Result<(
         Vec<D3D12DescriptorHeapSlot<ResourceWorkHeap>>,
-        Vec<D3D12_RESOURCE_UAV_BARRIER>,
+        Vec<D3D12_RESOURCE_BARRIER>,
     )> {
         // create views for mipmap generation
         let srv = work_heap.alloc_slot()?;
@@ -240,7 +240,7 @@ impl D3D12MipmapGen {
             cmd.SetComputeRootDescriptorTable(0, *heap_slots[0].deref().as_ref());
         }
 
-        let mut residual_uavs = Vec::new();
+        let mut residual_barriers = Vec::new();
         for i in 1..miplevels as u32 {
             let scaled = size.scale_mipmap(i);
             let mipmap_params = MipConstants {
@@ -267,6 +267,7 @@ impl D3D12MipmapGen {
 
             unsafe {
                 cmd.ResourceBarrier(&barriers);
+                residual_barriers.extend(barriers);
 
                 cmd.SetComputeRootDescriptorTable(1, *heap_slots[i as usize].deref().as_ref());
                 cmd.SetComputeRoot32BitConstants(
@@ -311,14 +312,9 @@ impl D3D12MipmapGen {
                 cmd.ResourceBarrier(&barriers);
             }
 
-            let uav = unsafe {
-                let [barrier, ..] = barriers;
-                barrier.Anonymous.UAV
-            };
-
-            residual_uavs.push(ManuallyDrop::into_inner(uav))
+            residual_barriers.extend(barriers)
         }
 
-        Ok((heap_slots, residual_uavs))
+        Ok((heap_slots, residual_barriers))
     }
 }

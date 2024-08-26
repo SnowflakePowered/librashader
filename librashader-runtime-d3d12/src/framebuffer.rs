@@ -180,6 +180,7 @@ impl OwnedImage {
 
         unsafe {
             cmd.ResourceBarrier(&barriers);
+            gc.dispose_barriers(barriers);
 
             let dst = D3D12_TEXTURE_COPY_LOCATION {
                 pResource: ManuallyDrop::new(Some(self.handle.resource().clone())),
@@ -236,6 +237,8 @@ impl OwnedImage {
             cmd.ResourceBarrier(&barriers);
         }
 
+        gc.dispose_barriers(barriers);
+
         Ok(())
     }
 
@@ -243,24 +246,25 @@ impl OwnedImage {
         &self,
         cmd: &ID3D12GraphicsCommandList,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
+        gc: &mut FrameResiduals,
     ) -> error::Result<()> {
-        util::d3d12_resource_transition(
+        gc.dispose_barriers(util::d3d12_resource_transition(
             cmd,
             &self.handle.resource(),
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_RENDER_TARGET,
-        );
+        ));
 
         let rtv = self.create_render_target_view(heap)?;
 
         unsafe { cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR, None) }
 
-        util::d3d12_resource_transition(
+        gc.dispose_barriers(util::d3d12_resource_transition(
             cmd,
             &self.handle.resource(),
             D3D12_RESOURCE_STATE_RENDER_TARGET,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        );
+        ));
 
         Ok(())
     }

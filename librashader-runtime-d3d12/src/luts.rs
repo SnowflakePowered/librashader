@@ -157,39 +157,18 @@ impl LutTexture {
             resource_type: &ResourceType::Placed,
         })?;
 
-        //
-        // let mut upload: Option<ID3D12Resource> = None;
-        //
-        // unsafe {
-        //     device.CreateCommittedResource(
-        //         &D3D12_HEAP_PROPERTIES {
-        //             Type: D3D12_HEAP_TYPE_UPLOAD,
-        //             CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        //             MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
-        //             CreationNodeMask: 1,
-        //             VisibleNodeMask: 1,
-        //         },
-        //         D3D12_HEAP_FLAG_NONE,
-        //         &buffer_desc,
-        //         D3D12_RESOURCE_STATE_GENERIC_READ,
-        //         None,
-        //         &mut upload,
-        //     )?;
-        // }
-        // assume_d3d12_init!(upload, "CreateCommittedResource");
-
         let subresource = [D3D12_SUBRESOURCE_DATA {
             pData: source.bytes.as_ptr().cast(),
             RowPitch: 4 * source.size.width as isize,
             SlicePitch: (4 * source.size.width * source.size.height) as isize,
         }];
 
-        d3d12_resource_transition(
+        gc.dispose_barriers(d3d12_resource_transition(
             cmd,
             &resource.resource(),
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_COPY_DEST,
-        );
+        ));
 
         d3d12_update_subresources(
             cmd,
@@ -202,12 +181,12 @@ impl LutTexture {
             gc,
         )?;
 
-        d3d12_resource_transition(
+        gc.dispose_barriers(d3d12_resource_transition(
             cmd,
             &resource.resource(),
             D3D12_RESOURCE_STATE_COPY_DEST,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        );
+        ));
 
         let view = InputTexture::new(
             resource.resource().clone(),
