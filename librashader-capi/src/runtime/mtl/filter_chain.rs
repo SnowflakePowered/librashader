@@ -229,13 +229,13 @@ extern_fn! {
         chain: *mut libra_mtl_filter_chain_t,
         param_name: *const c_char,
         value: f32
-    ) mut |chain| {
-        assert_some_ptr!(mut chain);
+    ) |chain| {
+        assert_some_ptr!(chain);
         unsafe {
             let name = CStr::from_ptr(param_name);
             let name = name.to_str()?;
 
-            if chain.set_parameter(name, value).is_none() {
+            if chain.parameters().set_parameter(name, value).is_none() {
                 return LibrashaderError::UnknownShaderParameter(param_name).export()
             }
         }
@@ -250,17 +250,17 @@ extern_fn! {
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_mtl_filter_chain_t`.
     /// - `param_name` must be either null or a null terminated string.
     fn libra_mtl_filter_chain_get_param(
-        chain: *mut libra_mtl_filter_chain_t,
+        chain: *const libra_mtl_filter_chain_t,
         param_name: *const c_char,
         out: *mut MaybeUninit<f32>
-    ) mut |chain| {
-        assert_some_ptr!(mut chain);
+    ) |chain| {
+        assert_some_ptr!(chain);
 
         unsafe {
             let name = CStr::from_ptr(param_name);
             let name = name.to_str()?;
 
-            let Some(value) = chain.get_parameter(name) else {
+            let Some(value) = chain.parameters().get_parameter(name) else {
                 return LibrashaderError::UnknownShaderParameter(param_name).export()
             };
 
@@ -277,9 +277,9 @@ extern_fn! {
     fn libra_mtl_filter_chain_set_active_pass_count(
         chain: *mut libra_mtl_filter_chain_t,
         value: u32
-    ) mut |chain| {
-        assert_some_ptr!(mut chain);
-        chain.set_enabled_pass_count(value as usize);
+    ) |chain| {
+        assert_some_ptr!(chain);
+        chain.parameters().set_passes_enabled(value as usize);
     }
 }
 
@@ -289,11 +289,11 @@ extern_fn! {
     /// ## Safety
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_mtl_filter_chain_t`.
     fn libra_mtl_filter_chain_get_active_pass_count(
-        chain: *mut libra_mtl_filter_chain_t,
+        chain: *const libra_mtl_filter_chain_t,
         out: *mut MaybeUninit<u32>
-    ) mut |chain| {
-        assert_some_ptr!(mut chain);
-        let value = chain.get_enabled_pass_count();
+    ) |chain| {
+        assert_some_ptr!(chain);
+        let value = chain.parameters().passes_enabled();
         unsafe {
             out.write(MaybeUninit::new(value as u32))
         }

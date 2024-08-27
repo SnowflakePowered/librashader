@@ -36,11 +36,6 @@ use crate::util::GetSize;
 
 use windows::Win32::Graphics::Direct3D9::{IDirect3DDevice9, IDirect3DSurface9, IDirect3DTexture9};
 
-pub struct FilterMutable {
-    pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
-}
-
 pub(crate) struct FilterCommon {
     pub(crate) d3d9: IDirect3DDevice9,
     pub(crate) luts: FastHashMap<usize, LutTexture>,
@@ -48,7 +43,7 @@ pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<D3D9InputTexture>]>,
     pub feedback_textures: Box<[Option<D3D9InputTexture>]>,
     pub history_textures: Box<[Option<D3D9InputTexture>]>,
-    pub config: FilterMutable,
+    pub config: RuntimeParameters,
     pub disable_mipmaps: bool,
     pub(crate) draw_quad: DrawQuad,
 }
@@ -90,6 +85,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D9 {
     fn init_passes(
@@ -255,14 +251,7 @@ impl FilterChainD3D9 {
             history_framebuffers,
             common: FilterCommon {
                 d3d9: device.clone(),
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
@@ -295,7 +284,8 @@ impl FilterChainD3D9 {
         frame_count: usize,
         options: Option<&FrameOptionsD3D9>,
     ) -> error::Result<()> {
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
+
         let passes = &mut self.passes[0..max];
         if let Some(options) = options {
             if options.clear_history {

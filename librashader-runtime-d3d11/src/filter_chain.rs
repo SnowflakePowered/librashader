@@ -43,11 +43,6 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
 
-pub struct FilterMutable {
-    pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
-}
-
 /// A Direct3D 11 filter chain.
 pub struct FilterChainD3D11 {
     pub(crate) common: FilterCommon,
@@ -71,7 +66,7 @@ pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputTexture>]>,
     pub feedback_textures: Box<[Option<InputTexture>]>,
     pub history_textures: Box<[Option<InputTexture>]>,
-    pub config: FilterMutable,
+    pub config: RuntimeParameters,
     pub disable_mipmaps: bool,
     pub(crate) draw_quad: DrawQuad,
 }
@@ -103,6 +98,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D11 {
     /// Load the shader preset at the given path into a filter chain.
@@ -193,14 +189,7 @@ impl FilterChainD3D11 {
                     _device: device.clone(),
                     immediate_context,
                 },
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
@@ -405,7 +394,7 @@ impl FilterChainD3D11 {
         frame_count: usize,
         options: Option<&FrameOptionsD3D11>,
     ) -> error::Result<()> {
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
 
         // Need to clone this because pushing history needs a mutable borrow.
         let immediate_context = &self.common.d3d11.immediate_context.clone();

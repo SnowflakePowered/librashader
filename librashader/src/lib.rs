@@ -236,6 +236,7 @@ pub mod reflect {
 pub mod runtime {
     pub use librashader_common::{Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
+    pub use librashader_runtime::parameters::RuntimeParameters;
 
     #[cfg(feature = "runtime-gl")]
     #[doc(cfg(feature = "runtime-gl"))]

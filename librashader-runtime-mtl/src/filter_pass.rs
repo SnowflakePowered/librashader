@@ -163,7 +163,7 @@ impl FilterPass {
             parent.history_textures.iter().map(|o| o.as_ref()),
             parent.luts.iter().map(|(u, i)| (*u, i.as_ref())),
             &self.source.parameters,
-            &parent.config.parameters,
+            &parent.config,
         );
 
         // flush to buffers

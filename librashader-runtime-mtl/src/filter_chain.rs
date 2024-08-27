@@ -57,6 +57,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 /// A Metal filter chain.
 pub struct FilterChainMetal {
@@ -75,18 +76,13 @@ impl Debug for FilterChainMetal {
     }
 }
 
-pub struct FilterMutable {
-    pub passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
-}
-
 pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputTexture>]>,
     pub feedback_textures: Box<[Option<InputTexture>]>,
     pub history_textures: Box<[Option<InputTexture>]>,
     pub luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
-    pub config: FilterMutable,
+    pub config: RuntimeParameters,
     pub internal_frame_count: i32,
     pub(crate) draw_quad: DrawQuad,
     device: Id<ProtocolObject<dyn MTLDevice>>,
@@ -301,14 +297,7 @@ impl FilterChainMetal {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 draw_quad,
                 device,
                 output_textures,
@@ -336,7 +325,7 @@ impl FilterChainMetal {
         frame_count: usize,
         options: Option<&FrameOptionsMetal>,
     ) -> error::Result<()> {
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         let passes = &mut self.passes[0..max];
         if let Some(options) = &options {
             let desc = unsafe {

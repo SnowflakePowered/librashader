@@ -1,3 +1,4 @@
+use crate::parameters::RuntimeParameters;
 use crate::uniforms::{BindUniform, NoUniformBinder, UniformStorage};
 use librashader_common::map::FastHashMap;
 use librashader_common::Size;
@@ -120,8 +121,9 @@ where
         original_history: impl Iterator<Item = Option<impl AsRef<Self::InputTexture>>>,
         lookup_textures: impl Iterator<Item = (usize, impl AsRef<Self::InputTexture>)>,
         parameter_defaults: &FastHashMap<String, ShaderParameter>,
-        runtime_parameters: &FastHashMap<String, f32>,
+        runtime_parameters: &RuntimeParameters,
     ) {
+        let runtime_parameters = runtime_parameters.parameters.load();
         // Bind MVP
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::MVP.into()) {
             uniform_storage.bind_mat4(
