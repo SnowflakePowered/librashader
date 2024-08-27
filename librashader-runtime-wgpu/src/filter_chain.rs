@@ -56,6 +56,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 /// A wgpu filter chain.
 pub struct FilterChainWgpu {
@@ -69,19 +70,13 @@ pub struct FilterChainWgpu {
     default_frame_options: FrameOptionsWgpu,
 }
 
-pub struct FilterMutable {
-    pub passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
-}
-
 pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputImage>]>,
     pub feedback_textures: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
     pub luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
-    pub config: FilterMutable,
-    pub internal_frame_count: i32,
+    pub config: RuntimeParameters,
     pub(crate) draw_quad: DrawQuad,
     device: Arc<Device>,
     pub(crate) queue: Arc<wgpu::Queue>,
@@ -199,21 +194,13 @@ impl FilterChainWgpu {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 draw_quad,
                 device,
                 queue,
                 output_textures,
                 feedback_textures,
                 history_textures,
-                internal_frame_count: 0,
             },
             passes: filters,
             output_framebuffers,
@@ -377,7 +364,7 @@ impl FilterChainWgpu {
         frame_count: usize,
         options: Option<&FrameOptionsWgpu>,
     ) -> error::Result<()> {
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         let passes = &mut self.passes[0..max];
 
         if let Some(options) = &options {
@@ -513,7 +500,6 @@ impl FilterChainWgpu {
         }
 
         self.push_history(&input, cmd);
-        self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
 }

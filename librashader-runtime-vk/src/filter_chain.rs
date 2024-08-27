@@ -128,11 +128,6 @@ pub struct FilterChainVulkan {
     default_options: FrameOptionsVulkan,
 }
 
-pub struct FilterMutable {
-    pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
-}
-
 pub(crate) struct FilterCommon {
     pub(crate) luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
@@ -140,7 +135,7 @@ pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputImage>]>,
     pub feedback_textures: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
-    pub config: FilterMutable,
+    pub config: RuntimeParameters,
     pub device: Arc<ash::Device>,
     pub(crate) internal_frame_count: usize,
 }
@@ -236,6 +231,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
@@ -386,14 +382,7 @@ impl FilterChainVulkan {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 draw_quad: DrawQuad::new(&device.device, &device.alloc)?,
                 device: device.device.clone(),
                 output_textures,
@@ -576,7 +565,7 @@ impl FilterChainVulkan {
         intermediates.dispose();
 
         // limit number of passes to those enabled.
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         let passes = &mut self.passes[0..max];
 
         if let Some(options) = &options {

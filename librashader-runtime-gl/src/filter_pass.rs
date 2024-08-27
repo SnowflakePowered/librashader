@@ -196,7 +196,7 @@ impl<T: GLInterface> FilterPass<T> {
             parent.history_textures.iter().map(|o| o.bound()),
             parent.luts.iter().map(|(u, i)| (*u, i)),
             &self.source.parameters,
-            &parent.config.parameters,
+            &parent.config,
         );
     }
 }

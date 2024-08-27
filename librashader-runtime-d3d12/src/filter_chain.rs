@@ -60,11 +60,6 @@ use rayon::prelude::*;
 
 const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
 
-pub struct FilterMutable {
-    pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
-}
-
 /// A Direct3D 12 filter chain.
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
@@ -92,7 +87,7 @@ pub(crate) struct FilterCommon {
     pub output_textures: Box<[Option<InputTexture>]>,
     pub feedback_textures: Box<[Option<InputTexture>]>,
     pub history_textures: Box<[Option<InputTexture>]>,
-    pub config: FilterMutable,
+    pub config: RuntimeParameters,
     // pub disable_mipmaps: bool,
     pub luts: FastHashMap<usize, LutTexture>,
     pub mipmap_gen: D3D12MipmapGen,
@@ -222,6 +217,7 @@ mod compile {
 }
 
 use compile::{compile_passes_dxil, compile_passes_hlsl, DxilShaderPassMeta, HlslShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D12 {
     /// Load the shader preset at the given path into a filter chain.
@@ -387,14 +383,7 @@ impl FilterChainD3D12 {
                 mipmap_gen,
                 root_signature,
                 draw_quad,
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 history_textures,
             },
             staging_heap,
@@ -669,6 +658,13 @@ impl FilterChainD3D12 {
     ) -> error::Result<()> {
         self.residuals.dispose();
 
+        // limit number of passes to those enabled.
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
+        let passes = &mut self.passes[0..max];
+        if passes.is_empty() {
+            return Ok(());
+        }
+
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &mut self.history_framebuffers {
@@ -677,21 +673,7 @@ impl FilterChainD3D12 {
             }
         }
 
-        // limit number of passes to those enabled.
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
-        let passes = &mut self.passes[0..max];
-
-        if passes.is_empty() {
-            return Ok(());
-        }
-
         let options = options.unwrap_or(&self.default_options);
-
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
-        let passes = &mut self.passes[0..max];
-        if passes.is_empty() {
-            return Ok(());
-        }
 
         let filter = passes[0].config.filter;
         let wrap_mode = passes[0].config.wrap_mode;

@@ -43,18 +43,13 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
 
 pub(crate) struct FilterCommon {
     // semantics: ReflectSemantics,
-    pub config: FilterMutable,
+    pub config: RuntimeParameters,
     pub luts: FastHashMap<usize, InputTexture>,
     pub samplers: SamplerSet,
     pub output_textures: Box<[InputTexture]>,
     pub feedback_textures: Box<[InputTexture]>,
     pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
-}
-
-pub struct FilterMutable {
-    pub(crate) passes_enabled: usize,
-    pub(crate) parameters: FastHashMap<String, f32>,
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
@@ -119,6 +114,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_runtime::parameters::RuntimeParameters;
 
 impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
@@ -178,14 +174,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             history_framebuffers,
             draw_quad,
             common: FilterCommon {
-                config: FilterMutable {
-                    passes_enabled: preset.shader_count as usize,
-                    parameters: preset
-                        .parameters
-                        .into_iter()
-                        .map(|param| (param.name, param.value))
-                        .collect(),
-                },
+                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
@@ -274,7 +263,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         options: Option<&FrameOptionsGL>,
     ) -> error::Result<()> {
         // limit number of passes to those enabled.
-        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled);
+        let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         let passes = &mut self.passes[0..max];
 
         if let Some(options) = options {
