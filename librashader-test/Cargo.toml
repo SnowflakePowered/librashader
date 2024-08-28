@@ -28,7 +28,7 @@ opengl = ["librashader/runtime-gl", "dep:glow", "dep:glfw"]
 wgpu = ["librashader/runtime-wgpu", "dep:wgpu", "dep:wgpu-types"]
 
 d3d11 = ["librashader/runtime-d3d11", "dep:windows"]
-d3d12 = ["librashader/runtime-d3d12", "dep:windows"]
+d3d12 = ["librashader/runtime-d3d12", "dep:windows", "dep:d3d12-descriptor-heap"]
 d3d9 = ["librashader/runtime-d3d9", "dep:windows"]
 
 metal = ["librashader/runtime-metal", "dep:objc2", "dep:objc2-metal"]

@@ -37,7 +37,7 @@ pub trait RenderTest {
     /// shader presets, so the actual image that a shader will be applied to
     /// will often be part of the test harness object.
     fn render(
-        &self,
+        &mut self,
         path: impl AsRef<Path>,
         frame_count: usize,
     ) -> anyhow::Result<image::RgbaImage>;
@@ -51,13 +51,13 @@ mod test {
     use std::fs::File;
 
     const IMAGE_PATH: &str = "../triangle.png";
-    const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-geom.slangp";
+    const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 
     // const FILTER_PATH: &str =
     //     "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
 
     fn do_test<T: RenderTest>() -> anyhow::Result<()> {
-        let test = T::new(IMAGE_PATH)?;
+        let mut test = T::new(IMAGE_PATH)?;
         let image = test.render(FILTER_PATH, 100)?;
 
         let out = File::create("out.png")?;
@@ -107,9 +107,15 @@ mod test {
         do_test::<crate::render::d3d9::Direct3D9>()
     }
 
+    #[test]
+    #[cfg(feature = "d3d12")]
+    pub fn test_d3d12() -> anyhow::Result<()> {
+        do_test::<crate::render::d3d12::Direct3D12>()
+    }
+
     pub fn compare<A: RenderTest, B: RenderTest>() -> anyhow::Result<()> {
-        let a = A::new(IMAGE_PATH)?;
-        let b = B::new(IMAGE_PATH)?;
+        let mut a = A::new(IMAGE_PATH)?;
+        let mut b = B::new(IMAGE_PATH)?;
 
         let a_image = a.render(FILTER_PATH, 100)?;
         let b_image = b.render(FILTER_PATH, 100)?;
