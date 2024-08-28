@@ -1,9 +1,10 @@
-use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
+use crate::descriptor_heap::CpuStagingHeap;
 use crate::error;
 use crate::filter_chain::FrameResiduals;
 use crate::mipmap::MipmapGenContext;
 use crate::texture::InputTexture;
 use crate::util::{d3d12_get_closest_format, d3d12_resource_transition, d3d12_update_subresources};
+use d3d12_descriptor_heap::D3D12DescriptorHeap;
 use gpu_allocator::d3d12::{
     Allocator, Resource, ResourceCategory, ResourceCreateDesc, ResourceStateOrBarrierLayout,
     ResourceType,
@@ -14,7 +15,6 @@ use librashader_runtime::image::Image;
 use librashader_runtime::scaling::MipmapSize;
 use parking_lot::Mutex;
 use std::mem::ManuallyDrop;
-use std::ops::Deref;
 use std::sync::Arc;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
@@ -80,7 +80,7 @@ impl LutTexture {
         }
 
         desc.Format = d3d12_get_closest_format(device, format_support);
-        let descriptor = heap.alloc_slot()?;
+        let descriptor = heap.allocate_descriptor()?;
 
         // create handles on GPU
         let resource = allocator.lock().create_resource(&ResourceCreateDesc {
@@ -112,7 +112,7 @@ impl LutTexture {
             device.CreateShaderResourceView(
                 resource.resource(),
                 Some(&srv_desc),
-                *descriptor.deref().as_ref(),
+                *descriptor.as_ref(),
             );
         }
 

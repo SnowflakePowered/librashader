@@ -1,8 +1,5 @@
 use crate::buffer::{D3D12Buffer, RawD3D12Buffer};
-use crate::descriptor_heap::{
-    CpuStagingHeap, D3D12DescriptorHeap, D3D12DescriptorHeapSlot, RenderTargetHeap,
-    ResourceWorkHeap,
-};
+use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap, ResourceWorkHeap};
 use crate::draw_quad::DrawQuad;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
@@ -14,6 +11,9 @@ use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
 use crate::{error, util};
+use d3d12_descriptor_heap::{
+    D3D12DescriptorHeap, D3D12DescriptorHeapSlot, D3D12PartitionableHeap, D3D12PartitionedHeap,
+};
 use gpu_allocator::d3d12::{Allocator, AllocatorCreateDesc, ID3D12DeviceVersion};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
@@ -308,18 +308,22 @@ impl FilterChainD3D12 {
         })?));
 
         let draw_quad = DrawQuad::new(&allocator)?;
-        let mut staging_heap = D3D12DescriptorHeap::new(
-            device,
-            (MAX_BINDINGS_COUNT as usize) * shader_count
-                + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
-                + lut_count,
-        )?;
-        let rtv_heap = D3D12DescriptorHeap::new(
-            device,
-            (MAX_BINDINGS_COUNT as usize) * shader_count
-                + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
-                + lut_count,
-        )?;
+        let mut staging_heap = unsafe {
+            D3D12DescriptorHeap::new(
+                device,
+                (MAX_BINDINGS_COUNT as usize) * shader_count
+                    + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
+                    + lut_count,
+            )
+        }?;
+        let rtv_heap = unsafe {
+            D3D12DescriptorHeap::new(
+                device,
+                (MAX_BINDINGS_COUNT as usize) * shader_count
+                    + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
+                    + lut_count,
+            )
+        }?;
 
         let root_signature = D3D12RootSignature::new(device)?;
 
@@ -473,22 +477,31 @@ impl FilterChainD3D12 {
         D3D12DescriptorHeap<ResourceWorkHeap>,
     )> {
         let shader_count = passes.len();
-        let work_heap = D3D12DescriptorHeap::<ResourceWorkHeap>::new(
-            device,
-            (MAX_BINDINGS_COUNT as usize) * shader_count + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
-        )?;
-        let (work_heaps, mipmap_heap, texture_heap_handle) = unsafe {
-            work_heap.suballocate(
+        let D3D12PartitionedHeap {
+            partitioned: work_heaps,
+            reserved: mipmap_heap,
+            handle: texture_heap_handle,
+        } = unsafe {
+            let work_heap = D3D12PartitionableHeap::<ResourceWorkHeap>::new(
+                device,
+                (MAX_BINDINGS_COUNT as usize) * shader_count + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
+            )?;
+
+            work_heap.into_partitioned(
                 MAX_BINDINGS_COUNT as usize,
                 MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
-            )
+            )?
         };
 
-        let sampler_work_heap =
-            D3D12DescriptorHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
-
-        let (sampler_work_heaps, _, sampler_heap_handle) =
-            unsafe { sampler_work_heap.suballocate(MAX_BINDINGS_COUNT as usize, 0) };
+        let D3D12PartitionedHeap {
+            partitioned: sampler_work_heaps,
+            reserved: _,
+            handle: sampler_heap_handle,
+        } = unsafe {
+            let sampler_heap =
+                D3D12PartitionableHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
+            sampler_heap.into_partitioned(MAX_BINDINGS_COUNT as usize, 0)?
+        };
 
         let filters: Vec<error::Result<_>> = passes
             .into_par_iter()
@@ -578,8 +591,8 @@ impl FilterChainD3D12 {
                     let uniform_bindings =
                         reflection.meta.create_binding_map(|param| param.offset());
 
-                    let texture_heap = texture_heap.alloc_range()?;
-                    let sampler_heap = sampler_heap.alloc_range()?;
+                    let texture_heap = texture_heap.allocate_descriptor_range()?;
+                    let sampler_heap = sampler_heap.allocate_descriptor_range()?;
 
                     Ok(FilterPass {
                         reflection,
