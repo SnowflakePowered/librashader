@@ -854,6 +854,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "d3d12-descriptor-heap"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "825c5ff0f3af86b775d1e842a11fb42ee5eac1acec44ff46572a756219be3ff5"
+dependencies = [
+ "array-init",
+ "bitvec",
+ "thiserror",
+ "windows 0.58.0",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1774,6 +1786,7 @@ dependencies = [
  "array-init",
  "bitvec",
  "bytemuck",
+ "d3d12-descriptor-heap",
  "gfx-maths",
  "gpu-allocator 0.27.0",
  "librashader-cache",

@@ -1,9 +1,10 @@
-use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap, RenderTargetHeap};
+use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
 use crate::error::FilterChainError;
 use crate::filter_chain::FrameResiduals;
 use crate::texture::{D3D12OutputView, InputTexture};
 use crate::util::d3d12_get_closest_format;
 use crate::{error, util};
+use d3d12_descriptor_heap::D3D12DescriptorHeap;
 use gpu_allocator::d3d12::{
     Allocator, Resource, ResourceCategory, ResourceCreateDesc, ResourceStateOrBarrierLayout,
     ResourceType,
@@ -14,7 +15,6 @@ use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use parking_lot::Mutex;
 use std::mem::ManuallyDrop;
-use std::ops::Deref;
 use std::sync::Arc;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, D3D12_BOX, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
@@ -275,7 +275,7 @@ impl OwnedImage {
         filter: FilterMode,
         wrap_mode: WrapMode,
     ) -> error::Result<InputTexture> {
-        let descriptor = heap.alloc_slot()?;
+        let descriptor = heap.allocate_descriptor()?;
 
         unsafe {
             let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
@@ -293,7 +293,7 @@ impl OwnedImage {
             self.device.CreateShaderResourceView(
                 self.handle.resource(),
                 Some(&srv_desc),
-                *descriptor.deref().as_ref(),
+                *descriptor.as_ref(),
             );
         }
 
@@ -311,7 +311,7 @@ impl OwnedImage {
         &self,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
     ) -> error::Result<D3D12OutputView> {
-        let descriptor = heap.alloc_slot()?;
+        let descriptor = heap.allocate_descriptor()?;
 
         unsafe {
             let rtv_desc = D3D12_RENDER_TARGET_VIEW_DESC {
@@ -328,7 +328,7 @@ impl OwnedImage {
             self.device.CreateRenderTargetView(
                 self.handle.resource(),
                 Some(&rtv_desc),
-                *descriptor.deref().as_ref(),
+                *descriptor.as_ref(),
             );
         }
 

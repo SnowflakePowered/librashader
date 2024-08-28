@@ -1,5 +1,7 @@
 //! Direct3D 12 shader runtime errors.
 //!
+
+use d3d12_descriptor_heap::D3D12DescriptorHeapError;
 use thiserror::Error;
 
 /// Cumulative error type for Direct3D12 filter chains.
@@ -19,8 +21,8 @@ pub enum FilterChainError {
     ShaderReflectError(#[from] ShaderReflectError),
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
-    #[error("heap overflow")]
-    DescriptorHeapOverflow(usize),
+    #[error("heap error")]
+    HeapError(#[from] D3D12DescriptorHeapError),
     #[error("allocation error")]
     AllocationError(#[from] gpu_allocator::AllocationError),
 }

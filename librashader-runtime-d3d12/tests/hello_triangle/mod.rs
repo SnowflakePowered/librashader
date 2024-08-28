@@ -229,7 +229,8 @@ unsafe extern "system" fn debug_log(
 
 pub mod d3d12_hello_triangle {
     use super::*;
-    use crate::hello_triangle::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeap};
+    use crate::hello_triangle::descriptor_heap::CpuStagingHeap;
+    use d3d12_descriptor_heap::D3D12DescriptorHeap;
     use librashader_common::{Size, Viewport};
     use librashader_runtime_d3d12::{D3D12InputImage, D3D12OutputView, FilterChainD3D12};
     use std::mem::ManuallyDrop;
@@ -480,7 +481,7 @@ pub mod d3d12_hello_triangle {
                 fence,
                 fence_value,
                 fence_event,
-                frambuffer_heap: D3D12DescriptorHeap::new(&self.device, 1024).unwrap(),
+                frambuffer_heap: unsafe { D3D12DescriptorHeap::new(&self.device, 1024).unwrap() },
             });
 
             Ok(())
@@ -496,7 +497,7 @@ pub mod d3d12_hello_triangle {
 
         fn render(&mut self) {
             if let Some(resources) = &mut self.resources {
-                let srv = resources.frambuffer_heap.alloc_slot();
+                let srv = resources.frambuffer_heap.allocate_descriptor().unwrap();
 
                 unsafe {
                     self.device.CreateShaderResourceView(
@@ -512,17 +513,12 @@ pub mod d3d12_hello_triangle {
                                 },
                             },
                         }),
-                        *srv.deref().as_ref(),
+                        *srv.as_ref(),
                     )
                 }
 
-                populate_command_list(
-                    resources,
-                    &mut self.filter,
-                    self.framecount,
-                    *srv.deref().as_ref(),
-                )
-                .unwrap();
+                populate_command_list(resources, &mut self.filter, self.framecount, *srv.as_ref())
+                    .unwrap();
 
                 // Execute the command list.
                 let command_list: Option<ID3D12CommandList> = resources.command_list.cast().ok();

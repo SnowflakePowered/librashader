@@ -1,6 +1,6 @@
-use crate::descriptor_heap::{CpuStagingHeap, D3D12DescriptorHeapSlot, RenderTargetHeap};
+use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
+use d3d12_descriptor_heap::D3D12DescriptorHeapSlot;
 use librashader_common::{FilterMode, Size, WrapMode};
-use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
@@ -25,7 +25,7 @@ pub(crate) enum OutputDescriptor {
 impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for InputDescriptor {
     fn as_ref(&self) -> &D3D12_CPU_DESCRIPTOR_HANDLE {
         match self {
-            InputDescriptor::Owned(h) => h.deref().as_ref(),
+            InputDescriptor::Owned(h) => h.as_ref(),
             InputDescriptor::Raw(h) => h,
         }
     }
@@ -34,7 +34,7 @@ impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for InputDescriptor {
 impl AsRef<D3D12_CPU_DESCRIPTOR_HANDLE> for OutputDescriptor {
     fn as_ref(&self) -> &D3D12_CPU_DESCRIPTOR_HANDLE {
         match self {
-            OutputDescriptor::Owned(h) => h.deref().as_ref(),
+            OutputDescriptor::Owned(h) => h.as_ref(),
             OutputDescriptor::Raw(h) => h,
         }
     }
