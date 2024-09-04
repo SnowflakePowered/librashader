@@ -1,6 +1,5 @@
-use std::ops::Deref;
 use arc_swap::ArcSwap;
-use librashader_common::map::FastHashMap;
+use librashader_common::map::{FastHashMap, ShortString};
 use librashader_presets::ParameterConfig;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -17,7 +16,7 @@ pub trait FilterChainParameters {
 /// any thread.
 pub struct RuntimeParameters {
     passes_enabled: AtomicUsize,
-    pub(crate) parameters: ArcSwap<FastHashMap<String, f32>>,
+    pub(crate) parameters: ArcSwap<FastHashMap<ShortString, f32>>,
 }
 
 impl RuntimeParameters {
@@ -59,7 +58,7 @@ impl RuntimeParameters {
     }
 
     /// Get a reference to the runtime parameters.
-    pub fn parameters(&self) -> Arc<FastHashMap<String, f32>> {
+    pub fn parameters(&self) -> Arc<FastHashMap<ShortString, f32>> {
         self.parameters.load_full()
     }
 

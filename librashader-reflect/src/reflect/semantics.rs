@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use librashader_common::map::FastHashMap;
+use librashader_common::map::{FastHashMap, ShortString};
 use std::str::FromStr;
 
 /// The maximum number of bindings allowed in a shader.
@@ -255,7 +255,7 @@ pub struct VariableMeta {
     /// The size of the uniform.
     pub size: u32,
     /// The name of the uniform.
-    pub id: String,
+    pub id: ShortString,
 }
 
 /// Reflection information about a texture size uniform variable.
@@ -267,7 +267,7 @@ pub struct TextureSizeMeta {
     /// The mask indicating for which stages the texture size uniform should be bound.
     pub stage_mask: BindingStage,
     /// The name of the uniform.
-    pub id: String,
+    pub id: ShortString,
 }
 
 /// Reflection information about texture samplers.
@@ -321,7 +321,7 @@ pub trait TextureSemanticMap {
     fn get_texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>>;
 }
 
-impl TextureSemanticMap for FastHashMap<String, UniformSemantic> {
+impl TextureSemanticMap for FastHashMap<ShortString, UniformSemantic> {
     fn get_texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>> {
         match self.get(name) {
             None => {
@@ -353,7 +353,7 @@ impl TextureSemanticMap for FastHashMap<String, UniformSemantic> {
     }
 }
 
-impl TextureSemanticMap for FastHashMap<String, Semantic<TextureSemantics>> {
+impl TextureSemanticMap for FastHashMap<ShortString, Semantic<TextureSemantics>> {
     fn get_texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>> {
         match self.get(name) {
             None => {
@@ -390,7 +390,7 @@ pub trait UniqueSemanticMap {
     fn get_unique_semantic(&self, name: &str) -> Option<Semantic<UniqueSemantics, ()>>;
 }
 
-impl UniqueSemanticMap for FastHashMap<String, UniformSemantic> {
+impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
     fn get_unique_semantic(&self, name: &str) -> Option<Semantic<UniqueSemantics, ()>> {
         match self.get(name) {
             // existing uniforms in the semantic map have priority
@@ -448,9 +448,9 @@ pub enum UniformSemantic {
 #[derive(Debug, Clone)]
 pub struct ShaderSemantics {
     /// A map of uniform names to filter chain semantics.
-    pub uniform_semantics: FastHashMap<String, UniformSemantic>,
+    pub uniform_semantics: FastHashMap<ShortString, UniformSemantic>,
     /// A map of texture names to filter chain semantics.
-    pub texture_semantics: FastHashMap<String, Semantic<TextureSemantics>>,
+    pub texture_semantics: FastHashMap<ShortString, Semantic<TextureSemantics>>,
 }
 
 /// The binding of a uniform after the shader has been linked.
@@ -460,7 +460,7 @@ pub struct ShaderSemantics {
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum UniformBinding {
     /// A user parameter (`float`) binding.
-    Parameter(String),
+    Parameter(ShortString),
     /// A known semantic binding.
     SemanticVariable(UniqueSemantics),
     /// A texture size (`float4`) binding.
@@ -483,7 +483,7 @@ impl From<Semantic<TextureSemantics>> for UniformBinding {
 #[derive(Debug, Default)]
 pub struct BindingMeta {
     /// A map of parameter names to uniform binding metadata.
-    pub parameter_meta: FastHashMap<String, VariableMeta>,
+    pub parameter_meta: FastHashMap<ShortString, VariableMeta>,
     /// A map of unique semantics to uniform binding metadata.
     pub unique_meta: FastHashMap<UniqueSemantics, VariableMeta>,
     /// A map of texture semantics to texture binding points.

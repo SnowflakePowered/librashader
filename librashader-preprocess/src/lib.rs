@@ -15,7 +15,7 @@ mod stage;
 
 use crate::include::read_source;
 pub use error::*;
-use librashader_common::map::FastHashMap;
+use librashader_common::map::{FastHashMap, ShortString};
 use librashader_common::ImageFormat;
 use std::path::Path;
 
@@ -29,10 +29,10 @@ pub struct ShaderSource {
     pub fragment: String,
 
     /// The alias of the shader if available.
-    pub name: Option<String>,
+    pub name: Option<ShortString>,
 
     /// The list of shader parameters found in the shader source.
-    pub parameters: FastHashMap<String, ShaderParameter>,
+    pub parameters: FastHashMap<ShortString, ShaderParameter>,
 
     /// The image format the shader expects.
     pub format: ImageFormat,
@@ -42,7 +42,7 @@ pub struct ShaderSource {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ShaderParameter {
     /// The name of the parameter.
-    pub id: String,
+    pub id: ShortString,
     /// The description of the parameter.
     pub description: String,
     /// The initial value the parameter is set to.

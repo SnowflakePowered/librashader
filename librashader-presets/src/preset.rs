@@ -1,4 +1,5 @@
 use crate::error::ParsePresetError;
+use librashader_common::map::ShortString;
 use librashader_common::{FilterMode, ImageFormat, WrapMode};
 use std::ops::Mul;
 use std::path::PathBuf;
@@ -12,7 +13,7 @@ pub struct ShaderPassConfig {
     /// The fully qualified path to the shader pass source file.
     pub name: PathBuf,
     /// The alias of the shader pass if available.
-    pub alias: Option<String>,
+    pub alias: Option<ShortString>,
     /// The filtering mode that this shader pass should expect.
     pub filter: FilterMode,
     /// The texture addressing (wrap) mode that this shader pass expects.
@@ -151,7 +152,7 @@ pub struct Scale2D {
 #[derive(Debug, Clone)]
 pub struct TextureConfig {
     /// The name of the texture.
-    pub name: String,
+    pub name: ShortString,
     /// The fully qualified path to the texture.
     pub path: PathBuf,
     /// The wrap (addressing) mode to use when sampling the texture.
@@ -166,7 +167,7 @@ pub struct TextureConfig {
 #[derive(Debug, Clone)]
 pub struct ParameterConfig {
     /// The name of the parameter.
-    pub name: String,
+    pub name: ShortString,
     /// The value it is set to in the preset.
     pub value: f32,
 }

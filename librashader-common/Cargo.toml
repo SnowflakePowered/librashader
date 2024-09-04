@@ -29,6 +29,7 @@ wgpu-types = { version = "22", optional = true }
 num-traits = "0.2.15"
 rustc-hash = "2.0.0"
 halfbrown = "0.2.4"
+smartstring = "1.0"
 
 [target.'cfg(windows)'.dependencies.windows]
 optional = true

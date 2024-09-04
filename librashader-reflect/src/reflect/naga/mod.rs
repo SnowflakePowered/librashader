@@ -10,16 +10,8 @@ pub mod wgsl;
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 use std::fmt::Debug;
 
-use crate::front::SpirvCompilation;
-use naga::{
-    AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding,
-    Scalar, ScalarKind, StructMember, TypeInner, VectorSize,
-};
-use rspirv::binary::Assemble;
-use rspirv::dr::Builder;
-use rustc_hash::FxHashSet;
-
 use crate::front::spirv_passes::lower_samplers;
+use crate::front::SpirvCompilation;
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
     BindingMeta, BindingStage, BufferReflection, MemberOffset, ShaderSemantics, TextureBinding,
@@ -28,6 +20,14 @@ use crate::reflect::semantics::{
     MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
+use librashader_common::map::ShortString;
+use naga::{
+    AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding,
+    Scalar, ScalarKind, StructMember, TypeInner, VectorSize,
+};
+use rspirv::binary::Assemble;
+use rspirv::dr::Builder;
+use rustc_hash::FxHashSet;
 
 /// Reflect under Naga semantics
 ///
@@ -678,7 +678,7 @@ impl NagaReflect {
                 match &parameter.semantics {
                     UniqueSemantics::FloatParameter => {
                         let offset = member.offset;
-                        if let Some(meta) = meta.parameter_meta.get_mut(&name) {
+                        if let Some(meta) = meta.parameter_meta.get_mut::<str>(name.as_ref()) {
                             if let Some(expected) = meta.offset.offset(offset_type)
                                 && expected != offset as usize
                             {
@@ -701,6 +701,7 @@ impl NagaReflect {
 
                             *meta.offset.offset_mut(offset_type) = Some(offset as usize);
                         } else {
+                            let name = ShortString::from(name);
                             meta.parameter_meta.insert(
                                 name.clone(),
                                 VariableMeta {
@@ -739,7 +740,7 @@ impl NagaReflect {
                             meta.unique_meta.insert(
                                 *semantics,
                                 VariableMeta {
-                                    id: name,
+                                    id: ShortString::from(name),
                                     offset: MemberOffset::new(offset as usize, offset_type),
                                     size: typeinfo.size * typeinfo.columns,
                                 },
@@ -790,7 +791,7 @@ impl NagaReflect {
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                                 SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
                             },
-                            id: name,
+                            id: ShortString::from(name),
                         },
                     );
                 }

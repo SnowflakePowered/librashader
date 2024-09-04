@@ -1,6 +1,6 @@
 use crate::parameters::RuntimeParameters;
 use crate::uniforms::{BindUniform, NoUniformBinder, UniformStorage};
-use librashader_common::map::FastHashMap;
+use librashader_common::map::{FastHashMap, ShortString};
 use librashader_common::Size;
 use librashader_preprocess::ShaderParameter;
 use librashader_reflect::reflect::semantics::{
@@ -120,7 +120,7 @@ where
         pass_feedback: impl Iterator<Item = Option<impl AsRef<Self::InputTexture>>>,
         original_history: impl Iterator<Item = Option<impl AsRef<Self::InputTexture>>>,
         lookup_textures: impl Iterator<Item = (usize, impl AsRef<Self::InputTexture>)>,
-        parameter_defaults: &FastHashMap<String, ShaderParameter>,
+        parameter_defaults: &FastHashMap<ShortString, ShaderParameter>,
         runtime_parameters: &RuntimeParameters,
     ) {
         let runtime_parameters = runtime_parameters.parameters.load();
