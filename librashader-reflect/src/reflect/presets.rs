@@ -5,7 +5,7 @@ use crate::front::{ShaderInputCompiler, ShaderReflectObject};
 use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
-use librashader_common::map::FastHashMap;
+use librashader_common::map::{FastHashMap, ShortString};
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{ShaderPassConfig, TextureConfig};
 
@@ -80,8 +80,9 @@ where
     E: From<ShaderReflectError>,
     E: From<ShaderCompileError>,
 {
-    let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
-    let mut texture_semantics: FastHashMap<String, Semantic<TextureSemantics>> = Default::default();
+    let mut uniform_semantics: FastHashMap<ShortString, UniformSemantic> = Default::default();
+    let mut texture_semantics: FastHashMap<ShortString, Semantic<TextureSemantics>> =
+        Default::default();
 
     let passes = passes
         .into_iter()
@@ -119,8 +120,8 @@ where
 
 /// Insert the available semantics for the input pass config into the provided semantic maps.
 fn insert_pass_semantics(
-    uniform_semantics: &mut FastHashMap<String, UniformSemantic>,
-    texture_semantics: &mut FastHashMap<String, Semantic<TextureSemantics>>,
+    uniform_semantics: &mut FastHashMap<ShortString, UniformSemantic>,
+    texture_semantics: &mut FastHashMap<ShortString, Semantic<TextureSemantics>>,
     config: &ShaderPassConfig,
 ) {
     let Some(alias) = &config.alias else {
@@ -142,24 +143,32 @@ fn insert_pass_semantics(
             index,
         },
     );
+
+    let mut alias_size = alias.clone();
+    alias_size.push_str("Size");
     uniform_semantics.insert(
-        format!("{alias}Size"),
+        alias_size,
         UniformSemantic::Texture(Semantic {
             semantics: TextureSemantics::PassOutput,
             index,
         }),
     );
 
+    let mut alias_feedback = alias.clone();
+    alias_feedback.push_str("Feedback");
     // PassFeedback
     texture_semantics.insert(
-        format!("{alias}Feedback"),
+        alias_feedback,
         Semantic {
             semantics: TextureSemantics::PassFeedback,
             index,
         },
     );
+
+    let mut alias_feedback_size = alias.clone();
+    alias_feedback_size.push_str("FeedbackSize");
     uniform_semantics.insert(
-        format!("{alias}FeedbackSize"),
+        alias_feedback_size,
         UniformSemantic::Texture(Semantic {
             semantics: TextureSemantics::PassFeedback,
             index,
@@ -170,10 +179,13 @@ fn insert_pass_semantics(
 /// Insert the available semantics for the input texture config into the provided semantic maps.
 fn insert_lut_semantics(
     textures: &[TextureConfig],
-    uniform_semantics: &mut FastHashMap<String, UniformSemantic>,
-    texture_semantics: &mut FastHashMap<String, Semantic<TextureSemantics>>,
+    uniform_semantics: &mut FastHashMap<ShortString, UniformSemantic>,
+    texture_semantics: &mut FastHashMap<ShortString, Semantic<TextureSemantics>>,
 ) {
     for (index, texture) in textures.iter().enumerate() {
+        let mut size_semantic = texture.name.clone();
+        size_semantic.push_str("Size");
+
         texture_semantics.insert(
             texture.name.clone(),
             Semantic {
@@ -183,7 +195,7 @@ fn insert_lut_semantics(
         );
 
         uniform_semantics.insert(
-            format!("{}Size", texture.name),
+            size_semantic,
             UniformSemantic::Texture(Semantic {
                 semantics: TextureSemantics::User,
                 index,

@@ -19,10 +19,10 @@ use crate::reflect::{align_uniform_size, ReflectShader};
 use std::fmt::Debug;
 use std::ops::Deref;
 
+use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
+use librashader_common::map::ShortString;
 use spirv_cross::spirv::{Ast, Decoration, Module, Resource, ShaderResources, Type};
 use spirv_cross::ErrorCode;
-
-use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 
 /// Reflect shaders under SPIRV-Cross semantics.
 ///
@@ -342,7 +342,7 @@ where
                 match &parameter.semantics {
                     UniqueSemantics::FloatParameter => {
                         let offset = range.offset;
-                        if let Some(meta) = meta.parameter_meta.get_mut(&name) {
+                        if let Some(meta) = meta.parameter_meta.get_mut::<str>(&name.as_ref()) {
                             if let Some(expected) = meta.offset.offset(offset_type)
                                 && expected != offset
                             {
@@ -365,6 +365,7 @@ where
 
                             *meta.offset.offset_mut(offset_type) = Some(offset);
                         } else {
+                            let name = ShortString::from(name);
                             meta.parameter_meta.insert(
                                 name.clone(),
                                 VariableMeta {
@@ -403,7 +404,7 @@ where
                             meta.unique_meta.insert(
                                 *semantics,
                                 VariableMeta {
-                                    id: name,
+                                    id: name.into(),
                                     offset: MemberOffset::new(offset, offset_type),
                                     size: typeinfo.size * typeinfo.columns,
                                 },
@@ -454,7 +455,7 @@ where
                                 SemanticErrorBlame::Vertex => BindingStage::VERTEX,
                                 SemanticErrorBlame::Fragment => BindingStage::FRAGMENT,
                             },
-                            id: name,
+                            id: ShortString::from(name),
                         },
                     );
                 }
@@ -753,7 +754,7 @@ mod test {
     use crate::back::{CompileShader, ShaderCompilerOutput};
     use crate::front::{Glslang, ShaderInputCompiler};
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
-    use librashader_common::map::FastHashMap;
+    use librashader_common::map::{FastHashMap, ShortString};
     use librashader_preprocess::ShaderSource;
     use spirv_cross::glsl::{CompilerOptions, Version};
     use spirv_cross::hlsl::ShaderModel;
@@ -762,7 +763,7 @@ mod test {
     #[test]
     pub fn test_into() {
         let result = ShaderSource::load("../test/basic.slang").unwrap();
-        let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
+        let mut uniform_semantics: FastHashMap<ShortString, UniformSemantic> = Default::default();
 
         for (_index, param) in result.parameters.iter().enumerate() {
             uniform_semantics.insert(

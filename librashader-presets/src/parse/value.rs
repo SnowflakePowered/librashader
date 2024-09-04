@@ -10,7 +10,7 @@ use nom::IResult;
 use num_traits::cast::ToPrimitive;
 
 use crate::parse::token::do_lex;
-use librashader_common::map::FastHashMap;
+use librashader_common::map::{FastHashMap, ShortString};
 use librashader_common::{FilterMode, WrapMode};
 use std::fs::File;
 use std::io::Read;
@@ -37,10 +37,10 @@ pub enum Value {
     FloatFramebuffer(i32, bool),
     SrgbFramebuffer(i32, bool),
     MipmapInput(i32, bool),
-    Alias(i32, String),
-    Parameter(String, f32),
+    Alias(i32, ShortString),
+    Parameter(ShortString, f32),
     Texture {
-        name: String,
+        name: ShortString,
         filter_mode: FilterMode,
         wrap_mode: WrapMode,
         mipmap: bool,
@@ -389,7 +389,7 @@ pub fn parse_values(
         .map_or(None, |(_, v)| Some(FilterMode::from_str(&v.value).unwrap()));
 
         values.push(Value::Texture {
-            name: texture.to_string(),
+            name: ShortString::from(*texture.fragment()),
             filter_mode: filter.unwrap_or(if linear {
                 FilterMode::Linear
             } else {
@@ -412,7 +412,7 @@ pub fn parse_values(
                 // params (god help me), it would be pretty bad because we lose texture path fallback.
                 .unwrap_or(0.0);
             values.push(Value::Parameter(
-                token.key.fragment().to_string(),
+                ShortString::from(*token.key.fragment()),
                 param_val,
             ));
             continue;
@@ -493,7 +493,10 @@ pub fn parse_values(
         }
 
         if let Ok((_, idx)) = parse_indexed_key("alias", token.key) {
-            values.push(Value::Alias(idx, token.value.to_string()));
+            values.push(Value::Alias(
+                idx,
+                ShortString::from(*token.value.fragment()),
+            ));
             continue;
         }
         if let Ok((_, idx)) = parse_indexed_key("scale_type", token.key) {
@@ -556,7 +559,7 @@ pub fn parse_values(
         // handle undeclared parameters after parsing everything else as a last resort.
         if let Ok(param_val) = from_float(token.value) {
             values.push(Value::Parameter(
-                token.key.fragment().to_string(),
+                ShortString::from(*token.key.fragment()),
                 param_val,
             ));
         }
@@ -605,7 +608,7 @@ pub fn parse_values(
         });
 
         values.push(Value::Texture {
-            name: texture.to_string(),
+            name: ShortString::from(*texture.fragment()),
             filter_mode: if linear {
                 FilterMode::Linear
             } else {

@@ -36,7 +36,7 @@ mod test {
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use crate::reflect::ReflectShader;
     use bitflags::Flags;
-    use librashader_common::map::FastHashMap;
+    use librashader_common::map::{FastHashMap, ShortString};
     use librashader_preprocess::ShaderSource;
 
     #[test]
@@ -45,7 +45,7 @@ mod test {
         // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
         let result = ShaderSource::load("../test/basic.slang").unwrap();
 
-        let mut uniform_semantics: FastHashMap<String, UniformSemantic> = Default::default();
+        let mut uniform_semantics: FastHashMap<ShortString, UniformSemantic> = Default::default();
 
         for (_index, param) in result.parameters.iter().enumerate() {
             uniform_semantics.insert(

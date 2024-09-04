@@ -117,7 +117,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                 id,
                 name,
                 alias: shader_values.iter().find_map(|f| match f {
-                    Value::Alias(_, value) => Some(value.to_string()),
+                    Value::Alias(_, value) => Some(value.clone()),
                     _ => None,
                 }),
                 filter: shader_values

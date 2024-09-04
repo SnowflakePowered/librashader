@@ -2,6 +2,7 @@ use crate::{PreprocessError, ShaderParameter};
 use librashader_common::ImageFormat;
 use nom::bytes::complete::{is_not, tag, take_while};
 
+use librashader_common::map::ShortString;
 use nom::character::complete::multispace1;
 use nom::number::complete::float;
 use nom::sequence::delimited;
@@ -12,7 +13,7 @@ use std::str::FromStr;
 pub(crate) struct ShaderMeta {
     pub(crate) format: ImageFormat,
     pub(crate) parameters: Vec<ShaderParameter>,
-    pub(crate) name: Option<String>,
+    pub(crate) name: Option<ShortString>,
 }
 
 fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessError> {
@@ -40,7 +41,7 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         Ok((
             input,
             ShaderParameter {
-                id: name.to_string(),
+                id: name.into(),
                 description: description.to_string(),
                 initial,
                 minimum,
@@ -60,7 +61,7 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         Ok(param)
     } else {
         Ok(ShaderParameter {
-            id: name.to_string(),
+            id: name.into(),
             description: description.to_string(),
             initial: 0f32,
             minimum: 0f32,
@@ -89,7 +90,7 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
 
         if let Some(format_string) = line.strip_prefix("#pragma format ") {
             if format != ImageFormat::Unknown {
-                return Err(PreprocessError::DuplicatePragmaError(line.to_string()));
+                return Err(PreprocessError::DuplicatePragmaError(line.into()));
             }
 
             let format_string = format_string.trim();
@@ -102,10 +103,10 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
 
         if line.starts_with("#pragma name ") {
             if name.is_some() {
-                return Err(PreprocessError::DuplicatePragmaError(line.to_string()));
+                return Err(PreprocessError::DuplicatePragmaError(line.into()));
             }
 
-            name = Some(line.trim().to_string())
+            name = Some(ShortString::from(line.trim()))
         }
     }
 
@@ -124,7 +125,7 @@ mod test {
     #[test]
     fn parses_parameter_pragma() {
         assert_eq!(ShaderParameter {
-            id: "exc".to_string(),
+            id: "exc".into(),
             description: "orizontal correction hack (games where players stay at center)".to_string(),
             initial: 0.0,
             minimum: -10.0,
@@ -136,7 +137,7 @@ mod test {
     #[test]
     fn parses_parameter_pragma_test() {
         assert_eq!(ShaderParameter {
-            id: "HSM_CORE_RES_SAMPLING_MULT_SCANLINE_DIR".to_string(),
+            id: "HSM_CORE_RES_SAMPLING_MULT_SCANLINE_DIR".into(),
             description: "          Scanline Dir Multiplier".to_string(),
             initial: 100.0,
             minimum: 25.0,

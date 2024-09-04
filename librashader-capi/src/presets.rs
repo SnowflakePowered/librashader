@@ -205,7 +205,7 @@ extern_fn! {
         let iter = librashader::presets::get_parameter_meta(preset)?;
         let mut values = Vec::new();
         for param in iter {
-            let name = CString::new(param.id)
+            let name = CString::new(param.id.to_string())
             .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
             let description = CString::new(param.description)
             .map_err(|err| LibrashaderError::UnknownError(Box::new(err)))?;
