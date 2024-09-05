@@ -670,7 +670,7 @@ impl NagaReflect {
 
             let member_type = &module.types[member.ty].inner;
 
-            if let Some(parameter) = semantics.uniform_semantics.get_unique_semantic(&name) {
+            if let Some(parameter) = semantics.uniform_semantics.unique_semantic(&name) {
                 let Some(typeinfo) = parameter.semantics.validate_type(&member_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)));
                 };
@@ -748,7 +748,7 @@ impl NagaReflect {
                         }
                     }
                 }
-            } else if let Some(texture) = semantics.uniform_semantics.get_texture_semantic(&name) {
+            } else if let Some(texture) = semantics.uniform_semantics.texture_semantic(&name) {
                 let Some(_typeinfo) = texture.semantics.validate_type(&member_type) else {
                     return Err(blame.error(SemanticsErrorKind::InvalidTypeForSemantic(name)));
                 };
@@ -847,7 +847,7 @@ impl NagaReflect {
     ) -> Result<(), ShaderReflectError> {
         let Some(semantic) = semantics
             .texture_semantics
-            .get_texture_semantic(texture.name)
+            .texture_semantic(texture.name)
         else {
             return Err(
                 SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(

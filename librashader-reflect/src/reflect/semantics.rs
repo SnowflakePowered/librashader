@@ -318,11 +318,11 @@ impl UniformMeta for TextureSizeMeta {
 /// A trait for maps that can return texture semantic units.
 pub trait TextureSemanticMap {
     /// Get the texture semantic for the given variable name.
-    fn get_texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>>;
+    fn texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>>;
 }
 
 impl TextureSemanticMap for FastHashMap<ShortString, UniformSemantic> {
-    fn get_texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>> {
+    fn texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>> {
         match self.get(name) {
             None => {
                 if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
@@ -354,7 +354,7 @@ impl TextureSemanticMap for FastHashMap<ShortString, UniformSemantic> {
 }
 
 impl TextureSemanticMap for FastHashMap<ShortString, Semantic<TextureSemantics>> {
-    fn get_texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>> {
+    fn texture_semantic(&self, name: &str) -> Option<Semantic<TextureSemantics>> {
         match self.get(name) {
             None => {
                 if let Some(semantics) = TextureSemantics::TEXTURE_SEMANTICS
@@ -387,11 +387,11 @@ impl TextureSemanticMap for FastHashMap<ShortString, Semantic<TextureSemantics>>
 /// A trait for maps that can return unique semantic units.
 pub trait UniqueSemanticMap {
     /// Get the unique semantic for the given variable name.
-    fn get_unique_semantic(&self, name: &str) -> Option<Semantic<UniqueSemantics, ()>>;
+    fn unique_semantic(&self, name: &str) -> Option<Semantic<UniqueSemantics, ()>>;
 }
 
 impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
-    fn get_unique_semantic(&self, name: &str) -> Option<Semantic<UniqueSemantics, ()>> {
+    fn unique_semantic(&self, name: &str) -> Option<Semantic<UniqueSemantics, ()>> {
         match self.get(name) {
             // existing uniforms in the semantic map have priority
             None => match name {
