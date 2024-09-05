@@ -154,7 +154,7 @@ impl FilterChainMetal {
             .enumerate()
             .map(|(index, (config, source, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
-                let msl = reflect.compile(Some(MslVersion::V2_0))?;
+                let msl = reflect.compile(Some(MslVersion::new(2, 0, 0)))?;
 
                 let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
                 let push_size = reflection

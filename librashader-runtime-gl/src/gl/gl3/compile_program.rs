@@ -5,7 +5,8 @@ use crate::util;
 use gl::types::{GLint, GLuint};
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use spirv_cross::spirv::Decoration;
+use spirv_cross2::reflect::ResourceType;
+use spirv_cross2::spirv::Decoration;
 
 pub struct Gl3CompileProgram;
 
@@ -14,7 +15,7 @@ impl CompileProgram for Gl3CompileProgram {
         glsl: ShaderCompilerOutput<String, CrossGlslContext>,
         _cache: bool,
     ) -> crate::error::Result<(GLuint, UniformLocation<GLuint>)> {
-        let vertex_resources = glsl.context.artifact.vertex.get_shader_resources()?;
+        let vertex_resources = glsl.context.artifact.vertex.shader_resources()?;
 
         let (program, ubo_location) = unsafe {
             let vertex = util::gl_compile_shader(gl::VERTEX_SHADER, glsl.vertex.as_str())?;
@@ -24,13 +25,18 @@ impl CompileProgram for Gl3CompileProgram {
             gl::AttachShader(program, vertex);
             gl::AttachShader(program, fragment);
 
-            for res in vertex_resources.stage_inputs {
-                let loc = glsl
+            for res in vertex_resources.resources_for_type(ResourceType::StageInput)? {
+                let Some(loc) = glsl
                     .context
                     .artifact
                     .vertex
-                    .get_decoration(res.id, Decoration::Location)?;
-                let mut name = res.name;
+                    .decoration(res.id, Decoration::Location)?
+                    .and_then(|d| d.as_literal())
+                else {
+                    continue;
+                };
+
+                let mut name = res.name.to_string();
                 name.push('\0');
 
                 gl::BindAttribLocation(program, loc, name.as_str().as_ptr().cast())

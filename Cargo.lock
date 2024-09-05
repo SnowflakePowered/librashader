@@ -411,9 +411,9 @@ checksum = "5ce89b21cab1437276d2650d57e971f9d548a2d9037cc231abdc0562b97498ce"
 
 [[package]]
 name = "bytemuck"
-version = "1.17.1"
+version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "773d90827bc3feecfb67fab12e24de0749aad83c74b9504ecde46237b5cd24e2"
+checksum = "94bbb0ad554ad961ddc5da507a12a29b14e4ae5bda06b19f575a3e6079d2e2ae"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -1678,7 +1678,6 @@ dependencies = [
  "ash",
  "gl",
  "librashader",
- "librashader-spirv-cross",
  "objc2 0.5.2",
  "objc2-metal",
  "paste",
@@ -1741,13 +1740,13 @@ dependencies = [
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
- "librashader-spirv-cross",
  "matches",
  "naga",
  "rspirv",
  "rustc-hash 2.0.0",
  "serde",
  "spirv",
+ "spirv-cross2",
  "spirv-to-dxil",
  "thiserror",
 ]
@@ -1842,8 +1841,8 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
- "librashader-spirv-cross",
  "rayon",
+ "spirv-cross2",
  "sptr",
  "thiserror",
 ]
@@ -1912,18 +1911,6 @@ dependencies = [
  "thiserror",
  "wgpu",
  "winit",
-]
-
-[[package]]
-name = "librashader-spirv-cross"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4603464191d79d8ce9fe81f7925dfa5b74060b15be51608525f0758f6d88e238"
-dependencies = [
- "build-target",
- "cc",
- "js-sys",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -2936,9 +2923,9 @@ checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
 
 [[package]]
 name = "rustix"
-version = "0.38.35"
+version = "0.38.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a85d50532239da68e9addb745ba38ff4612a242c1c7ceea689c4bc7c2f43c36f"
+checksum = "3f55e80d50763938498dd5ebb18647174e0c76dc38c5505294bb224624f30f36"
 dependencies = [
  "bitflags 2.6.0",
  "errno",
@@ -3145,6 +3132,45 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eda41003dc44290527a59b13432d4a0379379fa074b70174882adfbdfd917844"
 dependencies = [
  "bitflags 2.6.0",
+]
+
+[[package]]
+name = "spirv-cross-sys"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3aaad7cc693a12f8da9fd481ac938fdd0fc1b2e73b9f710eb723d3e7f5607f0a"
+dependencies = [
+ "bytemuck",
+ "cc",
+ "glob",
+ "num-derive",
+ "num-traits",
+]
+
+[[package]]
+name = "spirv-cross2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6f49915b223bae37821a45c93ad5c269cb6df620b4147b567cda4cf8951061e"
+dependencies = [
+ "bitflags 2.6.0",
+ "bytemuck",
+ "memchr",
+ "spirv",
+ "spirv-cross-sys",
+ "spirv-cross2-derive",
+ "thiserror",
+]
+
+[[package]]
+name = "spirv-cross2-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18017a288e6ce64dd5d56510166baeabb01849483555c031f573c091b6934a64"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.77",
 ]
 
 [[package]]

@@ -96,7 +96,7 @@ impl FilterChainD3D9 {
     ) -> error::Result<Vec<FilterPass>> {
         let builder_fn = |(index, (config, source, mut reflect)): (usize, ShaderPassMeta)| {
             let mut reflection = reflect.reflect(index, semantics)?;
-            let hlsl = reflect.compile(Some(HlslShaderModel::V3_0))?;
+            let hlsl = reflect.compile(Some(HlslShaderModel::ShaderModel3_0))?;
 
             // eprintln!("===vs===\n{}", hlsl.vertex);
 

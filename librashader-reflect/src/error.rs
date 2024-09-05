@@ -20,7 +20,7 @@ pub enum ShaderCompileError {
 
     /// Error when transpiling from spirv-cross.
     #[error("spirv-cross error: {0:?}")]
-    SpirvCrossCompileError(#[from] spirv_cross::ErrorCode),
+    SpirvCrossCompileError(#[from] spirv_cross2::SpirvCrossError),
 
     /// Error when transpiling from spirv-to-dxil
     #[cfg(all(target_os = "windows", feature = "dxil"))]
@@ -87,7 +87,7 @@ pub enum SemanticsErrorKind {
 pub enum ShaderReflectError {
     /// Reflection error from spirv-cross.
     #[error("spirv cross error: {0}")]
-    SpirvCrossError(#[from] spirv_cross::ErrorCode),
+    SpirvCrossError(#[from] spirv_cross2::SpirvCrossError),
     /// Error when validating vertex shader semantics.
     #[error("error when verifying vertex semantics: {0:?}")]
     VertexSemanticError(SemanticsErrorKind),

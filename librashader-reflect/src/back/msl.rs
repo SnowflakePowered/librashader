@@ -9,8 +9,8 @@ use crate::reflect::ReflectShader;
 use naga::back::msl::TranslationInfo;
 use naga::Module;
 
-/// The HLSL shader model version to target.
-pub use spirv_cross::msl::Version as MslVersion;
+/// The MSL language version to target.
+pub use spirv_cross2::compile::msl::MslVersion;
 
 /// Compiler options for MSL
 #[derive(Debug, Default, Clone)]
@@ -22,7 +22,7 @@ pub struct MslNagaCompileOptions {
 /// The context for a MSL compilation via spirv-cross.
 pub struct CrossMslContext {
     /// The compiled HLSL program.
-    pub artifact: CompiledProgram<spirv_cross::msl::Target>,
+    pub artifact: CompiledProgram<spirv_cross2::targets::Msl>,
 }
 
 impl FromCompilation<SpirvCompilation, SpirvCross> for MSL {

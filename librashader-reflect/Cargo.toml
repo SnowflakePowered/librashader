@@ -22,7 +22,7 @@ librashader-common = { path = "../librashader-common", version = "0.3.3" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.3.3" }
 librashader-presets = { path = "../librashader-presets", version = "0.3.3" }
 
-spirv_cross = { workspace = true, optional = true }
+spirv-cross2 = { workspace = true, optional = true }
 
 naga = { version = "22", optional = true }
 rspirv = { version = "0.12.0", optional = true }
@@ -40,11 +40,11 @@ optional = true
 
 [features]
 default = ["cross", "naga", "serialize", "wgsl", "msl"]
-dxil = ["spirv_cross/hlsl", "spirv-to-dxil"]
-wgsl = ["cross", "naga/wgsl-out", "spirv", "rspirv"]
-cross = [ "spirv_cross", "spirv_cross/glsl", "spirv_cross/hlsl", "spirv_cross/msl" ]
-naga = [ "rspirv", "spirv", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
-serialize = [ "serde" ]
-msl = [ "spirv_cross/msl", "naga/msl-out" ]
+dxil = ["spirv-cross2/hlsl", "dep:spirv-to-dxil"]
+wgsl = ["cross", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
+cross = [ "dep:spirv-cross2", "spirv-cross2/glsl", "spirv-cross2/hlsl", "spirv-cross2/msl" ]
+naga = [ "dep:rspirv", "dep:spirv", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
+serialize = [ "dep:serde" ]
+msl = [ "spirv-cross2/msl", "naga/msl-out" ]
 
 unstable-naga-in = ["naga/glsl-in"]

@@ -212,7 +212,7 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
             }
         };
 
-        return None;
+        None
     }
 }
 
@@ -566,7 +566,7 @@ impl NagaReflect {
             };
 
             let &Some(Binding::Location { location, .. }) = &frag_output.binding else {
-                return Err(ShaderReflectError::VertexSemanticError(
+                return Err(ShaderReflectError::FragmentSemanticError(
                     SemanticsErrorKind::MissingBinding,
                 ));
             };
@@ -845,10 +845,7 @@ impl NagaReflect {
         semantics: &ShaderSemantics,
         meta: &mut BindingMeta,
     ) -> Result<(), ShaderReflectError> {
-        let Some(semantic) = semantics
-            .texture_semantics
-            .texture_semantic(texture.name)
-        else {
+        let Some(semantic) = semantics.texture_semantics.texture_semantic(texture.name) else {
             return Err(
                 SemanticErrorBlame::Fragment.error(SemanticsErrorKind::UnknownSemantics(
                     texture.name.to_string(),

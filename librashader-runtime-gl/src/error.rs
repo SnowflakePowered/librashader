@@ -13,7 +13,7 @@ pub enum FilterChainError {
     #[error("fbo initialization error")]
     FramebufferInit(GLenum),
     #[error("SPIRV reflection error")]
-    SpirvCrossReflectError(#[from] spirv_cross::ErrorCode),
+    SpirvCrossReflectError(#[from] spirv_cross2::SpirvCrossError),
     #[error("shader preset parse error")]
     ShaderPresetError(#[from] ParsePresetError),
     #[error("shader preprocess error")]

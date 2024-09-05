@@ -19,7 +19,7 @@ librashader-reflect = { path = "../librashader-reflect", version = "0.3.3" }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.3.3" }
 librashader-cache = { path = "../librashader-cache", version = "0.3.3" }
 
-spirv_cross = { workspace = true }
+spirv-cross2 = { workspace = true, features = ["glsl"] }
 gl = "0.14.0"
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
