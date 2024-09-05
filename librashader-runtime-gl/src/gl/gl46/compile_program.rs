@@ -6,7 +6,8 @@ use gl::types::{GLint, GLsizei, GLuint};
 use librashader_cache::Cacheable;
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
-use spirv_cross::spirv::Decoration;
+use spirv_cross2::reflect::ResourceType;
+use spirv_cross2::spirv::Decoration;
 
 pub struct Gl4CompileProgram;
 
@@ -45,7 +46,7 @@ impl CompileProgram for Gl4CompileProgram {
         glsl: ShaderCompilerOutput<String, CrossGlslContext>,
         cache: bool,
     ) -> crate::error::Result<(GLuint, UniformLocation<GLuint>)> {
-        let vertex_resources = glsl.context.artifact.vertex.get_shader_resources()?;
+        let vertex_resources = glsl.context.artifact.vertex.shader_resources()?;
 
         let program = librashader_cache::cache_shader_object(
             "opengl4",
@@ -58,13 +59,18 @@ impl CompileProgram for Gl4CompileProgram {
                 gl::AttachShader(program, vertex);
                 gl::AttachShader(program, fragment);
 
-                for res in &vertex_resources.stage_inputs {
-                    let loc = glsl
+                for res in vertex_resources.resources_for_type(ResourceType::StageInput)? {
+                    let Some(loc) = glsl
                         .context
                         .artifact
                         .vertex
-                        .get_decoration(res.id, Decoration::Location)?;
-                    let mut name = res.name.clone();
+                        .decoration(res.id, Decoration::Location)?
+                        .and_then(|d| d.as_literal())
+                    else {
+                        continue;
+                    };
+
+                    let mut name = res.name.to_string();
                     name.push('\0');
 
                     gl::BindAttribLocation(program, loc, name.as_str().as_ptr().cast())

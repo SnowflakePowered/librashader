@@ -190,8 +190,6 @@ pub mod reflect {
 
         pub use librashader_reflect::back::msl::CrossMslContext;
 
-        pub use librashader_reflect::reflect::cross::CompiledAst;
-
         pub use librashader_reflect::reflect::cross::CompiledProgram;
     }
 

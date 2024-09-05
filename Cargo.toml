@@ -20,8 +20,7 @@ resolver = "2"
 [workspace.dependencies]
 windows = "0.58.0"
 ash = "0.38"
-spirv_cross = { package = "librashader-spirv-cross", version = "0.26" }
-
+spirv-cross2 = { version = "0.4", default-features = false }
 objc2-metal = { version = "0.2" }
 objc2 = { version = "0.5.0" }
 

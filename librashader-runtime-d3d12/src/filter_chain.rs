@@ -550,7 +550,7 @@ impl FilterChainD3D12 {
                         } else {
                             let hlsl_reflection = hlsl.reflect(index, semantics)?;
                             let hlsl = hlsl.compile(Some(
-                                librashader_reflect::back::hlsl::HlslShaderModel::V6_0,
+                                librashader_reflect::back::hlsl::HlslShaderModel::ShaderModel6_0,
                             ))?;
 
                             let graphics_pipeline = D3D12GraphicsPipeline::new_from_hlsl(

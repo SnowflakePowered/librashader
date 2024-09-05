@@ -7,7 +7,7 @@ use crate::reflect::cross::{CompiledProgram, SpirvCross};
 use crate::reflect::ReflectShader;
 
 /// The HLSL shader model version to target.
-pub use spirv_cross::hlsl::ShaderModel as HlslShaderModel;
+pub use spirv_cross2::compile::hlsl::HlslShaderModel;
 
 /// Buffer assignment information
 #[derive(Debug, Clone)]
@@ -99,7 +99,7 @@ impl HlslBufferAssignments {
 /// The context for a HLSL compilation via spirv-cross.
 pub struct CrossHlslContext {
     /// The compiled HLSL program.
-    pub artifact: CompiledProgram<spirv_cross::hlsl::Target>,
+    pub artifact: CompiledProgram<spirv_cross2::targets::Hlsl>,
     pub vertex_buffers: HlslBufferAssignments,
     pub fragment_buffers: HlslBufferAssignments,
 }

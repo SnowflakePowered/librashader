@@ -6,7 +6,7 @@ use crate::reflect::cross::{CompiledProgram, SpirvCross};
 use crate::reflect::ReflectShader;
 
 /// The GLSL version to target.
-pub use spirv_cross::glsl::Version as GlslVersion;
+pub use spirv_cross2::compile::glsl::GlslVersion;
 
 use crate::reflect::cross::glsl::GlslReflect;
 
@@ -15,7 +15,7 @@ pub struct CrossGlslContext {
     /// A map of bindings of sampler names to binding locations.
     pub sampler_bindings: Vec<(String, u32)>,
     /// The compiled program artifact after compilation.
-    pub artifact: CompiledProgram<spirv_cross::glsl::Target>,
+    pub artifact: CompiledProgram<spirv_cross2::targets::Glsl>,
 }
 
 impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {

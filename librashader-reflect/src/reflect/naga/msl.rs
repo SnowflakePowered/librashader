@@ -8,19 +8,9 @@ use naga::back::msl::{
 };
 use naga::valid::{Capabilities, ValidationFlags};
 use naga::{Module, TypeInner};
-use spirv_cross::msl::Version;
 
 fn msl_version_to_naga_msl(version: MslVersion) -> (u8, u8) {
-    match version {
-        Version::V1_0 => (1, 0),
-        Version::V1_1 => (1, 1),
-        Version::V1_2 => (1, 2),
-        Version::V2_0 => (2, 0),
-        Version::V2_1 => (2, 1),
-        Version::V2_2 => (2, 2),
-        Version::V2_3 => (2, 3),
-        _ => (0, 0),
-    }
+    (version.major as u8, version.minor as u8)
 }
 
 impl CompileShader<MSL> for NagaReflect {
@@ -33,7 +23,7 @@ impl CompileShader<MSL> for NagaReflect {
     ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
         // https://github.com/libretro/RetroArch/blob/434e94c782af2e4d4277a24b7ed8e5fc54870088/gfx/drivers_shader/slang_process.cpp#L524
 
-        let lang_version = msl_version_to_naga_msl(options.unwrap_or(MslVersion::V2_0));
+        let lang_version = msl_version_to_naga_msl(options.unwrap_or(MslVersion::new(2, 0, 0)));
 
         let mut vert_options = Options {
             lang_version,
