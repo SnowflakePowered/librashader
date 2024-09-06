@@ -98,7 +98,7 @@ jobs:
   build-windows-7:
     strategy:
       matrix:
-        profile: ['debug', 'release', 'optimized']
+        profile: ['release', 'optimized']
       fail-fast: false
     runs-on: windows-latest
     name: x86_64-win7-windows
