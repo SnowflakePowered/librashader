@@ -2,9 +2,9 @@
 //!
 //! This crate contains facilities and types for resolving `#include` directives in `.slang`
 //! into a single compilation unit. `#pragma` directives are also parsed and resolved as
-//! [`ShaderParameter`](crate::ShaderParameter) structs.
+//! [`ShaderParameter`] structs.
 //!
-//! The resulting [`ShaderSource`](crate::ShaderSource) can then be passed into a
+//! The resulting [`ShaderSource`]can then be passed into a
 //! reflection target for reflection and compilation into the target shader format.
 //!
 //! Re-exported as [`librashader::preprocess`](https://docs.rs/librashader/latest/librashader/preprocess/index.html).

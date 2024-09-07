@@ -455,7 +455,7 @@ pub struct ShaderSemantics {
 
 /// The binding of a uniform after the shader has been linked.
 ///
-/// Used in combination with [`MemberOffset`](crate::reflect::semantics::MemberOffset) to keep track
+/// Used in combination with [`MemberOffset`] to keep track
 /// of semantics at each frame pass.
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum UniformBinding {
