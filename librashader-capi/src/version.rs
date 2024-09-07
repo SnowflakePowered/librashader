@@ -28,10 +28,16 @@ pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 1;
 /// ABI versions are not backwards compatible. It is not
 /// valid to load a librashader C API instance for any ABI
 /// version not equal to LIBRASHADER_CURRENT_ABI.
+///
 /// ## ABI Versions
 /// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
-/// - ABI version 2: 0.4.0
+/// - ABI version 2: 0.5.0
+///     - Reduced texture size information needed for some runtimes.
+///     - Removed wrapper structs for Direct3D 11 SRV and RTV handles.
+///     - Removed `gl_context_init`.
+///     - Make viewport handling consistent across runtimes, which are now
+///       span the output render target if omitted.
 pub const LIBRASHADER_CURRENT_ABI: LIBRASHADER_ABI_VERSION = 2;
 
 /// Function pointer definition for libra_abi_version
