@@ -49,6 +49,9 @@
 //! For documentation on the librashader C API, see [librashader-capi](https://docs.rs/librashader-capi/latest/librashader_capi/),
 //! or [`librashader.h`](https://github.com/SnowflakePowered/librashader/blob/master/include/librashader.h).
 
+pub use librashader_common::map::FastHashMap;
+pub use librashader_common::map::ShortString;
+
 #[cfg(feature = "presets")]
 #[doc(cfg(feature = "presets"))]
 /// Parsing and usage of shader presets.
