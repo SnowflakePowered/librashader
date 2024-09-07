@@ -46,6 +46,8 @@
 #![feature(impl_trait_in_assoc_type)]
 #![feature(let_chains)]
 
+#![allow(stable_features)]
+#![feature(c_str_literals)]
 /// Shader codegen backends.
 pub mod back;
 /// Error types.
