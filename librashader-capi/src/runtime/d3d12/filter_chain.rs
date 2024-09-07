@@ -287,7 +287,7 @@ extern_fn! {
             let name = CStr::from_ptr(param_name);
             let name = name.to_str()?;
 
-            if chain.parameters().set_parameter(name, value).is_none() {
+            if chain.parameters().set_parameter_value(name, value).is_none() {
                 return LibrashaderError::UnknownShaderParameter(param_name).export()
             }
         }
@@ -312,7 +312,7 @@ extern_fn! {
             let name = CStr::from_ptr(param_name);
             let name = name.to_str()?;
 
-            let Some(value) = chain.parameters().get_parameter(name) else {
+            let Some(value) = chain.parameters().parameter_value(name) else {
                 return LibrashaderError::UnknownShaderParameter(param_name).export()
             };
 

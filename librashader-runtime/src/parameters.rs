@@ -35,14 +35,14 @@ impl RuntimeParameters {
     }
 
     /// Get the value of a runtime parameter
-    pub fn get_parameter(&self, name: &str) -> Option<f32> {
+    pub fn parameter_value(&self, name: &str) -> Option<f32> {
         self.parameters.load().get::<str>(name.as_ref()).copied()
     }
 
     /// Set a runtime parameter.
     ///
     /// This is a relatively slow operation as it will be synchronized across threads.
-    pub fn set_parameter(&self, name: &str, new_value: f32) -> Option<f32> {
+    pub fn set_parameter_value(&self, name: &str, new_value: f32) -> Option<f32> {
         let mut updated_map = FastHashMap::clone(&self.parameters.load());
 
         if let Some(value) = updated_map.get_mut::<str>(name.as_ref()) {
