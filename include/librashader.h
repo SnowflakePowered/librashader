@@ -1040,7 +1040,12 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 /// ## ABI Versions
 /// - ABI version 0: null instance (unloaded)
 /// - ABI version 1: 0.1.0
-/// - ABI version 2: 0.4.0
+/// - ABI version 2: 0.5.0
+///     - Reduced texture size information needed for some runtimes.
+///     - Removed wrapper structs for Direct3D 11 SRV and RTV handles.
+///     - Removed `gl_context_init`.
+///     - Make viewport handling consistent across runtimes, which are now
+///       span the output render target if omitted.
 #define LIBRASHADER_CURRENT_ABI 2
 
 #ifdef __cplusplus

@@ -59,6 +59,9 @@
 //! to the same context as the drawing thread, and in Direct3D 11, where filter chain creation is unsafe
 //! if the `ID3D11Device` was created with `D3D11_CREATE_DEVICE_SINGLETHREADED`. Metal is entirely thread unsafe.
 //!
+//! Setting and retrieving filter parameters from any thread, regardless of the lack of other thread safety-guarantees
+//! of the runtime, is always thread safe.
+//!
 //! You must ensure that only thread has access to a created filter pass **before** you call `*_frame`. `*_frame` may only be
 //! called from one thread at a time.
 #![cfg_attr(feature = "docsrs", feature(doc_cfg))]
