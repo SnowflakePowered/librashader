@@ -204,7 +204,7 @@ libra_error_t __librashader__noop_gl_filter_chain_create(
 
 libra_error_t __librashader__noop_gl_filter_chain_frame(
     libra_gl_filter_chain_t *chain, size_t frame_count,
-    struct libra_source_image_gl_t image, struct libra_output_framebuffer_gl_t out,
+    struct libra_image_gl_t image, struct libra_image_gl_t out,
     const struct libra_viewport_t *viewport, const float *mvp,
     const struct frame_gl_opt_t *opt) {
     return NULL;

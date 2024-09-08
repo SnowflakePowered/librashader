@@ -19,7 +19,7 @@ pub struct GLFramebuffer {
     pub(crate) format: u32,
     pub(crate) max_levels: u32,
     pub(crate) mip_levels: u32,
-    pub(crate) is_raw: bool,
+    pub(crate) is_extern_image: bool,
     pub(crate) ctx: Arc<glow::Context>,
 }
 
@@ -42,7 +42,7 @@ impl GLFramebuffer {
             max_levels: miplevels,
             mip_levels: miplevels,
             fbo,
-            is_raw: true,
+            is_extern_image: true,
             ctx,
         }
     }
@@ -89,14 +89,58 @@ impl GLFramebuffer {
     }
 }
 
+/// A state-checked wrapper around a raw framebuffer, used exclusively for output images.
+pub struct OutputFramebuffer {
+    framebuffer: Option<GLFramebuffer>,
+    ctx: Arc<glow::Context>,
+}
+
+impl OutputFramebuffer {
+    pub fn new(ctx: &Arc<glow::Context>) -> Self {
+        OutputFramebuffer {
+            ctx: Arc::clone(ctx),
+            framebuffer: None,
+        }
+    }
+
+    /// Ensure that the renderbuffer is up to date.
+    pub fn ensure<T: FramebufferInterface>(&mut self, image: &GLImage) -> Result<&GLFramebuffer> {
+        let texture = image.handle;
+        let size = image.size;
+        let format = image.format;
+
+        let Some(framebuffer) = self.framebuffer.as_mut() else {
+            self.framebuffer = Some(T::new_raw(&self.ctx, texture, size, format, 1)?);
+            return Ok(self.framebuffer.as_ref().unwrap());
+        };
+
+        assert!(
+            framebuffer.is_extern_image,
+            "Somehow an internal image got into the renderbuffer!"
+        );
+
+        if framebuffer.image == texture && framebuffer.size == size && framebuffer.format == format
+        {
+            // Problem Case #3 :cry:
+            return Ok(self.framebuffer.as_ref().unwrap());
+        };
+
+        // Replace with a new framebuffer.
+        let new = T::new_raw(&self.ctx, texture, size, format, 1)?;
+        std::mem::swap(&mut self.framebuffer, &mut Some(new));
+        Ok(self.framebuffer.as_ref().unwrap())
+    }
+}
+
 impl Drop for GLFramebuffer {
     fn drop(&mut self) {
-        if self.is_raw {
-            return;
-        }
-
         unsafe {
             self.ctx.delete_framebuffer(self.fbo);
+
+            if self.is_extern_image {
+                return;
+            }
+
             if let Some(image) = self.image {
                 self.ctx.delete_texture(image);
             }

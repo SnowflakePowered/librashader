@@ -29,8 +29,57 @@ impl FramebufferInterface for Gl46Framebuffer {
             max_levels,
             mip_levels: 0,
             fbo: framebuffer,
-            is_raw: false,
+            is_extern_image: false,
             ctx: Arc::clone(&context),
+        })
+    }
+
+    fn new_raw(
+        ctx: &Arc<glow::Context>,
+        image: Option<glow::Texture>,
+        mut size: Size<u32>,
+        format: u32,
+        miplevels: u32,
+    ) -> Result<GLFramebuffer> {
+        let framebuffer = unsafe {
+            ctx.create_named_framebuffer()
+                .map_err(FilterChainError::GlError)?
+        };
+
+        if size.width == 0 {
+            size.width = 1;
+        }
+        if size.height == 0 {
+            size.height = 1;
+        }
+
+        if size.width > librashader_runtime::scaling::MAX_TEXEL_SIZE as u32 {
+            size.width = librashader_runtime::scaling::MAX_TEXEL_SIZE as u32 - 1;
+        }
+
+        if size.height > librashader_runtime::scaling::MAX_TEXEL_SIZE as u32 {
+            size.height = librashader_runtime::scaling::MAX_TEXEL_SIZE as u32 - 1;
+        }
+
+        let status = unsafe {
+            ctx.named_framebuffer_texture(Some(framebuffer), glow::COLOR_ATTACHMENT0, image, 0);
+
+            ctx.check_named_framebuffer_status(Some(framebuffer), glow::FRAMEBUFFER)
+        };
+
+        if status != glow::FRAMEBUFFER_COMPLETE {
+            return Err(FilterChainError::FramebufferInit(status));
+        }
+
+        Ok(GLFramebuffer {
+            image,
+            size,
+            format,
+            max_levels: miplevels,
+            mip_levels: miplevels,
+            fbo: framebuffer,
+            is_extern_image: true,
+            ctx: Arc::clone(&ctx),
         })
     }
 
@@ -90,7 +139,7 @@ impl FramebufferInterface for Gl46Framebuffer {
         Ok(())
     }
     fn init(fb: &mut GLFramebuffer, mut size: Size<u32>, format: impl Into<u32>) -> Result<()> {
-        if fb.is_raw {
+        if fb.is_extern_image {
             return Ok(());
         }
         fb.format = format.into();
