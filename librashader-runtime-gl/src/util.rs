@@ -1,4 +1,4 @@
-use gl::types::{GLenum, GLuint};
+use gl::types::{GLenum, GLint, GLuint};
 
 use crate::error;
 use crate::error::FilterChainError;
@@ -6,12 +6,13 @@ use librashader_reflect::back::glsl::GlslVersion;
 
 pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GLuint> {
     let (shader, compile_status) = unsafe {
+        let lens = [source.len() as GLint];
         let shader = gl::CreateShader(stage);
         gl::ShaderSource(
             shader,
             1,
-            &source.as_bytes().as_ptr().cast(),
-            std::ptr::null(),
+            &source.as_ptr().cast(),
+            lens.as_ptr(),
         );
         gl::CompileShader(shader);
         let mut compile_status = 0;
