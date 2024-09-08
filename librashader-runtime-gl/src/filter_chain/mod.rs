@@ -2,7 +2,7 @@ use crate::error::{FilterChainError, Result};
 use crate::filter_chain::chain::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
-use crate::{GLFramebuffer, GLImage};
+use crate::GLImage;
 use librashader_presets::ShaderPreset;
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -63,7 +63,7 @@ impl FilterChainGL {
     pub unsafe fn frame(
         &mut self,
         input: &GLImage,
-        viewport: &Viewport<&GLFramebuffer>,
+        viewport: &Viewport<&GLImage>,
         frame_count: usize,
         options: Option<&FrameOptionsGL>,
     ) -> Result<()> {

@@ -18,6 +18,5 @@ mod texture;
 pub mod error;
 pub mod options;
 
-pub use crate::gl::GLFramebuffer;
 pub use filter_chain::FilterChainGL;
 pub use framebuffer::GLImage;

@@ -95,6 +95,16 @@ pub(crate) trait UboRing<const SIZE: usize> {
 
 pub(crate) trait FramebufferInterface {
     fn new(context: &Arc<glow::Context>, max_levels: u32) -> Result<GLFramebuffer>;
+
+    /// Create a new raw framebuffer for the given image, size, format, and miplevels.
+    fn new_raw(
+        context: &Arc<glow::Context>,
+        image: Option<glow::Texture>,
+        size: Size<u32>,
+        format: u32,
+        miplevels: u32,
+    ) -> Result<GLFramebuffer>;
+
     fn scale(
         fb: &mut GLFramebuffer,
         scaling: Scale2D,
@@ -104,7 +114,7 @@ pub(crate) trait FramebufferInterface {
         original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
-        if fb.is_raw {
+        if fb.is_extern_image {
             return Ok(fb.size);
         }
 
@@ -155,3 +165,5 @@ pub(crate) trait GLInterface {
     type BindTexture: BindTexture;
     type CompileShader: CompileProgram;
 }
+
+pub(crate) use framebuffer::OutputFramebuffer;

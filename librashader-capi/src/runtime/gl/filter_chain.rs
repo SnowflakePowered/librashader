@@ -4,9 +4,8 @@ use crate::ctypes::{
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::gl::error::FilterChainError;
 use librashader::runtime::gl::{
-    FilterChain, FilterChainOptions, FrameOptions, GLFramebuffer, GLImage,
+    FilterChain, FilterChainOptions, FrameOptions, GLImage,
 };
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
@@ -21,36 +20,21 @@ use std::sync::Arc;
 /// A GL function loader that librashader needs to be initialized with.
 pub type libra_gl_loader_t = unsafe extern "system" fn(*const c_char) -> *const c_void;
 
-/// OpenGL parameters for the source image.
+/// OpenGL parameters for an image.
 #[repr(C)]
-pub struct libra_source_image_gl_t {
-    /// A texture GLuint to the source image.
+pub struct libra_image_gl_t {
+    /// A texture GLuint to the texture.
     pub handle: u32,
-    /// The format of the source image.
+    /// The format of the texture.
     pub format: u32,
-    /// The width of the source image.
+    /// The width of the texture.
     pub width: u32,
-    /// The height of the source image.
+    /// The height of the texture.
     pub height: u32,
 }
 
-/// OpenGL parameters for the output framebuffer.
-#[repr(C)]
-pub struct libra_output_framebuffer_gl_t {
-    /// A framebuffer GLuint to the output framebuffer.
-    pub fbo: u32,
-    /// A texture GLuint to the logical buffer of the output framebuffer.
-    pub texture: u32,
-    /// The format of the output framebuffer.
-    pub format: u32,
-    /// The width of the output image.
-    pub width: u32,
-    /// The height of the output image.
-    pub height: u32,
-}
-
-impl From<libra_source_image_gl_t> for GLImage {
-    fn from(value: libra_source_image_gl_t) -> Self {
+impl From<libra_image_gl_t> for GLImage {
+    fn from(value: libra_image_gl_t) -> Self {
         let handle = NonZeroU32::try_from(value.handle)
             .ok()
             .map(glow::NativeTexture);
@@ -166,7 +150,7 @@ extern_fn! {
     ///
     /// - `chain` is a handle to the filter chain.
     /// - `frame_count` is the number of frames passed to the shader
-    /// - `image` is a `libra_source_image_gl_t`, containing the name of a Texture, format, and size information to
+    /// - `image` is a `libra_image_gl_t`, containing the name of a Texture, format, and size information to
     ///    to an image that will serve as the source image for the frame.
     /// - `out` is a `libra_output_framebuffer_gl_t`, containing the name of a Framebuffer, the name of a Texture, format,
     ///    and size information for the render target of the frame.
@@ -193,14 +177,16 @@ extern_fn! {
     nopanic fn libra_gl_filter_chain_frame(
         chain: *mut libra_gl_filter_chain_t,
         frame_count: usize,
-        image: libra_source_image_gl_t,
-        out: libra_output_framebuffer_gl_t,
+        image: libra_image_gl_t,
+        out: libra_image_gl_t,
         viewport: *const libra_viewport_t,
         mvp: *const f32,
         opt: *const MaybeUninit<frame_gl_opt_t>,
     ) mut |chain| {
         assert_some_ptr!(mut chain);
         let image: GLImage = image.into();
+        let out: GLImage = out.into();
+
         let mvp = if mvp.is_null() {
             None
         } else {
@@ -214,26 +200,14 @@ extern_fn! {
 
         let opt = opt.map(FromUninit::from_uninit);
 
-        let texture = NonZeroU32::try_from(out.texture)
-            .ok()
-            .map(glow::NativeTexture);
-
-        let fbo = NonZeroU32::try_from(out.fbo)
-            .ok()
-            .map(glow::NativeFramebuffer)
-            .ok_or(FilterChainError::GlInvalidFramebuffer)?;
-
-        let framebuffer = GLFramebuffer::new_from_raw(Arc::clone(chain.get_context()),
-            texture, fbo, out.format, Size::new(out.width, out.height), 1);
-
          let viewport = if viewport.is_null() {
-            Viewport::new_render_target_sized_origin(&framebuffer, mvp)?
+            Viewport::new_render_target_sized_origin(&out, mvp)?
         } else {
             let viewport = unsafe { viewport.read() };
             Viewport {
                 x: viewport.x,
                 y: viewport.y,
-                output: &framebuffer,
+                output: &out,
                 size: Size {
                     height: viewport.height,
                     width: viewport.width

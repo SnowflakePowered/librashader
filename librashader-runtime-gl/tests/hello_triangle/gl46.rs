@@ -6,7 +6,7 @@ use glfw::{Context, Glfw, Window, WindowEvent};
 use glow::HasContext;
 use librashader_common::{GetSize, Size, Viewport};
 
-use librashader_runtime_gl::{FilterChainGL, GLFramebuffer, GLImage};
+use librashader_runtime_gl::{FilterChainGL, GLImage};
 
 const WIDTH: u32 = 800;
 const HEIGHT: u32 = 600;
@@ -348,14 +348,11 @@ void main()
     let (fb_width, fb_height) = window.get_framebuffer_size();
     let (vp_width, vp_height) = window.get_size();
 
-    let output = GLFramebuffer::new_from_raw(
-        Arc::clone(gl),
-        Some(output_texture),
-        output_framebuffer_handle,
-        glow::RGBA8,
-        Size::new(vp_width as u32, vp_height as u32),
-        1,
-    );
+    let output = GLImage {
+        handle: Some(output_texture),
+        format: glow::RGBA8,
+        size: Size::new(vp_width as u32, vp_height as u32),
+    };
 
     while !window.should_close() {
         glfw.poll_events();
