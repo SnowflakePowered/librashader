@@ -2,7 +2,8 @@ use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::{FilterPass, UniformOffset};
 use crate::gl::{
-    CompileProgram, DrawQuad, FramebufferInterface, GLFramebuffer, GLInterface, LoadLut, UboRing,
+    CompileProgram, DrawQuad, FramebufferInterface, GLFramebuffer, GLInterface, LoadLut,
+    OutputFramebuffer, UboRing,
 };
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 use crate::samplers::SamplerSet;
@@ -39,6 +40,7 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     output_framebuffers: Box<[GLFramebuffer]>,
     feedback_framebuffers: Box<[GLFramebuffer]>,
     history_framebuffers: VecDeque<GLFramebuffer>,
+    render_target: OutputFramebuffer,
     default_options: FrameOptionsGL,
     draw_last_pass_feedback: bool,
 }
@@ -183,6 +185,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // create vertex objects
         let draw_quad = T::DrawQuad::new(&context)?;
 
+        let output = OutputFramebuffer::new(&context);
+
         Ok(FilterChainImpl {
             draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
@@ -201,6 +205,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 context,
             },
             default_options: Default::default(),
+            render_target: output,
         })
     }
 
@@ -278,7 +283,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
     pub unsafe fn frame(
         &mut self,
         frame_count: usize,
-        viewport: &Viewport<&GLFramebuffer>,
+        viewport: &Viewport<&GLImage>,
         input: &GLImage,
         options: Option<&FrameOptionsGL>,
     ) -> error::Result<()> {
@@ -385,6 +390,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
             let index = passes_len - 1;
+            let final_viewport = self
+                .render_target
+                .ensure::<T::FramebufferInterface>(viewport.output)?;
+
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
@@ -411,7 +420,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 viewport,
                 &original,
                 &source,
-                RenderTarget::viewport(viewport),
+                RenderTarget::viewport_with_output(final_viewport, viewport),
             );
             self.common.output_textures[passes_len - 1] = viewport
                 .output

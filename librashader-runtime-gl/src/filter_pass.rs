@@ -12,10 +12,10 @@ use librashader_runtime::render_target::RenderTarget;
 
 use crate::binding::{GlUniformBinder, GlUniformStorage, UniformLocation, VariableLocation};
 use crate::filter_chain::FilterCommon;
-use crate::gl::{BindTexture, GLInterface, UboRing};
+use crate::gl::{BindTexture, GLFramebuffer, GLInterface, UboRing};
 use crate::options::FrameOptionsGL;
 use crate::samplers::SamplerSet;
-use crate::GLFramebuffer;
+use crate::GLImage;
 
 use crate::texture::InputTexture;
 
@@ -82,7 +82,7 @@ impl<T: GLInterface> FilterPass<T> {
         parent: &FilterCommon,
         frame_count: u32,
         options: &FrameOptionsGL,
-        viewport: &Viewport<&GLFramebuffer>,
+        viewport: &Viewport<&GLImage>,
         original: &InputTexture,
         source: &InputTexture,
         output: RenderTarget<GLFramebuffer, i32>,
@@ -177,7 +177,7 @@ impl<T: GLInterface> FilterPass<T> {
         frame_count: u32,
         options: &FrameOptionsGL,
         fb_size: Size<u32>,
-        viewport: &Viewport<&GLFramebuffer>,
+        viewport: &Viewport<&GLImage>,
         original: &InputTexture,
         source: &InputTexture,
     ) {
