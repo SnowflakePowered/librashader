@@ -27,7 +27,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
-use objc2::rc::Id;
+use objc2::rc::{Id, Retained};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::{
@@ -204,8 +204,8 @@ impl FilterChainMetal {
 
     fn push_history(
         &mut self,
-        input: &ProtocolObject<dyn MTLTexture>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
+        input: &ProtocolObject<dyn MTLTexture>,
     ) -> error::Result<()> {
         let mipmapper = cmd
             .blitCommandEncoder()
@@ -227,10 +227,11 @@ impl FilterChainMetal {
             }
 
             back.copy_from(&mipmapper, input)?;
-
+            mipmapper.endEncoding();
             self.history_framebuffers.push_front(back);
+        } else {
+            mipmapper.endEncoding();
         }
-        mipmapper.endEncoding();
         Ok(())
     }
 
@@ -326,20 +327,7 @@ impl FilterChainMetal {
         options: Option<&FrameOptionsMetal>,
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
-        let passes = &mut self.passes[0..max];
         if let Some(options) = &options {
-            let desc = unsafe {
-                let desc = MTLRenderPassDescriptor::new();
-                desc.colorAttachments()
-                    .objectAtIndexedSubscript(0)
-                    .setLoadAction(MTLLoadAction::Clear);
-
-                desc.colorAttachments()
-                    .objectAtIndexedSubscript(0)
-                    .setStoreAction(MTLStoreAction::DontCare);
-                desc
-            };
-
             let clear_desc = unsafe { MTLRenderPassDescriptor::new() };
             if options.clear_history {
                 for (index, history) in self.history_framebuffers.iter().enumerate() {
@@ -352,13 +340,17 @@ impl FilterChainMetal {
                         ca.setStoreAction(MTLStoreAction::Store);
                     }
                 }
-            }
 
-            let clearpass = cmd
-                .renderCommandEncoderWithDescriptor(&desc)
-                .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
-            clearpass.endEncoding();
+                let clearpass = cmd
+                    .renderCommandEncoderWithDescriptor(&clear_desc)
+                    .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
+                clearpass.endEncoding();
+            }
         }
+
+        self.push_history(&cmd, &input)?;
+
+        let passes = &mut self.passes[0..max];
         if passes.is_empty() {
             return Ok(());
         }
@@ -482,7 +474,6 @@ impl FilterChainMetal {
             )?;
         }
 
-        self.push_history(&input, &cmd)?;
         self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }

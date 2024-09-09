@@ -28,5 +28,5 @@ fn select_optimal_pixel_format(format: MTLPixelFormat) -> MTLPixelFormat {
     if format == MTLPixelFormat::RGBA8Unorm_sRGB {
         return MTLPixelFormat::BGRA8Unorm_sRGB;
     }
-    return format;
+    format
 }
