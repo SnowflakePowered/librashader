@@ -70,11 +70,11 @@ impl OwnedTexture {
                 1
             });
 
-            descriptor.setStorageMode(MTLStorageMode::Private);
             descriptor.setUsage(
                 MTLTextureUsage::ShaderRead
                     | MTLTextureUsage::ShaderWrite
-                    | MTLTextureUsage::RenderTarget,
+                    | MTLTextureUsage::RenderTarget
+                | MTLTextureUsage::PixelFormatView,
             );
 
             descriptor
@@ -106,7 +106,7 @@ impl OwnedTexture {
             || (!mipmap && self.max_miplevels != 1)
             || format != select_optimal_pixel_format(format)
         {
-            let mut new = OwnedTexture::new(device, size, self.max_miplevels, format)?;
+            let mut new = OwnedTexture::new(device, size, self.max_miplevels, select_optimal_pixel_format(format))?;
             std::mem::swap(self, &mut new);
         }
         Ok(size)
