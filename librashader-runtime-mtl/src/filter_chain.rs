@@ -83,7 +83,6 @@ pub(crate) struct FilterCommon {
     pub luts: FastHashMap<usize, LutTexture>,
     pub samplers: SamplerSet,
     pub config: RuntimeParameters,
-    pub internal_frame_count: i32,
     pub(crate) draw_quad: DrawQuad,
     device: Id<ProtocolObject<dyn MTLDevice>>,
 }
@@ -304,7 +303,6 @@ impl FilterChainMetal {
                 output_textures,
                 feedback_textures,
                 history_textures,
-                internal_frame_count: 0,
             },
             passes: filters,
             output_framebuffers,
@@ -474,7 +472,6 @@ impl FilterChainMetal {
             )?;
         }
 
-        self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
         Ok(())
     }
 }
