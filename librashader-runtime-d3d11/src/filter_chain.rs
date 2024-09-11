@@ -495,11 +495,32 @@ impl FilterChainD3D11 {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
+            let index = passes_len - 1;
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
+
+            // Draw to output_framebuffers for proper handling of feedback.
+
+            let feedback_target = &self.output_framebuffers[index];
             pass.draw(
                 &ctx,
-                passes_len - 1,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                RenderTarget::viewport_with_output(
+                    &feedback_target.create_render_target_view()?,
+                    viewport,
+                ),
+                QuadType::Final,
+            )?;
+
+            pass.draw(
+                &ctx,
+                index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
                 options,
