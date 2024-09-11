@@ -385,13 +385,30 @@ impl FilterChainD3D9 {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
+            let index = passes_len - 1;
             source.filter = pass.config.filter;
             source.wrap = pass.config.wrap_mode;
             source.is_srgb = pass.config.srgb_framebuffer;
 
+            let feedback_target = &self.output_framebuffers[index];
+            let feedback_target_rtv = feedback_target.as_output()?;
+
             pass.draw(
                 &self.common.d3d9,
-                passes_len - 1,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                RenderTarget::viewport_with_output(&feedback_target_rtv, viewport),
+                QuadType::Final,
+            )?;
+
+            pass.draw(
+                &self.common.d3d9,
+                index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
                 options,
