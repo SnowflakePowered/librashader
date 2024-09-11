@@ -824,6 +824,53 @@ impl FilterChainD3D12 {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
+            let index = passes_len - 1;
+
+            source.filter = pass.config.filter;
+            source.wrap_mode = pass.config.wrap_mode;
+
+            let feedback_target = &self.output_framebuffers[index];
+
+            if pass.pipeline.format != feedback_target.format {
+                // eprintln!("recompiling final pipeline");
+                pass.pipeline.recompile(
+                    feedback_target.format,
+                    &self.common.root_signature,
+                    &self.common.d3d12,
+                )?;
+            }
+
+            self.residuals
+                .dispose_barriers(util::d3d12_resource_transition(
+                    cmd,
+                    &feedback_target.handle.resource(),
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    D3D12_RESOURCE_STATE_RENDER_TARGET,
+                ));
+
+            let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
+            let out = RenderTarget::viewport_with_output(&view, viewport);
+            pass.draw(
+                cmd,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final,
+            )?;
+
+            self.residuals
+                .dispose_barriers(util::d3d12_resource_transition(
+                    cmd,
+                    &feedback_target.handle.resource(),
+                    D3D12_RESOURCE_STATE_RENDER_TARGET,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                ));
+
             if pass.pipeline.format != viewport.output.format {
                 // eprintln!("recompiling final pipeline");
                 pass.pipeline.recompile(
@@ -833,11 +880,7 @@ impl FilterChainD3D12 {
                 )?;
             }
 
-            source.filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-
             let out = RenderTarget::viewport(viewport);
-
             pass.draw(
                 cmd,
                 passes_len - 1,
