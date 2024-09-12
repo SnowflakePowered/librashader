@@ -8,12 +8,7 @@ pub unsafe fn gl_compile_shader(stage: GLenum, source: &str) -> error::Result<GL
     let (shader, compile_status) = unsafe {
         let lens = [source.len() as GLint];
         let shader = gl::CreateShader(stage);
-        gl::ShaderSource(
-            shader,
-            1,
-            &source.as_ptr().cast(),
-            lens.as_ptr(),
-        );
+        gl::ShaderSource(shader, 1, &source.as_ptr().cast(), lens.as_ptr());
         gl::CompileShader(shader);
         let mut compile_status = 0;
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut compile_status);

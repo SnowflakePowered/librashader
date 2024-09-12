@@ -361,12 +361,25 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
+            let index = passes_len - 1;
             source.filter = pass.config.filter;
             source.mip_filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
+            let target = &self.output_framebuffers[index];
             pass.draw(
-                passes_len - 1,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                RenderTarget::viewport_with_output(target, viewport),
+            );
+
+            pass.draw(
+                index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
                 options,

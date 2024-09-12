@@ -9,7 +9,7 @@ fn triangle_gl() {
 
     unsafe {
         let mut filter = FilterChainGL::load_from_path(
-            "../test/shaders_slang/crt/crt-royale.slangp",
+            "../test/shaders_slang/test/feedback.slangp",
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: false,
