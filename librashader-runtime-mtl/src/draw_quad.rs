@@ -58,22 +58,6 @@ pub struct DrawQuad {
 impl DrawQuad {
     pub fn new(device: &ProtocolObject<dyn MTLDevice>) -> Result<DrawQuad> {
         let vbo_data: &'static [u8] = bytemuck::cast_slice(&VBO_DATA);
-        // let buffer = unsafe {
-        //     device
-        //         .newBufferWithBytes_length_options(
-        //             // SAFETY: this pointer is const.
-        //             // https://developer.apple.com/documentation/metal/mtldevice/1433429-newbufferwithbytes
-        //             NonNull::new_unchecked(vbo_data.as_ptr() as *mut c_void),
-        //             vbo_data.len(),
-        //             if cfg!(target_os = "ios") {
-        //                 MTLResourceStorageModeShared
-        //             } else {
-        //                 MTLResourceStorageModeManaged
-        //             },
-        //         )
-        //         .ok_or(FilterChainError::BufferError)?
-        // };
-
         let buffer = unsafe {
             device
                 .newBufferWithBytes_length_options(
