@@ -124,12 +124,12 @@ impl<'a> State<'a> {
         //
         // let preset = ShaderPreset::try_parse("../test/basic.slangp").unwrap();
         //
-        // let preset = ShaderPreset::try_parse("../test/shaders_slang/test/history.slangp").unwrap();
+        let preset = ShaderPreset::try_parse("../test/shaders_slang/test/feedback.slangp").unwrap();
 
-        let preset = ShaderPreset::try_parse(
-            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-        )
-        .unwrap();
+        // let preset = ShaderPreset::try_parse(
+        //     "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+        // )
+        // .unwrap();
 
         let chain = FilterChainWgpu::load_from_preset(
             preset,

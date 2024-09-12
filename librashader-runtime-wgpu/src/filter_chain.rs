@@ -438,11 +438,11 @@ impl FilterChainWgpu {
         let options = options.unwrap_or(&self.default_frame_options);
 
         for (index, pass) in pass.iter_mut().enumerate() {
-            let target = &self.output_framebuffers[index];
             source.filter_mode = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
+            let target = &self.output_framebuffers[index];
             let output_image = WgpuOutputView::from(target);
             let out = RenderTarget::identity(&output_image);
 
@@ -476,18 +476,38 @@ impl FilterChainWgpu {
         assert_eq!(last.len(), 1);
 
         if let Some(pass) = last.iter_mut().next() {
-            if pass.graphics_pipeline.format != viewport.output.format {
+            let index = passes_len - 1;
+            if !pass.graphics_pipeline.has_format(viewport.output.format) {
                 // need to recompile
                 pass.graphics_pipeline.recompile(viewport.output.format);
             }
+
             source.filter_mode = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
+
+            let target = &self.output_framebuffers[index];
+            let output_image = WgpuOutputView::from(target);
+            let out = RenderTarget::viewport_with_output(&output_image, viewport);
+
+            pass.draw(
+                cmd,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final,
+            )?;
+
             let output_image = &viewport.output;
             let out = RenderTarget::viewport_with_output(output_image, viewport);
             pass.draw(
                 cmd,
-                passes_len - 1,
+                index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
                 options,
