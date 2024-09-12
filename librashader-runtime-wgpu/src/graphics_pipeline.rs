@@ -1,6 +1,7 @@
 use crate::framebuffer::WgpuOutputView;
 use crate::util;
 use librashader_cache::cache_pipeline;
+use librashader_common::map::FastHashMap;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::ShaderReflection;
@@ -19,9 +20,8 @@ use wgpu::{
 
 pub struct WgpuGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
-    render_pipeline: wgpu::RenderPipeline,
     cache: Option<wgpu::PipelineCache>,
-    pub format: wgpu::TextureFormat,
+    render_pipelines: FastHashMap<wgpu::TextureFormat, wgpu::RenderPipeline>,
 }
 
 pub struct PipelineLayoutObjects {
@@ -249,18 +249,25 @@ impl WgpuGraphicsPipeline {
         };
 
         let layout = PipelineLayoutObjects::new(reflection, shader_assembly, device);
-        let render_pipeline = layout.create_pipeline(render_pass_format, cache.as_ref());
+        let mut render_pipelines = FastHashMap::default();
+        render_pipelines.insert(
+            render_pass_format,
+            layout.create_pipeline(render_pass_format, cache.as_ref()),
+        );
         Self {
             layout,
-            render_pipeline,
-            format: render_pass_format,
+            render_pipelines,
             cache,
         }
     }
 
+    pub fn has_format(&self, format: TextureFormat) -> bool {
+        self.render_pipelines.contains_key(&format)
+    }
+
     pub fn recompile(&mut self, format: TextureFormat) {
         let render_pipeline = self.layout.create_pipeline(format, self.cache.as_ref());
-        self.render_pipeline = render_pipeline;
+        self.render_pipelines.insert(format, render_pipeline);
     }
 
     pub(crate) fn begin_rendering<'pass>(
@@ -268,6 +275,14 @@ impl WgpuGraphicsPipeline {
         output: &RenderTarget<'pass, WgpuOutputView>,
         cmd: &'pass mut CommandEncoder,
     ) -> RenderPass<'pass> {
+        let Some(pipeline) = self
+            .render_pipelines
+            .get(&output.output.format)
+            .or_else(|| self.render_pipelines.values().next())
+        else {
+            panic!("No available render pipelines found")
+        };
+
         let mut render_pass = cmd.begin_render_pass(&RenderPassDescriptor {
             label: Some("librashader"),
             color_attachments: &[Some(RenderPassColorAttachment {
@@ -304,7 +319,7 @@ impl WgpuGraphicsPipeline {
             1.0,
         );
 
-        render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_pipeline(pipeline);
         render_pass
     }
 }
