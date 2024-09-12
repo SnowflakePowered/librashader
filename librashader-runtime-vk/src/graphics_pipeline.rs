@@ -7,6 +7,7 @@ use crate::render_pass::VulkanRenderPass;
 use ash::vk::PushConstantRange;
 use bytemuck::offset_of;
 use librashader_cache::cache_pipeline;
+use librashader_common::map::FastHashMap;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
 use librashader_reflect::reflect::ShaderReflection;
@@ -14,6 +15,7 @@ use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
 use std::ffi::CStr;
 use std::sync::Arc;
+
 const ENTRY_POINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") };
 
 pub struct PipelineDescriptors<'a> {
@@ -93,6 +95,8 @@ impl PipelineDescriptors<'_> {
 pub struct PipelineLayoutObjects {
     pub layout: vk::PipelineLayout,
     pub descriptor_sets: Vec<vk::DescriptorSet>,
+    pub descriptor_sets_alt: Vec<vk::DescriptorSet>,
+
     pub _pool: vk::DescriptorPool,
     pub _descriptor_set_layout: [vk::DescriptorSetLayout; 1],
 }
@@ -127,7 +131,7 @@ impl PipelineLayoutObjects {
         let layout = unsafe { device.create_pipeline_layout(&pipeline_create_info, None)? };
 
         let pool_info = vk::DescriptorPoolCreateInfo::default()
-            .max_sets(replicas)
+            .max_sets(replicas * 2)
             .pool_sizes(&descriptors.pool_sizes);
 
         let pool = unsafe { device.create_descriptor_pool(&pool_info, None)? };
@@ -145,10 +149,24 @@ impl PipelineLayoutObjects {
         let descriptor_sets: Vec<vk::DescriptorSet> =
             descriptor_sets.into_iter().flatten().collect();
 
+        let mut descriptor_sets_alt = Vec::new();
+        let alloc_info = vk::DescriptorSetAllocateInfo::default()
+            .descriptor_pool(pool)
+            .set_layouts(&descriptor_set_layout);
+
+        for _ in 0..replicas {
+            let set = unsafe { device.allocate_descriptor_sets(&alloc_info)? };
+            descriptor_sets_alt.push(set)
+        }
+
+        let descriptor_sets_alt: Vec<vk::DescriptorSet> =
+            descriptor_sets_alt.into_iter().flatten().collect();
+
         Ok(PipelineLayoutObjects {
             layout,
             _descriptor_set_layout: descriptor_set_layout,
             descriptor_sets,
+            descriptor_sets_alt,
             _pool: pool,
         })
     }
@@ -179,12 +197,13 @@ impl Drop for VulkanShaderModule {
 
 pub struct VulkanGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
-    pub pipeline: vk::Pipeline,
-    pub render_pass: Option<VulkanRenderPass>,
+    pub pipelines: FastHashMap<vk::Format, vk::Pipeline>,
+    pub render_passes: FastHashMap<vk::Format, Option<VulkanRenderPass>>,
     device: Arc<ash::Device>,
     vertex: VulkanShaderModule,
     fragment: VulkanShaderModule,
     cache: vk::PipelineCache,
+    use_render_pass: bool,
 }
 
 impl VulkanGraphicsPipeline {
@@ -315,11 +334,13 @@ impl VulkanGraphicsPipeline {
         let fragment_module = VulkanShaderModule::new(device, &fragment_info)?;
 
         let mut render_pass = None;
+        let mut use_render_pass = false;
         if render_pass_format != vk::Format::UNDEFINED {
             render_pass = Some(VulkanRenderPass::create_render_pass(
                 device,
                 render_pass_format,
             )?);
+            use_render_pass = true;
         }
 
         let (pipeline, pipeline_cache) = cache_pipeline(
@@ -348,25 +369,32 @@ impl VulkanGraphicsPipeline {
             bypass_cache,
         )?;
 
+        let mut pipelines = FastHashMap::default();
+        let mut render_passes = FastHashMap::default();
+
+        pipelines.insert(render_pass_format, pipeline);
+        render_passes.insert(render_pass_format, render_pass);
+
         Ok(VulkanGraphicsPipeline {
             device: Arc::clone(device),
             layout: pipeline_layout,
-            pipeline,
-            render_pass,
+            pipelines,
+            render_passes,
             vertex: vertex_module,
             fragment: fragment_module,
             cache: pipeline_cache,
+            use_render_pass,
         })
     }
 
     pub(crate) fn recompile(&mut self, format: vk::Format) -> error::Result<()> {
-        let mut new_renderpass = if self.render_pass.is_some() {
+        let new_renderpass = if self.use_render_pass {
             Some(VulkanRenderPass::create_render_pass(&self.device, format)?)
         } else {
             None
         };
 
-        let mut new_pipeline = Self::create_pipeline(
+        let new_pipeline = Self::create_pipeline(
             &self.device,
             &self.cache,
             &self.layout,
@@ -375,23 +403,19 @@ impl VulkanGraphicsPipeline {
             new_renderpass.as_ref(),
         )?;
 
-        std::mem::swap(&mut self.render_pass, &mut new_renderpass);
-        std::mem::swap(&mut self.pipeline, &mut new_pipeline);
+        self.render_passes.insert(format, new_renderpass);
+        self.pipelines.insert(format, new_pipeline);
 
-        unsafe {
-            if new_pipeline != vk::Pipeline::null() {
-                self.device.destroy_pipeline(new_pipeline, None)
-            }
-        }
         Ok(())
     }
     #[inline(always)]
     pub(crate) fn begin_rendering(
         &self,
         output: &RenderTarget<OutputImage>,
+        format: vk::Format,
         cmd: vk::CommandBuffer,
     ) -> error::Result<Option<vk::Framebuffer>> {
-        if let Some(render_pass) = &self.render_pass {
+        if let Some(Some(render_pass)) = &self.render_passes.get(&format) {
             let attachments = [output.output.image_view];
             let framebuffer = unsafe {
                 self.device.create_framebuffer(
@@ -452,7 +476,7 @@ impl VulkanGraphicsPipeline {
 
     pub(crate) fn end_rendering(&self, cmd: vk::CommandBuffer) {
         unsafe {
-            if self.render_pass.is_none() {
+            if !self.use_render_pass {
                 self.device.cmd_end_rendering(cmd);
             } else {
                 self.device.cmd_end_render_pass(cmd)
@@ -464,8 +488,10 @@ impl VulkanGraphicsPipeline {
 impl Drop for VulkanGraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
-            if self.pipeline != vk::Pipeline::null() {
-                self.device.destroy_pipeline(self.pipeline, None)
+            for (_, pipeline) in self.pipelines.iter_mut() {
+                if *pipeline != vk::Pipeline::null() {
+                    self.device.destroy_pipeline(*pipeline, None)
+                }
             }
 
             if self.cache != vk::PipelineCache::null() {

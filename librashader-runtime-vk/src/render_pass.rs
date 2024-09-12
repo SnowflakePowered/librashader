@@ -6,7 +6,7 @@ use ash::vk::{
 
 pub struct VulkanRenderPass {
     pub handle: vk::RenderPass,
-    pub format: vk::Format,
+    pub _format: vk::Format,
 }
 
 impl VulkanRenderPass {
@@ -38,7 +38,10 @@ impl VulkanRenderPass {
 
         unsafe {
             let rp = device.create_render_pass(&renderpass_info, None)?;
-            Ok(Self { handle: rp, format })
+            Ok(Self {
+                handle: rp,
+                _format: format,
+            })
         }
     }
 }
