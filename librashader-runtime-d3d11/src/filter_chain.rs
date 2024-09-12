@@ -518,6 +518,7 @@ impl FilterChainD3D11 {
                 QuadType::Final,
             )?;
 
+
             pass.draw(
                 &ctx,
                 index,

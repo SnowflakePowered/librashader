@@ -87,6 +87,7 @@ impl FilterPass {
     pub(crate) fn draw(
         &mut self,
         cmd: vk::CommandBuffer,
+        format: vk::Format,
         pass_index: usize,
         parent: &FilterCommon,
         frame_count: u32,
@@ -96,9 +97,15 @@ impl FilterPass {
         source: &InputImage,
         output: &RenderTarget<OutputImage>,
         vbo_type: QuadType,
+        use_alt_descriptors: bool,
     ) -> error::Result<Option<vk::Framebuffer>> {
-        let mut descriptor = self.graphics_pipeline.layout.descriptor_sets
-            [parent.internal_frame_count % self.frames_in_flight as usize];
+        let mut descriptor = if use_alt_descriptors {
+            self.graphics_pipeline.layout.descriptor_sets_alt
+                [parent.internal_frame_count % self.frames_in_flight as usize]
+        } else {
+            self.graphics_pipeline.layout.descriptor_sets
+                [parent.internal_frame_count % self.frames_in_flight as usize]
+        };
 
         self.build_semantics(
             pass_index,
@@ -113,6 +120,15 @@ impl FilterPass {
             source,
         );
 
+        let Some(pipeline) = self
+            .graphics_pipeline
+            .pipelines
+            .get(&format)
+            .or_else(|| self.graphics_pipeline.pipelines.values().next())
+        else {
+            panic!("No available render pipelines found")
+        };
+
         if let Some(ubo) = &self.reflection.ubo {
             self.uniform_storage.inner_ubo().bind_to_descriptor_set(
                 descriptor,
@@ -123,14 +139,14 @@ impl FilterPass {
 
         output.output.begin_pass(&parent.device, cmd);
 
-        let residual = self.graphics_pipeline.begin_rendering(output, cmd)?;
+        let residual = self
+            .graphics_pipeline
+            .begin_rendering(output, format, cmd)?;
 
         unsafe {
-            parent.device.cmd_bind_pipeline(
-                cmd,
-                vk::PipelineBindPoint::GRAPHICS,
-                self.graphics_pipeline.pipeline,
-            );
+            parent
+                .device
+                .cmd_bind_pipeline(cmd, vk::PipelineBindPoint::GRAPHICS, *pipeline);
 
             parent.device.cmd_bind_descriptor_sets(
                 cmd,

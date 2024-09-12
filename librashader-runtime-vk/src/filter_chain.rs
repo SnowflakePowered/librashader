@@ -678,6 +678,7 @@ impl FilterChainVulkan {
 
             let residual_fb = pass.draw(
                 cmd,
+                target.image.format,
                 index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
@@ -687,6 +688,7 @@ impl FilterChainVulkan {
                 &source,
                 &out,
                 QuadType::Offscreen,
+                false,
             )?;
 
             if target.max_miplevels > 1 && !self.disable_mipmaps {
@@ -703,12 +705,12 @@ impl FilterChainVulkan {
         // try to hint the optimizer
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
-            if let Some(format) = pass
+            let index = passes_len - 1;
+            if pass
                 .graphics_pipeline
-                .render_pass
-                .as_ref()
-                .map(|r| r.format)
-                && format != viewport.output.format
+                .render_passes
+                .get(&viewport.output.format)
+                .is_none()
             {
                 // need to recompile
                 pass.graphics_pipeline.recompile(viewport.output.format)?;
@@ -718,12 +720,15 @@ impl FilterChainVulkan {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let output_image = OutputImage::new(&self.vulkan.device, viewport.output.clone())?;
+            let target = &self.output_framebuffers[index];
+
+            let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
             let out = RenderTarget::viewport_with_output(&output_image, viewport);
 
             let residual_fb = pass.draw(
                 cmd,
-                passes_len - 1,
+                target.image.format,
+                index,
                 &self.common,
                 pass.config.get_frame_count(frame_count),
                 options,
@@ -732,6 +737,28 @@ impl FilterChainVulkan {
                 &source,
                 &out,
                 QuadType::Final,
+                true,
+            )?;
+            out.output.end_pass(&self.vulkan.device, cmd);
+            intermediates.dispose_outputs(output_image);
+            intermediates.dispose_framebuffers(residual_fb);
+
+            let output_image = OutputImage::new(&self.vulkan.device, viewport.output.clone())?;
+            let out = RenderTarget::viewport_with_output(&output_image, viewport);
+
+            let residual_fb = pass.draw(
+                cmd,
+                viewport.output.format,
+                index,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final,
+                false,
             )?;
 
             intermediates.dispose_outputs(output_image);
