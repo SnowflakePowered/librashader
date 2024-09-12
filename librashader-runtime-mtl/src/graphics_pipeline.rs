@@ -15,6 +15,7 @@ use objc2_metal::{
     MTLVertexFormat, MTLVertexStepFunction, MTLViewport,
 };
 
+use librashader_common::map::FastHashMap;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 
@@ -23,8 +24,8 @@ pub const VERTEX_BUFFER_INDEX: usize = 4;
 
 pub struct MetalGraphicsPipeline {
     pub layout: PipelineLayoutObjects,
-    render_pipeline: Retained<ProtocolObject<dyn MTLRenderPipelineState>>,
-    pub render_pass_format: MTLPixelFormat,
+    render_pipelines:
+        FastHashMap<MTLPixelFormat, Retained<ProtocolObject<dyn MTLRenderPipelineState>>>,
 }
 
 pub struct PipelineLayoutObjects {
@@ -154,11 +155,16 @@ impl MetalGraphicsPipeline {
     ) -> Result<Self> {
         let layout = PipelineLayoutObjects::new(shader_assembly, device)?;
         let pipeline = layout.create_pipeline(device, render_pass_format)?;
+        let mut pipelines = FastHashMap::default();
+        pipelines.insert(render_pass_format, pipeline);
         Ok(Self {
             layout,
-            render_pipeline: pipeline,
-            render_pass_format,
+            render_pipelines: pipelines,
         })
+    }
+
+    pub fn has_format(&self, format: MTLPixelFormat) -> bool {
+        self.render_pipelines.contains_key(&format)
     }
 
     pub fn recompile(
@@ -167,7 +173,7 @@ impl MetalGraphicsPipeline {
         format: MTLPixelFormat,
     ) -> Result<()> {
         let render_pipeline = self.layout.create_pipeline(device, format)?;
-        self.render_pipeline = render_pipeline;
+        self.render_pipelines.insert(format, render_pipeline);
         Ok(())
     }
 
@@ -177,6 +183,14 @@ impl MetalGraphicsPipeline {
         buffer: &ProtocolObject<dyn MTLCommandBuffer>,
     ) -> Result<Retained<ProtocolObject<dyn MTLRenderCommandEncoder>>> {
         unsafe {
+            let Some(pipeline) = self
+                .render_pipelines
+                .get(&output.output.pixelFormat())
+                .or_else(|| self.render_pipelines.values().next())
+            else {
+                panic!("No render available pipeline found");
+            };
+
             let descriptor = MTLRenderPassDescriptor::new();
             let ca = descriptor.colorAttachments().objectAtIndexedSubscript(0);
             ca.setLoadAction(MTLLoadAction::DontCare);
@@ -188,7 +202,7 @@ impl MetalGraphicsPipeline {
                 .ok_or(FilterChainError::FailedToCreateRenderPass)?;
 
             rpass.setLabel(Some(&*NSString::from_str("librashader rpass")));
-            rpass.setRenderPipelineState(&self.render_pipeline);
+            rpass.setRenderPipelineState(pipeline);
 
             rpass.setScissorRect(MTLScissorRect {
                 x: output.x as usize,

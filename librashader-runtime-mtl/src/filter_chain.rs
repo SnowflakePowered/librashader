@@ -27,7 +27,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
-use objc2::rc::{Id, Retained};
+use objc2::rc::Id;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::{
@@ -206,7 +206,6 @@ impl FilterChainMetal {
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         input: &ProtocolObject<dyn MTLTexture>,
     ) -> error::Result<()> {
-
         if let Some(mut back) = self.history_framebuffers.pop_back() {
             let mipmapper = cmd
                 .blitCommandEncoder()
@@ -436,6 +435,8 @@ impl FilterChainMetal {
                 target.generate_mipmaps(&cmd)?;
             }
 
+            self.common.output_textures[index] =
+                Some(target.as_input(pass.config.filter, pass.config.wrap_mode)?);
             source = self.common.output_textures[index]
                 .as_ref()
                 .map(InputTexture::try_clone)
@@ -446,7 +447,10 @@ impl FilterChainMetal {
         assert_eq!(last.len(), 1);
 
         if let Some(pass) = last.iter_mut().next() {
-            if pass.graphics_pipeline.render_pass_format != viewport.output.pixelFormat() {
+            if !pass
+                .graphics_pipeline
+                .has_format(viewport.output.pixelFormat())
+            {
                 // need to recompile
                 pass.graphics_pipeline
                     .recompile(&self.common.device, viewport.output.pixelFormat())?;
@@ -455,6 +459,24 @@ impl FilterChainMetal {
             source.filter_mode = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
+            let index = passes_len - 1;
+
+            let output_image = &self.output_framebuffers[index].texture;
+
+            let out = RenderTarget::viewport_with_output(output_image.as_ref(), viewport);
+            pass.draw(
+                &cmd,
+                passes_len - 1,
+                &self.common,
+                pass.config.get_frame_count(frame_count),
+                options,
+                viewport,
+                &original,
+                &source,
+                &out,
+                QuadType::Final,
+            )?;
+
             let output_image = viewport.output;
             let out = RenderTarget::viewport_with_output(output_image, viewport);
             pass.draw(
