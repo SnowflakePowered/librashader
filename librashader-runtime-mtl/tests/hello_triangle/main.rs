@@ -220,7 +220,7 @@ declare_class!(
                 .expect("Failed to create a pipeline state.");
 
            let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+            ShaderPreset::try_parse("../test/shaders_slang/test/feedback.slangp").unwrap();
 
         let filter_chain = FilterChainMetal::load_from_preset(
             preset,
