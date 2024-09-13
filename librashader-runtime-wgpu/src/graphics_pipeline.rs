@@ -56,8 +56,10 @@ impl PipelineLayoutObjects {
 
         let mut push_constant_range = Vec::new();
 
-        if let Some(push_meta) = reflection.push_constant.as_ref()
-            && !push_meta.stage_mask.is_empty()
+        if let Some(push_meta) = reflection
+            .push_constant
+            .as_ref()
+            .filter(|push_meta| !push_meta.stage_mask.is_empty())
         {
             let push_mask = util::binding_stage_to_wgpu_stage(push_meta.stage_mask);
 
@@ -80,8 +82,10 @@ impl PipelineLayoutObjects {
             }
         }
 
-        if let Some(ubo_meta) = reflection.ubo.as_ref()
-            && !ubo_meta.stage_mask.is_empty()
+        if let Some(ubo_meta) = reflection
+            .ubo
+            .as_ref()
+            .filter(|ubo_meta| !ubo_meta.stage_mask.is_empty())
         {
             let ubo_mask = util::binding_stage_to_wgpu_stage(ubo_meta.stage_mask);
             main_bindings.push(BindGroupLayoutEntry {
