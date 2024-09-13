@@ -224,7 +224,7 @@ libra_error_t __librashader__noop_gl_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_gl_filter_chain_get_param(
-    libra_gl_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_gl_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -274,7 +274,7 @@ libra_error_t __librashader__noop_vk_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_vk_filter_chain_get_param(
-    libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -326,7 +326,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_d3d11_filter_chain_get_param(
-    libra_d3d11_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_d3d11_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -378,7 +378,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_d3d12_filter_chain_get_param(
-    libra_d3d12_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_d3d12_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -421,7 +421,7 @@ libra_error_t __librashader__noop_d3d9_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_d3d9_filter_chain_get_param(
-    libra_d3d9_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_d3d9_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -473,7 +473,7 @@ libra_error_t __librashader__noop_mtl_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_mtl_filter_chain_get_param(
-    libra_mtl_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_mtl_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
