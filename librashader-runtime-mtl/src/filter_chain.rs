@@ -206,10 +206,11 @@ impl FilterChainMetal {
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         input: &ProtocolObject<dyn MTLTexture>,
     ) -> error::Result<()> {
-        let mipmapper = cmd
-            .blitCommandEncoder()
-            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
+
         if let Some(mut back) = self.history_framebuffers.pop_back() {
+            let mipmapper = cmd
+                .blitCommandEncoder()
+                .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
             if back.texture.height() != input.height()
                 || back.texture.width() != input.width()
                 || input.pixelFormat() != back.texture.pixelFormat()
@@ -228,8 +229,6 @@ impl FilterChainMetal {
             back.copy_from(&mipmapper, input)?;
             mipmapper.endEncoding();
             self.history_framebuffers.push_front(back);
-        } else {
-            mipmapper.endEncoding();
         }
         Ok(())
     }
