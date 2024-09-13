@@ -34,7 +34,7 @@ The following changes are applicable if `LIBRA_RUNTIME_VULKAN` is defined.
 * The `image` and `out` parameters of `libra_vk_filter_chain_frame` has changed from `libra_source_image_vk_t` and `libra_output_image_vk_t`, to `libra_image_vk_t`.
 * In `libra_vk_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
-* The `chain` parameter of `libra_vk_filter_chain_get_param` has been made `const` [^1].
+* The `chain` parameter of `libra_vk_filter_chain_get_param` has been made `const`.
 * It is always thread safe to call `libra_vk_filter_chain_set_param` from any thread [^1].
 
 ## `LIBRA_RUNTIME_OPENGL` changes
@@ -49,7 +49,7 @@ The following changes are applicable if `LIBRA_RUNTIME_METAL` is defined.
   * The `fbo` field previously in `libra_output_image_gl_t` is no longer necessary. librashader will now internally manage a framebuffer object to write to the provided texture.
 * In `libra_gl_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
-* The `chain` parameter of `libra_gl_filter_chain_get_param` has been made `const` [^1].
+* The `chain` parameter of `libra_gl_filter_chain_get_param` has been made `const`.
 * It is always thread safe to call `libra_gl_filter_chain_set_param` from any thread [^1].
 
 ## `LIBRA_RUNTIME_D3D11` changes
@@ -60,7 +60,7 @@ The following changes are applicable if `LIBRA_RUNTIME_D3D11` is defined.
 * The `libra_source_image_d3d11_t` struct has been removed.
 * In `libra_d3d11_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
-* The `chain` parameter of `libra_d3d11_filter_chain_get_param` has been made `const` [^1].
+* The `chain` parameter of `libra_d3d11_filter_chain_get_param` has been made `const`.
 * It is always thread safe to call `libra_d3d11_filter_chain_set_param` from any thread [^1].
 
 ## `LIBRA_RUNTIME_D3D12` changes
@@ -71,7 +71,7 @@ The following changes are applicable if `LIBRA_RUNTIME_D3D12` is defined.
   * You should now pass what was previously `.width` and `.height` of `libra_viewport_t` to these new fields in `libra_output_image_d3d12_t`.
 * In `libra_d3d12_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
-* The `chain` parameter of `libra_d3d12_filter_chain_get_param` has been made `const` [^1].
+* The `chain` parameter of `libra_d3d12_filter_chain_get_param` has been made `const`.
 * It is always thread safe to call `libra_d3d12_filter_chain_set_param` from any thread [^1].
 
 ## `LIBRA_RUNTIME_D3D9` changes
@@ -79,7 +79,7 @@ The following changes are applicable if `LIBRA_RUNTIME_D3D9` is defined.
 
 * In `libra_d3d9_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
-* The `chain` parameter of `libra_d3d9_filter_chain_get_param` has been made `const` [^1].
+* The `chain` parameter of `libra_d3d9_filter_chain_get_param` has been made `const`.
 * It is always thread safe to call `libra_d3d9_filter_chain_set_param` from any thread [^1].
 
 ## `LIBRA_RUNTIME_METAL` changes
@@ -87,7 +87,7 @@ The following changes are applicable if `LIBRA_RUNTIME_METAL` is defined.
 
 * In `libra_mtl_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
-* The `chain` parameter of `libra_mtl_filter_chain_get_param` has been made `const` [^1].
+* The `chain` parameter of `libra_mtl_filter_chain_get_param` has been made `const`.
 * It is always thread safe to call `libra_mtl_filter_chain_set_param` from any thread [^1].
 
 ## `libra_viewport_t` changes

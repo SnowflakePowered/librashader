@@ -255,7 +255,7 @@ extern_fn! {
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
     /// - `param_name` must be either null or a null terminated string.
     fn libra_gl_filter_chain_get_param(
-        chain: *mut libra_gl_filter_chain_t,
+        chain: *const libra_gl_filter_chain_t,
         param_name: *const c_char,
         out: *mut MaybeUninit<f32>
     ) |chain| {
@@ -294,10 +294,10 @@ extern_fn! {
     /// ## Safety
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
     fn libra_gl_filter_chain_get_active_pass_count(
-        chain: *mut libra_gl_filter_chain_t,
+        chain: *const libra_gl_filter_chain_t,
         out: *mut MaybeUninit<u32>
-    ) mut |chain| {
-        assert_some_ptr!(mut chain);
+    ) |chain| {
+        assert_some_ptr!(chain);
         let value = chain.parameters().passes_enabled();
         unsafe {
             out.write(MaybeUninit::new(value as u32))
