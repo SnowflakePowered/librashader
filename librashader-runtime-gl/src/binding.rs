@@ -69,8 +69,9 @@ where
         location: VariableLocation,
         _: &(),
     ) -> Option<()> {
-        if let Some(location) = location.location(block)
-            && location.bindable()
+        if let Some(location) = location
+            .location(block)
+            .filter(|location| location.bindable())
         {
             if location.is_valid(BindingStage::VERTEX) {
                 unsafe {
@@ -96,8 +97,9 @@ impl BindUniform<VariableLocation, &[f32; 4], ()> for GlUniformBinder {
         location: VariableLocation,
         _: &(),
     ) -> Option<()> {
-        if let Some(location) = location.location(block)
-            && location.bindable()
+        if let Some(location) = location
+            .location(block)
+            .filter(|location| location.bindable())
         {
             unsafe {
                 if location.is_valid(BindingStage::VERTEX) {
@@ -121,8 +123,9 @@ impl BindUniform<VariableLocation, &[f32; 16], ()> for GlUniformBinder {
         location: VariableLocation,
         _: &(),
     ) -> Option<()> {
-        if let Some(location) = location.location(block)
-            && location.bindable()
+        if let Some(location) = location
+            .location(block)
+            .filter(|location| location.bindable())
         {
             unsafe {
                 if location.is_valid(BindingStage::VERTEX) {
