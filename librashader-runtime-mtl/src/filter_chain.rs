@@ -66,6 +66,14 @@ pub struct FilterChainMetal {
     output_framebuffers: Box<[OwnedTexture]>,
     feedback_framebuffers: Box<[OwnedTexture]>,
     history_framebuffers: VecDeque<OwnedTexture>,
+    /// Metal does not allow us to push the input texture to history
+    /// before recording framebuffers, so we double-buffer it.
+    ///
+    /// First we swap OriginalHistory1 with the contents of this buffer (which were written to
+    /// in the previous frame)
+    ///
+    /// Then we blit the original to the buffer.
+    prev_frame_history_buffer: OwnedTexture,
     disable_mipmaps: bool,
     default_options: FrameOptionsMetal,
 }
@@ -206,29 +214,38 @@ impl FilterChainMetal {
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         input: &ProtocolObject<dyn MTLTexture>,
     ) -> error::Result<()> {
-        if let Some(mut back) = self.history_framebuffers.pop_back() {
-            let mipmapper = cmd
-                .blitCommandEncoder()
-                .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
-            if back.texture.height() != input.height()
-                || back.texture.width() != input.width()
-                || input.pixelFormat() != back.texture.pixelFormat()
-            {
-                let size = Size {
-                    width: input.width() as u32,
-                    height: input.height() as u32,
-                };
+        // If there's no history, there's no need to do any of this.
+        let Some(mut back) = self.history_framebuffers.pop_back() else {
+            return Ok(());
+        };
 
-                let _old_back = std::mem::replace(
-                    &mut back,
-                    OwnedTexture::new(&self.common.device, size, 1, input.pixelFormat())?,
-                );
-            }
+        // Push the previous frame as OriginalHistory1
+        std::mem::swap(&mut back, &mut self.prev_frame_history_buffer);
+        self.history_framebuffers.push_front(back);
 
-            back.copy_from(&mipmapper, input)?;
-            mipmapper.endEncoding();
-            self.history_framebuffers.push_front(back);
+        // Copy the current frame into prev_frame_history_buffer, which will be
+        // pushed to OriginalHistory1 in the next frame.
+        let back = &mut self.prev_frame_history_buffer;
+        let mipmapper = cmd
+            .blitCommandEncoder()
+            .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
+        if back.texture.height() != input.height()
+            || back.texture.width() != input.width()
+            || input.pixelFormat() != back.texture.pixelFormat()
+        {
+            let size = Size {
+                width: input.width() as u32,
+                height: input.height() as u32,
+            };
+
+            let _old_back = std::mem::replace(
+                back,
+                OwnedTexture::new(&self.common.device, size, 1, input.pixelFormat())?,
+            );
         }
+
+        back.copy_from(&mipmapper, input)?;
+        mipmapper.endEncoding();
         Ok(())
     }
 
@@ -290,6 +307,8 @@ impl FilterChainMetal {
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
+        let history_buffer = framebuffer_gen()?;
+
         let draw_quad = DrawQuad::new(&device)?;
         Ok(FilterChainMetal {
             common: FilterCommon {
@@ -306,6 +325,7 @@ impl FilterChainMetal {
             output_framebuffers,
             feedback_framebuffers,
             history_framebuffers,
+            prev_frame_history_buffer: history_buffer,
             disable_mipmaps: options.map(|f| f.force_no_mipmaps).unwrap_or(false),
             default_options: Default::default(),
         })
