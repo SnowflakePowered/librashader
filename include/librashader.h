@@ -359,9 +359,9 @@ typedef struct _filter_chain_d3d11 *libra_d3d11_filter_chain_t;
 typedef struct libra_source_image_d3d11_t {
   /// A shader resource view into the source image
   ID3D11ShaderResourceView * handle;
-  /// The width of the source image.
+  /// This is currently ignored.
   uint32_t width;
-  /// The height of the source image.
+  /// This is currently ignored.
   uint32_t height;
 } libra_source_image_d3d11_t;
 #endif
@@ -452,11 +452,11 @@ typedef struct libra_source_image_d3d12_t {
   ID3D12Resource * resource;
   /// A CPU descriptor handle to a shader resource view of the image.
   D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
-  /// The format of the image.
+  /// This is currently ignored.
   DXGI_FORMAT format;
-  /// The width of the source image.
+  /// This is currently ignored.
   uint32_t width;
-  /// The height of the source image.
+  /// This is currently ignored.
   uint32_t height;
 } libra_source_image_d3d12_t;
 #endif
@@ -1577,9 +1577,6 @@ libra_error_t libra_d3d9_filter_chain_create(libra_shader_preset_t *preset,
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D9))
 /// Draw a frame with the given parameters for the given filter chain.
 ///
-/// If `device_context` is null, then commands are recorded onto the immediate context. Otherwise,
-/// it will record commands onto the provided context. If the context is deferred, librashader
-/// will not finalize command lists. The context must otherwise be associated with the `Id3d9Device`
 ///
 /// ## Safety
 /// - `chain` may be null, invalid, but not uninitialized. If `chain` is null or invalid, this
@@ -1589,10 +1586,7 @@ libra_error_t libra_d3d9_filter_chain_create(libra_shader_preset_t *preset,
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d9_opt_t`
 ///    struct.
 /// - `out` must not be null.
-/// - `image.handle` must not be null.
-/// - If `device_context` is null, commands will be recorded onto the immediate context of the `Id3d9Device`
-///   this filter chain was created with. The context must otherwise be associated with the `Id3d9Device`
-///   the filter chain was created with.
+/// - `image` must not be null.
 /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
 ///   thread at a time may call this function.
 libra_error_t libra_d3d9_filter_chain_frame(libra_d3d9_filter_chain_t *chain,
@@ -1917,7 +1911,7 @@ LIBRASHADER_API_VERSION libra_instance_api_version(void);
 ///
 /// These automatically inferred variables, as well as all other variables can be overridden with
 /// `libra_preset_ctx_set_param`, but the expected string values must be provided.
-/// See https://github.com/libretro/RetroArch/pull/15023 for a list of expected string values.
+/// See <https://github.com/libretro/RetroArch/pull/15023> for a list of expected string values.
 ///
 /// No variables can be removed once added to the context, however subsequent calls to set the same
 /// variable will overwrite the expected variable.
