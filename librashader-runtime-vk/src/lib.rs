@@ -4,7 +4,6 @@
 //! See [`librashader::runtime::vk`](https://docs.rs/librashader/latest/librashader/runtime/vk/index.html) instead.
 #![deny(unsafe_op_in_unsafe_fn)]
 #![feature(type_alias_impl_trait)]
-#![feature(let_chains)]
 
 mod draw_quad;
 mod filter_chain;

@@ -185,8 +185,8 @@ impl FrameResiduals {
             }
         }
         for framebuffer in self.framebuffers.drain(0..) {
-            if let Some(framebuffer) = framebuffer
-                && framebuffer != vk::Framebuffer::null()
+            if let Some(framebuffer) =
+                framebuffer.filter(|framebuffer| *framebuffer != vk::Framebuffer::null())
             {
                 unsafe {
                     self.device.destroy_framebuffer(framebuffer, None);
