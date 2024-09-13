@@ -74,7 +74,7 @@ impl OwnedTexture {
                 MTLTextureUsage::ShaderRead
                     | MTLTextureUsage::ShaderWrite
                     | MTLTextureUsage::RenderTarget
-                | MTLTextureUsage::PixelFormatView,
+                    | MTLTextureUsage::PixelFormatView,
             );
 
             descriptor
@@ -104,9 +104,14 @@ impl OwnedTexture {
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
             || (!mipmap && self.max_miplevels != 1)
-            || format != select_optimal_pixel_format(format)
+            || self.texture.pixelFormat() != select_optimal_pixel_format(format)
         {
-            let mut new = OwnedTexture::new(device, size, self.max_miplevels, select_optimal_pixel_format(format))?;
+            let mut new = OwnedTexture::new(
+                device,
+                size,
+                self.max_miplevels,
+                select_optimal_pixel_format(format),
+            )?;
             std::mem::swap(self, &mut new);
         }
         Ok(size)
