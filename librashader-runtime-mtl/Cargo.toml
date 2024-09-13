@@ -41,7 +41,7 @@ objc2 = { workspace = true, features = ["apple"] }
 [features]
 # run_test = ["icrate/AppKit", "i "icrate/Foundation_all", "icrate/MetalKit", "icrate/MetalKit_all"]
 
-[dev-dependencies]
+[target.'cfg(target_vendor="apple")'.dev-dependencies]
 objc2-metal-kit = { version = "0.2", features = ["all"]}
 objc2-foundation = { version = "0.2", features = ["all"] }
 objc2-app-kit = { version = "0.2", features = ["all"] }
