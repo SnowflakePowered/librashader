@@ -180,8 +180,11 @@ impl FilterPass {
 
         render_pass.set_bind_group(1, &sampler_bind_group, &[]);
 
-        if let Some(push) = &self.reflection.push_constant
-            && !has_pcb_buffer
+        if let Some(push) = &self
+            .reflection
+            .push_constant
+            .as_ref()
+            .filter(|_| !has_pcb_buffer)
         {
             let mut stage_mask = ShaderStages::empty();
             if push.stage_mask.contains(BindingStage::FRAGMENT) {

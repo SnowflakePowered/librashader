@@ -4,7 +4,6 @@
 //! See [`librashader::runtime::wgpu`](https://docs.rs/librashader/latest/librashader/runtime/wgpu/index.html) instead.
 #![deny(unsafe_op_in_unsafe_fn)]
 #![feature(type_alias_impl_trait)]
-#![feature(let_chains)]
 
 mod buffer;
 mod draw_quad;
