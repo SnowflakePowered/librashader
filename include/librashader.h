@@ -515,7 +515,7 @@ typedef libra_error_t (*PFN_libra_preset_set_param)(libra_shader_preset_t *prese
 
 /// Function pointer definition for
 ///libra_preset_get_param
-typedef libra_error_t (*PFN_libra_preset_get_param)(libra_shader_preset_t *preset,
+typedef libra_error_t (*PFN_libra_preset_get_param)(const libra_shader_preset_t *preset,
                                                     const char *name,
                                                     float *value);
 
@@ -525,7 +525,7 @@ typedef libra_error_t (*PFN_libra_preset_print)(libra_shader_preset_t *preset);
 
 /// Function pointer definition for
 ///libra_preset_get_runtime_params
-typedef libra_error_t (*PFN_libra_preset_get_runtime_params)(libra_shader_preset_t *preset,
+typedef libra_error_t (*PFN_libra_preset_get_runtime_params)(const libra_shader_preset_t *preset,
                                                              struct libra_preset_param_list_t *out);
 
 /// Function pointer definition for
@@ -659,7 +659,7 @@ typedef libra_error_t (*PFN_libra_gl_filter_chain_set_active_pass_count)(libra_g
 #if defined(LIBRA_RUNTIME_OPENGL)
 /// Function pointer definition for
 ///libra_gl_filter_chain_get_active_pass_count
-typedef libra_error_t (*PFN_libra_gl_filter_chain_get_active_pass_count)(libra_gl_filter_chain_t *chain,
+typedef libra_error_t (*PFN_libra_gl_filter_chain_get_active_pass_count)(const libra_gl_filter_chain_t *chain,
                                                                          uint32_t *out);
 #endif
 
@@ -1125,7 +1125,9 @@ libra_error_t libra_preset_set_param(libra_shader_preset_t *preset, const char *
 /// - `preset` must be null or a valid and aligned pointer to a shader preset.
 /// - `name` must be null or a valid and aligned pointer to a string.
 /// - `value` may be a pointer to a uninitialized `float`.
-libra_error_t libra_preset_get_param(libra_shader_preset_t *preset, const char *name, float *value);
+libra_error_t libra_preset_get_param(const libra_shader_preset_t *preset,
+                                     const char *name,
+                                     float *value);
 
 /// Pretty print the shader preset.
 ///
@@ -1143,7 +1145,7 @@ libra_error_t libra_preset_print(libra_shader_preset_t *preset);
 ///   cause undefined behaviour when later freed.
 /// - It is safe to call `libra_preset_get_runtime_params` multiple times, however
 ///   the output struct must only be freed once per call.
-libra_error_t libra_preset_get_runtime_params(libra_shader_preset_t *preset,
+libra_error_t libra_preset_get_runtime_params(const libra_shader_preset_t *preset,
                                               struct libra_preset_param_list_t *out);
 
 /// Free the runtime parameters.
@@ -1261,7 +1263,7 @@ libra_error_t libra_gl_filter_chain_set_active_pass_count(libra_gl_filter_chain_
 ///
 /// ## Safety
 /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
-libra_error_t libra_gl_filter_chain_get_active_pass_count(libra_gl_filter_chain_t *chain,
+libra_error_t libra_gl_filter_chain_get_active_pass_count(const libra_gl_filter_chain_t *chain,
                                                           uint32_t *out);
 #endif
 
