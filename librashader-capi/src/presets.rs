@@ -157,7 +157,7 @@ extern_fn! {
     /// - `name` must be null or a valid and aligned pointer to a string.
     /// - `value` may be a pointer to a uninitialized `float`.
     fn libra_preset_get_param(
-        preset: *mut libra_shader_preset_t,
+        preset: *const libra_shader_preset_t,
         name: *const c_char,
         value: *mut MaybeUninit<f32>
     ) |name, preset| {
@@ -195,7 +195,7 @@ extern_fn! {
     /// - It is safe to call `libra_preset_get_runtime_params` multiple times, however
     ///   the output struct must only be freed once per call.
     fn libra_preset_get_runtime_params(
-        preset: *mut libra_shader_preset_t,
+        preset: *const libra_shader_preset_t,
         out: *mut MaybeUninit<libra_preset_param_list_t>
     ) |preset| {
         assert_some_ptr!(preset);

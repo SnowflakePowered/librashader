@@ -255,7 +255,7 @@ extern_fn! {
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_gl_filter_chain_t`.
     /// - `param_name` must be either null or a null terminated string.
     fn libra_gl_filter_chain_get_param(
-        chain: *mut libra_gl_filter_chain_t,
+        chain: *const libra_gl_filter_chain_t,
         param_name: *const c_char,
         out: *mut MaybeUninit<f32>
     ) |chain| {

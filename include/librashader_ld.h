@@ -178,7 +178,7 @@ libra_error_t __librashader__noop_preset_set_param(
 }
 
 libra_error_t __librashader__noop_preset_get_param(
-    libra_shader_preset_t *preset, const char *name, float *value) {
+    const libra_shader_preset_t *preset, const char *name, float *value) {
     return NULL;
 }
 
@@ -186,7 +186,7 @@ libra_error_t __librashader__noop_preset_print(libra_shader_preset_t *preset) {
     return NULL;
 }
 libra_error_t __librashader__noop_preset_get_runtime_params(
-    libra_shader_preset_t *preset, struct libra_preset_param_list_t *out) {
+    const libra_shader_preset_t *preset, struct libra_preset_param_list_t *out) {
     return NULL;
 }
 libra_error_t __librashader__noop_preset_free_runtime_params(
@@ -221,7 +221,7 @@ libra_error_t __librashader__noop_gl_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_gl_filter_chain_get_param(
-    libra_gl_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_gl_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -231,7 +231,7 @@ libra_error_t __librashader__noop_gl_filter_chain_set_active_pass_count(
 }
 
 libra_error_t __librashader__noop_gl_filter_chain_get_active_pass_count(
-    libra_gl_filter_chain_t *chain, uint32_t *out) {
+    const libra_gl_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
@@ -271,7 +271,7 @@ libra_error_t __librashader__noop_vk_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_vk_filter_chain_get_param(
-    libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_vk_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -281,7 +281,7 @@ libra_error_t __librashader__noop_vk_filter_chain_set_active_pass_count(
 }
 
 libra_error_t __librashader__noop_vk_filter_chain_get_active_pass_count(
-    libra_vk_filter_chain_t *chain, uint32_t *out) {
+    const libra_vk_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
@@ -323,7 +323,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_d3d11_filter_chain_get_param(
-    libra_d3d11_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_d3d11_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -333,7 +333,7 @@ libra_error_t __librashader__noop_d3d11_filter_chain_set_active_pass_count(
 }
 
 libra_error_t __librashader__noop_d3d11_filter_chain_get_active_pass_count(
-    libra_d3d11_filter_chain_t *chain, uint32_t *out) {
+    const libra_d3d11_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
@@ -375,7 +375,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_d3d12_filter_chain_get_param(
-    libra_d3d12_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_d3d12_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -385,7 +385,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_set_active_pass_count(
 }
 
 libra_error_t __librashader__noop_d3d12_filter_chain_get_active_pass_count(
-    libra_d3d12_filter_chain_t *chain, uint32_t *out) {
+    const libra_d3d12_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
@@ -418,7 +418,7 @@ libra_error_t __librashader__noop_d3d9_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_d3d9_filter_chain_get_param(
-    libra_d3d9_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_d3d9_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -428,7 +428,7 @@ libra_error_t __librashader__noop_d3d9_filter_chain_set_active_pass_count(
 }
 
 libra_error_t __librashader__noop_d3d9_filter_chain_get_active_pass_count(
-    libra_d3d9_filter_chain_t *chain, uint32_t *out) {
+    const libra_d3d9_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
@@ -470,7 +470,7 @@ libra_error_t __librashader__noop_mtl_filter_chain_set_param(
 }
 
 libra_error_t __librashader__noop_mtl_filter_chain_get_param(
-    libra_mtl_filter_chain_t *chain, const char *param_name, float *out) {
+    const libra_mtl_filter_chain_t *chain, const char *param_name, float *out) {
     return NULL;
 }
 
@@ -480,7 +480,7 @@ libra_error_t __librashader__noop_mtl_filter_chain_set_active_pass_count(
 }
 
 libra_error_t __librashader__noop_mtl_filter_chain_get_active_pass_count(
-    libra_mtl_filter_chain_t *chain, uint32_t *out) {
+    const libra_mtl_filter_chain_t *chain, uint32_t *out) {
     return NULL;
 }
 #endif
