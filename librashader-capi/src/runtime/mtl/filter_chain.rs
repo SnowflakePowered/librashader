@@ -250,7 +250,7 @@ extern_fn! {
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_mtl_filter_chain_t`.
     /// - `param_name` must be either null or a null terminated string.
     fn libra_mtl_filter_chain_get_param(
-        chain: *const libra_mtl_filter_chain_t,
+        chain: *mut libra_mtl_filter_chain_t,
         param_name: *const c_char,
         out: *mut MaybeUninit<f32>
     ) |chain| {
@@ -289,7 +289,7 @@ extern_fn! {
     /// ## Safety
     /// - `chain` must be either null or a valid and aligned pointer to an initialized `libra_mtl_filter_chain_t`.
     fn libra_mtl_filter_chain_get_active_pass_count(
-        chain: *const libra_mtl_filter_chain_t,
+        chain: *mut libra_mtl_filter_chain_t,
         out: *mut MaybeUninit<u32>
     ) |chain| {
         assert_some_ptr!(chain);
