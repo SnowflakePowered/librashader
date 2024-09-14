@@ -44,7 +44,6 @@
 //! a pure-Rust shader compiler, as well as SPIRV-Cross via [SpirvCompilation](crate::front::SpirvCompilation)
 //! is supported.
 #![feature(impl_trait_in_assoc_type)]
-#![feature(let_chains)]
 #![allow(stable_features)]
 #![feature(c_str_literals)]
 /// Shader codegen backends.

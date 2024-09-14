@@ -679,8 +679,10 @@ impl NagaReflect {
                     UniqueSemantics::FloatParameter => {
                         let offset = member.offset;
                         if let Some(meta) = meta.parameter_meta.get_mut::<str>(name.as_ref()) {
-                            if let Some(expected) = meta.offset.offset(offset_type)
-                                && expected != offset as usize
+                            if let Some(expected) = meta
+                                .offset
+                                .offset(offset_type)
+                                .filter(|expected| *expected != offset as usize)
                             {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name,
@@ -715,8 +717,10 @@ impl NagaReflect {
                     semantics => {
                         let offset = member.offset;
                         if let Some(meta) = meta.unique_meta.get_mut(semantics) {
-                            if let Some(expected) = meta.offset.offset(offset_type)
-                                && expected != offset as usize
+                            if let Some(expected) = meta
+                                .offset
+                                .offset(offset_type)
+                                .filter(|expected| *expected != offset as usize)
                             {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name,
@@ -764,8 +768,10 @@ impl NagaReflect {
 
                 let offset = member.offset;
                 if let Some(meta) = meta.texture_size_meta.get_mut(&texture) {
-                    if let Some(expected) = meta.offset.offset(offset_type)
-                        && expected != offset as usize
+                    if let Some(expected) = meta
+                        .offset
+                        .offset(offset_type)
+                        .filter(|expected| *expected != offset as usize)
                     {
                         return Err(ShaderReflectError::MismatchedOffset {
                             semantic: name,

@@ -383,8 +383,10 @@ where
                     UniqueSemantics::FloatParameter => {
                         let offset = range.offset;
                         if let Some(meta) = meta.parameter_meta.get_mut::<str>(&name.as_ref()) {
-                            if let Some(expected) = meta.offset.offset(offset_type)
-                                && expected != offset
+                            if let Some(expected) = meta
+                                .offset
+                                .offset(offset_type)
+                                .filter(|expected| *expected != offset)
                             {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name.to_string(),
@@ -419,8 +421,10 @@ where
                     semantics => {
                         let offset = range.offset;
                         if let Some(meta) = meta.unique_meta.get_mut(semantics) {
-                            if let Some(expected) = meta.offset.offset(offset_type)
-                                && expected != offset
+                            if let Some(expected) = meta
+                                .offset
+                                .offset(offset_type)
+                                .filter(|expected| *expected != offset)
                             {
                                 return Err(ShaderReflectError::MismatchedOffset {
                                     semantic: name.to_string(),
@@ -470,8 +474,10 @@ where
 
                 let offset = range.offset;
                 if let Some(meta) = meta.texture_size_meta.get_mut(&texture) {
-                    if let Some(expected) = meta.offset.offset(offset_type)
-                        && expected != offset
+                    if let Some(expected) = meta
+                        .offset
+                        .offset(offset_type)
+                        .filter(|expected| *expected != offset)
                     {
                         return Err(ShaderReflectError::MismatchedOffset {
                             semantic: name.to_string(),
