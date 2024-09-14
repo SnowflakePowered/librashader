@@ -6,7 +6,6 @@
 //! See [`librashader::runtime::d3d11`](https://docs.rs/librashader/latest/librashader/runtime/d3d11/index.html) instead.
 
 #![feature(type_alias_impl_trait)]
-#![feature(let_chains)]
 
 mod draw_quad;
 mod filter_chain;
