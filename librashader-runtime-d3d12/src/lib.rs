@@ -1,6 +1,5 @@
 #![cfg(target_os = "windows")]
 #![deny(unsafe_op_in_unsafe_fn)]
-#![feature(let_chains)]
 #![feature(type_alias_impl_trait)]
 
 mod buffer;
