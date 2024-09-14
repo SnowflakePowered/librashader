@@ -160,14 +160,20 @@ impl FilterPass {
             source,
         );
 
-        if let Some(ubo) = &self.reflection.ubo
-            && ubo.size != 0
+        if self
+            .reflection
+            .ubo
+            .as_ref()
+            .is_some_and(|ubo| ubo.size != 0)
         {
             self.uniform_storage.inner_ubo().bind_cbv(2, cmd);
         }
 
-        if let Some(push) = &self.reflection.push_constant
-            && push.size != 0
+        if self
+            .reflection
+            .push_constant
+            .as_ref()
+            .is_some_and(|push| push.size != 0)
         {
             self.uniform_storage.inner_push().bind_cbv(3, cmd);
         }
