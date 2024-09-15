@@ -1,5 +1,5 @@
 use crate::back::targets::MSL;
-use crate::back::{CompileShader, CompilerBackend, FromCompilation};
+use crate::back::{CompileReflectShader, CompileShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
 use crate::front::SpirvCompilation;
 use crate::reflect::cross::msl::MslReflect;
@@ -57,8 +57,7 @@ impl FromCompilation<SpirvCompilation, Naga> for MSL {
     type Target = MSL;
     type Options = Option<self::MslVersion>;
     type Context = NagaMslContext;
-    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-        + ReflectShader;
+    type Output = impl CompileReflectShader<Self::Target, SpirvCompilation, Naga>;
 
     fn from_compilation(
         compile: SpirvCompilation,
