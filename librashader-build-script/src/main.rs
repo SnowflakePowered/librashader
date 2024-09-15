@@ -12,6 +12,8 @@ struct Args {
     profile: String,
     #[arg(long, global = true)]
     target: Option<String>,
+    #[arg(long, default_value_t = false, global = true)]
+    stable: bool,
     #[arg(last = true)]
     cargoflags: Vec<String>,
 }
@@ -27,7 +29,7 @@ pub fn main() -> ExitCode {
     let profile = args.profile;
 
     let crate_dir = Path::new("librashader-capi");
-    println!("Building librashader C API...");
+    println!("INFO: Building librashader C API...");
 
     let mut cmd = Command::new("cargo");
     cmd.arg("build");
@@ -46,6 +48,10 @@ pub fn main() -> ExitCode {
         cmd.arg(format!("--target={}", &target));
     }
 
+    if args.stable {
+        println!("WARN: Building librashader with stable Rust compatibility. C headers will not be generated.");
+        cmd.args(["--features", "stable"]);
+    }
     if !args.cargoflags.is_empty() {
         cmd.args(args.cargoflags);
     }
@@ -64,22 +70,26 @@ pub fn main() -> ExitCode {
         .canonicalize()
         .expect("Could not find output directory.");
 
-    println!("Generating C headers...");
+    if args.stable {
+        println!("WARN: C header generation is not supported when building for stable Rust.");
+    } else {
+        println!("INFO: Generating C headers...");
 
-    // Create headers.
-    let mut buf = BufWriter::new(Vec::new());
-    cbindgen::generate(crate_dir)
-        .expect("Unable to generate bindings")
-        .write(&mut buf);
+        // Create headers.
+        let mut buf = BufWriter::new(Vec::new());
+        cbindgen::generate(crate_dir)
+            .expect("Unable to generate bindings")
+            .write(&mut buf);
 
-    let bytes = buf.into_inner().expect("Unable to extract bytes");
-    let string = String::from_utf8(bytes).expect("Unable to create string");
-    File::create(output_dir.join("librashader.h"))
-        .expect("Unable to open file")
-        .write_all(string.as_bytes())
-        .expect("Unable to write bindings.");
+        let bytes = buf.into_inner().expect("Unable to extract bytes");
+        let string = String::from_utf8(bytes).expect("Unable to create string");
+        File::create(output_dir.join("librashader.h"))
+            .expect("Unable to open file")
+            .write_all(string.as_bytes())
+            .expect("Unable to write bindings.");
+    }
 
-    println!("Moving artifacts...");
+    println!("INFO: Moving artifacts...");
     if cfg!(target_os = "macos") {
         let artifacts = &["liblibrashader_capi.dylib", "liblibrashader_capi.a"];
         for artifact in artifacts {
@@ -106,12 +116,12 @@ pub fn main() -> ExitCode {
         ];
         for artifact in artifacts {
             let ext = artifact.replace("_capi", "");
-            println!("Renaming {artifact} to {ext}");
+            println!("INFO: Renaming {artifact} to {ext}");
             fs::rename(output_dir.join(artifact), output_dir.join(ext)).unwrap();
         }
 
         if output_dir.join("librashader_capi.pdb").exists() {
-            println!("Renaming librashader_capi.pdb to librashader.pdb");
+            println!("INFO: Renaming librashader_capi.pdb to librashader.pdb");
             fs::rename(
                 output_dir.join("librashader_capi.pdb"),
                 output_dir.join("librashader.pdb"),
@@ -120,5 +130,5 @@ pub fn main() -> ExitCode {
         }
     }
 
-    return ExitCode::SUCCESS;
+    ExitCode::SUCCESS
 }
