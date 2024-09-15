@@ -1,6 +1,6 @@
 #![cfg(target_os = "windows")]
 #![deny(unsafe_op_in_unsafe_fn)]
-#![feature(type_alias_impl_trait)]
+#![cfg_attr(not(feature = "stable"), feature(type_alias_impl_trait))]
 
 mod buffer;
 mod descriptor_heap;

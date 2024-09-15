@@ -27,6 +27,9 @@ rayon = "1.6.1"
 
 sptr = "0.3"
 
+[features]
+stable = ["librashader-reflect/stable"]
+
 [dev-dependencies]
 glfw = "0.47.0"
 

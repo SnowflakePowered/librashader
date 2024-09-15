@@ -41,8 +41,14 @@ use std::path::Path;
 
 mod compile {
     use super::*;
+
+    #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>;
+
+    #[cfg(feature = "stable")]
+    pub type ShaderPassMeta =
+        ShaderPassArtifact<Box<dyn CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>>;
 
     pub fn compile_passes(
         shaders: Vec<ShaderPassConfig>,

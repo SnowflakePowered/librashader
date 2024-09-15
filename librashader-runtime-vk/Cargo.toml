@@ -30,6 +30,9 @@ array-concat = "0.5.2"
 
 ash = { workspace = true, features = ["debug"] }
 
+[features]
+stable = ["librashader-reflect/stable"]
+
 [dev-dependencies]
 num = "0.4.0"
 glfw = "0.49.0"

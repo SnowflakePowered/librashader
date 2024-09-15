@@ -169,8 +169,15 @@ impl Drop for FrameResiduals {
 
 mod compile {
     use super::*;
+
+    #[cfg(not(feature = "stable"))]
     pub type DxilShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation, SpirvCross> + Send>;
+
+    #[cfg(feature = "stable")]
+    pub type DxilShaderPassMeta = ShaderPassArtifact<
+        Box<dyn CompileReflectShader<DXIL, SpirvCompilation, SpirvCross> + Send>,
+    >;
 
     pub fn compile_passes_dxil(
         shaders: Vec<ShaderPassConfig>,
@@ -192,8 +199,14 @@ mod compile {
         Ok((passes, semantics))
     }
 
+    #[cfg(not(feature = "stable"))]
     pub type HlslShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>;
+
+    #[cfg(feature = "stable")]
+    pub type HlslShaderPassMeta = ShaderPassArtifact<
+        Box<dyn CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>,
+    >;
 
     pub fn compile_passes_hlsl(
         shaders: Vec<ShaderPassConfig>,
