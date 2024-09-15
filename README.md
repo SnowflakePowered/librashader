@@ -8,7 +8,7 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader) [![Docs](https://docs.rs/librashader/badge.svg)](https://docs.rs/librashader) [![build result](https://build.opensuse.org/projects/home:chyyran:librashader/packages/librashader/badge.svg)](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader)
 ![License](https://img.shields.io/crates/l/librashader)
-![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg) 
+![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg) ![Stable rust](https://img.shields.io/badge/rust-1.77-blue.svg)
 
 ## Installation
 For end-users, librashader is available from the [Open Build Service](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader) for a variety of Linux distributions and platforms.
@@ -92,7 +92,17 @@ static DEFAULT_MVP: &[f32; 16] = &[
 As with RetroArch, a rotation on this MVP will be applied only on the final pass for these runtimes. This is the only way to
 pass orientation information to shaders.
 
-### Building
+### Writing a librashader Runtime
+
+If you wish to contribute a runtime implementation not already available, see the [librashader-runtime](https://docs.rs/librashader-runtime/latest/librashader_runtime/)
+crate for helpers and shared logic used across all librashader runtime implementations. Using these helpers and traits will
+ensure that your runtime has consistent behaviour for uniform and texture semantics bindings with the existing librashader runtimes.
+
+These types should not be exposed to the end user in the runtime's public API, and should be kept internal to the implementation of
+the runtime.
+
+
+## Building
 
 For Rust projects, simply add the crate to your `Cargo.toml`. 
 
@@ -112,14 +122,28 @@ This will output a `librashader.dll` or `librashader.so` in the target folder. P
 While librashader has no build-time dependencies, using `librashader_ld.h` may require headers from
 the relevant runtime graphics API.
 
-### Writing a librashader Runtime
 
-If you wish to contribute a runtime implementation not already available, see the [librashader-runtime](https://docs.rs/librashader-runtime/latest/librashader_runtime/)
-crate for helpers and shared logic used across all librashader runtime implementations. Using these helpers and traits will
-ensure that your runtime has consistent behaviour for uniform and texture semantics bindings with the existing librashader runtimes.
+### Building against stable Rust
+While librashader is intended to be used with nightly Rust until [required features](https://github.com/SnowflakePowered/librashader/issues/55) are stabilized, it supports being
+built with stable Rust with the `stable` feature.
 
-These types should not be exposed to the end user in the runtime's public API, and should be kept internal to the implementation of
-the runtime.
+```toml 
+librashader = { features = "stable" }
+```
+
+If building the C API, the `--stable` flag in the build script will enable the `stable` feature.
+
+```
+cargo +stable run -p librashader-build-script -- --profile optimized --stable 
+```
+
+There are some caveats when building against stable Rust, such that building librashader against nightly Rust is still highly encouraged.
+
+* C headers will not be regenerated when building with the `stable` feature.
+* There is a minor performance hit in initial shader compilation when building against stable Rust. This is due to boxed trait objects being used instead of `impl Trait`.
+* A higher MSRV is required when building against stable Rust.
+
+When the `trait_alias_impl_trait` feature is stabilized, the `stable` feature will be removed. 
 
 ## Examples
 
@@ -225,12 +249,18 @@ in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VE
 
 ### MSRV Policy
 
-While librashader requires nightly Rust, the following MSRV policy is enforced for unstable library features.
+When building against nightly Rust, the following MSRV policy is enforced for unstable library features.
 
 * Windows and macOS: **latest** nightly
-* Linux: **1.76**
+* Linux: **1.74**
 
-A CI job runs weekly to ensure librashader continues to build on nightly. Note that the MSRV is only intended to ease distribution on Linux and is allowed to change any time. It generally tracks the latest version of Rust available in the latest version of Ubuntu, but this may change with no warning in a patch release.
+A CI job runs weekly to ensure librashader continues to build on nightly. 
+
+Building against stable Rust requires a higher MSRV.
+* All platforms: **1.77**
+
+Note that the MSRV is only intended to ease distribution on Linux when building against nightly Rust or with `RUSTC_BOOTSTRAP=1`, and is allowed to change any time. 
+It generally tracks the latest version of Rust available in the latest version of Ubuntu, but this may change with no warning in a patch release.
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
