@@ -1,4 +1,3 @@
-#![feature(doc_cfg)]
 //! The C API for [librashader](https://docs.rs/librashader/).
 //!
 //! The librashader C API is designed to be loaded dynamically via `librashader_ld.h`, but static usage is also
@@ -62,7 +61,7 @@
 //!
 //! You must ensure that only thread has access to a created filter pass **before** you call `*_frame`. `*_frame` may only be
 //! called from one thread at a time.
-
+#![cfg_attr(feature = "docsrs", feature(doc_cfg))]
 #![allow(non_camel_case_types)]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![deny(deprecated)]

@@ -27,6 +27,7 @@ runtime-metal = ["__cbindgen_internal_objc", "librashader/runtime-metal"]
 
 reflect-unstable = []
 stable = ["librashader/stable"]
+docsrs = []
 
 __cbindgen_internal = ["runtime-all"]
 
@@ -66,4 +67,4 @@ targets = [ "x86_64-pc-windows-msvc",
     "aarch64-apple-ios",
     "i686-pc-windows-msvc",
     "i686-unknown-linux-gnu", ]
-features = ["librashader/docsrs"]
+features = ["docsrs", "librashader/docsrs"]

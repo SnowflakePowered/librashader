@@ -26,26 +26,38 @@ pub enum LibrashaderError {
     #[error("The provided parameter name was invalid.")]
     UnknownShaderParameter(*const c_char),
     #[cfg(feature = "runtime-opengl")]
-    #[doc(cfg(feature = "runtime-opengl"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-opengl")))]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
     #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
-    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))
+    )]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
     #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
-    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))
+    )]
     #[error("There was an error in the D3D12 filter chain.")]
     D3D12FilterError(#[from] librashader::runtime::d3d12::error::FilterChainError),
     #[cfg(all(target_os = "windows", feature = "runtime-d3d9"))]
-    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))
+    )]
     #[error("There was an error in the D3D9 filter chain.")]
     D3D9FilterError(#[from] librashader::runtime::d3d9::error::FilterChainError),
     #[cfg(feature = "runtime-vulkan")]
-    #[doc(cfg(feature = "runtime-vulkan"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-vulkan")))]
     #[error("There was an error in the Vulkan filter chain.")]
     VulkanFilterError(#[from] librashader::runtime::vk::error::FilterChainError),
-    #[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))
+    )]
     #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
     #[error("There was an error in the D3D12 filter chain.")]
     MetalFilterError(#[from] librashader::runtime::mtl::error::FilterChainError),
