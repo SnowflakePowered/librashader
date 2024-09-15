@@ -104,49 +104,61 @@ pub mod preprocess {
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "reflect")))]
 /// Shader reflection and cross-compilation.
 ///
-/// The `type_alias_impl_trait` nightly feature is required. You should choose your
-/// target shading language, and a compilation type.
+/// Without the `stable` crate feature, the `type_alias_impl_trait` nightly feature is required.
+///
+/// You should choose your target shading language, and a compilation type.
 ///
 /// ```rust
 /// #![feature(type_alias_impl_trait)]
+/// mod compile {
+///     use std::error::Error;
+///     use librashader_preprocess::ShaderSource;
+///     use librashader_presets::ShaderPreset;
+///     use librashader_reflect::back::{CompileReflectShader, FromCompilation};
+///     use librashader_reflect::back::targets::SPIRV;
+///     use librashader_reflect::front::SpirvCompilation;
+///     use librashader_reflect::reflect::cross::SpirvCross;
+///     use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
+///     use librashader_reflect::reflect::semantics::ShaderSemantics;
 ///
-/// use std::error::Error;
-/// use librashader::preprocess::ShaderSource;
-/// use librashader::presets::ShaderPreset;
-/// use librashader::reflect::{CompileReflectShader, FromCompilation, CompilePresetTarget, ShaderPassArtifact};
-/// use librashader::reflect::targets::SPIRV;
-/// use librashader::reflect::semantics::ShaderSemantics;
-/// use librashader_reflect::front::{ShaderInputCompiler, SpirvCompilation};
-/// use librashader_reflect::reflect::cross::SpirvCross;
-/// type Artifact = impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross>;
-/// type ShaderPassMeta = ShaderPassArtifact<Artifact>;
+///     type Artifact = impl CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross>;
+///     type ShaderPassMeta = ShaderPassArtifact<Artifact>;
 ///
-/// // Compile single shader
-/// pub fn compile_spirv(
-///         source: &ShaderSource,
-///     ) -> Result<Artifact, Box<dyn Error>>
-/// {
-///     let compilation = SpirvCompilation::compile(&source)?;
-///     let spirv = SPIRV::from_compilation(compilation)?;
-///     Ok(spirv)
-/// }
-///
-/// // Compile preset
-/// pub fn compile_preset(preset: ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), Box<dyn Error>>
-/// {
-///     let (passes, semantics) = SPIRV::compile_preset_passes::<SpirvCompilation, SpirvCross, Box<dyn Error>>(
-///     preset.shaders, &preset.textures)?;
-///     Ok((passes, semantics))
+///      // Compile preset
+///     pub fn compile_preset(preset: ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), Box<dyn Error>>
+///     {
+///         let (passes, semantics) = SPIRV::compile_preset_passes::<SpirvCompilation, SpirvCross, Box<dyn Error>>(
+///         preset.shaders, &preset.textures)?;
+///         Ok((passes, semantics))
+///     }
 /// }
 /// ```
 ///
-/// ## What's with all the traits?
-/// librashader-reflect is designed to be compiler-agnostic. In the future, we will allow usage of
-/// [naga](https://docs.rs/naga/latest/naga/index.html), a pure-Rust shader compiler, when it has
-/// matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
+/// With the `stable` crate feature, a trait object can be used instead. Note the `Send` bound
+/// on `Artifact` is required.
 ///
-/// In the meanwhile, the only supported input compiler is [SpirvCompilation](crate::reflect::SpirvCompilation),
-/// which does compilation of GLSL to SPIR-V via [glslang](https://github.com/KhronosGroup/glslang/).
+/// ```
+/// use librashader_reflect::back::CompileReflectShader;
+/// use librashader_reflect::back::targets::SPIRV;
+/// use librashader_reflect::front::SpirvCompilation;
+/// use librashader_reflect::reflect::cross::SpirvCross;
+/// use librashader_reflect::reflect::presets::ShaderPassArtifact;
+///
+/// type Artifact = Box<dyn CompileReflectShader<SPIRV, SpirvCompilation, SpirvCross> + Send>;
+/// type ShaderPassMeta = ShaderPassArtifact<Artifact>;
+/// ```
+///
+/// ## What's with all the traits?
+/// librashader-reflect is designed to be frontend and backend agnostic.
+///
+/// Currently [SpirvCompilation](crate::reflect::SpirvCompilation),
+/// which does compilation of GLSL to SPIR-V via [glslang](https://github.com/KhronosGroup/glslang/ is the only
+/// supported frontend.
+///
+/// In the future, we will allow [Naga](https://docs.rs/naga/latest/naga/index.html), a pure-Rust shader compiler,
+/// as a frontend, when it has matured enough to support [the features librashader needs](https://github.com/gfx-rs/naga/issues/1012).
+///
+/// Both naga and SPIRV-Cross are supported as backends depending on the target.
 pub mod reflect {
     /// Supported shader compiler targets.
     pub mod targets {
