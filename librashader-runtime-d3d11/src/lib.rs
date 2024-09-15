@@ -5,7 +5,7 @@
 //! This crate should not be used directly.
 //! See [`librashader::runtime::d3d11`](https://docs.rs/librashader/latest/librashader/runtime/d3d11/index.html) instead.
 
-#![feature(type_alias_impl_trait)]
+#![cfg_attr(not(feature = "stable"), feature(type_alias_impl_trait))]
 
 mod draw_quad;
 mod filter_chain;

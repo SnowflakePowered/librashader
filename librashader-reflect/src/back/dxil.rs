@@ -17,6 +17,7 @@ impl OutputTarget for DXIL {
     type Output = DxilObject;
 }
 
+#[cfg(not(feature = "stable"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     type Target = DXIL;
     type Options = Option<ShaderModel>;
@@ -34,6 +35,28 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
                 vertex: compile.vertex,
                 fragment: compile.fragment,
             },
+        })
+    }
+}
+
+#[cfg(feature = "stable")]
+impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
+    type Target = DXIL;
+    type Options = Option<ShaderModel>;
+    type Context = ();
+    type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross> + Send>;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        let reflect = GlslReflect::try_from(&compile)?;
+        Ok(CompilerBackend {
+            // we can just reuse WriteSpirV as the backend.
+            backend: Box::new(WriteSpirV {
+                reflect,
+                vertex: compile.vertex,
+                fragment: compile.fragment,
+            }),
         })
     }
 }

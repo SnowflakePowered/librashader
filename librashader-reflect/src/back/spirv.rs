@@ -18,6 +18,7 @@ pub(crate) struct WriteSpirV {
     pub(crate) fragment: Vec<u32>,
 }
 
+#[cfg(not(feature = "stable"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
@@ -36,6 +37,29 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
                 vertex,
                 fragment,
             },
+        })
+    }
+}
+
+#[cfg(feature = "stable")]
+impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
+    type Target = SPIRV;
+    type Options = Option<()>;
+    type Context = ();
+    type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross> + Send>;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        let reflect = GlslReflect::try_from(&compile)?;
+        let vertex = compile.vertex;
+        let fragment = compile.fragment;
+        Ok(CompilerBackend {
+            backend: Box::new(WriteSpirV {
+                reflect,
+                vertex,
+                fragment,
+            }),
         })
     }
 }
@@ -83,6 +107,7 @@ pub struct NagaSpirvContext {
     pub vertex: Module,
 }
 
+#[cfg(not(feature = "stable"))]
 impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
     type Target = SPIRV;
     type Options = NagaSpirvOptions;
@@ -94,6 +119,22 @@ impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: NagaReflect::try_from(&compile)?,
+        })
+    }
+}
+
+#[cfg(feature = "stable")]
+impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
+    type Target = SPIRV;
+    type Options = NagaSpirvOptions;
+    type Context = NagaSpirvContext;
+    type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, Naga> + Send>;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: Box::new(NagaReflect::try_from(&compile)?),
         })
     }
 }

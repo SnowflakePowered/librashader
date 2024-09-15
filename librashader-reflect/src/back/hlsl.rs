@@ -46,7 +46,7 @@ impl HlslBufferAssignments {
         {
             return true;
         }
-        return false;
+        false
     }
 
     // Check if the mangled name matches.
@@ -91,7 +91,7 @@ impl HlslBufferAssignments {
             return true;
         }
 
-        return false;
+        false
     }
 }
 
@@ -103,6 +103,7 @@ pub struct CrossHlslContext {
     pub fragment_buffers: HlslBufferAssignments,
 }
 
+#[cfg(not(feature = "stable"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
     type Target = HLSL;
     type Options = Option<HlslShaderModel>;
@@ -114,6 +115,22 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: HlslReflect::try_from(&compile)?,
+        })
+    }
+}
+
+#[cfg(feature = "stable")]
+impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
+    type Target = HLSL;
+    type Options = Option<HlslShaderModel>;
+    type Context = CrossHlslContext;
+    type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross> + Send>;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: Box::new(HlslReflect::try_from(&compile)?),
         })
     }
 }

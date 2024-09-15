@@ -11,6 +11,7 @@ pub struct NagaWgslContext {
     pub vertex: Module,
 }
 
+#[cfg(not(feature = "stable"))]
 impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     type Target = WGSL;
     type Options = NagaLoweringOptions;
@@ -22,6 +23,22 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: NagaReflect::try_from(&compile)?,
+        })
+    }
+}
+
+#[cfg(feature = "stable")]
+impl FromCompilation<SpirvCompilation, Naga> for WGSL {
+    type Target = WGSL;
+    type Options = NagaLoweringOptions;
+    type Context = NagaWgslContext;
+    type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, Naga> + Send>;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: Box::new(NagaReflect::try_from(&compile)?),
         })
     }
 }
