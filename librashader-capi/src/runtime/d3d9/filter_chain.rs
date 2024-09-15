@@ -178,7 +178,7 @@ extern_fn! {
             let name = name.to_str()?;
 
             if chain.parameters().set_parameter_value(name, value).is_none() {
-                return LibrashaderError::UnknownShaderParameter(param_name).export()
+                return Err(LibrashaderError::UnknownShaderParameter(param_name))
             }
         }
     }
@@ -203,7 +203,7 @@ extern_fn! {
             let name = name.to_str()?;
 
             let Some(value) = chain.parameters().parameter_value(name) else {
-                return LibrashaderError::UnknownShaderParameter(param_name).export()
+                return Err(LibrashaderError::UnknownShaderParameter(param_name))
             };
 
             out.write(MaybeUninit::new(value));

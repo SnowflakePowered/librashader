@@ -211,12 +211,12 @@ impl LibrashaderError {
 }
 
 macro_rules! assert_non_null {
-    ($value:ident) => {
+    (@EXPORT $value:ident) => {
         if $value.is_null() || !$crate::ffi::ptr_is_aligned($value) {
             return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
         }
     };
-    (noexport $value:ident) => {
+    ($value:ident) => {
         if $value.is_null() || !$crate::ffi::ptr_is_aligned($value) {
             return Err($crate::error::LibrashaderError::InvalidParameter(
                 stringify!($value),
@@ -228,14 +228,18 @@ macro_rules! assert_non_null {
 macro_rules! assert_some_ptr {
     ($value:ident) => {
         if $value.is_none() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
+            return Err($crate::error::LibrashaderError::InvalidParameter(
+                stringify!($value),
+            ));
         }
 
         let $value = unsafe { $value.as_ref().unwrap_unchecked().as_ref() };
     };
     (mut $value:ident) => {
         if $value.is_none() {
-            return $crate::error::LibrashaderError::InvalidParameter(stringify!($value)).export();
+            return Err($crate::error::LibrashaderError::InvalidParameter(
+                stringify!($value),
+            ));
         }
 
         let $value = unsafe { $value.as_mut().unwrap_unchecked().as_mut() };
