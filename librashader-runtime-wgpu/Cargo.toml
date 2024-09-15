@@ -22,7 +22,6 @@ librashader-runtime = { path = "../librashader-runtime" , version = "0.4.2" }
 librashader-cache = { path = "../librashader-cache", version = "0.4.2" }
 
 wgpu = { workspace = true, default-features = false, features = ["wgsl"] }
-image = "0.25.1"
 thiserror = "1.0.50"
 bytemuck = { version = "1.14.0", features = ["derive"] }
 array-concat = "0.5.2"
