@@ -52,6 +52,7 @@ pub struct FilterChainD3D11 {
     history_framebuffers: VecDeque<OwnedImage>,
     state: D3D11State,
     default_options: FrameOptionsD3D11,
+    draw_last_pass_feedback: bool,
 }
 
 pub(crate) struct Direct3D11 {
@@ -187,6 +188,7 @@ impl FilterChainD3D11 {
         let draw_quad = DrawQuad::new(device)?;
         let state = D3D11State::new(device)?;
         Ok(FilterChainD3D11 {
+            draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
             output_framebuffers,
             feedback_framebuffers,
@@ -510,21 +512,23 @@ impl FilterChainD3D11 {
             // Draw to output_framebuffers for proper handling of feedback.
 
             let feedback_target = &self.output_framebuffers[index];
-            pass.draw(
-                &ctx,
-                index,
-                &self.common,
-                pass.config.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::viewport_with_output(
-                    &feedback_target.create_render_target_view()?,
+            if self.draw_last_pass_feedback {
+                pass.draw(
+                    &ctx,
+                    index,
+                    &self.common,
+                    pass.config.get_frame_count(frame_count),
+                    options,
                     viewport,
-                ),
-                QuadType::Final,
-            )?;
+                    &original,
+                    &source,
+                    RenderTarget::viewport_with_output(
+                        &feedback_target.create_render_target_view()?,
+                        viewport,
+                    ),
+                    QuadType::Final,
+                )?;
+            }
 
             pass.draw(
                 &ctx,

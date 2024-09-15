@@ -56,6 +56,7 @@ pub struct FilterChainD3D9 {
     feedback_framebuffers: Box<[D3D9Texture]>,
     history_framebuffers: VecDeque<D3D9Texture>,
     default_options: FrameOptionsD3D9,
+    draw_last_pass_feedback: bool,
 }
 
 mod compile {
@@ -252,6 +253,7 @@ impl FilterChainD3D9 {
         let draw_quad = DrawQuad::new(device)?;
 
         Ok(FilterChainD3D9 {
+            draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
             output_framebuffers,
             feedback_framebuffers,
@@ -397,21 +399,23 @@ impl FilterChainD3D9 {
             source.wrap = pass.config.wrap_mode;
             source.is_srgb = pass.config.srgb_framebuffer;
 
-            let feedback_target = &self.output_framebuffers[index];
-            let feedback_target_rtv = feedback_target.as_output()?;
+            if self.draw_last_pass_feedback {
+                let feedback_target = &self.output_framebuffers[index];
+                let feedback_target_rtv = feedback_target.as_output()?;
 
-            pass.draw(
-                &self.common.d3d9,
-                index,
-                &self.common,
-                pass.config.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::viewport_with_output(&feedback_target_rtv, viewport),
-                QuadType::Final,
-            )?;
+                pass.draw(
+                    &self.common.d3d9,
+                    index,
+                    &self.common,
+                    pass.config.get_frame_count(frame_count),
+                    options,
+                    viewport,
+                    &original,
+                    &source,
+                    RenderTarget::viewport_with_output(&feedback_target_rtv, viewport),
+                    QuadType::Final,
+                )?;
+            }
 
             pass.draw(
                 &self.common.d3d9,
