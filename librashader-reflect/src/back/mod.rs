@@ -36,6 +36,16 @@ pub trait CompileShader<T: OutputTarget> {
         self,
         options: Self::Options,
     ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError>;
+
+    /// Consume the object and return the compiled output of the shader.
+    ///
+    /// This is an internal implementation detail for stable building without TAIT,
+    /// to allow delegation when Self is unsized (i.e. dyn CompileReflectShader).
+    #[doc(hidden)]
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError>;
 }
 
 /// Marker trait for combinations of targets and compilations that can be reflected and compiled
@@ -81,6 +91,13 @@ where
     ) -> Result<ShaderCompilerOutput<E::Output, Self::Context>, ShaderCompileError> {
         self.backend.compile(options)
     }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<E::Output, Self::Context>, ShaderCompileError> {
+        self.backend.compile(options)
+    }
 }
 
 /// A trait for reflectable compilations that can be transformed
@@ -121,6 +138,39 @@ where
         semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
         self.backend.reflect(pass_number, semantics)
+    }
+}
+
+impl<T: ReflectShader + ?Sized> ReflectShader for Box<T> {
+    fn reflect(
+        &mut self,
+        pass_number: usize,
+        semantics: &ShaderSemantics,
+    ) -> Result<ShaderReflection, ShaderReflectError> {
+        (**self).reflect(pass_number, semantics)
+    }
+}
+
+impl<O, T> CompileShader<T> for Box<O>
+where
+    O: CompileShader<T> + ?Sized,
+    T: OutputTarget,
+{
+    type Options = O::Options;
+    type Context = O::Context;
+
+    fn compile(
+        self,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError> {
+        O::compile_boxed(self, options)
+    }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<T::Output, Self::Context>, ShaderCompileError> {
+        self.compile(options)
     }
 }
 

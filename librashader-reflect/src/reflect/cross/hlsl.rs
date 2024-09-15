@@ -128,4 +128,11 @@ impl CompileShader<HLSL> for CrossReflect<targets::Hlsl> {
             },
         })
     }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
+        <CrossReflect<targets::Hlsl> as CompileShader<HLSL>>::compile(*self, options)
+    }
 }

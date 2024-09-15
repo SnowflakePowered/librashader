@@ -1,5 +1,7 @@
 use crate::back::targets::SPIRV;
-use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
+use crate::back::{
+    CompileReflectShader, CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput,
+};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
 use crate::reflect::cross::glsl::GlslReflect;
@@ -20,8 +22,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
     type Context = ();
-    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-        + ReflectShader;
+    type Output = impl CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross>;
 
     fn from_compilation(
         compile: SpirvCompilation,
@@ -86,8 +87,7 @@ impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
     type Target = SPIRV;
     type Options = NagaSpirvOptions;
     type Context = NagaSpirvContext;
-    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-        + ReflectShader;
+    type Output = impl CompileReflectShader<Self::Target, SpirvCompilation, Naga>;
 
     fn from_compilation(
         compile: SpirvCompilation,
