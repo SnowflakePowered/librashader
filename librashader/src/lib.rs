@@ -1,5 +1,5 @@
 #![forbid(missing_docs)]
-#![feature(doc_cfg)]
+#![cfg_attr(feature = "docsrs", feature(doc_cfg))]
 //! RetroArch shader preset compiler and runtime.
 //!
 //! librashader provides convenient and safe access to RetroArch ['slang' shaders](https://github.com/libretro/slang-shaders).
@@ -53,7 +53,7 @@ pub use librashader_common::map::FastHashMap;
 pub use librashader_common::map::ShortString;
 
 #[cfg(feature = "presets")]
-#[doc(cfg(feature = "presets"))]
+#[cfg_attr(feature = "docsrs", doc(cfg(feature = "presets")))]
 /// Parsing and usage of shader presets.
 ///
 /// This module contains facilities and types for parsing `.slangp` shader presets files.
@@ -87,7 +87,7 @@ pub mod presets {
 }
 
 #[cfg(feature = "preprocess")]
-#[doc(cfg(feature = "preprocess"))]
+#[cfg_attr(feature = "docsrs", doc(cfg(feature = "preprocess")))]
 /// Loading and preprocessing of 'slang' shader source files.
 ///
 /// This module contains facilities and types for resolving `#include` directives in `.slang`
@@ -101,7 +101,7 @@ pub mod preprocess {
 }
 
 #[cfg(feature = "reflect")]
-#[doc(cfg(feature = "reflect"))]
+#[cfg_attr(feature = "docsrs", doc(cfg(feature = "reflect")))]
 /// Shader reflection and cross-compilation.
 ///
 /// The `type_alias_impl_trait` nightly feature is required. You should choose your
@@ -171,7 +171,7 @@ pub mod reflect {
 
     /// Reflection via SPIRV-Cross.
     #[cfg(feature = "reflect-cross")]
-    #[doc(cfg(feature = "reflect-cross"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "reflect-cross")))]
     pub mod cross {
         pub use librashader_reflect::reflect::cross::SpirvCross;
 
@@ -198,7 +198,10 @@ pub mod reflect {
 
     /// DXIL reflection via spirv-to-dxil.
     #[cfg(all(target_os = "windows", feature = "reflect-dxil"))]
-    #[doc(cfg(all(target_os = "windows", feature = "reflect-dxil")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "reflect-dxil")))
+    )]
     pub mod dxil {
         /// The maximum shader model to use when compiling the DXIL blob.
         pub use librashader_reflect::back::dxil::ShaderModel;
@@ -209,7 +212,7 @@ pub mod reflect {
 
     /// Reflection via Naga
     #[cfg(feature = "reflect-naga")]
-    #[doc(cfg(feature = "reflect-naga"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "reflect-naga")))]
     pub mod naga {
         pub use librashader_reflect::back::wgsl::NagaWgslContext;
         pub use librashader_reflect::reflect::naga::Naga;
@@ -233,14 +236,14 @@ pub mod reflect {
 
 /// Shader runtimes to execute a filter chain on a GPU surface.
 #[cfg(feature = "runtime")]
-#[doc(cfg(feature = "runtime"))]
+#[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime")))]
 pub mod runtime {
     pub use librashader_common::{Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
     pub use librashader_runtime::parameters::RuntimeParameters;
 
     #[cfg(feature = "runtime-gl")]
-    #[doc(cfg(feature = "runtime-gl"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-gl")))]
     /// Shader runtime for OpenGL 3.3+.
     ///
     /// DSA support requires OpenGL 4.6.
@@ -256,7 +259,10 @@ pub mod runtime {
     }
 
     #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
-    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))
+    )]
     /// Shader runtime for Direct3D 11.
     pub mod d3d11 {
         pub use librashader_runtime_d3d11::{
@@ -269,7 +275,10 @@ pub mod runtime {
     }
 
     #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
-    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "runtime-d3d12")))
+    )]
     /// Shader runtime for Direct3D 12.
     pub mod d3d12 {
         pub use librashader_runtime_d3d12::{
@@ -282,7 +291,10 @@ pub mod runtime {
     }
 
     #[cfg(all(target_os = "windows", feature = "runtime-d3d9"))]
-    #[doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))
+    )]
     /// Shader runtime for Direct3D 9.
     pub mod d3d9 {
         pub use librashader_runtime_d3d9::{
@@ -295,7 +307,7 @@ pub mod runtime {
     }
 
     #[cfg(feature = "runtime-vk")]
-    #[doc(cfg(feature = "runtime-vk"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-vk")))]
     /// Shader runtime for Vulkan.
     pub mod vk {
         pub use librashader_runtime_vk::{
@@ -308,7 +320,10 @@ pub mod runtime {
     }
 
     #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
-    #[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+    #[cfg_attr(
+        feature = "docsrs",
+        doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))
+    )]
     /// Shader runtime for Metal.
     pub mod mtl {
         pub use librashader_runtime_mtl::{
@@ -321,7 +336,7 @@ pub mod runtime {
     }
 
     #[cfg(feature = "runtime-wgpu")]
-    #[doc(cfg(feature = "runtime-wgpu"))]
+    #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-wgpu")))]
     /// Shader runtime for wgpu.
     pub mod wgpu {
         pub use librashader_runtime_wgpu::{

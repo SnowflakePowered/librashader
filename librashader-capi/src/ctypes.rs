@@ -60,7 +60,7 @@ use librashader::runtime::gl::FilterChain as FilterChainGL;
 
 /// A handle to a OpenGL filter chain.
 #[cfg(feature = "runtime-opengl")]
-#[doc(cfg(feature = "runtime-opengl"))]
+#[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-opengl")))]
 pub type libra_gl_filter_chain_t = Option<NonNull<FilterChainGL>>;
 
 /// A handle to a Direct3D 11 filter chain.
@@ -71,7 +71,10 @@ pub type libra_gl_filter_chain_t = Option<NonNull<FilterChainGL>>;
 use librashader::runtime::d3d11::FilterChain as FilterChainD3D11;
 
 /// A handle to a Direct3D 11 filter chain.
-#[doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))]
+#[cfg_attr(
+    feature = "docsrs",
+    doc(cfg(all(target_os = "windows", feature = "runtime-d3d11")))
+)]
 #[cfg(any(
     feature = "__cbindgen_internal",
     all(target_os = "windows", feature = "runtime-d3d11")
@@ -98,7 +101,10 @@ pub type libra_d3d12_filter_chain_t = Option<NonNull<FilterChainD3D12>>;
 use librashader::runtime::d3d9::FilterChain as FilterChainD3D9;
 
 /// A handle to a Direct3D 11 filter chain.
-#[doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))]
+#[cfg_attr(
+    feature = "docsrs",
+    doc(cfg(all(target_os = "windows", feature = "runtime-d3d9")))
+)]
 #[cfg(any(
     feature = "__cbindgen_internal",
     all(target_os = "windows", feature = "runtime-d3d9")
@@ -109,12 +115,15 @@ pub type libra_d3d9_filter_chain_t = Option<NonNull<FilterChainD3D9>>;
 use librashader::runtime::vk::FilterChain as FilterChainVulkan;
 /// A handle to a Vulkan filter chain.
 #[cfg(feature = "runtime-vulkan")]
-#[doc(cfg(feature = "runtime-vulkan"))]
+#[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-vulkan")))]
 pub type libra_vk_filter_chain_t = Option<NonNull<FilterChainVulkan>>;
 
 #[cfg(all(target_os = "macos", feature = "runtime-metal"))]
 use librashader::runtime::mtl::FilterChain as FilterChainMetal;
-#[doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))]
+#[cfg_attr(
+    feature = "docsrs",
+    doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))
+)]
 #[cfg(any(
     feature = "__cbindgen_internal",
     all(
