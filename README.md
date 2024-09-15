@@ -18,7 +18,7 @@ Windows and macOS users can grab the latest binaries from [GitHub Releases](http
 librashader supports all modern graphics runtimes, including wgpu, Vulkan, OpenGL 3.3+ and 4.6 (with DSA), 
 Direct3D 11, Direct3D 12, and Metal. 
 
-librashader does not support legacy render APIs such as older versions of OpenGL or Direct3D, except for experimental
+librashader does not support legacy render APIs such as older versions of OpenGL or Direct3D, except for limited
 support for Direct3D 9.
 
 | **API**     | **Status** | **`librashader` feature** |
