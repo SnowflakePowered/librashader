@@ -1,6 +1,6 @@
 # librashader
 
-![Mega Bezel SMOOTH-ADV](shader_triangle.png)
+![Mega Bezel SMOOTH-ADV](https://raw.githubusercontent.com/SnowflakePowered/librashader/master/shader_triangle.png)
 
 <small>*Mega Bezel SMOOTH-ADV on DirectX 11*</small>
 
