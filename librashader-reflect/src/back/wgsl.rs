@@ -1,9 +1,8 @@
 use crate::back::targets::WGSL;
-use crate::back::{CompileShader, CompilerBackend, FromCompilation};
+use crate::back::{CompileReflectShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
 use crate::front::SpirvCompilation;
 use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
-use crate::reflect::ReflectShader;
 use naga::Module;
 
 /// The context for a WGSL compilation via Naga
@@ -16,8 +15,7 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     type Target = WGSL;
     type Options = NagaLoweringOptions;
     type Context = NagaWgslContext;
-    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-        + ReflectShader;
+    type Output = impl CompileReflectShader<Self::Target, SpirvCompilation, Naga>;
 
     fn from_compilation(
         compile: SpirvCompilation,

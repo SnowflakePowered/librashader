@@ -1,11 +1,12 @@
 use crate::back::spirv::WriteSpirV;
 use crate::back::targets::{OutputTarget, DXIL};
-use crate::back::{CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput};
+use crate::back::{
+    CompileReflectShader, CompileShader, CompilerBackend, FromCompilation, ShaderCompilerOutput,
+};
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
 use crate::reflect::cross::glsl::GlslReflect;
 use crate::reflect::cross::SpirvCross;
-use crate::reflect::ReflectShader;
 pub use spirv_to_dxil::DxilObject;
 pub use spirv_to_dxil::ShaderModel;
 use spirv_to_dxil::{
@@ -20,8 +21,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     type Target = DXIL;
     type Options = Option<ShaderModel>;
     type Context = ();
-    type Output = impl CompileShader<Self::Target, Options = Self::Options, Context = Self::Context>
-        + ReflectShader;
+    type Output = impl CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross>;
 
     fn from_compilation(
         compile: SpirvCompilation,
@@ -87,5 +87,12 @@ impl CompileShader<DXIL> for WriteSpirV {
             fragment,
             context: (),
         })
+    }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<DxilObject, Self::Context>, ShaderCompileError> {
+        <WriteSpirV as CompileShader<DXIL>>::compile(*self, options)
     }
 }

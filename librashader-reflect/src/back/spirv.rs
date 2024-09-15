@@ -63,6 +63,17 @@ impl CompileShader<SPIRV> for WriteSpirV {
             context: (),
         })
     }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        _options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<Vec<u32>, Self::Context>, ShaderCompileError> {
+        Ok(ShaderCompilerOutput {
+            vertex: self.vertex,
+            fragment: self.fragment,
+            context: (),
+        })
+    }
 }
 
 /// The context for a SPIRV compilation via Naga
