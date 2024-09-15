@@ -404,6 +404,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "carlog"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95faf7476605bbef1fdf740eaa3f7f2b97b70fbed0aada1ee0c040cff66c84cf"
+dependencies = [
+ "colored",
+]
+
+[[package]]
 name = "cbindgen"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -566,6 +575,16 @@ name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
+
+[[package]]
+name = "colored"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8"
+dependencies = [
+ "lazy_static",
+ "windows-sys 0.48.0",
+]
 
 [[package]]
 name = "com"
@@ -1476,6 +1495,7 @@ dependencies = [
 name = "librashader-build-script"
 version = "0.1.0"
 dependencies = [
+ "carlog",
  "cbindgen",
  "clap 4.1.0",
 ]

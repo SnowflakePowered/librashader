@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 cbindgen = "0.26.0"
 clap = { version = "=4.1.0", features = ["derive"] }
-
+carlog = "0.1.0"
 
 [package.metadata.release]
 release = false

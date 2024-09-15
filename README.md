@@ -252,7 +252,7 @@ in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VE
 When building against nightly Rust, the following MSRV policy is enforced for unstable library features.
 
 * Windows and macOS: **latest** nightly
-* Linux: **1.74**
+* Linux: **1.76**
 
 A CI job runs weekly to ensure librashader continues to build on nightly. 
 
