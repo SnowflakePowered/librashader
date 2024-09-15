@@ -165,4 +165,11 @@ impl CompileShader<GLSL> for CrossReflect<targets::Glsl> {
             },
         })
     }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
+        <CrossReflect<targets::Glsl> as CompileShader<GLSL>>::compile(*self, options)
+    }
 }

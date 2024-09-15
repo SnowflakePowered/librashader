@@ -146,6 +146,13 @@ impl CompileShader<MSL> for NagaReflect {
             },
         })
     }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
+        <NagaReflect as CompileShader<MSL>>::compile(*self, options)
+    }
 }
 
 #[cfg(test)]
