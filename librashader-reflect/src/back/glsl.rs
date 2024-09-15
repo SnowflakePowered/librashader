@@ -17,6 +17,7 @@ pub struct CrossGlslContext {
     pub artifact: CompiledProgram<spirv_cross2::targets::Glsl>,
 }
 
+#[cfg(not(feature = "stable"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {
     type Target = GLSL;
     type Options = GlslVersion;
@@ -28,6 +29,22 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: GlslReflect::try_from(&compile)?,
+        })
+    }
+}
+
+#[cfg(feature = "stable")]
+impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {
+    type Target = GLSL;
+    type Options = GlslVersion;
+    type Context = CrossGlslContext;
+    type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross> + Send>;
+
+    fn from_compilation(
+        compile: SpirvCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: Box::new(GlslReflect::try_from(&compile)?),
         })
     }
 }
