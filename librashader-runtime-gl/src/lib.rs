@@ -3,7 +3,7 @@
 //! This crate should not be used directly.
 //! See [`librashader::runtime::gl`](https://docs.rs/librashader/latest/librashader/runtime/gl/index.html) instead.
 #![deny(unsafe_op_in_unsafe_fn)]
-#![feature(type_alias_impl_trait)]
+#![cfg_attr(not(feature = "stable"), feature(type_alias_impl_trait))]
 
 mod binding;
 mod filter_chain;

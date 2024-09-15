@@ -39,7 +39,7 @@ objc2-metal = { workspace = true, features = ["all"] }
 objc2 = { workspace = true, features = ["apple"] }
 
 [features]
-# run_test = ["icrate/AppKit", "i "icrate/Foundation_all", "icrate/MetalKit", "icrate/MetalKit_all"]
+stable = ["librashader-reflect/stable"]
 
 [target.'cfg(target_vendor="apple")'.dev-dependencies]
 objc2-metal-kit = { version = "0.2", features = ["all"]}

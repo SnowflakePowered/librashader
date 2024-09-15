@@ -26,6 +26,7 @@ runtime-vulkan = ["ash", "librashader/runtime-vk"]
 runtime-metal = ["__cbindgen_internal_objc", "librashader/runtime-metal"]
 
 reflect-unstable = []
+stable = ["librashader/stable"]
 
 __cbindgen_internal = ["runtime-all"]
 

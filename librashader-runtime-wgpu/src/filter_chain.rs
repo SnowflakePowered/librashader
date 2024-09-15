@@ -40,8 +40,14 @@ use crate::texture::{InputImage, OwnedImage};
 
 mod compile {
     use super::*;
+
+    #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<WGSL, SpirvCompilation, Naga> + Send>;
+
+    #[cfg(feature = "stable")]
+    pub type ShaderPassMeta =
+        ShaderPassArtifact<Box<dyn CompileReflectShader<WGSL, SpirvCompilation, Naga> + Send>>;
 
     pub fn compile_passes(
         shaders: Vec<ShaderPassConfig>,

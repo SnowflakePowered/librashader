@@ -89,8 +89,15 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
 mod compile {
     use super::*;
+
+    #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<GLSL, SpirvCompilation, SpirvCross>>;
+
+    #[cfg(feature = "stable")]
+    pub type ShaderPassMeta = ShaderPassArtifact<
+        Box<dyn CompileReflectShader<GLSL, SpirvCompilation, SpirvCross> + Send>,
+    >;
 
     pub fn compile_passes(
         shaders: Vec<ShaderPassConfig>,

@@ -26,6 +26,7 @@ array-concat = "0.5.2"
 
 [features]
 debug-shader = []
+stable = ["librashader-reflect/stable"]
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true

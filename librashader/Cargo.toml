@@ -47,7 +47,15 @@ runtime = []
 reflect = []
 preprocess = []
 presets = []
-
+stable = [ "librashader-reflect/stable",
+           "librashader-runtime-d3d9?/stable",
+           "librashader-runtime-d3d11?/stable",
+           "librashader-runtime-d3d12?/stable",
+           "librashader-runtime-gl?/stable",
+           "librashader-runtime-vk?/stable",
+           "librashader-runtime-mtl?/stable",
+           "librashader-runtime-wgpu?/stable"
+]
 # runtimes
 
 runtime-gl = [ "runtime", "reflect-cross", "librashader-common/opengl", "librashader-runtime-gl" ]

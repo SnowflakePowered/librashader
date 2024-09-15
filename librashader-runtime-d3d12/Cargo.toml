@@ -33,6 +33,9 @@ gpu-allocator = { version = "0.27.0", features = ["d3d12"], default-features = f
 parking_lot = "0.12.3"
 d3d12-descriptor-heap = "0.1.0"
 
+[features]
+stable = ["librashader-reflect/stable"]
+
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
 features = [
