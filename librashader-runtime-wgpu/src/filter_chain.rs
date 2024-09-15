@@ -74,6 +74,7 @@ pub struct FilterChainWgpu {
     disable_mipmaps: bool,
     mipmapper: MipmapGen,
     default_frame_options: FrameOptionsWgpu,
+    draw_last_pass_feedback: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -197,6 +198,7 @@ impl FilterChainWgpu {
         let draw_quad = DrawQuad::new(&device);
 
         Ok(FilterChainWgpu {
+            draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             common: FilterCommon {
                 luts,
                 samplers,
@@ -492,22 +494,24 @@ impl FilterChainWgpu {
             source.wrap_mode = pass.config.wrap_mode;
             source.mip_filter = pass.config.filter;
 
-            let target = &self.output_framebuffers[index];
-            let output_image = WgpuOutputView::from(target);
-            let out = RenderTarget::viewport_with_output(&output_image, viewport);
+            if self.draw_last_pass_feedback {
+                let target = &self.output_framebuffers[index];
+                let output_image = WgpuOutputView::from(target);
+                let out = RenderTarget::viewport_with_output(&output_image, viewport);
 
-            pass.draw(
-                cmd,
-                index,
-                &self.common,
-                pass.config.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                QuadType::Final,
-            )?;
+                pass.draw(
+                    cmd,
+                    index,
+                    &self.common,
+                    pass.config.get_frame_count(frame_count),
+                    options,
+                    viewport,
+                    &original,
+                    &source,
+                    &out,
+                    QuadType::Final,
+                )?;
+            }
 
             let output_image = &viewport.output;
             let out = RenderTarget::viewport_with_output(output_image, viewport);

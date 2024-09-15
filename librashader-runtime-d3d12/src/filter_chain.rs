@@ -79,6 +79,7 @@ pub struct FilterChainD3D12 {
     disable_mipmaps: bool,
 
     default_options: FrameOptionsD3D12,
+    draw_last_pass_feedback: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -386,6 +387,7 @@ impl FilterChainD3D12 {
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
 
         Ok(FilterChainD3D12 {
+            draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             common: FilterCommon {
                 d3d12: device.clone(),
                 samplers,
@@ -848,47 +850,49 @@ impl FilterChainD3D12 {
             source.filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
-            let feedback_target = &self.output_framebuffers[index];
+            if self.draw_last_pass_feedback {
+                let feedback_target = &self.output_framebuffers[index];
 
-            if pass.pipeline.format != feedback_target.format {
-                // eprintln!("recompiling final pipeline");
-                pass.pipeline.recompile(
-                    feedback_target.format,
-                    &self.common.root_signature,
-                    &self.common.d3d12,
+                if pass.pipeline.format != feedback_target.format {
+                    // eprintln!("recompiling final pipeline");
+                    pass.pipeline.recompile(
+                        feedback_target.format,
+                        &self.common.root_signature,
+                        &self.common.d3d12,
+                    )?;
+                }
+
+                self.residuals
+                    .dispose_barriers(util::d3d12_resource_transition(
+                        cmd,
+                        &feedback_target.handle.resource(),
+                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                        D3D12_RESOURCE_STATE_RENDER_TARGET,
+                    ));
+
+                let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
+                let out = RenderTarget::viewport_with_output(&view, viewport);
+                pass.draw(
+                    cmd,
+                    index,
+                    &self.common,
+                    pass.config.get_frame_count(frame_count),
+                    options,
+                    viewport,
+                    &original,
+                    &source,
+                    &out,
+                    QuadType::Final,
                 )?;
+
+                self.residuals
+                    .dispose_barriers(util::d3d12_resource_transition(
+                        cmd,
+                        &feedback_target.handle.resource(),
+                        D3D12_RESOURCE_STATE_RENDER_TARGET,
+                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    ));
             }
-
-            self.residuals
-                .dispose_barriers(util::d3d12_resource_transition(
-                    cmd,
-                    &feedback_target.handle.resource(),
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                    D3D12_RESOURCE_STATE_RENDER_TARGET,
-                ));
-
-            let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
-            let out = RenderTarget::viewport_with_output(&view, viewport);
-            pass.draw(
-                cmd,
-                index,
-                &self.common,
-                pass.config.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                QuadType::Final,
-            )?;
-
-            self.residuals
-                .dispose_barriers(util::d3d12_resource_transition(
-                    cmd,
-                    &feedback_target.handle.resource(),
-                    D3D12_RESOURCE_STATE_RENDER_TARGET,
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                ));
 
             if pass.pipeline.format != viewport.output.format {
                 // eprintln!("recompiling final pipeline");

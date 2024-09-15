@@ -39,6 +39,7 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     feedback_framebuffers: Box<[GLFramebuffer]>,
     history_framebuffers: VecDeque<GLFramebuffer>,
     default_options: FrameOptionsGL,
+    draw_last_pass_feedback: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -175,6 +176,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let draw_quad = T::DrawQuad::new();
 
         Ok(FilterChainImpl {
+            draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
             output_framebuffers,
             feedback_framebuffers,
@@ -373,17 +375,19 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source.mip_filter = pass.config.filter;
             source.wrap_mode = pass.config.wrap_mode;
 
-            let target = &self.output_framebuffers[index];
-            pass.draw(
-                index,
-                &self.common,
-                pass.config.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::viewport_with_output(target, viewport),
-            );
+            if self.draw_last_pass_feedback {
+                let target = &self.output_framebuffers[index];
+                pass.draw(
+                    index,
+                    &self.common,
+                    pass.config.get_frame_count(frame_count),
+                    options,
+                    viewport,
+                    &original,
+                    &source,
+                    RenderTarget::viewport_with_output(target, viewport),
+                );
+            }
 
             pass.draw(
                 index,

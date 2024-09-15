@@ -82,6 +82,7 @@ pub struct FilterChainMetal {
     prev_frame_history_buffer: OwnedTexture,
     disable_mipmaps: bool,
     default_options: FrameOptionsMetal,
+    draw_last_pass_feedback: bool
 }
 
 impl Debug for FilterChainMetal {
@@ -317,6 +318,7 @@ impl FilterChainMetal {
 
         let draw_quad = DrawQuad::new(&device)?;
         Ok(FilterChainMetal {
+            draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             common: FilterCommon {
                 luts,
                 samplers,
@@ -487,21 +489,22 @@ impl FilterChainMetal {
             source.mip_filter = pass.config.filter;
             let index = passes_len - 1;
 
-            let output_image = &self.output_framebuffers[index].texture;
-
-            let out = RenderTarget::viewport_with_output(output_image.as_ref(), viewport);
-            pass.draw(
-                &cmd,
-                passes_len - 1,
-                &self.common,
-                pass.config.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                QuadType::Final,
-            )?;
+            if self.draw_last_pass_feedback {
+                let output_image = &self.output_framebuffers[index].texture;
+                let out = RenderTarget::viewport_with_output(output_image.as_ref(), viewport);
+                pass.draw(
+                    &cmd,
+                    passes_len - 1,
+                    &self.common,
+                    pass.config.get_frame_count(frame_count),
+                    options,
+                    viewport,
+                    &original,
+                    &source,
+                    &out,
+                    QuadType::Final,
+                )?;
+            }
 
             let output_image = viewport.output;
             let out = RenderTarget::viewport_with_output(output_image, viewport);
