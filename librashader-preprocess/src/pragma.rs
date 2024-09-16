@@ -3,7 +3,8 @@ use librashader_common::ImageFormat;
 use nom::bytes::complete::{is_not, tag, take_while};
 
 use librashader_common::map::ShortString;
-use nom::character::complete::multispace1;
+use nom::character::complete::{multispace0, multispace1};
+use nom::combinator::opt;
 use nom::number::complete::float;
 use nom::sequence::delimited;
 use nom::IResult;
@@ -36,8 +37,16 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         let (input, minimum) = float(input)?;
         let (input, _) = multispace1(input)?;
         let (input, maximum) = float(input)?;
-        let (input, _) = multispace1(input)?;
-        let (input, step) = float(input)?;
+
+        // Step is actually optional and defaults to 0.02
+        // This behaviour can be seen in shaders like
+        // crt/crt-slangtest-cubic.slangp
+        // which doesn't have a step argument
+        // #pragma parameter OUT_GAMMA "Monitor Output Gamma" 2.2 1.8 2.4
+
+        // https://github.com/libretro/slang-shaders/blob/0e2939787076e4a8a83be89175557fde23abe837/crt/shaders/crt-slangtest/parameters.inc#L1
+        let (input, _) = multispace0(input)?;
+        let (input, step) = opt(float)(input)?;
         Ok((
             input,
             ShaderParameter {
@@ -46,7 +55,7 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
                 initial,
                 minimum,
                 maximum,
-                step,
+                step: step.unwrap_or(0.02),
             },
         ))
     }
@@ -144,5 +153,23 @@ mod test {
             maximum: 1600.0,
             step: 25.0
         }, parse_parameter_string(r#"#pragma parameter HSM_CORE_RES_SAMPLING_MULT_SCANLINE_DIR			"          Scanline Dir Multiplier"  100 25 1600 25"#).unwrap())
+    }
+
+    #[test]
+    fn parses_parameter_pragma_with_no_step() {
+        assert_eq!(
+            ShaderParameter {
+                id: "OUT_GAMMA".into(),
+                description: "Monitor Output Gamma".to_string(),
+                initial: 2.2,
+                minimum: 1.8,
+                maximum: 2.4,
+                step: 0.02
+            },
+            parse_parameter_string(
+                r#"#pragma parameter OUT_GAMMA "Monitor Output Gamma" 2.2 1.8 2.4"#
+            )
+            .unwrap()
+        )
     }
 }
