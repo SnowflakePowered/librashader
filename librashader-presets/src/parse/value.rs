@@ -282,7 +282,7 @@ pub fn parse_values(
         {
             let parameter_name_string: &str = token.value.fragment();
             for parameter_name in parameter_name_string.split(';') {
-                parameter_names.push(parameter_name);
+                parameter_names.push(parameter_name.trim());
             }
         }
     }
@@ -294,7 +294,7 @@ pub fn parse_values(
         {
             let texture_name_string: &str = token.value.fragment();
             for texture_name in texture_name_string.split(';') {
-                texture_names.push(texture_name);
+                texture_names.push(texture_name.trim());
             }
         }
     }
@@ -339,6 +339,7 @@ pub fn parse_values(
             MakeExtractIf::extract_if(tokens, |token| texture_names.contains(token.key.fragment()))
         {
             let mut relative_path = path.to_path_buf();
+            // Don't trim paths
             relative_path.push(*token.value.fragment());
             relative_path
                 .canonicalize()
@@ -404,7 +405,7 @@ pub fn parse_values(
     let mut rest_tokens = Vec::new();
     // hopefully no more textures left in the token tree
     for (p, token) in tokens {
-        if parameter_names.contains(token.key.fragment()) {
+        if parameter_names.contains(&token.key.fragment().trim()) {
             let param_val = from_float(token.value)
                 // This is literally just to work around BEAM_PROFILE in crt-hyllian-sinc-glow.slangp
                 // which has ""0'.000000". This somehow works in RA because it defaults to 0, probably.
@@ -412,7 +413,7 @@ pub fn parse_values(
                 // params (god help me), it would be pretty bad because we lose texture path fallback.
                 .unwrap_or(0.0);
             values.push(Value::Parameter(
-                ShortString::from(*token.key.fragment()),
+                ShortString::from(token.key.fragment().trim()),
                 param_val,
             ));
             continue;
@@ -495,7 +496,7 @@ pub fn parse_values(
         if let Ok((_, idx)) = parse_indexed_key("alias", token.key) {
             values.push(Value::Alias(
                 idx,
-                ShortString::from(*token.value.fragment()),
+                ShortString::from(token.value.fragment().trim()),
             ));
             continue;
         }
@@ -559,7 +560,7 @@ pub fn parse_values(
         // handle undeclared parameters after parsing everything else as a last resort.
         if let Ok(param_val) = from_float(token.value) {
             values.push(Value::Parameter(
-                ShortString::from(*token.key.fragment()),
+                ShortString::from(token.key.fragment().trim()),
                 param_val,
             ));
         }
@@ -570,6 +571,7 @@ pub fn parse_values(
                 .all(|k| !token.key.ends_with(k))
         {
             let mut relative_path = path.to_path_buf();
+            // Don't trim paths.
             relative_path.push(*token.value.fragment());
             relative_path
                 .canonicalize()
@@ -633,7 +635,7 @@ mod test {
     #[test]
     pub fn parse_basic() {
         let root =
-            PathBuf::from("../test/slang-shaders/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
+            PathBuf::from("../test/shaders_slang/bezel/Mega_Bezel/Presets/Base_CRT_Presets/MBZ__3__STD__MEGATRON-NTSC.slangp");
         let basic = parse_preset(root, WildcardContext::new());
         eprintln!("{basic:?}");
         assert!(basic.is_ok());
