@@ -105,9 +105,11 @@ where
         })
         .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>, E>>()?;
 
-    for details in &passes {
-        insert_pass_semantics(&mut uniform_semantics, &mut texture_semantics, &details.0)
+    for (config, source, _) in &passes {
+        insert_pass_semantics(&mut uniform_semantics, &mut texture_semantics, config.alias.as_ref(), config.id as usize);
+        insert_pass_semantics(&mut uniform_semantics, &mut texture_semantics, source.name.as_ref(), config.id as usize);
     }
+
     insert_lut_semantics(textures, &mut uniform_semantics, &mut texture_semantics);
 
     let semantics = ShaderSemantics {
@@ -122,9 +124,10 @@ where
 fn insert_pass_semantics(
     uniform_semantics: &mut FastHashMap<ShortString, UniformSemantic>,
     texture_semantics: &mut FastHashMap<ShortString, Semantic<TextureSemantics>>,
-    config: &ShaderPassConfig,
+    alias: Option<&ShortString>,
+    index: usize,
 ) {
-    let Some(alias) = &config.alias else {
+    let Some(alias) = alias else {
         return;
     };
 
@@ -132,8 +135,6 @@ fn insert_pass_semantics(
     if alias.trim().is_empty() {
         return;
     }
-
-    let index = config.id as usize;
 
     // PassOutput
     texture_semantics.insert(
