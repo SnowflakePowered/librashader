@@ -1334,7 +1334,7 @@ typedef struct libra_instance_t {
     ///    struct.
     PFN_libra_mtl_filter_chain_frame mtl_filter_chain_frame;
 
-    /// Free a D3D11 filter chain.
+    /// Free a Metal filter chain.
     ///
     /// The resulting value in `chain` then becomes null.
     /// ## Safety
