@@ -54,11 +54,11 @@ impl SamplerSet {
                     descriptor.setTAddressMode(MTLSamplerAddressMode::from(*wrap_mode));
 
                     descriptor.setMagFilter(MTLSamplerMinMagFilter::from(*filter_mode));
-
                     descriptor.setMinFilter(MTLSamplerMinMagFilter::from(*filter_mode));
                     descriptor.setMipFilter(filter_mode.mtl_mip(*mipmap_filter));
+
                     descriptor.setLodMinClamp(0.0);
-                    descriptor.setLodMaxClamp(1000.0);
+                    descriptor.setLodMaxClamp(f32::MAX);
                     descriptor.setCompareFunction(MTLCompareFunction::Never);
                     descriptor.setMaxAnisotropy(1);
                     descriptor.setBorderColor(MTLSamplerBorderColor::TransparentBlack);
