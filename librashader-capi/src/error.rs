@@ -59,7 +59,7 @@ pub enum LibrashaderError {
         doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))
     )]
     #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
-    #[error("There was an error in the D3D12 filter chain.")]
+    #[error("There was an error in the Metal filter chain.")]
     MetalFilterError(#[from] librashader::runtime::mtl::error::FilterChainError),
 }
 
