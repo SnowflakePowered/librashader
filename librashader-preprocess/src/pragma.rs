@@ -110,12 +110,12 @@ pub(crate) fn parse_pragma_meta(source: impl AsRef<str>) -> Result<ShaderMeta, P
             }
         }
 
-        if line.starts_with("#pragma name ") {
+        if let Some(pragma_name) = line.strip_prefix("#pragma name ") {
             if name.is_some() {
                 return Err(PreprocessError::DuplicatePragmaError(line.into()));
             }
 
-            name = Some(ShortString::from(line.trim()))
+            name = Some(ShortString::from(pragma_name.trim()))
         }
     }
 
