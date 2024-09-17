@@ -462,7 +462,7 @@ macro_rules! impl_default_frame_options {
             /// The direction of rendering.
             /// -1 indicates that the frames are played in reverse order.
             pub frame_direction: i32,
-            /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+            /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
             pub rotation: u32,
             /// The total number of subframes ran. Default is 1.
             pub total_subframes: u32,

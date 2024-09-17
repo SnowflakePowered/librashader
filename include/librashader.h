@@ -242,7 +242,7 @@ typedef struct frame_gl_opt_t {
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
-  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
   uint32_t rotation;
   /// The total number of subframes ran. Default is 1.
   uint32_t total_subframes;
@@ -326,7 +326,7 @@ typedef struct frame_vk_opt_t {
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
-  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
   uint32_t rotation;
   /// The total number of subframes ran. Default is 1.
   uint32_t total_subframes;
@@ -376,7 +376,7 @@ typedef struct frame_d3d11_opt_t {
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
-  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
   uint32_t rotation;
   /// The total number of subframes ran. Default is 1.
   uint32_t total_subframes;
@@ -414,7 +414,7 @@ typedef struct frame_d3d9_opt_t {
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
-  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
   uint32_t rotation;
   /// The total number of subframes ran. Default is 1.
   uint32_t total_subframes;
@@ -481,7 +481,7 @@ typedef struct frame_d3d12_opt_t {
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
-  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
   uint32_t rotation;
   /// The total number of subframes ran. Default is 1.
   uint32_t total_subframes;
@@ -514,7 +514,7 @@ typedef struct frame_mtl_opt_t {
   /// The direction of rendering.
   /// -1 indicates that the frames are played in reverse order.
   int32_t frame_direction;
-  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 4 = 270deg.
+  /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
   uint32_t rotation;
   /// The total number of subframes ran. Default is 1.
   uint32_t total_subframes;
