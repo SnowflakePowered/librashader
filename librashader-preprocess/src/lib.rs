@@ -81,6 +81,7 @@ impl SourceOutput for String {
 pub(crate) fn load_shader_source(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
     let source = read_source(path)?;
     let meta = pragma::parse_pragma_meta(&source)?;
+
     let text = stage::process_stages(&source)?;
     let parameters = FastHashMap::from_iter(meta.parameters.into_iter().map(|p| (p.id.clone(), p)));
 
