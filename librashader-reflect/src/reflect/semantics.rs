@@ -249,7 +249,6 @@ impl MemberOffset {
 /// Reflection information about a non-texture related uniform variable.
 #[derive(Debug)]
 pub struct VariableMeta {
-    // this might bite us in the back because retroarch keeps separate UBO/push offsets.. eh
     /// The offset of this variable uniform.
     pub offset: MemberOffset,
     /// The size of the uniform.
@@ -424,7 +423,7 @@ impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
                     index: (),
                 }),
                 "CurrentSubFrame" => Some(Semantic {
-                    semantics: UniqueSemantics::TotalSubFrames,
+                    semantics: UniqueSemantics::CurrentSubFrame,
                     index: (),
                 }),
                 _ => None,
