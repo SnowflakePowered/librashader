@@ -32,7 +32,9 @@ pub fn main() -> ExitCode {
     let crate_dir = Path::new("librashader-capi");
     carlog_info!("Building", "librashader C API");
 
-    let mut cmd = Command::new("cargo");
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+    let mut cmd = Command::new(&cargo);
+
     cmd.arg("build");
     cmd.args(["--package", "librashader-capi"]);
     cmd.arg(format!(
@@ -50,12 +52,8 @@ pub fn main() -> ExitCode {
     }
 
     if args.stable {
-        carlog_warning!(
-            "building librashader with stable Rust compatibility"
-        );
-        carlog_warning!(
-            "C headers will not be generated"
-        );
+        carlog_warning!("building librashader with stable Rust compatibility");
+        carlog_warning!("C headers will not be generated");
         cmd.args(["--features", "stable"]);
     }
     if !args.cargoflags.is_empty() {
