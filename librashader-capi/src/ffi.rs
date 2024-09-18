@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! wrap_ok {
     ($e:expr) => {
         ::core::iter::empty().try_fold($e, |_, __x: ::core::convert::Infallible| match __x {})
