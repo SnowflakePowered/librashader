@@ -4,9 +4,7 @@ use crate::ctypes::{
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::gl::{
-    FilterChain, FilterChainOptions, FrameOptions, GLImage,
-};
+use librashader::runtime::gl::{FilterChain, FilterChainOptions, FrameOptions, GLImage};
 use librashader::runtime::FilterChainParameters;
 use librashader::runtime::{Size, Viewport};
 use std::ffi::CStr;

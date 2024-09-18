@@ -106,8 +106,18 @@ where
         .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>, E>>()?;
 
     for (config, source, _) in &passes {
-        insert_pass_semantics(&mut uniform_semantics, &mut texture_semantics, config.alias.as_ref(), config.id as usize);
-        insert_pass_semantics(&mut uniform_semantics, &mut texture_semantics, source.name.as_ref(), config.id as usize);
+        insert_pass_semantics(
+            &mut uniform_semantics,
+            &mut texture_semantics,
+            config.alias.as_ref(),
+            config.id as usize,
+        );
+        insert_pass_semantics(
+            &mut uniform_semantics,
+            &mut texture_semantics,
+            source.name.as_ref(),
+            config.id as usize,
+        );
     }
 
     insert_lut_semantics(textures, &mut uniform_semantics, &mut texture_semantics);
