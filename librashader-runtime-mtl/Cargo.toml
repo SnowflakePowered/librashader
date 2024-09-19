@@ -34,7 +34,7 @@ harness = false
 targets = ["x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-objc2-foundation = { version = "0.2", features = ["NSError"] }
+objc2-foundation = { version = "0.2", features = ["NSError", "NSFileManager", "NSString", "NSPathUtilities"] }
 objc2-metal = { workspace = true, features = ["all"] }
 objc2 = { workspace = true, features = ["apple"] }
 

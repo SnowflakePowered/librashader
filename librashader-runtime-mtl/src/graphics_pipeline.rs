@@ -5,15 +5,8 @@ use librashader_reflect::back::msl::{CrossMslContext, NagaMslContext};
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
-use objc2_foundation::NSString;
-use objc2_metal::{
-    MTLBlendFactor, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLFunction, MTLLibrary,
-    MTLLoadAction, MTLPixelFormat, MTLPrimitiveTopologyClass, MTLRenderCommandEncoder,
-    MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor,
-    MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreAction,
-    MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor,
-    MTLVertexFormat, MTLVertexStepFunction, MTLViewport,
-};
+use objc2_foundation::{ns_string, NSFileManager, NSSearchPathDirectory, NSSearchPathDomainMask, NSString, NSURL};
+use objc2_metal::{MTLBinaryArchive, MTLBinaryArchiveDescriptor, MTLBlendFactor, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLFunction, MTLFunctionDescriptor, MTLLibrary, MTLLoadAction, MTLPixelFormat, MTLPrimitiveTopologyClass, MTLRenderCommandEncoder, MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor, MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreAction, MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor, MTLVertexFormat, MTLVertexStepFunction, MTLViewport};
 
 use librashader_common::map::FastHashMap;
 use objc2::rc::Retained;
@@ -56,9 +49,14 @@ impl PipelineLayoutObjects {
         shader_assembly: &ShaderCompilerOutput<String, T>,
         device: &ProtocolObject<dyn MTLDevice>,
     ) -> Result<Self> {
+        let binary_archive = device.newBinaryArchiveWithDescriptor_error(&MTLBinaryArchiveDescriptor::new())?;
+
         let entry = T::entry_point();
 
         let vertex = NSString::from_str(&shader_assembly.vertex);
+        let vertex_desc = MTLFunctionDescriptor::new();
+        vertex_desc.setName(Some(&entry));
+
         let vertex = device.newLibraryWithSource_options_error(&vertex, None)?;
         let vertex_entry = vertex
             .newFunctionWithName(&entry)
@@ -66,9 +64,32 @@ impl PipelineLayoutObjects {
 
         let fragment = NSString::from_str(&shader_assembly.fragment);
         let fragment = device.newLibraryWithSource_options_error(&fragment, None)?;
+
+        let fragment_desc = MTLFunctionDescriptor::new();
+        fragment_desc.setName(Some(&entry));
         let fragment_entry = fragment
             .newFunctionWithName(&entry)
             .ok_or(FilterChainError::ShaderWrongEntryName)?;
+
+
+        unsafe {
+            binary_archive.addFunctionWithDescriptor_library_error(&fragment_desc, &fragment)?;
+            binary_archive.addFunctionWithDescriptor_library_error(&vertex_desc, &vertex)?;
+        }
+
+        unsafe {
+            let manager = NSFileManager::defaultManager();
+            let application_support =manager
+                .URLsForDirectory_inDomains(NSSearchPathDirectory::NSCachesDirectory, NSSearchPathDomainMask::NSUserDomainMask);
+
+            let metal_lib = application_support.first().unwrap().URLByAppendingPathComponent(ns_string!("librashader.metallib"))
+                .unwrap();
+            eprintln!("{:?}", metal_lib);
+            if let Err(e) = binary_archive.serializeToURL_error(&metal_lib) {
+                eprintln!("{:?}", e.localizedDescription());
+            }
+        }
+
 
         Ok(Self {
             _vertex_lib: vertex,
@@ -155,6 +176,7 @@ impl MetalGraphicsPipeline {
     ) -> Result<Self> {
         let layout = PipelineLayoutObjects::new(shader_assembly, device)?;
         let pipeline = layout.create_pipeline(device, render_pass_format)?;
+
         let mut pipelines = FastHashMap::default();
         pipelines.insert(render_pass_format, pipeline);
         Ok(Self {
