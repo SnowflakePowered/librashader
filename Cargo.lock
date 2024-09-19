@@ -1591,11 +1591,9 @@ dependencies = [
  "bitflags 2.6.0",
  "bytemuck",
  "glslang",
- "indexmap",
  "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
- "matches",
  "naga",
  "rspirv",
  "rustc-hash 2.0.0",
@@ -1687,6 +1685,7 @@ dependencies = [
 name = "librashader-runtime-gl"
 version = "0.4.5"
 dependencies = [
+ "array-init",
  "bytemuck",
  "glfw 0.47.0",
  "glow 0.14.1",
@@ -1841,12 +1840,6 @@ checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "matches"
-version = "0.1.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2532096657941c2fea9c289d370a250971c689d4f143798ff67113ec042024a5"
 
 [[package]]
 name = "memchr"
