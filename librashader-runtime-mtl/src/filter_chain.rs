@@ -82,7 +82,7 @@ pub struct FilterChainMetal {
     prev_frame_history_buffer: OwnedTexture,
     disable_mipmaps: bool,
     default_options: FrameOptionsMetal,
-    draw_last_pass_feedback: bool
+    draw_last_pass_feedback: bool,
 }
 
 impl Debug for FilterChainMetal {

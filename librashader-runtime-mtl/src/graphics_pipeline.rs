@@ -177,7 +177,7 @@ impl MetalGraphicsPipeline {
         Ok(())
     }
 
-    pub fn begin_rendering<'pass>(
+    pub fn begin_rendering(
         &self,
         output: &RenderTarget<ProtocolObject<dyn MTLTexture>>,
         buffer: &ProtocolObject<dyn MTLCommandBuffer>,

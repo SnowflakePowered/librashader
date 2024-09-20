@@ -7,7 +7,7 @@ use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_metal::{
     MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLPixelFormat,
-    MTLStorageMode, MTLTexture, MTLTextureDescriptor, MTLTextureUsage,
+    MTLTexture, MTLTextureDescriptor, MTLTextureUsage,
 };
 
 pub type MetalTexture = Retained<ProtocolObject<dyn MTLTexture>>;
