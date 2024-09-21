@@ -2,6 +2,7 @@
 
 /// API version type alias.
 pub type LIBRASHADER_API_VERSION = usize;
+/// ABI version type alias.
 pub type LIBRASHADER_ABI_VERSION = usize;
 
 /// The current version of the librashader API.

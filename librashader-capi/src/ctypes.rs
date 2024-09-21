@@ -18,7 +18,9 @@ pub type libra_error_t = Option<NonNull<LibrashaderError>>;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum LIBRA_PRESET_CTX_ORIENTATION {
+    /// Context parameter for vertical orientation.
     Vertical = 0,
+    /// Context parameter for horizontal orientation.
     Horizontal,
 }
 impl From<LIBRA_PRESET_CTX_ORIENTATION> for Orientation {
@@ -30,15 +32,21 @@ impl From<LIBRA_PRESET_CTX_ORIENTATION> for Orientation {
     }
 }
 
-// An enum representing graphics runtimes (video drivers) for use in preset contexts.
+/// An enum representing graphics runtimes (video drivers) for use in preset contexts.
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum LIBRA_PRESET_CTX_RUNTIME {
+    /// No runtime.
     None = 0,
+    /// OpenGL 3.3+
     GlCore,
+    /// Vulkan
     Vulkan,
+    /// Direct3D 11
     D3D11,
+    /// Direct3D 12
     D3D12,
+    /// Metal
     Metal,
 }
 
@@ -120,6 +128,8 @@ pub type libra_vk_filter_chain_t = Option<NonNull<FilterChainVulkan>>;
 
 #[cfg(all(target_os = "macos", feature = "runtime-metal"))]
 use librashader::runtime::mtl::FilterChain as FilterChainMetal;
+
+/// A handle to a Vulkan filter chain.
 #[cfg_attr(
     feature = "docsrs",
     doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))

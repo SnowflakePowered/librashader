@@ -9,26 +9,45 @@ use thiserror::Error;
 #[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum LibrashaderError {
+    /// An unknown error or panic occurred.
     #[error("There was an unknown error.")]
     UnknownError(Box<dyn Any + Send + 'static>),
+
+    /// An invalid parameter (likely null), was passed.
     #[error("The parameter was null or invalid.")]
     InvalidParameter(&'static str),
+
+    /// The string provided was not valid UTF-8.
     #[error("The provided string was not valid UTF8.")]
     InvalidString(#[from] std::str::Utf8Error),
+
+    /// An error occurred in the preset parser.
     #[error("There was an error parsing the preset.")]
     PresetError(#[from] librashader::presets::ParsePresetError),
+
+    /// An error occurred in the shader preprocessor.
     #[error("There was an error preprocessing the shader source.")]
     PreprocessError(#[from] librashader::preprocess::PreprocessError),
+
+    /// An error occurred in the shader compiler.
     #[error("There was an error compiling the shader source.")]
     ShaderCompileError(#[from] librashader::reflect::ShaderCompileError),
+
+    /// An error occrred when validating and reflecting the shader.
     #[error("There was an error reflecting the shader source.")]
     ShaderReflectError(#[from] librashader::reflect::ShaderReflectError),
+
+    /// An invalid shader parameter name was provided.
     #[error("The provided parameter name was invalid.")]
     UnknownShaderParameter(*const c_char),
+
+    /// An error occurred with the OpenGL filter chain.
     #[cfg(feature = "runtime-opengl")]
     #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-opengl")))]
     #[error("There was an error in the OpenGL filter chain.")]
     OpenGlFilterError(#[from] librashader::runtime::gl::error::FilterChainError),
+
+    /// An error occurred with the Direct3D 11 filter chain.
     #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
     #[cfg_attr(
         feature = "docsrs",
@@ -36,6 +55,8 @@ pub enum LibrashaderError {
     )]
     #[error("There was an error in the D3D11 filter chain.")]
     D3D11FilterError(#[from] librashader::runtime::d3d11::error::FilterChainError),
+
+    /// An error occurred with the Direct3D 12 filter chain.
     #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
     #[cfg_attr(
         feature = "docsrs",
@@ -43,6 +64,8 @@ pub enum LibrashaderError {
     )]
     #[error("There was an error in the D3D12 filter chain.")]
     D3D12FilterError(#[from] librashader::runtime::d3d12::error::FilterChainError),
+
+    /// An error occurred with the Direct3D 9 filter chain.
     #[cfg(all(target_os = "windows", feature = "runtime-d3d9"))]
     #[cfg_attr(
         feature = "docsrs",
@@ -50,10 +73,15 @@ pub enum LibrashaderError {
     )]
     #[error("There was an error in the D3D9 filter chain.")]
     D3D9FilterError(#[from] librashader::runtime::d3d9::error::FilterChainError),
+
+    /// An error occurred with the Vulkan filter chain.
+
     #[cfg(feature = "runtime-vulkan")]
     #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime-vulkan")))]
     #[error("There was an error in the Vulkan filter chain.")]
     VulkanFilterError(#[from] librashader::runtime::vk::error::FilterChainError),
+
+    /// An error occurred with the Metal filter chain.
     #[cfg_attr(
         feature = "docsrs",
         doc(cfg(all(target_vendor = "apple", feature = "runtime-metal")))
@@ -66,13 +94,28 @@ pub enum LibrashaderError {
 /// Error codes for librashader error types.
 #[repr(i32)]
 pub enum LIBRA_ERRNO {
+    /// Error code for an unknown error.
     UNKNOWN_ERROR = 0,
+
+    /// Error code for an invalid parameter.
     INVALID_PARAMETER = 1,
+
+    /// Error code for an invalid (non-UTF8) string.
     INVALID_STRING = 2,
+
+    /// Error code for a preset parser error.
     PRESET_ERROR = 3,
+
+    /// Error code for a preprocessor error.
     PREPROCESS_ERROR = 4,
+
+    /// Error code for a shader parameter error.
     SHADER_PARAMETER_ERROR = 5,
+
+    /// Error code for a reflection error.
     REFLECT_ERROR = 6,
+
+    /// Error code for a runtime error.
     RUNTIME_ERROR = 7,
 }
 
