@@ -1464,7 +1464,7 @@ dependencies = [
 
 [[package]]
 name = "librashader"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "ash",
  "glob",
@@ -1518,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-capi"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "ash",
  "gl",
@@ -1631,7 +1631,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "array-concat",
  "array-init",
@@ -1656,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d9"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1675,7 +1675,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "bytemuck",
  "gl",
@@ -1694,7 +1694,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-mtl"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1715,7 +1715,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "array-concat",
  "ash",
@@ -1739,7 +1739,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-wgpu"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "array-concat",
  "bytemuck",
