@@ -89,6 +89,7 @@ pub enum LibrashaderError {
     #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
     #[error("There was an error in the Metal filter chain.")]
     MetalFilterError(#[from] librashader::runtime::mtl::error::FilterChainError),
+    /// This error is unreachable.
     #[error("This error is not reachable")]
     Infallible(#[from] std::convert::Infallible),
 }
