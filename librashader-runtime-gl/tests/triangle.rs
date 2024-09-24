@@ -10,9 +10,9 @@ fn triangle_gl() {
 
     unsafe {
         let mut filter = FilterChainGL::load_from_path(
-            Arc::clone(&context),
             // "../test/basic.slangp",
             "../test/shaders_slang/test/feedback.slangp",
+            Arc::clone(&context),
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: false,
@@ -31,12 +31,12 @@ fn triangle_gl46() {
     let (glfw, window, events, shader, vao, context) = hello_triangle::gl46::setup();
     unsafe {
         let mut filter = FilterChainGL::load_from_path(
-            Arc::clone(&context),
             // "../test/slang-shaders/vhs/VHSPro.slangp",
             // "../test/slang-shaders/test/history.slangp",
             // "../test/basic.slangp",
             // "../test/shaders_slang/crt/crt-royale.slangp",
             "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            Arc::clone(&context),
             Some(&FilterChainOptionsGL {
                 glsl_version: 330,
                 use_dsa: true,

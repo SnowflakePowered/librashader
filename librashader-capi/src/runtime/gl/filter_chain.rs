@@ -131,8 +131,8 @@ extern_fn! {
             let context = glow::Context::from_loader_function_cstr(
                 |proc_name| loader(proc_name.as_ptr()));
 
-            let chain = FilterChain::load_from_preset(Arc::new(context),
-                *preset, options.as_ref())?;
+            let chain = FilterChain::load_from_preset(*preset,
+                Arc::new(context), options.as_ref())?;
 
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 chain,
