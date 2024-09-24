@@ -29,7 +29,7 @@ wgpu = ["librashader/runtime-wgpu", "dep:wgpu", "dep:wgpu-types"]
 
 d3d11 = ["librashader/runtime-d3d11", "dep:windows"]
 d3d12 = ["librashader/runtime-d3d12", "dep:windows"]
-
+metal = ["librashader/runtime-metal", "dep:objc2", "dep:objc2-metal"]
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
