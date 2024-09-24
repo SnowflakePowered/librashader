@@ -13,6 +13,9 @@ pub mod vk;
 #[cfg(feature = "wgpu")]
 pub mod wgpu;
 
+#[cfg(feature = "metal")]
+pub mod mtl;
+
 use std::path::Path;
 
 /// Test harness to set up a device, render a triangle, and apply a shader
@@ -39,10 +42,7 @@ pub trait RenderTest {
 
 #[cfg(test)]
 mod test {
-    use crate::render::d3d11::Direct3D11;
-    use crate::render::gl::{OpenGl3, OpenGl4};
-    use crate::render::vk::Vulkan;
-    use crate::render::wgpu::Wgpu;
+
     use crate::render::RenderTest;
     use image::codecs::png::PngEncoder;
     use std::fs::File;
@@ -65,31 +65,37 @@ mod test {
     #[test]
     #[cfg(feature = "d3d11")]
     pub fn test_d3d11() -> anyhow::Result<()> {
-        do_test::<Direct3D11>()
+        do_test::<crate::render::d3d11::Direct3D11>()
     }
 
     #[test]
     #[cfg(feature = "wgpu")]
     pub fn test_wgpu() -> anyhow::Result<()> {
-        do_test::<Wgpu>()
+        do_test::<crate::render::wgpu::Wgpu>()
     }
 
     #[test]
     #[cfg(feature = "vulkan")]
     pub fn test_vk() -> anyhow::Result<()> {
-        do_test::<Vulkan>()
+        do_test::<crate::render::vk::Vulkan>()
     }
 
     #[test]
     #[cfg(feature = "opengl")]
     pub fn test_gl3() -> anyhow::Result<()> {
-        do_test::<OpenGl3>()
+        do_test::<crate::render::gl::OpenGl3>()
     }
 
     #[test]
     #[cfg(feature = "opengl")]
     pub fn test_gl4() -> anyhow::Result<()> {
-        do_test::<OpenGl4>()
+        do_test::<crate::render::gl::OpenGl4>()
+    }
+
+    #[test]
+    #[cfg(feature = "metal")]
+    pub fn test_metal() -> anyhow::Result<()> {
+        do_test::<crate::render::mtl::Metal>()
     }
 
     pub fn compare<A: RenderTest, B: RenderTest>() -> anyhow::Result<()> {
