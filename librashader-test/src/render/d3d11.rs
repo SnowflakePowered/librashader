@@ -22,7 +22,7 @@ impl RenderTest for Direct3D11 {
                 &self.device,
                 Some(&FilterChainOptions {
                     force_no_mipmaps: false,
-                    disable_cache: true,
+                    disable_cache: false,
                 }),
             )?;
             filter_chain.frame(
