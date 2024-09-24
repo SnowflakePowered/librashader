@@ -38,7 +38,7 @@ impl RenderTest for OpenGl3 {
                     glsl_version: 330,
                     use_dsa: false,
                     force_no_mipmaps: false,
-                    disable_cache: true,
+                    disable_cache: false,
                 }),
             )
         }?;

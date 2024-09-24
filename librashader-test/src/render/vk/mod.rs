@@ -41,7 +41,7 @@ impl RenderTest for Vulkan {
                     frames_in_flight: 3,
                     force_no_mipmaps: false,
                     use_dynamic_rendering: false,
-                    disable_cache: true,
+                    disable_cache: false,
                 }),
             )?;
 

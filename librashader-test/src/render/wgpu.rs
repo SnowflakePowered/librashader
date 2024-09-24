@@ -63,7 +63,7 @@ impl RenderTest for Wgpu {
             Arc::clone(&self.queue),
             Some(&FilterChainOptions {
                 force_no_mipmaps: false,
-                enable_cache: false,
+                enable_cache: true,
                 adapter_info: None,
             }),
         )?;
