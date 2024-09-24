@@ -15,17 +15,12 @@ pub struct Gl46UboRing<const SIZE: usize> {
 impl<const SIZE: usize> UboRing<SIZE> for Gl46UboRing<SIZE> {
     fn new(context: &glow::Context, buffer_size: u32) -> error::Result<Self> {
         let items: [glow::Buffer; SIZE] = array_init::try_array_init(|_| unsafe {
-            context
-                .create_named_buffer()
-                .map(|buffer| {
-                    context.named_buffer_data_size(
-                        buffer,
-                        buffer_size as i32,
-                        glow::STREAM_DRAW,
-                    );
-                    buffer
-                })
-        }).map_err(FilterChainError::GlError)?;
+            context.create_named_buffer().map(|buffer| {
+                context.named_buffer_data_size(buffer, buffer_size as i32, glow::STREAM_DRAW);
+                buffer
+            })
+        })
+        .map_err(FilterChainError::GlError)?;
 
         let ring: InlineRingBuffer<glow::Buffer, SIZE> = InlineRingBuffer::from_array(items);
         Ok(Gl46UboRing { ring })

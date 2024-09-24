@@ -15,19 +15,14 @@ pub struct Gl3UboRing<const SIZE: usize> {
 impl<const SIZE: usize> UboRing<SIZE> for Gl3UboRing<SIZE> {
     fn new(ctx: &glow::Context, buffer_size: u32) -> error::Result<Self> {
         let items: [glow::Buffer; SIZE] = array_init::try_array_init(|_| unsafe {
-            ctx
-                .create_buffer()
-                .map(|buffer| {
-                    ctx.bind_buffer(glow::UNIFORM_BUFFER, Some(buffer));
-                    ctx.buffer_data_size(
-                        glow::UNIFORM_BUFFER,
-                        buffer_size as i32,
-                        glow::STREAM_DRAW,
-                    );
-                    ctx.bind_buffer(glow::UNIFORM_BUFFER, None);
-                    buffer
-                })
-        }).map_err(FilterChainError::GlError)?;
+            ctx.create_buffer().map(|buffer| {
+                ctx.bind_buffer(glow::UNIFORM_BUFFER, Some(buffer));
+                ctx.buffer_data_size(glow::UNIFORM_BUFFER, buffer_size as i32, glow::STREAM_DRAW);
+                ctx.bind_buffer(glow::UNIFORM_BUFFER, None);
+                buffer
+            })
+        })
+        .map_err(FilterChainError::GlError)?;
 
         let ring: InlineRingBuffer<glow::Buffer, SIZE> = InlineRingBuffer::from_array(items);
         Ok(Gl3UboRing { ring })

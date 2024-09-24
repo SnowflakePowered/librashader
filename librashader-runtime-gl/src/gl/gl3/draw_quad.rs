@@ -17,10 +17,8 @@ impl DrawQuad for Gl3DrawQuad {
 
         unsafe {
             vbo = [
-                ctx.create_buffer()
-                    .map_err(FilterChainError::GlError)?,
-                ctx.create_buffer()
-                    .map_err(FilterChainError::GlError)?,
+                ctx.create_buffer().map_err(FilterChainError::GlError)?,
+                ctx.create_buffer().map_err(FilterChainError::GlError)?,
             ];
 
             ctx.bind_buffer(glow::ARRAY_BUFFER, Some(vbo[0]));
