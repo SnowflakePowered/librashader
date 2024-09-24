@@ -235,7 +235,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52bca67b61cb81e5553babde81b8211f713cb6db79766f80168f3e5f40ea6c82"
 dependencies = [
  "ash",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "raw-window-metal",
 ]
 
@@ -881,12 +881,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cty"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
-
-[[package]]
 name = "cursor-icon"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1194,35 +1188,22 @@ dependencies = [
 
 [[package]]
 name = "glfw"
-version = "0.47.0"
+version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2c532509718cb34e0c449ec5ef74529c1af3a33b664e6b8ddfe29252f86f936"
+checksum = "d1cad81f99085cabd6a4a99403335bc3f3d00d6cf4467e478f13c393ced9259d"
 dependencies = [
  "bitflags 1.3.2",
  "glfw-sys",
- "objc",
- "raw-window-handle 0.4.3",
- "winapi",
-]
-
-[[package]]
-name = "glfw"
-version = "0.49.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c70971598fc996224a36fe95256e90335242c00da647f7b0a0b125136613c54b"
-dependencies = [
- "bitflags 1.3.2",
- "glfw-sys",
- "objc",
- "raw-window-handle 0.5.2",
+ "objc2 0.5.2",
+ "raw-window-handle",
  "winapi",
 ]
 
 [[package]]
 name = "glfw-sys"
-version = "4.0.0+3.3.5"
+version = "5.0.0+3.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5abed6d39a50226676aab893d6b4ad154da7e93fcdfed90d7696758a1b477ed1"
+checksum = "1dfc32d45fb58ff38b112696907963a7d671e9cf742b16f882062169a053cf88"
 dependencies = [
  "cmake",
 ]
@@ -1875,7 +1856,7 @@ version = "0.4.5"
 dependencies = [
  "array-init",
  "bytemuck",
- "glfw 0.47.0",
+ "glfw",
  "glow 0.14.1",
  "librashader-cache",
  "librashader-common",
@@ -1917,7 +1898,6 @@ dependencies = [
  "ash",
  "ash-window",
  "bytemuck",
- "glfw 0.49.1",
  "gpu-allocator 0.27.0",
  "librashader-cache",
  "librashader-common",
@@ -1927,7 +1907,7 @@ dependencies = [
  "librashader-runtime",
  "num",
  "parking_lot",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "rayon",
  "thiserror",
  "winit",
@@ -1949,7 +1929,7 @@ dependencies = [
  "librashader-runtime",
  "log",
  "pollster",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "rayon",
  "thiserror",
  "wgpu",
@@ -1962,7 +1942,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "ash",
+ "bitvec",
+ "d3d12-descriptor-heap",
  "gfx-maths",
+ "glfw",
+ "glow 0.14.1",
+ "gpu-allocator 0.27.0",
  "image",
  "image-compare",
  "librashader",
@@ -2156,7 +2141,7 @@ dependencies = [
  "log",
  "ndk-sys",
  "num_enum",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "thiserror",
 ]
 
@@ -2839,21 +2824,6 @@ dependencies = [
 
 [[package]]
 name = "raw-window-handle"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b800beb9b6e7d2df1fe337c9e3d04e3af22a124460fb4c30fcc22c9117cefb41"
-dependencies = [
- "cty",
-]
-
-[[package]]
-name = "raw-window-handle"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2ff9a1f06a88b01621b7ae906ef0211290d1c8a168a15542486a8f61c0833b9"
-
-[[package]]
-name = "raw-window-handle"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
@@ -2867,7 +2837,7 @@ dependencies = [
  "cocoa",
  "core-graphics",
  "objc",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
 ]
 
 [[package]]
@@ -3818,7 +3788,7 @@ dependencies = [
  "naga",
  "parking_lot",
  "profiling",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "smallvec",
  "static_assertions",
  "wasm-bindgen",
@@ -3846,7 +3816,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "profiling",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "rustc-hash 1.1.0",
  "smallvec",
  "thiserror",
@@ -3888,7 +3858,7 @@ dependencies = [
  "parking_lot",
  "profiling",
  "range-alloc",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "renderdoc-sys",
  "rustc-hash 1.1.0",
  "smallvec",
@@ -4271,7 +4241,7 @@ dependencies = [
  "once_cell",
  "orbclient",
  "percent-encoding",
- "raw-window-handle 0.6.2",
+ "raw-window-handle",
  "redox_syscall 0.3.5",
  "rustix",
  "sctk-adwaita",

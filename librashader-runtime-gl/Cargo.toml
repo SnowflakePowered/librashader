@@ -30,7 +30,7 @@ array-init = "2.1.0"
 stable = ["librashader-reflect/stable"]
 
 [dev-dependencies]
-glfw = "0.47.0"
+glfw = { workspace = true }
 
 [package.metadata.docs.rs]
 features = ["librashader-cache/docsrs"]
