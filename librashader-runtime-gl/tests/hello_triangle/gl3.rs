@@ -1,7 +1,7 @@
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 
-use glfw::{Context, Glfw, Window, WindowEvent};
+use glfw::{fail_on_errors, Context, Glfw, GlfwReceiver, PWindow, Window, WindowEvent};
 
 use glow::HasContext;
 use librashader_common::{GetSize, Size, Viewport};
@@ -14,13 +14,13 @@ const TITLE: &str = "librashader OpenGL 3.3";
 
 pub fn setup() -> (
     Glfw,
-    Window,
-    Receiver<(f64, WindowEvent)>,
+    PWindow,
+    GlfwReceiver<(f64, WindowEvent)>,
     glow::Program,
     glow::VertexArray,
     Arc<glow::Context>,
 ) {
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    let mut glfw = glfw::init(fail_on_errors!()).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(
         glfw::OpenGlProfileHint::Core,
@@ -171,8 +171,8 @@ void main()
 pub fn do_loop(
     gl: &Arc<glow::Context>,
     mut glfw: Glfw,
-    mut window: Window,
-    events: Receiver<(f64, WindowEvent)>,
+    mut window: PWindow,
+    events: GlfwReceiver<(f64, WindowEvent)>,
     triangle_program: glow::Program,
     triangle_vao: glow::VertexArray,
     filter: &mut FilterChainGL,
@@ -183,7 +183,7 @@ pub fn do_loop(
     let quad_vbuf;
 
     let output_texture;
-    let output_framebuffer_handle;
+    // let output_framebuffer_handle;
     let output_quad_vbuf;
 
     unsafe {
@@ -270,10 +270,11 @@ pub fn do_loop(
     }
 
     unsafe {
+        gl.bind_framebuffer(glow::FRAMEBUFFER, None);
         // do frmaebuffer
-        output_framebuffer_handle = gl.create_framebuffer().unwrap();
-
-        gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_framebuffer_handle));
+        // output_framebuffer_handle = gl.create_framebuffer().unwrap();
+        //
+        // gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_framebuffer_handle));
 
         // glow::ObjectLabel(
         //     glow::FRAMEBUFFER,
@@ -324,18 +325,18 @@ pub fn do_loop(
         );
 
         // set color attachment
-        gl.framebuffer_texture_2d(
-            glow::FRAMEBUFFER,
-            glow::COLOR_ATTACHMENT0,
-            glow::TEXTURE_2D,
-            Some(output_texture),
-            0,
-        );
+        // gl.framebuffer_texture_2d(
+        //     glow::FRAMEBUFFER,
+        //     glow::COLOR_ATTACHMENT0,
+        //     glow::TEXTURE_2D,
+        //     Some(output_texture),
+        //     0,
+        // );
 
-        gl.draw_buffer(glow::COLOR_ATTACHMENT0);
-        if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
-            panic!("failed to create fbo")
-        }
+        // gl.draw_buffer(glow::COLOR_ATTACHMENT0);
+        // if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
+        //     panic!("failed to create fbo")
+        // }
 
         let fullscreen_fbo = [
             -1.0f32, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0,

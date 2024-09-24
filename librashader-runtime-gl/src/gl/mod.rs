@@ -120,7 +120,11 @@ pub(crate) trait FramebufferInterface {
 
         let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
 
-        if fb.size != size || (mipmap && fb.max_levels == 1) || (!mipmap && fb.max_levels != 1) {
+        if fb.size != size
+            || (mipmap && fb.max_levels == 1)
+            || (!mipmap && fb.max_levels != 1)
+            || fb.image.is_none()
+        {
             fb.size = size;
 
             if mipmap {
@@ -145,6 +149,7 @@ pub(crate) trait FramebufferInterface {
     fn clear<const REBIND: bool>(fb: &GLFramebuffer);
     fn copy_from(fb: &mut GLFramebuffer, image: &GLImage) -> Result<()>;
     fn init(fb: &mut GLFramebuffer, size: Size<u32>, format: impl Into<u32>) -> Result<()>;
+    fn bind(fb: &GLFramebuffer) -> Result<()>;
 }
 
 pub(crate) trait BindTexture {

@@ -10,7 +10,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum FilterChainError {
-    #[error("fbo initialization error")]
+    #[error("fbo initialization error {0:x}")]
     FramebufferInit(u32),
     #[error("SPIRV reflection error")]
     SpirvCrossReflectError(#[from] spirv_cross2::SpirvCrossError),

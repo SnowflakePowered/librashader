@@ -236,4 +236,16 @@ impl FramebufferInterface for Gl46Framebuffer {
         }
         Ok(())
     }
+
+    fn bind(fb: &GLFramebuffer) -> Result<()> {
+        unsafe {
+            fb.ctx.bind_framebuffer(glow::FRAMEBUFFER, Some(fb.fbo));
+            let status = fb.ctx.check_framebuffer_status(glow::FRAMEBUFFER);
+            if status != glow::FRAMEBUFFER_COMPLETE {
+                return Err(FilterChainError::FramebufferInit(status));
+            }
+        }
+
+        Ok(())
+    }
 }
