@@ -25,6 +25,13 @@ pub struct Vulkan {
 }
 
 impl RenderTest for Vulkan {
+    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        Vulkan::new(path)
+    }
+
     fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_path(

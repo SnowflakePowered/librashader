@@ -6,6 +6,13 @@ use librashader::runtime::{Size, Viewport};
 use std::path::Path;
 
 impl RenderTest for Direct3D11 {
+    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        Direct3D11::new(path)
+    }
+
     fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let (renderbuffer, rtv) = self.create_renderbuffer(self.image_bytes.size)?;
 

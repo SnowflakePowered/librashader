@@ -22,6 +22,13 @@ pub struct OpenGl3(OpenGl);
 pub struct OpenGl4(OpenGl);
 
 impl RenderTest for OpenGl3 {
+    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        OpenGl3::new(path)
+    }
+
     fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_path(
@@ -41,6 +48,13 @@ impl RenderTest for OpenGl3 {
 }
 
 impl RenderTest for OpenGl4 {
+    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        OpenGl4::new(path)
+    }
+
     fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_path(

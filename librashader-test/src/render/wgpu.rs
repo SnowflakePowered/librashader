@@ -49,6 +49,13 @@ impl BufferDimensions {
 }
 
 impl RenderTest for Wgpu {
+    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        Wgpu::new(path)
+    }
+
     fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut chain = FilterChain::load_from_path(
             path,
