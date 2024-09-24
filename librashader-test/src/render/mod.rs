@@ -1,6 +1,16 @@
+#[cfg(feature = "d3d11")]
 pub mod d3d11;
+
+#[cfg(feature = "d3d12")]
+pub mod d3d12;
+
+#[cfg(feature = "opengl")]
 pub mod gl;
+
+#[cfg(feature = "vulkan")]
 pub mod vk;
+
+#[cfg(feature = "wgpu")]
 pub mod wgpu;
 
 use std::path::Path;
@@ -53,26 +63,31 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "d3d11")]
     pub fn test_d3d11() -> anyhow::Result<()> {
         do_test::<Direct3D11>()
     }
 
     #[test]
+    #[cfg(feature = "wgpu")]
     pub fn test_wgpu() -> anyhow::Result<()> {
         do_test::<Wgpu>()
     }
 
     #[test]
+    #[cfg(feature = "vulkan")]
     pub fn test_vk() -> anyhow::Result<()> {
         do_test::<Vulkan>()
     }
 
     #[test]
+    #[cfg(feature = "opengl")]
     pub fn test_gl3() -> anyhow::Result<()> {
         do_test::<OpenGl3>()
     }
 
     #[test]
+    #[cfg(feature = "opengl")]
     pub fn test_gl4() -> anyhow::Result<()> {
         do_test::<OpenGl4>()
     }
