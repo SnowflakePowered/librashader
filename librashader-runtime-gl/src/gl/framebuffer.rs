@@ -87,6 +87,10 @@ impl GLFramebuffer {
             wrap_mode,
         }
     }
+
+    pub(crate) fn bind<T: FramebufferInterface>(&self) -> Result<()> {
+        T::bind(self)
+    }
 }
 
 /// A state-checked wrapper around a raw framebuffer, used exclusively for output images.

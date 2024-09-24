@@ -290,4 +290,23 @@ impl FramebufferInterface for Gl3Framebuffer {
 
         Ok(())
     }
+
+    fn bind(fb: &GLFramebuffer) -> Result<()> {
+        unsafe {
+            fb.ctx.bind_framebuffer(glow::FRAMEBUFFER, Some(fb.fbo));
+            fb.ctx.framebuffer_texture_2d(
+                glow::FRAMEBUFFER,
+                glow::COLOR_ATTACHMENT0,
+                glow::TEXTURE_2D,
+                fb.image,
+                0,
+            );
+            let status = fb.ctx.check_framebuffer_status(glow::FRAMEBUFFER);
+            if status != glow::FRAMEBUFFER_COMPLETE {
+                return Err(FilterChainError::FramebufferInit(status));
+            }
+        }
+
+        Ok(())
+    }
 }

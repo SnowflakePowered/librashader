@@ -377,7 +377,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 &original,
                 &source,
                 RenderTarget::identity(target)?,
-            );
+            )?;
 
             let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
             self.common.output_textures[index] = target;
@@ -409,7 +409,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                     &original,
                     &source,
                     RenderTarget::viewport_with_output(target, viewport),
-                );
+                )?;
             }
 
             pass.draw(
@@ -421,7 +421,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 &original,
                 &source,
                 RenderTarget::viewport_with_output(final_viewport, viewport),
-            );
+            )?;
             self.common.output_textures[passes_len - 1] = viewport
                 .output
                 .as_texture(pass.config.filter, pass.config.wrap_mode);

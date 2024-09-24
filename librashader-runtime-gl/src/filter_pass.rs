@@ -15,7 +15,7 @@ use crate::filter_chain::FilterCommon;
 use crate::gl::{BindTexture, GLFramebuffer, GLInterface, UboRing};
 use crate::options::FrameOptionsGL;
 use crate::samplers::SamplerSet;
-use crate::GLImage;
+use crate::{error, GLImage};
 
 use crate::texture::InputTexture;
 
@@ -86,7 +86,7 @@ impl<T: GLInterface> FilterPass<T> {
         original: &InputTexture,
         source: &InputTexture,
         output: RenderTarget<GLFramebuffer, i32>,
-    ) {
+    ) -> error::Result<()> {
         let framebuffer = output.output;
 
         if self.config.mipmap_input && !parent.disable_mipmaps {
@@ -94,9 +94,7 @@ impl<T: GLInterface> FilterPass<T> {
         }
 
         unsafe {
-            parent
-                .context
-                .bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer.fbo));
+            framebuffer.bind::<T::FramebufferInterface>()?;
             parent.context.use_program(Some(self.program));
         }
 
@@ -154,6 +152,8 @@ impl<T: GLInterface> FilterPass<T> {
             parent.context.disable(glow::FRAMEBUFFER_SRGB);
             parent.context.bind_framebuffer(glow::FRAMEBUFFER, None);
         }
+
+        Ok(())
     }
 }
 

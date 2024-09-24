@@ -1,7 +1,7 @@
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 
-use glfw::{Context, Glfw, Window, WindowEvent};
+use glfw::{fail_on_errors, Context, Glfw, GlfwReceiver, PWindow, Window, WindowEvent};
 
 use glow::HasContext;
 use librashader_common::{GetSize, Size, Viewport};
@@ -14,13 +14,13 @@ const TITLE: &str = "librashader OpenGL 4.6";
 
 pub fn setup() -> (
     Glfw,
-    Window,
-    Receiver<(f64, WindowEvent)>,
+    PWindow,
+    GlfwReceiver<(f64, WindowEvent)>,
     glow::Program,
     glow::VertexArray,
     Arc<glow::Context>,
 ) {
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    let mut glfw = glfw::init(fail_on_errors!()).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(
         glfw::OpenGlProfileHint::Core,
@@ -155,8 +155,8 @@ void main()
 pub fn do_loop(
     gl: &Arc<glow::Context>,
     mut glfw: Glfw,
-    mut window: Window,
-    events: Receiver<(f64, WindowEvent)>,
+    mut window: PWindow,
+    events: GlfwReceiver<(f64, WindowEvent)>,
     triangle_program: glow::Program,
     triangle_vao: glow::VertexArray,
     filter: &mut FilterChainGL,

@@ -11,17 +11,17 @@ fn triangle_gl() {
     unsafe {
         let mut filter = FilterChainGL::load_from_path(
             // "../test/basic.slangp",
-            "../test/shaders_slang/test/feedback.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             Arc::clone(&context),
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
                 use_dsa: false,
                 force_no_mipmaps: false,
-                disable_cache: false,
+                disable_cache: true,
             }),
         )
         // FilterChain::load_from_path("../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", None)
-        .unwrap();
+        .expect("Failed to load filter chain");
         hello_triangle::gl3::do_loop(&context, glfw, window, events, shader, vao, &mut filter);
     }
 }
@@ -35,7 +35,7 @@ fn triangle_gl46() {
             // "../test/slang-shaders/test/history.slangp",
             // "../test/basic.slangp",
             // "../test/shaders_slang/crt/crt-royale.slangp",
-            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             Arc::clone(&context),
             Some(&FilterChainOptionsGL {
                 glsl_version: 330,
