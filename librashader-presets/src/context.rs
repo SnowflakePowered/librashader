@@ -331,7 +331,7 @@ impl WildcardContext {
     ///
     /// This is a one way conversion, and will normalize rotation context items
     /// into `VID-FINAL-ROT`.
-    pub fn to_hashmap(mut self) -> FastHashMap<String, String> {
+    pub fn into_hashmap(mut self) -> FastHashMap<String, String> {
         let mut map = FastHashMap::default();
         let last_user_rot = self
             .0

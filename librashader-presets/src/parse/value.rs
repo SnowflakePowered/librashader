@@ -219,7 +219,7 @@ pub(crate) fn parse_preset(
 ) -> Result<Vec<Value>, ParsePresetError> {
     let path = path.as_ref();
     let mut path = path.to_path_buf();
-    let context = context.to_hashmap();
+    let context = context.into_hashmap();
 
     apply_context(&mut path, &context);
 
