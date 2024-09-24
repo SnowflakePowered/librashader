@@ -35,7 +35,6 @@ stable = ["librashader-reflect/stable"]
 
 [dev-dependencies]
 num = "0.4.0"
-glfw = "0.49.0"
 winit = {  version = "0.29.10", features = ["rwh_06"] }
 raw-window-handle = "0.6.2"
 ash-window = "0.13.0"
