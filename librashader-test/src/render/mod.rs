@@ -7,6 +7,11 @@ use std::path::Path;
 
 /// Test harness to set up a device, render a triangle, and apply a shader
 pub trait RenderTest {
+    /// Create a new instance of the test harness.
+    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    where
+        Self: Sized;
+
     /// Render a shader onto an image buffer, applying the provided shader.
     ///
     /// The test should render in linear colour space for proper comparison against
@@ -24,6 +29,10 @@ pub trait RenderTest {
 
 #[cfg(test)]
 mod test {
+    use crate::render::d3d11::Direct3D11;
+    use crate::render::gl::{OpenGl3, OpenGl4};
+    use crate::render::vk::Vulkan;
+    use crate::render::wgpu::Wgpu;
     use crate::render::RenderTest;
     use image::codecs::png::PngEncoder;
     use std::fs::File;
@@ -34,70 +43,49 @@ mod test {
     // const FILTER_PATH: &str =
     //     "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
 
-    #[test]
-    pub fn test_d3d11() -> anyhow::Result<()> {
-        let d3d11 = super::d3d11::Direct3D11::new(IMAGE_PATH)?;
-        let image = d3d11.render(FILTER_PATH, 100)?;
+    fn do_test<T: RenderTest>() -> anyhow::Result<()> {
+        let test = T::new(IMAGE_PATH)?;
+        let image = test.render(FILTER_PATH, 100)?;
 
         let out = File::create("out.png")?;
         image.write_with_encoder(PngEncoder::new(out))?;
         Ok(())
+    }
+
+    #[test]
+    pub fn test_d3d11() -> anyhow::Result<()> {
+        do_test::<Direct3D11>()
     }
 
     #[test]
     pub fn test_wgpu() -> anyhow::Result<()> {
-        let wgpu = super::wgpu::Wgpu::new(IMAGE_PATH)?;
-        let image = wgpu.render(FILTER_PATH, 100)?;
-
-        let out = File::create("out.png")?;
-        image.write_with_encoder(PngEncoder::new(out))?;
-        Ok(())
+        do_test::<Wgpu>()
     }
 
     #[test]
     pub fn test_vk() -> anyhow::Result<()> {
-        let vulkan = super::vk::Vulkan::new(IMAGE_PATH)?;
-        let image = vulkan.render(FILTER_PATH, 100)?;
-        //
-        let out = File::create("out.png")?;
-        image.write_with_encoder(PngEncoder::new(out))?;
-        Ok(())
+        do_test::<Vulkan>()
     }
 
     #[test]
     pub fn test_gl3() -> anyhow::Result<()> {
-
-        let gl = super::gl::OpenGl3::new(IMAGE_PATH)?;
-        let image = gl.render(FILTER_PATH, 1000)?;
-
-        let out = File::create("out.png")?;
-        image.write_with_encoder(PngEncoder::new(out))?;
-        Ok(())
+        do_test::<OpenGl3>()
     }
 
     #[test]
     pub fn test_gl4() -> anyhow::Result<()> {
-
-        let gl = super::gl::OpenGl4::new(IMAGE_PATH)?;
-        let image = gl.render(FILTER_PATH, 1000)?;
-
-        let out = File::create("out.png")?;
-        image.write_with_encoder(PngEncoder::new(out))?;
-        Ok(())
+        do_test::<OpenGl4>()
     }
 
-    #[test]
-    pub fn compare() -> anyhow::Result<()> {
-        let d3d11 = super::d3d11::Direct3D11::new(IMAGE_PATH)?;
-        let wgpu = super::wgpu::Wgpu::new(IMAGE_PATH)?;
+    pub fn compare<A: RenderTest, B: RenderTest>() -> anyhow::Result<()> {
+        let a = A::new(IMAGE_PATH)?;
+        let b = B::new(IMAGE_PATH)?;
 
-        let wgpu_image = wgpu.render(FILTER_PATH, 100)?;
-        let d3d11_image = d3d11.render(FILTER_PATH, 100)?;
+        let a_image = a.render(FILTER_PATH, 100)?;
+        let b_image = b.render(FILTER_PATH, 100)?;
 
-        let similarity = image_compare::rgba_hybrid_compare(&wgpu_image, &d3d11_image)?;
-
+        let similarity = image_compare::rgba_hybrid_compare(&a_image, &b_image)?;
         assert!(similarity.score > 0.95);
-
         Ok(())
     }
 }
