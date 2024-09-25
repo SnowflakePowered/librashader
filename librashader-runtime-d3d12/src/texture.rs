@@ -5,6 +5,7 @@ use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
 /// An image for use as shader resource view.
+#[derive(Clone)]
 pub struct D3D12InputImage {
     pub resource: ID3D12Resource,
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
