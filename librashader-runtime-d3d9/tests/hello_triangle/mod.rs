@@ -195,10 +195,10 @@ pub mod d3d9_hello_triangle {
     use std::path::{Path, PathBuf};
 
     use librashader_common::{GetSize, Viewport};
+    use librashader_runtime::image::{Image, UVDirection, ARGB8, BGRA8, RGBA8};
     use librashader_runtime_d3d9::options::FilterChainOptionsD3D9;
     use librashader_runtime_d3d9::FilterChainD3D9;
     use std::time::Instant;
-    use librashader_runtime::image::{Image, UVDirection, ARGB8, BGRA8, RGBA8};
 
     pub struct Sample {
         pub direct3d: IDirect3D9,

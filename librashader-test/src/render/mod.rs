@@ -4,6 +4,9 @@ pub mod d3d11;
 #[cfg(feature = "d3d12")]
 pub mod d3d12;
 
+#[cfg(feature = "d3d9")]
+pub mod d3d9;
+
 #[cfg(feature = "opengl")]
 pub mod gl;
 
@@ -48,7 +51,7 @@ mod test {
     use std::fs::File;
 
     const IMAGE_PATH: &str = "../triangle.png";
-    const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+    const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-geom.slangp";
 
     // const FILTER_PATH: &str =
     //     "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
@@ -96,6 +99,12 @@ mod test {
     #[cfg(feature = "metal")]
     pub fn test_metal() -> anyhow::Result<()> {
         do_test::<crate::render::mtl::Metal>()
+    }
+
+    #[test]
+    #[cfg(feature = "d3d9")]
+    pub fn test_d3d9() -> anyhow::Result<()> {
+        do_test::<crate::render::d3d9::Direct3D9>()
     }
 
     pub fn compare<A: RenderTest, B: RenderTest>() -> anyhow::Result<()> {
