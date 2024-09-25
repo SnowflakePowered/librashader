@@ -23,7 +23,7 @@ use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::image::{Image, ImageError, UVDirection, ARGB8};
+use librashader_runtime::image::{Image, ImageError, UVDirection, ARGB8, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -190,7 +190,7 @@ impl FilterChainD3D9 {
         let images = textures
             .iter()
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image<ARGB8>>, ImageError>>()?;
+            .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
 
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
             let texture = LutTexture::new(device, &image, &texture)?;
