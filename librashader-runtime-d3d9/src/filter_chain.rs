@@ -23,7 +23,7 @@ use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::image::{Image, ImageError, UVDirection, ARGB8, BGRA8};
+use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -288,7 +288,7 @@ impl FilterChainD3D9 {
     ///   * `input` must be in `D3DPOOL_DEFAULT`.
     pub unsafe fn frame(
         &mut self,
-        input: IDirect3DTexture9,
+        input: &IDirect3DTexture9,
         viewport: &Viewport<IDirect3DSurface9>,
         frame_count: usize,
         options: Option<&FrameOptionsD3D9>,

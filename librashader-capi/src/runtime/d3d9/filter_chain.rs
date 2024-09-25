@@ -7,6 +7,7 @@ use librashader::runtime::d3d9::{FilterChain, FilterChainOptions, FrameOptions};
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
+use std::ops::Deref;
 use std::ptr::NonNull;
 use std::slice;
 use windows::Win32::Graphics::Direct3D9::{IDirect3DDevice9, IDirect3DSurface9, IDirect3DTexture9};
@@ -179,7 +180,7 @@ extern_fn! {
 
 
         unsafe {
-            chain.frame(ManuallyDrop::into_inner(image.clone()), &viewport, frame_count, options.as_ref())?;
+            chain.frame(image.deref(), &viewport, frame_count, options.as_ref())?;
         }
     }
 }
