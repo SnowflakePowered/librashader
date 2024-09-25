@@ -12,7 +12,7 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-glslang = "0.4"
+glslang = "0.5"
 bytemuck = "1.13.0"
 
 thiserror = "1.0.37"
