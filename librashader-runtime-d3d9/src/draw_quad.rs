@@ -4,7 +4,7 @@ use array_concat::concat_arrays;
 use bytemuck::offset_of;
 use librashader_runtime::quad::{QuadType, VertexInput};
 
-use windows::Win32::Foundation::{FALSE, TRUE};
+use windows::Win32::Foundation::FALSE;
 
 use windows::Win32::Graphics::Direct3D9::{
     IDirect3DDevice9, IDirect3DVertexBuffer9, IDirect3DVertexDeclaration9, D3DCMP_ALWAYS,
