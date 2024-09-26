@@ -3,8 +3,15 @@ name = "librashader-test"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "librashader-cli"
+path = "src/cli/main.rs"
+
 [dependencies]
-librashader = { version = "0.4.5", path = "../librashader", default-features = false }
+librashader = { version = "0.4.5", path = "../librashader", features = ["presets", "serde"], default-features = false }
 librashader-runtime = { version = "0.4.5", path = "../librashader-runtime"}
 wgpu = { version = "22", default-features = false, optional = true  }
 wgpu-types = { version = "22", optional = true }
@@ -22,6 +29,10 @@ glow = {  workspace = true, optional = true }
 glfw = { workspace = true, optional = true }
 ash = { workspace = true, optional = true }
 
+clap = { workspace = true }
+serde = "1.0"
+serde_json = "1.0"
+
 [features]
 default = ["full"]
 
@@ -35,6 +46,8 @@ d3d12 = ["librashader/runtime-d3d12", "dep:windows", "dep:d3d12-descriptor-heap"
 d3d9 = ["librashader/runtime-d3d9", "dep:windows"]
 
 metal = ["librashader/runtime-metal", "dep:objc2", "dep:objc2-metal"]
+
+vulkan-debug = ["vulkan"]
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true

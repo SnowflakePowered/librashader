@@ -84,6 +84,8 @@ full = ["runtime-all", "reflect-all", "preprocess", "presets"]
 # cache hack
 docsrs = ["librashader-cache/docsrs"]
 
+serde = ["librashader-presets/serde"]
+
 # emits warning messages in tests
 github-ci = []
 

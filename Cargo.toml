@@ -29,6 +29,8 @@ glfw = { version = "0.58.0"}
 wgpu = { version = "22", default-features = false }
 wgpu-types = { version = "22" }
 
+clap = { version = "=4.3.0", features = ["derive"] }
+
 [workspace.metadata.release]
 
 [profile.optimized]
