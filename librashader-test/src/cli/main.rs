@@ -92,7 +92,7 @@ enum Commands {
         #[arg(short, long)]
         shader: PathBuf,
 
-        /// The shader stage to output.
+        /// The shader stage to output
         #[arg(value_enum, short = 'o', long)]
         stage: TranspileStage,
 
@@ -100,8 +100,15 @@ enum Commands {
         #[arg(value_enum, short, long)]
         format: TranspileFormat,
 
-        /// The version of the output format to parse as.
-        /// This could be a GLSL version, a shader model, or an MSL version.
+        /// The version of the output format to parse as, if applicable
+        ///
+        /// For GLSL, this should be an string corresponding to a GLSL version (e.g. '330', or '300es', or '300 es').
+        ///
+        /// For HLSL, this is a shader model version as an integer (50), or a version in the format MAJ_MIN (5_0), or MAJ.MIN (5.0).
+        ///
+        /// For MSL, this is the shader language version as an integer in format
+        /// <MMmmpp>(30100), or a version in the format MAJ_MIN (3_1), or MAJ.MIN (3.1).
+        ///
         #[arg(short, long)]
         version: Option<String>,
     },
@@ -306,7 +313,10 @@ pub fn main() -> Result<(), anyhow::Error> {
                         librashader::reflect::targets::GLSL::from_compilation(compilation)?;
                     compilation.validate()?;
 
-                    let output = compilation.compile(GlslVersion::Glsl330)?;
+                    let version = version.map(|s| parse_glsl_version(&s))
+                        .unwrap_or(Ok(GlslVersion::Glsl330))?;
+
+                    let output = compilation.compile(version)?;
                     TranspileOutput {
                         vertex: output.vertex,
                         fragment: output.fragment,
@@ -316,7 +326,11 @@ pub fn main() -> Result<(), anyhow::Error> {
                     let mut compilation =
                         librashader::reflect::targets::HLSL::from_compilation(compilation)?;
                     compilation.validate()?;
-                    let output = compilation.compile(Some(HlslShaderModel::ShaderModel5_0))?;
+
+                    let shader_model = version.map(|s| parse_hlsl_version(&s))
+                        .unwrap_or(Ok(HlslShaderModel::ShaderModel5_0))?;
+
+                    let output = compilation.compile(Some(shader_model))?;
                     TranspileOutput {
                         vertex: output.vertex,
                         fragment: output.fragment,
@@ -342,7 +356,11 @@ pub fn main() -> Result<(), anyhow::Error> {
                             SpirvCross,
                         >>::from_compilation(compilation)?;
                     compilation.validate()?;
-                    let output = compilation.compile(Some(MslVersion::new(1, 2, 0)))?;
+
+                    let version = version.map(|s| parse_msl_version(&s))
+                        .unwrap_or(Ok(MslVersion::new(1, 2, 0)))?;
+
+                    let output = compilation.compile(Some(version))?;
 
                     TranspileOutput {
                         vertex: output.vertex,
@@ -451,4 +469,98 @@ fn spirv_to_dis(spirv: Vec<u32>) -> anyhow::Result<String> {
         .name_const_ids(true)
         .indent(true)
         .disassemble(&binary)
+}
+
+fn parse_glsl_version(version_str: &str) -> anyhow::Result<GlslVersion> {
+    if version_str.contains("es") {
+        let Some(version) = version_str.strip_suffix("es").map(|s| s.trim()) else {
+            return Err(anyhow!("Unknown GLSL version"))
+        };
+
+        Ok(match version {
+            "100" => GlslVersion::Glsl100Es,
+            "300" => GlslVersion::Glsl300Es,
+            "310" => GlslVersion::Glsl310Es,
+            "320" => GlslVersion::Glsl320Es,
+            _ => return Err(anyhow!("Unknown GLSL version")),
+        })
+    } else {
+        Ok(match version_str {
+            "100" => GlslVersion::Glsl100Es,
+            "110" => GlslVersion::Glsl110,
+            "120" => GlslVersion::Glsl120,
+            "130" => GlslVersion::Glsl130,
+            "140" => GlslVersion::Glsl140,
+            "150" => GlslVersion::Glsl150,
+            "300" => GlslVersion::Glsl300Es,
+            "330" => GlslVersion::Glsl330,
+            "310" => GlslVersion::Glsl310Es,
+            "320" => GlslVersion::Glsl320Es,
+            "400" => GlslVersion::Glsl400,
+            "410" => GlslVersion::Glsl410,
+            "420" => GlslVersion::Glsl420,
+            "430" => GlslVersion::Glsl430,
+            "440" => GlslVersion::Glsl440,
+            "450" => GlslVersion::Glsl450,
+            "460" => GlslVersion::Glsl460,
+            _ => return Err(anyhow!("Unknown GLSL version")),
+        })
+    }
+}
+
+fn version_to_usize(version_str: &str) -> anyhow::Result<usize> {
+    let version: &str = if version_str.contains("_") {
+        &version_str.replace("_", "")
+    } else if version_str.contains(".") {
+        &version_str.replace(".", "")
+    } else {
+        version_str
+    };
+
+    let version = version.parse::<usize>().map_err(|_| anyhow!("Invalid version string"))?;
+    Ok(version)
+}
+
+fn parse_hlsl_version(version_str: &str) -> anyhow::Result<HlslShaderModel> {
+    let version = version_to_usize(version_str)?;
+    Ok(match version {
+        30 => HlslShaderModel::ShaderModel3_0,
+        40 => HlslShaderModel::ShaderModel4_0,
+        50 => HlslShaderModel::ShaderModel5_0,
+        51 => HlslShaderModel::ShaderModel5_1,
+        60 => HlslShaderModel::ShaderModel6_0,
+        61 => HlslShaderModel::ShaderModel6_1,
+        62 => HlslShaderModel::ShaderModel6_2,
+        63 => HlslShaderModel::ShaderModel6_3,
+        64 => HlslShaderModel::ShaderModel6_4,
+        65 => HlslShaderModel::ShaderModel6_5,
+        66 => HlslShaderModel::ShaderModel6_6,
+        67 => HlslShaderModel::ShaderModel6_7,
+        68 => HlslShaderModel::ShaderModel6_8,
+        _ => return Err(anyhow!("Unknown Shader Model")),
+    })
+}
+
+fn parse_msl_version(version_str: &str) -> anyhow::Result<MslVersion> {
+    let version = version_to_usize(version_str)?;
+    Ok(match version {
+        10 => MslVersion::new(1, 0, 0),
+        11 => MslVersion::new(1, 1, 0),
+        12 => MslVersion::new(1, 2, 0),
+        20 => MslVersion::new(2, 0, 0),
+        21 => MslVersion::new(2, 1, 0),
+        22 => MslVersion::new(2, 2, 0),
+        23 => MslVersion::new(2, 3, 0),
+        24 => MslVersion::new(2, 4, 0),
+        30 => MslVersion::new(3, 0, 0),
+        31 => MslVersion::new(3, 1, 0),
+        32 => MslVersion::new(3, 2, 0),
+        n if n >= 10000 => {
+            let major = n / 10000;
+            let minor = (n - (major * 10000)) / 100;
+            let patch = n - ((major * 10000) + (minor * 100));
+            MslVersion::new(major as u32, minor as u32, patch as u32)
+        }
+        _ => return Err(anyhow!("Unknown MSL version")),
+    })
 }
