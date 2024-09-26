@@ -7,7 +7,7 @@ use crate::reflect::semantics::{
 };
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ShaderPassConfig, TextureConfig};
+use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -214,3 +214,60 @@ fn insert_lut_semantics(
         );
     }
 }
+
+impl ShaderSemantics {
+    /// Create pass semantics for a single pass in the given shader preset.
+    ///
+    /// This is meant as a convenience function for reflection use only.
+    pub fn create_pass_semantics<E>(preset: &ShaderPreset, index: usize) -> Result<ShaderSemantics, E>
+    where
+        E: From<ShaderReflectError>,
+        E: From<PreprocessError>,
+    {
+        let mut uniform_semantics: FastHashMap<ShortString, UniformSemantic> = Default::default();
+        let mut texture_semantics: FastHashMap<ShortString, Semantic<TextureSemantics>> =
+            Default::default();
+
+        let config = preset
+            .shaders
+            .get(index)
+            .ok_or_else(|| PreprocessError::InvalidStage)?;
+
+        let source = ShaderSource::load(&config.name)?;
+
+        for parameter in source.parameters.values() {
+            uniform_semantics.insert(
+                parameter.id.clone(),
+                UniformSemantic::Unique(Semantic {
+                    semantics: UniqueSemantics::FloatParameter,
+                    index: (),
+                }),
+            );
+        }
+
+        insert_pass_semantics(
+            &mut uniform_semantics,
+            &mut texture_semantics,
+            config.alias.as_ref(),
+            config.id as usize,
+        );
+        insert_pass_semantics(
+            &mut uniform_semantics,
+            &mut texture_semantics,
+            source.name.as_ref(),
+            config.id as usize,
+        );
+        insert_lut_semantics(
+            preset.textures.as_slice(),
+            &mut uniform_semantics,
+            &mut texture_semantics,
+        );
+
+        Ok(ShaderSemantics {
+            uniform_semantics,
+            texture_semantics,
+        })
+    }
+
+}
+
