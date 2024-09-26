@@ -21,6 +21,7 @@ use std::path::Path;
 
 /// The source file for a single shader pass.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderSource {
     /// The source contents for the vertex shader.
     pub vertex: String,
@@ -40,6 +41,7 @@ pub struct ShaderSource {
 
 /// A user tweakable parameter for the shader as declared in source.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderParameter {
     /// The name of the parameter.
     pub id: ShortString,
