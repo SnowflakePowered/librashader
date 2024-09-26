@@ -1,9 +1,10 @@
 [package]
-name = "librashader-test"
-version = "0.1.0"
+name = "librashader-cli"
+version = "0.4.5"
 edition = "2021"
 
 [lib]
+name = "librashader_test"
 path = "src/lib.rs"
 
 [[bin]]

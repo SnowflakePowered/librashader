@@ -1584,6 +1584,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-cli"
+version = "0.4.5"
+dependencies = [
+ "anyhow",
+ "ash",
+ "bitvec",
+ "clap",
+ "d3d12-descriptor-heap",
+ "gfx-maths",
+ "glfw",
+ "glow 0.14.1",
+ "gpu-allocator 0.27.0",
+ "image",
+ "image-compare",
+ "librashader",
+ "librashader-runtime",
+ "objc2 0.5.2",
+ "objc2-metal",
+ "parking_lot",
+ "pollster",
+ "serde",
+ "serde_json",
+ "spq-spvasm",
+ "wgpu",
+ "wgpu-types",
+ "windows 0.58.0",
+]
+
+[[package]]
 name = "librashader-common"
 version = "0.4.5"
 dependencies = [
@@ -1810,35 +1839,6 @@ dependencies = [
  "thiserror",
  "wgpu",
  "winit",
-]
-
-[[package]]
-name = "librashader-test"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "ash",
- "bitvec",
- "clap",
- "d3d12-descriptor-heap",
- "gfx-maths",
- "glfw",
- "glow 0.14.1",
- "gpu-allocator 0.27.0",
- "image",
- "image-compare",
- "librashader",
- "librashader-runtime",
- "objc2 0.5.2",
- "objc2-metal",
- "parking_lot",
- "pollster",
- "serde",
- "serde_json",
- "spq-spvasm",
- "wgpu",
- "wgpu-types",
- "windows 0.58.0",
 ]
 
 [[package]]
