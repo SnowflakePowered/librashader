@@ -9,6 +9,7 @@ pub const MAX_PUSH_BUFFER_SIZE: u32 = 128;
 
 /// The type of a uniform.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UniformType {
     /// A matrix of 4x4 floats (`mat4`).
     Mat4,
@@ -26,6 +27,7 @@ pub enum UniformType {
 /// that are always available.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 #[repr(i32)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UniqueSemantics {
     // mat4, MVP
     /// The Model View Projection matrix for the frame.
@@ -84,6 +86,7 @@ impl UniqueSemantics {
 /// Texture semantics are used to relate both texture samplers and `*Size` uniforms.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 #[repr(i32)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TextureSemantics {
     /// The original input of the filter chain.
     Original = 0,
@@ -163,6 +166,7 @@ pub(crate) trait ValidateTypeSemantics<T> {
 
 /// A unit of unique or indexed semantic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Semantic<T, I = usize> {
     /// The semantics of this unit.
     pub semantics: T,
@@ -173,6 +177,8 @@ pub struct Semantic<T, I = usize> {
 bitflags! {
     /// The pipeline stage for which a uniform is bound.
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(transparent))]
     pub struct BindingStage: u8 {
         const NONE = 0b00000000;
         const VERTEX = 0b00000001;
@@ -181,7 +187,8 @@ bitflags! {
 }
 
 /// Reflection information for the Uniform Buffer or Push Constant Block
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BufferReflection<T> {
     /// The binding point for this buffer, if applicable
     pub binding: T,
@@ -195,6 +202,7 @@ pub struct BufferReflection<T> {
 ///
 /// A uniform can be bound to both the UBO, or as a Push Constant.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MemberOffset {
     /// The offset of the uniform member within the UBO.
     pub ubo: Option<usize>,
@@ -203,6 +211,7 @@ pub struct MemberOffset {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// The block where a uniform member is located.
 pub enum UniformMemberBlock {
     /// The offset is for a UBO.
@@ -247,7 +256,8 @@ impl MemberOffset {
 }
 
 /// Reflection information about a non-texture related uniform variable.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VariableMeta {
     /// The offset of this variable uniform.
     pub offset: MemberOffset,
@@ -258,7 +268,8 @@ pub struct VariableMeta {
 }
 
 /// Reflection information about a texture size uniform variable.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextureSizeMeta {
     // this might bite us in the back because retroarch keeps separate UBO/push offsets..
     /// The offset of this size uniform.
@@ -270,14 +281,16 @@ pub struct TextureSizeMeta {
 }
 
 /// Reflection information about texture samplers.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextureBinding {
     /// The binding index of the texture.
     pub binding: u32,
 }
 
 /// Reflection information about a shader.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderReflection {
     /// Reflection information about the UBO for this shader.
     pub ubo: Option<BufferReflection<u32>>,
@@ -436,6 +449,7 @@ impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
 
 /// Semantic assignment of a shader uniform to filter chain semantics.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UniformSemantic {
     /// A unique semantic.
     Unique(Semantic<UniqueSemantics, ()>),
@@ -445,6 +459,7 @@ pub enum UniformSemantic {
 
 /// The runtime provided maps of uniform and texture variables to filter chain semantics.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderSemantics {
     /// A map of uniform names to filter chain semantics.
     pub uniform_semantics: FastHashMap<ShortString, UniformSemantic>,
@@ -457,6 +472,7 @@ pub struct ShaderSemantics {
 /// Used in combination with [`MemberOffset`] to keep track
 /// of semantics at each frame pass.
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UniformBinding {
     /// A user parameter (`float`) binding.
     Parameter(ShortString),
@@ -479,7 +495,8 @@ impl From<Semantic<TextureSemantics>> for UniformBinding {
 }
 
 /// Reflection metadata about the various bindings for this shader.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BindingMeta {
     /// A map of parameter names to uniform binding metadata.
     pub parameter_meta: FastHashMap<ShortString, VariableMeta>,

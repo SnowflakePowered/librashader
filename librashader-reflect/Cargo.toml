@@ -36,12 +36,13 @@ version = "0.4.7"
 optional = true
 
 [features]
-default = ["cross", "naga", "serialize", "wgsl", "msl"]
+default = ["cross", "naga", "wgsl", "msl"]
 dxil = ["spirv-cross2/hlsl", "dep:spirv-to-dxil"]
 wgsl = ["cross", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
 cross = [ "dep:spirv-cross2", "spirv-cross2/glsl", "spirv-cross2/hlsl", "spirv-cross2/msl" ]
 naga = [ "dep:rspirv", "dep:spirv", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
-serialize = [ "dep:serde" ]
+serde = ["dep:serde", "serde/derive", "librashader-common/serde", "bitflags/serde"]
+
 msl = [ "spirv-cross2/msl", "naga/msl-out" ]
 stable = []
 
