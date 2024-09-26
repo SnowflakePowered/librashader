@@ -1135,9 +1135,9 @@ dependencies = [
 
 [[package]]
 name = "glslang"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31c1d4356eb6ef7c461f6c44ffdcfd97012c5a611216be19281a7a4ee8340681"
+checksum = "68ea691c064fdb88b4a329c240f76ed9ff21a9bde51f534e35106f97e95c7188"
 dependencies = [
  "bitflags 2.6.0",
  "glslang-sys",
