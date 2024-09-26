@@ -29,7 +29,7 @@ impl RenderTest for Metal {
         Metal::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let queue = self
             .device
             .newCommandQueue()

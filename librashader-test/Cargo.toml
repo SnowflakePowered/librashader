@@ -23,6 +23,9 @@ glfw = { workspace = true, optional = true }
 ash = { workspace = true, optional = true }
 
 [features]
+default = ["full"]
+
+full = ["vulkan", "opengl", "wgpu", "d3d9", "d3d11", "d3d12", "metal"]
 vulkan = ["librashader/runtime-vk", "dep:ash"]
 opengl = ["librashader/runtime-gl", "dep:glow", "dep:glfw"]
 wgpu = ["librashader/runtime-wgpu", "dep:wgpu", "dep:wgpu-types"]

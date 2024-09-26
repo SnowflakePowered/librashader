@@ -1,10 +1,10 @@
-#[cfg(feature = "d3d11")]
+#[cfg(all(windows, feature = "d3d11"))]
 pub mod d3d11;
 
-#[cfg(feature = "d3d12")]
+#[cfg(all(windows, feature = "d3d12"))]
 pub mod d3d12;
 
-#[cfg(feature = "d3d9")]
+#[cfg(all(windows, feature = "d3d9"))]
 pub mod d3d9;
 
 #[cfg(feature = "opengl")]
@@ -16,7 +16,7 @@ pub mod vk;
 #[cfg(feature = "wgpu")]
 pub mod wgpu;
 
-#[cfg(feature = "metal")]
+#[cfg(all(target_vendor = "apple", feature = "metal"))]
 pub mod mtl;
 
 use std::path::Path;
@@ -66,7 +66,7 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "d3d11")]
+    #[cfg(all(windows, feature = "d3d11"))]
     pub fn test_d3d11() -> anyhow::Result<()> {
         do_test::<crate::render::d3d11::Direct3D11>()
     }
@@ -96,19 +96,19 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "metal")]
+    #[cfg(all(target_vendor = "apple", feature = "metal"))]
     pub fn test_metal() -> anyhow::Result<()> {
         do_test::<crate::render::mtl::Metal>()
     }
 
     #[test]
-    #[cfg(feature = "d3d9")]
+    #[cfg(all(windows, feature = "d3d9"))]
     pub fn test_d3d9() -> anyhow::Result<()> {
         do_test::<crate::render::d3d9::Direct3D9>()
     }
 
     #[test]
-    #[cfg(feature = "d3d12")]
+    #[cfg(all(windows, feature = "d3d12"))]
     pub fn test_d3d12() -> anyhow::Result<()> {
         do_test::<crate::render::d3d12::Direct3D12>()
     }

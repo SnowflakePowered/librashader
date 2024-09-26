@@ -1,7 +1,4 @@
-use crate::render::vk::physical_device::QueueFamilyIndices;
-use ash::prelude::VkResult;
 use ash::vk;
-use ash::vk::CommandBufferResetFlags;
 use gpu_allocator::vulkan::Allocator;
 use librashader::runtime::vk::VulkanObjects;
 use parking_lot::Mutex;
