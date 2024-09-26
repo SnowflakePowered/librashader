@@ -48,7 +48,6 @@ of the internals if you wish to use parts of librashader piecemeal.
 The librashader C API is best used by including `librashader_ld.h` in your project, which implements a loader that dynamically
 loads the librashader (`librashader.so`, `librashader.dll`, or `librashader.dylib`) implementation in the search path. 
 
-
 ### C compatibility
 The recommended way of integrating `librashader` is by the `librashader_ld` single header library which implements
 a dynamic loader for `librashader.dll` / `librashader.so` / `librashader.dylib`. See the [versioning policy](https://github.com/SnowflakePowered/librashader#versioning)
@@ -76,6 +75,7 @@ The Metal runtime is **not thread safe**. However you can still defer submission
 `filter_chain_create_deferred` function.
 
 The Direct3D 9 API is not thread safe, unless `D3DCREATE_MULTITHREADED` is enabled at device creation.
+
 ### Quad vertices and rotations
 All runtimes render intermediate passes with an identity matrix MVP and a VBO for with range `[-1, 1]`. The final pass uses a
 Quad VBO with range `[0, 1]` and the following projection matrix by default.
@@ -101,6 +101,8 @@ ensure that your runtime has consistent behaviour for uniform and texture semant
 These types should not be exposed to the end user in the runtime's public API, and should be kept internal to the implementation of
 the runtime.
 
+## Command-line interface
+librashader provides a 
 
 ## Building
 
@@ -128,7 +130,7 @@ While librashader is intended to be used with nightly Rust until [required featu
 built with stable Rust with the `stable` feature.
 
 ```toml 
-librashader = { features = "stable" }
+librashader = { features = ["stable"] }
 ```
 
 If building the C API, the `--stable` flag in the build script will enable the `stable` feature.
