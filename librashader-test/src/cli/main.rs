@@ -8,7 +8,6 @@ use librashader::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader::reflect::semantics::ShaderSemantics;
 use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvCompilation};
 use librashader_test::render::RenderTest;
-use ron::ser::PrettyConfig;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug)]
@@ -337,10 +336,11 @@ pub fn main() -> Result<(), anyhow::Error> {
                     }
                 }
                 TranspileFormat::MSL => {
-                    let mut compilation = <librashader::reflect::targets::MSL as FromCompilation<
-                        SpirvCompilation,
-                        SpirvCross,
-                    >>::from_compilation(compilation)?;
+                    let mut compilation =
+                        <librashader::reflect::targets::MSL as FromCompilation<
+                            SpirvCompilation,
+                            SpirvCross,
+                        >>::from_compilation(compilation)?;
                     compilation.validate()?;
                     let output = compilation.compile(Some(MslVersion::new(1, 2, 0)))?;
 
@@ -350,10 +350,11 @@ pub fn main() -> Result<(), anyhow::Error> {
                     }
                 }
                 TranspileFormat::SPIRV => {
-                    let mut compilation = <librashader::reflect::targets::SPIRV as FromCompilation<
-                        SpirvCompilation,
-                        SpirvCross,
-                    >>::from_compilation(compilation)?;
+                    let mut compilation =
+                        <librashader::reflect::targets::SPIRV as FromCompilation<
+                            SpirvCompilation,
+                            SpirvCross,
+                        >>::from_compilation(compilation)?;
                     compilation.validate()?;
                     let output = compilation.compile(None)?;
 
@@ -407,10 +408,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                 }
             };
 
-            print!(
-                "{}",
-                ron::ser::to_string_pretty(&reflection, PrettyConfig::new())?
-            );
+            print!("{}", serde_json::to_string_pretty(&reflection)?);
         }
     }
 
