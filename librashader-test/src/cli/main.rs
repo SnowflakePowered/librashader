@@ -5,11 +5,11 @@ use librashader::presets::context::ContextItem;
 use librashader::presets::{ShaderPreset, WildcardContext};
 use librashader::reflect::cross::{GlslVersion, HlslShaderModel, MslVersion, SpirvCross};
 use librashader::reflect::naga::{Naga, NagaLoweringOptions};
-use librashader::reflect::semantics::{ ShaderSemantics};
+use librashader::reflect::semantics::ShaderSemantics;
 use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvCompilation};
 use librashader_test::render::RenderTest;
-use std::path::{Path, PathBuf};
 use ron::ser::PrettyConfig;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -303,8 +303,10 @@ pub fn main() -> Result<(), anyhow::Error> {
             let compilation = SpirvCompilation::try_from(&source)?;
             let output = match format {
                 TranspileFormat::GLSL => {
-                    let compilation =
+                    let mut compilation =
                         librashader::reflect::targets::GLSL::from_compilation(compilation)?;
+                    compilation.validate()?;
+
                     let output = compilation.compile(GlslVersion::Glsl330)?;
                     TranspileOutput {
                         vertex: output.vertex,
@@ -312,8 +314,9 @@ pub fn main() -> Result<(), anyhow::Error> {
                     }
                 }
                 TranspileFormat::HLSL => {
-                    let compilation =
+                    let mut compilation =
                         librashader::reflect::targets::HLSL::from_compilation(compilation)?;
+                    compilation.validate()?;
                     let output = compilation.compile(Some(HlslShaderModel::ShaderModel5_0))?;
                     TranspileOutput {
                         vertex: output.vertex,
@@ -321,8 +324,9 @@ pub fn main() -> Result<(), anyhow::Error> {
                     }
                 }
                 TranspileFormat::WGSL => {
-                    let compilation =
+                    let mut compilation =
                         librashader::reflect::targets::WGSL::from_compilation(compilation)?;
+                    compilation.validate()?;
                     let output = compilation.compile(NagaLoweringOptions {
                         write_pcb_as_ubo: true,
                         sampler_bind_group: 1,
@@ -333,21 +337,24 @@ pub fn main() -> Result<(), anyhow::Error> {
                     }
                 }
                 TranspileFormat::MSL => {
-                    let compilation = <librashader::reflect::targets::MSL as FromCompilation<
+                    let mut compilation = <librashader::reflect::targets::MSL as FromCompilation<
                         SpirvCompilation,
                         SpirvCross,
                     >>::from_compilation(compilation)?;
+                    compilation.validate()?;
                     let output = compilation.compile(Some(MslVersion::new(1, 2, 0)))?;
+
                     TranspileOutput {
                         vertex: output.vertex,
                         fragment: output.fragment,
                     }
                 }
                 TranspileFormat::SPIRV => {
-                    let compilation = <librashader::reflect::targets::SPIRV as FromCompilation<
+                    let mut compilation = <librashader::reflect::targets::SPIRV as FromCompilation<
                         SpirvCompilation,
                         SpirvCross,
                     >>::from_compilation(compilation)?;
+                    compilation.validate()?;
                     let output = compilation.compile(None)?;
 
                     TranspileOutput {
@@ -378,7 +385,8 @@ pub fn main() -> Result<(), anyhow::Error> {
             let source = librashader::preprocess::ShaderSource::load(shader.name.as_path())?;
             let compilation = SpirvCompilation::try_from(&source)?;
 
-            let semantics = ShaderSemantics::create_pass_semantics::<anyhow::Error>(&preset, index)?;
+            let semantics =
+                ShaderSemantics::create_pass_semantics::<anyhow::Error>(&preset, index)?;
 
             let reflection = match backend {
                 ReflectionBackend::SpirvCross => {
@@ -399,7 +407,10 @@ pub fn main() -> Result<(), anyhow::Error> {
                 }
             };
 
-            print!("{}", ron::ser::to_string_pretty(&reflection, PrettyConfig::new())?);
+            print!(
+                "{}",
+                ron::ser::to_string_pretty(&reflection, PrettyConfig::new())?
+            );
         }
     }
 
