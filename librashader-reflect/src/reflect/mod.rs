@@ -25,6 +25,9 @@ pub trait ReflectShader {
         pass_number: usize,
         semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError>;
+
+    /// Validate the shader without doing reflection against a set of semantics.
+    fn validate(&mut self) -> Result<(), ShaderReflectError>;
 }
 
 pub use semantics::ShaderReflection;

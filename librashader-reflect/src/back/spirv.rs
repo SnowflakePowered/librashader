@@ -72,6 +72,10 @@ impl ReflectShader for WriteSpirV {
     ) -> Result<ShaderReflection, ShaderReflectError> {
         self.reflect.reflect(pass_number, semantics)
     }
+
+    fn validate(&mut self) -> Result<(), ShaderReflectError> {
+        self.reflect.validate()
+    }
 }
 
 impl CompileShader<SPIRV> for WriteSpirV {

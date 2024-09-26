@@ -160,7 +160,7 @@ impl<T> CrossReflect<T>
 where
     T: spirv_cross2::compile::CompilableTarget,
 {
-    fn validate(
+    fn validate_semantics(
         &self,
         vertex_res: &AllResources,
         fragment_res: &AllResources,
@@ -714,7 +714,7 @@ where
     ) -> Result<ShaderReflection, ShaderReflectError> {
         let vertex_res = self.vertex.shader_resources()?.all_resources()?;
         let fragment_res = self.fragment.shader_resources()?.all_resources()?;
-        self.validate(&vertex_res, &fragment_res)?;
+        self.validate_semantics(&vertex_res, &fragment_res)?;
 
         let vertex_ubo = vertex_res.uniform_buffers.first();
         let fragment_ubo = fragment_res.uniform_buffers.first();
@@ -796,6 +796,23 @@ where
             push_constant,
             meta,
         })
+    }
+
+    fn validate(&mut self) -> Result<(), ShaderReflectError> {
+        let vertex_res = self.vertex.shader_resources()?.all_resources()?;
+        let fragment_res = self.fragment.shader_resources()?.all_resources()?;
+        self.validate_semantics(&vertex_res, &fragment_res)?;
+        let vertex_ubo = vertex_res.uniform_buffers.first();
+        let fragment_ubo = fragment_res.uniform_buffers.first();
+
+        self.reflect_ubos(vertex_ubo, fragment_ubo)?;
+
+        let vertex_push = vertex_res.push_constant_buffers.first();
+        let fragment_push = fragment_res.push_constant_buffers.first();
+
+        self.reflect_push_constant_buffer(vertex_push, fragment_push)?;
+
+        Ok(())
     }
 }
 

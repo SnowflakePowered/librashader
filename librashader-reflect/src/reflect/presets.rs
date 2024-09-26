@@ -219,7 +219,10 @@ impl ShaderSemantics {
     /// Create pass semantics for a single pass in the given shader preset.
     ///
     /// This is meant as a convenience function for reflection use only.
-    pub fn create_pass_semantics<E>(preset: &ShaderPreset, index: usize) -> Result<ShaderSemantics, E>
+    pub fn create_pass_semantics<E>(
+        preset: &ShaderPreset,
+        index: usize,
+    ) -> Result<ShaderSemantics, E>
     where
         E: From<ShaderReflectError>,
         E: From<PreprocessError>,
@@ -268,6 +271,4 @@ impl ShaderSemantics {
             texture_semantics,
         })
     }
-
 }
-
