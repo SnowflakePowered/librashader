@@ -1148,9 +1148,9 @@ dependencies = [
 
 [[package]]
 name = "glslang-sys"
-version = "0.5.1+fa9c3de"
+version = "0.5.2+fa9c3de"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff921e0bd8f2b25cc8ebc94b5a4bb724aee4ad2af5690dfd82decf1a64c33aec"
+checksum = "ca4ade0a93e3a8597c8fd1e1df6a22c847803819401b39835fffb96a5b5ee06f"
 dependencies = [
  "cc",
  "glob",
