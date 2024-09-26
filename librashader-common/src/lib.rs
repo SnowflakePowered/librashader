@@ -45,6 +45,7 @@ use std::str::FromStr;
 
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Supported image formats for textures.
 pub enum ImageFormat {
     #[default]
@@ -91,6 +92,7 @@ pub enum ImageFormat {
 
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// The filtering mode for a texture sampler.
 pub enum FilterMode {
     /// Linear filtering.
@@ -129,6 +131,7 @@ impl FromStr for FilterMode {
 
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// The wrapping (address) mode for a texture sampler.
 pub enum WrapMode {
     #[default]
@@ -189,6 +192,7 @@ impl FromStr for ImageFormat {
 
 /// A size with a width and height.
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Size<T> {
     pub width: T,
     pub height: T,

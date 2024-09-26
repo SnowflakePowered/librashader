@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 /// The configuration for a single shader pass.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderPassConfig {
     /// The index of the shader pass relative to its parent preset.
     pub id: i32,
@@ -55,6 +56,7 @@ impl ShaderPassConfig {
 
 #[repr(i32)]
 #[derive(Default, Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// The scaling type for the shader pass.
 pub enum ScaleType {
     #[default]
@@ -70,6 +72,7 @@ pub enum ScaleType {
 
 /// The scaling factor for framebuffer scaling.
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ScaleFactor {
     /// Scale by a fractional float factor.
     Float(f32),
@@ -130,6 +133,7 @@ impl FromStr for ScaleType {
 
 /// Framebuffer scaling parameters.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Scaling {
     /// The method to scale the framebuffer with.
     pub scale_type: ScaleType,
@@ -139,6 +143,7 @@ pub struct Scaling {
 
 /// 2D quad scaling parameters.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Scale2D {
     /// Whether or not this combination of scaling factors is valid.
     pub valid: bool,
@@ -150,6 +155,7 @@ pub struct Scale2D {
 
 /// Configuration options for a lookup texture used in the shader.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextureConfig {
     /// The name of the texture.
     pub name: ShortString,
@@ -165,6 +171,7 @@ pub struct TextureConfig {
 
 /// Configuration options for a shader parameter.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ParameterConfig {
     /// The name of the parameter.
     pub name: ShortString,
@@ -177,6 +184,7 @@ pub struct ParameterConfig {
 /// A shader preset can be used to create a filter chain runtime instance, or reflected to get
 /// parameter metadata.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderPreset {
     /// Used in legacy GLSL shader semantics. If < 0, no feedback pass is used.
     /// Otherwise, the FBO after pass #N is passed a texture to next frame
