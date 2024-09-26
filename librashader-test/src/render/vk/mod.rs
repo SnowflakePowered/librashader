@@ -8,7 +8,7 @@ use image::RgbaImage;
 use librashader::runtime::vk::{FilterChain, FilterChainOptions, VulkanImage};
 use librashader::runtime::Viewport;
 use librashader_runtime::image::{Image, UVDirection, BGRA8};
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::path::Path;
 
 mod base;
@@ -32,7 +32,7 @@ impl RenderTest for Vulkan {
         Vulkan::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_path(
                 path,

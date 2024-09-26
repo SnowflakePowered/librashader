@@ -3,16 +3,15 @@ use anyhow::anyhow;
 use image::RgbaImage;
 use librashader::runtime::d3d9::{FilterChain, FilterChainOptions};
 use librashader::runtime::Viewport;
-use librashader_runtime::image::{Image, PixelFormat, UVDirection, ARGB8, BGRA8};
+use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
 use std::path::Path;
 use windows::Win32::Foundation::{HWND, TRUE};
 use windows::Win32::Graphics::Direct3D9::{
     Direct3DCreate9, IDirect3D9, IDirect3DDevice9, IDirect3DTexture9, D3DADAPTER_DEFAULT,
-    D3DCREATE_HARDWARE_VERTEXPROCESSING, D3DDEVTYPE_HAL, D3DFMT_A8R8G8B8, D3DFMT_R8G8B8,
-    D3DFMT_UNKNOWN, D3DLOCKED_RECT, D3DPOOL_DEFAULT, D3DPOOL_MANAGED, D3DPOOL_SCRATCH,
-    D3DPOOL_SYSTEMMEM, D3DPRESENT_INTERVAL_IMMEDIATE, D3DPRESENT_PARAMETERS, D3DRS_CLIPPING,
-    D3DRS_CULLMODE, D3DRS_LIGHTING, D3DRS_ZENABLE, D3DRS_ZFUNC, D3DSURFACE_DESC,
-    D3DSWAPEFFECT_DISCARD, D3DUSAGE_DYNAMIC, D3DUSAGE_RENDERTARGET, D3D_SDK_VERSION,
+    D3DCREATE_HARDWARE_VERTEXPROCESSING, D3DDEVTYPE_HAL, D3DFMT_A8R8G8B8, D3DLOCKED_RECT,
+    D3DPOOL_DEFAULT, D3DPOOL_MANAGED, D3DPOOL_SYSTEMMEM, D3DPRESENT_INTERVAL_IMMEDIATE,
+    D3DPRESENT_PARAMETERS, D3DSURFACE_DESC, D3DSWAPEFFECT_DISCARD, D3DUSAGE_RENDERTARGET,
+    D3D_SDK_VERSION,
 };
 
 pub struct Direct3D9 {
@@ -30,7 +29,7 @@ impl RenderTest for Direct3D9 {
         Direct3D9::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_path(
                 path,

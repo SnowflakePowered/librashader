@@ -13,7 +13,7 @@ impl RenderTest for Direct3D11 {
         Direct3D11::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let (renderbuffer, rtv) = self.create_renderbuffer(self.image_bytes.size)?;
 
         unsafe {

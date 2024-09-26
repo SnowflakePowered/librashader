@@ -5,7 +5,7 @@ use librashader::runtime::wgpu::*;
 use librashader::runtime::Viewport;
 use librashader_runtime::image::{Image, UVDirection};
 use std::io::{Cursor, Write};
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::Arc;
 use wgpu::{Adapter, Device, Instance, Queue, Texture};
@@ -56,7 +56,7 @@ impl RenderTest for Wgpu {
         Wgpu::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut chain = FilterChain::load_from_path(
             path,
             Arc::clone(&self.device),

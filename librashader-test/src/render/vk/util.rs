@@ -1,9 +1,4 @@
 use ash::vk;
-use gpu_allocator::vulkan::{Allocator, AllocatorCreateDesc};
-
-use gpu_allocator::AllocationSizes;
-use parking_lot::Mutex;
-use std::sync::Arc;
 
 #[inline(always)]
 pub unsafe fn vulkan_image_layout_transition_levels(

@@ -29,7 +29,7 @@ impl RenderTest for OpenGl3 {
         OpenGl3::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_path(
                 path,
@@ -55,7 +55,7 @@ impl RenderTest for OpenGl4 {
         OpenGl4::new(path)
     }
 
-    fn render(&self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_path(
                 path,
