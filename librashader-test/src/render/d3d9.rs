@@ -22,14 +22,14 @@ pub struct Direct3D9 {
 }
 
 impl RenderTest for Direct3D9 {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         Direct3D9::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_path(
                 path,

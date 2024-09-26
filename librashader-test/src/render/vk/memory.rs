@@ -54,7 +54,6 @@ pub struct VulkanBuffer {
     device: Arc<ash::Device>,
     allocation: ManuallyDrop<Allocation>,
     allocator: Arc<Mutex<Allocator>>,
-    size: vk::DeviceSize,
 }
 
 impl VulkanBuffer {
@@ -88,7 +87,6 @@ impl VulkanBuffer {
                 handle: buffer,
                 allocation: ManuallyDrop::new(alloc),
                 allocator: Arc::clone(allocator),
-                size: size as vk::DeviceSize,
                 device: device.clone(),
             })
         }

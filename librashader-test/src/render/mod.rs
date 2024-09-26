@@ -24,7 +24,7 @@ use std::path::Path;
 /// Test harness to set up a device, render a triangle, and apply a shader
 pub trait RenderTest {
     /// Create a new instance of the test harness.
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized;
 
@@ -36,11 +36,7 @@ pub trait RenderTest {
     /// For testing purposes, it is often that a single image will be reused with multiple
     /// shader presets, so the actual image that a shader will be applied to
     /// will often be part of the test harness object.
-    fn render(
-        &mut self,
-        path: impl AsRef<Path>,
-        frame_count: usize,
-    ) -> anyhow::Result<image::RgbaImage>;
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<image::RgbaImage>;
 }
 
 #[cfg(test)]
@@ -57,8 +53,8 @@ mod test {
     //     "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp";
 
     fn do_test<T: RenderTest>() -> anyhow::Result<()> {
-        let mut test = T::new(IMAGE_PATH)?;
-        let image = test.render(FILTER_PATH, 100)?;
+        let mut test = T::new(IMAGE_PATH.as_ref())?;
+        let image = test.render(FILTER_PATH.as_ref(), 100)?;
 
         let out = File::create("out.png")?;
         image.write_with_encoder(PngEncoder::new(out))?;
@@ -114,11 +110,11 @@ mod test {
     }
 
     pub fn compare<A: RenderTest, B: RenderTest>() -> anyhow::Result<()> {
-        let mut a = A::new(IMAGE_PATH)?;
-        let mut b = B::new(IMAGE_PATH)?;
+        let mut a = A::new(IMAGE_PATH.as_ref())?;
+        let mut b = B::new(IMAGE_PATH.as_ref())?;
 
-        let a_image = a.render(FILTER_PATH, 100)?;
-        let b_image = b.render(FILTER_PATH, 100)?;
+        let a_image = a.render(FILTER_PATH.as_ref(), 100)?;
+        let b_image = b.render(FILTER_PATH.as_ref(), 100)?;
 
         let similarity = image_compare::rgba_hybrid_compare(&a_image, &b_image)?;
         assert!(similarity.score > 0.95);

@@ -20,17 +20,12 @@
 
 use anyhow::anyhow;
 use glfw::{fail_on_errors, Context, Glfw, OpenGlProfileHint, PWindow, WindowHint, WindowMode};
-use glow::HasContext;
 use std::sync::Arc;
 
 pub struct GlfwContext {
-    wnd: PWindow,
-    glfw: Glfw,
+    _wnd: PWindow,
+    _glfw: Glfw,
     pub gl: Arc<glow::Context>,
-}
-
-fn debug_callback(_source: u32, _err_type: u32, _id: u32, _severity: u32, message: &str) {
-    println!("[gl] {message:?}");
 }
 
 impl GlfwContext {
@@ -50,19 +45,19 @@ impl GlfwContext {
 
         wnd.make_current();
 
-        let mut gl =
+        let gl =
             unsafe { glow::Context::from_loader_function(|proc| wnd.get_proc_address(proc) as _) };
 
-        unsafe {
-            gl.enable(glow::DEBUG_OUTPUT);
-            gl.enable(glow::DEBUG_OUTPUT_SYNCHRONOUS);
-            gl.debug_message_callback(debug_callback);
-            gl.debug_message_control(glow::DONT_CARE, glow::DONT_CARE, glow::DONT_CARE, &[], true);
-        }
+        // unsafe {
+        //     gl.enable(glow::DEBUG_OUTPUT);
+        //     gl.enable(glow::DEBUG_OUTPUT_SYNCHRONOUS);
+        //     gl.debug_message_callback(debug_callback);
+        //     gl.debug_message_control(glow::DONT_CARE, glow::DONT_CARE, glow::DONT_CARE, &[], true);
+        // }
 
         Ok(Self {
-            wnd,
-            glfw,
+            _wnd: wnd,
+            _glfw: glfw,
             gl: Arc::new(gl),
         })
     }

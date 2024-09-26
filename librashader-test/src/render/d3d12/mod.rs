@@ -11,57 +11,54 @@ use librashader::runtime::d3d12::{
 };
 use librashader::runtime::Viewport;
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
-use std::ffi::CStr;
 use std::path::Path;
 use windows::core::Interface;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::{D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_12_1};
 use windows::Win32::Graphics::Direct3D12::{
     D3D12CreateDevice, ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence,
-    ID3D12GraphicsCommandList, ID3D12InfoQueue1, ID3D12Resource, D3D12_COMMAND_LIST_TYPE_DIRECT,
+    ID3D12GraphicsCommandList, ID3D12Resource, D3D12_COMMAND_LIST_TYPE_DIRECT,
     D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
     D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
     D3D12_FENCE_FLAG_NONE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_CUSTOM,
     D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_L0,
-    D3D12_MEMORY_POOL_UNKNOWN, D3D12_MESSAGE_CALLBACK_FLAG_NONE, D3D12_MESSAGE_CATEGORY,
-    D3D12_MESSAGE_ID, D3D12_MESSAGE_SEVERITY, D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
-    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DESC,
+    D3D12_MEMORY_POOL_UNKNOWN, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC,
     D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-    D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ,
+    D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON,
+    D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC,
-    D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_SUBRESOURCE_DATA,
-    D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
+    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_SUBRESOURCE_DATA, D3D12_TEX2D_SRV,
+    D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 use windows::Win32::Graphics::Dxgi::{
     CreateDXGIFactory2, IDXGIAdapter1, IDXGIFactory4, DXGI_ADAPTER_FLAG_NONE,
-    DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_CREATE_FACTORY_DEBUG, DXGI_CREATE_FACTORY_FLAGS,
+    DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_CREATE_FACTORY_DEBUG,
 };
 use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFINITE};
 
 pub struct Direct3D12 {
     device: ID3D12Device,
-    cpu_heap: D3D12DescriptorHeap<CpuStagingHeap>,
+    _cpu_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
     texture: D3D12InputImage,
-    heap_slot: D3D12DescriptorHeapSlot<CpuStagingHeap>,
+    _heap_slot: D3D12DescriptorHeapSlot<CpuStagingHeap>,
     command_pool: ID3D12CommandAllocator,
     queue: ID3D12CommandQueue,
     image: Image<BGRA8>,
 }
 
 impl RenderTest for Direct3D12 {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         Direct3D12::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         unsafe {
             let descriptor = self.rtv_heap.allocate_descriptor()?;
 
@@ -175,10 +172,10 @@ impl RenderTest for Direct3D12 {
 }
 
 impl Direct3D12 {
-    pub fn new(image_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn new(image_path: &Path) -> anyhow::Result<Self> {
         let device = Self::create_device()?;
         let mut heap = unsafe { D3D12DescriptorHeap::new(&device, 8)? };
-        let mut rtv_heap = unsafe { D3D12DescriptorHeap::new(&device, 16)? };
+        let rtv_heap = unsafe { D3D12DescriptorHeap::new(&device, 16)? };
 
         unsafe {
             let command_pool: ID3D12CommandAllocator =
@@ -196,10 +193,10 @@ impl Direct3D12 {
 
             Ok(Self {
                 device,
-                cpu_heap: heap,
+                _cpu_heap: heap,
                 rtv_heap,
                 texture,
-                heap_slot,
+                _heap_slot: heap_slot,
                 command_pool,
                 image,
                 queue,
@@ -225,7 +222,7 @@ impl Direct3D12 {
         command_pool: &ID3D12CommandAllocator,
         queue: &ID3D12CommandQueue,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
-        path: impl AsRef<Path>,
+        path: &Path,
     ) -> anyhow::Result<(
         Image<BGRA8>,
         D3D12InputImage,
@@ -386,7 +383,7 @@ impl Direct3D12 {
         for i in 0.. {
             let adapter = unsafe { factory.EnumAdapters1(i)? };
 
-            let mut desc = unsafe { adapter.GetDesc1()? };
+            let desc = unsafe { adapter.GetDesc1()? };
 
             if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32) != DXGI_ADAPTER_FLAG_NONE.0 as u32
             {

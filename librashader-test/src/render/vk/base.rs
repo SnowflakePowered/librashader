@@ -6,16 +6,11 @@ use std::ffi::CStr;
 use std::sync::Arc;
 
 pub struct VulkanBase {
-    entry: ash::Entry,
-    instance: ash::Instance,
     device: Arc<ash::Device>,
     graphics_queue: vk::Queue,
-    // pub debug: VulkanDebug,
-    physical_device: vk::PhysicalDevice,
-    mem_props: vk::PhysicalDeviceMemoryProperties,
     allocator: Arc<Mutex<Allocator>>,
-    _pool: vk::CommandPool,
     cmd_buffer: vk::CommandBuffer,
+    pool: vk::CommandPool,
 }
 
 impl From<&VulkanBase> for VulkanObjects {
@@ -52,7 +47,6 @@ impl VulkanBase {
         let physical_device = super::physical_device::pick_physical_device(&instance)?;
 
         let (device, queue, cmd_pool) = Self::create_device(&instance, &physical_device)?;
-        let mem_props = unsafe { instance.get_physical_device_memory_properties(physical_device) };
 
         let alloc = super::memory::create_allocator(
             device.clone(),
@@ -71,15 +65,11 @@ impl VulkanBase {
             .unwrap();
 
         Ok(Self {
-            entry,
-            instance,
             device: Arc::new(device),
             graphics_queue: queue,
-            physical_device,
-            mem_props,
             // debug,
             allocator: alloc,
-            _pool: cmd_pool,
+            pool: cmd_pool,
             cmd_buffer: buffers,
         })
     }
@@ -157,7 +147,7 @@ impl VulkanBase {
 impl Drop for VulkanBase {
     fn drop(&mut self) {
         unsafe {
-            self.device.destroy_command_pool(self._pool, None);
+            self.device.destroy_command_pool(self.pool, None);
         }
     }
 }
