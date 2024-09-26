@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use librashader_common::map::{FastHashMap, ShortString};
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 /// The maximum number of bindings allowed in a shader.
@@ -78,6 +79,27 @@ impl UniqueSemantics {
             UniqueSemantics::CurrentSubFrame => UniformType::Unsigned,
             UniqueSemantics::FloatParameter => UniformType::Float,
         }
+    }
+
+    /// Get the name of the semantic as a string.
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            UniqueSemantics::MVP => "MVP",
+            UniqueSemantics::Output => "Output",
+            UniqueSemantics::FinalViewport => "FinalViewport",
+            UniqueSemantics::FrameCount => "FrameCount",
+            UniqueSemantics::FrameDirection => "FrameDirection",
+            UniqueSemantics::Rotation => "Rotation",
+            UniqueSemantics::TotalSubFrames => "TotalSubFrames",
+            UniqueSemantics::CurrentSubFrame => "CurrentSubFrame",
+            UniqueSemantics::FloatParameter => "FloatParameter",
+        }
+    }
+}
+
+impl Display for UniqueSemantics {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -166,7 +188,6 @@ pub(crate) trait ValidateTypeSemantics<T> {
 
 /// A unit of unique or indexed semantic.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Semantic<T, I = usize> {
     /// The semantics of this unit.
     pub semantics: T,
@@ -498,12 +519,159 @@ impl From<Semantic<TextureSemantics>> for UniformBinding {
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BindingMeta {
+    #[cfg_attr(feature = "serde", serde(rename = "param"))]
     /// A map of parameter names to uniform binding metadata.
     pub parameter_meta: FastHashMap<ShortString, VariableMeta>,
+    #[cfg_attr(feature = "serde", serde(rename = "unique"))]
     /// A map of unique semantics to uniform binding metadata.
     pub unique_meta: FastHashMap<UniqueSemantics, VariableMeta>,
+    #[cfg_attr(feature = "serde", serde(rename = "texture"))]
     /// A map of texture semantics to texture binding points.
     pub texture_meta: FastHashMap<Semantic<TextureSemantics>, TextureBinding>,
+    #[cfg_attr(feature = "serde", serde(rename = "texture_size"))]
     /// A map of texture semantics to texture size uniform binding metadata.
     pub texture_size_meta: FastHashMap<Semantic<TextureSemantics>, TextureSizeMeta>,
+}
+
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::*;
+    use serde::de::{Deserialize, Visitor};
+    use serde::ser::Serialize;
+    use serde::{Deserializer, Serializer};
+
+    struct TextureSemanticVisitor;
+
+    impl<'de> Visitor<'de> for TextureSemanticVisitor {
+        type Value = Semantic<TextureSemantics>;
+
+        fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            formatter.write_str("a string of the form (Semantic)N?")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            match v {
+                "Original" => Ok(TextureSemantics::Original.semantics(0)),
+                "Source" => Ok(TextureSemantics::Source.semantics(0)),
+                other => {
+                    let Some(index) = other.find(|c: char| c.is_digit(10)) else {
+                        return Err(E::custom(format!(
+                            "expected index for indexed texture semantic {v}"
+                        )));
+                    };
+
+                    let (semantic, index) = other.split_at(index);
+                    let Ok(index) = index.parse::<usize>() else {
+                        return Err(E::custom(format!(
+                            "could not parse index {index} of texture semantic {v}"
+                        )));
+                    };
+
+                    match semantic {
+                        "OriginalHistory" => Ok(TextureSemantics::OriginalHistory.semantics(index)),
+                        "PassOutput" => Ok(TextureSemantics::PassOutput.semantics(index)),
+                        "PassFeedback" => Ok(TextureSemantics::PassFeedback.semantics(index)),
+                        // everything else (including "User") is a user semantic.
+                        _ => Ok(TextureSemantics::User.semantics(index)),
+                    }
+                }
+            }
+        }
+    }
+    impl<'de> Deserialize<'de> for Semantic<TextureSemantics> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserializer.deserialize_str(TextureSemanticVisitor)
+        }
+    }
+
+    impl Serialize for Semantic<TextureSemantics> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            if self.semantics.is_indexed() {
+                serializer.serialize_str(&format!(
+                    "{}{}",
+                    self.semantics.texture_name(),
+                    self.index
+                ))
+            } else {
+                serializer.serialize_str(&format!("{}", self.semantics.texture_name()))
+            }
+        }
+    }
+
+    struct UniqueSemanticsVisitor;
+    impl<'de> Visitor<'de> for UniqueSemanticsVisitor {
+        type Value = Semantic<UniqueSemantics, ()>;
+
+        fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            formatter.write_str("a valid uniform semantic name")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(match v {
+                "MVP" => Semantic {
+                    semantics: UniqueSemantics::MVP,
+                    index: (),
+                },
+                "OutputSize" => Semantic {
+                    semantics: UniqueSemantics::Output,
+                    index: (),
+                },
+                "FinalViewportSize" => Semantic {
+                    semantics: UniqueSemantics::FinalViewport,
+                    index: (),
+                },
+                "FrameCount" => Semantic {
+                    semantics: UniqueSemantics::FrameCount,
+                    index: (),
+                },
+                "FrameDirection" => Semantic {
+                    semantics: UniqueSemantics::FrameDirection,
+                    index: (),
+                },
+                "Rotation" => Semantic {
+                    semantics: UniqueSemantics::Rotation,
+                    index: (),
+                },
+                "TotalSubFrames" => Semantic {
+                    semantics: UniqueSemantics::TotalSubFrames,
+                    index: (),
+                },
+                "CurrentSubFrame" => Semantic {
+                    semantics: UniqueSemantics::CurrentSubFrame,
+                    index: (),
+                },
+                _ => return Err(E::custom(format!("unknown unique semantic {v}"))),
+            })
+        }
+    }
+
+    impl Serialize for Semantic<UniqueSemantics, ()> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_str(self.semantics.as_str())
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Semantic<UniqueSemantics, ()> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserializer.deserialize_str(UniqueSemanticsVisitor)
+        }
+    }
 }
