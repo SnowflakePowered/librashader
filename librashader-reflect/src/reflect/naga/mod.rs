@@ -239,7 +239,7 @@ impl ValidateTypeSemantics<&TypeInner> for TextureSemantics {
 
 impl NagaReflect {
     fn reflect_ubos(
-        &mut self,
+        &self,
         vertex_ubo: Option<Handle<GlobalVariable>>,
         fragment_ubo: Option<Handle<GlobalVariable>>,
     ) -> Result<Option<BufferReflection<u32>>, ShaderReflectError> {
@@ -429,7 +429,7 @@ impl NagaReflect {
         }
     }
 
-    fn validate(&self) -> Result<(), ShaderReflectError> {
+    fn validate_semantics(&self) -> Result<(), ShaderReflectError> {
         // Verify types
         if self.vertex.global_variables.iter().any(|(_, gv)| {
             let ty = &self.vertex.types[gv.ty];
@@ -882,7 +882,7 @@ impl ReflectShader for NagaReflect {
         pass_number: usize,
         semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
-        self.validate()?;
+        self.validate_semantics()?;
 
         // Validate verifies that there's only one uniform block.
         let vertex_ubo = self
@@ -1011,6 +1011,36 @@ impl ReflectShader for NagaReflect {
             push_constant,
             meta,
         })
+    }
+
+    fn validate(&mut self) -> Result<(), ShaderReflectError> {
+        self.validate_semantics()?;
+        let vertex_push = self
+            .vertex
+            .global_variables
+            .iter()
+            .find_map(|(handle, gv)| {
+                if gv.space == AddressSpace::PushConstant {
+                    Some(handle)
+                } else {
+                    None
+                }
+            });
+
+        let fragment_push = self
+            .fragment
+            .global_variables
+            .iter()
+            .find_map(|(handle, gv)| {
+                if gv.space == AddressSpace::PushConstant {
+                    Some(handle)
+                } else {
+                    None
+                }
+            });
+
+        self.reflect_push_constant_buffer(vertex_push, fragment_push)?;
+        Ok(())
     }
 }
 

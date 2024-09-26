@@ -32,6 +32,9 @@ pub trait CompileShader<T: OutputTarget> {
     type Context;
 
     /// Consume the object and return the compiled output of the shader.
+    ///
+    /// The shader should either be reflected or validated as
+    /// [ReflectShader] before being compiled, or the results may not be valid.
     fn compile(
         self,
         options: Self::Options,
@@ -139,6 +142,10 @@ where
     ) -> Result<ShaderReflection, ShaderReflectError> {
         self.backend.reflect(pass_number, semantics)
     }
+
+    fn validate(&mut self) -> Result<(), ShaderReflectError> {
+        self.backend.validate()
+    }
 }
 
 impl<T: ReflectShader + ?Sized> ReflectShader for Box<T> {
@@ -148,6 +155,10 @@ impl<T: ReflectShader + ?Sized> ReflectShader for Box<T> {
         semantics: &ShaderSemantics,
     ) -> Result<ShaderReflection, ShaderReflectError> {
         (**self).reflect(pass_number, semantics)
+    }
+
+    fn validate(&mut self) -> Result<(), ShaderReflectError> {
+        (**self).validate()
     }
 }
 
