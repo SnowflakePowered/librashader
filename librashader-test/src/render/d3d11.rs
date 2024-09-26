@@ -6,14 +6,14 @@ use librashader::runtime::{Size, Viewport};
 use std::path::Path;
 
 impl RenderTest for Direct3D11 {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         Direct3D11::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let (renderbuffer, rtv) = self.create_renderbuffer(self.image_bytes.size)?;
 
         unsafe {
@@ -87,7 +87,7 @@ use windows::{
 pub struct Direct3D11 {
     device: ID3D11Device,
     immediate_context: ID3D11DeviceContext,
-    image_tex: ID3D11Texture2D,
+    _image_tex: ID3D11Texture2D,
     image_srv: ID3D11ShaderResourceView,
     image_bytes: Image,
 }
@@ -117,7 +117,7 @@ impl Direct3D11 {
         Ok((dxgi_factory, out_device.unwrap(), out_context.unwrap()))
     }
 
-    pub fn new(image_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn new(image_path: &Path) -> anyhow::Result<Self> {
         let (_factory, device, imm_context) = Self::create_device()?;
 
         let (image, image_tex, srv) = Self::load_image(&device, image_path)?;
@@ -125,17 +125,17 @@ impl Direct3D11 {
             device,
             immediate_context: imm_context,
             image_bytes: image,
-            image_tex,
+            _image_tex: image_tex,
             image_srv: srv,
         })
     }
 
     fn load_image(
         device: &ID3D11Device,
-        image_path: impl AsRef<Path>,
+        image_path: &Path,
     ) -> anyhow::Result<(Image, ID3D11Texture2D, ID3D11ShaderResourceView)> {
         let image = Image::load(image_path, UVDirection::TopLeft)?;
-        let mut desc = D3D11_TEXTURE2D_DESC {
+        let desc = D3D11_TEXTURE2D_DESC {
             Width: image.size.width,
             Height: image.size.height,
             // todo: set this to 0

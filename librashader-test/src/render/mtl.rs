@@ -22,14 +22,14 @@ pub struct Metal {
 }
 
 impl RenderTest for Metal {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         Metal::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let queue = self
             .device
             .newCommandQueue()

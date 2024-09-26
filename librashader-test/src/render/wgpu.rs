@@ -17,16 +17,15 @@ use wgpu_types::{
 use parking_lot::Mutex;
 
 pub struct Wgpu {
-    instance: Instance,
-    adapter: Adapter,
+    _instance: Instance,
+    _adapter: Adapter,
     device: Arc<Device>,
     queue: Arc<Queue>,
-    image: Image,
+    _image: Image,
     texture: Arc<Texture>,
 }
 
 struct BufferDimensions {
-    width: usize,
     height: usize,
     unpadded_bytes_per_row: usize,
     padded_bytes_per_row: usize,
@@ -40,7 +39,6 @@ impl BufferDimensions {
         let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
         let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
         Self {
-            width,
             height,
             unpadded_bytes_per_row,
             padded_bytes_per_row,
@@ -49,14 +47,14 @@ impl BufferDimensions {
 }
 
 impl RenderTest for Wgpu {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         Wgpu::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut chain = FilterChain::load_from_path(
             path,
             Arc::clone(&self.device),
@@ -126,7 +124,7 @@ impl RenderTest for Wgpu {
 
         let capturable = Arc::clone(&output_buf);
 
-        let mut pixels = Arc::new(Mutex::new(Vec::new()));
+        let pixels = Arc::new(Mutex::new(Vec::new()));
 
         let pixels_async = Arc::clone(&pixels);
         output_buf
@@ -167,7 +165,7 @@ impl RenderTest for Wgpu {
 }
 
 impl Wgpu {
-    pub fn new(image: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn new(image: &Path) -> anyhow::Result<Self> {
         pollster::block_on(async {
             let instance = wgpu::Instance::default();
             let adapter = instance
@@ -196,21 +194,17 @@ impl Wgpu {
             let (image, texture) = Self::load_image(&device, &queue, image)?;
 
             Ok(Self {
-                instance,
-                adapter,
+                _instance: instance,
+                _adapter: adapter,
                 device: Arc::new(device),
                 queue: Arc::new(queue),
-                image,
+                _image: image,
                 texture: Arc::new(texture),
             })
         })
     }
 
-    fn load_image(
-        device: &Device,
-        queue: &Queue,
-        path: impl AsRef<Path>,
-    ) -> anyhow::Result<(Image, Texture)> {
+    fn load_image(device: &Device, queue: &Queue, path: &Path) -> anyhow::Result<(Image, Texture)> {
         let image = Image::load(path, UVDirection::TopLeft)?;
         let texture = device.create_texture(&TextureDescriptor {
             size: image.size.into(),

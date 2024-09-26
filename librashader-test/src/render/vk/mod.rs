@@ -8,7 +8,6 @@ use image::RgbaImage;
 use librashader::runtime::vk::{FilterChain, FilterChainOptions, VulkanImage};
 use librashader::runtime::Viewport;
 use librashader_runtime::image::{Image, UVDirection, BGRA8};
-use std::io::Write;
 use std::path::Path;
 
 mod base;
@@ -20,19 +19,18 @@ pub struct Vulkan {
     vk: VulkanBase,
     image_bytes: Image<BGRA8>,
     image: vk::Image,
-    view: vk::ImageView,
-    image_alloc: VulkanImageMemory,
+    _image_alloc: VulkanImageMemory,
 }
 
 impl RenderTest for Vulkan {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         Vulkan::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_path(
                 path,
@@ -56,10 +54,10 @@ impl RenderTest for Vulkan {
                 .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_SRC)
                 .initial_layout(vk::ImageLayout::UNDEFINED);
 
-            let render_texture = unsafe { self.vk.device().create_image(&image_info, None)? };
+            let render_texture = { self.vk.device().create_image(&image_info, None)? };
 
             // This just needs to stay alive until the read.
-            let _memory = unsafe {
+            let _memory = {
                 let mem_reqs = self
                     .vk
                     .device()
@@ -87,7 +85,7 @@ impl RenderTest for Vulkan {
                 None,
             )?;
 
-            let mut transfer_memory = unsafe {
+            let mut transfer_memory = {
                 let mem_reqs = self
                     .vk
                     .device()
@@ -101,38 +99,36 @@ impl RenderTest for Vulkan {
                 )?
             };
 
-            self.vk.queue_work(|cmd| unsafe {
-                unsafe {
-                    util::vulkan_image_layout_transition_levels(
-                        &self.vk.device(),
-                        cmd,
-                        render_texture,
-                        vk::REMAINING_MIP_LEVELS,
-                        vk::ImageLayout::UNDEFINED,
-                        vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-                        vk::PipelineStageFlags::ALL_GRAPHICS,
-                        vk::PipelineStageFlags::ALL_GRAPHICS,
-                        vk::QUEUE_FAMILY_IGNORED,
-                        vk::QUEUE_FAMILY_IGNORED,
-                    );
+            self.vk.queue_work(|cmd| {
+                util::vulkan_image_layout_transition_levels(
+                    &self.vk.device(),
+                    cmd,
+                    render_texture,
+                    vk::REMAINING_MIP_LEVELS,
+                    vk::ImageLayout::UNDEFINED,
+                    vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                    vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                    vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                    vk::PipelineStageFlags::ALL_GRAPHICS,
+                    vk::PipelineStageFlags::ALL_GRAPHICS,
+                    vk::QUEUE_FAMILY_IGNORED,
+                    vk::QUEUE_FAMILY_IGNORED,
+                );
 
-                    util::vulkan_image_layout_transition_levels(
-                        &self.vk.device(),
-                        cmd,
-                        transfer_texture,
-                        vk::REMAINING_MIP_LEVELS,
-                        vk::ImageLayout::UNDEFINED,
-                        vk::ImageLayout::GENERAL,
-                        vk::AccessFlags::TRANSFER_WRITE | vk::AccessFlags::TRANSFER_READ,
-                        vk::AccessFlags::TRANSFER_WRITE | vk::AccessFlags::TRANSFER_READ,
-                        vk::PipelineStageFlags::ALL_GRAPHICS,
-                        vk::PipelineStageFlags::TRANSFER,
-                        vk::QUEUE_FAMILY_IGNORED,
-                        vk::QUEUE_FAMILY_IGNORED,
-                    )
-                }
+                util::vulkan_image_layout_transition_levels(
+                    &self.vk.device(),
+                    cmd,
+                    transfer_texture,
+                    vk::REMAINING_MIP_LEVELS,
+                    vk::ImageLayout::UNDEFINED,
+                    vk::ImageLayout::GENERAL,
+                    vk::AccessFlags::TRANSFER_WRITE | vk::AccessFlags::TRANSFER_READ,
+                    vk::AccessFlags::TRANSFER_WRITE | vk::AccessFlags::TRANSFER_READ,
+                    vk::PipelineStageFlags::ALL_GRAPHICS,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::QUEUE_FAMILY_IGNORED,
+                    vk::QUEUE_FAMILY_IGNORED,
+                );
 
                 filter_chain.frame(
                     &VulkanImage {
@@ -153,7 +149,7 @@ impl RenderTest for Vulkan {
                     None,
                 )?;
 
-                unsafe {
+                {
                     util::vulkan_image_layout_transition_levels(
                         &self.vk.device(),
                         cmd,
@@ -235,23 +231,22 @@ impl RenderTest for Vulkan {
 }
 
 impl Vulkan {
-    pub fn new(image_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn new(image_path: &Path) -> anyhow::Result<Self> {
         let vk = VulkanBase::new()?;
 
-        let (image_bytes, image_alloc, image, view) = Self::load_image(&vk, image_path)?;
+        let (image_bytes, image_alloc, image, _view) = Self::load_image(&vk, image_path)?;
 
         Ok(Self {
             vk,
             image,
             image_bytes,
-            view,
-            image_alloc,
+            _image_alloc: image_alloc,
         })
     }
 
     pub fn load_image(
         vk: &VulkanBase,
-        image_path: impl AsRef<Path>,
+        image_path: &Path,
     ) -> anyhow::Result<(Image<BGRA8>, VulkanImageMemory, vk::Image, vk::ImageView)> {
         let image: Image<BGRA8> = Image::load(image_path, UVDirection::TopLeft)?;
 

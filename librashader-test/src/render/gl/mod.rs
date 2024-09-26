@@ -13,7 +13,6 @@ use std::sync::Arc;
 
 struct OpenGl {
     context: GlfwContext,
-    use_dsa: bool,
     texture: GLImage,
     image_bytes: Image<RGBA8>,
 }
@@ -22,14 +21,14 @@ pub struct OpenGl3(OpenGl);
 pub struct OpenGl4(OpenGl);
 
 impl RenderTest for OpenGl3 {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         OpenGl3::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_path(
                 path,
@@ -48,14 +47,14 @@ impl RenderTest for OpenGl3 {
 }
 
 impl RenderTest for OpenGl4 {
-    fn new(path: impl AsRef<Path>) -> anyhow::Result<Self>
+    fn new(path: &Path) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
         OpenGl4::new(path)
     }
 
-    fn render(&mut self, path: impl AsRef<Path>, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_path(
                 path,
@@ -74,20 +73,20 @@ impl RenderTest for OpenGl4 {
 }
 
 impl OpenGl3 {
-    pub fn new(image_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn new(image_path: &Path) -> anyhow::Result<Self> {
         Ok(Self(OpenGl::new(image_path, false)?))
     }
 }
 
 impl OpenGl4 {
-    pub fn new(image_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn new(image_path: &Path) -> anyhow::Result<Self> {
         Ok(Self(OpenGl::new(image_path, true)?))
     }
 }
 
 impl OpenGl {
-    pub fn new(image_path: impl AsRef<Path>, use_dsa: bool) -> anyhow::Result<Self> {
-        let image: Image<RGBA8> = Image::load(image_path.as_ref(), UVDirection::TopLeft)?;
+    pub fn new(image_path: &Path, use_dsa: bool) -> anyhow::Result<Self> {
+        let image: Image<RGBA8> = Image::load(image_path, UVDirection::TopLeft)?;
         let height = image.size.height;
         let width = image.size.width;
         let version = if use_dsa {
@@ -131,7 +130,6 @@ impl OpenGl {
 
         Ok(Self {
             context,
-            use_dsa,
             texture: GLImage {
                 handle: Some(texture),
                 format: glow::RGBA8,
