@@ -10,6 +10,7 @@ use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvC
 use librashader_test::render::RenderTest;
 use std::path::{Path, PathBuf};
 
+/// Helpers and utilities to reflect and debug 'slang' shaders and presets.
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
@@ -30,7 +31,7 @@ enum Commands {
         /// The path to the input image.
         #[arg(short, long)]
         image: PathBuf,
-        /// The path to the output image.
+        /// The path to the output image
         ///
         /// If `-`, writes the image in PNG format to stdout.
         #[arg(short, long)]
@@ -86,7 +87,7 @@ enum Commands {
         #[arg(value_enum, short, long)]
         output: PreprocessOutput,
     },
-    /// Transpile a shader in a given preset to the given format.
+    /// Transpile a shader to the given format.
     Transpile {
         /// The path to the slang shader.
         #[arg(short, long)]
@@ -113,8 +114,6 @@ enum Commands {
         version: Option<String>,
     },
     /// Reflect the shader relative to a preset, giving information about semantics used in a slang shader.
-    ///
-    /// Due to limitations
     Reflect {
         /// The path to the shader preset to load.
         #[arg(short, long)]
