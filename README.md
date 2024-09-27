@@ -121,7 +121,7 @@ Options:
   -V, --version  Print version
 ```
 
-For more information, see [`CLI.md`](https://github.com/SnowflakePowered/librashader/blob/master/CLI.md)
+For more information, see [`CLI.md`](https://github.com/SnowflakePowered/librashader/blob/master/CLI.md).
 
 ## Building
 
