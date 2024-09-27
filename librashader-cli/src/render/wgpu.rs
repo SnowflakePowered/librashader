@@ -1,4 +1,4 @@
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use image::RgbaImage;
 use librashader::runtime::wgpu::*;
@@ -61,6 +61,7 @@ impl RenderTest for Wgpu {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         let mut chain = FilterChain::load_from_preset(
             preset,
@@ -112,7 +113,15 @@ impl RenderTest for Wgpu {
             &Viewport::new_render_target_sized_origin(output, None)?,
             &mut cmd,
             frame_count,
-            None,
+            frame_options
+                .map(|options| FrameOptions {
+                    clear_history: options.clear_history,
+                    frame_direction: options.frame_direction,
+                    rotation: options.rotation,
+                    total_subframes: options.total_subframes,
+                    current_subframe: options.current_subframe,
+                })
+                .as_ref(),
         )?;
 
         cmd.copy_texture_to_buffer(

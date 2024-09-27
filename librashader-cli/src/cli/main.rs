@@ -9,7 +9,7 @@ use librashader::reflect::semantics::ShaderSemantics;
 use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvCompilation};
 use librashader::{FastHashMap, ShortString};
 use librashader_runtime::parameters::RuntimeParameters;
-use librashader_test::render::RenderTest;
+use librashader_test::render::{CommonFrameOptions, RenderTest};
 use std::path::{Path, PathBuf};
 
 /// Helpers and utilities to reflect and debug 'slang' shaders and presets.
@@ -20,34 +20,76 @@ struct Args {
     command: Commands,
 }
 
+#[derive(clap::Args, Debug)]
+struct PresetArgs {
+    /// The path to the shader preset to load.
+    #[arg(short, long)]
+    preset: PathBuf,
+    /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
+    /// wildcards are always added to the preset parsing context.
+    ///
+    /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
+    #[arg(short, long, value_delimiter = ',', num_args = 1..)]
+    wildcards: Option<Vec<String>>,
+}
+
+#[derive(clap::Args, Debug)]
+struct RenderArgs {
+    /// The frame to render.
+    #[arg(short, long, default_value_t = 60)]
+    frame: usize,
+    /// Parameters to pass to the shader preset, comma separated with equals signs.
+    ///
+    /// For example, crt_gamma=2.5,halation_weight=0.001
+    #[arg(long, value_delimiter = ',', num_args = 1..)]
+    params: Option<Vec<String>>,
+    /// Set the number of passes enabled for the preset.
+    #[arg(long)]
+    passes_enabled: Option<usize>,
+    /// The path to the input image.
+    #[arg(short, long)]
+    image: PathBuf,
+    #[clap(flatten)]
+    options: Option<FrameOptionsArgs>,
+}
+
+impl From<FrameOptionsArgs> for CommonFrameOptions {
+    fn from(value: FrameOptionsArgs) -> Self {
+        Self {
+            clear_history: false,
+            frame_direction: value.frame_direction,
+            rotation: value.rotation,
+            total_subframes: value.total_subframes,
+            current_subframe: value.current_subframe,
+        }
+    }
+}
+
+#[derive(clap::Args, Debug)]
+struct FrameOptionsArgs {
+    /// The direction of rendering.
+    /// -1 indicates that the frames are played in reverse order.
+    #[arg(long, default_value_t = 1, allow_hyphen_values = true)]
+    pub frame_direction: i32,
+    /// The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg.
+    #[arg(long, default_value_t = 0)]
+    pub rotation: u32,
+    /// The total number of subframes ran. Default is 1.
+    #[arg(long, default_value_t = 1)]
+    pub total_subframes: u32,
+    /// The current sub frame. Default is 1.
+    #[arg(long, default_value_t = 1)]
+    pub current_subframe: u32,
+}
+
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Render a shader preset against an image
     Render {
-        /// The frame to render.
-        #[arg(short, long, default_value_t = 60)]
-        frame: usize,
-        /// The path to the shader preset to load.
-        #[arg(short, long)]
-        preset: PathBuf,
-        /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
-        /// wildcards are always added to the preset parsing context.
-        ///
-        /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
-        #[arg(short, long, value_delimiter = ',', num_args = 1..)]
-        wildcards: Option<Vec<String>>,
-        /// Parameters to pass to the shader preset, comma separated with equals signs.
-        ///
-        /// For example, crt_gamma=2.5,halation_weight=0.001
-        #[arg(long, value_delimiter = ',', num_args = 1..)]
-        params: Option<Vec<String>>,
-
-        /// Set the number of passes enabled for the preset.
-        #[arg(long)]
-        passes_enabled: Option<usize>,
-        /// The path to the input image.
-        #[arg(short, long)]
-        image: PathBuf,
+        #[clap(flatten)]
+        preset: PresetArgs,
+        #[clap(flatten)]
+        render: RenderArgs,
         /// The path to the output image
         ///
         /// If `-`, writes the image in PNG format to stdout.
@@ -60,29 +102,10 @@ enum Commands {
     /// Compare two runtimes and get a similarity score between the two
     /// runtimes rendering the same frame
     Compare {
-        /// The frame to render.
-        #[arg(short, long, default_value_t = 60)]
-        frame: usize,
-        /// The path to the shader preset to load.
-        #[arg(short, long)]
-        preset: PathBuf,
-        /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
-        /// wildcards are always added to the preset parsing context.
-        ///
-        /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
-        #[arg(short, long, value_delimiter = ',', num_args = 1..)]
-        wildcards: Option<Vec<String>>,
-        /// Parameters to pass to the shader preset, comma separated with equals signs.
-        ///
-        /// For example, crt_gamma=2.5,halation_weight=0.001
-        #[arg(long, value_delimiter = ',', num_args = 1..)]
-        params: Option<Vec<String>>,
-        /// Set the number of passes enabled for the preset.
-        #[arg(long)]
-        passes_enabled: Option<usize>,
-        /// The path to the input image.
-        #[arg(short, long)]
-        image: PathBuf,
+        #[clap(flatten)]
+        preset: PresetArgs,
+        #[clap(flatten)]
+        render: RenderArgs,
         /// The runtime to compare against
         #[arg(value_enum, short, long)]
         left: Runtime,
@@ -97,15 +120,8 @@ enum Commands {
     },
     /// Parse a preset and get a JSON representation of the data.
     Parse {
-        /// The path to the shader preset to load.
-        #[arg(short, long)]
-        preset: PathBuf,
-        /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
-        /// wildcards are always added to the preset parsing context.
-        ///
-        /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
-        #[arg(short, long, value_delimiter = ',', num_args = 1..)]
-        wildcards: Option<Vec<String>>,
+        #[clap(flatten)]
+        preset: PresetArgs,
     },
     /// Get the raw GLSL output of a preprocessed shader.
     Preprocess {
@@ -146,15 +162,8 @@ enum Commands {
     },
     /// Reflect the shader relative to a preset, giving information about semantics used in a slang shader.
     Reflect {
-        /// The path to the shader preset to load.
-        #[arg(short, long)]
-        preset: PathBuf,
-        /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
-        /// wildcards are always added to the preset parsing context.
-        ///
-        /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
-        #[arg(short, long, value_delimiter = ',', num_args = 1..)]
-        wildcards: Option<Vec<String>>,
+        #[clap(flatten)]
+        preset: PresetArgs,
 
         /// The pass index to use.
         #[arg(short, long)]
@@ -270,16 +279,22 @@ pub fn main() -> Result<(), anyhow::Error> {
 
     match args.command {
         Commands::Render {
-            frame,
             preset,
-            wildcards,
-            params,
-            passes_enabled,
-            image,
+            render,
             out,
             runtime,
         } => {
+            let PresetArgs { preset, wildcards } = preset;
+            let RenderArgs {
+                frame,
+                params,
+                passes_enabled,
+                image,
+                options,
+            } = render;
+
             let test: &mut dyn RenderTest = get_runtime!(runtime, image);
+
             let preset = get_shader_preset(preset, wildcards)?;
             let params = parse_params(params)?;
 
@@ -287,6 +302,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                 preset,
                 frame,
                 Some(&|rp| set_params(rp, &params, passes_enabled)),
+                options.map(CommonFrameOptions::from),
             )?;
 
             if out.as_path() == Path::new("-") {
@@ -297,18 +313,24 @@ pub fn main() -> Result<(), anyhow::Error> {
             }
         }
         Commands::Compare {
-            frame,
             preset,
-            wildcards,
-            params,
-            passes_enabled,
-            image,
+            render,
             left,
             right,
             out,
         } => {
+            let PresetArgs { preset, wildcards } = preset;
+            let RenderArgs {
+                frame,
+                params,
+                passes_enabled,
+                image,
+                options,
+            } = render;
+
             let left: &mut dyn RenderTest = get_runtime!(left, image);
             let right: &mut dyn RenderTest = get_runtime!(right, image);
+
             let params = parse_params(params)?;
 
             let left_preset = get_shader_preset(preset.clone(), wildcards.clone())?;
@@ -316,6 +338,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                 left_preset,
                 frame,
                 Some(&|rp| set_params(rp, &params, passes_enabled)),
+                None,
             )?;
 
             let right_preset = get_shader_preset(preset.clone(), wildcards.clone())?;
@@ -323,6 +346,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                 right_preset,
                 frame,
                 Some(&|rp| set_params(rp, &params, passes_enabled)),
+                options.map(CommonFrameOptions::from),
             )?;
 
             let similarity = image_compare::rgba_hybrid_compare(&left_image, &right_image)?;
@@ -338,7 +362,9 @@ pub fn main() -> Result<(), anyhow::Error> {
                 }
             }
         }
-        Commands::Parse { preset, wildcards } => {
+        Commands::Parse { preset } => {
+            let PresetArgs { preset, wildcards } = preset;
+
             let preset = get_shader_preset(preset, wildcards)?;
             let out = serde_json::to_string_pretty(&preset)?;
             print!("{out:}");
@@ -451,10 +477,11 @@ pub fn main() -> Result<(), anyhow::Error> {
         }
         Commands::Reflect {
             preset,
-            wildcards,
             index,
             backend,
         } => {
+            let PresetArgs { preset, wildcards } = preset;
+
             let preset = get_shader_preset(preset, wildcards)?;
             let Some(shader) = preset.shaders.get(index) else {
                 return Err(anyhow!("Invalid pass index for the preset"));

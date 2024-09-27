@@ -466,7 +466,7 @@ macro_rules! impl_default_frame_options {
             pub rotation: u32,
             /// The total number of subframes ran. Default is 1.
             pub total_subframes: u32,
-            // The current sub frame. Default is 1.
+            /// The current sub frame. Default is 1.
             pub current_subframe: u32,
         }
 

@@ -2,13 +2,13 @@ mod descriptor_heap;
 mod util;
 
 use crate::render::d3d12::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
 use librashader::runtime::d3d12::{
-    D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions,
+    D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions,
 };
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
@@ -65,6 +65,7 @@ impl RenderTest for Direct3D12 {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         unsafe {
             let descriptor = self.rtv_heap.allocate_descriptor()?;
@@ -145,7 +146,15 @@ impl RenderTest for Direct3D12 {
                     None,
                 )?,
                 frame_count,
-                None,
+                frame_options
+                    .map(|options| FrameOptions {
+                        clear_history: options.clear_history,
+                        frame_direction: options.frame_direction,
+                        rotation: options.rotation,
+                        total_subframes: options.total_subframes,
+                        current_subframe: options.current_subframe,
+                    })
+                    .as_ref(),
             )?;
 
             cmd.Close()?;
