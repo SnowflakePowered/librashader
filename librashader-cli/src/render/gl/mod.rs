@@ -1,12 +1,12 @@
 mod context;
 
 use crate::render::gl::context::{GLVersion, GlfwContext};
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use glow::{HasContext, PixelPackData, PixelUnpackData};
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
-use librashader::runtime::gl::{FilterChain, FilterChainOptions, GLImage};
+use librashader::runtime::gl::{FilterChain, FilterChainOptions, FrameOptions, GLImage};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, UVDirection, RGBA8};
@@ -35,6 +35,7 @@ impl RenderTest for OpenGl3 {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_preset(
@@ -53,7 +54,19 @@ impl RenderTest for OpenGl3 {
             setter(filter_chain.parameters());
         }
 
-        Ok(self.0.render(&mut filter_chain, frame_count)?)
+        Ok(self.0.render(
+            &mut filter_chain,
+            frame_count,
+            frame_options
+                .map(|options| FrameOptions {
+                    clear_history: options.clear_history,
+                    frame_direction: options.frame_direction,
+                    rotation: options.rotation,
+                    total_subframes: options.total_subframes,
+                    current_subframe: options.current_subframe,
+                })
+                .as_ref(),
+        )?)
     }
 }
 
@@ -70,6 +83,7 @@ impl RenderTest for OpenGl4 {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         let mut filter_chain = unsafe {
             FilterChain::load_from_preset(
@@ -88,7 +102,19 @@ impl RenderTest for OpenGl4 {
             setter(filter_chain.parameters());
         }
 
-        Ok(self.0.render(&mut filter_chain, frame_count)?)
+        Ok(self.0.render(
+            &mut filter_chain,
+            frame_count,
+            frame_options
+                .map(|options| FrameOptions {
+                    clear_history: options.clear_history,
+                    frame_direction: options.frame_direction,
+                    rotation: options.rotation,
+                    total_subframes: options.total_subframes,
+                    current_subframe: options.current_subframe,
+                })
+                .as_ref(),
+        )?)
     }
 }
 
@@ -163,6 +189,7 @@ impl OpenGl {
         &self,
         chain: &mut FilterChain,
         frame_count: usize,
+        options: Option<&FrameOptions>,
     ) -> Result<RgbaImage, anyhow::Error> {
         let render_texture = unsafe {
             let tex = self
@@ -193,7 +220,7 @@ impl OpenGl {
                 &self.texture,
                 &Viewport::new_render_target_sized_origin(&output, None)?,
                 frame_count,
-                None,
+                options,
             )?;
         }
 

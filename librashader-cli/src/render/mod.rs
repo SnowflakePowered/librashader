@@ -20,6 +20,7 @@ pub mod wgpu;
 pub mod mtl;
 
 use librashader::presets::ShaderPreset;
+use librashader_runtime::impl_default_frame_options;
 use librashader_runtime::parameters::RuntimeParameters;
 use std::path::Path;
 
@@ -56,7 +57,7 @@ pub trait RenderTest {
         preset: ShaderPreset,
         frame_count: usize,
     ) -> anyhow::Result<image::RgbaImage> {
-        self.render_with_preset_and_params(preset, frame_count, None)
+        self.render_with_preset_and_params(preset, frame_count, None, None)
     }
 
     /// Render a shader onto an image buffer, applying the provided shader.
@@ -72,8 +73,11 @@ pub trait RenderTest {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage>;
 }
+
+impl_default_frame_options!(CommonFrameOptions);
 
 #[cfg(test)]
 mod test {

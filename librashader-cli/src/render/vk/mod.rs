@@ -1,12 +1,12 @@
 use crate::render::vk::base::VulkanBase;
 use crate::render::vk::memory::{VulkanBuffer, VulkanImageMemory};
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use ash::vk;
 use gpu_allocator::MemoryLocation;
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
-use librashader::runtime::vk::{FilterChain, FilterChainOptions, VulkanImage};
+use librashader::runtime::vk::{FilterChain, FilterChainOptions, FrameOptions, VulkanImage};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, UVDirection, BGRA8};
@@ -37,6 +37,7 @@ impl RenderTest for Vulkan {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_preset(
@@ -157,7 +158,15 @@ impl RenderTest for Vulkan {
                     )?,
                     cmd,
                     frame_count,
-                    None,
+                    frame_options
+                        .map(|options| FrameOptions {
+                            clear_history: options.clear_history,
+                            frame_direction: options.frame_direction,
+                            rotation: options.rotation,
+                            total_subframes: options.total_subframes,
+                            current_subframe: options.current_subframe,
+                        })
+                        .as_ref(),
                 )?;
 
                 {

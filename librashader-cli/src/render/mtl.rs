@@ -1,8 +1,8 @@
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
-use librashader::runtime::mtl::{FilterChain, FilterChainOptions};
+use librashader::runtime::mtl::{FilterChain, FilterChainOptions, FrameOptions};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8, RGBA8};
@@ -36,6 +36,7 @@ impl RenderTest for Metal {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         let queue = self
             .device
@@ -90,7 +91,15 @@ impl RenderTest for Metal {
             &Viewport::new_render_target_sized_origin(render_texture.as_ref(), None)?,
             cmd.as_ref(),
             frame_count,
-            None,
+            frame_options
+                .map(|options| FrameOptions {
+                    clear_history: options.clear_history,
+                    frame_direction: options.frame_direction,
+                    rotation: options.rotation,
+                    total_subframes: options.total_subframes,
+                    current_subframe: options.current_subframe,
+                })
+                .as_ref(),
         )?;
 
         cmd.commit();

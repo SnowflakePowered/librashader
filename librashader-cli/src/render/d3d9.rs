@@ -1,8 +1,8 @@
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
-use librashader::runtime::d3d9::{FilterChain, FilterChainOptions};
+use librashader::runtime::d3d9::{FilterChain, FilterChainOptions, FrameOptions};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
@@ -36,6 +36,7 @@ impl RenderTest for Direct3D9 {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         unsafe {
             let mut filter_chain = FilterChain::load_from_preset(
@@ -87,7 +88,15 @@ impl RenderTest for Direct3D9 {
                 &self.texture,
                 &Viewport::new_render_target_sized_origin(surface.clone(), None)?,
                 frame_count,
-                None,
+                frame_options
+                    .map(|options| FrameOptions {
+                        clear_history: options.clear_history,
+                        frame_direction: options.frame_direction,
+                        rotation: options.rotation,
+                        total_subframes: options.total_subframes,
+                        current_subframe: options.current_subframe,
+                    })
+                    .as_ref(),
             )?;
 
             self.device.GetRenderTargetData(&surface, &copy_texture)?;

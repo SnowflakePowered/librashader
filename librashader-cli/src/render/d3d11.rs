@@ -1,4 +1,4 @@
-use crate::render::RenderTest;
+use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
 use image::RgbaImage;
 use librashader::runtime::d3d11::*;
@@ -19,6 +19,7 @@ impl RenderTest for Direct3D11 {
         preset: ShaderPreset,
         frame_count: usize,
         param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+        frame_options: Option<CommonFrameOptions>,
     ) -> anyhow::Result<image::RgbaImage> {
         let (renderbuffer, rtv) = self.create_renderbuffer(self.image_bytes.size)?;
 
@@ -41,7 +42,15 @@ impl RenderTest for Direct3D11 {
                 &self.image_srv,
                 &Viewport::new_render_target_sized_origin(rtv, None)?,
                 frame_count,
-                None,
+                frame_options
+                    .map(|options| FrameOptions {
+                        clear_history: options.clear_history,
+                        frame_direction: options.frame_direction,
+                        rotation: options.rotation,
+                        total_subframes: options.total_subframes,
+                        current_subframe: options.current_subframe,
+                    })
+                    .as_ref(),
             )?;
 
             let mut renderbuffer_desc = Default::default();
