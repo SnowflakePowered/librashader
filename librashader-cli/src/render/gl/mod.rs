@@ -5,8 +5,10 @@ use crate::render::RenderTest;
 use anyhow::anyhow;
 use glow::{HasContext, PixelPackData, PixelUnpackData};
 use image::RgbaImage;
+use librashader::presets::ShaderPreset;
 use librashader::runtime::gl::{FilterChain, FilterChainOptions, GLImage};
 use librashader::runtime::Viewport;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, UVDirection, RGBA8};
 use std::path::Path;
 use std::sync::Arc;
@@ -28,10 +30,15 @@ impl RenderTest for OpenGl3 {
         OpenGl3::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         let mut filter_chain = unsafe {
-            FilterChain::load_from_path(
-                path,
+            FilterChain::load_from_preset(
+                preset,
                 Arc::clone(&self.0.context.gl),
                 Some(&FilterChainOptions {
                     glsl_version: 330,
@@ -41,6 +48,10 @@ impl RenderTest for OpenGl3 {
                 }),
             )
         }?;
+
+        if let Some(setter) = param_setter {
+            setter(filter_chain.parameters());
+        }
 
         Ok(self.0.render(&mut filter_chain, frame_count)?)
     }
@@ -54,10 +65,15 @@ impl RenderTest for OpenGl4 {
         OpenGl4::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         let mut filter_chain = unsafe {
-            FilterChain::load_from_path(
-                path,
+            FilterChain::load_from_preset(
+                preset,
                 Arc::clone(&self.0.context.gl),
                 Some(&FilterChainOptions {
                     glsl_version: 460,
@@ -67,6 +83,10 @@ impl RenderTest for OpenGl4 {
                 }),
             )
         }?;
+
+        if let Some(setter) = param_setter {
+            setter(filter_chain.parameters());
+        }
 
         Ok(self.0.render(&mut filter_chain, frame_count)?)
     }

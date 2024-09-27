@@ -1,8 +1,10 @@
 use crate::render::RenderTest;
 use anyhow::anyhow;
 use image::RgbaImage;
+use librashader::presets::ShaderPreset;
 use librashader::runtime::mtl::{FilterChain, FilterChainOptions};
 use librashader::runtime::Viewport;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8, RGBA8};
 use objc2::ffi::NSUInteger;
 use objc2::rc::Retained;
@@ -29,7 +31,12 @@ impl RenderTest for Metal {
         Metal::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         let queue = self
             .device
             .newCommandQueue()
@@ -39,13 +46,17 @@ impl RenderTest for Metal {
             .commandBuffer()
             .ok_or_else(|| anyhow!("Unable to create command buffer"))?;
 
-        let mut filter_chain = FilterChain::load_from_path(
-            path,
+        let mut filter_chain = FilterChain::load_from_preset(
+            preset,
             &queue,
             Some(&FilterChainOptions {
                 force_no_mipmaps: false,
             }),
         )?;
+
+        if let Some(setter) = param_setter {
+            setter(filter_chain.parameters());
+        }
 
         let render_texture = unsafe {
             let texture_descriptor =

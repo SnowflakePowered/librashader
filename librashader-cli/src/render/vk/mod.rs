@@ -5,8 +5,10 @@ use anyhow::anyhow;
 use ash::vk;
 use gpu_allocator::MemoryLocation;
 use image::RgbaImage;
+use librashader::presets::ShaderPreset;
 use librashader::runtime::vk::{FilterChain, FilterChainOptions, VulkanImage};
 use librashader::runtime::Viewport;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, UVDirection, BGRA8};
 use std::path::Path;
 
@@ -30,10 +32,15 @@ impl RenderTest for Vulkan {
         Vulkan::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         unsafe {
-            let mut filter_chain = FilterChain::load_from_path(
-                path,
+            let mut filter_chain = FilterChain::load_from_preset(
+                preset,
                 &self.vk,
                 Some(&FilterChainOptions {
                     frames_in_flight: 3,
@@ -42,6 +49,10 @@ impl RenderTest for Vulkan {
                     disable_cache: false,
                 }),
             )?;
+
+            if let Some(setter) = param_setter {
+                setter(filter_chain.parameters());
+            }
 
             let image_info = vk::ImageCreateInfo::default()
                 .image_type(vk::ImageType::TYPE_2D)

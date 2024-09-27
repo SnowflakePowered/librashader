@@ -14,6 +14,8 @@ use wgpu_types::{
     ImageDataLayout, Maintain, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
 };
 
+use librashader::presets::ShaderPreset;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use parking_lot::Mutex;
 
 pub struct Wgpu {
@@ -54,9 +56,14 @@ impl RenderTest for Wgpu {
         Wgpu::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
-        let mut chain = FilterChain::load_from_path(
-            path,
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
+        let mut chain = FilterChain::load_from_preset(
+            preset,
             Arc::clone(&self.device),
             Arc::clone(&self.queue),
             Some(&FilterChainOptions {
@@ -65,7 +72,9 @@ impl RenderTest for Wgpu {
                 adapter_info: None,
             }),
         )?;
-
+        if let Some(setter) = param_setter {
+            setter(&chain.parameters());
+        }
         let mut cmd = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor { label: None });

@@ -1,8 +1,10 @@
 use crate::render::RenderTest;
 use anyhow::anyhow;
 use image::RgbaImage;
+use librashader::presets::ShaderPreset;
 use librashader::runtime::d3d9::{FilterChain, FilterChainOptions};
 use librashader::runtime::Viewport;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
 use std::path::Path;
 use windows::Win32::Foundation::{HWND, TRUE};
@@ -29,16 +31,25 @@ impl RenderTest for Direct3D9 {
         Direct3D9::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         unsafe {
-            let mut filter_chain = FilterChain::load_from_path(
-                path,
+            let mut filter_chain = FilterChain::load_from_preset(
+                preset,
                 &self.device,
                 Some(&FilterChainOptions {
                     force_no_mipmaps: false,
                     disable_cache: false,
                 }),
             )?;
+
+            if let Some(setter) = param_setter {
+                setter(filter_chain.parameters());
+            }
 
             let mut render_texture = None;
 

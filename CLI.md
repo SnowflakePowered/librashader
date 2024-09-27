@@ -46,6 +46,19 @@ Options:
   -p, --preset <PRESET>
           The path to the shader preset to load
 
+  -w, --wildcards <WILDCARDS>...
+          Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR wildcards are always added to the preset parsing context.
+
+          For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
+
+      --params <PARAMS>...
+          Parameters to pass to the shader preset, comma separated with equals signs.
+
+          For example, crt_gamma=2.5,halation_weight=0.001
+          
+      --passes-enabled <PASSES_ENABLED>
+          Set the number of passes enabled for the preset
+
   -i, --image <IMAGE>
           The path to the input image
 
@@ -57,10 +70,11 @@ Options:
   -r, --runtime <RUNTIME>
           The runtime to use to render the shader preset
 
-          [possible values: opengl3, opengl4, vulkan, wgpu, d3d9, d3d11, d3d12, metal]
+          [possible values: opengl3, opengl4, vulkan, wgpu, d3d9, d3d11, d3d12]
 
   -h, --help
           Print help (see a summary with '-h')
+
 ```
 
 The `render` command can be used to apply a shader preset to an image. The available runtimes will depend on the platform
@@ -93,6 +107,19 @@ Options:
   -p, --preset <PRESET>
           The path to the shader preset to load
 
+  -w, --wildcards <WILDCARDS>...
+          Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR wildcards are always added to the preset parsing context.
+
+          For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
+
+      --params <PARAMS>...
+          Parameters to pass to the shader preset, comma separated with equals signs.
+
+          For example, crt_gamma=2.5,halation_weight=0.001
+          
+      --passes-enabled <PASSES_ENABLED>
+          Set the number of passes enabled for the preset
+          
   -i, --image <IMAGE>
           The path to the input image
 
