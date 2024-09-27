@@ -108,21 +108,24 @@ impl RenderTest for Wgpu {
             TextureFormat::Rgba8Unorm,
         );
 
-        chain.frame(
-            Arc::clone(&self.texture),
-            &Viewport::new_render_target_sized_origin(output, None)?,
-            &mut cmd,
-            frame_count,
-            frame_options
-                .map(|options| FrameOptions {
-                    clear_history: options.clear_history,
-                    frame_direction: options.frame_direction,
-                    rotation: options.rotation,
-                    total_subframes: options.total_subframes,
-                    current_subframe: options.current_subframe,
-                })
-                .as_ref(),
-        )?;
+        let viewport = Viewport::new_render_target_sized_origin(output, None)?;
+        let options = frame_options.map(|options| FrameOptions {
+            clear_history: options.clear_history,
+            frame_direction: options.frame_direction,
+            rotation: options.rotation,
+            total_subframes: options.total_subframes,
+            current_subframe: options.current_subframe,
+        });
+
+        for frame in 0..=frame_count {
+            chain.frame(
+                Arc::clone(&self.texture),
+                &viewport,
+                &mut cmd,
+                frame,
+                options.as_ref(),
+            )?;
+        }
 
         cmd.copy_texture_to_buffer(
             output_tex.as_image_copy(),

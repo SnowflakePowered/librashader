@@ -5,7 +5,7 @@ use librashader::presets::ShaderPreset;
 use librashader::runtime::mtl::{FilterChain, FilterChainOptions, FrameOptions};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
-use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8, RGBA8};
+use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
 use objc2::ffi::NSUInteger;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -86,21 +86,24 @@ impl RenderTest for Metal {
             texture
         };
 
-        filter_chain.frame(
-            &self.texture,
-            &Viewport::new_render_target_sized_origin(render_texture.as_ref(), None)?,
-            cmd.as_ref(),
-            frame_count,
-            frame_options
-                .map(|options| FrameOptions {
-                    clear_history: options.clear_history,
-                    frame_direction: options.frame_direction,
-                    rotation: options.rotation,
-                    total_subframes: options.total_subframes,
-                    current_subframe: options.current_subframe,
-                })
-                .as_ref(),
-        )?;
+        let viewport = Viewport::new_render_target_sized_origin(render_texture.as_ref(), None)?;
+        let options = frame_options.map(|options| FrameOptions {
+            clear_history: options.clear_history,
+            frame_direction: options.frame_direction,
+            rotation: options.rotation,
+            total_subframes: options.total_subframes,
+            current_subframe: options.current_subframe,
+        });
+
+        for frame in 0..=frame_count {
+            filter_chain.frame(
+                &self.texture,
+                &viewport,
+                cmd.as_ref(),
+                frame,
+                options.as_ref(),
+            )?;
+        }
 
         cmd.commit();
         unsafe {

@@ -142,32 +142,36 @@ impl RenderTest for Vulkan {
                     vk::QUEUE_FAMILY_IGNORED,
                 );
 
-                filter_chain.frame(
-                    &VulkanImage {
-                        image: self.image,
-                        size: self.image_bytes.size,
+                let options = frame_options.map(|options| FrameOptions {
+                    clear_history: options.clear_history,
+                    frame_direction: options.frame_direction,
+                    rotation: options.rotation,
+                    total_subframes: options.total_subframes,
+                    current_subframe: options.current_subframe,
+                });
+
+                let viewport = Viewport::new_render_target_sized_origin(
+                    VulkanImage {
+                        image: render_texture,
+                        size: self.image_bytes.size.into(),
                         format: vk::Format::B8G8R8A8_UNORM,
                     },
-                    &Viewport::new_render_target_sized_origin(
-                        VulkanImage {
-                            image: render_texture,
-                            size: self.image_bytes.size.into(),
+                    None,
+                )?;
+
+                for frame in 0..=frame_count {
+                    filter_chain.frame(
+                        &VulkanImage {
+                            image: self.image,
+                            size: self.image_bytes.size,
                             format: vk::Format::B8G8R8A8_UNORM,
                         },
-                        None,
-                    )?,
-                    cmd,
-                    frame_count,
-                    frame_options
-                        .map(|options| FrameOptions {
-                            clear_history: options.clear_history,
-                            frame_direction: options.frame_direction,
-                            rotation: options.rotation,
-                            total_subframes: options.total_subframes,
-                            current_subframe: options.current_subframe,
-                        })
-                        .as_ref(),
-                )?;
+                        &viewport,
+                        cmd,
+                        frame,
+                        options.as_ref(),
+                    )?;
+                }
 
                 {
                     util::vulkan_image_layout_transition_levels(

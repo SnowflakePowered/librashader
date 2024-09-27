@@ -36,7 +36,10 @@ struct PresetArgs {
 #[derive(clap::Args, Debug)]
 struct RenderArgs {
     /// The frame to render.
-    #[arg(short, long, default_value_t = 60)]
+    ///
+    /// The renderer will run up to the number of frames specified here
+    /// to ensure feedback and history.
+    #[arg(short, long, default_value_t = 0)]
     frame: usize,
     /// Parameters to pass to the shader preset, comma separated with equals signs.
     ///

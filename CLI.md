@@ -38,11 +38,6 @@ Render a shader preset against an image
 Usage: librashader-cli render [OPTIONS] --preset <PRESET> --image <IMAGE> --out <OUT> --runtime <RUNTIME>
 
 Options:
-  -f, --frame <FRAME>
-          The frame to render
-
-          [default: 60]
-
   -p, --preset <PRESET>
           The path to the shader preset to load
 
@@ -51,16 +46,43 @@ Options:
 
           For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
 
+  -f, --frame <FRAME>
+          The frame to render.
+
+          The renderer will run up to the number of frames specified here to ensure feedback and history.
+
+          [default: 0]
+
       --params <PARAMS>...
           Parameters to pass to the shader preset, comma separated with equals signs.
 
           For example, crt_gamma=2.5,halation_weight=0.001
-          
+
       --passes-enabled <PASSES_ENABLED>
           Set the number of passes enabled for the preset
 
   -i, --image <IMAGE>
           The path to the input image
+
+      --frame-direction <FRAME_DIRECTION>
+          The direction of rendering. -1 indicates that the frames are played in reverse order
+
+          [default: 1]
+
+      --rotation <ROTATION>
+          The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg
+
+          [default: 0]
+
+      --total-subframes <TOTAL_SUBFRAMES>
+          The total number of subframes ran. Default is 1
+
+          [default: 1]
+
+      --current-subframe <CURRENT_SUBFRAME>
+          The current sub frame. Default is 1
+
+          [default: 1]
 
   -o, --out <OUT>
           The path to the output image
@@ -70,10 +92,11 @@ Options:
   -r, --runtime <RUNTIME>
           The runtime to use to render the shader preset
 
-          [possible values: opengl3, opengl4, vulkan, wgpu, d3d9, d3d11, d3d12]
+          [possible values: opengl3, opengl4, vulkan, wgpu, d3d9, d3d11, d3d12, metal]
 
   -h, --help
           Print help (see a summary with '-h')
+
 
 ```
 
@@ -99,11 +122,6 @@ Compare two runtimes and get a similarity score between the two runtimes renderi
 Usage: librashader-cli compare [OPTIONS] --preset <PRESET> --image <IMAGE> --left <LEFT> --right <RIGHT>
 
 Options:
-  -f, --frame <FRAME>
-          The frame to render
-
-          [default: 60]
-
   -p, --preset <PRESET>
           The path to the shader preset to load
 
@@ -112,16 +130,43 @@ Options:
 
           For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
 
+  -f, --frame <FRAME>
+          The frame to render.
+
+          The renderer will run up to the number of frames specified here to ensure feedback and history.
+
+          [default: 0]
+
       --params <PARAMS>...
           Parameters to pass to the shader preset, comma separated with equals signs.
 
           For example, crt_gamma=2.5,halation_weight=0.001
-          
+
       --passes-enabled <PASSES_ENABLED>
           Set the number of passes enabled for the preset
-          
+
   -i, --image <IMAGE>
           The path to the input image
+
+      --frame-direction <FRAME_DIRECTION>
+          The direction of rendering. -1 indicates that the frames are played in reverse order
+
+          [default: 1]
+
+      --rotation <ROTATION>
+          The rotation of the output. 0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg
+
+          [default: 0]
+
+      --total-subframes <TOTAL_SUBFRAMES>
+          The total number of subframes ran. Default is 1
+
+          [default: 1]
+
+      --current-subframe <CURRENT_SUBFRAME>
+          The current sub frame. Default is 1
+
+          [default: 1]
 
   -l, --left <LEFT>
           The runtime to compare against
@@ -140,6 +185,7 @@ Options:
 
   -h, --help
           Print help (see a summary with '-h')
+
 ```
 
 The `compare` command can be used to get the similarity of two different runtimes, returning a similarity score and similarity image. 

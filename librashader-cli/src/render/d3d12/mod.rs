@@ -134,28 +134,32 @@ impl RenderTest for Direct3D12 {
             self.device
                 .CreateRenderTargetView(&output_texture, None, *descriptor.as_ref());
 
-            filter_chain.frame(
-                &cmd,
-                self.texture.clone(),
-                &Viewport::new_render_target_sized_origin(
-                    D3D12OutputView::new_from_raw(
-                        *descriptor.as_ref(),
-                        self.image.size,
-                        DXGI_FORMAT_B8G8R8A8_UNORM,
-                    ),
-                    None,
-                )?,
-                frame_count,
-                frame_options
-                    .map(|options| FrameOptions {
-                        clear_history: options.clear_history,
-                        frame_direction: options.frame_direction,
-                        rotation: options.rotation,
-                        total_subframes: options.total_subframes,
-                        current_subframe: options.current_subframe,
-                    })
-                    .as_ref(),
+            let viewport = Viewport::new_render_target_sized_origin(
+                D3D12OutputView::new_from_raw(
+                    *descriptor.as_ref(),
+                    self.image.size,
+                    DXGI_FORMAT_B8G8R8A8_UNORM,
+                ),
+                None,
             )?;
+
+            let options = frame_options.map(|options| FrameOptions {
+                clear_history: options.clear_history,
+                frame_direction: options.frame_direction,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+            });
+
+            for frame in 0..=frame_count {
+                filter_chain.frame(
+                    &cmd,
+                    self.texture.clone(),
+                    &viewport,
+                    frame,
+                    options.as_ref(),
+                )?;
+            }
 
             cmd.Close()?;
             self.queue.ExecuteCommandLists(&[Some(cmd.cast()?)]);
