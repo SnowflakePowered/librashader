@@ -198,7 +198,7 @@ pub struct Semantic<T, I = usize> {
 bitflags! {
     /// The pipeline stage for which a uniform is bound.
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(transparent))]
     pub struct BindingStage: u8 {
         const NONE = 0b00000000;

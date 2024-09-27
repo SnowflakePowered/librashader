@@ -102,7 +102,26 @@ These types should not be exposed to the end user in the runtime's public API, a
 the runtime.
 
 ## Command-line interface
-librashader provides a 
+librashader provides a command-line interface to reflect and debug 'slang' shaders and presets.
+
+``` 
+Usage: librashader-cli <COMMAND>
+
+Commands:
+  render      Render a shader preset against an image
+  compare     Compare two runtimes and get a similarity score between the two runtimes rendering the same frame
+  parse       Parse a preset and get a JSON representation of the data
+  preprocess  Get the raw GLSL output of a preprocessed shader
+  transpile   Transpile a shader in a given preset to the given format
+  reflect     Reflect the shader relative to a preset, giving information about semantics used in a slang shader
+  help        Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+For more information, see [`CLI.md`](https://github.com/SnowflakePowered/librashader/blob/master/CLI.md)
 
 ## Building
 
@@ -248,6 +267,9 @@ The `SONAME` of `librashader.so` when installed via package manager is set to `L
 
 The above does not apply to releases of librashader prior to `0.1.0`, which were allowed to break API and ABI compatibility
 in both the Rust and C API without an increase to either `LIBRASHADER_CURRENT_VERSION` or `LIBRASHADER_CURRENT_ABI`.
+
+The ABI version was bumped from `1` to `2` with librashader `0.5.0`. See [`MIGRATION-ABI2.md`](https://github.com/SnowflakePowered/librashader/blob/master/MIGRATION-ABI2.md)
+for migration instructions.
 
 ### MSRV Policy
 
