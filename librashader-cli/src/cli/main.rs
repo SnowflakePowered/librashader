@@ -7,6 +7,8 @@ use librashader::reflect::cross::{GlslVersion, HlslShaderModel, MslVersion, Spir
 use librashader::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader::reflect::semantics::ShaderSemantics;
 use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvCompilation};
+use librashader::{FastHashMap, ShortString};
+use librashader_runtime::parameters::RuntimeParameters;
 use librashader_test::render::RenderTest;
 use std::path::{Path, PathBuf};
 
@@ -28,6 +30,21 @@ enum Commands {
         /// The path to the shader preset to load.
         #[arg(short, long)]
         preset: PathBuf,
+        /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
+        /// wildcards are always added to the preset parsing context.
+        ///
+        /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
+        #[arg(short, long, value_delimiter = ',', num_args = 1..)]
+        wildcards: Option<Vec<String>>,
+        /// Parameters to pass to the shader preset, comma separated with equals signs.
+        ///
+        /// For example, crt_gamma=2.5,halation_weight=0.001
+        #[arg(long, value_delimiter = ',', num_args = 1..)]
+        params: Option<Vec<String>>,
+
+        /// Set the number of passes enabled for the preset.
+        #[arg(long)]
+        passes_enabled: Option<usize>,
         /// The path to the input image.
         #[arg(short, long)]
         image: PathBuf,
@@ -49,6 +66,20 @@ enum Commands {
         /// The path to the shader preset to load.
         #[arg(short, long)]
         preset: PathBuf,
+        /// Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR
+        /// wildcards are always added to the preset parsing context.
+        ///
+        /// For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
+        #[arg(short, long, value_delimiter = ',', num_args = 1..)]
+        wildcards: Option<Vec<String>>,
+        /// Parameters to pass to the shader preset, comma separated with equals signs.
+        ///
+        /// For example, crt_gamma=2.5,halation_weight=0.001
+        #[arg(long, value_delimiter = ',', num_args = 1..)]
+        params: Option<Vec<String>>,
+        /// Set the number of passes enabled for the preset.
+        #[arg(long)]
+        passes_enabled: Option<usize>,
         /// The path to the input image.
         #[arg(short, long)]
         image: PathBuf,
@@ -241,12 +272,22 @@ pub fn main() -> Result<(), anyhow::Error> {
         Commands::Render {
             frame,
             preset,
+            wildcards,
+            params,
+            passes_enabled,
             image,
             out,
             runtime,
         } => {
             let test: &mut dyn RenderTest = get_runtime!(runtime, image);
-            let image = test.render(preset.as_path(), frame)?;
+            let preset = get_shader_preset(preset, wildcards)?;
+            let params = parse_params(params)?;
+
+            let image = test.render_with_preset_and_params(
+                preset,
+                frame,
+                Some(&|rp| set_params(rp, &params, passes_enabled)),
+            )?;
 
             if out.as_path() == Path::new("-") {
                 let out = std::io::stdout();
@@ -258,6 +299,9 @@ pub fn main() -> Result<(), anyhow::Error> {
         Commands::Compare {
             frame,
             preset,
+            wildcards,
+            params,
+            passes_enabled,
             image,
             left,
             right,
@@ -265,9 +309,22 @@ pub fn main() -> Result<(), anyhow::Error> {
         } => {
             let left: &mut dyn RenderTest = get_runtime!(left, image);
             let right: &mut dyn RenderTest = get_runtime!(right, image);
+            let params = parse_params(params)?;
 
-            let left_image = left.render(preset.as_path(), frame)?;
-            let right_image = right.render(preset.as_path(), frame)?;
+            let left_preset = get_shader_preset(preset.clone(), wildcards.clone())?;
+            let left_image = left.render_with_preset_and_params(
+                left_preset,
+                frame,
+                Some(&|rp| set_params(rp, &params, passes_enabled)),
+            )?;
+
+            let right_preset = get_shader_preset(preset.clone(), wildcards.clone())?;
+            let right_image = right.render_with_preset_and_params(
+                right_preset,
+                frame,
+                Some(&|rp| set_params(rp, &params, passes_enabled)),
+            )?;
+
             let similarity = image_compare::rgba_hybrid_compare(&left_image, &right_image)?;
             print!("{}", similarity.score);
 
@@ -312,7 +369,8 @@ pub fn main() -> Result<(), anyhow::Error> {
                         librashader::reflect::targets::GLSL::from_compilation(compilation)?;
                     compilation.validate()?;
 
-                    let version = version.map(|s| parse_glsl_version(&s))
+                    let version = version
+                        .map(|s| parse_glsl_version(&s))
                         .unwrap_or(Ok(GlslVersion::Glsl330))?;
 
                     let output = compilation.compile(version)?;
@@ -326,7 +384,8 @@ pub fn main() -> Result<(), anyhow::Error> {
                         librashader::reflect::targets::HLSL::from_compilation(compilation)?;
                     compilation.validate()?;
 
-                    let shader_model = version.map(|s| parse_hlsl_version(&s))
+                    let shader_model = version
+                        .map(|s| parse_hlsl_version(&s))
                         .unwrap_or(Ok(HlslShaderModel::ShaderModel5_0))?;
 
                     let output = compilation.compile(Some(shader_model))?;
@@ -356,7 +415,8 @@ pub fn main() -> Result<(), anyhow::Error> {
                         >>::from_compilation(compilation)?;
                     compilation.validate()?;
 
-                    let version = version.map(|s| parse_msl_version(&s))
+                    let version = version
+                        .map(|s| parse_msl_version(&s))
                         .unwrap_or(Ok(MslVersion::new(1, 2, 0)))?;
 
                     let output = compilation.compile(Some(version))?;
@@ -459,6 +519,49 @@ fn get_shader_preset(
     Ok(preset)
 }
 
+fn parse_params(
+    assignments: Option<Vec<String>>,
+) -> anyhow::Result<Option<FastHashMap<ShortString, f32>>> {
+    let Some(assignments) = assignments else {
+        return Ok(None);
+    };
+
+    let mut map = FastHashMap::default();
+    for string in assignments {
+        let Some((left, right)) = string.split_once("=") else {
+            return Err(anyhow!("Encountered invalid parameter string {string}"));
+        };
+
+        let value = right
+            .parse::<f32>()
+            .map_err(|_| anyhow!("Encountered invalid parameter value: {right}"))?;
+
+        map.insert(ShortString::from(left), value);
+    }
+
+    Ok(Some(map))
+}
+
+fn set_params(
+    params: &RuntimeParameters,
+    assignments: &Option<FastHashMap<ShortString, f32>>,
+    passes_enabled: Option<usize>,
+) {
+    if let Some(passes_enabled) = passes_enabled {
+        params.set_passes_enabled(passes_enabled)
+    };
+
+    let Some(assignments) = assignments else {
+        return;
+    };
+
+    params.update_parameters(|params| {
+        for (key, param) in assignments {
+            params.insert(key.clone(), *param);
+        }
+    });
+}
+
 fn spirv_to_dis(spirv: Vec<u32>) -> anyhow::Result<String> {
     let binary = spq_spvasm::SpirvBinary::from(spirv);
     spq_spvasm::Disassembler::new()
@@ -473,7 +576,7 @@ fn spirv_to_dis(spirv: Vec<u32>) -> anyhow::Result<String> {
 fn parse_glsl_version(version_str: &str) -> anyhow::Result<GlslVersion> {
     if version_str.contains("es") {
         let Some(version) = version_str.strip_suffix("es").map(|s| s.trim()) else {
-            return Err(anyhow!("Unknown GLSL version"))
+            return Err(anyhow!("Unknown GLSL version"));
         };
 
         Ok(match version {
@@ -516,7 +619,9 @@ fn version_to_usize(version_str: &str) -> anyhow::Result<usize> {
         version_str
     };
 
-    let version = version.parse::<usize>().map_err(|_| anyhow!("Invalid version string"))?;
+    let version = version
+        .parse::<usize>()
+        .map_err(|_| anyhow!("Invalid version string"))?;
     Ok(version)
 }
 

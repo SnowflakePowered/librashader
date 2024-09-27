@@ -2,6 +2,7 @@ use crate::render::RenderTest;
 use anyhow::anyhow;
 use image::RgbaImage;
 use librashader::runtime::d3d11::*;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader::runtime::{Size, Viewport};
 use std::path::Path;
 
@@ -13,18 +14,28 @@ impl RenderTest for Direct3D11 {
         Direct3D11::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         let (renderbuffer, rtv) = self.create_renderbuffer(self.image_bytes.size)?;
 
         unsafe {
-            let mut filter_chain = FilterChain::load_from_path(
-                path,
+            let mut filter_chain = FilterChain::load_from_preset(
+                preset,
                 &self.device,
                 Some(&FilterChainOptions {
                     force_no_mipmaps: false,
                     disable_cache: false,
                 }),
             )?;
+
+            if let Some(setter) = param_setter {
+                setter(filter_chain.parameters());
+            }
+
             filter_chain.frame(
                 None,
                 &self.image_srv,
@@ -78,6 +89,7 @@ impl RenderTest for Direct3D11 {
     }
 }
 
+use librashader::presets::ShaderPreset;
 use librashader_runtime::image::{Image, UVDirection};
 use windows::{
     Win32::Foundation::*, Win32::Graphics::Direct3D::*, Win32::Graphics::Direct3D11::*,

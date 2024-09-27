@@ -42,6 +42,7 @@ impl RuntimeParameters {
     /// Set a runtime parameter.
     ///
     /// This is a relatively slow operation as it will be synchronized across threads.
+    /// If updating multiple parameters, see [`RuntimeParameters::update_parameters`].
     pub fn set_parameter_value(&self, name: &str, new_value: f32) -> Option<f32> {
         let mut updated_map = FastHashMap::clone(&self.parameters.load());
 
@@ -55,6 +56,13 @@ impl RuntimeParameters {
         } else {
             None
         }
+    }
+
+    /// Update multiple runtime parameters atomically through a function.
+    pub fn update_parameters(&self, updater: impl FnOnce(&mut FastHashMap<ShortString, f32>)) {
+        let mut updated_map = FastHashMap::clone(&self.parameters.load());
+        updater(&mut updated_map);
+        self.parameters.store(Arc::new(updated_map));
     }
 
     /// Get a reference to the runtime parameters.

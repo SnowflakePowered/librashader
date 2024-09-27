@@ -19,6 +19,8 @@ pub mod wgpu;
 #[cfg(all(target_vendor = "apple", feature = "metal"))]
 pub mod mtl;
 
+use librashader::presets::ShaderPreset;
+use librashader_runtime::parameters::RuntimeParameters;
 use std::path::Path;
 
 /// Test harness to set up a device, render a triangle, and apply a shader
@@ -36,7 +38,41 @@ pub trait RenderTest {
     /// For testing purposes, it is often that a single image will be reused with multiple
     /// shader presets, so the actual image that a shader will be applied to
     /// will often be part of the test harness object.
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<image::RgbaImage>;
+    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<image::RgbaImage> {
+        let preset = ShaderPreset::try_parse(path)?;
+        self.render_with_preset(preset, frame_count)
+    }
+
+    /// Render a shader onto an image buffer, applying the provided shader.
+    ///
+    /// The test should render in linear colour space for proper comparison against
+    /// backends.
+    ///
+    /// For testing purposes, it is often that a single image will be reused with multiple
+    /// shader presets, so the actual image that a shader will be applied to
+    /// will often be part of the test harness object.
+    fn render_with_preset(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+    ) -> anyhow::Result<image::RgbaImage> {
+        self.render_with_preset_and_params(preset, frame_count, None)
+    }
+
+    /// Render a shader onto an image buffer, applying the provided shader.
+    ///
+    /// The test should render in linear colour space for proper comparison against
+    /// backends.
+    ///
+    /// For testing purposes, it is often that a single image will be reused with multiple
+    /// shader presets, so the actual image that a shader will be applied to
+    /// will often be part of the test harness object.
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage>;
 }
 
 #[cfg(test)]

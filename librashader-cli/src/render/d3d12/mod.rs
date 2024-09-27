@@ -6,10 +6,12 @@ use crate::render::RenderTest;
 use anyhow::anyhow;
 use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
 use image::RgbaImage;
+use librashader::presets::ShaderPreset;
 use librashader::runtime::d3d12::{
     D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions,
 };
 use librashader::runtime::Viewport;
+use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
 use std::path::Path;
 use windows::core::Interface;
@@ -58,7 +60,12 @@ impl RenderTest for Direct3D12 {
         Direct3D12::new(path)
     }
 
-    fn render(&mut self, path: &Path, frame_count: usize) -> anyhow::Result<RgbaImage> {
+    fn render_with_preset_and_params(
+        &mut self,
+        preset: ShaderPreset,
+        frame_count: usize,
+        param_setter: Option<&dyn Fn(&RuntimeParameters)>,
+    ) -> anyhow::Result<image::RgbaImage> {
         unsafe {
             let descriptor = self.rtv_heap.allocate_descriptor()?;
 
@@ -72,8 +79,8 @@ impl RenderTest for Direct3D12 {
             let fence_event = CreateEventA(None, false, false, None)?;
             let fence: ID3D12Fence = self.device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
 
-            let mut filter_chain = FilterChain::load_from_path(
-                path,
+            let mut filter_chain = FilterChain::load_from_preset(
+                preset,
                 &self.device,
                 Some(&FilterChainOptions {
                     force_hlsl_pipeline: false,
@@ -81,6 +88,10 @@ impl RenderTest for Direct3D12 {
                     disable_cache: false,
                 }),
             )?;
+
+            if let Some(setter) = param_setter {
+                setter(filter_chain.parameters());
+            }
 
             let mut output_texture = None;
             let desc = D3D12_RESOURCE_DESC {
