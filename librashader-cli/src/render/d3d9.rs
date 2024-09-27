@@ -84,20 +84,19 @@ impl RenderTest for Direct3D9 {
 
             let surface = render_texture.GetSurfaceLevel(0)?;
 
-            filter_chain.frame(
-                &self.texture,
-                &Viewport::new_render_target_sized_origin(surface.clone(), None)?,
-                frame_count,
-                frame_options
-                    .map(|options| FrameOptions {
-                        clear_history: options.clear_history,
-                        frame_direction: options.frame_direction,
-                        rotation: options.rotation,
-                        total_subframes: options.total_subframes,
-                        current_subframe: options.current_subframe,
-                    })
-                    .as_ref(),
-            )?;
+            let options = frame_options.map(|options| FrameOptions {
+                clear_history: options.clear_history,
+                frame_direction: options.frame_direction,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+            });
+
+            let viewport = Viewport::new_render_target_sized_origin(surface.clone(), None)?;
+
+            for frame in 0..=frame_count {
+                filter_chain.frame(&self.texture, &viewport, frame, options.as_ref())?;
+            }
 
             self.device.GetRenderTargetData(&surface, &copy_texture)?;
 

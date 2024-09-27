@@ -215,13 +215,11 @@ impl OpenGl {
             size: self.image_bytes.size,
         };
 
-        unsafe {
-            chain.frame(
-                &self.texture,
-                &Viewport::new_render_target_sized_origin(&output, None)?,
-                frame_count,
-                options,
-            )?;
+        let viewport = Viewport::new_render_target_sized_origin(&output, None)?;
+        for frame in 0..=frame_count {
+            unsafe {
+                chain.frame(&self.texture, &viewport, frame, options)?;
+            }
         }
 
         // should be the same size as the input image

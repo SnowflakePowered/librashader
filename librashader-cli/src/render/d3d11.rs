@@ -36,22 +36,18 @@ impl RenderTest for Direct3D11 {
             if let Some(setter) = param_setter {
                 setter(filter_chain.parameters());
             }
+            let viewport = Viewport::new_render_target_sized_origin(rtv, None)?;
+            let options = frame_options.map(|options| FrameOptions {
+                clear_history: options.clear_history,
+                frame_direction: options.frame_direction,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+            });
 
-            filter_chain.frame(
-                None,
-                &self.image_srv,
-                &Viewport::new_render_target_sized_origin(rtv, None)?,
-                frame_count,
-                frame_options
-                    .map(|options| FrameOptions {
-                        clear_history: options.clear_history,
-                        frame_direction: options.frame_direction,
-                        rotation: options.rotation,
-                        total_subframes: options.total_subframes,
-                        current_subframe: options.current_subframe,
-                    })
-                    .as_ref(),
-            )?;
+            for frame in 0..=frame_count {
+                filter_chain.frame(None, &self.image_srv, &viewport, frame, options.as_ref())?;
+            }
 
             let mut renderbuffer_desc = Default::default();
             renderbuffer.GetDesc(&mut renderbuffer_desc);
