@@ -401,7 +401,7 @@ impl FilterChainD3D11 {
         &mut self,
         ctx: Option<&ID3D11DeviceContext>,
         input: &ID3D11ShaderResourceView,
-        viewport: &Viewport<ID3D11RenderTargetView>,
+        viewport: &Viewport<&ID3D11RenderTargetView>,
         frame_count: usize,
         options: Option<&FrameOptionsD3D11>,
     ) -> error::Result<()> {
