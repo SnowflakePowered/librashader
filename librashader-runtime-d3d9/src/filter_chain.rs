@@ -289,7 +289,7 @@ impl FilterChainD3D9 {
     pub unsafe fn frame(
         &mut self,
         input: &IDirect3DTexture9,
-        viewport: &Viewport<IDirect3DSurface9>,
+        viewport: &Viewport<&IDirect3DSurface9>,
         frame_count: usize,
         options: Option<&FrameOptionsD3D9>,
     ) -> error::Result<()> {

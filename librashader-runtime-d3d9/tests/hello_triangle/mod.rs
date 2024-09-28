@@ -431,13 +431,13 @@ pub mod d3d9_hello_triangle {
                 resources
                     .filter
                     .frame(
-                        resources.texture.clone(),
+                        &resources.texture,
                         &Viewport {
                             x: 0.0,
                             y: 0.0,
                             mvp: None,
-                            output: backbuffer.clone(),
-                            size: backbuffer.size().unwrap(),
+                            output: &backbuffer,
+                            size: backbuffer.size()?,
                         },
                         0,
                         None,

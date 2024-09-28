@@ -64,7 +64,7 @@ impl From<FilterMode> for Direct3D9::D3DTEXTUREFILTER {
     }
 }
 
-impl GetSize<u32> for Direct3D9::IDirect3DSurface9 {
+impl GetSize<u32> for &Direct3D9::IDirect3DSurface9 {
     type Error = windows::core::Error;
 
     fn size(&self) -> Result<Size<u32>, Self::Error> {
@@ -80,7 +80,14 @@ impl GetSize<u32> for Direct3D9::IDirect3DSurface9 {
     }
 }
 
-impl GetSize<u32> for Direct3D9::IDirect3DTexture9 {
+impl GetSize<u32> for Direct3D9::IDirect3DSurface9 {
+    type Error = windows::core::Error;
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        <&Self as GetSize<u32>>::size(&self)
+    }
+}
+
+impl GetSize<u32> for &Direct3D9::IDirect3DTexture9 {
     type Error = windows::core::Error;
 
     fn size(&self) -> Result<Size<u32>, Self::Error> {
@@ -93,6 +100,13 @@ impl GetSize<u32> for Direct3D9::IDirect3DTexture9 {
             height: desc.Height,
             width: desc.Width,
         })
+    }
+}
+
+impl GetSize<u32> for Direct3D9::IDirect3DTexture9 {
+    type Error = windows::core::Error;
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        <&Self as GetSize<u32>>::size(&self)
     }
 }
 
