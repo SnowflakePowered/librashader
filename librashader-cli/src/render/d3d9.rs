@@ -92,7 +92,7 @@ impl RenderTest for Direct3D9 {
                 current_subframe: options.current_subframe,
             });
 
-            let viewport = Viewport::new_render_target_sized_origin(surface.clone(), None)?;
+            let viewport = Viewport::new_render_target_sized_origin(&surface, None)?;
 
             for frame in 0..=frame_count {
                 filter_chain.frame(&self.texture, &viewport, frame, options.as_ref())?;

@@ -144,7 +144,7 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         options: &FrameOptionsD3D9,
-        viewport: &Viewport<IDirect3DSurface9>,
+        viewport: &Viewport<&IDirect3DSurface9>,
         original: &D3D9InputTexture,
         source: &D3D9InputTexture,
         output: RenderTarget<IDirect3DSurface9>,
