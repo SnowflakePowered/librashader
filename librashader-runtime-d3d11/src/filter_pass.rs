@@ -151,7 +151,7 @@ impl FilterPass {
         parent: &FilterCommon,
         frame_count: u32,
         options: &FrameOptionsD3D11,
-        viewport: &Viewport<ID3D11RenderTargetView>,
+        viewport: &Viewport<&ID3D11RenderTargetView>,
         original: &InputTexture,
         source: &InputTexture,
         output: RenderTarget<ID3D11RenderTargetView>,

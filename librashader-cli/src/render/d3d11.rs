@@ -36,7 +36,7 @@ impl RenderTest for Direct3D11 {
             if let Some(setter) = param_setter {
                 setter(filter_chain.parameters());
             }
-            let viewport = Viewport::new_render_target_sized_origin(rtv, None)?;
+            let viewport = Viewport::new_render_target_sized_origin(&rtv, None)?;
             let options = frame_options.map(|options| FrameOptions {
                 clear_history: options.clear_history,
                 frame_direction: options.frame_direction,

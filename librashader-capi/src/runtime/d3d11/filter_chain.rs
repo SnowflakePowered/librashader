@@ -241,14 +241,14 @@ extern_fn! {
         };
 
         let viewport = if viewport.is_null() {
-            Viewport::new_render_target_sized_origin(ManuallyDrop::into_inner(out.clone()), mvp)
+            Viewport::new_render_target_sized_origin(out.deref(), mvp)
                 .map_err(|e| LibrashaderError::D3D11FilterError(FilterChainError::Direct3DError(e)))?
         } else {
             let viewport = unsafe { viewport.read() };
             Viewport {
                 x: viewport.x,
                 y: viewport.y,
-                output: ManuallyDrop::into_inner(out.clone()),
+                output: out.deref(),
                 size: Size {
                     height: viewport.height,
                     width: viewport.width

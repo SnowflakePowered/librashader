@@ -569,7 +569,7 @@ pub mod d3d11_hello_triangle {
                 let srv = input_srv.unwrap();
 
                 // eprintln!("w: {} h: {}", backbuffer_desc.Width, backbuffer_desc.Height);
-                let output = resources.backbuffer_rtv.as_ref().unwrap().clone();
+                let output = resources.backbuffer_rtv.as_ref().unwrap();
                 let size: Size<u32> = output.size().unwrap();
                 self.filter
                     .frame(

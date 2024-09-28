@@ -23,7 +23,7 @@ impl From<FilterMode> for Direct3D11::D3D11_FILTER {
     }
 }
 
-impl GetSize<u32> for Direct3D11::ID3D11RenderTargetView {
+impl GetSize<u32> for &Direct3D11::ID3D11RenderTargetView {
     type Error = windows::core::Error;
 
     fn size(&self) -> Result<Size<u32>, Self::Error> {
@@ -55,7 +55,15 @@ impl GetSize<u32> for Direct3D11::ID3D11RenderTargetView {
     }
 }
 
-impl GetSize<u32> for Direct3D11::ID3D11ShaderResourceView {
+impl GetSize<u32> for Direct3D11::ID3D11RenderTargetView {
+    type Error = windows::core::Error;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        <&Self as GetSize<u32>>::size(&self)
+    }
+}
+
+impl GetSize<u32> for &Direct3D11::ID3D11ShaderResourceView {
     type Error = windows::core::Error;
 
     fn size(&self) -> Result<Size<u32>, Self::Error> {
@@ -83,5 +91,13 @@ impl GetSize<u32> for Direct3D11::ID3D11ShaderResourceView {
             height: desc.Height,
             width: desc.Width,
         })
+    }
+}
+
+impl GetSize<u32> for Direct3D11::ID3D11ShaderResourceView {
+    type Error = windows::core::Error;
+
+    fn size(&self) -> Result<Size<u32>, Self::Error> {
+        <&Self as GetSize<u32>>::size(&self)
     }
 }
