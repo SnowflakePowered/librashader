@@ -1,15 +1,16 @@
 use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
-use crate::resource::ResourceHandleStrategy;
-use d3d12_descriptor_heap::D3D12DescriptorHeapSlot;
+use crate::resource::{OutlivesFrame, ResourceHandleStrategy};
+use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
 use librashader_common::{FilterMode, GetSize, Size, WrapMode};
 use std::mem::ManuallyDrop;
+use windows::core::InterfaceRef;
 use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
 /// An image for use as shader resource view.
 #[derive(Clone)]
-pub struct D3D12InputImage {
-    pub resource: ID3D12Resource,
+pub struct D3D12InputImage<'a> {
+    pub resource: InterfaceRef<'a, ID3D12Resource>,
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
 }
 
@@ -95,12 +96,13 @@ pub struct InputTexture {
     pub(crate) format: DXGI_FORMAT,
     pub(crate) wrap_mode: WrapMode,
     pub(crate) filter: FilterMode,
-    drop_flag: bool,
 }
 
 impl InputTexture {
-    pub fn new<S: ResourceHandleStrategy<T>, T>(
-        resource: &T,
+    // Create a new input texture, with runtime lifetime tracking.
+    // The source owned framebuffer must outlive this input.
+    pub fn new(
+        resource: &ManuallyDrop<ID3D12Resource>,
         handle: D3D12DescriptorHeapSlot<CpuStagingHeap>,
         size: Size<u32>,
         format: DXGI_FORMAT,
@@ -114,13 +116,12 @@ impl InputTexture {
             // as valid for the lifetime of handle.
             // Also, resource is non-null by construction.
             // Option<T> and <T> have the same layout.
-            resource: unsafe { std::mem::transmute(S::obtain(resource)) },
+            resource: unsafe { std::mem::transmute(OutlivesFrame::obtain(resource)) },
             descriptor: srv,
             size,
             format,
             wrap_mode,
             filter,
-            drop_flag: S::NEEDS_CLEANUP,
         }
     }
 
@@ -132,42 +133,27 @@ impl InputTexture {
     ) -> InputTexture {
         let desc = unsafe { image.resource.GetDesc() };
         InputTexture {
-            resource: ManuallyDrop::new(image.resource.clone()),
+            resource: unsafe { std::mem::transmute(image.resource) },
             descriptor: InputDescriptor::Raw(image.descriptor),
             size: Size::new(desc.Width as u32, desc.Height),
             format: desc.Format,
             wrap_mode,
             filter,
-            drop_flag: true,
         }
     }
 }
 
 impl Clone for InputTexture {
     fn clone(&self) -> Self {
-        // ensure lifetime for raw resources or if there is a drop flag
-        if self.descriptor.is_raw() || self.drop_flag {
-            InputTexture {
-                resource: ManuallyDrop::clone(&self.resource),
-                descriptor: self.descriptor.clone(),
-                size: self.size,
-                format: self.format,
-                wrap_mode: self.wrap_mode,
-                filter: self.filter,
-                drop_flag: true,
-            }
-        } else {
-            // SAFETY: the parent doesn't have drop flag, so that means
-            // we don't need to handle drop.
-            InputTexture {
-                resource: unsafe { std::mem::transmute_copy(&self.resource) },
-                descriptor: self.descriptor.clone(),
-                size: self.size,
-                format: self.format,
-                wrap_mode: self.wrap_mode,
-                filter: self.filter,
-                drop_flag: false,
-            }
+        // SAFETY: the parent doesn't have drop flag, so that means
+        // we don't need to handle drop.
+        InputTexture {
+            resource: unsafe { std::mem::transmute_copy(&self.resource) },
+            descriptor: self.descriptor.clone(),
+            size: self.size,
+            format: self.format,
+            wrap_mode: self.wrap_mode,
+            filter: self.filter,
         }
     }
 }
@@ -183,13 +169,5 @@ impl GetSize<u32> for D3D12OutputView {
 
     fn size(&self) -> Result<Size<u32>, Self::Error> {
         Ok(self.size)
-    }
-}
-
-impl Drop for InputTexture {
-    fn drop(&mut self) {
-        if self.drop_flag {
-            unsafe { ManuallyDrop::drop(&mut self.resource) }
-        }
     }
 }

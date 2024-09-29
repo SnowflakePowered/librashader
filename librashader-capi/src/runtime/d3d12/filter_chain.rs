@@ -8,6 +8,7 @@ use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 use std::slice;
+use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE,
 };
@@ -90,19 +91,6 @@ pub struct filter_chain_d3d12_opt_t {
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d12_opt_t {
         0 =>  [force_hlsl_pipeline, force_no_mipmaps, disable_cache];
-    }
-}
-
-impl TryFrom<libra_source_image_d3d12_t> for D3D12InputImage {
-    type Error = LibrashaderError;
-
-    fn try_from(value: libra_source_image_d3d12_t) -> Result<Self, Self::Error> {
-        let resource = value.resource.clone();
-
-        Ok(D3D12InputImage {
-            resource: ManuallyDrop::into_inner(resource),
-            descriptor: value.descriptor,
-        })
     }
 }
 
@@ -295,7 +283,10 @@ extern_fn! {
             }
         };
 
-        let image = image.try_into()?;
+        let image = D3D12InputImage {
+            resource: image.resource.to_ref(),
+            descriptor: image.descriptor,
+        };
         unsafe {
             chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;
         }
