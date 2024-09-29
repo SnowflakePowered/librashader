@@ -145,7 +145,7 @@ impl FilterPass {
         vbo_type: QuadType,
     ) -> error::Result<()> {
         unsafe {
-            cmd.SetPipelineState(&self.pipeline.handle);
+            cmd.SetPipelineState(self.pipeline.pipeline_state(output.output.format));
         }
 
         self.build_semantics(
