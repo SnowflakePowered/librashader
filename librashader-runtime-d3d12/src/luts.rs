@@ -1,7 +1,10 @@
 use crate::descriptor_heap::CpuStagingHeap;
 use crate::error;
+use crate::error::assume_d3d12_init;
 use crate::filter_chain::FrameResiduals;
 use crate::mipmap::MipmapGenContext;
+use crate::resource::OutlivesFrame;
+use crate::resource::ResourceHandleStrategy;
 use crate::texture::InputTexture;
 use crate::util::{d3d12_get_closest_format, d3d12_resource_transition};
 use d3d12_descriptor_heap::D3D12DescriptorHeap;
@@ -15,19 +18,34 @@ use librashader_runtime::image::Image;
 use librashader_runtime::scaling::MipmapSize;
 use parking_lot::Mutex;
 use std::mem::ManuallyDrop;
+use std::ops::Deref;
 use std::sync::Arc;
-use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_MEMCPY_DEST, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_SUBRESOURCE_DATA, D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, D3D12_TEXTURE_LAYOUT_ROW_MAJOR};
-use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use std::u64;
-use crate::error::assume_d3d12_init;
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource,
+    D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
+    D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE,
+    D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_MEMCPY_DEST, D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
+    D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST,
+    D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
+    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_SUBRESOURCE_DATA, D3D12_TEX2D_SRV,
+    D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0,
+    D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+    D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+};
+use windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 
 pub struct LutTexture {
-    resource: ManuallyDrop<Resource>,
+    allocator_resource: ManuallyDrop<Resource>,
+    resource: ManuallyDrop<ID3D12Resource>,
     view: InputTexture,
     miplevels: Option<u16>,
     // Staging heap needs to be kept alive until the command list is submitted, which is
     // really annoying. We could probably do better but it's safer to keep it around.
-    staging: ManuallyDrop<Resource>,
+    allocator_staging: ManuallyDrop<Resource>,
+    staging: ManuallyDrop<ID3D12Resource>,
     allocator: Arc<Mutex<Allocator>>,
 }
 
@@ -75,7 +93,7 @@ impl LutTexture {
         let descriptor = heap.allocate_descriptor()?;
 
         // create handles on GPU
-        let resource = allocator.lock().create_resource(&ResourceCreateDesc {
+        let allocator_resource = allocator.lock().create_resource(&ResourceCreateDesc {
             name: "lut alloc",
             memory_location: MemoryLocation::GpuOnly,
             resource_category: ResourceCategory::OtherTexture,
@@ -102,7 +120,7 @@ impl LutTexture {
             };
 
             device.CreateShaderResourceView(
-                resource.resource(),
+                allocator_resource.resource(),
                 Some(&srv_desc),
                 *descriptor.as_ref(),
             );
@@ -136,7 +154,7 @@ impl LutTexture {
             buffer_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         }
 
-        let upload = allocator.lock().create_resource(&ResourceCreateDesc {
+        let allocator_upload = allocator.lock().create_resource(&ResourceCreateDesc {
             name: "lut staging",
             memory_location: MemoryLocation::CpuToGpu,
             resource_category: ResourceCategory::Buffer,
@@ -155,17 +173,20 @@ impl LutTexture {
             SlicePitch: (4 * source.size.width * source.size.height) as isize,
         }];
 
+        let resource = ManuallyDrop::new(allocator_resource.resource().clone());
+        let upload = ManuallyDrop::new(allocator_upload.resource().clone());
+
         gc.dispose_barriers(d3d12_resource_transition(
             cmd,
-            &resource.resource(),
+            &allocator_resource.resource(),
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_COPY_DEST,
         ));
 
-        d3d12_update_subresources(
+        d3d12_update_subresources::<OutlivesFrame>(
             cmd,
-            &resource.resource(),
-            &upload.resource(),
+            &resource,
+            &upload,
             0,
             0,
             1,
@@ -175,32 +196,35 @@ impl LutTexture {
 
         gc.dispose_barriers(d3d12_resource_transition(
             cmd,
-            &resource.resource(),
+            &resource,
             D3D12_RESOURCE_STATE_COPY_DEST,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
         ));
 
         let view = InputTexture::new(
-            resource.resource().clone(),
+            allocator_resource.resource().clone(),
             descriptor,
             source.size,
             ImageFormat::R8G8B8A8Unorm.into(),
             filter,
             wrap_mode,
         );
+
         Ok(LutTexture {
-            resource: ManuallyDrop::new(resource),
-            staging: ManuallyDrop::new(upload),
+            allocator_resource: ManuallyDrop::new(allocator_resource),
+            allocator_staging: ManuallyDrop::new(allocator_upload),
             view,
             miplevels: if mipmap { Some(miplevels) } else { None },
             allocator: Arc::clone(&allocator),
+            resource,
+            staging: upload,
         })
     }
 
     pub fn generate_mipmaps(&self, gen_mips: &mut MipmapGenContext) -> error::Result<()> {
         if let Some(miplevels) = self.miplevels {
             gen_mips.generate_mipmaps(
-                &self.resource.resource(),
+                &self.allocator_resource.resource(),
                 miplevels,
                 self.view.size,
                 ImageFormat::R8G8B8A8Unorm.into(),
@@ -219,22 +243,29 @@ impl AsRef<InputTexture> for LutTexture {
 
 impl Drop for LutTexture {
     fn drop(&mut self) {
-        let resource = unsafe { ManuallyDrop::take(&mut self.resource) };
+        // drop view handles
+        unsafe {
+            ManuallyDrop::drop(&mut self.resource);
+            ManuallyDrop::drop(&mut self.staging)
+        };
+
+        // deallocate
+        let resource = unsafe { ManuallyDrop::take(&mut self.allocator_resource) };
         if let Err(e) = self.allocator.lock().free_resource(resource) {
             println!("librashader-runtime-d3d12: [warn] failed to deallocate lut buffer memory {e}")
         }
 
-        let staging = unsafe { ManuallyDrop::take(&mut self.staging) };
+        let staging = unsafe { ManuallyDrop::take(&mut self.allocator_staging) };
         if let Err(e) = self.allocator.lock().free_resource(staging) {
             println!("librashader-runtime-d3d12: [warn] failed to deallocate lut staging buffer memory {e}")
         }
     }
 }
 
-fn d3d12_update_subresources(
+fn d3d12_update_subresources<S: ResourceHandleStrategy<ManuallyDrop<ID3D12Resource>>>(
     cmd: &ID3D12GraphicsCommandList,
-    destination_resource: &ID3D12Resource,
-    intermediate_resource: &ID3D12Resource,
+    destination_resource: &ManuallyDrop<ID3D12Resource>,
+    intermediate_resource: &ManuallyDrop<ID3D12Resource>,
     intermediate_offset: u64,
     first_subresouce: u32,
     num_subresources: u32,
@@ -269,7 +300,7 @@ fn d3d12_update_subresources(
             Some(&mut required_size),
         );
 
-        update_subresources(
+        update_subresources::<S>(
             cmd,
             destination_resource,
             intermediate_resource,
@@ -286,10 +317,10 @@ fn d3d12_update_subresources(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn update_subresources(
+fn update_subresources<S: ResourceHandleStrategy<ManuallyDrop<ID3D12Resource>>>(
     cmd: &ID3D12GraphicsCommandList,
-    destination_resource: &ID3D12Resource,
-    intermediate_resource: &ID3D12Resource,
+    destination_resource: &ManuallyDrop<ID3D12Resource>,
+    intermediate_resource: &ManuallyDrop<ID3D12Resource>,
     first_subresouce: u32,
     num_subresources: u32,
     required_size: u64,
@@ -327,16 +358,16 @@ fn update_subresources(
         let destination_desc = destination_resource.GetDesc();
         if destination_desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER {
             cmd.CopyBufferRegion(
-                destination_resource,
+                destination_resource.deref(),
                 0,
-                intermediate_resource,
+                intermediate_resource.deref(),
                 layouts[0].Offset,
                 layouts[0].Footprint.Width as u64,
             );
         } else {
             for i in 0..num_subresources as usize {
                 let dest_location = D3D12_TEXTURE_COPY_LOCATION {
-                    pResource: ManuallyDrop::new(Some(destination_resource.clone())),
+                    pResource: S::obtain(&destination_resource),
                     Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
                     Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                         SubresourceIndex: i as u32 + first_subresouce,
@@ -344,7 +375,7 @@ fn update_subresources(
                 };
 
                 let source_location = D3D12_TEXTURE_COPY_LOCATION {
-                    pResource: ManuallyDrop::new(Some(intermediate_resource.clone())),
+                    pResource: S::obtain(&intermediate_resource),
                     Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
                     Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                         PlacedFootprint: layouts[i],
@@ -353,8 +384,8 @@ fn update_subresources(
 
                 cmd.CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, None);
 
-                gc.dispose_resource(dest_location.pResource);
-                gc.dispose_resource(source_location.pResource);
+                S::cleanup(gc, dest_location.pResource);
+                S::cleanup(gc, source_location.pResource);
             }
         }
         Ok(required_size)

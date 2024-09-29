@@ -251,7 +251,7 @@ pub mod d3d12_hello_triangle {
         command_queue: ID3D12CommandQueue,
         swap_chain: IDXGISwapChain3,
         frame_index: u32,
-        render_targets: [ID3D12Resource; FRAME_COUNT as usize],
+        render_targets: [ManuallyDrop<ID3D12Resource>; FRAME_COUNT as usize],
         rtv_heap: ID3D12DescriptorHeap,
         rtv_descriptor_size: usize,
         viewport: D3D12_VIEWPORT,
@@ -260,7 +260,7 @@ pub mod d3d12_hello_triangle {
         root_signature: ID3D12RootSignature,
         pso: ID3D12PipelineState,
         command_list: ID3D12GraphicsCommandList,
-        framebuffer: ID3D12Resource,
+        framebuffer: ManuallyDrop<ID3D12Resource>,
         // we need to keep this around to keep the reference alive, even though
         // nothing reads from it
         #[allow(dead_code)]
@@ -377,8 +377,8 @@ pub mod d3d12_hello_triangle {
             } as usize;
             let rtv_handle = unsafe { rtv_heap.GetCPUDescriptorHandleForHeapStart() };
 
-            let render_targets: [ID3D12Resource; FRAME_COUNT as usize] =
-                array_init::try_array_init(|i: usize| -> Result<ID3D12Resource> {
+            let render_targets: [ManuallyDrop<ID3D12Resource>; FRAME_COUNT as usize] =
+                array_init::try_array_init(|i: usize| -> Result<ManuallyDrop<ID3D12Resource>> {
                     let render_target: ID3D12Resource = unsafe { swap_chain.GetBuffer(i as u32) }?;
                     unsafe {
                         self.device.CreateRenderTargetView(
@@ -389,7 +389,7 @@ pub mod d3d12_hello_triangle {
                             },
                         )
                     };
-                    Ok(render_target)
+                    Ok(ManuallyDrop::new(render_target))
                 })?;
 
             let framebuffer: ID3D12Resource = unsafe {
@@ -475,7 +475,7 @@ pub mod d3d12_hello_triangle {
                 root_signature,
                 pso,
                 command_list,
-                framebuffer,
+                framebuffer: ManuallyDrop::new(framebuffer),
                 vertex_buffer,
                 vbv,
                 fence,
@@ -501,7 +501,7 @@ pub mod d3d12_hello_triangle {
 
                 unsafe {
                     self.device.CreateShaderResourceView(
-                        &resources.framebuffer,
+                        resources.framebuffer.deref(),
                         Some(&D3D12_SHADER_RESOURCE_VIEW_DESC {
                             Format: DXGI_FORMAT_R8G8B8A8_UNORM,
                             ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
@@ -601,8 +601,8 @@ pub mod d3d12_hello_triangle {
 
         unsafe {
             command_list.CopyResource(
-                &resources.framebuffer,
-                &resources.render_targets[resources.frame_index as usize],
+                &*resources.framebuffer,
+                &*resources.render_targets[resources.frame_index as usize],
             );
             command_list.ResourceBarrier(&[transition_barrier(
                 &resources.framebuffer,
@@ -620,7 +620,7 @@ pub mod d3d12_hello_triangle {
                 .frame(
                     command_list,
                     D3D12InputImage {
-                        resource: resources.framebuffer.clone(),
+                        resource: ID3D12Resource::clone(&*resources.framebuffer),
                         descriptor: framebuffer,
                     },
                     &Viewport {
@@ -656,7 +656,7 @@ pub mod d3d12_hello_triangle {
     }
 
     fn transition_barrier(
-        resource: &ID3D12Resource,
+        resource: &ManuallyDrop<ID3D12Resource>,
         state_before: D3D12_RESOURCE_STATES,
         state_after: D3D12_RESOURCE_STATES,
     ) -> D3D12_RESOURCE_BARRIER {
@@ -665,7 +665,7 @@ pub mod d3d12_hello_triangle {
             Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
             Anonymous: D3D12_RESOURCE_BARRIER_0 {
                 Transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
-                    pResource: ManuallyDrop::new(Some(resource.clone())),
+                    pResource: unsafe { std::mem::transmute_copy(resource) },
                     StateBefore: state_before,
                     StateAfter: state_after,
                     Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
@@ -694,7 +694,7 @@ pub mod d3d12_hello_triangle {
         }?;
 
         let mut device: Option<ID3D12Device> = None;
-        unsafe { D3D12CreateDevice(&adapter, D3D_FEATURE_LEVEL_12_2, &mut device) }?;
+        unsafe { D3D12CreateDevice(&adapter, D3D_FEATURE_LEVEL_12_1, &mut device) }?;
         Ok((dxgi_factory, device.unwrap()))
     }
 

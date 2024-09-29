@@ -17,6 +17,7 @@ mod util;
 
 pub mod error;
 pub mod options;
+mod resource;
 
 use librashader_runtime::impl_filter_chain_parameters;
 impl_filter_chain_parameters!(FilterChainD3D12);
