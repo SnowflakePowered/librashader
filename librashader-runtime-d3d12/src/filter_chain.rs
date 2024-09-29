@@ -131,13 +131,18 @@ impl FrameResiduals {
         self.mipmaps.extend(handles)
     }
 
-    pub fn dispose_resource(&mut self, resource: ManuallyDrop<Option<ID3D12Resource>>) {
+    pub unsafe fn dispose_resource(&mut self, resource: ManuallyDrop<Option<ID3D12Resource>>) {
         self.resources.push(resource)
     }
 
-    /// Disposition only handles transition barriers, but it is not unsafe because
-    /// other things just leak and leakign is not unsafe,
-    pub fn dispose_barriers(&mut self, barrier: impl IntoIterator<Item = D3D12_RESOURCE_BARRIER>) {
+    /// Disposition only handles transition barriers.
+    ///
+    /// **Safety:** It is only safe to dispose a barrier created with resource strategy IncrementRef.
+    ///
+    pub unsafe fn dispose_barriers(
+        &mut self,
+        barrier: impl IntoIterator<Item = D3D12_RESOURCE_BARRIER>,
+    ) {
         self.resource_barriers.extend(barrier);
     }
 
@@ -230,6 +235,7 @@ mod compile {
     }
 }
 
+use crate::resource::OutlivesFrame;
 use compile::{compile_passes_dxil, compile_passes_hlsl, DxilShaderPassMeta, HlslShaderPassMeta};
 use librashader_runtime::parameters::RuntimeParameters;
 
@@ -321,7 +327,8 @@ impl FilterChainD3D12 {
         let mut staging_heap = unsafe {
             D3D12DescriptorHeap::new(
                 device,
-                (MAX_BINDINGS_COUNT as usize) * shader_count
+                    // add one, because technically the input image doesn't need to count
+                (1 + MAX_BINDINGS_COUNT as usize) * shader_count
                     + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
                     + lut_count,
             )
@@ -391,7 +398,7 @@ impl FilterChainD3D12 {
             common: FilterCommon {
                 d3d12: device.clone(),
                 samplers,
-                allocator: allocator,
+                allocator,
                 output_textures,
                 feedback_textures,
                 luts,
@@ -460,7 +467,10 @@ impl FilterChainD3D12 {
 
         gc.dispose_mipmap_handles(residual_mipmap);
         gc.dispose_mipmap_gen(mipmap_gen);
-        gc.dispose_barriers(residual_barrier);
+
+        unsafe {
+            gc.dispose_barriers(residual_barrier);
+        }
 
         Ok(luts)
     }
@@ -653,7 +663,7 @@ impl FilterChainD3D12 {
                 );
             }
             unsafe {
-                back.copy_from(cmd, input, &mut self.residuals)?;
+                back.copy_from(cmd, input)?;
             }
             self.history_framebuffers.push_front(back);
         }
@@ -669,6 +679,8 @@ impl FilterChainD3D12 {
     /// librashader **will not** create a resource barrier for the final pass. The output image will
     /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
     /// the output image to the final resource state.
+    ///
+    /// The input and output images must stay alive until the command list is submitted and work is complete.
     pub unsafe fn frame(
         &mut self,
         cmd: &ID3D12GraphicsCommandList,
@@ -689,7 +701,7 @@ impl FilterChainD3D12 {
         if let Some(options) = options {
             if options.clear_history {
                 for framebuffer in &mut self.history_framebuffers {
-                    framebuffer.clear(cmd, &mut self.rtv_heap, &mut self.residuals)?;
+                    framebuffer.clear(cmd, &mut self.rtv_heap)?;
                 }
             }
         }
@@ -787,13 +799,12 @@ impl FilterChainD3D12 {
                 )?;
             }
 
-            self.residuals
-                .dispose_barriers(util::d3d12_resource_transition(
-                    cmd,
-                    &target.handle.resource(),
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                    D3D12_RESOURCE_STATE_RENDER_TARGET,
-                ));
+            util::d3d12_resource_transition::<OutlivesFrame, _>(
+                cmd,
+                &target.resource,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+            );
 
             let view = target.create_render_target_view(&mut self.rtv_heap)?;
             let out = RenderTarget::identity(&view)?;
@@ -811,21 +822,21 @@ impl FilterChainD3D12 {
                 QuadType::Offscreen,
             )?;
 
-            self.residuals
-                .dispose_barriers(util::d3d12_resource_transition(
-                    cmd,
-                    &target.handle.resource(),
-                    D3D12_RESOURCE_STATE_RENDER_TARGET,
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                ));
+            util::d3d12_resource_transition::<OutlivesFrame, _>(
+                cmd,
+                &target.resource,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            );
 
             if target.max_mipmap > 1 && !self.disable_mipmaps {
-                let (residuals, residual_barriers) = self.common.mipmap_gen.mipmapping_context(
+                // barriers don't get disposed because the context is OutlivesFrame
+                let (residuals, _residual_barriers) = self.common.mipmap_gen.mipmapping_context(
                     cmd,
                     &mut self.mipmap_heap,
                     |ctx| {
-                        ctx.generate_mipmaps(
-                            &target.handle.resource(),
+                        ctx.generate_mipmaps::<OutlivesFrame, _>(
+                            &target.resource,
                             target.max_mipmap,
                             target.size,
                             target.format.into(),
@@ -835,7 +846,6 @@ impl FilterChainD3D12 {
                 )?;
 
                 self.residuals.dispose_mipmap_handles(residuals);
-                self.residuals.dispose_barriers(residual_barriers);
             }
 
             self.residuals.dispose_output(view.descriptor);
@@ -862,13 +872,12 @@ impl FilterChainD3D12 {
                     )?;
                 }
 
-                self.residuals
-                    .dispose_barriers(util::d3d12_resource_transition(
-                        cmd,
-                        &feedback_target.handle.resource(),
-                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                        D3D12_RESOURCE_STATE_RENDER_TARGET,
-                    ));
+                util::d3d12_resource_transition::<OutlivesFrame, _>(
+                    cmd,
+                    &feedback_target.resource,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    D3D12_RESOURCE_STATE_RENDER_TARGET,
+                );
 
                 let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
                 let out = RenderTarget::viewport_with_output(&view, viewport);
@@ -885,13 +894,12 @@ impl FilterChainD3D12 {
                     QuadType::Final,
                 )?;
 
-                self.residuals
-                    .dispose_barriers(util::d3d12_resource_transition(
-                        cmd,
-                        &feedback_target.handle.resource(),
-                        D3D12_RESOURCE_STATE_RENDER_TARGET,
-                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                    ));
+                util::d3d12_resource_transition::<OutlivesFrame, _>(
+                    cmd,
+                    &feedback_target.resource,
+                    D3D12_RESOURCE_STATE_RENDER_TARGET,
+                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                );
             }
 
             if pass.pipeline.format != viewport.output.format {

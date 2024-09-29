@@ -176,12 +176,12 @@ impl LutTexture {
         let resource = ManuallyDrop::new(allocator_resource.resource().clone());
         let upload = ManuallyDrop::new(allocator_upload.resource().clone());
 
-        gc.dispose_barriers(d3d12_resource_transition(
+        d3d12_resource_transition::<OutlivesFrame, _>(
             cmd,
-            &allocator_resource.resource(),
+            &resource,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_COPY_DEST,
-        ));
+        );
 
         d3d12_update_subresources::<OutlivesFrame>(
             cmd,
@@ -194,15 +194,15 @@ impl LutTexture {
             gc,
         )?;
 
-        gc.dispose_barriers(d3d12_resource_transition(
+        d3d12_resource_transition::<OutlivesFrame, _>(
             cmd,
             &resource,
             D3D12_RESOURCE_STATE_COPY_DEST,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        ));
+        );
 
-        let view = InputTexture::new(
-            allocator_resource.resource().clone(),
+        let view = InputTexture::new::<OutlivesFrame, _>(
+            &resource,
             descriptor,
             source.size,
             ImageFormat::R8G8B8A8Unorm.into(),
@@ -223,8 +223,8 @@ impl LutTexture {
 
     pub fn generate_mipmaps(&self, gen_mips: &mut MipmapGenContext) -> error::Result<()> {
         if let Some(miplevels) = self.miplevels {
-            gen_mips.generate_mipmaps(
-                &self.allocator_resource.resource(),
+            gen_mips.generate_mipmaps::<OutlivesFrame, _>(
+                &self.resource,
                 miplevels,
                 self.view.size,
                 ImageFormat::R8G8B8A8Unorm.into(),
@@ -384,8 +384,8 @@ fn update_subresources<S: ResourceHandleStrategy<ManuallyDrop<ID3D12Resource>>>(
 
                 cmd.CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, None);
 
-                S::cleanup(gc, dest_location.pResource);
-                S::cleanup(gc, source_location.pResource);
+                S::cleanup_handler(|| gc.dispose_resource(dest_location.pResource));
+                S::cleanup_handler(|| gc.dispose_resource(source_location.pResource));
             }
         }
         Ok(required_size)

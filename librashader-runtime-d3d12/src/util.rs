@@ -7,8 +7,9 @@ use windows::Win32::Graphics::Direct3D::Dxc::{
     DXC_CP_UTF8,
 };
 
+use crate::resource::ResourceHandleStrategy;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
+    ID3D12Device, ID3D12GraphicsCommandList, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
     D3D12_FEATURE_FORMAT_SUPPORT, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_0,
     D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_BARRIER_FLAG_NONE,
     D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_STATES,
@@ -174,9 +175,8 @@ pub fn dxc_validate_shader(
     }
 }
 
-#[must_use = "Resource Barrier must be disposed"]
-pub fn d3d12_get_resource_transition_subresource(
-    resource: &ID3D12Resource,
+pub fn d3d12_get_resource_transition_subresource<S: ResourceHandleStrategy<T>, T>(
+    resource: &T,
     before: D3D12_RESOURCE_STATES,
     after: D3D12_RESOURCE_STATES,
     subresource: u32,
@@ -186,7 +186,7 @@ pub fn d3d12_get_resource_transition_subresource(
         Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
         Anonymous: D3D12_RESOURCE_BARRIER_0 {
             Transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
-                pResource: ManuallyDrop::new(Some(resource.clone())),
+                pResource: unsafe { S::obtain(resource) },
                 Subresource: subresource,
                 StateBefore: before,
                 StateAfter: after,
@@ -195,15 +195,14 @@ pub fn d3d12_get_resource_transition_subresource(
     }
 }
 
-#[must_use = "Resource Barrier must be disposed"]
 #[inline(always)]
-pub fn d3d12_resource_transition(
+pub fn d3d12_resource_transition<S: ResourceHandleStrategy<T>, T>(
     cmd: &ID3D12GraphicsCommandList,
-    resource: &ID3D12Resource,
+    resource: &T,
     before: D3D12_RESOURCE_STATES,
     after: D3D12_RESOURCE_STATES,
 ) -> [D3D12_RESOURCE_BARRIER; 1] {
-    d3d12_resource_transition_subresource(
+    d3d12_resource_transition_subresource::<S, T>(
         cmd,
         resource,
         before,
@@ -214,14 +213,14 @@ pub fn d3d12_resource_transition(
 
 #[must_use = "Resource Barrier must be disposed"]
 #[inline(always)]
-pub fn d3d12_resource_transition_subresource(
+fn d3d12_resource_transition_subresource<S: ResourceHandleStrategy<T>, T>(
     cmd: &ID3D12GraphicsCommandList,
-    resource: &ID3D12Resource,
+    resource: &T,
     before: D3D12_RESOURCE_STATES,
     after: D3D12_RESOURCE_STATES,
     subresource: u32,
 ) -> [D3D12_RESOURCE_BARRIER; 1] {
-    let barrier = [d3d12_get_resource_transition_subresource(
+    let barrier = [d3d12_get_resource_transition_subresource::<S, T>(
         resource,
         before,
         after,

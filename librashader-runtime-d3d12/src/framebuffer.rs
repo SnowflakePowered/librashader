@@ -1,6 +1,6 @@
 use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
 use crate::error::FilterChainError;
-use crate::filter_chain::FrameResiduals;
+use crate::resource::{OutlivesFrame, ResourceHandleStrategy};
 use crate::texture::{D3D12OutputView, InputTexture};
 use crate::util::d3d12_get_closest_format;
 use crate::{error, util};
@@ -17,12 +17,13 @@ use parking_lot::Mutex;
 use std::mem::ManuallyDrop;
 use std::sync::Arc;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12GraphicsCommandList, D3D12_BOX, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-    D3D12_FEATURE_DATA_FORMAT_SUPPORT, D3D12_FORMAT_SUPPORT1_MIP,
-    D3D12_FORMAT_SUPPORT1_RENDER_TARGET, D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE,
-    D3D12_FORMAT_SUPPORT1_TEXTURE2D, D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD,
-    D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE, D3D12_RENDER_TARGET_VIEW_DESC,
-    D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_DESC,
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX,
+    D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
+    D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
+    D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D,
+    D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE,
+    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0,
+    D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_DESC,
     D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
     D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST,
     D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
@@ -36,6 +37,7 @@ use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 #[derive(Debug)]
 pub(crate) struct OwnedImage {
     pub(crate) handle: ManuallyDrop<Resource>,
+    pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) size: Size<u32>,
     pub(crate) format: DXGI_FORMAT,
     pub(crate) max_mipmap: u16,
@@ -113,7 +115,7 @@ impl OwnedImage {
 
         desc.Format = d3d12_get_closest_format(device, format_support);
 
-        let resource = allocator.lock().create_resource(&ResourceCreateDesc {
+        let allocator_resource = allocator.lock().create_resource(&ResourceCreateDesc {
             name: "ownedimage",
             memory_location: MemoryLocation::GpuOnly,
             resource_category: ResourceCategory::RtvDsvTexture,
@@ -145,8 +147,10 @@ impl OwnedImage {
         // }
         // assume_d3d12_init!(resource, "CreateCommittedResource");
 
+        let resource = ManuallyDrop::new(allocator_resource.resource().clone());
         Ok(OwnedImage {
-            handle: ManuallyDrop::new(resource),
+            handle: ManuallyDrop::new(allocator_resource),
+            resource,
             size,
             format: desc.Format,
             device: device.clone(),
@@ -161,17 +165,16 @@ impl OwnedImage {
         &self,
         cmd: &ID3D12GraphicsCommandList,
         input: &InputTexture,
-        gc: &mut FrameResiduals,
     ) -> error::Result<()> {
         let barriers = [
-            util::d3d12_get_resource_transition_subresource(
+            util::d3d12_get_resource_transition_subresource::<OutlivesFrame, _>(
                 &input.resource,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_COPY_SOURCE,
                 D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
             ),
-            util::d3d12_get_resource_transition_subresource(
-                &self.handle.resource(),
+            util::d3d12_get_resource_transition_subresource::<OutlivesFrame, _>(
+                &self.resource,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_COPY_DEST,
                 D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
@@ -180,10 +183,9 @@ impl OwnedImage {
 
         unsafe {
             cmd.ResourceBarrier(&barriers);
-            gc.dispose_barriers(barriers);
 
             let dst = D3D12_TEXTURE_COPY_LOCATION {
-                pResource: ManuallyDrop::new(Some(self.handle.resource().clone())),
+                pResource: OutlivesFrame::obtain(&self.resource),
                 Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
                 Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                     SubresourceIndex: 0,
@@ -191,7 +193,7 @@ impl OwnedImage {
             };
 
             let src = D3D12_TEXTURE_COPY_LOCATION {
-                pResource: ManuallyDrop::new(Some(input.resource.clone())),
+                pResource: OutlivesFrame::obtain(&input.resource),
                 Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
                 Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                     SubresourceIndex: 0,
@@ -213,20 +215,17 @@ impl OwnedImage {
                     back: 1,
                 }),
             );
-
-            gc.dispose_resource(dst.pResource);
-            gc.dispose_resource(src.pResource);
         }
 
         let barriers = [
-            util::d3d12_get_resource_transition_subresource(
+            util::d3d12_get_resource_transition_subresource::<OutlivesFrame, _>(
                 &input.resource,
                 D3D12_RESOURCE_STATE_COPY_SOURCE,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
             ),
-            util::d3d12_get_resource_transition_subresource(
-                &self.handle.resource(),
+            util::d3d12_get_resource_transition_subresource::<OutlivesFrame, _>(
+                &self.resource,
                 D3D12_RESOURCE_STATE_COPY_DEST,
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
@@ -237,8 +236,6 @@ impl OwnedImage {
             cmd.ResourceBarrier(&barriers);
         }
 
-        gc.dispose_barriers(barriers);
-
         Ok(())
     }
 
@@ -246,25 +243,26 @@ impl OwnedImage {
         &self,
         cmd: &ID3D12GraphicsCommandList,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
-        gc: &mut FrameResiduals,
     ) -> error::Result<()> {
-        gc.dispose_barriers(util::d3d12_resource_transition(
-            cmd,
-            &self.handle.resource(),
-            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            D3D12_RESOURCE_STATE_RENDER_TARGET,
-        ));
+        unsafe {
+            util::d3d12_resource_transition::<OutlivesFrame, _>(
+                cmd,
+                &self.resource,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+            );
 
-        let rtv = self.create_render_target_view(heap)?;
+            let rtv = self.create_render_target_view(heap)?;
 
-        unsafe { cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR, None) }
+            cmd.ClearRenderTargetView(*rtv.descriptor.as_ref(), CLEAR, None);
 
-        gc.dispose_barriers(util::d3d12_resource_transition(
-            cmd,
-            &self.handle.resource(),
-            D3D12_RESOURCE_STATE_RENDER_TARGET,
-            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        ));
+            util::d3d12_resource_transition::<OutlivesFrame, _>(
+                cmd,
+                &self.resource,
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            );
+        }
 
         Ok(())
     }
@@ -297,8 +295,8 @@ impl OwnedImage {
             );
         }
 
-        Ok(InputTexture::new(
-            self.handle.resource().clone(),
+        Ok(InputTexture::new::<OutlivesFrame, _>(
+            &self.resource,
             descriptor,
             self.size,
             self.format,
@@ -390,6 +388,10 @@ impl ScaleFramebuffer for OwnedImage {
 
 impl Drop for OwnedImage {
     fn drop(&mut self) {
+        // let go of the handle
+        unsafe {
+            ManuallyDrop::drop(&mut self.resource);
+        }
         let resource = unsafe { ManuallyDrop::take(&mut self.handle) };
         if let Err(e) = self.allocator.lock().free_resource(resource) {
             println!("librashader-runtime-d3d12: [warn] failed to deallocate owned image buffer memory {e}")
