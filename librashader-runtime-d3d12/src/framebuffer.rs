@@ -295,7 +295,7 @@ impl OwnedImage {
             );
         }
 
-        Ok(InputTexture::new::<OutlivesFrame, _>(
+        Ok(InputTexture::new(
             &self.resource,
             descriptor,
             self.size,
