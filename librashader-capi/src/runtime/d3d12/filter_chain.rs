@@ -23,10 +23,10 @@ use librashader::runtime::{FilterChainParameters, Size, Viewport};
 /// Direct3D 12 parameters for the source image.
 #[repr(C)]
 pub struct libra_source_image_d3d12_t {
-    /// The resource containing the image.
-    pub resource: ManuallyDrop<ID3D12Resource>,
     /// A CPU descriptor handle to a shader resource view of the image.
     pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    /// The resource containing the image.
+    pub resource: ManuallyDrop<ID3D12Resource>,
 }
 
 /// Direct3D 12 parameters for the output image.
