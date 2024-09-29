@@ -1,11 +1,21 @@
 use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
+use crate::{error, FilterChainD3D12};
 use crate::resource::{OutlivesFrame, ResourceHandleStrategy};
 use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
 use librashader_common::{FilterMode, GetSize, Size, WrapMode};
 use std::mem::ManuallyDrop;
+use std::ops::Deref;
 use windows::core::InterfaceRef;
-use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_RENDER_TARGET_VIEW_DESC,
+    D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV,
+};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
+
+/// A **non-owning** reference to a ID3D12Resource.
+/// This does not `AddRef` or `Release` the underlying interface.
+pub type D3D12ResourceRef<'a> = InterfaceRef<'a, ID3D12Resource>;
 
 /// An image for use as shader resource view.
 #[derive(Clone)]
@@ -86,6 +96,52 @@ impl D3D12OutputView {
             size,
             format,
         }
+    }
+
+    /// Create a new output view from a resource ref, linked to the chain.
+    ///
+    /// The output view will be automatically disposed on drop.
+    pub fn new_from_resource(
+        image: D3D12ResourceRef,
+        chain: &mut FilterChainD3D12
+    ) -> error::Result<D3D12OutputView> {
+        Self::new_from_resource_internal(image, &chain.common.d3d12, &mut chain.rtv_heap)
+    }
+
+    /// Create a new output view from a resource ref
+    pub(crate) fn new_from_resource_internal(
+        image: D3D12ResourceRef,
+        device: &ID3D12Device,
+        heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
+    ) -> error::Result<D3D12OutputView> {
+        let desc = unsafe { image.GetDesc() };
+        if desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D {
+            return Err(crate::error::FilterChainError::InvalidDimensionError(
+                desc.Dimension,
+            ));
+        }
+
+        let slot = heap.allocate_descriptor()?;
+        unsafe {
+            let rtv_desc = D3D12_RENDER_TARGET_VIEW_DESC {
+                Format: desc.Format,
+                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2D: D3D12_TEX2D_RTV {
+                        MipSlice: 0,
+                        ..Default::default()
+                    },
+                },
+            };
+
+            device.CreateRenderTargetView(image.deref(), Some(&rtv_desc), *slot.as_ref());
+        }
+
+        Ok(Self::new(
+            slot,
+            Size::new(desc.Width as u32, desc.Height),
+            desc.Format,
+        ))
     }
 }
 

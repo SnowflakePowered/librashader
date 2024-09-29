@@ -68,7 +68,7 @@ pub struct FilterChainD3D12 {
     pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
     pub(crate) history_framebuffers: VecDeque<OwnedImage>,
     staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
-    rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
+    pub(crate) rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
     work_heap: ID3D12DescriptorHeap,
     sampler_heap: ID3D12DescriptorHeap,

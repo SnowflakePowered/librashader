@@ -16,20 +16,20 @@ use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
 use parking_lot::Mutex;
 use std::mem::ManuallyDrop;
 use std::sync::Arc;
+use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX,
     D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
     D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
     D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D,
     D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE,
-    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0,
     D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_DESC,
     D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
     D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST,
     D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RTV_DIMENSION_TEXTURE2D,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
     D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
-    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION,
+    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION,
     D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
@@ -309,32 +309,7 @@ impl OwnedImage {
         &self,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
     ) -> error::Result<D3D12OutputView> {
-        let descriptor = heap.allocate_descriptor()?;
-
-        unsafe {
-            let rtv_desc = D3D12_RENDER_TARGET_VIEW_DESC {
-                Format: self.format.into(),
-                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
-                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    Texture2D: D3D12_TEX2D_RTV {
-                        MipSlice: 0,
-                        ..Default::default()
-                    },
-                },
-            };
-
-            self.device.CreateRenderTargetView(
-                self.handle.resource(),
-                Some(&rtv_desc),
-                *descriptor.as_ref(),
-            );
-        }
-
-        Ok(D3D12OutputView::new(
-            descriptor,
-            self.size,
-            self.format.into(),
-        ))
+        D3D12OutputView::new_from_resource_internal(self.resource.to_ref(), &self.device, heap)
     }
 
     pub fn scale(
