@@ -620,7 +620,7 @@ pub mod d3d12_hello_triangle {
                 .frame(
                     command_list,
                     D3D12InputImage {
-                        resource: ID3D12Resource::clone(&*resources.framebuffer),
+                        resource: resources.framebuffer.to_ref(),
                         descriptor: framebuffer,
                     },
                     &Viewport {

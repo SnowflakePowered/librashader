@@ -45,7 +45,7 @@ pub struct Direct3D12 {
     _cpu_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
-    texture: D3D12InputImage,
+    texture: ID3D12Resource,
     _heap_slot: D3D12DescriptorHeapSlot<CpuStagingHeap>,
     command_pool: ID3D12CommandAllocator,
     queue: ID3D12CommandQueue,
@@ -154,7 +154,10 @@ impl RenderTest for Direct3D12 {
             for frame in 0..=frame_count {
                 filter_chain.frame(
                     &cmd,
-                    self.texture.clone(),
+                    D3D12InputImage {
+                        resource: self.texture.to_ref(),
+                        descriptor: *self._heap_slot.as_ref(),
+                    },
                     &viewport,
                     frame,
                     options.as_ref(),
@@ -249,7 +252,7 @@ impl Direct3D12 {
         path: &Path,
     ) -> anyhow::Result<(
         Image<BGRA8>,
-        D3D12InputImage,
+        ID3D12Resource,
         D3D12DescriptorHeapSlot<CpuStagingHeap>,
     )> {
         // 1 time queue infrastructure for lut uploads
@@ -392,14 +395,7 @@ impl Direct3D12 {
                 CloseHandle(fence_event)?;
             }
 
-            Ok((
-                image,
-                D3D12InputImage {
-                    resource,
-                    descriptor: descriptor.as_ref().clone(),
-                },
-                descriptor,
-            ))
+            Ok((image, resource, descriptor))
         }
     }
 
