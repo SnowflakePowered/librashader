@@ -152,7 +152,7 @@ pub mod preprocess {
 /// librashader-reflect is designed to be frontend and backend agnostic.
 ///
 /// Currently [SpirvCompilation](crate::reflect::SpirvCompilation),
-/// which does compilation of GLSL to SPIR-V via [glslang](https://github.com/KhronosGroup/glslang/ is the only
+/// which does compilation of GLSL to SPIR-V via [glslang](https://github.com/KhronosGroup/glslang/) is the only
 /// supported frontend.
 ///
 /// In the future, we will allow [Naga](https://docs.rs/naga/latest/naga/index.html), a pure-Rust shader compiler,
