@@ -621,7 +621,7 @@ pub mod d3d12_hello_triangle {
                     command_list,
                     D3D12InputImage {
                         resource: resources.framebuffer.to_ref(),
-                        descriptor: framebuffer,
+                        descriptor: Some(framebuffer),
                     },
                     &Viewport {
                         x: 0.0,

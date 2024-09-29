@@ -6,12 +6,9 @@ use librashader_common::{FilterMode, GetSize, Size, WrapMode};
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use windows::core::InterfaceRef;
-use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_RENDER_TARGET_VIEW_DESC,
-    D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV,
-};
+use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
+use crate::error::FilterChainError;
 
 /// A **non-owning** reference to a ID3D12Resource.
 /// This does not `AddRef` or `Release` the underlying interface.
@@ -21,19 +18,22 @@ pub type D3D12ResourceRef<'a> = InterfaceRef<'a, ID3D12Resource>;
 #[derive(Clone)]
 pub struct D3D12InputImage<'a> {
     pub resource: InterfaceRef<'a, ID3D12Resource>,
-    pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    pub descriptor: Option<D3D12_CPU_DESCRIPTOR_HANDLE>,
+}
+
+impl<'a> From<InterfaceRef<'a, ID3D12Resource>> for D3D12InputImage<'a> {
+    fn from(value: InterfaceRef<'a, ID3D12Resource>) -> Self {
+        Self {
+            resource: value,
+            descriptor: None
+        }
+    }
 }
 
 #[derive(Clone)]
 pub(crate) enum InputDescriptor {
     Owned(D3D12DescriptorHeapSlot<CpuStagingHeap>),
     Raw(D3D12_CPU_DESCRIPTOR_HANDLE),
-}
-
-impl InputDescriptor {
-    fn is_raw(&self) -> bool {
-        matches!(self, InputDescriptor::Raw(_))
-    }
 }
 
 #[derive(Clone)]
@@ -186,17 +186,45 @@ impl InputTexture {
         image: D3D12InputImage,
         filter: FilterMode,
         wrap_mode: WrapMode,
-    ) -> InputTexture {
+        device: &ID3D12Device,
+        heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
+    ) -> error::Result<InputTexture> {
         let desc = unsafe { image.resource.GetDesc() };
-        InputTexture {
+        if desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D {
+            return Err(FilterChainError::InvalidDimensionError(desc.Dimension));
+        }
+
+        let descriptor = image.descriptor.map_or_else(|| {
+            let slot = heap.allocate_descriptor()?;
+            unsafe {
+                let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                    Format: desc.Format,
+                    ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
+                    Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                    Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                        Texture2D: D3D12_TEX2D_SRV {
+                            MipLevels: desc.MipLevels as u32,
+                            ..Default::default()
+                        },
+                    },
+                };
+                device.CreateShaderResourceView(image.resource.deref(), Some(&srv_desc), *slot.as_ref());
+            }
+
+            Ok::<_, FilterChainError>(InputDescriptor::Owned(slot))
+        }, |raw| Ok(InputDescriptor::Raw(raw)))?;
+
+        Ok(InputTexture {
             resource: unsafe { std::mem::transmute(image.resource) },
-            descriptor: InputDescriptor::Raw(image.descriptor),
+            descriptor,
             size: Size::new(desc.Width as u32, desc.Height),
             format: desc.Format,
             wrap_mode,
             filter,
-        }
+        })
     }
+
+
 }
 
 impl Clone for InputTexture {
