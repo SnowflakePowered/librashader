@@ -336,7 +336,7 @@ impl FilterChainD3D12 {
         let rtv_heap = unsafe {
             D3D12DescriptorHeap::new(
                 device,
-                (MAX_BINDINGS_COUNT as usize) * shader_count
+                (1 + MAX_BINDINGS_COUNT as usize) * shader_count
                     + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
                     + lut_count,
             )
@@ -735,7 +735,7 @@ impl FilterChainD3D12 {
                 Some(fbo.create_shader_resource_view(&mut self.staging_heap, filter, wrap_mode)?);
         }
 
-        let original = unsafe { InputTexture::new_from_raw(input, filter, wrap_mode) };
+        let original = unsafe { InputTexture::new_from_raw(input, filter, wrap_mode, &self.common.d3d12, &mut self.staging_heap)? };
         let mut source = original.clone();
 
         // swap output and feedback **before** recording command buffers

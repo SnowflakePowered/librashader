@@ -156,7 +156,7 @@ impl RenderTest for Direct3D12 {
                     &cmd,
                     D3D12InputImage {
                         resource: self.texture.to_ref(),
-                        descriptor: *self._heap_slot.as_ref(),
+                        descriptor: None,
                     },
                     &viewport,
                     frame,
