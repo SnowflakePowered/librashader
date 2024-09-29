@@ -327,7 +327,7 @@ impl FilterChainD3D12 {
         let mut staging_heap = unsafe {
             D3D12DescriptorHeap::new(
                 device,
-                    // add one, because technically the input image doesn't need to count
+                // add one, because technically the input image doesn't need to count
                 (1 + MAX_BINDINGS_COUNT as usize) * shader_count
                     + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS
                     + lut_count,
@@ -790,7 +790,7 @@ impl FilterChainD3D12 {
 
             let target = &self.output_framebuffers[index];
 
-            if pass.pipeline.format != target.format {
+            if !pass.pipeline.has_format(target.format) {
                 // eprintln!("recompiling final pipeline");
                 pass.pipeline.recompile(
                     target.format,
@@ -863,7 +863,7 @@ impl FilterChainD3D12 {
             if self.draw_last_pass_feedback {
                 let feedback_target = &self.output_framebuffers[index];
 
-                if pass.pipeline.format != feedback_target.format {
+                if !pass.pipeline.has_format(feedback_target.format) {
                     // eprintln!("recompiling final pipeline");
                     pass.pipeline.recompile(
                         feedback_target.format,
@@ -902,7 +902,7 @@ impl FilterChainD3D12 {
                 );
             }
 
-            if pass.pipeline.format != viewport.output.format {
+            if !pass.pipeline.has_format(viewport.output.format) {
                 // eprintln!("recompiling final pipeline");
                 pass.pipeline.recompile(
                     viewport.output.format,
