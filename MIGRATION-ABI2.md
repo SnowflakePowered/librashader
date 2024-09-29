@@ -66,8 +66,11 @@ The following changes are applicable if `LIBRA_RUNTIME_D3D11` is defined.
 ## `LIBRA_RUNTIME_D3D12` changes
 The following changes are applicable if `LIBRA_RUNTIME_D3D12` is defined.
 
-* The fields `format`, `width`, and `height` have been removed from `libra_source_image_d3d12_t`.
-* The fields `width` and `height` have been added to `libra_output_image_d3d12_t`. 
+* The `image` parameter of `libra_d3d12_filter_chain_frame` has changed from `libra_source_image_d3d12_t` to `ID3D12Resource *`.
+  * You should now pass what was previously the `.resource` field of `libra_source_image_d3d12_t` field directly as `image` to `libra_d3d12_filter_chain_frame`.
+  * There is no longer a need to provide a `D3D12_CPU_DESCRIPTOR_HANDLE` for the input image.
+* The `libra_source_image_d3d12_t` struct has been removed.
+* The fields `width` and `height` have been added to `libra_output_image_d3d12_t`.
   * You should now pass what was previously `.width` and `.height` of `libra_viewport_t` to these new fields in `libra_output_image_d3d12_t`.
 * In `libra_d3d12_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.

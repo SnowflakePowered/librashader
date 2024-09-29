@@ -7,8 +7,6 @@ use windows::{
     Win32::UI::WindowsAndMessaging::*,
 };
 
-mod descriptor_heap;
-
 static SHADER: &[u8] = b"struct PSInput
 {
     float4 position : SV_POSITION;
@@ -229,12 +227,9 @@ unsafe extern "system" fn debug_log(
 
 pub mod d3d12_hello_triangle {
     use super::*;
-    use crate::hello_triangle::descriptor_heap::CpuStagingHeap;
-    use d3d12_descriptor_heap::D3D12DescriptorHeap;
     use librashader_common::{Size, Viewport};
-    use librashader_runtime_d3d12::{D3D12InputImage, D3D12OutputView, FilterChainD3D12};
+    use librashader_runtime_d3d12::{D3D12OutputView, FilterChainD3D12};
     use std::mem::ManuallyDrop;
-    use std::ops::Deref;
     use std::path::Path;
 
     const FRAME_COUNT: u32 = 2;
@@ -270,7 +265,6 @@ pub mod d3d12_hello_triangle {
         fence: ID3D12Fence,
         fence_value: u64,
         fence_event: HANDLE,
-        frambuffer_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     }
 
     impl DXSample for Sample {
@@ -481,7 +475,6 @@ pub mod d3d12_hello_triangle {
                 fence,
                 fence_value,
                 fence_event,
-                frambuffer_heap: unsafe { D3D12DescriptorHeap::new(&self.device, 1024).unwrap() },
             });
 
             Ok(())
@@ -497,28 +490,7 @@ pub mod d3d12_hello_triangle {
 
         fn render(&mut self) {
             if let Some(resources) = &mut self.resources {
-                let srv = resources.frambuffer_heap.allocate_descriptor().unwrap();
-
-                unsafe {
-                    self.device.CreateShaderResourceView(
-                        resources.framebuffer.deref(),
-                        Some(&D3D12_SHADER_RESOURCE_VIEW_DESC {
-                            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-                            ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
-                            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-                            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                                Texture2D: D3D12_TEX2D_SRV {
-                                    MipLevels: u32::MAX,
-                                    ..Default::default()
-                                },
-                            },
-                        }),
-                        *srv.as_ref(),
-                    )
-                }
-
-                populate_command_list(resources, &mut self.filter, self.framecount, *srv.as_ref())
-                    .unwrap();
+                populate_command_list(resources, &mut self.filter, self.framecount).unwrap();
 
                 // Execute the command list.
                 let command_list: Option<ID3D12CommandList> = resources.command_list.cast().ok();
@@ -539,7 +511,6 @@ pub mod d3d12_hello_triangle {
         resources: &mut Resources,
         filter: &mut FilterChainD3D12,
         frame_count: usize,
-        framebuffer: D3D12_CPU_DESCRIPTOR_HANDLE,
     ) -> Result<()> {
         // Command list allocators can only be reset when the associated
         // command lists have finished execution on the GPU; apps should use
@@ -619,10 +590,7 @@ pub mod d3d12_hello_triangle {
             filter
                 .frame(
                     command_list,
-                    D3D12InputImage {
-                        resource: resources.framebuffer.to_ref(),
-                        descriptor: framebuffer,
-                    },
+                    resources.framebuffer.to_ref(),
                     &Viewport {
                         x: 0.0,
                         y: 0.0,

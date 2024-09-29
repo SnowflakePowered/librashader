@@ -15,19 +15,8 @@ use windows::Win32::Graphics::Direct3D12::{
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
 use crate::LIBRASHADER_API_VERSION;
-use librashader::runtime::d3d12::{
-    D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions,
-};
+use librashader::runtime::d3d12::{D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions};
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
-
-/// Direct3D 12 parameters for the source image.
-#[repr(C)]
-pub struct libra_source_image_d3d12_t {
-    /// The resource containing the image.
-    pub resource: ManuallyDrop<ID3D12Resource>,
-    /// A CPU descriptor handle to a shader resource view of the image.
-    pub descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-}
 
 /// Direct3D 12 parameters for the output image.
 #[repr(C)]
@@ -206,11 +195,11 @@ extern_fn! {
     /// - `command_list` is a `ID3D12GraphicsCommandList` to record draw commands to.
     ///    The provided command list must be open and associated with the `ID3D12Device` this filter chain was created with.
     /// - `frame_count` is the number of frames passed to the shader
-    /// - `image` is a `libra_source_image_d3d12_t`, containing a `ID3D12Resource` pointer and CPU descriptor
-    ///    to an image that will serve as the source image for the frame. The input image must be in the
-    ///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout.
+    /// - `image` is a non-null `ID3D12Resource` pointer. The input image must be in the
+    ///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout. The image dimension
+    ///    must be `D3D12_RESOURCE_DIMENSION_TEXTURE2D`.
     /// - `out` is a `libra_output_image_d3d12_t`, containing a CPU descriptor handle, format, and size information
-    ///    for the render target of the frame. The output image must be in
+    ///    for the render target of the frame. The output image resource must be in
     ///    `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state or equivalent barrier layout.
     ///
     /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
@@ -238,7 +227,7 @@ extern_fn! {
         chain: *mut libra_d3d12_filter_chain_t,
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,
         frame_count: usize,
-        image: libra_source_image_d3d12_t,
+        image: ManuallyDrop<ID3D12Resource>,
         out: libra_output_image_d3d12_t,
         viewport: *const libra_viewport_t,
         mvp: *const f32,
@@ -283,10 +272,8 @@ extern_fn! {
             }
         };
 
-        let image = D3D12InputImage {
-            resource: image.resource.to_ref(),
-            descriptor: image.descriptor,
-        };
+        let image = image.to_ref();
+
         unsafe {
             chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;
         }

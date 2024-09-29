@@ -22,5 +22,5 @@ mod resource;
 use librashader_runtime::impl_filter_chain_parameters;
 impl_filter_chain_parameters!(FilterChainD3D12);
 pub use filter_chain::FilterChainD3D12;
-pub use texture::D3D12InputImage;
 pub use texture::D3D12OutputView;
+pub use texture::D3D12ResourceRef;

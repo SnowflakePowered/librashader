@@ -9,8 +9,8 @@ use crate::luts::LutTexture;
 use crate::mipmap::D3D12MipmapGen;
 use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
 use crate::samplers::SamplerSet;
-use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
-use crate::{error, util};
+use crate::texture::{D3D12OutputView, InputTexture, OutputDescriptor};
+use crate::{error, util, D3D12ResourceRef};
 use d3d12_descriptor_heap::{
     D3D12DescriptorHeap, D3D12DescriptorHeapSlot, D3D12PartitionableHeap, D3D12PartitionedHeap,
 };
@@ -684,7 +684,7 @@ impl FilterChainD3D12 {
     pub unsafe fn frame(
         &mut self,
         cmd: &ID3D12GraphicsCommandList,
-        input: D3D12InputImage,
+        input: D3D12ResourceRef,
         viewport: &Viewport<D3D12OutputView>,
         frame_count: usize,
         options: Option<&FrameOptionsD3D12>,
@@ -735,7 +735,15 @@ impl FilterChainD3D12 {
                 Some(fbo.create_shader_resource_view(&mut self.staging_heap, filter, wrap_mode)?);
         }
 
-        let original = unsafe { InputTexture::new_from_raw(input, filter, wrap_mode) };
+        let original = unsafe {
+            InputTexture::new_from_raw(
+                input,
+                &self.common.d3d12,
+                &mut self.staging_heap,
+                filter,
+                wrap_mode,
+            )?
+        };
         let mut source = original.clone();
 
         // swap output and feedback **before** recording command buffers

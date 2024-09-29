@@ -296,7 +296,7 @@ pub mod runtime {
             options::{
                 FilterChainOptionsD3D12 as FilterChainOptions, FrameOptionsD3D12 as FrameOptions,
             },
-            D3D12InputImage, D3D12OutputView, FilterChainD3D12 as FilterChain,
+            D3D12ResourceRef, D3D12OutputView, FilterChainD3D12 as FilterChain,
         };
     }
 

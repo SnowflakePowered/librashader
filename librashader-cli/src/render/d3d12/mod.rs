@@ -1,15 +1,13 @@
 mod descriptor_heap;
 mod util;
 
-use crate::render::d3d12::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
+use crate::render::d3d12::descriptor_heap::RenderTargetHeap;
 use crate::render::{CommonFrameOptions, RenderTest};
 use anyhow::anyhow;
-use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
+use d3d12_descriptor_heap::D3D12DescriptorHeap;
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
-use librashader::runtime::d3d12::{
-    D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions,
-};
+use librashader::runtime::d3d12::{D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
@@ -21,17 +19,14 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12CreateDevice, ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12Device, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12Resource, D3D12_COMMAND_LIST_TYPE_DIRECT,
     D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-    D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-    D3D12_FENCE_FLAG_NONE, D3D12_HEAP_FLAG_NONE, D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_CUSTOM,
-    D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD, D3D12_MEMORY_POOL_L0,
-    D3D12_MEMORY_POOL_UNKNOWN, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_RESOURCE_DESC,
-    D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE, D3D12_FENCE_FLAG_NONE, D3D12_HEAP_FLAG_NONE,
+    D3D12_HEAP_PROPERTIES, D3D12_HEAP_TYPE_CUSTOM, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD,
+    D3D12_MEMORY_POOL_L0, D3D12_MEMORY_POOL_UNKNOWN, D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
+    D3D12_RESOURCE_DESC, D3D12_RESOURCE_DIMENSION_BUFFER, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
     D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON,
     D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
-    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_SUBRESOURCE_DATA, D3D12_TEX2D_SRV,
-    D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+    D3D12_SUBRESOURCE_DATA, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 use windows::Win32::Graphics::Dxgi::{
@@ -42,11 +37,9 @@ use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFIN
 
 pub struct Direct3D12 {
     device: ID3D12Device,
-    _cpu_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
     texture: ID3D12Resource,
-    _heap_slot: D3D12DescriptorHeapSlot<CpuStagingHeap>,
     command_pool: ID3D12CommandAllocator,
     queue: ID3D12CommandQueue,
     image: Image<BGRA8>,
@@ -154,10 +147,7 @@ impl RenderTest for Direct3D12 {
             for frame in 0..=frame_count {
                 filter_chain.frame(
                     &cmd,
-                    D3D12InputImage {
-                        resource: self.texture.to_ref(),
-                        descriptor: *self._heap_slot.as_ref(),
-                    },
+                    self.texture.to_ref(),
                     &viewport,
                     frame,
                     options.as_ref(),
@@ -201,7 +191,6 @@ impl RenderTest for Direct3D12 {
 impl Direct3D12 {
     pub fn new(image_path: &Path) -> anyhow::Result<Self> {
         let device = Self::create_device()?;
-        let mut heap = unsafe { D3D12DescriptorHeap::new(&device, 8)? };
         let rtv_heap = unsafe { D3D12DescriptorHeap::new(&device, 16)? };
 
         unsafe {
@@ -215,15 +204,12 @@ impl Direct3D12 {
                     Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
                     NodeMask: 0,
                 })?;
-            let (image, texture, heap_slot) =
-                Self::load_image(&device, &command_pool, &queue, &mut heap, image_path)?;
+            let (image, texture) = Self::load_image(&device, &command_pool, &queue, image_path)?;
 
             Ok(Self {
                 device,
-                _cpu_heap: heap,
                 rtv_heap,
                 texture,
-                _heap_slot: heap_slot,
                 command_pool,
                 image,
                 queue,
@@ -248,13 +234,8 @@ impl Direct3D12 {
         device: &ID3D12Device,
         command_pool: &ID3D12CommandAllocator,
         queue: &ID3D12CommandQueue,
-        heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         path: &Path,
-    ) -> anyhow::Result<(
-        Image<BGRA8>,
-        ID3D12Resource,
-        D3D12DescriptorHeapSlot<CpuStagingHeap>,
-    )> {
+    ) -> anyhow::Result<(Image<BGRA8>, ID3D12Resource)> {
         // 1 time queue infrastructure for lut uploads
         let image: Image<BGRA8> = Image::load(path, UVDirection::TopLeft)?;
 
@@ -273,8 +254,6 @@ impl Direct3D12 {
             Layout: Default::default(),
             Flags: Default::default(),
         };
-
-        let descriptor = heap.allocate_descriptor()?;
 
         // create handles on GPU
         let mut resource: Option<ID3D12Resource> = None;
@@ -304,19 +283,6 @@ impl Direct3D12 {
             )?;
 
             let resource = resource.ok_or_else(|| anyhow!("Failed to allocate resource"))?;
-            let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
-                Format: desc.Format,
-                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
-                Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                    Texture2D: D3D12_TEX2D_SRV {
-                        MipLevels: u32::MAX,
-                        ..Default::default()
-                    },
-                },
-            };
-
-            device.CreateShaderResourceView(&resource, Some(&srv_desc), *descriptor.as_ref());
 
             let mut buffer_desc = D3D12_RESOURCE_DESC {
                 Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -395,7 +361,7 @@ impl Direct3D12 {
                 CloseHandle(fence_event)?;
             }
 
-            Ok((image, resource, descriptor))
+            Ok((image, resource))
         }
     }
 

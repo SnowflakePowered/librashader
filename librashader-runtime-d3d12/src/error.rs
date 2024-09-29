@@ -3,6 +3,7 @@
 
 use d3d12_descriptor_heap::D3D12DescriptorHeapError;
 use thiserror::Error;
+use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_DIMENSION;
 
 /// Cumulative error type for Direct3D12 filter chains.
 #[derive(Error, Debug)]
@@ -26,6 +27,8 @@ pub enum FilterChainError {
     HeapError(#[from] D3D12DescriptorHeapError),
     #[error("allocation error")]
     AllocationError(#[from] gpu_allocator::AllocationError),
+    #[error("invalid resource dimension {0:?}")]
+    InvalidDimensionError(D3D12_RESOURCE_DIMENSION),
     #[error("unreachable")]
     Infallible(#[from] std::convert::Infallible),
 }

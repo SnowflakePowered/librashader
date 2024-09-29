@@ -57,13 +57,21 @@ enum LIBRA_ERRNO
   : int32_t
 #endif // __cplusplus
  {
+  /// Error code for an unknown error.
   LIBRA_ERRNO_UNKNOWN_ERROR = 0,
+  /// Error code for an invalid parameter.
   LIBRA_ERRNO_INVALID_PARAMETER = 1,
+  /// Error code for an invalid (non-UTF8) string.
   LIBRA_ERRNO_INVALID_STRING = 2,
+  /// Error code for a preset parser error.
   LIBRA_ERRNO_PRESET_ERROR = 3,
+  /// Error code for a preprocessor error.
   LIBRA_ERRNO_PREPROCESS_ERROR = 4,
+  /// Error code for a shader parameter error.
   LIBRA_ERRNO_SHADER_PARAMETER_ERROR = 5,
+  /// Error code for a reflection error.
   LIBRA_ERRNO_REFLECT_ERROR = 6,
+  /// Error code for a runtime error.
   LIBRA_ERRNO_RUNTIME_ERROR = 7,
 };
 #ifndef __cplusplus
@@ -76,23 +84,32 @@ enum LIBRA_PRESET_CTX_ORIENTATION
   : uint32_t
 #endif // __cplusplus
  {
+  /// Context parameter for vertical orientation.
   LIBRA_PRESET_CTX_ORIENTATION_VERTICAL = 0,
+  /// Context parameter for horizontal orientation.
   LIBRA_PRESET_CTX_ORIENTATION_HORIZONTAL,
 };
 #ifndef __cplusplus
 typedef uint32_t LIBRA_PRESET_CTX_ORIENTATION;
 #endif // __cplusplus
 
+/// An enum representing graphics runtimes (video drivers) for use in preset contexts.
 enum LIBRA_PRESET_CTX_RUNTIME
 #ifdef __cplusplus
   : uint32_t
 #endif // __cplusplus
  {
+  /// No runtime.
   LIBRA_PRESET_CTX_RUNTIME_NONE = 0,
+  /// OpenGL 3.3+
   LIBRA_PRESET_CTX_RUNTIME_GL_CORE,
+  /// Vulkan
   LIBRA_PRESET_CTX_RUNTIME_VULKAN,
+  /// Direct3D 11
   LIBRA_PRESET_CTX_RUNTIME_D3D11,
+  /// Direct3D 12
   LIBRA_PRESET_CTX_RUNTIME_D3D12,
+  /// Metal
   LIBRA_PRESET_CTX_RUNTIME_METAL,
 };
 #ifndef __cplusplus
@@ -416,16 +433,6 @@ typedef struct _filter_chain_d3d12 *libra_d3d12_filter_chain_t;
 #endif
 
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12))
-/// Direct3D 12 parameters for the source image.
-typedef struct libra_source_image_d3d12_t {
-  /// The resource containing the image.
-  ID3D12Resource * resource;
-  /// A CPU descriptor handle to a shader resource view of the image.
-  D3D12_CPU_DESCRIPTOR_HANDLE descriptor;
-} libra_source_image_d3d12_t;
-#endif
-
-#if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12))
 /// Direct3D 12 parameters for the output image.
 typedef struct libra_output_image_d3d12_t {
   /// A CPU descriptor handle to a shader resource view of the image.
@@ -469,6 +476,7 @@ typedef struct filter_chain_mtl_opt_t {
 #endif
 
 #if (defined(__APPLE__) && defined(LIBRA_RUNTIME_METAL) && defined(__OBJC__))
+/// A handle to a Vulkan filter chain.
 typedef struct _filter_chain_mtl *libra_mtl_filter_chain_t;
 #endif
 
@@ -491,6 +499,7 @@ typedef struct frame_mtl_opt_t {
 } frame_mtl_opt_t;
 #endif
 
+/// ABI version type alias.
 typedef size_t LIBRASHADER_ABI_VERSION;
 
 /// Function pointer definition for libra_abi_version
@@ -887,7 +896,7 @@ typedef libra_error_t (*PFN_libra_d3d12_filter_chain_create_deferred)(libra_shad
 typedef libra_error_t (*PFN_libra_d3d12_filter_chain_frame)(libra_d3d12_filter_chain_t *chain,
                                                             ID3D12GraphicsCommandList * command_list,
                                                             size_t frame_count,
-                                                            struct libra_source_image_d3d12_t image,
+                                                            ID3D12Resource * image,
                                                             struct libra_output_image_d3d12_t out,
                                                             const struct libra_viewport_t *viewport,
                                                             const float *mvp,
@@ -1730,11 +1739,11 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 /// - `command_list` is a `ID3D12GraphicsCommandList` to record draw commands to.
 ///    The provided command list must be open and associated with the `ID3D12Device` this filter chain was created with.
 /// - `frame_count` is the number of frames passed to the shader
-/// - `image` is a `libra_source_image_d3d12_t`, containing a `ID3D12Resource` pointer and CPU descriptor
-///    to an image that will serve as the source image for the frame. The input image must be in the
-///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout.
+/// - `image` is a non-null `ID3D12Resource` pointer. The input image must be in the
+///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout. The image dimension
+///    must be `D3D12_RESOURCE_DIMENSION_TEXTURE2D`.
 /// - `out` is a `libra_output_image_d3d12_t`, containing a CPU descriptor handle, format, and size information
-///    for the render target of the frame. The output image must be in
+///    for the render target of the frame. The output image resource must be in
 ///    `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state or equivalent barrier layout.
 ///
 /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
@@ -1761,7 +1770,7 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
                                              ID3D12GraphicsCommandList * command_list,
                                              size_t frame_count,
-                                             struct libra_source_image_d3d12_t image,
+                                             ID3D12Resource * image,
                                              struct libra_output_image_d3d12_t out,
                                              const struct libra_viewport_t *viewport,
                                              const float *mvp,
@@ -2025,6 +2034,7 @@ libra_error_t libra_preset_ctx_set_param(libra_preset_ctx_t *context,
 /// - GLCore
 /// - Direct3D11
 /// - Direct3D12
+/// - Metal
 ///
 /// This will also set the appropriate video driver extensions.
 ///
