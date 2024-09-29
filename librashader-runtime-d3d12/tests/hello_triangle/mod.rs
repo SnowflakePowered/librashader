@@ -188,7 +188,7 @@ fn get_hardware_adapter(factory: &IDXGIFactory4) -> Result<IDXGIAdapter1> {
     for i in 0.. {
         let adapter = unsafe { factory.EnumAdapters1(i)? };
 
-        let mut desc = unsafe { adapter.GetDesc1()? };
+        let desc = unsafe { adapter.GetDesc1()? };
 
         if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32) != DXGI_ADAPTER_FLAG_NONE.0 as u32 {
             // Don't select the Basic Render Driver adapter. If you want a
