@@ -7,9 +7,7 @@ use anyhow::anyhow;
 use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
 use image::RgbaImage;
 use librashader::presets::ShaderPreset;
-use librashader::runtime::d3d12::{
-    D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions,
-};
+use librashader::runtime::d3d12::{D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions};
 use librashader::runtime::Viewport;
 use librashader::runtime::{FilterChainParameters, RuntimeParameters};
 use librashader_runtime::image::{Image, PixelFormat, UVDirection, BGRA8};
@@ -151,14 +149,10 @@ impl RenderTest for Direct3D12 {
                 current_subframe: options.current_subframe,
             });
 
+            let image = self.texture.to_ref();
+
             for frame in 0..=frame_count {
-                filter_chain.frame(
-                    &cmd,
-                    D3D12InputImage::Managed(self.texture.to_ref()),
-                    &viewport,
-                    frame,
-                    options.as_ref(),
-                )?;
+                filter_chain.frame(&cmd, image.into(), &viewport, frame, options.as_ref())?;
             }
 
             cmd.Close()?;

@@ -358,7 +358,7 @@ libra_error_t __librashader__noop_d3d12_filter_chain_create_deferred(
 
 libra_error_t __librashader__noop_d3d12_filter_chain_frame(
     libra_d3d12_filter_chain_t *chain, ID3D12GraphicsCommandList *command_list,
-    size_t frame_count, struct libra_source_image_d3d12_t image, struct libra_output_image_d3d12_t out,
+    size_t frame_count, struct libra_image_d3d12_t image, struct libra_image_d3d12_t out,
     const struct libra_viewport_t *viewport, const float *mvp,
     const struct frame_d3d12_opt_t *opt) {
     return NULL;

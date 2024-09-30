@@ -8,7 +8,6 @@ use std::ffi::CStr;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 use std::slice;
-use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE,
 };
@@ -19,6 +18,40 @@ use librashader::runtime::d3d12::{
     D3D12InputImage, D3D12OutputView, FilterChain, FilterChainOptions, FrameOptions,
 };
 use librashader::runtime::{FilterChainParameters, Size, Viewport};
+
+/// Tagged union for a Direct3D 12 image
+#[repr(C)]
+pub struct libra_image_d3d12_t {
+    /// The type of the image.
+    pub image_type: LIBRA_D3D12_IMAGE_TYPE,
+    /// The handle to the image.
+    pub handle: libra_image_d3d12_handle_t,
+}
+
+/// A handle to a Direct3D 12 image.
+///
+/// This must be either a pointer to a `ID3D12Resource`,
+/// or a valid source or output image type.
+#[repr(C)]
+pub union libra_image_d3d12_handle_t {
+    /// A pointer to an `ID3D12Resource`, with descriptors managed by the filter chain.
+    pub resource: ManuallyDrop<ID3D12Resource>,
+    /// A source image with externally managed descriptors.
+    pub source: ManuallyDrop<libra_source_image_d3d12_t>,
+    /// An output image with externally managed descriptors.
+    pub output: ManuallyDrop<libra_output_image_d3d12_t>,
+}
+
+/// The type of image passed to the image.
+#[repr(C)]
+pub enum LIBRA_D3D12_IMAGE_TYPE {
+    /// The image handle is a pointer to a `ID3D12Resource`.
+    IMAGE_TYPE_RESOURCE = 0,
+    /// The image handle is a `libra_source_image_d3d12_t`
+    IMAGE_TYPE_SOURCE_IMAGE = 1,
+    /// The image handle is a `libra_output_image_d3d12_t`
+    IMAGE_TYPE_OUTPUT_IMAGE = 2,
+}
 
 /// Direct3D 12 parameters for the source image.
 #[repr(C)]
@@ -200,18 +233,26 @@ extern_fn! {
     /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
     /// the output image to the final resource state.
     ///
+    /// The refcount of any COM pointers passed into this frame will not be changed. It is the responsibility
+    /// of the caller to ensure any resources remain alive until the `ID3D12GraphicsCommandList` provided is
+    /// submitted.
+    ///
     /// ## Parameters
     ///
     /// - `chain` is a handle to the filter chain.
     /// - `command_list` is a `ID3D12GraphicsCommandList` to record draw commands to.
     ///    The provided command list must be open and associated with the `ID3D12Device` this filter chain was created with.
     /// - `frame_count` is the number of frames passed to the shader
-    /// - `image` is a `libra_source_image_d3d12_t`, containing a `ID3D12Resource` pointer and CPU descriptor
-    ///    to an image that will serve as the source image for the frame. The input image must be in the
-    ///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout.
-    /// - `out` is a `libra_output_image_d3d12_t`, containing a CPU descriptor handle, format, and size information
-    ///    for the render target of the frame. The output image must be in
+    /// - `image` is a `libra_image_d3d12_t` with `image_type` set to `IMAGE_TYPE_SOURCE_IMAGE` or `IMAGE_TYPE_RESOURCE`,
+    ///    with `image_handle` either a `ID3D12Resource*` or an `libra_source_image_d3d12_t` containing a CPU descriptor to a shader resource view,
+    ///    and the image resource the view is of, which will serve as the source image for the frame.
+    ///    The input image resource must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state
+    ///    or equivalent barrier layout. The image resource must have dimension `D3D12_RESOURCE_DIMENSION_TEXTURE2D`.
+    /// - `out` is a `libra_image_d3d12_t`, with `image_type` set to `IMAGE_TYPE_OUTPUT_IMAGE` or `IMAGE_TYPE_RESOURCE`,
+    ///    with `image_handle` being either a `ID3D12Resource*` or an `libra_output_image_d3d12_t`, containing a CPU descriptor handle,
+    ///    format, and size information for the render target of the frame. The output image must be in
     ///    `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state or equivalent barrier layout.
+    ///    The image resource must have dimension `D3D12_RESOURCE_DIMENSION_TEXTURE2D`.
     ///
     /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
     ///    will be applied to the render target. It may be null, in which case a default viewport spanning the
@@ -228,18 +269,23 @@ extern_fn! {
     ///    values for the model view projection matrix.
     /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d12_opt_t`
     ///    struct.
-    /// - `out` must be a descriptor handle to a render target view.
-    /// - `image.resource` must not be null.
+    /// -  Any resource pointers contained within a `libra_image_d3d12_t` must be non-null.
+    /// -  The `handle` field of any `libra_image_d3d12_t` must be valid for it's `image_type`.
+    ///      - If `image_type` is `IMAGE_TYPE_RESOURCE`, then `handle` must be `ID3D12Resource *`.
+    ///      - If `image_type` is `IMAGE_TYPE_SOURCE`, then `handle` must be `libra_source_image_d3d12_t`.
+    ///      - If `image_type` is `IMAGE_TYPE_OUTPUT`, then `handle` must be `libra_output_image_d3d12_t`.
     /// - `command_list` must be a non-null pointer to a `ID3D12GraphicsCommandList` that is open,
     ///    and must be associated with the `ID3D12Device` this filter chain was created with.
+    /// - All resource pointers contained within a `libra_image_d3d12_t` must remain valid until the `ID3D12GraphicsCommandList *`
+    ///   provided is submitted after the call to this function.
     /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
     ///   thread at a time may call this function.
     nopanic fn libra_d3d12_filter_chain_frame(
         chain: *mut libra_d3d12_filter_chain_t,
         command_list: ManuallyDrop<ID3D12GraphicsCommandList>,
         frame_count: usize,
-        image: libra_source_image_d3d12_t,
-        out: libra_output_image_d3d12_t,
+        image: libra_image_d3d12_t,
+        out: libra_image_d3d12_t,
         viewport: *const libra_viewport_t,
         mvp: *const f32,
         options: *const MaybeUninit<frame_d3d12_opt_t>
@@ -261,10 +307,26 @@ extern_fn! {
         let options = options.map(FromUninit::from_uninit);
 
         let output = unsafe {
-            D3D12OutputView::new_from_raw(
-                out.descriptor,
-                Size::new(out.width, out.height),
-                out.format)
+            match out.image_type {
+                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_RESOURCE => {
+                    let out = out.handle.resource;
+                    D3D12OutputView::new_from_resource(
+                        out,
+                        chain,
+                    )?
+                }
+                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_OUTPUT_IMAGE => {
+                    let out = out.handle.output;
+                    D3D12OutputView::new_from_raw(
+                        out.descriptor,
+                        Size::new(out.width, out.height),
+                        out.format,
+                    )
+                }
+                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_SOURCE_IMAGE => {
+                    return Err(LibrashaderError::InvalidParameter("out"))
+                }
+            }
         };
 
         let viewport = if viewport.is_null() {
@@ -283,10 +345,25 @@ extern_fn! {
             }
         };
 
-        let image = D3D12InputImage::External {
-            resource: image.resource.to_ref(),
-            descriptor: image.descriptor,
+        let image = unsafe {
+            match image.image_type {
+                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_RESOURCE => {
+                    let image = image.handle.resource;
+                    D3D12InputImage::Managed(image)
+                }
+                 LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_SOURCE_IMAGE => {
+                    let image = ManuallyDrop::into_inner(image.handle.source);
+                    D3D12InputImage::External {
+                        resource: image.resource,
+                        descriptor: image.descriptor,
+                    }
+                }
+                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_OUTPUT_IMAGE => {
+                    return Err(LibrashaderError::InvalidParameter("image"))
+                }
+            }
         };
+
         unsafe {
             chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;
         }

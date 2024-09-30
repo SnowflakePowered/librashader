@@ -66,9 +66,17 @@ The following changes are applicable if `LIBRA_RUNTIME_D3D11` is defined.
 ## `LIBRA_RUNTIME_D3D12` changes
 The following changes are applicable if `LIBRA_RUNTIME_D3D12` is defined.
 
+* The lifetime of resources will not be extended past the call to the `libra_d3d12_filter_chain_frame` function. In other words, the refcount for any resources passed into the function
+  will no longer be changed, and it is explicitly the responsibility of the caller to ensure any resources remain alive until the `ID3D12GraphicsCommandList` provided is submitted.
 * The fields `format`, `width`, and `height` have been removed from `libra_source_image_d3d12_t`.
 * The fields `width` and `height` have been added to `libra_output_image_d3d12_t`. 
   * You should now pass what was previously `.width` and `.height` of `libra_viewport_t` to these new fields in `libra_output_image_d3d12_t`.
+* The `image` parameter of `libra_d3d12_filter_chain_frame` has changed from `libra_source_image_d3d12_t` to `libra_image_d3d12_t`.
+  * To maintain the previous behaviour, `.image_type` of the `libra_image_d3d12_t` should be set to `IMAGE_TYPE_SOURCE_IMAGE`, and `.handle.source` should be the `libra_source_image_d3d12_t`struct.
+* The `out` parameter of `libra_d3d12_filter_chain_frame` has changed from `libra_output_image_d3d11_t` to `libra_image_d3d12_t`.
+  * To maintain the previous behaviour, `.image_type` of the `libra_image_d3d12_t` should be set to `IMAGE_TYPE_OUTPUT_IMAGE`, and `.handle.output` should be the `libra_output_image_d3d12_t`struct.
+* Any `libra_image_d3d12_t` can now optionally pass only the `ID3D12Resource *` for the texture by setting `.image_type` to `IMAGE_TYPE_RESOURCE` and setting `.handle.resource` to the resource pointer.
+  *  If using `IMAGE_TYPE_RESOURCE`, shader resource view and render target view descriptors for the input and output images will be internally allocated by the filter chain. This may result in marginally worse performance.
 * In `libra_d3d12_filter_chain_frame`, the position of the `viewport` parameter has moved to after the `out` parameter, and its type has changed from `libra_viewport_t` to `libra_viewport_t *`, which is allowed to be `NULL`.
   See [`libra_viewport_t` changes](#libra_viewport_t-changes) for more details.
 * The `chain` parameter of `libra_d3d12_filter_chain_get_param` has been made `const`.
