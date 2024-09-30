@@ -27,10 +27,10 @@ use windows::Win32::Graphics::Direct3D12::{
     D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
     D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST,
     D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0,
-    D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV, D3D12_TEXTURE_COPY_LOCATION,
-    D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+    D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_SHADER_RESOURCE_VIEW_DESC,
+    D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_SRV,
+    D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0,
+    D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
@@ -295,7 +295,7 @@ impl OwnedImage {
             );
         }
 
-        Ok(InputTexture::new(
+        Ok(InputTexture::new_owned(
             &self.resource,
             descriptor,
             self.size,
@@ -309,7 +309,9 @@ impl OwnedImage {
         &self,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
     ) -> error::Result<D3D12OutputView> {
-        D3D12OutputView::new_from_resource_internal(self.resource.to_ref(), &self.device, heap)
+        unsafe {
+            D3D12OutputView::new_from_resource_internal(self.resource.to_ref(), &self.device, heap)
+        }
     }
 
     pub fn scale(

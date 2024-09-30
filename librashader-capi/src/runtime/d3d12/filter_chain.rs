@@ -283,9 +283,9 @@ extern_fn! {
             }
         };
 
-        let image = D3D12InputImage {
+        let image = D3D12InputImage::External {
             resource: image.resource.to_ref(),
-            descriptor: Some(image.descriptor),
+            descriptor: image.descriptor,
         };
         unsafe {
             chain.frame(&command_list, image, &viewport, frame_count, options.as_ref())?;

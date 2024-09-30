@@ -67,7 +67,7 @@ pub struct FilterChainD3D12 {
     pub(crate) output_framebuffers: Box<[OwnedImage]>,
     pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
     pub(crate) history_framebuffers: VecDeque<OwnedImage>,
-    staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
+    pub(crate) staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     pub(crate) rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
 
     work_heap: ID3D12DescriptorHeap,
@@ -735,7 +735,22 @@ impl FilterChainD3D12 {
                 Some(fbo.create_shader_resource_view(&mut self.staging_heap, filter, wrap_mode)?);
         }
 
-        let original = unsafe { InputTexture::new_from_raw(input, filter, wrap_mode, &self.common.d3d12, &mut self.staging_heap)? };
+        let original = unsafe {
+            match input {
+                D3D12InputImage::Managed(input) => InputTexture::new_from_resource(
+                    input,
+                    filter,
+                    wrap_mode,
+                    &self.common.d3d12,
+                    &mut self.staging_heap,
+                )?,
+                D3D12InputImage::External {
+                    resource,
+                    descriptor,
+                } => InputTexture::new_from_raw(resource, descriptor, filter, wrap_mode),
+            }
+        };
+
         let mut source = original.clone();
 
         // swap output and feedback **before** recording command buffers

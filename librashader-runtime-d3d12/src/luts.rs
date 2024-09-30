@@ -201,7 +201,7 @@ impl LutTexture {
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
         );
 
-        let view = InputTexture::new(
+        let view = InputTexture::new_owned(
             &resource,
             descriptor,
             source.size,
