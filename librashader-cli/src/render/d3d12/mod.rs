@@ -154,10 +154,7 @@ impl RenderTest for Direct3D12 {
             for frame in 0..=frame_count {
                 filter_chain.frame(
                     &cmd,
-                    D3D12InputImage {
-                        resource: self.texture.to_ref(),
-                        descriptor: None,
-                    },
+                    D3D12InputImage::Managed(self.texture.to_ref()),
                     &viewport,
                     frame,
                     options.as_ref(),

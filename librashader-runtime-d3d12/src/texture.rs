@@ -1,14 +1,21 @@
 use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap};
-use crate::{error, FilterChainD3D12};
+use crate::error::FilterChainError;
 use crate::resource::{OutlivesFrame, ResourceHandleStrategy};
+use crate::{error, FilterChainD3D12};
 use d3d12_descriptor_heap::{D3D12DescriptorHeap, D3D12DescriptorHeapSlot};
 use librashader_common::{FilterMode, GetSize, Size, WrapMode};
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use windows::core::InterfaceRef;
-use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DIMENSION_TEXTURE2D, D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV, D3D12_TEX2D_SRV};
+use windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device, ID3D12Resource, D3D12_CPU_DESCRIPTOR_HANDLE,
+    D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_RENDER_TARGET_VIEW_DESC,
+    D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_SHADER_RESOURCE_VIEW_DESC,
+    D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_TEX2D_RTV,
+    D3D12_TEX2D_SRV,
+};
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
-use crate::error::FilterChainError;
 
 /// A **non-owning** reference to a ID3D12Resource.
 /// This does not `AddRef` or `Release` the underlying interface.
@@ -16,18 +23,16 @@ pub type D3D12ResourceRef<'a> = InterfaceRef<'a, ID3D12Resource>;
 
 /// An image for use as shader resource view.
 #[derive(Clone)]
-pub struct D3D12InputImage<'a> {
-    pub resource: InterfaceRef<'a, ID3D12Resource>,
-    pub descriptor: Option<D3D12_CPU_DESCRIPTOR_HANDLE>,
-}
-
-impl<'a> From<InterfaceRef<'a, ID3D12Resource>> for D3D12InputImage<'a> {
-    fn from(value: InterfaceRef<'a, ID3D12Resource>) -> Self {
-        Self {
-            resource: value,
-            descriptor: None
-        }
-    }
+pub enum D3D12InputImage<'a> {
+    /// The filter chain manages the CPU descriptor to the shader resource view.
+    Managed(InterfaceRef<'a, ID3D12Resource>),
+    /// The CPU descriptor to the shader resource view is managed externally.
+    External {
+        /// The ID3D12Resource that holds the image data.
+        resource: InterfaceRef<'a, ID3D12Resource>,
+        /// The CPU descriptor to the shader resource view.
+        descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    },
 }
 
 #[derive(Clone)]
@@ -85,6 +90,9 @@ impl D3D12OutputView {
     }
 
     // unsafe since the lifetime of the handle has to survive
+    /// Create a new D3D12OutputView from a CPU descriptor handle of a render target view.
+    ///
+    /// SAFETY: the handle must be valid until the command list is submitted.
     pub unsafe fn new_from_raw(
         handle: D3D12_CPU_DESCRIPTOR_HANDLE,
         size: Size<u32>,
@@ -101,15 +109,17 @@ impl D3D12OutputView {
     /// Create a new output view from a resource ref, linked to the chain.
     ///
     /// The output view will be automatically disposed on drop.
-    pub fn new_from_resource(
+    ///
+    /// SAFETY: the image must be valid until the command list is submitted.
+    pub unsafe fn new_from_resource(
         image: D3D12ResourceRef,
-        chain: &mut FilterChainD3D12
+        chain: &mut FilterChainD3D12,
     ) -> error::Result<D3D12OutputView> {
-        Self::new_from_resource_internal(image, &chain.common.d3d12, &mut chain.rtv_heap)
+        unsafe { Self::new_from_resource_internal(image, &chain.common.d3d12, &mut chain.rtv_heap) }
     }
 
     /// Create a new output view from a resource ref
-    pub(crate) fn new_from_resource_internal(
+    pub(crate) unsafe fn new_from_resource_internal(
         image: D3D12ResourceRef,
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
@@ -145,7 +155,7 @@ impl D3D12OutputView {
     }
 }
 
-pub struct InputTexture {
+pub(crate) struct InputTexture {
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) descriptor: InputDescriptor,
     pub(crate) size: Size<u32>,
@@ -157,7 +167,7 @@ pub struct InputTexture {
 impl InputTexture {
     // Create a new input texture, with runtime lifetime tracking.
     // The source owned framebuffer must outlive this input.
-    pub fn new(
+    pub fn new_owned(
         resource: &ManuallyDrop<ID3D12Resource>,
         handle: D3D12DescriptorHeapSlot<CpuStagingHeap>,
         size: Size<u32>,
@@ -168,7 +178,7 @@ impl InputTexture {
         let srv = InputDescriptor::Owned(handle);
         InputTexture {
             // SAFETY: `new` is only used for owned textures. We know this because
-            // we also hold `handle`, so the texture is at least
+            // we also hold `handle`, so the texture must be valid for at least
             // as valid for the lifetime of handle.
             // Also, resource is non-null by construction.
             // Option<T> and <T> have the same layout.
@@ -182,19 +192,19 @@ impl InputTexture {
     }
 
     // unsafe since the lifetime of the handle has to survive
-    pub unsafe fn new_from_raw(
-        image: D3D12InputImage,
+    pub unsafe fn new_from_resource<'a>(
+        image: InterfaceRef<'a, ID3D12Resource>,
         filter: FilterMode,
         wrap_mode: WrapMode,
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
     ) -> error::Result<InputTexture> {
-        let desc = unsafe { image.resource.GetDesc() };
+        let desc = unsafe { image.GetDesc() };
         if desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D {
             return Err(FilterChainError::InvalidDimensionError(desc.Dimension));
         }
 
-        let descriptor = image.descriptor.map_or_else(|| {
+        let descriptor = {
             let slot = heap.allocate_descriptor()?;
             unsafe {
                 let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
@@ -208,14 +218,14 @@ impl InputTexture {
                         },
                     },
                 };
-                device.CreateShaderResourceView(image.resource.deref(), Some(&srv_desc), *slot.as_ref());
+                device.CreateShaderResourceView(image.deref(), Some(&srv_desc), *slot.as_ref());
             }
 
             Ok::<_, FilterChainError>(InputDescriptor::Owned(slot))
-        }, |raw| Ok(InputDescriptor::Raw(raw)))?;
+        }?;
 
         Ok(InputTexture {
-            resource: unsafe { std::mem::transmute(image.resource) },
+            resource: unsafe { std::mem::transmute(image) },
             descriptor,
             size: Size::new(desc.Width as u32, desc.Height),
             format: desc.Format,
@@ -224,7 +234,23 @@ impl InputTexture {
         })
     }
 
-
+    // unsafe since the lifetime of the handle has to survive
+    pub unsafe fn new_from_raw(
+        image: InterfaceRef<ID3D12Resource>,
+        descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+        filter: FilterMode,
+        wrap_mode: WrapMode,
+    ) -> InputTexture {
+        let desc = unsafe { image.GetDesc() };
+        InputTexture {
+            resource: unsafe { std::mem::transmute(image) },
+            descriptor: InputDescriptor::Raw(descriptor),
+            size: Size::new(desc.Width as u32, desc.Height),
+            format: desc.Format,
+            wrap_mode,
+            filter,
+        }
+    }
 }
 
 impl Clone for InputTexture {
