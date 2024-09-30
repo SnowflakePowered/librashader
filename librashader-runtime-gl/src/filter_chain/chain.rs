@@ -147,10 +147,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // initialize passes
         let filters = Self::init_passes(&context, version, passes, &semantics, disable_cache)?;
 
-        let default_filter = filters.first().map(|f| f.config.filter).unwrap_or_default();
+        let default_filter = filters.first().map(|f| f.meta.filter).unwrap_or_default();
         let default_wrap = filters
             .first()
-            .map(|f| f.config.wrap_mode)
+            .map(|f| f.meta.wrap_mode)
             .unwrap_or_default();
 
         let samplers = SamplerSet::new(&context)?;
@@ -256,7 +256,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 uniform_storage,
                 uniform_bindings,
                 source,
-                config,
+                meta: config,
             });
         }
 
@@ -309,8 +309,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         self.draw_quad
             .bind_vertices(&self.common.context, QuadType::Offscreen);
 
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         // update history
         for (texture, fbo) in self
@@ -352,9 +352,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .zip(self.feedback_framebuffers.iter())
             .zip(passes.iter())
         {
-            texture.image = fbo
-                .as_texture(pass.config.filter, pass.config.wrap_mode)
-                .image;
+            texture.image = fbo.as_texture(pass.meta.filter, pass.meta.wrap_mode).image;
         }
 
         let passes_len = passes.len();
@@ -364,14 +362,14 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .bind_vertices(&self.common.context, QuadType::Offscreen);
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
-            source.filter = pass.config.filter;
-            source.mip_filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
+            source.filter = pass.meta.filter;
+            source.mip_filter = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
 
             pass.draw(
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -379,7 +377,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 RenderTarget::identity(target)?,
             )?;
 
-            let target = target.as_texture(pass.config.filter, pass.config.wrap_mode);
+            let target = target.as_texture(pass.meta.filter, pass.meta.wrap_mode);
             self.common.output_textures[index] = target;
             source = target;
         }
@@ -394,16 +392,16 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 .render_target
                 .ensure::<T::FramebufferInterface>(viewport.output)?;
 
-            source.filter = pass.config.filter;
-            source.mip_filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
+            source.filter = pass.meta.filter;
+            source.mip_filter = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
 
             if self.draw_last_pass_feedback {
                 let target = &self.output_framebuffers[index];
                 pass.draw(
                     index,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -415,7 +413,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             pass.draw(
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -424,7 +422,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             )?;
             self.common.output_textures[passes_len - 1] = viewport
                 .output
-                .as_texture(pass.config.filter, pass.config.wrap_mode);
+                .as_texture(pass.meta.filter, pass.meta.wrap_mode);
         }
 
         // swap feedback framebuffers with output

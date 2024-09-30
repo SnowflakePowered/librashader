@@ -7,7 +7,7 @@ use crate::reflect::semantics::{
 };
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::{ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -27,7 +27,7 @@ use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 /// ```
 ///
 /// This allows a runtime to not name the backing type of the compiled artifact if not necessary.
-pub type ShaderPassArtifact<T> = (ShaderPassConfig, ShaderSource, CompilerBackend<T>);
+pub type ShaderPassArtifact<T> = (ShaderPassMeta, ShaderSource, CompilerBackend<T>);
 
 impl<T: OutputTarget> CompilePresetTarget for T {}
 
@@ -101,22 +101,22 @@ where
                     }),
                 );
             }
-            Ok::<_, E>((shader, source, reflect))
+            Ok::<_, E>((shader.meta, source, reflect))
         })
-        .collect::<Result<Vec<(ShaderPassConfig, ShaderSource, CompilerBackend<_>)>, E>>()?;
+        .collect::<Result<Vec<(ShaderPassMeta, ShaderSource, CompilerBackend<_>)>, E>>()?;
 
-    for (config, source, _) in &passes {
+    for (meta, source, _) in &passes {
         insert_pass_semantics(
             &mut uniform_semantics,
             &mut texture_semantics,
-            config.alias.as_ref(),
-            config.id as usize,
+            meta.alias.as_ref(),
+            meta.id as usize,
         );
         insert_pass_semantics(
             &mut uniform_semantics,
             &mut texture_semantics,
             source.name.as_ref(),
-            config.id as usize,
+            meta.id as usize,
         );
     }
 
@@ -251,14 +251,14 @@ impl ShaderSemantics {
         insert_pass_semantics(
             &mut uniform_semantics,
             &mut texture_semantics,
-            config.alias.as_ref(),
-            config.id as usize,
+            config.meta.alias.as_ref(),
+            config.meta.id as usize,
         );
         insert_pass_semantics(
             &mut uniform_semantics,
             &mut texture_semantics,
             source.name.as_ref(),
-            config.id as usize,
+            config.meta.id as usize,
         );
         insert_lut_semantics(
             preset.textures.as_slice(),

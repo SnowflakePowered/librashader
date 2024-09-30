@@ -10,7 +10,7 @@ use d3d12_descriptor_heap::D3D12DescriptorHeapSlot;
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
-use librashader_presets::ShaderPassConfig;
+use librashader_presets::ShaderPassMeta;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
@@ -30,7 +30,7 @@ use windows::Win32::Graphics::Direct3D12::{
 pub(crate) struct FilterPass {
     pub(crate) pipeline: D3D12GraphicsPipeline,
     pub(crate) reflection: ShaderReflection,
-    pub(crate) config: ShaderPassConfig,
+    pub(crate) meta: ShaderPassMeta,
     pub(crate) uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub uniform_storage:
         UniformStorage<NoUniformBinder, Option<()>, RawD3D12Buffer, RawD3D12Buffer>,
@@ -77,8 +77,8 @@ impl FilterPassMeta for FilterPass {
         self.source.format
     }
 
-    fn config(&self) -> &ShaderPassConfig {
-        &self.config
+    fn meta(&self) -> &ShaderPassMeta {
+        &self.meta
     }
 }
 

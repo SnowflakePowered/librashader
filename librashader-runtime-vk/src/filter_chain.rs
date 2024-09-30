@@ -511,7 +511,7 @@ impl FilterChainVulkan {
                     uniform_storage,
                     uniform_bindings,
                     source,
-                    config,
+                    meta: config,
                     graphics_pipeline,
                     // ubo_ring,
                     frames_in_flight,
@@ -654,8 +654,8 @@ impl FilterChainVulkan {
             self.vulkan.device.create_image_view(&create_info, None)?
         };
 
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         // update history
         for (texture, image) in self
@@ -704,9 +704,9 @@ impl FilterChainVulkan {
                        feedback: &OwnedImage| {
                 // refresh inputs
                 self.common.feedback_textures[index] =
-                    Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode));
+                    Some(feedback.as_input(pass.meta.filter, pass.meta.wrap_mode));
                 self.common.output_textures[index] =
-                    Some(output.as_input(pass.config.filter, pass.config.wrap_mode));
+                    Some(output.as_input(pass.meta.filter, pass.meta.wrap_mode));
                 Ok(())
             }),
         )?;
@@ -721,9 +721,9 @@ impl FilterChainVulkan {
             .bind_vbo_for_frame(&self.vulkan.device, cmd);
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
-            source.filter_mode = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-            source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
+            source.mip_filter = pass.meta.filter;
 
             let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
             let out = RenderTarget::identity(&output_image)?;
@@ -733,7 +733,7 @@ impl FilterChainVulkan {
                 target.image.format,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -768,9 +768,9 @@ impl FilterChainVulkan {
                 pass.graphics_pipeline.recompile(viewport.output.format)?;
             }
 
-            source.filter_mode = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-            source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
+            source.mip_filter = pass.meta.filter;
 
             if self.draw_last_pass_feedback {
                 let target = &self.output_framebuffers[index];
@@ -783,7 +783,7 @@ impl FilterChainVulkan {
                     target.image.format,
                     index,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -805,7 +805,7 @@ impl FilterChainVulkan {
                 viewport.output.format,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,

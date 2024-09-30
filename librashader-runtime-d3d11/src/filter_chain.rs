@@ -328,7 +328,7 @@ impl FilterChainD3D11 {
                 uniform_buffer: ubo_cbuffer,
                 push_buffer: push_cbuffer,
                 source,
-                config,
+                meta: config,
             })
         };
 
@@ -425,8 +425,8 @@ impl FilterChainD3D11 {
         }
 
         let options = options.unwrap_or(&self.default_options);
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         for (texture, fbo) in self
             .common
@@ -467,8 +467,8 @@ impl FilterChainD3D11 {
         {
             *texture = Some(InputTexture::from_framebuffer(
                 fbo,
-                pass.config.wrap_mode,
-                pass.config.filter,
+                pass.meta.wrap_mode,
+                pass.meta.filter,
             )?);
         }
 
@@ -479,14 +479,14 @@ impl FilterChainD3D11 {
         self.common.draw_quad.bind_vbo_for_frame(ctx);
 
         for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
+            source.filter = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
             let target = &self.output_framebuffers[index];
             pass.draw(
                 ctx,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -497,8 +497,8 @@ impl FilterChainD3D11 {
 
             source = InputTexture {
                 view: target.create_shader_resource_view()?,
-                filter: pass.config.filter,
-                wrap_mode: pass.config.wrap_mode,
+                filter: pass.meta.filter,
+                wrap_mode: pass.meta.wrap_mode,
             };
             self.common.output_textures[index] = Some(source.clone());
         }
@@ -507,8 +507,8 @@ impl FilterChainD3D11 {
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
             let index = passes_len - 1;
-            source.filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
+            source.filter = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
 
             // Draw to output_framebuffers for proper handling of feedback.
 
@@ -518,7 +518,7 @@ impl FilterChainD3D11 {
                     &ctx,
                     index,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -535,7 +535,7 @@ impl FilterChainD3D11 {
                 &ctx,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,

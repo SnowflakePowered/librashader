@@ -170,7 +170,7 @@ impl FilterChainD3D9 {
                 uniform_storage,
                 gl_halfpixel,
                 source,
-                config,
+                meta: config,
             })
         };
 
@@ -309,8 +309,8 @@ impl FilterChainD3D9 {
         }
 
         let options = options.unwrap_or(&self.default_options);
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         for (texture, fbo) in self
             .common
@@ -351,11 +351,7 @@ impl FilterChainD3D9 {
             .zip(self.feedback_framebuffers.iter())
             .zip(passes.iter())
         {
-            *texture = Some(fbo.as_input(
-                pass.config.filter,
-                pass.config.filter,
-                pass.config.wrap_mode,
-            ));
+            *texture = Some(fbo.as_input(pass.meta.filter, pass.meta.filter, pass.meta.wrap_mode));
         }
 
         let passes_len = passes.len();
@@ -363,16 +359,16 @@ impl FilterChainD3D9 {
         let state_guard = D3D9State::new(&self.common.d3d9)?;
 
         for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter = pass.config.filter;
-            source.wrap = pass.config.wrap_mode;
-            source.is_srgb = pass.config.srgb_framebuffer;
+            source.filter = pass.meta.filter;
+            source.wrap = pass.meta.wrap_mode;
+            source.is_srgb = pass.meta.srgb_framebuffer;
             let target = &self.output_framebuffers[index];
             let target_rtv = target.as_output()?;
             pass.draw(
                 &self.common.d3d9,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -383,10 +379,10 @@ impl FilterChainD3D9 {
 
             source = D3D9InputTexture {
                 handle: target.handle.clone(),
-                filter: pass.config.filter,
-                wrap: pass.config.wrap_mode,
-                mipmode: pass.config.filter,
-                is_srgb: pass.config.srgb_framebuffer,
+                filter: pass.meta.filter,
+                wrap: pass.meta.wrap_mode,
+                mipmode: pass.meta.filter,
+                is_srgb: pass.meta.srgb_framebuffer,
             };
             self.common.output_textures[index] = Some(source.clone());
         }
@@ -395,9 +391,9 @@ impl FilterChainD3D9 {
         assert_eq!(last.len(), 1);
         if let Some(pass) = last.iter_mut().next() {
             let index = passes_len - 1;
-            source.filter = pass.config.filter;
-            source.wrap = pass.config.wrap_mode;
-            source.is_srgb = pass.config.srgb_framebuffer;
+            source.filter = pass.meta.filter;
+            source.wrap = pass.meta.wrap_mode;
+            source.is_srgb = pass.meta.srgb_framebuffer;
 
             if self.draw_last_pass_feedback {
                 let feedback_target = &self.output_framebuffers[index];
@@ -407,7 +403,7 @@ impl FilterChainD3D9 {
                     &self.common.d3d9,
                     index,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -421,7 +417,7 @@ impl FilterChainD3D9 {
                 &self.common.d3d9,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,

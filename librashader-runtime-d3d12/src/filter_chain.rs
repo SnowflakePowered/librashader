@@ -619,7 +619,7 @@ impl FilterChainD3D12 {
                         uniform_bindings,
                         uniform_storage,
                         pipeline: graphics_pipeline,
-                        config,
+                        meta: config,
                         texture_heap,
                         sampler_heap,
                         source,
@@ -708,8 +708,8 @@ impl FilterChainD3D12 {
 
         let options = options.unwrap_or(&self.default_options);
 
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         for ((texture, fbo), pass) in self
             .common
@@ -720,8 +720,8 @@ impl FilterChainD3D12 {
         {
             *texture = Some(fbo.create_shader_resource_view(
                 &mut self.staging_heap,
-                pass.config.filter,
-                pass.config.wrap_mode,
+                pass.meta.filter,
+                pass.meta.wrap_mode,
             )?);
         }
 
@@ -771,13 +771,13 @@ impl FilterChainD3D12 {
                 // refresh inputs
                 self.common.feedback_textures[index] = Some(feedback.create_shader_resource_view(
                     &mut self.staging_heap,
-                    pass.config.filter,
-                    pass.config.wrap_mode,
+                    pass.meta.filter,
+                    pass.meta.wrap_mode,
                 )?);
                 self.common.output_textures[index] = Some(output.create_shader_resource_view(
                     &mut self.staging_heap,
-                    pass.config.filter,
-                    pass.config.wrap_mode,
+                    pass.meta.filter,
+                    pass.meta.wrap_mode,
                 )?);
 
                 Ok(())
@@ -800,8 +800,8 @@ impl FilterChainD3D12 {
         self.common.draw_quad.bind_vertices_for_frame(cmd);
 
         for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
+            source.filter = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
 
             let target = &self.output_framebuffers[index];
 
@@ -828,7 +828,7 @@ impl FilterChainD3D12 {
                 cmd,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -872,8 +872,8 @@ impl FilterChainD3D12 {
         if let Some(pass) = last.iter_mut().next() {
             let index = passes_len - 1;
 
-            source.filter = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
+            source.filter = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
 
             if self.draw_last_pass_feedback {
                 let feedback_target = &self.output_framebuffers[index];
@@ -900,7 +900,7 @@ impl FilterChainD3D12 {
                     cmd,
                     index,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -931,7 +931,7 @@ impl FilterChainD3D12 {
                 cmd,
                 passes_len - 1,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,

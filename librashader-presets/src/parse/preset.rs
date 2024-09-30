@@ -1,6 +1,9 @@
 use crate::parse::remove_if;
 use crate::parse::value::Value;
-use crate::{ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPreset, TextureConfig};
+use crate::{
+    ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPassMeta, ShaderPreset,
+    TextureConfig,
+};
 use vec_extract_if_polyfill::MakeExtractIf;
 
 pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
@@ -114,63 +117,65 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
             }
 
             let shader = ShaderPassConfig {
-                id,
                 name,
-                alias: shader_values.iter().find_map(|f| match f {
-                    Value::Alias(_, value) => Some(value.clone()),
-                    _ => None,
-                }),
-                filter: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::FilterMode(_, value) => Some(*value),
+                meta: ShaderPassMeta {
+                    id,
+                    alias: shader_values.iter().find_map(|f| match f {
+                        Value::Alias(_, value) => Some(value.clone()),
                         _ => None,
-                    })
-                    .unwrap_or_default(),
-                wrap_mode: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::WrapMode(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or_default(),
-                frame_count_mod: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::FrameCountMod(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or(0),
-                srgb_framebuffer: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::SrgbFramebuffer(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or(false),
-                float_framebuffer: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::FloatFramebuffer(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or(false),
-                mipmap_input: shader_values
-                    .iter()
-                    .find_map(|f| match f {
-                        Value::MipmapInput(_, value) => Some(*value),
-                        _ => None,
-                    })
-                    .unwrap_or(false),
-                scaling: Scale2D {
-                    valid: scale_valid,
-                    x: Scaling {
-                        scale_type: scale_type_x.unwrap_or_default(),
-                        factor: scale_x.unwrap_or_default(),
-                    },
-                    y: Scaling {
-                        scale_type: scale_type_y.unwrap_or_default(),
-                        factor: scale_y.unwrap_or_default(),
+                    }),
+                    filter: shader_values
+                        .iter()
+                        .find_map(|f| match f {
+                            Value::FilterMode(_, value) => Some(*value),
+                            _ => None,
+                        })
+                        .unwrap_or_default(),
+                    wrap_mode: shader_values
+                        .iter()
+                        .find_map(|f| match f {
+                            Value::WrapMode(_, value) => Some(*value),
+                            _ => None,
+                        })
+                        .unwrap_or_default(),
+                    frame_count_mod: shader_values
+                        .iter()
+                        .find_map(|f| match f {
+                            Value::FrameCountMod(_, value) => Some(*value),
+                            _ => None,
+                        })
+                        .unwrap_or(0),
+                    srgb_framebuffer: shader_values
+                        .iter()
+                        .find_map(|f| match f {
+                            Value::SrgbFramebuffer(_, value) => Some(*value),
+                            _ => None,
+                        })
+                        .unwrap_or(false),
+                    float_framebuffer: shader_values
+                        .iter()
+                        .find_map(|f| match f {
+                            Value::FloatFramebuffer(_, value) => Some(*value),
+                            _ => None,
+                        })
+                        .unwrap_or(false),
+                    mipmap_input: shader_values
+                        .iter()
+                        .find_map(|f| match f {
+                            Value::MipmapInput(_, value) => Some(*value),
+                            _ => None,
+                        })
+                        .unwrap_or(false),
+                    scaling: Scale2D {
+                        valid: scale_valid,
+                        x: Scaling {
+                            scale_type: scale_type_x.unwrap_or_default(),
+                            factor: scale_x.unwrap_or_default(),
+                        },
+                        y: Scaling {
+                            scale_type: scale_type_y.unwrap_or_default(),
+                            factor: scale_y.unwrap_or_default(),
+                        },
                     },
                 },
             };
