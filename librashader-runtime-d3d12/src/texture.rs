@@ -17,22 +17,24 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 
-/// A **non-owning** reference to a ID3D12Resource.
-/// This does not `AddRef` or `Release` the underlying interface.
-pub type D3D12ResourceRef<'a> = InterfaceRef<'a, ID3D12Resource>;
-
 /// An image for use as shader resource view.
 #[derive(Clone)]
-pub enum D3D12InputImage<'a> {
+pub enum D3D12InputImage {
     /// The filter chain manages the CPU descriptor to the shader resource view.
-    Managed(InterfaceRef<'a, ID3D12Resource>),
+    Managed(ManuallyDrop<ID3D12Resource>),
     /// The CPU descriptor to the shader resource view is managed externally.
     External {
         /// The ID3D12Resource that holds the image data.
-        resource: InterfaceRef<'a, ID3D12Resource>,
+        resource: ManuallyDrop<ID3D12Resource>,
         /// The CPU descriptor to the shader resource view.
         descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
     },
+}
+
+impl<'a> From<InterfaceRef<'a, ID3D12Resource>> for D3D12InputImage {
+    fn from(value: InterfaceRef<'a, ID3D12Resource>) -> Self {
+        Self::Managed(unsafe { std::mem::transmute(value) })
+    }
 }
 
 #[derive(Clone)]
@@ -112,15 +114,21 @@ impl D3D12OutputView {
     ///
     /// SAFETY: the image must be valid until the command list is submitted.
     pub unsafe fn new_from_resource(
-        image: D3D12ResourceRef,
+        image: ManuallyDrop<ID3D12Resource>,
         chain: &mut FilterChainD3D12,
     ) -> error::Result<D3D12OutputView> {
-        unsafe { Self::new_from_resource_internal(image, &chain.common.d3d12, &mut chain.rtv_heap) }
+        unsafe {
+            Self::new_from_resource_internal(
+                std::mem::transmute(image),
+                &chain.common.d3d12,
+                &mut chain.rtv_heap,
+            )
+        }
     }
 
     /// Create a new output view from a resource ref
     pub(crate) unsafe fn new_from_resource_internal(
-        image: D3D12ResourceRef,
+        image: InterfaceRef<ID3D12Resource>,
         device: &ID3D12Device,
         heap: &mut D3D12DescriptorHeap<RenderTargetHeap>,
     ) -> error::Result<D3D12OutputView> {
@@ -192,8 +200,8 @@ impl InputTexture {
     }
 
     // unsafe since the lifetime of the handle has to survive
-    pub unsafe fn new_from_resource<'a>(
-        image: InterfaceRef<'a, ID3D12Resource>,
+    pub unsafe fn new_from_resource(
+        image: ManuallyDrop<ID3D12Resource>,
         filter: FilterMode,
         wrap_mode: WrapMode,
         device: &ID3D12Device,
@@ -225,7 +233,7 @@ impl InputTexture {
         }?;
 
         Ok(InputTexture {
-            resource: unsafe { std::mem::transmute(image) },
+            resource: image,
             descriptor,
             size: Size::new(desc.Width as u32, desc.Height),
             format: desc.Format,
@@ -236,7 +244,7 @@ impl InputTexture {
 
     // unsafe since the lifetime of the handle has to survive
     pub unsafe fn new_from_raw(
-        image: InterfaceRef<ID3D12Resource>,
+        image: ManuallyDrop<ID3D12Resource>,
         descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
         filter: FilterMode,
         wrap_mode: WrapMode,
