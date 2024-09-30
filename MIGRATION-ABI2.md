@@ -68,7 +68,8 @@ The following changes are applicable if `LIBRA_RUNTIME_D3D12` is defined.
 
 * The lifetime of resources will not be extended past the call to the `libra_d3d12_filter_chain_frame` function. In other words, the refcount for any resources passed into the function
   will no longer be changed, and it is explicitly the responsibility of the caller to ensure any resources remain alive until the `ID3D12GraphicsCommandList` provided is submitted.
-* The fields `format`, `width`, and `height` have been removed from `libra_source_image_d3d12_t`.
+* The fields `format`, `width`, and `height` have been removed from `libra_source_image_d3d12_t`. 
+* The field `descriptor` now comes before the field `resource` in the layout of `libra_source_image_d3d12_t`.
 * The fields `width` and `height` have been added to `libra_output_image_d3d12_t`. 
   * You should now pass what was previously `.width` and `.height` of `libra_viewport_t` to these new fields in `libra_output_image_d3d12_t`.
 * The `image` parameter of `libra_d3d12_filter_chain_frame` has changed from `libra_source_image_d3d12_t` to `libra_image_d3d12_t`.
