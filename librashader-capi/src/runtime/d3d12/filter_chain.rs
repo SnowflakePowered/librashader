@@ -229,7 +229,7 @@ extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command list.
     ///
-    /// librashader **will not** create a resource barrier for the final pass. The output image will
+    /// A resource barrier **will not** be created for the final pass. The output image will
     /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
     /// the output image to the final resource state.
     ///
