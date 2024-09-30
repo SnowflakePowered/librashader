@@ -1386,7 +1386,7 @@ libra_error_t libra_vk_filter_chain_create_deferred(libra_shader_preset_t *prese
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command buffer.
 ///
-/// librashader **will not** create a pipeline barrier for the final pass. The output image must be
+/// A pipeline barrier **will not** be created for the final pass. The output image must be
 /// in `VK_COLOR_ATTACHMENT_OPTIMAL`, and will remain so after all shader passes. The caller must transition
 /// the output image to the final layout.
 ///
@@ -1782,7 +1782,7 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 /// Records rendering commands for a frame with the given parameters for the given filter chain
 /// to the input command list.
 ///
-/// librashader **will not** create a resource barrier for the final pass. The output image will
+/// A resource barrier **will not** be created for the final pass. The output image will
 /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
 /// the output image to the final resource state.
 ///

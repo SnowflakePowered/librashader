@@ -7,7 +7,7 @@ use librashader::runtime::vk::{
     FilterChain, FilterChainOptions, FrameOptions, VulkanImage, VulkanInstance,
 };
 use std::ffi::CStr;
-use std::ffi::{c_char, c_void};
+use std::ffi::c_char;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::slice;
@@ -18,11 +18,9 @@ use librashader::runtime::{Size, Viewport};
 use crate::LIBRASHADER_API_VERSION;
 use ash::vk;
 use ash::vk::Handle;
-pub use ash::vk::PFN_vkGetInstanceProcAddr;
 
-/// A Vulkan instance function loader that the Vulkan filter chain needs to be initialized with.
-pub type libra_PFN_vkGetInstanceProcAddr =
-    unsafe extern "system" fn(instance: *mut c_void, p_name: *const c_char);
+///	A Vulkan instance function loader that the Vulkan filter chain needs to be initialized with.
+pub use ash::vk::PFN_vkGetInstanceProcAddr;
 
 /// Vulkan parameters for an image.
 #[repr(C)]
@@ -237,7 +235,7 @@ extern_fn! {
     /// Records rendering commands for a frame with the given parameters for the given filter chain
     /// to the input command buffer.
     ///
-    /// librashader **will not** create a pipeline barrier for the final pass. The output image must be
+    /// A pipeline barrier **will not** be created for the final pass. The output image must be
     /// in `VK_COLOR_ATTACHMENT_OPTIMAL`, and will remain so after all shader passes. The caller must transition
     /// the output image to the final layout.
     ///
