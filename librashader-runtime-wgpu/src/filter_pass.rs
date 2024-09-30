@@ -9,7 +9,7 @@ use crate::texture::InputImage;
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
-use librashader_presets::ShaderPassConfig;
+use librashader_presets::ShaderPassMeta;
 use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
@@ -34,7 +34,7 @@ pub struct FilterPass {
     >,
     pub uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
-    pub config: ShaderPassConfig,
+    pub meta: ShaderPassMeta,
     pub graphics_pipeline: WgpuGraphicsPipeline,
 }
 
@@ -255,7 +255,7 @@ impl FilterPassMeta for FilterPass {
         self.source.format
     }
 
-    fn config(&self) -> &ShaderPassConfig {
-        &self.config
+    fn meta(&self) -> &ShaderPassMeta {
+        &self.meta
     }
 }

@@ -9,10 +9,17 @@ use std::str::FromStr;
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderPassConfig {
-    /// The index of the shader pass relative to its parent preset.
-    pub id: i32,
     /// The fully qualified path to the shader pass source file.
     pub name: PathBuf,
+    /// Meta information about the shader pass
+    pub meta: ShaderPassMeta,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ShaderPassMeta {
+    /// The index of the shader pass relative to its parent preset.
+    pub id: i32,
     /// The alias of the shader pass if available.
     pub alias: Option<ShortString>,
     /// The filtering mode that this shader pass should expect.
@@ -31,7 +38,7 @@ pub struct ShaderPassConfig {
     pub scaling: Scale2D,
 }
 
-impl ShaderPassConfig {
+impl ShaderPassMeta {
     /// If the framebuffer expects a different format than what was defined in the
     /// shader source, returns such format.
     #[inline(always)]

@@ -336,7 +336,7 @@ impl FilterChainWgpu {
                         uniform_storage,
                         uniform_bindings,
                         source,
-                        config,
+                        meta: config,
                         graphics_pipeline,
                     })
                 })
@@ -389,8 +389,8 @@ impl FilterChainWgpu {
 
         let original_image_view = input.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         // update history
         for (texture, image) in self
@@ -433,9 +433,9 @@ impl FilterChainWgpu {
                        feedback: &OwnedImage| {
                 // refresh inputs
                 self.common.feedback_textures[index] =
-                    Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode));
+                    Some(feedback.as_input(pass.meta.filter, pass.meta.wrap_mode));
                 self.common.output_textures[index] =
-                    Some(output.as_input(pass.config.filter, pass.config.wrap_mode));
+                    Some(output.as_input(pass.meta.filter, pass.meta.wrap_mode));
                 Ok(())
             }),
         )?;
@@ -446,9 +446,9 @@ impl FilterChainWgpu {
         let options = options.unwrap_or(&self.default_frame_options);
 
         for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter_mode = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-            source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
+            source.mip_filter = pass.meta.filter;
 
             let target = &self.output_framebuffers[index];
             let output_image = WgpuOutputView::from(target);
@@ -458,7 +458,7 @@ impl FilterChainWgpu {
                 cmd,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -490,9 +490,9 @@ impl FilterChainWgpu {
                 pass.graphics_pipeline.recompile(viewport.output.format);
             }
 
-            source.filter_mode = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-            source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
+            source.mip_filter = pass.meta.filter;
 
             if self.draw_last_pass_feedback {
                 let target = &self.output_framebuffers[index];
@@ -503,7 +503,7 @@ impl FilterChainWgpu {
                     cmd,
                     index,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -518,7 +518,7 @@ impl FilterChainWgpu {
                 cmd,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,

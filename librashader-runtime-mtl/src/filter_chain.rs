@@ -205,7 +205,7 @@ impl FilterChainMetal {
                     uniform_storage,
                     uniform_bindings,
                     source,
-                    config,
+                    meta: config,
                     graphics_pipeline,
                 })
             })
@@ -379,8 +379,8 @@ impl FilterChainMetal {
             return Ok(());
         }
 
-        let filter = passes[0].config.filter;
-        let wrap_mode = passes[0].config.wrap_mode;
+        let filter = passes[0].meta.filter;
+        let wrap_mode = passes[0].meta.wrap_mode;
 
         // update history
         for (texture, image) in self
@@ -428,9 +428,9 @@ impl FilterChainMetal {
                        feedback: &OwnedTexture| {
                 // refresh inputs
                 self.common.feedback_textures[index] =
-                    Some(feedback.as_input(pass.config.filter, pass.config.wrap_mode)?);
+                    Some(feedback.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
                 self.common.output_textures[index] =
-                    Some(output.as_input(pass.config.filter, pass.config.wrap_mode)?);
+                    Some(output.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
                 Ok(())
             }),
         )?;
@@ -441,16 +441,16 @@ impl FilterChainMetal {
 
         for (index, pass) in pass.iter_mut().enumerate() {
             let target = &self.output_framebuffers[index];
-            source.filter_mode = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-            source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
+            source.mip_filter = pass.meta.filter;
 
             let out = RenderTarget::identity(target.texture.as_ref())?;
             pass.draw(
                 &cmd,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
@@ -464,7 +464,7 @@ impl FilterChainMetal {
             }
 
             self.common.output_textures[index] =
-                Some(target.as_input(pass.config.filter, pass.config.wrap_mode)?);
+                Some(target.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
             source = self.common.output_textures[index]
                 .as_ref()
                 .map(InputTexture::try_clone)
@@ -484,9 +484,9 @@ impl FilterChainMetal {
                     .recompile(&self.common.device, viewport.output.pixelFormat())?;
             }
 
-            source.filter_mode = pass.config.filter;
-            source.wrap_mode = pass.config.wrap_mode;
-            source.mip_filter = pass.config.filter;
+            source.filter_mode = pass.meta.filter;
+            source.wrap_mode = pass.meta.wrap_mode;
+            source.mip_filter = pass.meta.filter;
             let index = passes_len - 1;
 
             if self.draw_last_pass_feedback {
@@ -496,7 +496,7 @@ impl FilterChainMetal {
                     &cmd,
                     passes_len - 1,
                     &self.common,
-                    pass.config.get_frame_count(frame_count),
+                    pass.meta.get_frame_count(frame_count),
                     options,
                     viewport,
                     &original,
@@ -511,7 +511,7 @@ impl FilterChainMetal {
                 &cmd,
                 index,
                 &self.common,
-                pass.config.get_frame_count(frame_count),
+                pass.meta.get_frame_count(frame_count),
                 options,
                 viewport,
                 &original,
