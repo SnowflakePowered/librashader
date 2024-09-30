@@ -38,7 +38,7 @@ The following changes are applicable if `LIBRA_RUNTIME_VULKAN` is defined.
 * It is always thread safe to call `libra_vk_filter_chain_set_param` from any thread [^1].
 
 ## `LIBRA_RUNTIME_OPENGL` changes
-The following changes are applicable if `LIBRA_RUNTIME_METAL` is defined.
+The following changes are applicable if `LIBRA_RUNTIME_OPENGL` is defined.
 * The `libra_gl_init_context` function has been removed.
 * The function `libra_gl_filter_chain_create` now accepts a `loader` parameter of type `libra_gl_loader_t`. This will be the OpenGL loader used to create the filter chain, previously passed to `libra_gl_init_context`
   The filter chain will be created against the current OpenGL context. 
