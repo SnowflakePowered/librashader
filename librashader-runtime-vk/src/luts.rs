@@ -3,7 +3,7 @@ use crate::memory::{VulkanBuffer, VulkanImageMemory};
 use crate::texture::{InputImage, VulkanImage};
 use crate::{error, util};
 use ash::vk;
-use librashader_presets::TextureConfig;
+use librashader_presets::{TextureConfig, TextureMeta};
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 
@@ -18,7 +18,7 @@ impl LutTexture {
         vulkan: &VulkanObjects,
         cmd: vk::CommandBuffer,
         image: Image<BGRA8>,
-        config: &TextureConfig,
+        config: &TextureMeta,
     ) -> error::Result<LutTexture> {
         let image_info = vk::ImageCreateInfo::default()
             .image_type(vk::ImageType::TYPE_2D)

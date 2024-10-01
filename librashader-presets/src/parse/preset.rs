@@ -1,8 +1,8 @@
 use crate::parse::remove_if;
 use crate::parse::value::Value;
 use crate::{
-    ParameterConfig, Scale2D, Scaling, ShaderPassConfig, ShaderPassMeta, ShaderPreset,
-    TextureConfig,
+    ParameterMeta, Scale2D, Scaling, ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig,
+    TextureMeta,
 };
 use vec_extract_if_polyfill::MakeExtractIf;
 
@@ -19,22 +19,24 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                 } = value
                 {
                     TextureConfig {
-                        name,
                         path,
-                        wrap_mode,
-                        filter_mode,
-                        mipmap,
+                        meta: TextureMeta {
+                            name,
+                            wrap_mode,
+                            filter_mode,
+                            mipmap,
+                        },
                     }
                 } else {
                     unreachable!("values should all be of type Texture")
                 }
             })
             .collect();
-    let parameters: Vec<ParameterConfig> =
+    let parameters: Vec<ParameterMeta> =
         MakeExtractIf::extract_if(&mut values, |f| matches!(*f, Value::Parameter { .. }))
             .map(|value| {
                 if let Value::Parameter(name, value) = value {
-                    ParameterConfig { name, value }
+                    ParameterMeta { name, value }
                 } else {
                     unreachable!("values should be all of type parameters")
                 }

@@ -448,9 +448,9 @@ impl FilterChainD3D12 {
                 staging_heap,
                 cmd,
                 &image,
-                texture.filter_mode,
-                texture.wrap_mode,
-                texture.mipmap,
+                texture.meta.filter_mode,
+                texture.meta.wrap_mode,
+                texture.meta.mipmap,
                 gc,
             )?;
             luts.insert(index, texture);

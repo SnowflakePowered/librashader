@@ -193,7 +193,7 @@ impl FilterChainD3D9 {
             .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
 
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(device, &image, &texture)?;
+            let texture = LutTexture::new(device, &image, &texture.meta)?;
             luts.insert(index, texture);
         }
         Ok(luts)
