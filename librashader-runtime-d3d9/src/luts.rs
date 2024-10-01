@@ -2,7 +2,7 @@ use crate::error;
 use crate::error::assume_d3d_init;
 use crate::texture::D3D9InputTexture;
 
-use librashader_presets::{TextureConfig, TextureMeta};
+use librashader_presets::TextureMeta;
 use librashader_runtime::image::{Image, BGRA8};
 
 use windows::Win32::Graphics::Direct3D9::{

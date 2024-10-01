@@ -119,7 +119,7 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
             }
 
             let shader = ShaderPassConfig {
-                name,
+                path: name,
                 meta: ShaderPassMeta {
                     id,
                     alias: shader_values.iter().find_map(|f| match f {

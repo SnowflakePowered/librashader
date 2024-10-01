@@ -55,7 +55,7 @@ fn collect_all_loadable_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
         !preset
             .shaders
             .par_iter()
-            .any(|shader| ShaderSource::load(&shader.name).is_err())
+            .any(|shader| ShaderSource::load(&shader.path).is_err())
     });
 
     presets
@@ -67,7 +67,7 @@ pub fn preprocess_all_slang_presets_parsed() {
 
     for (path, preset) in presets {
         preset.shaders.into_par_iter().for_each(|shader| {
-            if let Err(e) = ShaderSource::load(&shader.name) {
+            if let Err(e) = ShaderSource::load(&shader.path) {
                 #[cfg(not(feature = "github-ci"))]
                 eprintln!(
                     "[ERROR] Failed to preprocess shader {} from preset {}: {:?}",

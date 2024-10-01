@@ -3,7 +3,7 @@ use crate::memory::{VulkanBuffer, VulkanImageMemory};
 use crate::texture::{InputImage, VulkanImage};
 use crate::{error, util};
 use ash::vk;
-use librashader_presets::{TextureConfig, TextureMeta};
+use librashader_presets::TextureMeta;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 
