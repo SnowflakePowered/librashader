@@ -69,6 +69,9 @@ pub use librashader_common::map::ShortString;
 pub mod presets {
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
     pub use librashader_presets::*;
+
+    pub use librashader_pack::*;
+
     /// Get full parameter metadata from a shader preset.
     pub fn get_parameter_meta(
         preset: &ShaderPreset,
