@@ -10,7 +10,7 @@ use crate::texture::InputTexture;
 pub use framebuffer::GLFramebuffer;
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size};
-use librashader_presets::{Scale2D, TextureConfig};
+use librashader_presets::Scale2D;
 use librashader_reflect::back::glsl::CrossGlslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
 use librashader_reflect::reflect::semantics::{BufferReflection, TextureBinding};
@@ -60,7 +60,7 @@ static FINAL_VBO_DATA: &[VertexInput; 4] = &[
 pub(crate) trait LoadLut {
     fn load_luts(
         context: &glow::Context,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> Result<FastHashMap<usize, InputTexture>>;
 }
 
@@ -172,3 +172,4 @@ pub(crate) trait GLInterface {
 }
 
 pub(crate) use framebuffer::OutputFramebuffer;
+use librashader_pack::TextureData;

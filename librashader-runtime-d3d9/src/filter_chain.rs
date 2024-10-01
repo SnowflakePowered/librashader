@@ -12,7 +12,7 @@ use librashader_cache::{cache_shader_object, CachedCompilation};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::ShaderPreset;
 use librashader_reflect::back::hlsl::HlslShaderModel;
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -23,16 +23,18 @@ use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
 use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
 use std::collections::VecDeque;
 
-use std::path::Path;
-
 use librashader_common::GetSize;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
+
+use std::path::Path;
 
 use windows::Win32::Graphics::Direct3D9::{IDirect3DDevice9, IDirect3DSurface9, IDirect3DTexture9};
 
@@ -61,6 +63,7 @@ pub struct FilterChainD3D9 {
 
 mod compile {
     use super::*;
+    use librashader_pack::{ShaderPassData, TextureData};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -72,8 +75,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -81,10 +84,11 @@ mod compile {
                 CachedCompilation<SpirvCompilation>,
                 SpirvCross,
                 FilterChainError,
-            >(shaders, &textures)?
+            >(shaders, textures.iter().map(|t| &t.meta))?
         } else {
             HLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
+                shaders,
+                textures.iter().map(|t| &t.meta),
             )?
         };
 
@@ -93,6 +97,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_pack::{ShaderPresetPack, TextureData};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D9 {
@@ -184,16 +189,16 @@ impl FilterChainD3D9 {
 
     fn load_luts(
         device: &IDirect3DDevice9,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
         let images = textures
-            .iter()
-            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
+            .into_par_iter()
+            .map(|texture| LoadedTexture::from_texture(texture, UVDirection::TopLeft))
+            .collect::<Result<Vec<LoadedTexture<BGRA8>>, ImageError>>()?;
 
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(device, &image, &texture.meta)?;
+        for (index, LoadedTexture { meta, image }) in images.iter().enumerate() {
+            let texture = LutTexture::new(device, &image, &meta)?;
             luts.insert(index, texture);
         }
         Ok(luts)
@@ -213,9 +218,19 @@ impl FilterChainD3D9 {
         unsafe { Self::load_from_preset(preset, device, options) }
     }
 
-    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
     pub unsafe fn load_from_preset(
         preset: ShaderPreset,
+        device: &IDirect3DDevice9,
+        options: Option<&FilterChainOptionsD3D9>,
+    ) -> error::Result<FilterChainD3D9> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack(preset, device, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    pub unsafe fn load_from_pack(
+        preset: ShaderPresetPack,
         device: &IDirect3DDevice9,
         options: Option<&FilterChainOptionsD3D9>,
     ) -> error::Result<FilterChainD3D9> {
@@ -229,7 +244,7 @@ impl FilterChainD3D9 {
         let filters = FilterChainD3D9::init_passes(device, passes, &semantics, disable_cache)?;
 
         // load luts
-        let luts = FilterChainD3D9::load_luts(device, &preset.textures)?;
+        let luts = FilterChainD3D9::load_luts(device, preset.textures)?;
 
         let framebuffer_gen =
             || D3D9Texture::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false);

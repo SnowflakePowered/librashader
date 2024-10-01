@@ -4,8 +4,9 @@ use std::marker::PhantomData;
 
 use image::error::{LimitError, LimitErrorKind};
 use image::DynamicImage;
-use librashader_pack::TextureBuffer;
+use librashader_pack::{TextureBuffer, TextureData};
 use std::path::Path;
+use librashader_presets::TextureMeta;
 
 /// An uncompressed raw image ready to upload to GPU buffers.
 pub struct Image<P: PixelFormat = RGBA8> {
@@ -115,6 +116,25 @@ impl<P: PixelFormat> Image<P> {
         }
     }
 }
+
+/// Loaded texture data in the proper pixel format from a [`TextureData`].
+pub struct LoadedTexture<P: PixelFormat = RGBA8> {
+    /// The loaded image data
+    pub image: Image<P>,
+    /// Meta information about the texture
+    pub meta: TextureMeta
+}
+
+impl <P: PixelFormat> LoadedTexture<P> {
+    /// Load the texture with the given UV direction and subpixel ordering.
+    pub fn from_texture(texture: TextureData, direction: UVDirection) -> Result<Self, ImageError> {
+        Ok(LoadedTexture {
+            meta: texture.meta,
+            image: Image::load_from_buffer(texture.data, direction)?,
+        })
+    }
+}
+
 
 // load-bearing #[inline(always)], without it llvm will not vectorize.
 #[inline(always)]

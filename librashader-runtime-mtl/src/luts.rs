@@ -1,6 +1,6 @@
 use crate::error::{FilterChainError, Result};
 use crate::texture::InputTexture;
-use librashader_presets::{TextureConfig, TextureMeta};
+use librashader_presets::TextureMeta;
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 use objc2::runtime::ProtocolObject;

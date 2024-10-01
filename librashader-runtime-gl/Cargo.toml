@@ -16,6 +16,7 @@ librashader-common = { path = "../librashader-common", features = ["opengl"], ve
 librashader-presets = { path = "../librashader-presets", version = "0.4.5" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.4.5" }
 librashader-reflect = { path = "../librashader-reflect", version = "0.4.5" }
+librashader-pack = { path = "../librashader-pack", version = "0.4.5" }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.4.5" }
 librashader-cache = { path = "../librashader-cache", version = "0.4.5" }
 

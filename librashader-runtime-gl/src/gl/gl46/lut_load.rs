@@ -4,8 +4,8 @@ use crate::gl::LoadLut;
 use crate::texture::InputTexture;
 use glow::{HasContext, PixelUnpackData};
 use librashader_common::map::FastHashMap;
-use librashader_presets::TextureConfig;
-use librashader_runtime::image::{Image, ImageError, UVDirection};
+use librashader_pack::TextureData;
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
 use rayon::prelude::*;
 
@@ -13,19 +13,19 @@ pub struct Gl46LutLoad;
 impl LoadLut for Gl46LutLoad {
     fn load_luts(
         context: &glow::Context,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> Result<FastHashMap<usize, InputTexture>> {
         let mut luts = FastHashMap::default();
 
         // don't need this for texture DSA api.
 
-        let images = textures
-            .par_iter()
-            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<std::result::Result<Vec<Image>, ImageError>>()?;
+        let textures = textures
+            .into_par_iter()
+            .map(|texture| LoadedTexture::from_texture(texture, UVDirection::TopLeft))
+            .collect::<std::result::Result<Vec<LoadedTexture>, ImageError>>()?;
 
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let levels = if texture.meta.mipmap {
+        for (index, LoadedTexture { meta, image }) in textures.iter().enumerate() {
+            let levels = if meta.mipmap {
                 image.size.calculate_miplevels()
             } else {
                 1u32
@@ -75,9 +75,9 @@ impl LoadLut for Gl46LutLoad {
                         format: glow::RGBA8,
                         size: image.size,
                     },
-                    filter: texture.meta.filter_mode,
-                    mip_filter: texture.meta.filter_mode,
-                    wrap_mode: texture.meta.wrap_mode,
+                    filter: meta.filter_mode,
+                    mip_filter: meta.filter_mode,
+                    wrap_mode: meta.wrap_mode,
                 },
             );
         }

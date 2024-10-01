@@ -17,7 +17,7 @@ use d3d12_descriptor_heap::{
 use gpu_allocator::d3d12::{Allocator, AllocatorCreateDesc, ID3D12DeviceVersion};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::ShaderPreset;
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
@@ -25,7 +25,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::{ShaderSemantics, MAX_BINDINGS_COUNT};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
-use librashader_runtime::image::{Image, ImageError, UVDirection};
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 use parking_lot::Mutex;
@@ -175,6 +175,7 @@ impl Drop for FrameResiduals {
 
 mod compile {
     use super::*;
+    use librashader_pack::ShaderPassData;
 
     #[cfg(not(feature = "stable"))]
     pub type DxilShaderPassMeta =
@@ -186,8 +187,8 @@ mod compile {
     >;
 
     pub fn compile_passes_dxil(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
         disable_cache: bool,
     ) -> Result<(Vec<DxilShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -195,10 +196,11 @@ mod compile {
                 CachedCompilation<SpirvCompilation>,
                 SpirvCross,
                 FilterChainError,
-            >(shaders, &textures)?
+            >(shaders, textures.iter().map(|t| &t.meta))?
         } else {
             DXIL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
+                shaders,
+                textures.iter().map(|t| &t.meta),
             )?
         };
 
@@ -215,8 +217,8 @@ mod compile {
     >;
 
     pub fn compile_passes_hlsl(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
         disable_cache: bool,
     ) -> Result<(Vec<HlslShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -224,10 +226,11 @@ mod compile {
                 CachedCompilation<SpirvCompilation>,
                 SpirvCross,
                 FilterChainError,
-            >(shaders, &textures)?
+            >(shaders, textures.iter().map(|t| &t.meta))?
         } else {
             HLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
+                shaders,
+                textures.iter().map(|t| &t.meta),
             )?
         };
 
@@ -237,6 +240,7 @@ mod compile {
 
 use crate::resource::OutlivesFrame;
 use compile::{compile_passes_dxil, compile_passes_hlsl, DxilShaderPassMeta, HlslShaderPassMeta};
+use librashader_pack::{ShaderPresetPack, TextureData};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D12 {
@@ -258,6 +262,16 @@ impl FilterChainD3D12 {
         device: &ID3D12Device,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack(preset, device, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    pub unsafe fn load_from_pack(
+        preset: ShaderPresetPack,
+        device: &ID3D12Device,
+        options: Option<&FilterChainOptionsD3D12>,
+    ) -> error::Result<FilterChainD3D12> {
         unsafe {
             // 1 time queue infrastructure for lut uploads
             let command_pool: ID3D12CommandAllocator =
@@ -275,7 +289,7 @@ impl FilterChainD3D12 {
             let fence_event = CreateEventA(None, false, false, None)?;
             let fence: ID3D12Fence = device.CreateFence(0, D3D12_FENCE_FLAG_NONE)?;
 
-            let filter_chain = Self::load_from_preset_deferred(preset, device, &cmd, options)?;
+            let filter_chain = Self::load_from_pack_deferred(preset, device, &cmd, options)?;
 
             cmd.Close()?;
             queue.ExecuteCommandLists(&[Some(cmd.cast()?)]);
@@ -300,6 +314,23 @@ impl FilterChainD3D12 {
     /// graphics queue. The command list must be completely executed before calling [`frame`](Self::frame).
     pub unsafe fn load_from_preset_deferred(
         preset: ShaderPreset,
+        device: &ID3D12Device,
+        cmd: &ID3D12GraphicsCommandList,
+        options: Option<&FilterChainOptionsD3D12>,
+    ) -> error::Result<FilterChainD3D12> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack_deferred(preset, device, cmd, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed, loaded `ShaderPresetPack`, deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// ## Safety
+    /// The provided command list must be ready for recording and contain no prior commands.
+    /// The caller is responsible for ending the command list and immediately submitting it to a
+    /// graphics queue. The command list must be completely executed before calling [`frame`](Self::frame).
+    pub unsafe fn load_from_pack_deferred(
+        preset: ShaderPresetPack,
         device: &ID3D12Device,
         cmd: &ID3D12GraphicsCommandList,
         options: Option<&FilterChainOptionsD3D12>,
@@ -364,7 +395,7 @@ impl FilterChainD3D12 {
             &mut staging_heap,
             &mut mipmap_heap,
             &mut residuals,
-            &preset.textures,
+            preset.textures,
         )?;
 
         let framebuffer_gen = || {
@@ -430,27 +461,27 @@ impl FilterChainD3D12 {
         staging_heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         mipmap_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
         gc: &mut FrameResiduals,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         // use separate mipgen to load luts.
         let mipmap_gen = D3D12MipmapGen::new(device, true)?;
 
         let mut luts = FastHashMap::default();
-        let images = textures
-            .par_iter()
-            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image>, ImageError>>()?;
+        let textures = textures
+            .into_par_iter()
+            .map(|texture| LoadedTexture::from_texture(texture, UVDirection::TopLeft))
+            .collect::<Result<Vec<LoadedTexture>, ImageError>>()?;
 
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
+        for (index, LoadedTexture { meta, image }) in textures.iter().enumerate() {
             let texture = LutTexture::new(
                 device,
                 allocator,
                 staging_heap,
                 cmd,
                 &image,
-                texture.meta.filter_mode,
-                texture.meta.wrap_mode,
-                texture.meta.mipmap,
+                meta.filter_mode,
+                meta.wrap_mode,
+                meta.mipmap,
                 gc,
             )?;
             luts.insert(index, texture);

@@ -13,7 +13,6 @@ description = "RetroArch shaders for all."
 [dependencies]
 librashader-presets = { path = "../librashader-presets", version = "0.4.5", features = ["serde"] }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.4.5", features = ["serde"] }
-librashader-reflect= { path = "../librashader-reflect", version = "0.4.5" }
 
 thiserror = "1.0.64"
 serde = { version = "1.0", features = ["derive"], optional = true }

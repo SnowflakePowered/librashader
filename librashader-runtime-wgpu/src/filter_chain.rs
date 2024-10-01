@@ -1,5 +1,5 @@
 use librashader_common::map::FastHashMap;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::ShaderPreset;
 use librashader_reflect::back::targets::WGSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
@@ -7,7 +7,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::image::{Image, ImageError, UVDirection};
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 #[cfg(not(target_arch = "wasm32"))]
@@ -40,6 +40,7 @@ use crate::texture::{InputImage, OwnedImage};
 
 mod compile {
     use super::*;
+    use librashader_pack::{ShaderPassData, TextureData};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -50,18 +51,20 @@ mod compile {
         ShaderPassArtifact<Box<dyn CompileReflectShader<WGSL, SpirvCompilation, Naga> + Send>>;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
-        let (passes, semantics) =
-            WGSL::compile_preset_passes::<SpirvCompilation, Naga, FilterChainError>(
-                shaders, &textures,
-            )?;
+        let (passes, semantics) = WGSL::compile_preset_passes::<
+            SpirvCompilation,
+            Naga,
+            FilterChainError,
+        >(shaders, textures.iter().map(|t| &t.meta))?;
         Ok((passes, semantics))
     }
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_pack::{ShaderPresetPack, TextureData};
 use librashader_runtime::parameters::RuntimeParameters;
 
 /// A wgpu filter chain.
@@ -110,10 +113,21 @@ impl FilterChainWgpu {
         queue: Arc<wgpu::Queue>,
         options: Option<&FilterChainOptionsWgpu>,
     ) -> error::Result<FilterChainWgpu> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        Self::load_from_pack(preset, device, queue, options)
+    }
+
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
+    pub fn load_from_pack(
+        preset: ShaderPresetPack,
+        device: Arc<Device>,
+        queue: Arc<wgpu::Queue>,
+        options: Option<&FilterChainOptionsWgpu>,
+    ) -> error::Result<FilterChainWgpu> {
         let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("librashader load cmd"),
         });
-        let filter_chain = Self::load_from_preset_deferred(
+        let filter_chain = Self::load_from_pack_deferred(
             preset,
             Arc::clone(&device),
             Arc::clone(&queue),
@@ -144,6 +158,24 @@ impl FilterChainWgpu {
         cmd: &mut wgpu::CommandEncoder,
         options: Option<&FilterChainOptionsWgpu>,
     ) -> error::Result<FilterChainWgpu> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        Self::load_from_pack_deferred(preset, device, queue, cmd, options)
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// ## Safety
+    /// The provided command buffer must be ready for recording and contain no prior commands.
+    /// The caller is responsible for ending the command buffer and immediately submitting it to a
+    /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
+    pub fn load_from_pack_deferred(
+        preset: ShaderPresetPack,
+        device: Arc<Device>,
+        queue: Arc<wgpu::Queue>,
+        cmd: &mut wgpu::CommandEncoder,
+        options: Option<&FilterChainOptionsWgpu>,
+    ) -> error::Result<FilterChainWgpu> {
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
 
         // cache is opt-in for wgpu, not opt-out because of feature requirements.
@@ -166,7 +198,7 @@ impl FilterChainWgpu {
             cmd,
             &mut mipmapper,
             &samplers,
-            &preset.textures,
+            preset.textures,
         )?;
         //
         let framebuffer_gen = || {
@@ -226,29 +258,21 @@ impl FilterChainWgpu {
         cmd: &mut wgpu::CommandEncoder,
         mipmapper: &mut MipmapGen,
         sampler_set: &SamplerSet,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
 
         #[cfg(not(target_arch = "wasm32"))]
-        let images_iter = textures.par_iter();
+        let images_iter = textures.into_par_iter();
 
         #[cfg(target_arch = "wasm32")]
-        let images_iter = textures.iter();
+        let images_iter = textures.into_iter();
 
-        let images = images_iter
-            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image>, ImageError>>()?;
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(
-                device,
-                queue,
-                cmd,
-                image,
-                &texture.meta,
-                mipmapper,
-                sampler_set,
-            );
+        let textures = images_iter
+            .map(|texture| LoadedTexture::from_texture(texture, UVDirection::TopLeft))
+            .collect::<Result<Vec<LoadedTexture>, ImageError>>()?;
+        for (index, LoadedTexture { meta, image }) in textures.into_iter().enumerate() {
+            let texture = LutTexture::new(device, queue, cmd, image, &meta, mipmapper, sampler_set);
             luts.insert(index, texture);
         }
         Ok(luts)

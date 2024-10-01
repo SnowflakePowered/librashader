@@ -6,8 +6,9 @@ use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
 use librashader_common::map::{FastHashMap, ShortString};
+use librashader_pack::ShaderPassData;
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig};
+use librashader_presets::{ShaderPassMeta, ShaderPreset, TextureMeta};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -36,9 +37,9 @@ impl<T: OutputTarget> CompilePresetTarget for T {}
 pub trait CompilePresetTarget: OutputTarget {
     /// Compile passes of a shader preset given the applicable
     /// shader output target, compilation type, and resulting error.
-    fn compile_preset_passes<I, R, E>(
-        passes: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+    fn compile_preset_passes<'a, I, R, E>(
+        passes: Vec<ShaderPassData>,
+        textures: impl Iterator<Item = &'a TextureMeta>,
     ) -> Result<
         (
             Vec<ShaderPassArtifact<<Self as FromCompilation<I, R>>::Output>>,
@@ -61,9 +62,9 @@ pub trait CompilePresetTarget: OutputTarget {
 
 /// Compile passes of a shader preset given the applicable
 /// shader output target, compilation type, and resulting error.
-fn compile_preset_passes<T, I, R, E>(
-    passes: Vec<ShaderPassConfig>,
-    textures: &[TextureConfig],
+fn compile_preset_passes<'a, T, I, R, E>(
+    passes: Vec<ShaderPassData>,
+    textures: impl Iterator<Item = &'a TextureMeta>,
 ) -> Result<
     (
         Vec<ShaderPassArtifact<<T as FromCompilation<I, R>>::Output>>,
@@ -87,8 +88,7 @@ where
     let passes = passes
         .into_iter()
         .map(|shader| {
-            let source: ShaderSource = ShaderSource::load(&shader.path)?;
-
+            let source = shader.data;
             let compiled = I::Compiler::compile(&source)?;
             let reflect = T::from_compilation(compiled)?;
 
@@ -188,17 +188,17 @@ fn insert_pass_semantics(
 }
 
 /// Insert the available semantics for the input texture config into the provided semantic maps.
-fn insert_lut_semantics(
-    textures: &[TextureConfig],
+fn insert_lut_semantics<'a>(
+    textures: impl Iterator<Item = &'a TextureMeta>,
     uniform_semantics: &mut FastHashMap<ShortString, UniformSemantic>,
     texture_semantics: &mut FastHashMap<ShortString, Semantic<TextureSemantics>>,
 ) {
-    for (index, texture) in textures.iter().enumerate() {
-        let mut size_semantic = texture.meta.name.clone();
+    for (index, texture) in textures.enumerate() {
+        let mut size_semantic = texture.name.clone();
         size_semantic.push_str("Size");
 
         texture_semantics.insert(
-            texture.meta.name.clone(),
+            texture.name.clone(),
             Semantic {
                 semantics: TextureSemantics::User,
                 index,
@@ -261,7 +261,7 @@ impl ShaderSemantics {
             config.meta.id as usize,
         );
         insert_lut_semantics(
-            preset.textures.as_slice(),
+            preset.textures.iter().map(|t| &t.meta),
             &mut uniform_semantics,
             &mut texture_semantics,
         );
