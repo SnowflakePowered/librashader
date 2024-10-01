@@ -21,6 +21,7 @@ bitflags = "2.4.2"
 librashader-common = { path = "../librashader-common", version = "0.4.5" }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.4.5" }
 librashader-presets = { path = "../librashader-presets", version = "0.4.5" }
+librashader-pack = { path = "../librashader-pack", version = "0.4.5" }
 
 spirv-cross2 = { workspace = true, optional = true }
 

@@ -619,9 +619,9 @@ pub mod d3d12_hello_triangle {
             filter
                 .frame(
                     command_list,
-                    D3D12InputImage {
-                        resource: resources.framebuffer.to_ref(),
-                        descriptor: Some(framebuffer),
+                    D3D12InputImage::External {
+                        resource: resources.framebuffer.clone(),
+                        descriptor: framebuffer,
                     },
                     &Viewport {
                         x: 0.0,

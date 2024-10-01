@@ -18,7 +18,7 @@ use gpu_allocator::vulkan::Allocator;
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
 use librashader_presets::context::VideoDriver;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::ShaderPreset;
 use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
@@ -28,7 +28,7 @@ use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -250,6 +250,7 @@ impl Drop for FrameResiduals {
 
 mod compile {
     use super::*;
+    use librashader_pack::ShaderPassData;
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -261,8 +262,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -270,10 +271,11 @@ mod compile {
                 CachedCompilation<SpirvCompilation>,
                 SpirvCross,
                 FilterChainError,
-            >(shaders, &textures)?
+            >(shaders, textures.iter().map(|t| &t.meta))?
         } else {
             SPIRV::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
+                shaders,
+                textures.iter().map(|t| &t.meta),
             )?
         };
 
@@ -282,6 +284,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_pack::{ShaderPresetPack, TextureData};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainVulkan {
@@ -297,13 +300,26 @@ impl FilterChainVulkan {
     {
         // load passes from preset
         let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Vulkan)?;
-
-        unsafe { Self::load_from_preset(preset, vulkan, options) }
+        unsafe { Self::load_from_preset::<V, E>(preset, vulkan, options) }
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub unsafe fn load_from_preset<V, E>(
         preset: ShaderPreset,
+        vulkan: V,
+        options: Option<&FilterChainOptionsVulkan>,
+    ) -> error::Result<FilterChainVulkan>
+    where
+        V: TryInto<VulkanObjects, Error = E>,
+        FilterChainError: From<E>,
+    {
+        let pack = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack(pack, vulkan, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
+    pub unsafe fn load_from_pack<V, E>(
+        preset: ShaderPresetPack,
         vulkan: V,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan>
@@ -342,12 +358,7 @@ impl FilterChainVulkan {
         }
 
         let filter_chain = unsafe {
-            Self::load_from_preset_deferred::<_, Infallible>(
-                preset,
-                vulkan,
-                command_buffer,
-                options,
-            )?
+            Self::load_from_pack_deferred::<_, Infallible>(preset, vulkan, command_buffer, options)?
         };
 
         unsafe {
@@ -382,6 +393,27 @@ impl FilterChainVulkan {
         V: TryInto<VulkanObjects, Error = E>,
         FilterChainError: From<E>,
     {
+        let pack = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack_deferred(pack, vulkan, cmd, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed, loaded `ShaderPresetPack`, deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// ## Safety
+    /// The provided command buffer must be ready for recording and contain no prior commands.
+    /// The caller is responsible for ending the command buffer and immediately submitting it to a
+    /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
+    pub unsafe fn load_from_pack_deferred<V, E>(
+        preset: ShaderPresetPack,
+        vulkan: V,
+        cmd: vk::CommandBuffer,
+        options: Option<&FilterChainOptionsVulkan>,
+    ) -> error::Result<FilterChainVulkan>
+    where
+        V: TryInto<VulkanObjects, Error = E>,
+        FilterChainError: From<E>,
+    {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
 
@@ -402,7 +434,7 @@ impl FilterChainVulkan {
             disable_cache,
         )?;
 
-        let luts = FilterChainVulkan::load_luts(&device, cmd, &preset.textures)?;
+        let luts = FilterChainVulkan::load_luts(&device, cmd, preset.textures)?;
         let samplers = SamplerSet::new(&device.device)?;
 
         let framebuffer_gen =
@@ -527,15 +559,15 @@ impl FilterChainVulkan {
     fn load_luts(
         vulkan: &VulkanObjects,
         command_buffer: vk::CommandBuffer,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
-        let images = textures
-            .par_iter()
-            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(vulkan, command_buffer, image, &texture.meta)?;
+        let textures = textures
+            .into_par_iter()
+            .map(|texture| LoadedTexture::from_texture(texture, UVDirection::TopLeft))
+            .collect::<Result<Vec<LoadedTexture<BGRA8>>, ImageError>>()?;
+        for (index, LoadedTexture { meta, image }) in textures.into_iter().enumerate() {
+            let texture = LutTexture::new(vulkan, command_buffer, image, &meta)?;
             luts.insert(index, texture);
         }
         Ok(luts)

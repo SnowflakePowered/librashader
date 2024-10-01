@@ -11,7 +11,7 @@ use crate::texture::{get_texture_size, InputTexture, MetalTextureRef, OwnedTextu
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::ShaderPreset;
 use librashader_reflect::back::msl::MslVersion;
 use librashader_reflect::back::targets::MSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -22,7 +22,7 @@ use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
 use librashader_runtime::framebuffer::FramebufferInit;
-use librashader_runtime::image::{Image, ImageError, UVDirection, BGRA8};
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -41,6 +41,7 @@ use std::path::Path;
 
 mod compile {
     use super::*;
+    use librashader_pack::{ShaderPassData, TextureData};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -51,18 +52,20 @@ mod compile {
         ShaderPassArtifact<Box<dyn CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>>;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
-        let (passes, semantics) =
-            MSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
-            )?;
+        let (passes, semantics) = MSL::compile_preset_passes::<
+            SpirvCompilation,
+            SpirvCross,
+            FilterChainError,
+        >(shaders, textures.iter().map(|t| &t.meta))?;
         Ok((passes, semantics))
     }
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_pack::{ShaderPresetPack, TextureData};
 use librashader_runtime::parameters::RuntimeParameters;
 
 /// A Metal filter chain.
@@ -120,12 +123,22 @@ impl FilterChainMetal {
         queue: &ProtocolObject<dyn MTLCommandQueue>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        Self::load_from_pack(preset, queue, options)
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    pub fn load_from_pack(
+        preset: ShaderPresetPack,
+        queue: &ProtocolObject<dyn MTLCommandQueue>,
+        options: Option<&FilterChainOptionsMetal>,
+    ) -> error::Result<FilterChainMetal> {
         let cmd = queue
             .commandBuffer()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
 
         let filter_chain =
-            Self::load_from_preset_deferred_internal(preset, queue.device(), &cmd, options)?;
+            Self::load_from_pack_deferred_internal(preset, queue.device(), &cmd, options)?;
 
         cmd.commit();
         unsafe { cmd.waitUntilCompleted() };
@@ -136,7 +149,7 @@ impl FilterChainMetal {
     fn load_luts(
         device: &ProtocolObject<dyn MTLDevice>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
 
@@ -144,12 +157,12 @@ impl FilterChainMetal {
             .blitCommandEncoder()
             .ok_or(FilterChainError::FailedToCreateCommandBuffer)?;
 
-        let images = textures
-            .par_iter()
-            .map(|texture| Image::<BGRA8>::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(device, image, &texture.meta, &mipmapper)?;
+        let textures = textures
+            .into_par_iter()
+            .map(|texture| LoadedTexture::<BGRA8>::from_texture(texture, UVDirection::TopLeft))
+            .collect::<Result<Vec<LoadedTexture<BGRA8>>, ImageError>>()?;
+        for (index, LoadedTexture { meta, image }) in textures.into_iter().enumerate() {
+            let texture = LutTexture::new(device, image, &meta, &mipmapper)?;
             luts.insert(index, texture);
         }
 
@@ -269,7 +282,8 @@ impl FilterChainMetal {
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
-        Self::load_from_preset_deferred_internal(preset, queue.device(), &cmd, options)
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        Self::load_from_pack_deferred(preset, queue, cmd, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
@@ -279,8 +293,24 @@ impl FilterChainMetal {
     /// The provided command buffer must be ready for recording.
     /// The caller is responsible for ending the command buffer and immediately submitting it to a
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
-    fn load_from_preset_deferred_internal(
-        preset: ShaderPreset,
+    pub fn load_from_pack_deferred(
+        preset: ShaderPresetPack,
+        queue: &ProtocolObject<dyn MTLCommandQueue>,
+        cmd: &ProtocolObject<dyn MTLCommandBuffer>,
+        options: Option<&FilterChainOptionsMetal>,
+    ) -> error::Result<FilterChainMetal> {
+        Self::load_from_pack_deferred_internal(preset, queue.device(), &cmd, options)
+    }
+
+    /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
+    /// to the caller. This function therefore requires no external synchronization of the device queue.
+    ///
+    /// ## Safety
+    /// The provided command buffer must be ready for recording.
+    /// The caller is responsible for ending the command buffer and immediately submitting it to a
+    /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
+    fn load_from_pack_deferred_internal(
+        preset: ShaderPresetPack,
         device: Id<ProtocolObject<dyn MTLDevice>>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
@@ -290,7 +320,7 @@ impl FilterChainMetal {
         let filters = Self::init_passes(&device, passes, &semantics)?;
 
         let samplers = SamplerSet::new(&device)?;
-        let luts = FilterChainMetal::load_luts(&device, &cmd, &preset.textures)?;
+        let luts = FilterChainMetal::load_luts(&device, &cmd, preset.textures)?;
         let framebuffer_gen = || {
             Ok::<_, error::FilterChainError>(OwnedTexture::new(
                 &device,

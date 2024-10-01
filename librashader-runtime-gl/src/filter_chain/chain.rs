@@ -12,7 +12,6 @@ use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, GLImage};
 use librashader_common::Viewport;
 
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
 use librashader_reflect::back::glsl::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -22,6 +21,7 @@ use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 use glow::HasContext;
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
+use librashader_pack::{ShaderPassData, ShaderPresetPack, TextureData};
 use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
@@ -30,6 +30,7 @@ use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
+
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -107,8 +108,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -116,10 +117,11 @@ mod compile {
                 CachedCompilation<SpirvCompilation>,
                 SpirvCross,
                 FilterChainError,
-            >(shaders, &textures)?
+            >(shaders, textures.iter().map(|t| &t.meta))?
         } else {
             GLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
+                shaders,
+                textures.iter().map(|t| &t.meta),
             )?
         };
 
@@ -132,8 +134,8 @@ use librashader_runtime::parameters::RuntimeParameters;
 
 impl<T: GLInterface> FilterChainImpl<T> {
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
-    pub(crate) unsafe fn load_from_preset(
-        preset: ShaderPreset,
+    pub(crate) unsafe fn load_from_pack(
+        preset: ShaderPresetPack,
         context: Arc<glow::Context>,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
@@ -156,7 +158,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let samplers = SamplerSet::new(&context)?;
 
         // load luts
-        let luts = T::LoadLut::load_luts(&context, &preset.textures)?;
+        let luts = T::LoadLut::load_luts(&context, preset.textures)?;
 
         let framebuffer_gen = || T::FramebufferInterface::new(&context, 1);
         let input_gen = || InputTexture {

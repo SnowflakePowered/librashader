@@ -87,7 +87,6 @@ impl LoadableResource for TextureMeta {
 /// The configuration for a single shader pass.
 pub type ShaderPassData = ShaderPresetResource<ShaderPassMeta>;
 pub type TextureData = ShaderPresetResource<TextureMeta>;
-
 /// A shader preset, not reliant on disk, with all information needed.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

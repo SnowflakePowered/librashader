@@ -2,13 +2,13 @@ use crate::texture::InputTexture;
 use librashader_common::{ImageFormat, Size, Viewport};
 
 use librashader_common::map::FastHashMap;
-use librashader_presets::{ShaderPassConfig, ShaderPreset, TextureConfig};
+use librashader_presets::ShaderPreset;
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
-use librashader_runtime::image::{Image, ImageError, UVDirection};
+use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, RGBA8};
 use std::collections::VecDeque;
 
 use std::path::Path;
@@ -75,6 +75,7 @@ pub(crate) struct FilterCommon {
 
 mod compile {
     use super::*;
+    use librashader_pack::{ShaderPassData, TextureData};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -86,8 +87,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassConfig>,
-        textures: &[TextureConfig],
+        shaders: Vec<ShaderPassData>,
+        textures: &[TextureData],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -95,10 +96,11 @@ mod compile {
                 CachedCompilation<SpirvCompilation>,
                 SpirvCross,
                 FilterChainError,
-            >(shaders, &textures)?
+            >(shaders, textures.iter().map(|t| &t.meta))?
         } else {
             HLSL::compile_preset_passes::<SpirvCompilation, SpirvCross, FilterChainError>(
-                shaders, &textures,
+                shaders,
+                textures.iter().map(|t| &t.meta),
             )?
         };
 
@@ -107,6 +109,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
+use librashader_pack::{ShaderPresetPack, TextureData};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D11 {
@@ -132,6 +135,16 @@ impl FilterChainD3D11 {
         unsafe { Self::load_from_preset_deferred(preset, device, &immediate_context, options) }
     }
 
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
+    pub unsafe fn load_from_pack(
+        preset: ShaderPresetPack,
+        device: &ID3D11Device,
+        options: Option<&FilterChainOptionsD3D11>,
+    ) -> error::Result<FilterChainD3D11> {
+        let immediate_context = unsafe { device.GetImmediateContext()? };
+        unsafe { Self::load_from_pack_deferred(preset, device, &immediate_context, options) }
+    }
+
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
     /// to the caller. This function is therefore requires no external synchronization of the
     /// immediate context, as long as the immediate context is not used as the input context,
@@ -153,6 +166,31 @@ impl FilterChainD3D11 {
         ctx: &ID3D11DeviceContext,
         options: Option<&FilterChainOptionsD3D11>,
     ) -> error::Result<FilterChainD3D11> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack_deferred(preset, device, ctx, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`, deferring and GPU-side initialization
+    /// to the caller. This function is therefore requires no external synchronization of the
+    /// immediate context, as long as the immediate context is not used as the input context,
+    /// nor of the device, as long as the device is not single-threaded only.
+    ///
+    /// ## Safety
+    /// The provided context must either be immediate, or immediately submitted after this function
+    /// returns, **before drawing frames**, or lookup textures will fail to load and the filter chain
+    /// will be in an invalid state.
+    ///
+    /// If the context is deferred, it must be ready for command recording, and have no prior commands
+    /// recorded. No commands shall be recorded after, the caller must immediately call [`FinishCommandList`](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-finishcommandlist)
+    /// and execute the command list on the immediate context after this function returns.
+    ///
+    /// If the context is immediate, then access to the immediate context requires external synchronization.
+    pub unsafe fn load_from_pack_deferred(
+        preset: ShaderPresetPack,
+        device: &ID3D11Device,
+        ctx: &ID3D11DeviceContext,
+        options: Option<&FilterChainOptionsD3D11>,
+    ) -> error::Result<FilterChainD3D11> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
         let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
@@ -165,7 +203,7 @@ impl FilterChainD3D11 {
         let immediate_context = unsafe { device.GetImmediateContext()? };
 
         // load luts
-        let luts = FilterChainD3D11::load_luts(device, &ctx, &preset.textures)?;
+        let luts = FilterChainD3D11::load_luts(device, &ctx, preset.textures)?;
 
         let framebuffer_gen =
             || OwnedImage::new(device, Size::new(1, 1), ImageFormat::R8G8B8A8Unorm, false);
@@ -361,21 +399,21 @@ impl FilterChainD3D11 {
     fn load_luts(
         device: &ID3D11Device,
         context: &ID3D11DeviceContext,
-        textures: &[TextureConfig],
+        textures: Vec<TextureData>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
-        let images = textures
-            .par_iter()
-            .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
-            .collect::<Result<Vec<Image>, ImageError>>()?;
+        let textures = textures
+            .into_par_iter()
+            .map(|texture| LoadedTexture::from_texture(texture, UVDirection::TopLeft))
+            .collect::<Result<Vec<LoadedTexture<RGBA8>>, ImageError>>()?;
 
-        for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
+        for (index, LoadedTexture { meta, image }) in textures.iter().enumerate() {
             let desc = D3D11_TEXTURE2D_DESC {
                 Width: image.size.width,
                 Height: image.size.height,
                 Format: DXGI_FORMAT_R8G8B8A8_UNORM,
                 Usage: D3D11_USAGE_DEFAULT,
-                MiscFlags: if texture.meta.mipmap {
+                MiscFlags: if meta.mipmap {
                     D3D11_RESOURCE_MISC_GENERATE_MIPS.0 as u32
                 } else {
                     0
@@ -388,8 +426,8 @@ impl FilterChainD3D11 {
                 context,
                 &image,
                 desc,
-                texture.meta.filter_mode,
-                texture.meta.wrap_mode,
+                meta.filter_mode,
+                meta.wrap_mode,
             )?;
             luts.insert(index, texture);
         }

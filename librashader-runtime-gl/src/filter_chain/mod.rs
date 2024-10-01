@@ -14,6 +14,7 @@ mod parameters;
 
 pub(crate) use chain::FilterCommon;
 use librashader_common::Viewport;
+use librashader_pack::ShaderPresetPack;
 use librashader_presets::context::VideoDriver;
 
 /// An OpenGL filter chain.
@@ -22,9 +23,19 @@ pub struct FilterChainGL {
 }
 
 impl FilterChainGL {
-    /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
     pub unsafe fn load_from_preset(
         preset: ShaderPreset,
+        ctx: Arc<glow::Context>,
+        options: Option<&FilterChainOptionsGL>,
+    ) -> Result<Self> {
+        let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
+        unsafe { Self::load_from_pack(preset, ctx, options) }
+    }
+
+    /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
+    pub unsafe fn load_from_pack(
+        preset: ShaderPresetPack,
         ctx: Arc<glow::Context>,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
@@ -32,13 +43,13 @@ impl FilterChainGL {
             if options.is_some_and(|options| options.use_dsa) {
                 return Ok(Self {
                     filter: FilterChainDispatch::DirectStateAccess(unsafe {
-                        FilterChainImpl::load_from_preset(preset, ctx, options)?
+                        FilterChainImpl::load_from_pack(preset, ctx, options)?
                     }),
                 });
             }
             Ok(Self {
                 filter: FilterChainDispatch::Compatibility(unsafe {
-                    FilterChainImpl::load_from_preset(preset, ctx, options)?
+                    FilterChainImpl::load_from_pack(preset, ctx, options)?
                 }),
             })
         });
