@@ -2,7 +2,7 @@ use crate::mipmap::MipmapGen;
 use crate::samplers::SamplerSet;
 use crate::texture::InputImage;
 use librashader_common::{Size, WrapMode};
-use librashader_presets::{TextureConfig, TextureMeta};
+use librashader_presets::TextureMeta;
 use librashader_runtime::image::Image;
 use librashader_runtime::scaling::MipmapSize;
 use std::sync::Arc;

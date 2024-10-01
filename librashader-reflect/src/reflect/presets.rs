@@ -8,7 +8,7 @@ use crate::reflect::semantics::{
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{
-    ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig, TextureMeta,
+    ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig,
 };
 
 /// Artifacts of a reflected and compiled shader pass.
@@ -89,7 +89,7 @@ where
     let passes = passes
         .into_iter()
         .map(|shader| {
-            let source: ShaderSource = ShaderSource::load(&shader.name)?;
+            let source: ShaderSource = ShaderSource::load(&shader.path)?;
 
             let compiled = I::Compiler::compile(&source)?;
             let reflect = T::from_compilation(compiled)?;
@@ -238,7 +238,7 @@ impl ShaderSemantics {
             .get(index)
             .ok_or_else(|| PreprocessError::InvalidStage)?;
 
-        let source = ShaderSource::load(&config.name)?;
+        let source = ShaderSource::load(&config.path)?;
 
         for parameter in source.parameters.values() {
             uniform_semantics.insert(

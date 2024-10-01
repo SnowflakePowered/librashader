@@ -2,6 +2,7 @@ pub use image::ImageError;
 use librashader_common::Size;
 use std::marker::PhantomData;
 
+use image::RgbaImage;
 use std::path::Path;
 
 /// An uncompressed raw image ready to upload to GPU buffers.

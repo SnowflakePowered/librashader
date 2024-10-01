@@ -6,15 +6,22 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 /// The configuration for a single shader pass.
+pub type ShaderPassConfig = PathReference<ShaderPassMeta>;
+
+/// Configuration options for a lookup texture used in the shader.
+pub type TextureConfig = PathReference<TextureMeta>;
+
+/// A reference to a resource on desk.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ShaderPassConfig {
-    /// The fully qualified path to the shader pass source file.
-    pub name: PathBuf,
-    /// Meta information about the shader pass
-    pub meta: ShaderPassMeta,
+pub struct PathReference<M> {
+    /// The fully qualified path to the resource, often a shader source file or a texture.
+    pub path: PathBuf,
+    /// Meta information about the resource.
+    pub meta: M,
 }
 
+/// Meta information about a shader pass.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderPassMeta {
@@ -158,16 +165,6 @@ pub struct Scale2D {
     pub x: Scaling,
     /// Scaling parameters for the Y axis.
     pub y: Scaling,
-}
-
-/// Configuration options for a lookup texture used in the shader.
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct TextureConfig {
-    /// The fully qualified path to the texture.
-    pub path: PathBuf,
-    /// Meta information about the texture.
-    pub meta: TextureMeta,
 }
 
 /// Configuration options for a lookup texture used in the shader.

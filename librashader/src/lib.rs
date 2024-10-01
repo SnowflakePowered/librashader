@@ -77,7 +77,7 @@ pub mod presets {
             .shaders
             .iter()
             .map(|s| {
-                ShaderSource::load(&s.name)
+                ShaderSource::load(&s.path)
                     .map(|s| s.parameters.into_iter().map(|(_, v)| v).collect())
             })
             .collect();

@@ -490,7 +490,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                 return Err(anyhow!("Invalid pass index for the preset"));
             };
 
-            let source = librashader::preprocess::ShaderSource::load(shader.name.as_path())?;
+            let source = librashader::preprocess::ShaderSource::load(shader.path.as_path())?;
             let compilation = SpirvCompilation::try_from(&source)?;
 
             let semantics =
