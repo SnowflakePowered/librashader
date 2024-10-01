@@ -1606,6 +1606,7 @@ dependencies = [
  "objc2-metal",
  "parking_lot",
  "pollster",
+ "rmp-serde",
  "serde",
  "serde_json",
  "spq-spvasm",
