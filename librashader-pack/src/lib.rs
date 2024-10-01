@@ -160,8 +160,8 @@ impl ShaderPresetPack {
 #[cfg(feature = "serde")]
 mod serde_base64_or_bytes {
     use base64::display::Base64Display;
-    use base64::Engine;
     use base64::engine::general_purpose::STANDARD;
+    use base64::Engine;
     use serde::{Deserializer, Serializer};
 
     #[allow(clippy::ptr_arg)]
