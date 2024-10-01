@@ -1,0 +1,21 @@
+[package]
+name = "librashader-pack"
+version = "0.4.5"
+edition = "2021"
+
+[dependencies]
+librashader-presets = { path = "../librashader-presets", version = "0.4.5", features = ["serde"] }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.4.5", features = ["serde"] }
+librashader-reflect= { path = "../librashader-reflect", version = "0.4.5" }
+
+thiserror = "1.0.64"
+serde = {  version = "1.0", features = ["derive"] }
+serde_json = "1.0.128"
+rayon = { workspace = true }
+image = { workspace = true}
+
+[features]
+parse_legacy_glsl = ["librashader-presets/parse_legacy_glsl"]
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+rayon = { workspace = true}

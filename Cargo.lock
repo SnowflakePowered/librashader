@@ -1625,6 +1625,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "librashader-pack"
+version = "0.4.5"
+dependencies = [
+ "image",
+ "librashader-preprocess",
+ "librashader-presets",
+ "librashader-reflect",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "librashader-preprocess"
 version = "0.4.5"
 dependencies = [

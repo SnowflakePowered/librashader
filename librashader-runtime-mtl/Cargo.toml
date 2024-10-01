@@ -23,7 +23,7 @@ librashader-runtime = { path = "../librashader-runtime" , version = "0.4.5" }
 thiserror = "1.0"
 array-concat = "0.5.2"
 bytemuck = { version = "1.12.3", features = ["derive"] }
-rayon = "1.8.1"
+rayon = { workspace = true }
 
 [[test]]
 name = "triangle"

@@ -21,8 +21,9 @@ librashader-cache = { path = "../librashader-cache", version = "0.4.5", features
 
 thiserror = "1.0.37"
 bytemuck = "1.12.3"
-rayon = "1.6.1"
 array-concat = "0.5.2"
+
+rayon = { workspace = true }
 
 [features]
 debug-shader = []

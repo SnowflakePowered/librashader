@@ -16,7 +16,7 @@ members = [
     "librashader-cache",
     "librashader-capi",
     "librashader-build-script",
-    "librashader-cli"]
+    "librashader-cli", "librashader-pack"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -32,6 +32,17 @@ wgpu = { version = "22", default-features = false }
 wgpu-types = { version = "22" }
 
 clap = { version = "=4.3.0", features = ["derive"] }
+rayon = { version = "1.10.0"}
+
+
+[workspace.dependencies.image]
+version = "0.25.2"
+features = [
+    "gif", "jpeg", "png",
+    "tga", "pnm", "tiff",
+    "webp", "bmp", "dds",
+]
+default-features = false
 
 [workspace.metadata.release]
 
