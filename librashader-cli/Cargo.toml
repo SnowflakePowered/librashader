@@ -17,7 +17,7 @@ librashader-runtime = { version = "0.4.5", path = "../librashader-runtime"}
 wgpu = { version = "22", default-features = false, optional = true  }
 wgpu-types = { version = "22", optional = true }
 anyhow = "1.0.86"
-image = {  version = "0.25.2", default-features = false, features = ["png"] }
+image = { workspace = true }
 gfx-maths = "0.2.8"
 
 pollster = "0.3.0"

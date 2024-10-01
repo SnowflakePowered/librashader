@@ -23,7 +23,7 @@ spirv-cross2 = { workspace = true, features = ["glsl"] }
 glow = { workspace = true}
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "1.0.37"
-rayon = "1.6.1"
+rayon = { workspace = true }
 array-init = "2.1.0"
 
 [features]

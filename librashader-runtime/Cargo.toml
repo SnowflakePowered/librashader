@@ -21,11 +21,5 @@ num-traits = "0.2.15"
 array-concat = "0.5.2"
 arc-swap = "1.7.1"
 
-[dependencies.image]
-version = "0.25.2"
-features = [
-    "gif", "jpeg", "png",
-    "tga", "pnm", "tiff",
-    "webp", "bmp", "dds",
-]
-default-features = false
+image = { workspace = true }
+
