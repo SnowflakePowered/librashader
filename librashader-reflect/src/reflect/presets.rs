@@ -7,9 +7,7 @@ use crate::reflect::semantics::{
 };
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{
-    ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig,
-};
+use librashader_presets::{ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///

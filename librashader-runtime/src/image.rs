@@ -2,6 +2,9 @@ pub use image::ImageError;
 use librashader_common::Size;
 use std::marker::PhantomData;
 
+use image::error::{LimitError, LimitErrorKind};
+use image::DynamicImage;
+use librashader_pack::TextureBuffer;
 use std::path::Path;
 
 /// An uncompressed raw image ready to upload to GPU buffers.
@@ -66,13 +69,34 @@ pub enum UVDirection {
 impl<P: PixelFormat> Image<P> {
     /// Load the image from the path as RGBA8.
     pub fn load(path: impl AsRef<Path>, direction: UVDirection) -> Result<Self, ImageError> {
-        let mut image = image::open(path.as_ref())?;
+        let image = image::open(path.as_ref())?;
+        Ok(Self::convert(image, direction))
+    }
 
+    /// Load te image from a [`TextureBuffer`] from a [`ShaderPresetPack`](librashader_pack::ShaderPresetPack).
+    pub fn load_from_buffer(
+        buffer: TextureBuffer,
+        direction: UVDirection,
+    ) -> Result<Self, ImageError> {
+        let Some(image) = buffer.into() else {
+            return Err(ImageError::Limits(LimitError::from_kind(
+                LimitErrorKind::InsufficientMemory,
+            )));
+        };
+        let image = DynamicImage::ImageRgba8(image);
+        Ok(Self::convert(image, direction))
+    }
+
+    fn convert(mut image: DynamicImage, direction: UVDirection) -> Self {
         if direction == UVDirection::BottomLeft {
             image = image.flipv();
         }
 
-        let image = image.to_rgba8();
+        let image = if let DynamicImage::ImageRgba8(image) = image {
+            image
+        } else {
+            image.to_rgba8()
+        };
 
         let height = image.height();
         let width = image.width();
@@ -83,12 +107,12 @@ impl<P: PixelFormat> Image<P> {
 
         let mut bytes = image.into_raw();
         P::convert(&mut bytes);
-        Ok(Image {
+        Image {
             bytes,
             pitch,
             size: Size { height, width },
             _pd: Default::default(),
-        })
+        }
     }
 }
 

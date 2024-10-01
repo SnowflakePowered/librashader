@@ -1707,6 +1707,7 @@ dependencies = [
  "bytemuck",
  "image",
  "librashader-common",
+ "librashader-pack",
  "librashader-preprocess",
  "librashader-presets",
  "librashader-reflect",
