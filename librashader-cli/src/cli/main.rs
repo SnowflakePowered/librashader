@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use image::codecs::png::PngEncoder;
 use librashader::presets::context::ContextItem;
-use librashader::presets::{ShaderPreset, WildcardContext};
+use librashader::presets::{ShaderPreset, ShaderPresetPack, WildcardContext};
 use librashader::reflect::cross::{GlslVersion, HlslShaderModel, MslVersion, SpirvCross};
 use librashader::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader::reflect::semantics::ShaderSemantics;
@@ -10,6 +10,8 @@ use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvC
 use librashader::{FastHashMap, ShortString};
 use librashader_runtime::parameters::RuntimeParameters;
 use librashader_test::render::{CommonFrameOptions, RenderTest};
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Helpers and utilities to reflect and debug 'slang' shaders and presets.
@@ -126,6 +128,19 @@ enum Commands {
         #[clap(flatten)]
         preset: PresetArgs,
     },
+    /// Create a serialized preset pack from a shader preset.
+    Pack {
+        #[clap(flatten)]
+        preset: PresetArgs,
+        /// The path to write the output
+        ///
+        /// If `-`, writes the output to stdout
+        #[arg(short, long)]
+        out: PathBuf,
+        /// The file format to output.
+        #[arg(value_enum, short, long)]
+        format: PackFormat,
+    },
     /// Get the raw GLSL output of a preprocessed shader.
     Preprocess {
         /// The path to the slang shader.
@@ -211,6 +226,14 @@ enum TranspileFormat {
     MSL,
     #[clap(name = "spirv")]
     SPIRV,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum PackFormat {
+    #[clap(name = "json")]
+    JSON,
+    #[clap(name = "msgpack")]
+    MsgPack,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]
@@ -516,6 +539,27 @@ pub fn main() -> Result<(), anyhow::Error> {
             };
 
             print!("{}", serde_json::to_string_pretty(&reflection)?);
+        }
+        Commands::Pack {
+            preset,
+            out,
+            format,
+        } => {
+            let PresetArgs { preset, wildcards } = preset;
+            let preset = get_shader_preset(preset, wildcards)?;
+            let preset = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset)?;
+            let output_bytes = match format {
+                PackFormat::JSON => serde_json::to_vec_pretty(&preset)?,
+                PackFormat::MsgPack => rmp_serde::to_vec(&preset)?,
+            };
+
+            if out.as_path() == Path::new("-") {
+                let mut out = std::io::stdout();
+                out.write_all(output_bytes.as_slice())?;
+            } else {
+                let mut file = File::create(out.as_path())?;
+                file.write_all(output_bytes.as_slice())?;
+            }
         }
     }
 

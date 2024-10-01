@@ -233,7 +233,7 @@ will output the following JSON
   "shaders": [
     {
       "id": 0,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-first-pass-linearize-crt-gamma-bob-fields.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-first-pass-linearize-crt-gamma-bob-fields.slang",
       "alias": "ORIG_LINEARIZED",
       "filter": "Nearest",
       "wrap_mode": "ClampToBorder",
@@ -259,7 +259,7 @@ will output the following JSON
     },
     {
       "id": 1,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-vertical-interlacing.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-vertical-interlacing.slang",
       "alias": "VERTICAL_SCANLINES",
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -285,7 +285,7 @@ will output the following JSON
     },
     {
       "id": 2,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-bloom-approx.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-bloom-approx.slang",
       "alias": "BLOOM_APPROX",
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -311,7 +311,7 @@ will output the following JSON
     },
     {
       "id": 3,
-      "name": "/tmp/shaders_slang/blurs/shaders/royale/blur9fast-vertical.slang",
+      "path": "/tmp/shaders_slang/blurs/shaders/royale/blur9fast-vertical.slang",
       "alias": null,
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -337,7 +337,7 @@ will output the following JSON
     },
     {
       "id": 4,
-      "name": "/tmp/shaders_slang/blurs/shaders/royale/blur9fast-horizontal.slang",
+      "path": "/tmp/shaders_slang/blurs/shaders/royale/blur9fast-horizontal.slang",
       "alias": "HALATION_BLUR",
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -363,7 +363,7 @@ will output the following JSON
     },
     {
       "id": 5,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-mask-resize-vertical.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-mask-resize-vertical.slang",
       "alias": null,
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -389,7 +389,7 @@ will output the following JSON
     },
     {
       "id": 6,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-mask-resize-horizontal.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-mask-resize-horizontal.slang",
       "alias": "MASK_RESIZE",
       "filter": "Nearest",
       "wrap_mode": "ClampToBorder",
@@ -415,7 +415,7 @@ will output the following JSON
     },
     {
       "id": 7,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang",
       "alias": "MASKED_SCANLINES",
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -441,7 +441,7 @@ will output the following JSON
     },
     {
       "id": 8,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-brightpass.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-brightpass.slang",
       "alias": "BRIGHTPASS",
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -467,7 +467,7 @@ will output the following JSON
     },
     {
       "id": 9,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-bloom-vertical.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-bloom-vertical.slang",
       "alias": null,
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -493,7 +493,7 @@ will output the following JSON
     },
     {
       "id": 10,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-bloom-horizontal-reconstitute.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-bloom-horizontal-reconstitute.slang",
       "alias": null,
       "filter": "Linear",
       "wrap_mode": "ClampToBorder",
@@ -519,7 +519,7 @@ will output the following JSON
     },
     {
       "id": 11,
-      "name": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-geometry-aa-last-pass.slang",
+      "path": "/tmp/shaders_slang/crt/shaders/crt-royale/src/crt-royale-geometry-aa-last-pass.slang",
       "alias": null,
       "filter": "Linear",
       "wrap_mode": "ClampToEdge",
@@ -955,3 +955,42 @@ The above command will output the following JSON
 }
 ```
 </details>
+
+## Serializing a preset pack to a single file 
+
+```
+Create a serialized preset pack from a shader preset
+
+Usage: librashader-cli pack [OPTIONS] --preset <PRESET> --out <OUT> --format <FORMAT>
+
+Options:
+  -p, --preset <PRESET>
+          The path to the shader preset to load
+
+  -w, --wildcards <WILDCARDS>...
+          Additional wildcard options, comma separated with equals signs. The PRESET and PRESET_DIR wildcards are always added to the preset parsing context.
+
+          For example, CONTENT-DIR=MyVerticalGames,GAME=mspacman
+
+  -o, --out <OUT>
+          The path to write the output
+
+          If `-`, writes the output to stdout
+
+  -f, --format <FORMAT>
+          The file format to output
+
+          [possible values: json, msgpack]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```
+
+The `pack` command can be used to create a "preset pack", a format to store an entire shader preset, including files and preprocessed source code, 
+into a JSON or MessagePack representation where it can be loaded into memory without filesystem access. 
+
+This file format is experimental, and may be used in the future as a way to cache shader presets, or for usages in environments without a filesystem, 
+such as on the web. Note that packs are only supported by the librashader Rust API, and are not portable across other implementations of "slang" shaders.
+
+It is unlikely that the librashader C API will ever support loading shader packs.
