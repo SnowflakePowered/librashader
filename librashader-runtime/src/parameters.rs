@@ -1,6 +1,6 @@
 use arc_swap::ArcSwap;
 use librashader_common::map::{FastHashMap, ShortString};
-use librashader_presets::ParameterConfig;
+use librashader_presets::ParameterMeta;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -22,7 +22,7 @@ pub struct RuntimeParameters {
 impl RuntimeParameters {
     /// Create a new instance of runtime parameters from a `Vec` of
     /// shader parameters from a [`ShaderPreset`](librashader_presets::ShaderPreset).
-    pub fn new(passes_enabled: usize, parameters: Vec<ParameterConfig>) -> Self {
+    pub fn new(passes_enabled: usize, parameters: Vec<ParameterMeta>) -> Self {
         RuntimeParameters {
             passes_enabled: AtomicUsize::new(passes_enabled),
             parameters: ArcSwap::new(Arc::new(

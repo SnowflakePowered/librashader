@@ -240,8 +240,15 @@ impl FilterChainWgpu {
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture =
-                LutTexture::new(device, queue, cmd, image, texture, mipmapper, sampler_set);
+            let texture = LutTexture::new(
+                device,
+                queue,
+                cmd,
+                image,
+                &texture.meta,
+                mipmapper,
+                sampler_set,
+            );
             luts.insert(index, texture);
         }
         Ok(luts)

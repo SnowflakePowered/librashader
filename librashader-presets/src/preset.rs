@@ -164,22 +164,30 @@ pub struct Scale2D {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextureConfig {
-    /// The name of the texture.
-    pub name: ShortString,
     /// The fully qualified path to the texture.
     pub path: PathBuf,
+    /// Meta information about the texture.
+    pub meta: TextureMeta,
+}
+
+/// Configuration options for a lookup texture used in the shader.
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct TextureMeta {
+    /// The name of the texture.
+    pub name: ShortString,
     /// The wrap (addressing) mode to use when sampling the texture.
     pub wrap_mode: WrapMode,
     /// The filter mode to use when sampling the texture.
     pub filter_mode: FilterMode,
-    /// Whether or not to generate mipmaps for this texture.
+    /// Whether to generate mipmaps for this texture.
     pub mipmap: bool,
 }
 
 /// Configuration options for a shader parameter.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ParameterConfig {
+pub struct ParameterMeta {
     /// The name of the parameter.
     pub name: ShortString,
     /// The value it is set to in the preset.
@@ -208,5 +216,5 @@ pub struct ShaderPreset {
     pub textures: Vec<TextureConfig>,
 
     /// Preset information for each user parameter.
-    pub parameters: Vec<ParameterConfig>,
+    pub parameters: Vec<ParameterMeta>,
 }

@@ -535,7 +535,7 @@ impl FilterChainVulkan {
             .map(|texture| Image::load(&texture.path, UVDirection::TopLeft))
             .collect::<Result<Vec<Image<BGRA8>>, ImageError>>()?;
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let texture = LutTexture::new(vulkan, command_buffer, image, texture)?;
+            let texture = LutTexture::new(vulkan, command_buffer, image, &texture.meta)?;
             luts.insert(index, texture);
         }
         Ok(luts)

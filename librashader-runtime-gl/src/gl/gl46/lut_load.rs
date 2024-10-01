@@ -25,7 +25,7 @@ impl LoadLut for Gl46LutLoad {
             .collect::<std::result::Result<Vec<Image>, ImageError>>()?;
 
         for (index, (texture, image)) in textures.iter().zip(images).enumerate() {
-            let levels = if texture.mipmap {
+            let levels = if texture.meta.mipmap {
                 image.size.calculate_miplevels()
             } else {
                 1u32
@@ -75,9 +75,9 @@ impl LoadLut for Gl46LutLoad {
                         format: glow::RGBA8,
                         size: image.size,
                     },
-                    filter: texture.filter_mode,
-                    mip_filter: texture.filter_mode,
-                    wrap_mode: texture.wrap_mode,
+                    filter: texture.meta.filter_mode,
+                    mip_filter: texture.meta.filter_mode,
+                    wrap_mode: texture.meta.wrap_mode,
                 },
             );
         }

@@ -375,7 +375,7 @@ impl FilterChainD3D11 {
                 Height: image.size.height,
                 Format: DXGI_FORMAT_R8G8B8A8_UNORM,
                 Usage: D3D11_USAGE_DEFAULT,
-                MiscFlags: if texture.mipmap {
+                MiscFlags: if texture.meta.mipmap {
                     D3D11_RESOURCE_MISC_GENERATE_MIPS.0 as u32
                 } else {
                     0
@@ -388,8 +388,8 @@ impl FilterChainD3D11 {
                 context,
                 &image,
                 desc,
-                texture.filter_mode,
-                texture.wrap_mode,
+                texture.meta.filter_mode,
+                texture.meta.wrap_mode,
             )?;
             luts.insert(index, texture);
         }

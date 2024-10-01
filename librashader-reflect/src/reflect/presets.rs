@@ -7,7 +7,9 @@ use crate::reflect::semantics::{
 };
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig};
+use librashader_presets::{
+    ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig, TextureMeta,
+};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -194,11 +196,11 @@ fn insert_lut_semantics(
     texture_semantics: &mut FastHashMap<ShortString, Semantic<TextureSemantics>>,
 ) {
     for (index, texture) in textures.iter().enumerate() {
-        let mut size_semantic = texture.name.clone();
+        let mut size_semantic = texture.meta.name.clone();
         size_semantic.push_str("Size");
 
         texture_semantics.insert(
-            texture.name.clone(),
+            texture.meta.name.clone(),
             Semantic {
                 semantics: TextureSemantics::User,
                 index,

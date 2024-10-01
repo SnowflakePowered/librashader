@@ -1,6 +1,6 @@
 use crate::error::{FilterChainError, Result};
 use crate::texture::InputTexture;
-use librashader_presets::TextureConfig;
+use librashader_presets::{TextureConfig, TextureMeta};
 use librashader_runtime::image::{Image, BGRA8};
 use librashader_runtime::scaling::MipmapSize;
 use objc2::runtime::ProtocolObject;
@@ -23,7 +23,7 @@ impl LutTexture {
     pub fn new(
         device: &ProtocolObject<dyn MTLDevice>,
         image: Image<BGRA8>,
-        config: &TextureConfig,
+        config: &TextureMeta,
         mipmapper: &ProtocolObject<dyn MTLBlitCommandEncoder>,
     ) -> Result<Self> {
         let descriptor = unsafe {
