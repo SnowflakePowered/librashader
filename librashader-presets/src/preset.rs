@@ -11,7 +11,7 @@ pub type ShaderPassConfig = PathReference<ShaderPassMeta>;
 /// Configuration options for a lookup texture used in the shader.
 pub type TextureConfig = PathReference<TextureMeta>;
 
-/// A reference to a resource on desk.
+/// A reference to a resource on disk.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PathReference<M> {
