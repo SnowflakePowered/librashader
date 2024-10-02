@@ -1151,14 +1151,14 @@ dependencies = [
 
 [[package]]
 name = "glslang"
-version = "0.5.3"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e058f69c0b36dc2ce7e5243f440d186ae65ab7aa9e76cd4c5b953ea4b43286d"
+checksum = "ca195de172c94a69ab142424542f421cf8f7f14555ebbd82c6e8089a8cb318f7"
 dependencies = [
  "bitflags 2.6.0",
  "glslang-sys",
- "once_cell",
  "rustc-hash 2.0.0",
+ "smartstring",
  "thiserror",
 ]
 

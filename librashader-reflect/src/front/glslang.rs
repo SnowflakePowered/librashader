@@ -29,11 +29,17 @@ pub(crate) fn compile_spirv(source: &ShaderSource) -> Result<SpirvCompilation, S
     };
 
     let vertex = glslang::ShaderSource::from(source.vertex.as_str());
-    let vertex = ShaderInput::new(&vertex, glslang::ShaderStage::Vertex, &options, None)?;
+    let vertex = ShaderInput::new(&vertex, glslang::ShaderStage::Vertex, &options, None, None)?;
     let vertex = compiler.create_shader(vertex)?;
 
     let fragment = glslang::ShaderSource::from(source.fragment.as_str());
-    let fragment = ShaderInput::new(&fragment, glslang::ShaderStage::Fragment, &options, None)?;
+    let fragment = ShaderInput::new(
+        &fragment,
+        glslang::ShaderStage::Fragment,
+        &options,
+        None,
+        None,
+    )?;
     let fragment = compiler.create_shader(fragment)?;
 
     let vertex = vertex.compile()?;
