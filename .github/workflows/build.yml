@@ -149,12 +149,3 @@ jobs:
         with:
           name: ${{ format('librashader-x86_64-win7-windows-{0}-{1}', github.sha, matrix.profile) }}
           path: ${{ format('target/x86_64-win7-windows-msvc/{0}/librashader.*', matrix.profile) }}
-      - name: Build librashader CLI
-        if: matrix.profile == 'release'
-        run: cargo build -p librashader-cli --release --target x86_64-win7-windows-msvc -Zbuild-std
-      - name: Upload librashader-cli
-        uses: actions/upload-artifact@v4.4.0
-        if: matrix.profile == 'release'
-        with:
-          name: ${{ format('librashader-cli-x86_64-win7-windows-msvc-{0}', github.sha) }}
-          path: ${{ format('target/x86_64-win7-windows-msvc/{0}/librashader-cli.exe', matrix.profile) }}
