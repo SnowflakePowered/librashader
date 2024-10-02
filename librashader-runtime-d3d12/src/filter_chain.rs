@@ -565,10 +565,7 @@ impl FilterChainD3D12 {
                 |dxc,
                  (
                     index,
-                    (
-                        (((config, source, mut dxil), (_, _, mut hlsl)), mut texture_heap),
-                        mut sampler_heap,
-                    ),
+                    ((((config, mut dxil), (_, mut hlsl)), mut texture_heap), mut sampler_heap),
                 )| {
                     let Ok((validator, library, compiler)) = dxc else {
                         return Err(FilterChainError::Direct3DOperationError(
@@ -581,10 +578,10 @@ impl FilterChainD3D12 {
                         librashader_reflect::back::dxil::ShaderModel::ShaderModel6_0,
                     ))?;
 
-                    let render_format = if let Some(format) = config.get_format_override() {
+                    let render_format = if let Some(format) = config.meta.get_format_override() {
                         format
-                    } else if source.format != ImageFormat::Unknown {
-                        source.format
+                    } else if config.data.format != ImageFormat::Unknown {
+                        config.data.format
                     } else {
                         ImageFormat::R8G8B8A8Unorm
                     }
@@ -650,10 +647,10 @@ impl FilterChainD3D12 {
                         uniform_bindings,
                         uniform_storage,
                         pipeline: graphics_pipeline,
-                        meta: config,
+                        meta: config.meta,
                         texture_heap,
                         sampler_heap,
-                        source,
+                        source: config.data,
                     })
                 },
             )

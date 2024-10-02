@@ -282,7 +282,7 @@ impl FilterChainD3D11 {
         let device_is_singlethreaded =
             unsafe { (device.GetCreationFlags() & D3D11_CREATE_DEVICE_SINGLETHREADED.0) == 1 };
 
-        let builder_fn = |(index, (config, source, mut reflect)): (usize, ShaderPassMeta)| {
+        let builder_fn = |(index, (config, mut reflect)): (usize, ShaderPassMeta)| {
             let reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(None)?;
 
@@ -365,8 +365,8 @@ impl FilterChainD3D11 {
                 uniform_storage,
                 uniform_buffer: ubo_cbuffer,
                 push_buffer: push_cbuffer,
-                source,
-                meta: config,
+                source: config.data,
+                meta: config.meta,
             })
         };
 
