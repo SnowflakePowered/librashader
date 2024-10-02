@@ -60,7 +60,7 @@ static FINAL_VBO_DATA: &[VertexInput; 4] = &[
 pub(crate) trait LoadLut {
     fn load_luts(
         context: &glow::Context,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> Result<FastHashMap<usize, InputTexture>>;
 }
 
@@ -172,4 +172,4 @@ pub(crate) trait GLInterface {
 }
 
 pub(crate) use framebuffer::OutputFramebuffer;
-use librashader_pack::TextureData;
+use librashader_pack::TextureResource;

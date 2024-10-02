@@ -175,7 +175,7 @@ impl Drop for FrameResiduals {
 
 mod compile {
     use super::*;
-    use librashader_pack::ShaderPassData;
+    use librashader_pack::PassResource;
 
     #[cfg(not(feature = "stable"))]
     pub type DxilShaderPassMeta =
@@ -187,8 +187,8 @@ mod compile {
     >;
 
     pub fn compile_passes_dxil(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
         disable_cache: bool,
     ) -> Result<(Vec<DxilShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -217,8 +217,8 @@ mod compile {
     >;
 
     pub fn compile_passes_hlsl(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
         disable_cache: bool,
     ) -> Result<(Vec<HlslShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -240,7 +240,7 @@ mod compile {
 
 use crate::resource::OutlivesFrame;
 use compile::{compile_passes_dxil, compile_passes_hlsl, DxilShaderPassMeta, HlslShaderPassMeta};
-use librashader_pack::{ShaderPresetPack, TextureData};
+use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D12 {
@@ -335,14 +335,14 @@ impl FilterChainD3D12 {
         cmd: &ID3D12GraphicsCommandList,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
-        let shader_count = preset.shaders.len();
+        let shader_count = preset.passes.len();
         let lut_count = preset.textures.len();
 
-        let shader_copy = preset.shaders.clone();
+        let shader_copy = preset.passes.clone();
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
         let (passes, semantics) =
-            compile_passes_dxil(preset.shaders, &preset.textures, disable_cache)?;
+            compile_passes_dxil(preset.passes, &preset.textures, disable_cache)?;
         let (hlsl_passes, _) = compile_passes_hlsl(shader_copy, &preset.textures, disable_cache)?;
 
         let samplers = SamplerSet::new(device)?;
@@ -436,7 +436,7 @@ impl FilterChainD3D12 {
                 mipmap_gen,
                 root_signature,
                 draw_quad,
-                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
+                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 history_textures,
             },
             staging_heap,
@@ -461,7 +461,7 @@ impl FilterChainD3D12 {
         staging_heap: &mut D3D12DescriptorHeap<CpuStagingHeap>,
         mipmap_heap: &mut D3D12DescriptorHeap<ResourceWorkHeap>,
         gc: &mut FrameResiduals,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         // use separate mipgen to load luts.
         let mipmap_gen = D3D12MipmapGen::new(device, true)?;

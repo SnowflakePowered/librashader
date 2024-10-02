@@ -6,7 +6,7 @@
 //!
 use image::{ImageError, RgbaImage};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ParameterMeta, ShaderPassMeta, ShaderPreset, TextureMeta};
+use librashader_presets::{ParameterMeta, PassMeta, ShaderPreset, TextureMeta};
 use std::path::Path;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -49,7 +49,7 @@ impl From<RgbaImage> for TextureBuffer {
 /// A resource for a shader preset, fully loaded into memory.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ShaderPresetResource<M: LoadableResource> {
+pub struct LoadedResource<M: LoadableResource> {
     /// The fully qualified path to the texture.
     pub data: M::ResourceType,
     /// Meta information about the texture.
@@ -66,7 +66,7 @@ pub trait LoadableResource {
     fn load(path: &Path) -> Result<Self::ResourceType, Self::Error>;
 }
 
-impl LoadableResource for ShaderPassMeta {
+impl LoadableResource for PassMeta {
     type ResourceType = ShaderSource;
     type Error = PreprocessError;
 
@@ -84,9 +84,11 @@ impl LoadableResource for TextureMeta {
     }
 }
 
-/// The configuration for a single shader pass.
-pub type ShaderPassData = ShaderPresetResource<ShaderPassMeta>;
-pub type TextureData = ShaderPresetResource<TextureMeta>;
+/// The loaded resource information for the source code of a shader pass.
+pub type PassResource = LoadedResource<PassMeta>;
+
+/// The loaded texture resource for a shader preset.
+pub type TextureResource = LoadedResource<TextureMeta>;
 
 /// A fully loaded-in-memory shader preset, with all paths resolved to data.
 #[derive(Debug, Clone)]
@@ -98,13 +100,13 @@ pub struct ShaderPresetPack {
     pub feedback_pass: i32,
 
     /// The number of shaders enabled in the filter chain.
-    pub shader_count: i32,
+    pub pass_count: i32,
     // Everything is in Vecs because the expect number of values is well below 64.
     /// Preset information for each shader.
-    pub shaders: Vec<ShaderPassData>,
+    pub passes: Vec<PassResource>,
 
     /// Preset information for each texture.
-    pub textures: Vec<TextureData>,
+    pub textures: Vec<TextureResource>,
 
     /// Preset information for each user parameter.
     pub parameters: Vec<ParameterMeta>,
@@ -119,7 +121,7 @@ impl ShaderPresetPack {
         E: Send,
     {
         #[cfg(not(target_arch = "wasm32"))]
-        let shaders_iter = preset.shaders.into_par_iter();
+        let shaders_iter = preset.passes.into_par_iter();
 
         #[cfg(target_arch = "wasm32")]
         let shaders_iter = preset.shaders.into_iter();
@@ -134,11 +136,11 @@ impl ShaderPresetPack {
             #[cfg(feature = "parse_legacy_glsl")]
             feedback_pass: preset.feedback_pass,
 
-            shader_count: preset.shader_count,
-            shaders: shaders_iter
+            pass_count: preset.pass_count,
+            passes: shaders_iter
                 .map(|v| {
-                    Ok::<_, E>(ShaderPassData {
-                        data: ShaderPassMeta::load(v.path.as_path())?,
+                    Ok::<_, E>(PassResource {
+                        data: PassMeta::load(v.path.as_path())?,
                         meta: v.meta,
                     })
                 })
@@ -146,7 +148,7 @@ impl ShaderPresetPack {
             textures: textures_iter
                 .into_par_iter()
                 .map(|t| {
-                    Ok::<_, E>(TextureData {
+                    Ok::<_, E>(TextureResource {
                         data: TextureMeta::load(t.path.as_path())?,
                         meta: t.meta,
                     })

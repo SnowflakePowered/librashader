@@ -77,7 +77,7 @@ pub mod presets {
         preset: &ShaderPreset,
     ) -> Result<impl Iterator<Item = ShaderParameter>, PreprocessError> {
         let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset
-            .shaders
+            .passes
             .iter()
             .map(|s| {
                 ShaderSource::load(&s.path)
@@ -131,7 +131,7 @@ pub mod preprocess {
 ///     pub fn compile_preset(preset: ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), Box<dyn Error>>
 ///     {
 ///         let (passes, semantics) = SPIRV::compile_preset_passes::<SpirvCompilation, SpirvCross, Box<dyn Error>>(
-///         preset.shaders, &preset.textures)?;
+///         preset.passes, &preset.textures)?;
 ///         Ok((passes, semantics))
 ///     }
 /// }

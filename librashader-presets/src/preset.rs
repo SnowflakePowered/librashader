@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 /// The configuration for a single shader pass.
-pub type ShaderPassConfig = PathReference<ShaderPassMeta>;
+pub type PassConfig = PathReference<PassMeta>;
 
 /// Configuration options for a lookup texture used in the shader.
 pub type TextureConfig = PathReference<TextureMeta>;
@@ -24,7 +24,7 @@ pub struct PathReference<M> {
 /// Meta information about a shader pass.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ShaderPassMeta {
+pub struct PassMeta {
     /// The index of the shader pass relative to its parent preset.
     pub id: i32,
     /// The alias of the shader pass if available.
@@ -45,7 +45,7 @@ pub struct ShaderPassMeta {
     pub scaling: Scale2D,
 }
 
-impl ShaderPassMeta {
+impl PassMeta {
     /// If the framebuffer expects a different format than what was defined in the
     /// shader source, returns such format.
     #[inline(always)]
@@ -204,10 +204,10 @@ pub struct ShaderPreset {
     pub feedback_pass: i32,
 
     /// The number of shaders enabled in the filter chain.
-    pub shader_count: i32,
+    pub pass_count: i32,
     // Everything is in Vecs because the expect number of values is well below 64.
     /// Preset information for each shader.
-    pub shaders: Vec<ShaderPassConfig>,
+    pub passes: Vec<PassConfig>,
 
     /// Preset information for each texture.
     pub textures: Vec<TextureConfig>,

@@ -14,9 +14,9 @@ use librashader::reflect::FromCompilation;
 use librashader::reflect::OutputTarget;
 use librashader::reflect::SpirvCompilation;
 
-use librashader_pack::{LoadableResource, ShaderPassData};
+use librashader_pack::{LoadableResource, PassResource};
 use librashader_preprocess::PreprocessError;
-use librashader_presets::ShaderPassMeta;
+use librashader_presets::PassMeta;
 use once_cell::sync::Lazy;
 
 static ALL_SLANG_PRESETS: Lazy<RwLock<Vec<(PathBuf, ShaderPreset)>>> =
@@ -57,7 +57,7 @@ fn collect_all_loadable_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
     let mut presets = collect_all_slang_presets(false);
     presets.retain(|(_, preset)| {
         !preset
-            .shaders
+            .passes
             .par_iter()
             .any(|shader| ShaderSource::load(&shader.path).is_err())
     });
@@ -70,7 +70,7 @@ pub fn preprocess_all_slang_presets_parsed() {
     let presets = collect_all_slang_presets(true);
 
     for (path, preset) in presets {
-        preset.shaders.into_par_iter().for_each(|shader| {
+        preset.passes.into_par_iter().for_each(|shader| {
             if let Err(e) = ShaderSource::load(&shader.path) {
                 #[cfg(not(feature = "github-ci"))]
                 eprintln!(
@@ -143,11 +143,11 @@ where
         );
 
         let shader_pass_data = preset
-            .shaders
+            .passes
             .par_iter()
             .map(|p| {
                 (
-                    ShaderPassMeta::load(&p.path).map(|data| ShaderPassData {
+                    PassMeta::load(&p.path).map(|data| PassResource {
                         meta: p.meta.clone(),
                         data,
                     }),
@@ -169,7 +169,7 @@ where
                 };
                 e
             })
-            .collect::<Result<Vec<ShaderPassData>, PreprocessError>>();
+            .collect::<Result<Vec<PassResource>, PreprocessError>>();
 
         let Ok(shader_pass_data) = shader_pass_data else {
             return;

@@ -4,7 +4,7 @@ use crate::gl::LoadLut;
 use crate::texture::InputTexture;
 use glow::{HasContext, PixelUnpackData};
 use librashader_common::map::FastHashMap;
-use librashader_pack::TextureData;
+use librashader_pack::TextureResource;
 use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection};
 use librashader_runtime::scaling::MipmapSize;
 use rayon::prelude::*;
@@ -14,7 +14,7 @@ pub struct Gl3LutLoad;
 impl LoadLut for Gl3LutLoad {
     fn load_luts(
         context: &glow::Context,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> Result<FastHashMap<usize, InputTexture>> {
         let mut luts = FastHashMap::default();
         let pixel_unpack = unsafe { context.get_parameter_i32(glow::PIXEL_UNPACK_BUFFER_BINDING) };

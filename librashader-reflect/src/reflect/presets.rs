@@ -6,9 +6,9 @@ use crate::reflect::semantics::{
     Semantic, ShaderSemantics, TextureSemantics, UniformSemantic, UniqueSemantics,
 };
 use librashader_common::map::{FastHashMap, ShortString};
-use librashader_pack::ShaderPassData;
+use librashader_pack::PassResource;
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ShaderPassMeta, ShaderPreset, TextureMeta};
+use librashader_presets::{PassMeta, ShaderPreset, TextureMeta};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -28,7 +28,7 @@ use librashader_presets::{ShaderPassMeta, ShaderPreset, TextureMeta};
 /// ```
 ///
 /// This allows a runtime to not name the backing type of the compiled artifact if not necessary.
-pub type ShaderPassArtifact<T> = (ShaderPassMeta, ShaderSource, CompilerBackend<T>);
+pub type ShaderPassArtifact<T> = (PassMeta, ShaderSource, CompilerBackend<T>);
 
 impl<T: OutputTarget> CompilePresetTarget for T {}
 
@@ -38,7 +38,7 @@ pub trait CompilePresetTarget: OutputTarget {
     /// Compile passes of a shader preset given the applicable
     /// shader output target, compilation type, and resulting error.
     fn compile_preset_passes<'a, I, R, E>(
-        passes: Vec<ShaderPassData>,
+        passes: Vec<PassResource>,
         textures: impl Iterator<Item = &'a TextureMeta>,
     ) -> Result<
         (
@@ -63,7 +63,7 @@ pub trait CompilePresetTarget: OutputTarget {
 /// Compile passes of a shader preset given the applicable
 /// shader output target, compilation type, and resulting error.
 fn compile_preset_passes<'a, T, I, R, E>(
-    passes: Vec<ShaderPassData>,
+    passes: Vec<PassResource>,
     textures: impl Iterator<Item = &'a TextureMeta>,
 ) -> Result<
     (
@@ -103,7 +103,7 @@ where
             }
             Ok::<_, E>((shader.meta, source, reflect))
         })
-        .collect::<Result<Vec<(ShaderPassMeta, ShaderSource, CompilerBackend<_>)>, E>>()?;
+        .collect::<Result<Vec<(PassMeta, ShaderSource, CompilerBackend<_>)>, E>>()?;
 
     for (meta, source, _) in &passes {
         insert_pass_semantics(
@@ -232,7 +232,7 @@ impl ShaderSemantics {
             Default::default();
 
         let config = preset
-            .shaders
+            .passes
             .get(index)
             .ok_or_else(|| PreprocessError::InvalidStage)?;
 

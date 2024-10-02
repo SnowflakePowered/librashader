@@ -41,7 +41,7 @@ use std::path::Path;
 
 mod compile {
     use super::*;
-    use librashader_pack::{ShaderPassData, TextureData};
+    use librashader_pack::{PassResource, TextureResource};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -52,8 +52,8 @@ mod compile {
         ShaderPassArtifact<Box<dyn CompileReflectShader<MSL, SpirvCompilation, SpirvCross> + Send>>;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = MSL::compile_preset_passes::<
             SpirvCompilation,
@@ -65,7 +65,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
-use librashader_pack::{ShaderPresetPack, TextureData};
+use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
 /// A Metal filter chain.
@@ -149,7 +149,7 @@ impl FilterChainMetal {
     fn load_luts(
         device: &ProtocolObject<dyn MTLDevice>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
 
@@ -315,7 +315,7 @@ impl FilterChainMetal {
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
-        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
+        let (passes, semantics) = compile_passes(preset.passes, &preset.textures)?;
 
         let filters = Self::init_passes(&device, passes, &semantics)?;
 
@@ -352,7 +352,7 @@ impl FilterChainMetal {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
+                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 draw_quad,
                 device,
                 output_textures,

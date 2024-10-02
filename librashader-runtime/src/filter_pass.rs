@@ -1,5 +1,5 @@
 use librashader_common::ImageFormat;
-use librashader_presets::ShaderPassMeta;
+use librashader_presets::PassMeta;
 
 /// Trait for metadata about a filter pass.
 pub trait FilterPassMeta {
@@ -7,7 +7,7 @@ pub trait FilterPassMeta {
     fn framebuffer_format(&self) -> ImageFormat;
 
     /// Gets a reference to the filter pass config.
-    fn meta(&self) -> &ShaderPassMeta;
+    fn meta(&self) -> &PassMeta;
 
     /// Gets the format of the filter pass framebuffer.
     #[inline(always)]

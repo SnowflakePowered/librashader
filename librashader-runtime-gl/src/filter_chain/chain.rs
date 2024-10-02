@@ -21,7 +21,7 @@ use librashader_reflect::reflect::semantics::{ShaderSemantics, UniformMeta};
 use glow::HasContext;
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
-use librashader_pack::{ShaderPassData, ShaderPresetPack, TextureData};
+use librashader_pack::{PassResource, ShaderPresetPack, TextureResource};
 use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
@@ -108,8 +108,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -140,7 +140,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
-        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
+        let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
         let version = options.map_or_else(
             || gl_get_version(&context),
             |o| gl_u16_to_version(&context, o.glsl_version),
@@ -197,7 +197,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             history_framebuffers,
             draw_quad,
             common: FilterCommon {
-                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
+                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,
