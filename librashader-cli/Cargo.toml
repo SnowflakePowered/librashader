@@ -1,7 +1,14 @@
 [package]
 name = "librashader-cli"
-version = "0.4.5"
 edition = "2021"
+license = "MPL-2.0 OR GPL-3.0-only"
+version = "0.4.5"
+authors = ["Ronny Chan <ronny@ronnychan.ca>"]
+repository = "https://github.com/SnowflakePowered/librashader"
+readme = "../README.md"
+categories = ["emulators", "compilers", "graphics"]
+keywords = ["shader", "retroarch", "SPIR-V"]
+description = "RetroArch shaders for all."
 
 [lib]
 name = "librashader_test"
