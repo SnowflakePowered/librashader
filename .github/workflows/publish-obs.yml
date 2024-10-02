@@ -13,7 +13,7 @@ jobs:
     container: fedora:39
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install OSC and dependencies
         env:
           OBS_CONFIG: ${{ secrets.OBS_CONFIG }}

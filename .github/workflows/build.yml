@@ -38,7 +38,7 @@ jobs:
     - name: Build dynamic library
       run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }}
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4.4.0
       with:
         name: ${{ format('librashader-{0}-{1}-{2}', matrix.output, github.sha, matrix.profile) }}
         path: ${{ format('target/{0}/librashader.*', matrix.profile) }}
@@ -51,7 +51,7 @@ jobs:
       if: matrix.profile == 'release'
       run: cargo build -p librashader-cli --release
     - name: Upload librashader-cli
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4.4.0
       if: matrix.profile == 'release'
       with:
         name: ${{ format('librashader-cli-{0}-{1}', matrix.output, github.sha) }}
@@ -83,7 +83,7 @@ jobs:
     - name: Build dynamic library
       run: CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/aarch64-linux-gnu-gcc cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target aarch64-unknown-linux-gnu
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4.4.0
       with:
         name: ${{ format('librashader-aarch64-ubuntu-{0}-{1}', github.sha, matrix.profile) }}
         path: ${{ format('target/aarch64-unknown-linux-gnu/{0}/librashader.*', matrix.profile) }}
@@ -91,7 +91,7 @@ jobs:
       if: matrix.profile == 'release'
       run: CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/aarch64-linux-gnu-gcc  cargo build -p librashader-cli --release --target aarch64-unknown-linux-gnu
     - name: Upload librashader-cli
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4.4.0
       if: matrix.profile == 'release'
       with:
         name: ${{ format('librashader-cli-aarch64-ubuntu-{0}', github.sha) }}
@@ -114,7 +114,7 @@ jobs:
       - name: Build dynamic library
         run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target aarch64-pc-windows-msvc
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: ${{ format('librashader-aarch64-windows-{0}-{1}', github.sha, matrix.profile) }}
           path: ${{ format('target/aarch64-pc-windows-msvc/{0}/librashader.*', matrix.profile) }}
@@ -122,7 +122,7 @@ jobs:
         if: matrix.profile == 'release'
         run: cargo build -p librashader-cli --release --target aarch64-pc-windows-msvc
       - name: Upload librashader-cli
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.4.0
         if: matrix.profile == 'release'
         with:
           name: ${{ format('librashader-cli-aarch64-pc-windows-msvc-{0}', github.sha) }}
@@ -145,15 +145,15 @@ jobs:
       - name: Build dynamic library
         run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target x86_64-win7-windows-msvc -- -Zbuild-std
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: ${{ format('librashader-x86_64-win7-windows-{0}-{1}', github.sha, matrix.profile) }}
           path: ${{ format('target/x86_64-win7-windows-msvc/{0}/librashader.*', matrix.profile) }}
       - name: Build librashader CLI
         if: matrix.profile == 'release'
-        run: cargo build -p librashader-cli --release --target aarch64-pc-windows-msvc -Zbuild-std
+        run: cargo build -p librashader-cli --release --target x86_64-win7-windows-msvc -Zbuild-std
       - name: Upload librashader-cli
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.4.0
         if: matrix.profile == 'release'
         with:
           name: ${{ format('librashader-cli-x86_64-win7-windows-msvc-{0}', github.sha) }}
