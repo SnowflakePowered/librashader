@@ -397,12 +397,7 @@ declare_class!(
                 // blit.endEncoding();
 
                 filter_chain.frame(&texture,
-                    &Viewport {
-                        x: 0.0,
-                        y: 0.0,
-                        mvp: None,
-                        output: &backbuffer
-                    }, &command_buffer, 1, None)
+                    &Viewport::new_render_target_sized_origin(backbuffer.as_ref(), None).expect("viewport"), &command_buffer, 1, None)
                 .expect("frame");
 
                 let blit = command_buffer
