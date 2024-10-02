@@ -35,6 +35,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // #if defined(_WIN32)
 // #define LIBRA_RUNTIME_D3D11
 // #define LIBRA_RUNTIME_D3D12
+// #define LIBRA_RUNTIME_D3D9
 // #endif
 
 // #if (defined(__APPLE__) && defined(__OBJC__))
