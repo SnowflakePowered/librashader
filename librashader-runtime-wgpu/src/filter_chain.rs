@@ -40,7 +40,7 @@ use crate::texture::{InputImage, OwnedImage};
 
 mod compile {
     use super::*;
-    use librashader_pack::{ShaderPassData, TextureData};
+    use librashader_pack::{PassResource, TextureResource};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -51,8 +51,8 @@ mod compile {
         ShaderPassArtifact<Box<dyn CompileReflectShader<WGSL, SpirvCompilation, Naga> + Send>>;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = WGSL::compile_preset_passes::<
             SpirvCompilation,
@@ -64,7 +64,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
-use librashader_pack::{ShaderPresetPack, TextureData};
+use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
 /// A wgpu filter chain.
@@ -176,7 +176,7 @@ impl FilterChainWgpu {
         cmd: &mut wgpu::CommandEncoder,
         options: Option<&FilterChainOptionsWgpu>,
     ) -> error::Result<FilterChainWgpu> {
-        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures)?;
+        let (passes, semantics) = compile_passes(preset.passes, &preset.textures)?;
 
         // cache is opt-in for wgpu, not opt-out because of feature requirements.
         let disable_cache = options.map_or(true, |o| !o.enable_cache);
@@ -234,7 +234,7 @@ impl FilterChainWgpu {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
+                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 draw_quad,
                 device,
                 queue,
@@ -258,7 +258,7 @@ impl FilterChainWgpu {
         cmd: &mut wgpu::CommandEncoder,
         mipmapper: &mut MipmapGen,
         sampler_set: &SamplerSet,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
 

@@ -250,7 +250,7 @@ impl Drop for FrameResiduals {
 
 mod compile {
     use super::*;
-    use librashader_pack::ShaderPassData;
+    use librashader_pack::PassResource;
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -262,8 +262,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -284,7 +284,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
-use librashader_pack::{ShaderPresetPack, TextureData};
+use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainVulkan {
@@ -415,7 +415,7 @@ impl FilterChainVulkan {
         FilterChainError: From<E>,
     {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
-        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
+        let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
 
         let device = vulkan.try_into().map_err(From::from)?;
 
@@ -466,7 +466,7 @@ impl FilterChainVulkan {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
+                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 draw_quad: DrawQuad::new(&device.device, &device.alloc)?,
                 device: device.device.clone(),
                 output_textures,
@@ -559,7 +559,7 @@ impl FilterChainVulkan {
     fn load_luts(
         vulkan: &VulkanObjects,
         command_buffer: vk::CommandBuffer,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
         let textures = textures

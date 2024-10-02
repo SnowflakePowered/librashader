@@ -4,7 +4,7 @@ use librashader_reflect::reflect::ShaderReflection;
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
-use librashader_presets::ShaderPassMeta;
+use librashader_presets::PassMeta;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
@@ -38,7 +38,7 @@ pub(crate) struct FilterPass<T: GLInterface> {
     pub(crate) uniform_storage: GlUniformStorage,
     pub uniform_bindings: FastHashMap<UniformBinding, UniformOffset>,
     pub source: ShaderSource,
-    pub meta: ShaderPassMeta,
+    pub meta: PassMeta,
 }
 
 impl TextureInput for InputTexture {
@@ -162,7 +162,7 @@ impl<T: GLInterface> FilterPassMeta for FilterPass<T> {
         self.source.format
     }
 
-    fn meta(&self) -> &ShaderPassMeta {
+    fn meta(&self) -> &PassMeta {
         &self.meta
     }
 }

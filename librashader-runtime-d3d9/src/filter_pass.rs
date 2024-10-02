@@ -8,7 +8,7 @@ use librashader_common::map::FastHashMap;
 use librashader_common::GetSize;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
-use librashader_presets::ShaderPassMeta;
+use librashader_presets::PassMeta;
 use librashader_reflect::reflect::semantics::{TextureBinding, UniformBinding};
 use librashader_reflect::reflect::ShaderReflection;
 use librashader_runtime::binding::{BindSemantics, UniformInputs};
@@ -28,7 +28,7 @@ pub struct FilterPass {
     pub pixel_shader: IDirect3DPixelShader9,
     pub uniform_bindings: FastHashMap<UniformBinding, ConstantRegister>,
     pub source: ShaderSource,
-    pub meta: ShaderPassMeta,
+    pub meta: PassMeta,
     pub uniform_storage: D3D9UniformStorage,
     pub gl_halfpixel: Option<RegisterAssignment>,
 }
@@ -38,7 +38,7 @@ impl FilterPassMeta for FilterPass {
         self.source.format
     }
 
-    fn meta(&self) -> &ShaderPassMeta {
+    fn meta(&self) -> &PassMeta {
         &self.meta
     }
 }

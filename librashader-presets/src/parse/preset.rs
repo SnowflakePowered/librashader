@@ -1,8 +1,7 @@
 use crate::parse::remove_if;
 use crate::parse::value::Value;
 use crate::{
-    ParameterMeta, Scale2D, Scaling, ShaderPassConfig, ShaderPassMeta, ShaderPreset, TextureConfig,
-    TextureMeta,
+    ParameterMeta, PassConfig, PassMeta, Scale2D, Scaling, ShaderPreset, TextureConfig, TextureMeta,
 };
 use vec_extract_if_polyfill::MakeExtractIf;
 
@@ -118,9 +117,9 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
                 scale_y = scale;
             }
 
-            let shader = ShaderPassConfig {
+            let shader = PassConfig {
                 path: name,
-                meta: ShaderPassMeta {
+                meta: PassMeta {
                     id,
                     alias: shader_values.iter().find_map(|f| match f {
                         Value::Alias(_, value) => Some(value.clone()),
@@ -189,8 +188,8 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
     ShaderPreset {
         #[cfg(feature = "parse_legacy_glsl")]
         feedback_pass,
-        shader_count,
-        shaders,
+        pass_count: shader_count,
+        passes: shaders,
         textures,
         parameters,
     }

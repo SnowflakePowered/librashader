@@ -63,7 +63,7 @@ pub struct FilterChainD3D9 {
 
 mod compile {
     use super::*;
-    use librashader_pack::{ShaderPassData, TextureData};
+    use librashader_pack::{PassResource, TextureResource};
 
     #[cfg(not(feature = "stable"))]
     pub type ShaderPassMeta =
@@ -75,8 +75,8 @@ mod compile {
     >;
 
     pub fn compile_passes(
-        shaders: Vec<ShaderPassData>,
-        textures: &[TextureData],
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
         disable_cache: bool,
     ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
         let (passes, semantics) = if !disable_cache {
@@ -97,7 +97,7 @@ mod compile {
 }
 
 use compile::{compile_passes, ShaderPassMeta};
-use librashader_pack::{ShaderPresetPack, TextureData};
+use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
 impl FilterChainD3D9 {
@@ -189,7 +189,7 @@ impl FilterChainD3D9 {
 
     fn load_luts(
         device: &IDirect3DDevice9,
-        textures: Vec<TextureData>,
+        textures: Vec<TextureResource>,
     ) -> error::Result<FastHashMap<usize, LutTexture>> {
         let mut luts = FastHashMap::default();
         let images = textures
@@ -236,7 +236,7 @@ impl FilterChainD3D9 {
     ) -> error::Result<FilterChainD3D9> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
-        let (passes, semantics) = compile_passes(preset.shaders, &preset.textures, disable_cache)?;
+        let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
 
         let samplers = SamplerSet::new()?;
 
@@ -275,7 +275,7 @@ impl FilterChainD3D9 {
             history_framebuffers,
             common: FilterCommon {
                 d3d9: device.clone(),
-                config: RuntimeParameters::new(preset.shader_count as usize, preset.parameters),
+                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,

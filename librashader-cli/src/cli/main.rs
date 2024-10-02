@@ -509,7 +509,7 @@ pub fn main() -> Result<(), anyhow::Error> {
             let PresetArgs { preset, wildcards } = preset;
 
             let preset = get_shader_preset(preset, wildcards)?;
-            let Some(shader) = preset.shaders.get(index) else {
+            let Some(shader) = preset.passes.get(index) else {
                 return Err(anyhow!("Invalid pass index for the preset"));
             };
 

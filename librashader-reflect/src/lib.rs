@@ -34,7 +34,7 @@
 //! pub fn compile_preset(preset: ShaderPreset) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), Box<dyn Error>>
 //! {
 //!     let (passes, semantics) = SPIRV::compile_preset_passes::<SpirvCompilation, SpirvCross, Box<dyn Error>>(
-//!     preset.shaders, &preset.textures)?;
+//!     preset.passes, &preset.textures)?;
 //!     Ok((passes, semantics))
 //! }
 //! ```
