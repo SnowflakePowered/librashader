@@ -107,7 +107,7 @@ impl FilterChainD3D9 {
         semantics: &ShaderSemantics,
         disable_cache: bool,
     ) -> error::Result<Vec<FilterPass>> {
-        let builder_fn = |(index, (config, source, mut reflect)): (usize, ShaderPassMeta)| {
+        let builder_fn = |(index, (config, mut reflect)): (usize, ShaderPassMeta)| {
             let mut reflection = reflect.reflect(index, semantics)?;
             let hlsl = reflect.compile(Some(HlslShaderModel::ShaderModel3_0))?;
 
@@ -174,8 +174,8 @@ impl FilterChainD3D9 {
                 uniform_bindings,
                 uniform_storage,
                 gl_halfpixel,
-                source,
-                meta: config,
+                source: config.data,
+                meta: config.meta,
             })
         };
 

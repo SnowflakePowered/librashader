@@ -498,7 +498,7 @@ impl FilterChainVulkan {
         let filters: Vec<error::Result<FilterPass>> = passes
             .into_par_iter()
             .enumerate()
-            .map(|(index, (config, source, mut reflect))| {
+            .map(|(index, (config, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
                 let spirv_words = reflect.compile(None)?;
 
@@ -520,10 +520,10 @@ impl FilterChainVulkan {
 
                 let render_pass_format = if use_dynamic_rendering {
                     vk::Format::UNDEFINED
-                } else if let Some(format) = config.get_format_override() {
+                } else if let Some(format) = config.meta.get_format_override() {
                     format.into()
-                } else if source.format != ImageFormat::Unknown {
-                    source.format.into()
+                } else if config.data.format != ImageFormat::Unknown {
+                    config.data.format.into()
                 } else {
                     ImageFormat::R8G8B8A8Unorm.into()
                 };
@@ -542,8 +542,8 @@ impl FilterChainVulkan {
                     // compiled: spirv_words,
                     uniform_storage,
                     uniform_bindings,
-                    source,
-                    meta: config,
+                    source: config.data,
+                    meta: config.meta,
                     graphics_pipeline,
                     // ubo_ring,
                     frames_in_flight,

@@ -314,7 +314,7 @@ impl FilterChainWgpu {
 
             let filters: Vec<error::Result<FilterPass>> = passes_iter
                 .enumerate()
-                .map(|(index, (config, source, mut reflect))| {
+                .map(|(index, (config, mut reflect))| {
                     let reflection = reflect.reflect(index, semantics)?;
                     let wgsl = reflect.compile(NagaLoweringOptions {
                         write_pcb_as_ubo: true,
@@ -346,10 +346,10 @@ impl FilterChainWgpu {
                         reflection.meta.create_binding_map(|param| param.offset());
 
                     let render_pass_format: Option<TextureFormat> =
-                        if let Some(format) = config.get_format_override() {
+                        if let Some(format) = config.meta.get_format_override() {
                             format.into()
                         } else {
-                            source.format.into()
+                            config.data.format.into()
                         };
 
                     let graphics_pipeline = WgpuGraphicsPipeline::new(
@@ -366,8 +366,8 @@ impl FilterChainWgpu {
                         reflection,
                         uniform_storage,
                         uniform_bindings,
-                        source,
-                        meta: config,
+                        source: config.data,
+                        meta: config.meta,
                         graphics_pipeline,
                     })
                 })

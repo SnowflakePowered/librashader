@@ -179,7 +179,7 @@ impl FilterChainMetal {
         let filters: Vec<error::Result<FilterPass>> = passes
             .into_iter()
             .enumerate()
-            .map(|(index, (config, source, mut reflect))| {
+            .map(|(index, (config, mut reflect))| {
                 let reflection = reflect.reflect(index, semantics)?;
                 let msl = reflect.compile(Some(MslVersion::new(2, 0, 0)))?;
 
@@ -197,10 +197,10 @@ impl FilterChainMetal {
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
                 let render_pass_format: MTLPixelFormat =
-                    if let Some(format) = config.get_format_override() {
+                    if let Some(format) = config.meta.get_format_override() {
                         format.into()
                     } else {
-                        source.format.into()
+                        config.data.format.into()
                     };
 
                 let graphics_pipeline = MetalGraphicsPipeline::new(
@@ -217,8 +217,8 @@ impl FilterChainMetal {
                     reflection,
                     uniform_storage,
                     uniform_bindings,
-                    source,
-                    meta: config,
+                    source: config.data,
+                    meta: config.meta,
                     graphics_pipeline,
                 })
             })

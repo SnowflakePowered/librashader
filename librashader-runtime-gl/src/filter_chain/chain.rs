@@ -221,7 +221,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         let mut filters = Vec::new();
 
         // initialize passes
-        for (index, (config, source, mut reflect)) in passes.into_iter().enumerate() {
+        for (index, (config, mut reflect)) in passes.into_iter().enumerate() {
             let reflection = reflect.reflect(index, semantics)?;
             let glsl = reflect.compile(version)?;
 
@@ -257,8 +257,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 ubo_ring,
                 uniform_storage,
                 uniform_bindings,
-                source,
-                meta: config,
+                source: config.data,
+                meta: config.meta,
             });
         }
 

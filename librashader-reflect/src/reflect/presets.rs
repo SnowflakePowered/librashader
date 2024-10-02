@@ -8,7 +8,7 @@ use crate::reflect::semantics::{
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_pack::PassResource;
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{PassMeta, ShaderPreset, TextureMeta};
+use librashader_presets::{ShaderPreset, TextureMeta};
 
 /// Artifacts of a reflected and compiled shader pass.
 ///
@@ -28,7 +28,7 @@ use librashader_presets::{PassMeta, ShaderPreset, TextureMeta};
 /// ```
 ///
 /// This allows a runtime to not name the backing type of the compiled artifact if not necessary.
-pub type ShaderPassArtifact<T> = (PassMeta, ShaderSource, CompilerBackend<T>);
+pub type ShaderPassArtifact<T> = (PassResource, CompilerBackend<T>);
 
 impl<T: OutputTarget> CompilePresetTarget for T {}
 
@@ -38,7 +38,7 @@ pub trait CompilePresetTarget: OutputTarget {
     /// Compile passes of a shader preset given the applicable
     /// shader output target, compilation type, and resulting error.
     fn compile_preset_passes<'a, I, R, E>(
-        passes: Vec<PassResource>,
+        passes: impl IntoIterator<Item = PassResource>,
         textures: impl Iterator<Item = &'a TextureMeta>,
     ) -> Result<
         (
@@ -63,7 +63,7 @@ pub trait CompilePresetTarget: OutputTarget {
 /// Compile passes of a shader preset given the applicable
 /// shader output target, compilation type, and resulting error.
 fn compile_preset_passes<'a, T, I, R, E>(
-    passes: Vec<PassResource>,
+    passes: impl IntoIterator<Item = PassResource>,
     textures: impl Iterator<Item = &'a TextureMeta>,
 ) -> Result<
     (
@@ -85,11 +85,11 @@ where
     let mut texture_semantics: FastHashMap<ShortString, Semantic<TextureSemantics>> =
         Default::default();
 
-    let passes = passes
+    let artifacts = passes
         .into_iter()
         .map(|shader| {
-            let source = shader.data;
-            let compiled = I::Compiler::compile(&source)?;
+            let source = &shader.data;
+            let compiled = I::Compiler::compile(source)?;
             let reflect = T::from_compilation(compiled)?;
 
             for parameter in source.parameters.values() {
@@ -101,22 +101,22 @@ where
                     }),
                 );
             }
-            Ok::<_, E>((shader.meta, source, reflect))
+            Ok::<_, E>((shader, reflect))
         })
-        .collect::<Result<Vec<(PassMeta, ShaderSource, CompilerBackend<_>)>, E>>()?;
+        .collect::<Result<Vec<(PassResource, CompilerBackend<_>)>, E>>()?;
 
-    for (meta, source, _) in &passes {
+    for (pass, _) in artifacts.iter() {
         insert_pass_semantics(
             &mut uniform_semantics,
             &mut texture_semantics,
-            meta.alias.as_ref(),
-            meta.id as usize,
+            pass.meta.alias.as_ref(),
+            pass.meta.id as usize,
         );
         insert_pass_semantics(
             &mut uniform_semantics,
             &mut texture_semantics,
-            source.name.as_ref(),
-            meta.id as usize,
+            pass.data.name.as_ref(),
+            pass.meta.id as usize,
         );
     }
 
@@ -127,7 +127,7 @@ where
         texture_semantics,
     };
 
-    Ok((passes, semantics))
+    Ok((artifacts, semantics))
 }
 
 /// Insert the available semantics for the input pass config into the provided semantic maps.
