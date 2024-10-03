@@ -43,14 +43,14 @@ pub union libra_image_d3d12_handle_t {
 }
 
 /// The type of image passed to the image.
-#[repr(C)]
+#[repr(i32)]
 pub enum LIBRA_D3D12_IMAGE_TYPE {
     /// The image handle is a pointer to a `ID3D12Resource`.
-    IMAGE_TYPE_RESOURCE = 0,
+    RESOURCE = 0,
     /// The image handle is a `libra_source_image_d3d12_t`
-    IMAGE_TYPE_SOURCE_IMAGE = 1,
+    SOURCE_IMAGE = 1,
     /// The image handle is a `libra_output_image_d3d12_t`
-    IMAGE_TYPE_OUTPUT_IMAGE = 2,
+    OUTPUT_IMAGE = 2,
 }
 
 /// Direct3D 12 parameters for the source image.
@@ -308,14 +308,14 @@ extern_fn! {
 
         let output = unsafe {
             match out.image_type {
-                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_RESOURCE => {
+                LIBRA_D3D12_IMAGE_TYPE::RESOURCE => {
                     let out = out.handle.resource;
                     D3D12OutputView::new_from_resource(
                         out,
                         chain,
                     )?
                 }
-                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_OUTPUT_IMAGE => {
+                LIBRA_D3D12_IMAGE_TYPE::OUTPUT_IMAGE => {
                     let out = out.handle.output;
                     D3D12OutputView::new_from_raw(
                         out.descriptor,
@@ -323,7 +323,7 @@ extern_fn! {
                         out.format,
                     )
                 }
-                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_SOURCE_IMAGE => {
+                LIBRA_D3D12_IMAGE_TYPE::SOURCE_IMAGE => {
                     return Err(LibrashaderError::InvalidParameter("out"))
                 }
             }
@@ -347,18 +347,18 @@ extern_fn! {
 
         let image = unsafe {
             match image.image_type {
-                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_RESOURCE => {
+                LIBRA_D3D12_IMAGE_TYPE::RESOURCE => {
                     let image = image.handle.resource;
                     D3D12InputImage::Managed(image)
                 }
-                 LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_SOURCE_IMAGE => {
+                 LIBRA_D3D12_IMAGE_TYPE::SOURCE_IMAGE => {
                     let image = ManuallyDrop::into_inner(image.handle.source);
                     D3D12InputImage::External {
                         resource: image.resource,
                         descriptor: image.descriptor,
                     }
                 }
-                LIBRA_D3D12_IMAGE_TYPE::IMAGE_TYPE_OUTPUT_IMAGE => {
+                LIBRA_D3D12_IMAGE_TYPE::OUTPUT_IMAGE => {
                     return Err(LibrashaderError::InvalidParameter("image"))
                 }
             }

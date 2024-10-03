@@ -53,20 +53,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12))
 /// The type of image passed to the image.
-typedef enum LIBRA_D3D12_IMAGE_TYPE {
+enum LIBRA_D3D12_IMAGE_TYPE
+#ifdef __cplusplus
+  : int32_t
+#endif // __cplusplus
+ {
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12))
   /// The image handle is a pointer to a `ID3D12Resource`.
-  LIBRA_D3D12_IMAGE_TYPE_IMAGE_TYPE_RESOURCE = 0,
+  LIBRA_D3D12_IMAGE_TYPE_RESOURCE = 0,
 #endif
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12))
   /// The image handle is a `libra_source_image_d3d12_t`
-  LIBRA_D3D12_IMAGE_TYPE_IMAGE_TYPE_SOURCE_IMAGE = 1,
+  LIBRA_D3D12_IMAGE_TYPE_SOURCE_IMAGE = 1,
 #endif
 #if (defined(_WIN32) && defined(LIBRA_RUNTIME_D3D12))
   /// The image handle is a `libra_output_image_d3d12_t`
-  LIBRA_D3D12_IMAGE_TYPE_IMAGE_TYPE_OUTPUT_IMAGE = 2,
+  LIBRA_D3D12_IMAGE_TYPE_OUTPUT_IMAGE = 2,
 #endif
-} LIBRA_D3D12_IMAGE_TYPE;
+};
+#ifndef __cplusplus
+typedef int32_t LIBRA_D3D12_IMAGE_TYPE;
+#endif // __cplusplus
 #endif
 
 /// Error codes for librashader error types.
@@ -493,9 +500,9 @@ typedef union libra_image_d3d12_handle_t {
 /// Tagged union for a Direct3D 12 image
 typedef struct libra_image_d3d12_t {
   /// The type of the image.
-  enum LIBRA_D3D12_IMAGE_TYPE image_type;
+  LIBRA_D3D12_IMAGE_TYPE image_type;
   /// The handle to the image.
-  union libra_image_d3d12_handle_t image;
+  union libra_image_d3d12_handle_t handle;
 } libra_image_d3d12_t;
 #endif
 
@@ -1786,18 +1793,26 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 /// remain in `D3D12_RESOURCE_STATE_RENDER_TARGET` after all shader passes. The caller must transition
 /// the output image to the final resource state.
 ///
+/// The refcount of any COM pointers passed into this frame will not be changed. It is the responsibility
+/// of the caller to ensure any resources remain alive until the `ID3D12GraphicsCommandList` provided is
+/// submitted.
+///
 /// ## Parameters
 ///
 /// - `chain` is a handle to the filter chain.
 /// - `command_list` is a `ID3D12GraphicsCommandList` to record draw commands to.
 ///    The provided command list must be open and associated with the `ID3D12Device` this filter chain was created with.
 /// - `frame_count` is the number of frames passed to the shader
-/// - `image` is a `libra_source_image_d3d12_t`, containing a `ID3D12Resource` pointer and CPU descriptor
-///    to an image that will serve as the source image for the frame. The input image must be in the
-///    `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state or equivalent barrier layout.
-/// - `out` is a `libra_output_image_d3d12_t`, containing a CPU descriptor handle, format, and size information
-///    for the render target of the frame. The output image must be in
+/// - `image` is a `libra_image_d3d12_t` with `image_type` set to `IMAGE_TYPE_SOURCE_IMAGE` or `IMAGE_TYPE_RESOURCE`,
+///    with `image_handle` either a `ID3D12Resource*` or an `libra_source_image_d3d12_t` containing a CPU descriptor to a shader resource view,
+///    and the image resource the view is of, which will serve as the source image for the frame.
+///    The input image resource must be in the `D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE` resource state
+///    or equivalent barrier layout. The image resource must have dimension `D3D12_RESOURCE_DIMENSION_TEXTURE2D`.
+/// - `out` is a `libra_image_d3d12_t`, with `image_type` set to `IMAGE_TYPE_OUTPUT_IMAGE` or `IMAGE_TYPE_RESOURCE`,
+///    with `image_handle` being either a `ID3D12Resource*` or an `libra_output_image_d3d12_t`, containing a CPU descriptor handle,
+///    format, and size information for the render target of the frame. The output image must be in
 ///    `D3D12_RESOURCE_STATE_RENDER_TARGET` resource state or equivalent barrier layout.
+///    The image resource must have dimension `D3D12_RESOURCE_DIMENSION_TEXTURE2D`.
 ///
 /// - `viewport` is a pointer to a `libra_viewport_t` that specifies the area onto which scissor and viewport
 ///    will be applied to the render target. It may be null, in which case a default viewport spanning the
@@ -1814,10 +1829,15 @@ libra_error_t libra_d3d12_filter_chain_create_deferred(libra_shader_preset_t *pr
 ///    values for the model view projection matrix.
 /// - `opt` may be null, or if it is not null, must be an aligned pointer to a valid `frame_d3d12_opt_t`
 ///    struct.
-/// - `out` must be a descriptor handle to a render target view.
-/// - `image.resource` must not be null.
+/// -  Any resource pointers contained within a `libra_image_d3d12_t` must be non-null.
+/// -  The `handle` field of any `libra_image_d3d12_t` must be valid for it's `image_type`.
+///      - If `image_type` is `IMAGE_TYPE_RESOURCE`, then `handle` must be `ID3D12Resource *`.
+///      - If `image_type` is `IMAGE_TYPE_SOURCE`, then `handle` must be `libra_source_image_d3d12_t`.
+///      - If `image_type` is `IMAGE_TYPE_OUTPUT`, then `handle` must be `libra_output_image_d3d12_t`.
 /// - `command_list` must be a non-null pointer to a `ID3D12GraphicsCommandList` that is open,
 ///    and must be associated with the `ID3D12Device` this filter chain was created with.
+/// - All resource pointers contained within a `libra_image_d3d12_t` must remain valid until the `ID3D12GraphicsCommandList *`
+///   provided is submitted after the call to this function.
 /// - You must ensure that only one thread has access to `chain` before you call this function. Only one
 ///   thread at a time may call this function.
 libra_error_t libra_d3d12_filter_chain_frame(libra_d3d12_filter_chain_t *chain,
