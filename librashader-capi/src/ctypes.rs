@@ -48,6 +48,8 @@ pub enum LIBRA_PRESET_CTX_RUNTIME {
     D3D12,
     /// Metal
     Metal,
+    /// Direct3D 9
+    D3D9_HLSL
 }
 
 impl From<LIBRA_PRESET_CTX_RUNTIME> for VideoDriver {
@@ -59,6 +61,7 @@ impl From<LIBRA_PRESET_CTX_RUNTIME> for VideoDriver {
             LIBRA_PRESET_CTX_RUNTIME::D3D11 => VideoDriver::Direct3D11,
             LIBRA_PRESET_CTX_RUNTIME::D3D12 => VideoDriver::Direct3D12,
             LIBRA_PRESET_CTX_RUNTIME::Metal => VideoDriver::Metal,
+            LIBRA_PRESET_CTX_RUNTIME::D3D9_HLSL => VideoDriver::Direct3D9Hlsl
         }
     }
 }

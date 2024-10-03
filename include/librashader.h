@@ -136,6 +136,8 @@ enum LIBRA_PRESET_CTX_RUNTIME
   LIBRA_PRESET_CTX_RUNTIME_D3D12,
   /// Metal
   LIBRA_PRESET_CTX_RUNTIME_METAL,
+  /// Direct3D 9
+  LIBRA_PRESET_CTX_RUNTIME_D3D9_HLSL,
 };
 #ifndef __cplusplus
 typedef uint32_t LIBRA_PRESET_CTX_RUNTIME;
@@ -2108,6 +2110,7 @@ libra_error_t libra_preset_ctx_set_param(libra_preset_ctx_t *context,
 /// - Direct3D11
 /// - Direct3D12
 /// - Metal
+/// - Direct3D9 (HLSL)
 ///
 /// This will also set the appropriate video driver extensions.
 ///
