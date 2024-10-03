@@ -571,6 +571,7 @@ typedef struct libra_instance_t {
     /// - GLCore
     /// - Direct3D11
     /// - Direct3D12
+    /// - Metal
     ///
     /// This will also set the appropriate video driver extensions.
     ///
