@@ -111,6 +111,7 @@ Commands:
   render      Render a shader preset against an image
   compare     Compare two runtimes and get a similarity score between the two runtimes rendering the same frame
   parse       Parse a preset and get a JSON representation of the data
+  pack        Create a serialized preset pack from a shader preset
   preprocess  Get the raw GLSL output of a preprocessed shader
   transpile   Transpile a shader in a given preset to the given format
   reflect     Reflect the shader relative to a preset, giving information about semantics used in a slang shader
