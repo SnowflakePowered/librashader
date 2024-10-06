@@ -274,15 +274,15 @@ for migration instructions.
 
 ### MSRV Policy
 
+Building against stable Rust requires the following MSRV.
+
+* All platforms: **1.78**
+
 When building against nightly Rust, the following MSRV policy is enforced for unstable library features.
 
-* Windows and macOS: **latest** nightly
-* Linux: **1.76**
+* All platforms: **1.78**
 
-A CI job runs weekly to ensure librashader continues to build on nightly. 
-
-Building against stable Rust requires a higher MSRV.
-* All platforms: **1.77**
+A CI job runs weekly to ensure librashader continues to build on nightly.
 
 Note that the MSRV is only intended to ease distribution on Linux when building against nightly Rust or with `RUSTC_BOOTSTRAP=1`, and is allowed to change any time. 
 It generally tracks the latest version of Rust available in the latest version of Ubuntu, but this may change with no warning in a patch release.
