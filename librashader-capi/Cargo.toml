@@ -44,7 +44,6 @@ sptr = "0.3.2"
 
 glow = { workspace = true, optional = true }
 ash = { workspace = true, optional = true }
-cc = "=1.1.23"
 
 [dependencies.librashader]
 path = "../librashader"
