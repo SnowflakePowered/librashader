@@ -8,7 +8,7 @@ librashader (*/ˈli:brəʃeɪdɚ/*) is a preprocessor, compiler, and runtime for
 
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader) [![Docs](https://docs.rs/librashader/badge.svg)](https://docs.rs/librashader) [![build result](https://build.opensuse.org/projects/home:chyyran:librashader/packages/librashader/badge.svg)](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader)
 ![License](https://img.shields.io/crates/l/librashader)
-![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg) ![Stable rust](https://img.shields.io/badge/rust-1.77-blue.svg)
+![Stable rust](https://img.shields.io/badge/rust-1.78-blue.svg) ![Nightly rust](https://img.shields.io/badge/rust-nightly-orange.svg)
 
 ## Installation
 For end-users, librashader is available from the [Open Build Service](https://software.opensuse.org//download.html?project=home%3Achyyran%3Alibrashader&package=librashader) for a variety of Linux distributions and platforms.

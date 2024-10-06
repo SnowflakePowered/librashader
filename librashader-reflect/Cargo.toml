@@ -38,13 +38,13 @@ optional = true
 
 [features]
 default = ["cross", "naga", "wgsl", "msl"]
-dxil = ["spirv-cross2/hlsl", "dep:spirv-to-dxil"]
-wgsl = ["cross", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
-cross = [ "dep:spirv-cross2", "spirv-cross2/glsl", "spirv-cross2/hlsl", "spirv-cross2/msl" ]
-naga = [ "dep:rspirv", "dep:spirv", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
+dxil = [ "spirv-cross2?/hlsl", "dep:spirv-to-dxil" ]
+wgsl = [ "cross", "naga", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
+cross = [ "spirv-cross2", "spirv-cross2/glsl", "spirv-cross2/hlsl", "spirv-cross2/msl" ]
+naga = [ "dep:rspirv", "dep:spirv", "dep:naga", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
 serde = ["dep:serde", "serde/derive", "librashader-common/serde", "bitflags/serde"]
+msl = [ "cross", "spirv-cross2/msl", "naga?/msl-out" ]
 
-msl = [ "spirv-cross2/msl", "naga/msl-out" ]
 stable = []
 
 unstable-naga-in = ["naga/glsl-in"]
