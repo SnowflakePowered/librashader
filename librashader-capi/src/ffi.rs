@@ -237,14 +237,6 @@ pub unsafe fn boxed_slice_from_raw_parts<T>(ptr: *mut T, len: usize) -> Box<[T]>
     unsafe { Box::from_raw(std::slice::from_raw_parts_mut(ptr, len)) }
 }
 
-pub fn ptr_is_aligned<T: Sized>(ptr: *const T) -> bool {
-    let align = std::mem::align_of::<T>();
-    if !align.is_power_of_two() {
-        panic!("is_aligned_to: align is not a power-of-two");
-    }
-    sptr::Strict::addr(ptr) & (align - 1) == 0
-}
-
 pub(crate) use extern_fn;
 pub(crate) use ffi_body;
 pub(crate) use wrap_ok;

@@ -1587,7 +1587,6 @@ dependencies = [
  "objc2-metal",
  "paste",
  "rustc-hash 2.0.0",
- "sptr",
  "thiserror",
  "windows 0.58.0",
 ]
@@ -3120,12 +3119,6 @@ dependencies = [
  "num-traits",
  "spirq",
 ]
-
-[[package]]
-name = "sptr"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b9b39299b249ad65f3b7e96443bad61c02ca5cd3589f46cb6d610a0fd6c0d6a"
 
 [[package]]
 name = "stable_deref_trait"
