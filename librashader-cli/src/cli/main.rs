@@ -182,6 +182,7 @@ enum Commands {
         /// For MSL, this is the shader language version as an integer in format
         /// <MMmmpp>(30100), or a version in the format MAJ_MIN (3_1), or MAJ.MIN (3.1).
         ///
+        /// For SPIR-V, if this is the string "raw-id", then shows raw ID values instead of friendly names.
         #[arg(short, long)]
         version: Option<String>,
     },
@@ -500,9 +501,10 @@ pub fn main() -> Result<(), anyhow::Error> {
                     compilation.validate()?;
                     let output = compilation.compile(None)?;
 
+                    let raw = version.is_some_and(|s| s == "raw-id");
                     TranspileOutput {
-                        vertex: spirv_to_dis(output.vertex)?,
-                        fragment: spirv_to_dis(output.fragment)?,
+                        vertex: spirv_to_dis(output.vertex, raw)?,
+                        fragment: spirv_to_dis(output.fragment, raw)?,
                     }
                 }
             };
@@ -649,13 +651,13 @@ fn set_params(
     });
 }
 
-fn spirv_to_dis(spirv: Vec<u32>) -> anyhow::Result<String> {
+fn spirv_to_dis(spirv: Vec<u32>, raw: bool) -> anyhow::Result<String> {
     let binary = spq_spvasm::SpirvBinary::from(spirv);
     spq_spvasm::Disassembler::new()
         .print_header(true)
-        .name_ids(true)
-        .name_type_ids(true)
-        .name_const_ids(true)
+        .name_ids(!raw)
+        .name_type_ids(!raw)
+        .name_const_ids(!raw)
         .indent(true)
         .disassemble(&binary)
 }
