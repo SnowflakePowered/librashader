@@ -126,7 +126,11 @@ fn preprocess(
             match read_file(&include_path) {
                 Ok(source) => include_callback(output, source, include_path, file_name, line_no)?,
                 // ioerror indicates that the file is not found.
-                Err(PreprocessError::IOError(..)) => continue,
+                Err(PreprocessError::IOError(..)) => {
+                    output.push_line(&format!("// include_optional not found: {include_file}"));
+                    output.mark_line(line_no, file_name);
+
+                },
                 // other errors should not be ignored.
                 Err(e) => return Err(e),
             }
