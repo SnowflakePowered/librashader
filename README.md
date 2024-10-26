@@ -21,23 +21,25 @@ Direct3D 11, Direct3D 12, and Metal.
 librashader does not support legacy render APIs such as older versions of OpenGL or Direct3D, except for limited
 support for Direct3D 9.
 
-| **API**     | **Status** | **`librashader` feature** |
-|-------------|------------|--------------------------|
-| OpenGL 3.3+ | ✅         | `gl`                     |
-| OpenGL 4.6  | ✅         | `gl`                     |
-| Vulkan      | ✅         | `vk`                     |
-| Direct3D 9  | 🆗️         |`d3d9`                    |
-| Direct3D 11 | ✅         | `d3d11`                  |
-| Direct3D 12 | ✅         | `d3d12`                  |
-| Metal       | ✅         | `metal`                  |
-| wgpu        | 🆗         | `wgpu`                   |
+| **API**     | **Status**  | **`librashader` feature** |
+|-------------|-------------|---------------------------|
+| OpenGL 3.3+ | ✅          | `gl`                      |
+| OpenGL 4.6  | ✅          | `gl`                      |
+| Vulkan      | ✅          | `vk`                      |
+| Direct3D 9  | 🆗️          | `d3d9`                    |
+| Direct3D 11 | ✅          | `d3d11`                   |
+| Direct3D 12 | ✅          | `d3d12`                   |
+| Metal       | ✅          | `metal`                   |
+| wgpu        | ✅†         | `wgpu`                    |
 
 ✅ Full Support &mdash; 🆗 Secondary Support 
 
-Shader compatibility is not guaranteed on render APIs with secondary support. 
-
-wgpu has restrictions on shaders that can not be converted to WGSL, such as those that use `inverse`. Direct3D 9 does not support
+Shader compatibility is not guaranteed on render APIs with secondary support. In particular, Direct3D 9 does not support
 shaders that need Direct3D 10+ only features, or shaders that can not be compiled to [Shader Model 3.0](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/shader-model-3).
+
+†wgpu does not support [FSR shaders](https://github.com/libretro/slang-shaders/tree/master/edge-smoothing/fsr). This is blocking on 
+support for [parsing `ImageGather` operations](https://github.com/gfx-rs/wgpu/issues/4538) in wgpu. Some shaders also require [`FLOAT32_FILTERABLE`](https://docs.rs/wgpu/latest/wgpu/struct.Features.html#associatedconstant.FLOAT32_FILTERABLE)
+to be enabled.
 
 ## Usage
 
