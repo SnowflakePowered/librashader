@@ -61,7 +61,6 @@ impl RenderTest for Direct3D11 {
             self.immediate_context.Flush();
             renderbuffer.GetDesc(&mut renderbuffer_desc);
 
-            eprintln!("{:?}", renderbuffer_desc);
             let mut staging = None;
             self.device.CreateTexture2D(
                 &D3D11_TEXTURE2D_DESC {
