@@ -1,5 +1,5 @@
 pkgname=librashader
-pkgver=0.2.0~beta.2
+pkgver=0.5.1
 pkgrel=0
 pkgdesc="RetroArch shader runtime"
 arch=('x86_64' 'aarch64')

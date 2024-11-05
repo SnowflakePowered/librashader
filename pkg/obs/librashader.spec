@@ -3,7 +3,7 @@ Name:     librashader
 %define profile optimized
 Summary:  RetroArch shaders for all
 License:  MPL-2.0
-Version: 0.4.0
+Version: 0.5.1
 Release: 0
 URL:      https://github.com/SnowflakePowered/%{name}
 Source0:  librashader-%{version}.tar.xz
