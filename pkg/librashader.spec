@@ -4,7 +4,7 @@
 Name:     librashader
 %define lname librashader0
 %define profile optimized
-Version:  0.2.0~beta.2
+Version:  0.5.1
 Release:  %autorelease
 Summary:  RetroArch shaders for all
 License:  MPL-2.0
