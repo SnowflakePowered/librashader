@@ -23,7 +23,7 @@ librashader-runtime = { path = "../librashader-runtime" , version = "0.5.1" }
 librashader-cache = { path = "../librashader-cache", version = "0.5.1" }
 
 bytemuck = { version = "1.12.3", features = ["derive"] }
-thiserror = "1.0.37"
+thiserror = "2"
 gpu-allocator = { version = "0.27.0", default-features = false, features = ["vulkan"] }
 parking_lot = "0.12.1"
 rayon = { workspace = true }

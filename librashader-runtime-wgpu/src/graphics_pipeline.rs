@@ -162,7 +162,7 @@ impl PipelineLayoutObjects {
                 layout: Some(&self.layout),
                 vertex: wgpu::VertexState {
                     module: &self.vertex,
-                    entry_point: &self.vertex_entry_name,
+                    entry_point: Some(&self.vertex_entry_name),
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                     buffers: &[VertexBufferLayout {
                         array_stride: std::mem::size_of::<VertexInput>() as wgpu::BufferAddress,
@@ -185,7 +185,7 @@ impl PipelineLayoutObjects {
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &self.fragment,
-                    entry_point: &self.fragment_entry_name,
+                    entry_point: Some(&self.fragment_entry_name),
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: framebuffer_format,

@@ -23,7 +23,7 @@ librashader-cache = { path = "../librashader-cache", version = "0.5.1" }
 spirv-cross2 = { workspace = true, features = ["glsl"] }
 glow = { workspace = true}
 bytemuck = { version = "1.12.3", features = ["derive"] }
-thiserror = "1.0.37"
+thiserror = "2"
 rayon = { workspace = true }
 array-init = "2.1.0"
 

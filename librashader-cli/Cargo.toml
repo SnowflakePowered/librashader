@@ -21,13 +21,13 @@ path = "src/cli/main.rs"
 [dependencies]
 librashader = { version = "0.5.1", path = "../librashader", features = ["presets", "preprocess", "serde"], default-features = false }
 librashader-runtime = { version = "0.5.1", path = "../librashader-runtime"}
-wgpu = { version = "22", default-features = false, optional = true  }
-wgpu-types = { version = "22", optional = true }
+wgpu = { workspace = true, default-features = false, optional = true  }
+wgpu-types = {  workspace = true, optional = true }
 anyhow = "1.0.86"
 image = { workspace = true }
 gfx-maths = "0.2.8"
 
-pollster = "0.3.0"
+pollster = "0.4.0"
 parking_lot = "0.12.3"
 image-compare = "0.4.1"
 gpu-allocator = "0.27.0"
