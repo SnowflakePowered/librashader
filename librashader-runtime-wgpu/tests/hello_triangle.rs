@@ -125,7 +125,7 @@ impl<'a> State<'a> {
         // let preset = ShaderPreset::try_parse("../test/basic.slangp").unwrap();
         //
         let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+            ShaderPreset::try_parse(        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", ).unwrap();
 
         // let preset =
         //     ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
@@ -153,13 +153,13 @@ impl<'a> State<'a> {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
                 buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,

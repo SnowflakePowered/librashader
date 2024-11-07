@@ -12,7 +12,7 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-thiserror = "1.0.37"
+thiserror = "2"
 nom = "7.1.1"
 librashader-common = { path = "../librashader-common", version = "0.5.1" }
 encoding_rs = "0.8.31"

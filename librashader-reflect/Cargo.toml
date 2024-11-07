@@ -15,7 +15,7 @@ description = "RetroArch shaders for all."
 glslang = "0.6.0"
 bytemuck = "1.13.0"
 
-thiserror = "1.0.37"
+thiserror = "2"
 bitflags = "2.4.2"
 
 librashader-common = { path = "../librashader-common", version = "0.5.1" }
@@ -25,7 +25,7 @@ librashader-pack = { path = "../librashader-pack", version = "0.5.1" }
 
 spirv-cross2 = { workspace = true, optional = true }
 
-naga = { version = "22", optional = true }
+naga = { version = "23", optional = true }
 rspirv = { version = "0.12.0", optional = true }
 spirv = { version = "0.3.0", optional = true}
 

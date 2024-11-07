@@ -21,7 +21,7 @@ librashader-pack = { path = "../librashader-pack", version = "0.5.1" }
 librashader-reflect = { path = "../librashader-reflect", version = "0.5.1" }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.5.1" }
 
-thiserror = "1.0"
+thiserror = "2"
 array-concat = "0.5.2"
 bytemuck = { version = "1.12.3", features = ["derive"] }
 rayon = { workspace = true }
