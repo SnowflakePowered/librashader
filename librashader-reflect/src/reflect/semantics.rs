@@ -45,16 +45,27 @@ pub enum UniqueSemantics {
     // int, frame direction
     /// The direction in time where frames are rendered
     FrameDirection = 4,
+    // uint, frame time delta
+    /// The time delta between the previous frame and the current frame.
+    FrameTimeDelta = 5,
+    // uint, original FPS
+    /// The original frames per second for the underlying content
+    OriginalFPS = 6,
     //int, rotation (glUniform1i(uni->rotation, retroarch_get_rotation());)
     /// The rotation index (0 = 0deg, 1 = 90deg, 2 = 180deg, 3 = 270deg)
-    Rotation = 5,
+    Rotation = 7,
+    // float
+    /// The original aspect ratio
+    OriginalAspect = 8,
+    /// The original aspect ratio, if rotated.
+    OriginalAspectRotated = 9,
     /// Total number of subframes.
-    TotalSubFrames = 6,
+    TotalSubFrames = 10,
     /// The current subframe (default 1)
-    CurrentSubFrame = 7,
+    CurrentSubFrame = 11,
     /// A user defined float parameter.
     // float, user defined parameter, array
-    FloatParameter = 8,
+    FloatParameter = 12,
 }
 
 impl UniqueSemantics {
@@ -78,6 +89,10 @@ impl UniqueSemantics {
             UniqueSemantics::TotalSubFrames => UniformType::Unsigned,
             UniqueSemantics::CurrentSubFrame => UniformType::Unsigned,
             UniqueSemantics::FloatParameter => UniformType::Float,
+            UniqueSemantics::FrameTimeDelta => UniformType::Unsigned,
+            UniqueSemantics::OriginalFPS => UniformType::Unsigned,
+            UniqueSemantics::OriginalAspect => UniformType::Float,
+            UniqueSemantics::OriginalAspectRotated => UniformType::Float,
         }
     }
 
@@ -93,6 +108,10 @@ impl UniqueSemantics {
             UniqueSemantics::TotalSubFrames => "TotalSubFrames",
             UniqueSemantics::CurrentSubFrame => "CurrentSubFrame",
             UniqueSemantics::FloatParameter => "FloatParameter",
+            UniqueSemantics::FrameTimeDelta => "FrameTimeDelta",
+            UniqueSemantics::OriginalFPS => "OriginalFPS",
+            UniqueSemantics::OriginalAspect => "OriginalAspect",
+            UniqueSemantics::OriginalAspectRotated => "OriginalAspectRotated",
         }
     }
 }
