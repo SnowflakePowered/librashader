@@ -19,7 +19,7 @@ pub mod wgpu;
 #[cfg(all(target_vendor = "apple", feature = "metal"))]
 pub mod mtl;
 
-use librashader::presets::ShaderPreset;
+use librashader::presets::{ShaderFeatures, ShaderPreset};
 use librashader::runtime::Size;
 use librashader_runtime::impl_default_frame_options;
 use librashader_runtime::parameters::RuntimeParameters;
@@ -49,7 +49,7 @@ pub trait RenderTest {
         frame_count: usize,
         output_size: Option<Size<u32>>,
     ) -> anyhow::Result<image::RgbaImage> {
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse(path, ShaderFeatures::NONE)?;
         self.render_with_preset(preset, frame_count, output_size)
     }
 

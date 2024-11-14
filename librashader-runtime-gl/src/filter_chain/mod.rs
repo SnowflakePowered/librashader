@@ -3,7 +3,7 @@ use crate::filter_chain::chain::FilterChainImpl;
 use crate::filter_chain::inner::FilterChainDispatch;
 use crate::options::{FilterChainOptionsGL, FrameOptionsGL};
 use crate::GLImage;
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderFeatures, ShaderPreset};
 use std::panic::catch_unwind;
 use std::path::Path;
 use std::sync::Arc;
@@ -59,11 +59,13 @@ impl FilterChainGL {
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path(
         path: impl AsRef<Path>,
+        features: ShaderFeatures,
         ctx: Arc<glow::Context>,
         options: Option<&FilterChainOptionsGL>,
     ) -> Result<Self> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::GlCore)?;
+        let preset =
+            ShaderPreset::try_parse_with_driver_context(path, features, VideoDriver::GlCore)?;
         unsafe { Self::load_from_preset(preset, ctx, options) }
     }
 

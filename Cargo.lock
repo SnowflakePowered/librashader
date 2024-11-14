@@ -1602,6 +1602,7 @@ dependencies = [
 name = "librashader-presets"
 version = "0.5.1"
 dependencies = [
+ "bitflags 2.6.0",
  "glob",
  "librashader-common",
  "nom",

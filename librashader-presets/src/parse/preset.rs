@@ -1,11 +1,12 @@
 use crate::parse::remove_if;
 use crate::parse::value::Value;
 use crate::{
-    ParameterMeta, PassConfig, PassMeta, Scale2D, Scaling, ShaderPreset, TextureConfig, TextureMeta,
+    ParameterMeta, PassConfig, PassMeta, Scale2D, Scaling, ShaderFeatures, ShaderPreset,
+    TextureConfig, TextureMeta,
 };
 use vec_extract_if_polyfill::MakeExtractIf;
 
-pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
+pub fn resolve_values(mut values: Vec<Value>, features: ShaderFeatures) -> ShaderPreset {
     let textures: Vec<TextureConfig> =
         MakeExtractIf::extract_if(&mut values, |f| matches!(*f, Value::Texture { .. }))
             .map(|value| {
@@ -192,5 +193,6 @@ pub fn resolve_values(mut values: Vec<Value>) -> ShaderPreset {
         passes: shaders,
         textures,
         parameters,
+        features,
     }
 }

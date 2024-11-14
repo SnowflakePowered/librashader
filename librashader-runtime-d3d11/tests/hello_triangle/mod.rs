@@ -244,6 +244,7 @@ pub mod d3d11_hello_triangle {
     use std::path::Path;
 
     use librashader_common::{FilterMode, GetSize, ImageFormat, Size, Viewport, WrapMode};
+    use librashader_presets::ShaderFeatures;
     use librashader_runtime::image::Image;
     use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
     use librashader_runtime_d3d11::FilterChainD3D11;
@@ -292,7 +293,13 @@ pub mod d3d11_hello_triangle {
         ) -> Result<Self> {
             let (dxgi_factory, device, context) = create_device()?;
             let filter = unsafe {
-                FilterChainD3D11::load_from_path(filter, &device, filter_options).unwrap()
+                FilterChainD3D11::load_from_path(
+                    filter,
+                    ShaderFeatures::NONE,
+                    &device,
+                    filter_options,
+                )
+                .unwrap()
             };
             let lut = if let Some(image) = image {
                 let lut = ExampleTexture::new(

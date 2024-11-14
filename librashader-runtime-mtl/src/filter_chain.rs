@@ -11,7 +11,7 @@ use crate::texture::{get_texture_size, InputTexture, MetalTextureRef, OwnedTextu
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::msl::MslVersion;
 use librashader_reflect::back::targets::MSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -109,11 +109,13 @@ impl FilterChainMetal {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
+        features: ShaderFeatures,
         queue: &ProtocolObject<dyn MTLCommandQueue>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Metal)?;
+        let preset =
+            ShaderPreset::try_parse_with_driver_context(path, features, VideoDriver::Metal)?;
         Self::load_from_preset(preset, queue, options)
     }
 

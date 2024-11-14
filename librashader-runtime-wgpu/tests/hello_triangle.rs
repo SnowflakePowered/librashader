@@ -124,8 +124,10 @@ impl<'a> State<'a> {
         //
         // let preset = ShaderPreset::try_parse("../test/basic.slangp").unwrap();
         //
-        let preset =
-            ShaderPreset::try_parse(        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp", ).unwrap();
+        let preset = ShaderPreset::try_parse(
+            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+        )
+        .unwrap();
 
         // let preset =
         //     ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
