@@ -410,7 +410,10 @@ pub fn main() -> Result<(), anyhow::Error> {
             print!("{out:}");
         }
         Commands::Preprocess { shader, output } => {
-            let source = librashader::preprocess::ShaderSource::load(shader.as_path())?;
+            let source = librashader::preprocess::ShaderSource::load(
+                shader.as_path(),
+                ShaderFeatures::NONE,
+            )?;
             match output {
                 PreprocessOutput::Fragment => print!("{}", source.fragment),
                 PreprocessOutput::Vertex => print!("{}", source.vertex),
@@ -427,7 +430,10 @@ pub fn main() -> Result<(), anyhow::Error> {
             format,
             version,
         } => {
-            let source = librashader::preprocess::ShaderSource::load(shader.as_path())?;
+            let source = librashader::preprocess::ShaderSource::load(
+                shader.as_path(),
+                ShaderFeatures::NONE,
+            )?;
             let compilation = SpirvCompilation::try_from(&source)?;
             let output = match format {
                 TranspileFormat::GLSL => {
@@ -528,7 +534,10 @@ pub fn main() -> Result<(), anyhow::Error> {
                 return Err(anyhow!("Invalid pass index for the preset"));
             };
 
-            let source = librashader::preprocess::ShaderSource::load(shader.path.as_path())?;
+            let source = librashader::preprocess::ShaderSource::load(
+                shader.path.as_path(),
+                preset.features,
+            )?;
             let compilation = SpirvCompilation::try_from(&source)?;
 
             let semantics =

@@ -1556,6 +1556,7 @@ name = "librashader-common"
 version = "0.5.1"
 dependencies = [
  "ash",
+ "bitflags 2.6.0",
  "glow 0.15.0",
  "halfbrown",
  "num-traits",
@@ -1602,7 +1603,6 @@ dependencies = [
 name = "librashader-presets"
 version = "0.5.1"
 dependencies = [
- "bitflags 2.6.0",
  "glob",
  "librashader-common",
  "nom",

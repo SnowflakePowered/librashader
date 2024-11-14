@@ -16,6 +16,7 @@ mod stage;
 use crate::include::read_source;
 pub use error::*;
 use librashader_common::map::{FastHashMap, ShortString};
+use librashader_common::shader_features::ShaderFeatures;
 use librashader_common::ImageFormat;
 use std::path::Path;
 
@@ -60,8 +61,11 @@ pub struct ShaderParameter {
 impl ShaderSource {
     /// Load the source file at the given path, resolving includes relative to the location of the
     /// source file.
-    pub fn load(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
-        load_shader_source(path)
+    pub fn load(
+        path: impl AsRef<Path>,
+        features: ShaderFeatures,
+    ) -> Result<ShaderSource, PreprocessError> {
+        load_shader_source(path, features)
     }
 }
 
@@ -80,8 +84,11 @@ impl SourceOutput for String {
     }
 }
 
-pub(crate) fn load_shader_source(path: impl AsRef<Path>) -> Result<ShaderSource, PreprocessError> {
-    let source = read_source(path)?;
+pub(crate) fn load_shader_source(
+    path: impl AsRef<Path>,
+    features: ShaderFeatures,
+) -> Result<ShaderSource, PreprocessError> {
+    let source = read_source(path, features)?;
     let meta = pragma::parse_pragma_meta(&source)?;
 
     let text = stage::process_stages(&source)?;
@@ -100,11 +107,13 @@ pub(crate) fn load_shader_source(path: impl AsRef<Path>) -> Result<ShaderSource,
 mod test {
     use crate::include::read_source;
     use crate::{load_shader_source, pragma};
+    use librashader_common::shader_features::ShaderFeatures;
 
     #[test]
     pub fn load_file() {
         let result = load_shader_source(
             "../test/shaders_slang/blurs/shaders/royale/blur3x3-last-pass.slang",
+            ShaderFeatures::NONE,
         )
         .unwrap();
         eprintln!("{:#}", result.vertex)
@@ -112,9 +121,11 @@ mod test {
 
     #[test]
     pub fn preprocess_file() {
-        let result =
-            read_source("../test/slang-shaders/blurs/shaders/royale/blur3x3-last-pass.slang")
-                .unwrap();
+        let result = read_source(
+            "../test/slang-shaders/blurs/shaders/royale/blur3x3-last-pass.slang",
+            ShaderFeatures::NONE,
+        )
+        .unwrap();
         eprintln!("{result}")
     }
 
@@ -122,6 +133,7 @@ mod test {
     pub fn get_param_pragmas() {
         let result = read_source(
             "../test/slang-shaders/crt/shaders/crt-maximus-royale/src/ntsc_pass1.slang",
+            ShaderFeatures::NONE,
         )
         .unwrap();
 
@@ -131,7 +143,8 @@ mod test {
 
     #[test]
     pub fn include_optional() {
-        let result = read_source("../test/include_optional/pass.slang").unwrap();
+        let result =
+            read_source("../test/include_optional/pass.slang", ShaderFeatures::NONE).unwrap();
 
         eprintln!("{result}")
     }

@@ -1,5 +1,6 @@
 use crate::{PreprocessError, SourceOutput};
 use encoding_rs::{DecoderResult, WINDOWS_1252};
+use librashader_common::shader_features::ShaderFeatures;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -8,6 +9,10 @@ use std::str::Lines;
 #[cfg(feature = "line_directives")]
 const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &str =
     "#extension GL_GOOGLE_cpp_style_line_directive : require";
+
+const DEFINE_HAS_ORIGINALASPECT_UNIFORM: &str = "#define _HAS_ORIGINALASPECT_UNIFORM";
+
+const DEFINE_HAS_FRAMETIME_UNIFORMS: &str = "#define _HAS_FRAMETIME_UNIFORMS";
 
 fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
     let path = path.as_ref();
@@ -42,7 +47,10 @@ fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
     }
 }
 
-pub fn read_source(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
+pub fn read_source(
+    path: impl AsRef<Path>,
+    features: ShaderFeatures,
+) -> Result<String, PreprocessError> {
     let path = path.as_ref();
     let source = read_file(path)?;
     let mut output = String::new();
@@ -61,6 +69,14 @@ pub fn read_source(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
 
     #[cfg(feature = "line_directives")]
     output.push_line(GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE);
+
+    if features.contains(ShaderFeatures::ORIGINAL_ASPECT_UNIFORMS) {
+        output.push_line(DEFINE_HAS_ORIGINALASPECT_UNIFORM);
+    }
+
+    if features.contains(ShaderFeatures::FRAMETIME_UNIFORMS) {
+        output.push_line(DEFINE_HAS_FRAMETIME_UNIFORMS);
+    }
 
     output.mark_line(2, path.file_name().and_then(|f| f.to_str()).unwrap_or(""));
     preprocess(lines, path, &mut output)?;

@@ -6,7 +6,7 @@
 //!
 use image::{ImageError, RgbaImage};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ParameterMeta, PassMeta, ShaderPreset, TextureMeta};
+use librashader_presets::{ParameterMeta, PassMeta, ShaderFeatures, ShaderPreset, TextureMeta};
 use std::path::Path;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -62,24 +62,28 @@ pub trait LoadableResource {
     type ResourceType;
     /// The error type when loading the resource.
     type Error;
+    /// The type of options to pass to the loader.
+    type Options;
     /// Load the resource from the path.
-    fn load(path: &Path) -> Result<Self::ResourceType, Self::Error>;
+    fn load(path: &Path, options: Self::Options) -> Result<Self::ResourceType, Self::Error>;
 }
 
 impl LoadableResource for PassMeta {
     type ResourceType = ShaderSource;
     type Error = PreprocessError;
+    type Options = ShaderFeatures;
 
-    fn load(path: &Path) -> Result<Self::ResourceType, Self::Error> {
-        ShaderSource::load(path)
+    fn load(path: &Path, options: Self::Options) -> Result<Self::ResourceType, Self::Error> {
+        ShaderSource::load(path, options)
     }
 }
 
 impl LoadableResource for TextureMeta {
     type ResourceType = TextureBuffer;
     type Error = ImageError;
+    type Options = ();
 
-    fn load(path: &Path) -> Result<Self::ResourceType, Self::Error> {
+    fn load(path: &Path, _options: Self::Options) -> Result<Self::ResourceType, Self::Error> {
         image::open(path).map(|img| TextureBuffer::from(img.to_rgba8()))
     }
 }
@@ -140,7 +144,7 @@ impl ShaderPresetPack {
             passes: shaders_iter
                 .map(|v| {
                     Ok::<_, E>(PassResource {
-                        data: PassMeta::load(v.path.as_path())?,
+                        data: PassMeta::load(v.path.as_path(), preset.features)?,
                         meta: v.meta,
                     })
                 })
@@ -149,7 +153,7 @@ impl ShaderPresetPack {
                 .into_par_iter()
                 .map(|t| {
                     Ok::<_, E>(TextureResource {
-                        data: TextureMeta::load(t.path.as_path())?,
+                        data: TextureMeta::load(t.path.as_path(), ())?,
                         meta: t.meta,
                     })
                 })
@@ -224,14 +228,17 @@ mod serde_base64_or_bytes {
 #[cfg(test)]
 mod test {
     use crate::ShaderPresetPack;
-    use librashader_presets::ShaderPreset;
+    use librashader_presets::{ShaderFeatures, ShaderPreset};
     use std::fs::File;
     use std::io::Write;
 
     #[test]
     fn test() {
-        let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+        let preset = ShaderPreset::try_parse(
+            "../test/shaders_slang/crt/crt-royale.slangp",
+            ShaderFeatures::NONE,
+        )
+        .unwrap();
         let resolved = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset).unwrap();
         let mut file = File::create("crt-royale.slangpack.json").unwrap();
         file.write_all(serde_json::to_vec_pretty(&resolved).unwrap().as_ref())
@@ -240,8 +247,11 @@ mod test {
 
     #[test]
     fn test_rmp() {
-        let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
+        let preset = ShaderPreset::try_parse(
+            "../test/shaders_slang/crt/crt-royale.slangp",
+            ShaderFeatures::NONE,
+        )
+        .unwrap();
         let resolved = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset).unwrap();
         let mut file = File::create("crt-royale.slangpack").unwrap();
         file.write_all(rmp_serde::to_vec(&resolved).unwrap().as_ref())
