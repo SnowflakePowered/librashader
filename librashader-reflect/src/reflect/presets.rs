@@ -236,7 +236,7 @@ impl ShaderSemantics {
             .get(index)
             .ok_or_else(|| PreprocessError::InvalidStage)?;
 
-        let source = ShaderSource::load(&config.path)?;
+        let source = ShaderSource::load(&config.path, preset.features)?;
 
         for parameter in source.parameters.values() {
             uniform_semantics.insert(
