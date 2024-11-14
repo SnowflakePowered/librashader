@@ -12,7 +12,7 @@ use librashader_cache::{cache_shader_object, CachedCompilation};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::hlsl::HlslShaderModel;
 use librashader_reflect::back::targets::HLSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -209,11 +209,13 @@ impl FilterChainD3D9 {
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path(
         path: impl AsRef<Path>,
+        features: ShaderFeatures,
         device: &IDirect3DDevice9,
         options: Option<&FilterChainOptionsD3D9>,
     ) -> error::Result<FilterChainD3D9> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Direct3D11)?;
+        let preset =
+            ShaderPreset::try_parse_with_driver_context(path, features, VideoDriver::Direct3D11)?;
 
         unsafe { Self::load_from_preset(preset, device, options) }
     }

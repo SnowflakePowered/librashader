@@ -131,10 +131,7 @@ mod test {
 
     #[test]
     pub fn include_optional() {
-        let result = read_source(
-            "../test/include_optional/pass.slang",
-        )
-            .unwrap();
+        let result = read_source("../test/include_optional/pass.slang").unwrap();
 
         eprintln!("{result}")
     }

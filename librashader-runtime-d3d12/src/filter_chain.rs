@@ -17,7 +17,7 @@ use d3d12_descriptor_heap::{
 use gpu_allocator::d3d12::{Allocator, AllocatorCreateDesc, ID3D12DeviceVersion};
 use librashader_common::map::FastHashMap;
 use librashader_common::{ImageFormat, Size, Viewport};
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
@@ -247,11 +247,13 @@ impl FilterChainD3D12 {
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path(
         path: impl AsRef<Path>,
+        features: ShaderFeatures,
         device: &ID3D12Device,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Direct3D12)?;
+        let preset =
+            ShaderPreset::try_parse_with_driver_context(path, features, VideoDriver::Direct3D12)?;
 
         unsafe { Self::load_from_preset(preset, device, options) }
     }

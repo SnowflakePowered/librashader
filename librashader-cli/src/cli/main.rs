@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use image::codecs::png::PngEncoder;
 use librashader::presets::context::ContextItem;
-use librashader::presets::{ShaderPreset, ShaderPresetPack, WildcardContext};
+use librashader::presets::{ShaderFeatures, ShaderPreset, ShaderPresetPack, WildcardContext};
 use librashader::reflect::cross::{GlslVersion, HlslShaderModel, MslVersion, SpirvCross};
 use librashader::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader::reflect::semantics::ShaderSemantics;
@@ -604,7 +604,7 @@ fn get_shader_preset(
             ))
         }
     }
-    let preset = ShaderPreset::try_parse_with_context(preset, context)?;
+    let preset = ShaderPreset::try_parse_with_context(preset, ShaderFeatures::NONE, context)?;
     Ok(preset)
 }
 

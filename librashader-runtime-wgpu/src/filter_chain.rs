@@ -1,5 +1,5 @@
 use librashader_common::map::FastHashMap;
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::targets::WGSL;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
@@ -96,12 +96,13 @@ impl FilterChainWgpu {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
+        features: ShaderFeatures,
         device: Arc<Device>,
         queue: Arc<wgpu::Queue>,
         options: Option<&FilterChainOptionsWgpu>,
     ) -> error::Result<FilterChainWgpu> {
         // load passes from preset
-        let preset = ShaderPreset::try_parse(path)?;
+        let preset = ShaderPreset::try_parse(path, features)?;
 
         Self::load_from_preset(preset, device, queue, options)
     }

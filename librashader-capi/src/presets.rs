@@ -2,7 +2,7 @@
 use crate::ctypes::{libra_preset_ctx_t, libra_shader_preset_t};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::presets::ShaderPreset;
+use librashader::presets::{ShaderFeatures, ShaderPreset};
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
@@ -55,7 +55,7 @@ extern_fn! {
         let filename = unsafe { CStr::from_ptr(filename) };
         let filename = filename.to_str()?;
 
-        let preset = ShaderPreset::try_parse(filename)?;
+        let preset = ShaderPreset::try_parse(filename, ShaderFeatures::NONE)?;
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 preset,
@@ -98,7 +98,7 @@ extern_fn! {
 
         context.add_path_defaults(filename);
 
-        let preset = ShaderPreset::try_parse_with_context(filename, *context)?;
+        let preset = ShaderPreset::try_parse_with_context(filename, ShaderFeatures::NONE, *context)?;
         unsafe {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 preset,

@@ -18,7 +18,7 @@ use gpu_allocator::vulkan::Allocator;
 use librashader_cache::CachedCompilation;
 use librashader_common::map::FastHashMap;
 use librashader_presets::context::VideoDriver;
-use librashader_presets::ShaderPreset;
+use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::targets::SPIRV;
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
 use librashader_reflect::front::SpirvCompilation;
@@ -291,6 +291,7 @@ impl FilterChainVulkan {
     /// Load the shader preset at the given path into a filter chain.
     pub unsafe fn load_from_path<V, E>(
         path: impl AsRef<Path>,
+        features: ShaderFeatures,
         vulkan: V,
         options: Option<&FilterChainOptionsVulkan>,
     ) -> error::Result<FilterChainVulkan>
@@ -299,7 +300,8 @@ impl FilterChainVulkan {
         FilterChainError: From<E>,
     {
         // load passes from preset
-        let preset = ShaderPreset::try_parse_with_driver_context(path, VideoDriver::Vulkan)?;
+        let preset =
+            ShaderPreset::try_parse_with_driver_context(path, features, VideoDriver::Vulkan)?;
         unsafe { Self::load_from_preset::<V, E>(preset, vulkan, options) }
     }
 
