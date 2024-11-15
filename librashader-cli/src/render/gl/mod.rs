@@ -70,6 +70,9 @@ impl RenderTest for OpenGl3 {
                     rotation: options.rotation,
                     total_subframes: options.total_subframes,
                     current_subframe: options.current_subframe,
+                    aspect_ratio: options.aspect_ratio,
+                    frametime_delta: options.frametime_delta,
+                    frames_per_second: options.frames_per_second,
                 })
                 .as_ref(),
         )?)
@@ -124,6 +127,9 @@ impl RenderTest for OpenGl4 {
                     rotation: options.rotation,
                     total_subframes: options.total_subframes,
                     current_subframe: options.current_subframe,
+                    aspect_ratio: options.aspect_ratio,
+                    frametime_delta: options.frametime_delta,
+                    frames_per_second: options.frames_per_second,
                 })
                 .as_ref(),
         )?)

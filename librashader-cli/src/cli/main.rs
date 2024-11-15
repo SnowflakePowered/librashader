@@ -73,6 +73,9 @@ impl From<FrameOptionsArgs> for CommonFrameOptions {
             rotation: value.rotation,
             total_subframes: value.total_subframes,
             current_subframe: value.current_subframe,
+            aspect_ratio: f32::MAX,
+            frametime_delta: 0,
+            frames_per_second: 1,
         }
     }
 }
