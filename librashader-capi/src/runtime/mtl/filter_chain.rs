@@ -53,7 +53,7 @@ pub struct frame_mtl_opt_t {
     /// infer the ratio from the source image.
     pub aspect_ratio: f32,
     /// The original frames per second of the source. Default is 1.
-    pub frames_per_second: u32,
+    pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
 }

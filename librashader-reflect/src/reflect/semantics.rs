@@ -90,7 +90,7 @@ impl UniqueSemantics {
             UniqueSemantics::CurrentSubFrame => UniformType::Unsigned,
             UniqueSemantics::FloatParameter => UniformType::Float,
             UniqueSemantics::FrameTimeDelta => UniformType::Unsigned,
-            UniqueSemantics::OriginalFPS => UniformType::Unsigned,
+            UniqueSemantics::OriginalFPS => UniformType::Float,
             UniqueSemantics::OriginalAspect => UniformType::Float,
             UniqueSemantics::OriginalAspectRotated => UniformType::Float,
         }

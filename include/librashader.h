@@ -312,7 +312,7 @@ typedef struct frame_gl_opt_t {
   /// infer the ratio from the source image.
   float aspect_ratio;
   /// The original frames per second of the source. Default is 1.
-  uint32_t frames_per_second;
+  float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
 } frame_gl_opt_t;
@@ -401,7 +401,7 @@ typedef struct frame_vk_opt_t {
   /// infer the ratio from the source image.
   float aspect_ratio;
   /// The original frames per second of the source. Default is 1.
-  uint32_t frames_per_second;
+  float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
 } frame_vk_opt_t;
@@ -451,7 +451,7 @@ typedef struct frame_d3d11_opt_t {
   /// infer the ratio from the source image.
   float aspect_ratio;
   /// The original frames per second of the source. Default is 1.
-  uint32_t frames_per_second;
+  float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
 } frame_d3d11_opt_t;
@@ -501,7 +501,7 @@ typedef struct frame_d3d9_opt_t {
   /// infer the ratio from the source image.
   float aspect_ratio;
   /// The original frames per second of the source. Default is 1.
-  uint32_t frames_per_second;
+  float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
 } frame_d3d9_opt_t;
@@ -603,7 +603,7 @@ typedef struct frame_d3d12_opt_t {
   /// infer the ratio from the source image.
   float aspect_ratio;
   /// The original frames per second of the source. Default is 1.
-  uint32_t frames_per_second;
+  float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
 } frame_d3d12_opt_t;
@@ -649,7 +649,7 @@ typedef struct frame_mtl_opt_t {
   /// infer the ratio from the source image.
   float aspect_ratio;
   /// The original frames per second of the source. Default is 1.
-  uint32_t frames_per_second;
+  float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
 } frame_mtl_opt_t;

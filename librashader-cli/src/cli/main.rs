@@ -75,7 +75,7 @@ impl From<FrameOptionsArgs> for CommonFrameOptions {
             current_subframe: value.current_subframe,
             aspect_ratio: f32::MAX,
             frametime_delta: 0,
-            frames_per_second: 1,
+            frames_per_second: 1.0,
         }
     }
 }

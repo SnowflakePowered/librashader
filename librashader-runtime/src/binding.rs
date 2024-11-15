@@ -476,7 +476,7 @@ macro_rules! impl_default_frame_options {
             /// The default is 0 which will automatically infer the ratio from the source image.
             pub aspect_ratio: f32,
             /// The original frames per second of the source. Default is 1.
-            pub frames_per_second: u32,
+            pub frames_per_second: f32,
             /// Time in milliseconds between the current and previous frame. Default is 0.
             pub frametime_delta: u32,
         }
@@ -491,7 +491,7 @@ macro_rules! impl_default_frame_options {
                     current_subframe: 1,
                     aspect_ratio: 0.0,
                     frametime_delta: 0,
-                    frames_per_second: 1
+                    frames_per_second: 1.0
                 }
             }
         }
