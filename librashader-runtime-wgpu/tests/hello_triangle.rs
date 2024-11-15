@@ -10,7 +10,7 @@ use librashader_runtime_wgpu::FilterChainWgpu;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::platform::windows::EventLoopBuilderExtWindows;
-
+use librashader_common::shader_features::ShaderFeatures;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -126,6 +126,7 @@ impl<'a> State<'a> {
         //
         let preset = ShaderPreset::try_parse(
             "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            ShaderFeatures::NONE,
         )
         .unwrap();
 

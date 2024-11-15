@@ -2,11 +2,20 @@ use crate::cacheable::Cacheable;
 use crate::key::CacheKey;
 
 pub(crate) mod internal {
+    #[derive(Debug, Error)]
+    enum CatchPanicError {
+        #[error("a panic ocurred when loading the database")]
+        Panic(Box<dyn Any + Send + 'static>),
+    }
+
     use platform_dirs::AppDirs;
+    use std::any::Any;
     use std::error::Error;
+    use std::panic::catch_unwind;
     use std::path::PathBuf;
 
     use persy::{ByteVec, Config, Persy, ValueMode};
+    use thiserror::Error;
 
     pub(crate) fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
         let cache_dir = if let Some(cache_dir) =
@@ -45,20 +54,27 @@ pub(crate) mod internal {
 
     pub(crate) fn get_cache() -> Result<Persy, Box<dyn Error>> {
         let cache_dir = get_cache_dir()?;
-        match Persy::open_or_create_with(
-            &cache_dir.join("librashader.db.1"),
-            Config::new(),
-            |persy| {
-                let tx = persy.begin()?;
-                tx.commit()?;
-                Ok(())
-            },
-        ) {
-            Ok(conn) => Ok(conn),
-            Err(e) => {
+        match catch_unwind(|| {
+            Persy::open_or_create_with(
+                &cache_dir.join("librashader.db.1"),
+                Config::new(),
+                |persy| {
+                    let tx = persy.begin()?;
+                    tx.commit()?;
+                    Ok(())
+                },
+            )
+        }) {
+            Ok(Ok(conn)) => Ok(conn),
+            Ok(Err(e)) => {
                 let path = &cache_dir.join("librashader.db.1");
                 let _ = std::fs::remove_file(path).ok();
                 Err(e)?
+            }
+            Err(e) => {
+                let path = &cache_dir.join("librashader.db.1");
+                let _ = std::fs::remove_file(path).ok();
+                Err(CatchPanicError::Panic(e))?
             }
         }
     }
