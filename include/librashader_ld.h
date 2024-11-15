@@ -163,6 +163,14 @@ libra_error_t __librashader__noop_preset_create_with_context(
     return NULL;
 }
 
+libra_error_t __librashader__noop_preset_create_with_options(
+    const char *filename, libra_preset_ctx_t *context,
+    struct libra_preset_opt_t *options,
+    libra_shader_preset_t *out) {
+    *out = NULL;
+    return NULL;
+}
+
 libra_error_t __librashader__noop_preset_create(const char *filename,
                                                 libra_shader_preset_t *out) {
     *out = NULL;
@@ -651,6 +659,8 @@ typedef struct libra_instance_t {
     /// null. If this function returns an error, the state of `out` is
     /// unspecified.
     ///
+    /// This function is deprecated, and `preset_create_with_options` should be used instead.
+    ///
     /// ## Safety
     ///  - `filename` must be either null or a valid, aligned pointer to a
     ///  string path to the shader preset.
@@ -668,6 +678,9 @@ typedef struct libra_instance_t {
     ///
     /// Path information variables `PRESET_DIR` and `PRESET` will automatically
     /// be filled in.
+    ///
+    /// This function is deprecated, and `preset_create_with_options` should be used instead.
+    ///
     /// ## Safety
     ///  - `filename` must be either null or a valid, aligned pointer to a
     ///  string path to the shader preset.
@@ -680,6 +693,25 @@ typedef struct libra_instance_t {
     ///  - If any parameters are null, `out` is unchanged, and this function
     ///  returns `LIBRA_ERR_INVALID_PARAMETER`.
     PFN_libra_preset_create_with_context preset_create_with_context;
+
+    /// Load a preset with options
+    ///
+    /// Both `context` and `options` may be null.
+    ///
+    /// If `context` is null, then a default context will be provided, and this function will not return `LIBRA_ERR_INVALID_PARAMETER`.
+    /// If `options` is null, then default options will be chosen.
+    ///
+    /// If `context` is provided, it is immediately invalidated and must be recreated after
+    /// the preset is created.
+    ///
+    /// ## Safety
+    ///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
+    ///  - `options` must be either null, or a valid, aligned pointer to a `libra_shader_opt_t`.
+    ///    `LIBRASHADER_API_VERSION` should be set to `LIBRASHADER_CURRENT_VERSION`.
+    ///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
+    /// ## Returns
+    ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
+    PFN_libra_preset_create_with_options preset_create_with_options;
 
     /// Free the preset.
     ///
@@ -1418,6 +1450,8 @@ libra_instance_t __librashader_make_null_instance(void) {
     instance.preset_create = __librashader__noop_preset_create;
     instance.preset_create_with_context =
         __librashader__noop_preset_create_with_context;
+    instance.preset_create_with_options =
+                __librashader__noop_preset_create_with_options;
     instance.preset_free = __librashader__noop_preset_free;
     instance.preset_set_param = __librashader__noop_preset_set_param;
     instance.preset_get_param = __librashader__noop_preset_get_param;
@@ -1593,6 +1627,7 @@ libra_instance_t librashader_load_instance(void) {
 
     _LIBRASHADER_ASSIGN(librashader, instance, preset_create);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_create_with_context);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_create_with_options);
 
     _LIBRASHADER_ASSIGN(librashader, instance, preset_free);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_set_param);

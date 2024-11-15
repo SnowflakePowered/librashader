@@ -61,6 +61,7 @@ after_includes = """
 "target_os = windows" = "_WIN32"
 "target_vendor = apple" = "__APPLE__"
 
+
 [parse]
 parse_deps = false
 include = ["librashader"]
@@ -90,6 +91,7 @@ include = [
     "PFN_libra_preset_get_runtime_params",
     "PFN_libra_preset_free_runtime_params",
     "PFN_libra_preset_create_with_context",
+    "PFN_libra_preset_create_with_options",
 
     "PFN_libra_preset_ctx_create",
     "PFN_libra_preset_ctx_free",

@@ -2,10 +2,11 @@
 use crate::ctypes::{libra_preset_ctx_t, libra_shader_preset_t};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
-use librashader::presets::{ShaderFeatures, ShaderPreset};
+use librashader::presets::{ShaderFeatures, ShaderPreset, WildcardContext};
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
-use std::ptr::NonNull;
+use std::ptr::{addr_of_mut, NonNull};
+use crate::LIBRASHADER_API_VERSION;
 
 const _: () = crate::assert_thread_safe::<ShaderPreset>();
 
@@ -37,9 +38,33 @@ pub struct libra_preset_param_t {
     pub step: f32,
 }
 
+/// Options struct for loading shader presets.
+///
+/// Using this struct with `libra_preset_create_with_options` is the only way to
+/// enable extended shader preset features.
+#[repr(C)]
+pub struct libra_preset_opt_t {
+    /// The librashader API version.
+    pub version: LIBRASHADER_API_VERSION,
+    /// Enables `_HAS_ORIGINALASPECT_UNIFORMS` behaviour.
+    ///
+    /// If this is true, then `frame_options.aspect_ratio` must be set for correct behaviour of shaders.
+    ///
+    /// This is only supported on API 2 and above, otherwise this has no effect.
+    pub original_aspect_uniforms: bool,
+    /// Enables `_HAS_FRAMETIME_UNIFORMS` behaviour.
+    ///
+    /// If this is true, then `frame_options.frames_per_second` and `frame_options.frametime_delta`
+    /// must be set for correct behaviour of shaders.
+    ///
+    /// This is only supported on API 2 and above, otherwise this has no effect.
+    pub frametime_uniforms: bool
+}
+
 extern_fn! {
     /// Load a preset.
     ///
+    /// This function is deprecated, and `libra_preset_create_with_options` should be used instead.
     /// ## Safety
     ///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
     ///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
@@ -71,6 +96,8 @@ extern_fn! {
     /// the preset is created.
     ///
     /// Path information variables `PRESET_DIR` and `PRESET` will automatically be filled in.
+    ///
+    /// This function is deprecated, and `libra_preset_create_with_options` should be used instead.
     /// ## Safety
     ///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
     ///  - `context` must be either null or a valid, aligned pointer to a initialized `libra_preset_ctx_t`.
@@ -103,6 +130,91 @@ extern_fn! {
             out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                 preset,
             )))))
+        }
+    }
+}
+
+extern_fn! {
+    /// Load a preset with optional options and an optional context.
+    ///
+    /// Both `context` and `options` may be null.
+    ///
+    /// If `context` is null, then a default context will be provided, and this function will not return `LIBRA_ERR_INVALID_PARAMETER`.
+    /// If `options` is null, then default options will be chosen.
+    ///
+    /// If `context` is provided, it is immediately invalidated and must be recreated after
+    /// the preset is created.
+    ///
+    /// ## Safety
+    ///  - `filename` must be either null or a valid, aligned pointer to a string path to the shader preset.
+    ///  - `context` must be either null or a valid, aligned pointer to an initialized `libra_preset_ctx_t`.
+    ///  - `options` must be either null, or a valid, aligned pointer to a `libra_shader_opt_t`.
+    ///    `LIBRASHADER_API_VERSION` should be set to `LIBRASHADER_CURRENT_VERSION`.
+    ///  - `out` must be either null, or an aligned pointer to an uninitialized or invalid `libra_shader_preset_t`.
+    ///
+    /// ## Returns
+    ///  - If `out` or `filename` is null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
+    fn libra_preset_create_with_options(
+        filename: *const c_char,
+        context: *mut libra_preset_ctx_t,
+        options: *mut MaybeUninit<libra_preset_opt_t>,
+        out: *mut MaybeUninit<libra_shader_preset_t>
+    ) {
+        assert_non_null!(filename);
+        assert_non_null!(out);
+
+        let filename = unsafe { CStr::from_ptr(filename) };
+        let filename = filename.to_str()?;
+
+        // This control flow is like this because the wrapper makes it hard to return early..
+        if options.is_null() {
+            let preset = ShaderPreset::try_parse(filename, ShaderFeatures::NONE)?;
+            unsafe {
+                out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                    preset,
+                )))))
+            }
+        } else {
+            // SAFETY: options is not null
+            let mut options = unsafe { options.read() };
+            let opt_ptr = options.as_mut_ptr();
+
+            let api_version = unsafe { addr_of_mut!((*opt_ptr).version).read() };
+
+            let mut context = if context.is_null() {
+                Box::new(WildcardContext::new())
+            } else {
+                unsafe {
+                    let context_ptr = &mut *context;
+                    let context = context_ptr.take();
+                    Box::from_raw(context.unwrap().as_ptr())
+                }
+            };
+
+            context.add_path_defaults(filename);
+
+            let mut flags = ShaderFeatures::NONE;
+
+            // Original Aspect and Frametime Uniforms are an API 2 feature.
+            if api_version >= 2 {
+                let original_aspect_uniforms = unsafe { addr_of_mut!((*opt_ptr).original_aspect_uniforms).read() };
+                let frametime_uniforms = unsafe { addr_of_mut!((*opt_ptr).frametime_uniforms).read() };
+
+                if original_aspect_uniforms {
+                    flags |= ShaderFeatures::ORIGINAL_ASPECT_UNIFORMS;
+                }
+
+                if frametime_uniforms {
+                    flags |= ShaderFeatures::FRAMETIME_UNIFORMS;
+                }
+            }
+
+            let preset = ShaderPreset::try_parse(filename, flags)?;
+            unsafe {
+                out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
+                    preset,
+                )))))
+            }
         }
     }
 }

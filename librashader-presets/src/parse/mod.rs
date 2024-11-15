@@ -30,7 +30,7 @@ impl ShaderPreset {
     ) -> Result<ShaderPreset, ParsePresetError> {
         let mut context = WildcardContext::new();
         context.add_path_defaults(path.as_ref());
-        let values = parse_preset(path, WildcardContext::new())?;
+        let values = parse_preset(path, context)?;
         Ok(resolve_values(values, shader_features))
     }
 

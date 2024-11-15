@@ -5,6 +5,7 @@ bitflags! {
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(transparent))]
+    #[repr(C)]
     pub struct ShaderFeatures: u32 {
         /// No features are enabled.
         const NONE = 0b00000000;
