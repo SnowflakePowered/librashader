@@ -125,7 +125,7 @@ impl<'a> State<'a> {
         // let preset = ShaderPreset::try_parse("../test/basic.slangp").unwrap();
         //
         let preset = ShaderPreset::try_parse(
-            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/shaders_slang/motionblur/mix_frames.slangp",
             ShaderFeatures::NONE,
         )
         .unwrap();

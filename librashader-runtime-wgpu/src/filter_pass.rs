@@ -163,13 +163,13 @@ impl FilterPass {
         }
 
         let main_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
-            label: Some("main bind group"),
+            label: Some("librashader main bind group"),
             layout: &self.graphics_pipeline.layout.main_bind_group_layout,
             entries: &main_heap_array,
         });
 
         let sampler_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
-            label: Some("sampler bind group"),
+            label: Some("librashader sampler bind group"),
             layout: &self.graphics_pipeline.layout.sampler_bind_group_layout,
             entries: &sampler_heap_array,
         });
