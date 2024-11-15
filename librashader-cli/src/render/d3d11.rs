@@ -51,6 +51,9 @@ impl RenderTest for Direct3D11 {
                 rotation: options.rotation,
                 total_subframes: options.total_subframes,
                 current_subframe: options.current_subframe,
+                aspect_ratio: options.aspect_ratio,
+                frametime_delta: options.frametime_delta,
+                frames_per_second: options.frames_per_second,
             });
 
             for frame in 0..=frame_count {

@@ -96,6 +96,9 @@ impl RenderTest for Direct3D9 {
                 rotation: options.rotation,
                 total_subframes: options.total_subframes,
                 current_subframe: options.current_subframe,
+                aspect_ratio: options.aspect_ratio,
+                frametime_delta: options.frametime_delta,
+                frames_per_second: options.frames_per_second,
             });
 
             let viewport = Viewport::new_render_target_sized_origin(&surface, None)?;
