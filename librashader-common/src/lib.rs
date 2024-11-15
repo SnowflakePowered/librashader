@@ -206,6 +206,14 @@ impl<T> Size<T> {
     }
 }
 
+impl<T: AsPrimitive<f32>> Size<T> {
+    /// Get the aspect ratio of the size.
+    #[inline(always)]
+    pub fn aspect_ratio(&self) -> f32 {
+        self.width.as_() / self.height.as_()
+    }
+}
+
 impl<T: Sub<Output = T>> Sub for Size<T> {
     type Output = Size<T>;
 

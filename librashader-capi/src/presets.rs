@@ -2,11 +2,11 @@
 use crate::ctypes::{libra_preset_ctx_t, libra_shader_preset_t};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
+use crate::LIBRASHADER_API_VERSION;
 use librashader::presets::{ShaderFeatures, ShaderPreset, WildcardContext};
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
 use std::ptr::{addr_of_mut, NonNull};
-use crate::LIBRASHADER_API_VERSION;
 
 const _: () = crate::assert_thread_safe::<ShaderPreset>();
 
@@ -58,7 +58,7 @@ pub struct libra_preset_opt_t {
     /// must be set for correct behaviour of shaders.
     ///
     /// This is only supported on API 2 and above, otherwise this has no effect.
-    pub frametime_uniforms: bool
+    pub frametime_uniforms: bool,
 }
 
 extern_fn! {
