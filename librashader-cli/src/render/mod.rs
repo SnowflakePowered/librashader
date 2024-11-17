@@ -46,10 +46,11 @@ pub trait RenderTest {
     fn render(
         &mut self,
         path: &Path,
+        flags: ShaderFeatures,
         frame_count: usize,
         output_size: Option<Size<u32>>,
     ) -> anyhow::Result<image::RgbaImage> {
-        let preset = ShaderPreset::try_parse(path, ShaderFeatures::NONE)?;
+        let preset = ShaderPreset::try_parse(path, flags)?;
         self.render_with_preset(preset, frame_count, output_size)
     }
 
@@ -95,6 +96,7 @@ mod test {
 
     use crate::render::RenderTest;
     use image::codecs::png::PngEncoder;
+    use librashader::presets::ShaderFeatures;
     use std::fs::File;
 
     const IMAGE_PATH: &str = "../triangle.png";
@@ -105,7 +107,7 @@ mod test {
 
     fn do_test<T: RenderTest>() -> anyhow::Result<()> {
         let mut test = T::new(IMAGE_PATH.as_ref())?;
-        let image = test.render(FILTER_PATH.as_ref(), 100)?;
+        let image = test.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100)?;
 
         let out = File::create("out.png")?;
         image.write_with_encoder(PngEncoder::new(out))?;
@@ -164,8 +166,8 @@ mod test {
         let mut a = A::new(IMAGE_PATH.as_ref())?;
         let mut b = B::new(IMAGE_PATH.as_ref())?;
 
-        let a_image = a.render(FILTER_PATH.as_ref(), 100)?;
-        let b_image = b.render(FILTER_PATH.as_ref(), 100)?;
+        let a_image = a.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100)?;
+        let b_image = b.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100)?;
 
         let similarity = image_compare::rgba_hybrid_compare(&a_image, &b_image)?;
         assert!(similarity.score > 0.95);
