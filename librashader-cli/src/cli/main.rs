@@ -37,6 +37,18 @@ struct PresetArgs {
 }
 
 #[derive(clap::Args, Debug)]
+struct ShaderFeatureArgs {
+    /// Enable the defines for certain shader features.
+    ///
+    /// `originalaspect-uniforms` defines `_HAS_ORIGINALASPECT_UNIFORMS`.
+    /// `frametime-uniforms` defines `_HAS_FRAMETIME_UNIFORMS`.
+    ///
+    /// Note that defines will disappear in the final output, and are only passed for reflection.
+    #[arg(long, short='d')]
+    features: Vec<ShaderDefinesEnums>,
+}
+
+#[derive(clap::Args, Debug)]
 struct RenderArgs {
     /// The frame to render.
     ///
@@ -73,10 +85,27 @@ impl From<FrameOptionsArgs> for CommonFrameOptions {
             rotation: value.rotation,
             total_subframes: value.total_subframes,
             current_subframe: value.current_subframe,
-            aspect_ratio: f32::MAX,
-            frametime_delta: 0,
-            frames_per_second: 1.0,
+            aspect_ratio: value.aspect_ratio.unwrap_or(0.0),
+            frametime_delta: value.frametime_delta.unwrap_or(0),
+            frames_per_second: value.frames_per_second.unwrap_or(1.0),
         }
+    }
+}
+
+impl From<ShaderFeatureArgs> for ShaderFeatures {
+    fn from(value: ShaderFeatureArgs) -> Self {
+        let mut features = ShaderFeatures::NONE;
+
+        for feature in value.features {
+            if matches!(feature, ShaderDefinesEnums::FrametimeUniforms) {
+                features |= ShaderFeatures::FRAMETIME_UNIFORMS;
+            }
+            if matches!(feature, ShaderDefinesEnums::OriginalAspectUniforms) {
+                features |= ShaderFeatures::ORIGINAL_ASPECT_UNIFORMS;
+            }
+        }
+
+        features
     }
 }
 
@@ -95,6 +124,15 @@ struct FrameOptionsArgs {
     /// The current sub frame. Default is 1.
     #[arg(long, default_value_t = 1)]
     pub current_subframe: u32,
+    /// The aspect ratio of the source. The default is 0, which will infer the ratio from the input.
+    #[arg(long)]
+    pub aspect_ratio: Option<f32>,
+    /// Frames per second of the source. The default is 1.
+    #[arg(long)]
+    pub frames_per_second: Option<f32>,
+    /// The time between the previous and current frame. The default is 0.
+    #[arg(long)]
+    pub frametime_delta: Option<u32>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -137,11 +175,15 @@ enum Commands {
     Parse {
         #[clap(flatten)]
         preset: PresetArgs,
+        #[clap(flatten)]
+        flags: ShaderFeatureArgs,
     },
     /// Create a serialized preset pack from a shader preset.
     Pack {
         #[clap(flatten)]
         preset: PresetArgs,
+        #[clap(flatten)]
+        flags: ShaderFeatureArgs,
         /// The path to write the output
         ///
         /// If `-`, writes the output to stdout
@@ -161,6 +203,8 @@ enum Commands {
         /// `json` will print a JSON representation of the preprocessed shader.
         #[arg(value_enum, short, long)]
         output: PreprocessOutput,
+        #[clap(flatten)]
+        flags: ShaderFeatureArgs,
     },
     /// Transpile a shader to the given format.
     Transpile {
@@ -188,11 +232,16 @@ enum Commands {
         /// For SPIR-V, if this is the string "raw-id", then shows raw ID values instead of friendly names.
         #[arg(short, long)]
         version: Option<String>,
+        #[clap(flatten)]
+        flags: ShaderFeatureArgs,
     },
     /// Reflect the shader relative to a preset, giving information about semantics used in a slang shader.
     Reflect {
         #[clap(flatten)]
         preset: PresetArgs,
+
+        #[clap(flatten)]
+        flags: ShaderFeatureArgs,
 
         /// The pass index to use.
         #[arg(short, long)]
@@ -276,6 +325,14 @@ enum Runtime {
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]
+enum ShaderDefinesEnums {
+    #[clap(name = "originalaspect-uniforms")]
+    OriginalAspectUniforms,
+    #[clap(name = "frametime-uniforms")]
+    FrametimeUniforms,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
 enum ReflectionBackend {
     #[clap(name = "cross")]
     SpirvCross,
@@ -333,7 +390,26 @@ pub fn main() -> Result<(), anyhow::Error> {
 
             let test: &mut dyn RenderTest = get_runtime!(runtime, image);
             let dimensions = parse_dimension(dimensions, test.image_size())?;
-            let preset = get_shader_preset(preset, wildcards)?;
+
+            let mut features = ShaderFeatures::NONE;
+            if options
+                .as_ref()
+                .is_some_and(|args| args.aspect_ratio.is_some())
+            {
+                features |= ShaderFeatures::ORIGINAL_ASPECT_UNIFORMS;
+            }
+
+            if options
+                .as_ref()
+                .is_some_and(|args| args.frames_per_second.is_some())
+                || options
+                    .as_ref()
+                    .is_some_and(|args| args.frametime_delta.is_some())
+            {
+                features |= ShaderFeatures::FRAMETIME_UNIFORMS;
+            }
+
+            let preset = get_shader_preset(preset, wildcards, features)?;
             let params = parse_params(params)?;
 
             let image = test.render_with_preset_and_params(
@@ -371,10 +447,28 @@ pub fn main() -> Result<(), anyhow::Error> {
             let left: &mut dyn RenderTest = get_runtime!(left, image);
             let right: &mut dyn RenderTest = get_runtime!(right, image);
 
+            let mut features = ShaderFeatures::NONE;
+            if options
+                .as_ref()
+                .is_some_and(|args| args.aspect_ratio.is_some())
+            {
+                features |= ShaderFeatures::ORIGINAL_ASPECT_UNIFORMS;
+            }
+
+            if options
+                .as_ref()
+                .is_some_and(|args| args.frames_per_second.is_some())
+                || options
+                    .as_ref()
+                    .is_some_and(|args| args.frametime_delta.is_some())
+            {
+                features |= ShaderFeatures::FRAMETIME_UNIFORMS;
+            }
+
             let dimensions = parse_dimension(dimensions, left.image_size())?;
             let params = parse_params(params)?;
 
-            let left_preset = get_shader_preset(preset.clone(), wildcards.clone())?;
+            let left_preset = get_shader_preset(preset.clone(), wildcards.clone(), features)?;
             let left_image = left.render_with_preset_and_params(
                 left_preset,
                 frame,
@@ -383,7 +477,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                 None,
             )?;
 
-            let right_preset = get_shader_preset(preset.clone(), wildcards.clone())?;
+            let right_preset = get_shader_preset(preset.clone(), wildcards.clone(), features)?;
             let right_image = right.render_with_preset_and_params(
                 right_preset,
                 frame,
@@ -405,18 +499,20 @@ pub fn main() -> Result<(), anyhow::Error> {
                 }
             }
         }
-        Commands::Parse { preset } => {
+        Commands::Parse { preset, flags } => {
             let PresetArgs { preset, wildcards } = preset;
 
-            let preset = get_shader_preset(preset, wildcards)?;
+            let preset = get_shader_preset(preset, wildcards, flags.into())?;
             let out = serde_json::to_string_pretty(&preset)?;
             print!("{out:}");
         }
-        Commands::Preprocess { shader, output } => {
-            let source = librashader::preprocess::ShaderSource::load(
-                shader.as_path(),
-                ShaderFeatures::NONE,
-            )?;
+        Commands::Preprocess {
+            shader,
+            output,
+            flags,
+        } => {
+            let source =
+                librashader::preprocess::ShaderSource::load(shader.as_path(), flags.into())?;
             match output {
                 PreprocessOutput::Fragment => print!("{}", source.fragment),
                 PreprocessOutput::Vertex => print!("{}", source.vertex),
@@ -432,11 +528,10 @@ pub fn main() -> Result<(), anyhow::Error> {
             stage,
             format,
             version,
+            flags,
         } => {
-            let source = librashader::preprocess::ShaderSource::load(
-                shader.as_path(),
-                ShaderFeatures::NONE,
-            )?;
+            let source =
+                librashader::preprocess::ShaderSource::load(shader.as_path(), flags.into())?;
             let compilation = SpirvCompilation::try_from(&source)?;
             let output = match format {
                 TranspileFormat::GLSL => {
@@ -527,12 +622,13 @@ pub fn main() -> Result<(), anyhow::Error> {
         }
         Commands::Reflect {
             preset,
+            flags,
             index,
             backend,
         } => {
             let PresetArgs { preset, wildcards } = preset;
 
-            let preset = get_shader_preset(preset, wildcards)?;
+            let preset = get_shader_preset(preset, wildcards, flags.into())?;
             let Some(shader) = preset.passes.get(index) else {
                 return Err(anyhow!("Invalid pass index for the preset"));
             };
@@ -569,11 +665,12 @@ pub fn main() -> Result<(), anyhow::Error> {
         }
         Commands::Pack {
             preset,
+            flags,
             out,
             format,
         } => {
             let PresetArgs { preset, wildcards } = preset;
-            let preset = get_shader_preset(preset, wildcards)?;
+            let preset = get_shader_preset(preset, wildcards, flags.into())?;
             let preset = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset)?;
             let output_bytes = match format {
                 PackFormat::JSON => serde_json::to_vec_pretty(&preset)?,
@@ -601,6 +698,7 @@ struct TranspileOutput {
 fn get_shader_preset(
     preset: PathBuf,
     wildcards: Option<Vec<String>>,
+    flags: ShaderFeatures,
 ) -> anyhow::Result<ShaderPreset> {
     let mut context = WildcardContext::new();
     context.add_path_defaults(preset.as_path());
@@ -616,7 +714,7 @@ fn get_shader_preset(
             ))
         }
     }
-    let preset = ShaderPreset::try_parse_with_context(preset, ShaderFeatures::NONE, context)?;
+    let preset = ShaderPreset::try_parse_with_context(preset, flags, context)?;
     Ok(preset)
 }
 

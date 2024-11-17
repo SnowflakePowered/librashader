@@ -4,15 +4,15 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+use librashader_common::shader_features::ShaderFeatures;
 use librashader_common::{Size, Viewport};
 use librashader_presets::ShaderPreset;
 use librashader_runtime_wgpu::FilterChainWgpu;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
 use wgpu::util::DeviceExt;
 use winit::event_loop::EventLoopBuilder;
 use winit::platform::windows::EventLoopBuilderExtWindows;
-use librashader_common::shader_features::ShaderFeatures;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]

@@ -89,6 +89,15 @@ Options:
           The current sub frame. Default is 1
 
           [default: 1]
+          
+      --aspect-ratio <ASPECT_RATIO>
+          The aspect ratio of the source. The default is 0, which will infer the ratio from the input
+
+      --frames-per-second <FRAMES_PER_SECOND>
+          Frames per second of the source. The default is 1
+
+      --frametime-delta <FRAMETIME_DELTA>
+          The time between the previous and current frame. The default is 0
 
   -o, --out <OUT>
           The path to the output image
@@ -178,6 +187,15 @@ Options:
           The current sub frame. Default is 1
 
           [default: 1]
+          
+     --aspect-ratio <ASPECT_RATIO>
+          The aspect ratio of the source. The default is 0, which will infer the ratio from the input
+
+      --frames-per-second <FRAMES_PER_SECOND>
+          Frames per second of the source. The default is 1
+
+      --frametime-delta <FRAMETIME_DELTA>
+          The time between the previous and current frame. The default is 0
 
   -l, --left <LEFT>
           The runtime to compare against
@@ -622,7 +640,12 @@ Options:
           `json` will print a JSON representation of the preprocessed shader.
 
           [possible values: fragment, vertex, params, passformat, json]
+          
+  -d, --features <FEATURES>
+          Enable `_HAS_ORIGINALASPECT_UNIFORMS` define
 
+          [possible values: originalaspect-uniforms, frametime-uniforms]
+      
   -h, --help
           Print help (see a summary with '-h')
 ```
@@ -687,6 +710,11 @@ Options:
 
           For MSL, this is the shader language version as an integer in format <MMmmpp>(30100), or a version in the format MAJ_MIN (3_1), or MAJ.MIN (3.1).
 
+  -d, --features <FEATURES>
+          Enable the defines for certain shader features.
+
+          [possible values: originalaspect-uniforms, frametime-uniforms]
+
   -h, --help
           Print help (see a summary with '-h')
 ```
@@ -723,7 +751,12 @@ Options:
   -b, --backend <BACKEND>
           [default: cross]
           [possible values: cross, naga]
+          
+  -d, --features <FEATURES>
+          Enable the defines for certain shader features.
 
+          [possible values: originalaspect-uniforms, frametime-uniforms]
+      
   -h, --help
           Print help (see a summary with '-h') 
 ```
@@ -993,6 +1026,11 @@ Options:
 
           [possible values: json, msgpack]
 
+  -d, --features <FEATURES>
+          Enable the defines for certain shader features.
+
+          [possible values: originalaspect-uniforms, frametime-uniforms]
+      
   -h, --help
           Print help (see a summary with '-h')
 
