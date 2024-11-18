@@ -14,6 +14,7 @@ use librashader::reflect::FromCompilation;
 use librashader::reflect::OutputTarget;
 use librashader::reflect::SpirvCompilation;
 
+use librashader_common::shader_features::ShaderFeatures;
 use librashader_pack::{LoadableResource, PassResource};
 use librashader_preprocess::PreprocessError;
 use librashader_presets::PassMeta;
@@ -29,7 +30,7 @@ fn collect_all_slang_presets(collect_is_error: bool) -> Vec<(PathBuf, ShaderPres
         .into_par_iter()
         .filter_map(|entry| {
             if let Ok(path) = entry {
-                match ShaderPreset::try_parse(&path) {
+                match ShaderPreset::try_parse(&path, ShaderFeatures::all()) {
                     Ok(preset) => {
                         #[cfg(not(feature = "github-ci"))]
                         println!("[INFO] Parsing preset {path:?}");
@@ -59,7 +60,7 @@ fn collect_all_loadable_slang_presets() -> Vec<(PathBuf, ShaderPreset)> {
         !preset
             .passes
             .par_iter()
-            .any(|shader| ShaderSource::load(&shader.path).is_err())
+            .any(|shader| ShaderSource::load(&shader.path, ShaderFeatures::all()).is_err())
     });
 
     presets
@@ -71,7 +72,7 @@ pub fn preprocess_all_slang_presets_parsed() {
 
     for (path, preset) in presets {
         preset.passes.into_par_iter().for_each(|shader| {
-            if let Err(e) = ShaderSource::load(&shader.path) {
+            if let Err(e) = ShaderSource::load(&shader.path, ShaderFeatures::all()) {
                 #[cfg(not(feature = "github-ci"))]
                 eprintln!(
                     "[ERROR] Failed to preprocess shader {} from preset {}: {:?}",
@@ -147,7 +148,7 @@ where
             .par_iter()
             .map(|p| {
                 (
-                    PassMeta::load(&p.path).map(|data| PassResource {
+                    PassMeta::load(&p.path, ShaderFeatures::all()).map(|data| PassResource {
                         meta: p.meta.clone(),
                         data,
                     }),

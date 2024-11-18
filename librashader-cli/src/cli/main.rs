@@ -44,7 +44,7 @@ struct ShaderFeatureArgs {
     /// `frametime-uniforms` defines `_HAS_FRAMETIME_UNIFORMS`.
     ///
     /// Note that defines will disappear in the final output, and are only passed for reflection.
-    #[arg(long, short='d')]
+    #[arg(long, short = 'd')]
     features: Vec<ShaderDefinesEnums>,
 }
 
