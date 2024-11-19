@@ -479,6 +479,22 @@ impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
                     semantics: UniqueSemantics::CurrentSubFrame,
                     index: (),
                 }),
+                "OriginalAspect" => Some(Semantic {
+                    semantics: UniqueSemantics::OriginalAspect,
+                    index: (),
+                }),
+                "OriginalAspectRotated" => Some(Semantic {
+                    semantics: UniqueSemantics::OriginalAspectRotated,
+                    index: (),
+                }),
+                "OriginalFPS" => Some(Semantic {
+                    semantics: UniqueSemantics::OriginalFPS,
+                    index: (),
+                }),
+                "FrameTimeDelta" => Some(Semantic {
+                    semantics: UniqueSemantics::FrameTimeDelta,
+                    index: (),
+                }),
                 _ => None,
             },
             Some(UniformSemantic::Unique(variable)) => Some(*variable),
