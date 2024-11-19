@@ -395,6 +395,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct BindingRequirements {
     pub(crate) required_history: usize,
     pub(crate) uses_final_pass_as_feedback: bool,
