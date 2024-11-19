@@ -3,7 +3,7 @@ name = "librashader-runtime-mtl"
 edition = "2021"
 
 license = "MPL-2.0 OR GPL-3.0-only"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Ronny Chan <ronny@ronnychan.ca>"]
 repository = "https://github.com/SnowflakePowered/librashader"
 readme = "../README.md"
@@ -15,11 +15,11 @@ description = "RetroArch shaders for all."
 
 [dependencies]
 librashader-common = { path = "../librashader-common", features = ["metal"], version = "0.6.1" }
-librashader-presets = { path = "../librashader-presets", version = "0.6.0" }
-librashader-preprocess = { path = "../librashader-preprocess", version = "0.6.0" }
-librashader-pack = { path = "../librashader-pack", version = "0.6.0" }
-librashader-reflect = { path = "../librashader-reflect", version = "0.6.0" }
-librashader-runtime = { path = "../librashader-runtime" , version = "0.6.0" }
+librashader-presets = { path = "../librashader-presets", version = "0.6.1" }
+librashader-preprocess = { path = "../librashader-preprocess", version = "0.6.1" }
+librashader-pack = { path = "../librashader-pack", version = "0.6.1" }
+librashader-reflect = { path = "../librashader-reflect", version = "0.6.1" }
+librashader-runtime = { path = "../librashader-runtime" , version = "0.6.1" }
 
 thiserror = "2"
 array-concat = "0.5.2"
