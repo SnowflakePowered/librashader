@@ -295,7 +295,7 @@ pub mod d3d11_hello_triangle {
             let filter = unsafe {
                 FilterChainD3D11::load_from_path(
                     filter,
-                    ShaderFeatures::NONE,
+                    ShaderFeatures::all(),
                     &device,
                     filter_options,
                 )
@@ -583,13 +583,13 @@ pub mod d3d11_hello_triangle {
                         None,
                         &srv,
                         &Viewport {
-                            x: 100f32,
-                            y: 100f32,
+                            x: 0f32,
+                            y: 0f32,
                             output,
                             mvp: None,
                             size: Size {
-                                width: size.width - 200,
-                                height: size.height - 200,
+                                width: size.width,
+                                height: size.height,
                             },
                         },
                         resources.frame_count,
