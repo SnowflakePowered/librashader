@@ -1,6 +1,7 @@
 mod hello_triangle;
 
 use hello_triangle::vulkan_base::VulkanBase;
+use librashader_common::shader_features::ShaderFeatures;
 use librashader_runtime_vk::options::FilterChainOptionsVulkan;
 use librashader_runtime_vk::FilterChainVulkan;
 
@@ -11,7 +12,8 @@ fn triangle_vk() {
 
     unsafe {
         let filter = FilterChainVulkan::load_from_path(
-            "../test/shaders_slang/test/feedback.slangp",
+            "../test/aspect.slangp",
+            ShaderFeatures::all(),
             // "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             // "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",
             &base,

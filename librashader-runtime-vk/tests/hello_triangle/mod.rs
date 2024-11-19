@@ -263,6 +263,8 @@ impl VulkanWindow {
                         current_subframe: 1,
                         rotation: 0,
                         total_subframes: 1,
+                        aspect_ratio: 0.0,
+                        ..Default::default()
                     }),
                 )
                 .unwrap();
