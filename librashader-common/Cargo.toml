@@ -27,7 +27,7 @@ num-traits = "0.2.15"
 rustc-hash = "2.0.0"
 halfbrown = "0.2.4"
 smartstring = "1.0"
-bitflags = "2"
+bitflags = { version = "2", features = ["serde"] }
 
 glow = { workspace = true, optional = true }
 ash = { workspace = true, optional = true }
