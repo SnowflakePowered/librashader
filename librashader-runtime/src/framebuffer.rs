@@ -58,7 +58,10 @@ fn init_history<'a, F, I, E>(
     owned_generator: impl Fn() -> Result<F, E>,
     input_generator: impl Fn() -> I,
 ) -> Result<(VecDeque<F>, Box<[I]>), E> {
-    if required_images <= 1 {
+    // Since OriginalHistory0 aliases source, it always gets bound if present, and we don't need to
+    // store it. However, if even OriginalHistory1 is used, then we need to store it, hence we check if
+    // required_images is less than 1, and only then do we return an empty history queue.
+    if required_images < 1 {
         return Ok((VecDeque::new(), Box::new([])));
     }
 
