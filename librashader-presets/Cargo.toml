@@ -15,7 +15,7 @@ description = "RetroArch shaders for all."
 thiserror = "2"
 nom = "7.1.1"
 nom_locate = "4.0.0"
-librashader-common = { path = "../librashader-common", version = "0.6.0" }
+librashader-common = { path = "../librashader-common", version = "0.6.1" }
 num-traits = "0.2"
 once_cell = "1"
 # we don't need unicode

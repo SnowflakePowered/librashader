@@ -1553,7 +1553,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "ash",
  "bitflags 2.6.0",
