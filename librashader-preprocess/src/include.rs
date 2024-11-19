@@ -10,7 +10,7 @@ use std::str::Lines;
 const GL_GOOGLE_CPP_STYLE_LINE_DIRECTIVE: &str =
     "#extension GL_GOOGLE_cpp_style_line_directive : require";
 
-const DEFINE_HAS_ORIGINALASPECT_UNIFORM: &str = "#define _HAS_ORIGINALASPECT_UNIFORM";
+const DEFINE_HAS_ORIGINALASPECT_UNIFORM: &str = "#define _HAS_ORIGINALASPECT_UNIFORMS";
 
 const DEFINE_HAS_FRAMETIME_UNIFORMS: &str = "#define _HAS_FRAMETIME_UNIFORMS";
 
