@@ -1,6 +1,6 @@
 use crate::buffer::WgpuStagedBuffer;
 use crate::error;
-use crate::filter_chain::FilterCommon;
+use crate::filter_chain::{FilterCommon, WgpuDeviceObjects};
 use crate::framebuffer::WgpuOutputView;
 use crate::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::options::FrameOptionsWgpu;
@@ -88,11 +88,11 @@ impl BindSemantics<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuff
 }
 
 impl FilterPass {
-    pub(crate) fn draw(
+    pub(crate) fn draw<P: WgpuDeviceObjects>(
         &mut self,
         cmd: &mut wgpu::CommandEncoder,
         pass_index: usize,
-        parent: &FilterCommon,
+        parent: &FilterCommon<P>,
         frame_count: u32,
         options: &FrameOptionsWgpu,
         viewport: &Viewport<WgpuOutputView>,
@@ -161,17 +161,23 @@ impl FilterPass {
             }
         }
 
-        let main_bind_group = parent.device.create_bind_group(&BindGroupDescriptor {
-            label: Some("librashader main bind group"),
-            layout: &self.graphics_pipeline.layout.main_bind_group_layout,
-            entries: &main_heap_array,
-        });
+        let main_bind_group = parent
+            .objects
+            .device()
+            .create_bind_group(&BindGroupDescriptor {
+                label: Some("librashader main bind group"),
+                layout: &self.graphics_pipeline.layout.main_bind_group_layout,
+                entries: &main_heap_array,
+            });
 
-        let sampler_bind_group = parent.device.create_bind_group(&BindGroupDescriptor {
-            label: Some("librashader sampler bind group"),
-            layout: &self.graphics_pipeline.layout.sampler_bind_group_layout,
-            entries: &sampler_heap_array,
-        });
+        let sampler_bind_group = parent
+            .objects
+            .device()
+            .create_bind_group(&BindGroupDescriptor {
+                label: Some("librashader sampler bind group"),
+                layout: &self.graphics_pipeline.layout.sampler_bind_group_layout,
+                entries: &sampler_heap_array,
+            });
 
         let mut render_pass = self.graphics_pipeline.begin_rendering(output, cmd);
 
@@ -200,10 +206,10 @@ impl FilterPass {
         Ok(())
     }
 
-    fn build_semantics<'a>(
+    fn build_semantics<'a, P: WgpuDeviceObjects>(
         &mut self,
         pass_index: usize,
-        parent: &FilterCommon,
+        parent: &FilterCommon<P>,
         mvp: &[f32; 16],
         frame_count: u32,
         options: &FrameOptionsWgpu,
@@ -215,7 +221,7 @@ impl FilterPass {
         sampler_heap: &'a mut FastHashMap<u32, WgpuArcBinding<wgpu::Sampler>>,
     ) {
         Self::bind_semantics(
-            &parent.device,
+            &parent.objects.device(),
             &parent.samplers,
             &mut self.uniform_storage,
             &mut (main_heap, sampler_heap),
@@ -247,8 +253,12 @@ impl FilterPass {
         );
 
         // flush to buffers
-        self.uniform_storage.inner_ubo().flush(&parent.queue);
-        self.uniform_storage.inner_push().flush(&parent.queue);
+        self.uniform_storage
+            .inner_ubo()
+            .flush(&parent.objects.queue());
+        self.uniform_storage
+            .inner_push()
+            .flush(&parent.objects.queue());
     }
 }
 

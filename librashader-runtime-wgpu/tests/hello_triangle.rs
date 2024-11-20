@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::sync::Arc;
 use winit::{
     event::*,
@@ -7,7 +8,7 @@ use winit::{
 use librashader_common::shader_features::ShaderFeatures;
 use librashader_common::{Size, Viewport};
 use librashader_presets::ShaderPreset;
-use librashader_runtime_wgpu::FilterChainWgpu;
+use librashader_runtime_wgpu::{FilterChainWgpu, RcDeviceObjects};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 use wgpu::util::DeviceExt;
@@ -61,8 +62,8 @@ const VERTICES: &[Vertex] = &[
 
 struct State<'a> {
     surface: wgpu::Surface<'a>,
-    device: Arc<wgpu::Device>,
-    queue: Arc<wgpu::Queue>,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     clear_color: wgpu::Color,
@@ -71,9 +72,10 @@ struct State<'a> {
 
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
-    chain: FilterChainWgpu,
+    chain: FilterChainWgpu<RcDeviceObjects>,
     frame_count: usize,
 }
+
 impl<'a> State<'a> {
     async fn new(window: &'a Window) -> Self {
         let size = window.inner_size();
@@ -119,8 +121,6 @@ impl<'a> State<'a> {
             view_formats: vec![],
         };
 
-        let device = Arc::new(device);
-        let queue = Arc::new(queue);
         //
         // let preset = ShaderPreset::try_parse("../test/basic.slangp").unwrap();
         //
@@ -133,10 +133,11 @@ impl<'a> State<'a> {
         // let preset =
         //     ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
 
+        let (device, queue) = (Rc::new(device), Rc::new(queue));
+
         let chain = FilterChainWgpu::load_from_preset(
             preset,
-            Arc::clone(&device),
-            Arc::clone(&queue),
+            (Rc::clone(&device), Rc::clone(&queue)),
             None,
         )
         .unwrap();

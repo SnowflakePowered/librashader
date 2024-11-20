@@ -90,6 +90,13 @@ impl RuntimeParameters {
 
 #[macro_export]
 macro_rules! impl_filter_chain_parameters {
+    (<$gen:ident> $ty:ty) => {
+        impl<$gen> ::librashader_runtime::parameters::FilterChainParameters for $ty {
+            fn parameters(&self) -> &::librashader_runtime::parameters::RuntimeParameters {
+                &self.common.config
+            }
+        }
+    };
     ($ty:ty) => {
         impl ::librashader_runtime::parameters::FilterChainParameters for $ty {
             fn parameters(&self) -> &::librashader_runtime::parameters::RuntimeParameters {

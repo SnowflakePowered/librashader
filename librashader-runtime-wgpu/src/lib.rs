@@ -19,10 +19,15 @@ mod texture;
 mod util;
 
 pub use filter_chain::FilterChainWgpu;
+pub use filter_chain::WgpuDeviceObjects;
 pub use framebuffer::WgpuOutputView;
+
+pub use filter_chain::ArcDeviceObjects;
+pub use filter_chain::DeviceObjectsRef;
+pub use filter_chain::RcDeviceObjects;
 
 pub mod error;
 pub mod options;
 
 use librashader_runtime::impl_filter_chain_parameters;
-impl_filter_chain_parameters!(FilterChainWgpu);
+impl_filter_chain_parameters!(<P> FilterChainWgpu<P>);
