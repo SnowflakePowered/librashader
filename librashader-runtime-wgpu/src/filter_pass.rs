@@ -23,14 +23,13 @@ use std::sync::Arc;
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, BufferBinding, ShaderStages};
 
 pub struct FilterPass {
-    pub device: Arc<wgpu::Device>,
     pub reflection: ShaderReflection,
     pub(crate) uniform_storage: UniformStorage<
         NoUniformBinder,
         Option<()>,
         WgpuStagedBuffer,
         WgpuStagedBuffer,
-        Arc<wgpu::Device>,
+        wgpu::Device,
     >,
     pub uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub source: ShaderSource,
@@ -56,7 +55,7 @@ impl BindSemantics<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuff
         &'a mut FastHashMap<u32, WgpuArcBinding<wgpu::TextureView>>,
         &'a mut FastHashMap<u32, WgpuArcBinding<wgpu::Sampler>>,
     );
-    type DeviceContext = Arc<wgpu::Device>;
+    type DeviceContext = wgpu::Device;
     type UniformOffset = MemberOffset;
 
     #[inline(always)]
@@ -162,13 +161,13 @@ impl FilterPass {
             }
         }
 
-        let main_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
+        let main_bind_group = parent.device.create_bind_group(&BindGroupDescriptor {
             label: Some("librashader main bind group"),
             layout: &self.graphics_pipeline.layout.main_bind_group_layout,
             entries: &main_heap_array,
         });
 
-        let sampler_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
+        let sampler_bind_group = parent.device.create_bind_group(&BindGroupDescriptor {
             label: Some("librashader sampler bind group"),
             layout: &self.graphics_pipeline.layout.sampler_bind_group_layout,
             entries: &sampler_heap_array,
@@ -216,7 +215,7 @@ impl FilterPass {
         sampler_heap: &'a mut FastHashMap<u32, WgpuArcBinding<wgpu::Sampler>>,
     ) {
         Self::bind_semantics(
-            &self.device,
+            &parent.device,
             &parent.samplers,
             &mut self.uniform_storage,
             &mut (main_heap, sampler_heap),

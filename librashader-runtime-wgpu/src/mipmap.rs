@@ -1,9 +1,7 @@
 use librashader_common::map::FastHashMap;
 use std::borrow::Cow;
-use std::sync::Arc;
 
 pub struct MipmapGen {
-    device: Arc<wgpu::Device>,
     shader: wgpu::ShaderModule,
     pipeline_cache: FastHashMap<wgpu::TextureFormat, wgpu::RenderPipeline>,
 }
@@ -41,14 +39,13 @@ impl MipmapGen {
 
         pipeline
     }
-    pub fn new(device: Arc<wgpu::Device>) -> Self {
+    pub fn new(device: &wgpu::Device) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shader/blit.wgsl"))),
         });
 
         Self {
-            device,
             shader,
             pipeline_cache: Default::default(),
         }
@@ -56,6 +53,7 @@ impl MipmapGen {
 
     pub fn generate_mipmaps(
         &mut self,
+        device: &wgpu::Device,
         cmd: &mut wgpu::CommandEncoder,
         texture: &wgpu::Texture,
         sampler: &wgpu::Sampler,
@@ -65,7 +63,7 @@ impl MipmapGen {
         let pipeline = &*self
             .pipeline_cache
             .entry(format)
-            .or_insert_with(|| Self::create_pipeline(&self.device, &self.shader, format));
+            .or_insert_with(|| Self::create_pipeline(&device, &self.shader, format));
 
         let views = (0..miplevels)
             .map(|mip| {
@@ -84,7 +82,7 @@ impl MipmapGen {
 
         for target_mip in 1..miplevels as usize {
             let bind_group_layout = pipeline.get_bind_group_layout(0);
-            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {

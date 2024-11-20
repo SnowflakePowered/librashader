@@ -8,7 +8,6 @@ use std::sync::Arc;
 use wgpu::TextureFormat;
 
 pub struct OwnedImage {
-    device: Arc<wgpu::Device>,
     pub image: Arc<wgpu::Texture>,
     pub view: Arc<wgpu::TextureView>,
     pub max_miplevels: u32,
@@ -33,7 +32,7 @@ impl AsRef<InputImage> for InputImage {
 
 impl OwnedImage {
     pub fn new(
-        device: Arc<wgpu::Device>,
+        device: &wgpu::Device,
         size: Size<u32>,
         max_miplevels: u32,
         format: TextureFormat,
@@ -64,7 +63,6 @@ impl OwnedImage {
         });
 
         Self {
-            device,
             image: Arc::new(texture),
             view: Arc::new(view),
             max_miplevels,
@@ -75,6 +73,7 @@ impl OwnedImage {
 
     pub fn scale(
         &mut self,
+        device: &wgpu::Device,
         scaling: Scale2D,
         format: TextureFormat,
         viewport_size: &Size<u32>,
@@ -88,12 +87,7 @@ impl OwnedImage {
             || (!mipmap && self.max_miplevels != 1)
             || format != self.image.format()
         {
-            let mut new = OwnedImage::new(
-                Arc::clone(&self.device),
-                size,
-                self.max_miplevels,
-                format.into(),
-            );
+            let mut new = OwnedImage::new(device, size, self.max_miplevels, format.into());
             std::mem::swap(self, &mut new);
         }
         size
@@ -109,15 +103,15 @@ impl OwnedImage {
         }
     }
 
-    pub fn copy_from(&mut self, cmd: &mut wgpu::CommandEncoder, source: &wgpu::Texture) {
+    pub fn copy_from(
+        &mut self,
+        device: &wgpu::Device,
+        cmd: &mut wgpu::CommandEncoder,
+        source: &wgpu::Texture,
+    ) {
         let source_size = source.size().into();
         if source.format() != self.image.format() || self.size != source_size {
-            let mut new = OwnedImage::new(
-                Arc::clone(&self.device),
-                source_size,
-                self.max_miplevels,
-                source.format(),
-            );
+            let mut new = OwnedImage::new(device, source_size, self.max_miplevels, source.format());
             std::mem::swap(self, &mut new);
         }
 
@@ -131,19 +125,21 @@ impl OwnedImage {
     pub fn clear(&self, cmd: &mut wgpu::CommandEncoder) {
         cmd.clear_texture(&self.image, &wgpu::ImageSubresourceRange::default());
     }
+
     pub fn generate_mipmaps(
         &self,
+        device: &wgpu::Device,
         cmd: &mut wgpu::CommandEncoder,
         mipmapper: &mut MipmapGen,
         sampler: &wgpu::Sampler,
     ) {
-        mipmapper.generate_mipmaps(cmd, &self.image, sampler, self.max_miplevels);
+        mipmapper.generate_mipmaps(device, cmd, &self.image, sampler, self.max_miplevels);
     }
 }
 
 impl ScaleFramebuffer for OwnedImage {
     type Error = FilterChainError;
-    type Context = ();
+    type Context = wgpu::Device;
 
     fn scale(
         &mut self,
@@ -153,11 +149,12 @@ impl ScaleFramebuffer for OwnedImage {
         source_size: &Size<u32>,
         original_size: &Size<u32>,
         should_mipmap: bool,
-        _context: &Self::Context,
+        device: &Self::Context,
     ) -> Result<Size<u32>, Self::Error> {
         let format: Option<wgpu::TextureFormat> = format.into();
         let format = format.unwrap_or(TextureFormat::Bgra8Unorm);
         Ok(self.scale(
+            device,
             scaling,
             format,
             viewport_size,

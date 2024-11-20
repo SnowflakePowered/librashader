@@ -1,5 +1,4 @@
 use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
 
 pub struct WgpuStagedBuffer {
     buffer: wgpu::Buffer,
@@ -8,7 +7,7 @@ pub struct WgpuStagedBuffer {
 
 impl WgpuStagedBuffer {
     pub fn new(
-        device: &Arc<wgpu::Device>,
+        device: &wgpu::Device,
         usage: wgpu::BufferUsages,
         size: wgpu::BufferAddress,
         label: wgpu::Label<'static>,
