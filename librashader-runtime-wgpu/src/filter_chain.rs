@@ -12,10 +12,10 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::uniforms::UniformStorage;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
+use rayon::ThreadPoolBuilder;
 use std::collections::VecDeque;
 use std::path::Path;
-
-use rayon::ThreadPoolBuilder;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::buffer::WgpuStagedBuffer;
@@ -25,7 +25,6 @@ use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
-use wgpu::{Device, TextureFormat};
 
 use crate::error;
 use crate::error::FilterChainError;
@@ -68,8 +67,8 @@ use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
 /// A wgpu filter chain.
-pub struct FilterChainWgpu {
-    pub(crate) common: FilterCommon,
+pub struct FilterChainWgpu<D = ArcDeviceObjects> {
+    pub(crate) common: FilterCommon<D>,
     passes: Box<[FilterPass]>,
     output_framebuffers: Box<[OwnedImage]>,
     feedback_framebuffers: Box<[OwnedImage]>,
@@ -80,7 +79,59 @@ pub struct FilterChainWgpu {
     draw_last_pass_feedback: bool,
 }
 
-pub(crate) struct FilterCommon {
+/// Rc-ref counted device objects.
+pub type RcDeviceObjects = (Rc<wgpu::Device>, Rc<wgpu::Queue>);
+
+/// Arc-ref counted device objects.
+pub type ArcDeviceObjects = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
+
+/// Device objects behind reference
+pub type DeviceObjectsRef<'a> = (&'a wgpu::Device, &'a wgpu::Queue);
+
+/// A trait for structs that provide references to wgpu device objects.
+pub trait WgpuDeviceObjects: Clone {
+    /// Return a reference to the wgpu Device.
+    fn device(&self) -> &wgpu::Device;
+    /// Return a reference to the wgpu Queue.
+    fn queue(&self) -> &wgpu::Queue;
+}
+
+impl WgpuDeviceObjects for (Rc<wgpu::Device>, Rc<wgpu::Queue>) {
+    #[inline(always)]
+    fn device(&self) -> &wgpu::Device {
+        self.0.as_ref()
+    }
+
+    #[inline(always)]
+    fn queue(&self) -> &wgpu::Queue {
+        self.1.as_ref()
+    }
+}
+
+impl WgpuDeviceObjects for (Arc<wgpu::Device>, Arc<wgpu::Queue>) {
+    #[inline(always)]
+    fn device(&self) -> &wgpu::Device {
+        self.0.as_ref()
+    }
+    #[inline(always)]
+    fn queue(&self) -> &wgpu::Queue {
+        self.1.as_ref()
+    }
+}
+
+impl<'a> WgpuDeviceObjects for (&'a wgpu::Device, &'a wgpu::Queue) {
+    #[inline(always)]
+    fn device(&self) -> &wgpu::Device {
+        self.0
+    }
+
+    #[inline(always)]
+    fn queue(&self) -> &wgpu::Queue {
+        self.1
+    }
+}
+
+pub(crate) struct FilterCommon<P> {
     pub output_textures: Box<[Option<InputImage>]>,
     pub feedback_textures: Box<[Option<InputImage>]>,
     pub history_textures: Box<[Option<InputImage>]>,
@@ -88,59 +139,54 @@ pub(crate) struct FilterCommon {
     pub samplers: SamplerSet,
     pub config: RuntimeParameters,
     pub(crate) draw_quad: DrawQuad,
-    pub(crate) device: Arc<Device>,
-    pub(crate) queue: Arc<wgpu::Queue>,
+    pub(crate) objects: P,
 }
 
-impl FilterChainWgpu {
+impl<P: WgpuDeviceObjects> FilterChainWgpu<P> {
     /// Load the shader preset at the given path into a filter chain.
     pub fn load_from_path(
         path: impl AsRef<Path>,
         features: ShaderFeatures,
-        device: Arc<Device>,
-        queue: Arc<wgpu::Queue>,
+        objects: P,
         options: Option<&FilterChainOptionsWgpu>,
-    ) -> error::Result<FilterChainWgpu> {
+    ) -> error::Result<FilterChainWgpu<P>> {
         // load passes from preset
         let preset = ShaderPreset::try_parse(path, features)?;
 
-        Self::load_from_preset(preset, device, queue, options)
+        Self::load_from_preset(preset, objects, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
     pub fn load_from_preset(
         preset: ShaderPreset,
-        device: Arc<Device>,
-        queue: Arc<wgpu::Queue>,
+        objects: P,
         options: Option<&FilterChainOptionsWgpu>,
-    ) -> error::Result<FilterChainWgpu> {
+    ) -> error::Result<FilterChainWgpu<P>> {
         let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
-        Self::load_from_pack(preset, device, queue, options)
+        Self::load_from_pack(preset, objects, options)
     }
 
     /// Load a filter chain from a pre-parsed and loaded `ShaderPresetPack`.
     pub fn load_from_pack(
         preset: ShaderPresetPack,
-        device: Arc<Device>,
-        queue: Arc<wgpu::Queue>,
+        objects: P,
         options: Option<&FilterChainOptionsWgpu>,
-    ) -> error::Result<FilterChainWgpu> {
-        let mut cmd = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("librashader load cmd"),
-        });
-        let filter_chain = Self::load_from_pack_deferred(
-            preset,
-            Arc::clone(&device),
-            Arc::clone(&queue),
-            &mut cmd,
-            options,
-        )?;
+    ) -> error::Result<FilterChainWgpu<P>> {
+        let mut cmd = objects
+            .device()
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("librashader load cmd"),
+            });
+        let filter_chain =
+            Self::load_from_pack_deferred(preset, objects.clone(), &mut cmd, options)?;
 
         let cmd = cmd.finish();
 
         // Wait for device
-        let index = queue.submit([cmd]);
-        device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+        let index = objects.queue().submit([cmd]);
+        objects
+            .device()
+            .poll(wgpu::Maintain::WaitForSubmissionIndex(index));
 
         Ok(filter_chain)
     }
@@ -154,13 +200,12 @@ impl FilterChainWgpu {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub fn load_from_preset_deferred(
         preset: ShaderPreset,
-        device: Arc<Device>,
-        queue: Arc<wgpu::Queue>,
+        objects: P,
         cmd: &mut wgpu::CommandEncoder,
         options: Option<&FilterChainOptionsWgpu>,
-    ) -> error::Result<FilterChainWgpu> {
+    ) -> error::Result<FilterChainWgpu<P>> {
         let preset = ShaderPresetPack::load_from_preset::<FilterChainError>(preset)?;
-        Self::load_from_pack_deferred(preset, device, queue, cmd, options)
+        Self::load_from_pack_deferred(preset, objects, cmd, options)
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`, deferring and GPU-side initialization
@@ -172,28 +217,30 @@ impl FilterChainWgpu {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     pub fn load_from_pack_deferred(
         preset: ShaderPresetPack,
-        device: Arc<Device>,
-        queue: Arc<wgpu::Queue>,
+        objects: P,
         cmd: &mut wgpu::CommandEncoder,
         options: Option<&FilterChainOptionsWgpu>,
-    ) -> error::Result<FilterChainWgpu> {
+    ) -> error::Result<FilterChainWgpu<P>> {
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures)?;
 
         // cache is opt-in for wgpu, not opt-out because of feature requirements.
         let disable_cache = options.map_or(true, |o| !o.enable_cache);
 
+        let device = objects.device();
+        let queue = objects.queue();
+
         // initialize passes
         let filters = Self::init_passes(
-            &device,
+            device,
             passes,
             &semantics,
             options.and_then(|o| o.adapter_info.as_ref()),
             disable_cache,
         )?;
 
-        let samplers = SamplerSet::new(&device);
-        let mut mipmapper = MipmapGen::new(&device);
-        let luts = FilterChainWgpu::load_luts(
+        let samplers = SamplerSet::new(device);
+        let mut mipmapper = MipmapGen::new(device);
+        let luts = Self::load_luts(
             &device,
             &queue,
             cmd,
@@ -207,7 +254,7 @@ impl FilterChainWgpu {
                 &device,
                 Size::new(1, 1),
                 1,
-                TextureFormat::Bgra8Unorm,
+                wgpu::TextureFormat::Bgra8Unorm,
             ))
         };
         let input_gen = || None;
@@ -237,8 +284,7 @@ impl FilterChainWgpu {
                 samplers,
                 config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
                 draw_quad,
-                device,
-                queue,
+                objects,
                 output_textures,
                 feedback_textures,
                 history_textures,
@@ -286,7 +332,7 @@ impl FilterChainWgpu {
                 let _old_back = std::mem::replace(
                     &mut back,
                     OwnedImage::new(
-                        &self.common.device,
+                        &self.common.objects.device(),
                         input.size().into(),
                         1,
                         input.format().into(),
@@ -294,7 +340,7 @@ impl FilterChainWgpu {
                 );
             }
 
-            back.copy_from(&self.common.device, cmd, input);
+            back.copy_from(&self.common.objects.device(), cmd, input);
 
             self.history_framebuffers.push_front(back)
         }
@@ -346,7 +392,7 @@ impl FilterChainWgpu {
                     let uniform_bindings =
                         reflection.meta.create_binding_map(|param| param.offset());
 
-                    let render_pass_format: Option<TextureFormat> =
+                    let render_pass_format: Option<wgpu::TextureFormat> =
                         if let Some(format) = config.meta.get_format_override() {
                             format.into()
                         } else {
@@ -357,7 +403,7 @@ impl FilterChainWgpu {
                         &device,
                         &wgsl,
                         &reflection,
-                        render_pass_format.unwrap_or(TextureFormat::Rgba8Unorm),
+                        render_pass_format.unwrap_or(wgpu::TextureFormat::Rgba8Unorm),
                         adapter_info,
                         disable_cache,
                     );
@@ -457,7 +503,7 @@ impl FilterChainWgpu {
             &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
-            &self.common.device,
+            &self.common.objects.device(),
             Some(&mut |index: usize,
                        pass: &FilterPass,
                        output: &OwnedImage,
@@ -505,7 +551,12 @@ impl FilterChainWgpu {
                     FilterMode::Nearest,
                 );
 
-                target.generate_mipmaps(&self.common.device, cmd, &mut self.mipmapper, &sampler);
+                target.generate_mipmaps(
+                    &self.common.objects.device(),
+                    cmd,
+                    &mut self.mipmapper,
+                    &sampler,
+                );
             }
 
             source = self.common.output_textures[index].clone().unwrap();
@@ -519,7 +570,7 @@ impl FilterChainWgpu {
             if !pass.graphics_pipeline.has_format(viewport.output.format) {
                 // need to recompile
                 pass.graphics_pipeline
-                    .recompile(&self.common.device, viewport.output.format);
+                    .recompile(&self.common.objects.device(), viewport.output.format);
             }
 
             source.filter_mode = pass.meta.filter;
