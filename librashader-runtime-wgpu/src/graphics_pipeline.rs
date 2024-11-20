@@ -9,7 +9,6 @@ use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
 use std::borrow::Cow;
 use std::convert::Infallible;
-use std::sync::Arc;
 use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
     BufferBindingType, BufferSize, CommandEncoder, Operations, PipelineLayout, PushConstantRange,
@@ -32,14 +31,13 @@ pub struct PipelineLayoutObjects {
     vertex_entry_name: String,
     vertex: ShaderModule,
     fragment: ShaderModule,
-    device: Arc<wgpu::Device>,
 }
 
 impl PipelineLayoutObjects {
     pub fn new(
         reflection: &ShaderReflection,
         shader_assembly: &ShaderCompilerOutput<String, NagaWgslContext>,
-        device: Arc<wgpu::Device>,
+        device: &wgpu::Device,
     ) -> Self {
         let vertex = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("vertex"),
@@ -147,76 +145,75 @@ impl PipelineLayoutObjects {
             vertex_entry_name: shader_assembly.context.vertex.entry_points[0].name.clone(),
             vertex,
             fragment,
-            device,
         }
     }
 
     pub fn create_pipeline(
         &self,
+        device: &wgpu::Device,
         framebuffer_format: TextureFormat,
         cache: Option<&wgpu::PipelineCache>,
     ) -> wgpu::RenderPipeline {
-        self.device
-            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Render Pipeline"),
-                layout: Some(&self.layout),
-                vertex: wgpu::VertexState {
-                    module: &self.vertex,
-                    entry_point: Some(&self.vertex_entry_name),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    buffers: &[VertexBufferLayout {
-                        array_stride: std::mem::size_of::<VertexInput>() as wgpu::BufferAddress,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &[
-                            wgpu::VertexAttribute {
-                                format: wgpu::VertexFormat::Float32x4,
-                                offset: bytemuck::offset_of!(VertexInput, position)
-                                    as wgpu::BufferAddress,
-                                shader_location: 0,
-                            },
-                            wgpu::VertexAttribute {
-                                format: wgpu::VertexFormat::Float32x2,
-                                offset: bytemuck::offset_of!(VertexInput, texcoord)
-                                    as wgpu::BufferAddress,
-                                shader_location: 1,
-                            },
-                        ],
-                    }],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &self.fragment,
-                    entry_point: Some(&self.fragment_entry_name),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: framebuffer_format,
-                        blend: None,
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleStrip,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    unclipped_depth: false,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview: None,
-                cache,
-            })
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&self.layout),
+            vertex: wgpu::VertexState {
+                module: &self.vertex,
+                entry_point: Some(&self.vertex_entry_name),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                buffers: &[VertexBufferLayout {
+                    array_stride: std::mem::size_of::<VertexInput>() as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: bytemuck::offset_of!(VertexInput, position)
+                                as wgpu::BufferAddress,
+                            shader_location: 0,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: bytemuck::offset_of!(VertexInput, texcoord)
+                                as wgpu::BufferAddress,
+                            shader_location: 1,
+                        },
+                    ],
+                }],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &self.fragment,
+                entry_point: Some(&self.fragment_entry_name),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: framebuffer_format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+            cache,
+        })
     }
 }
 
 impl WgpuGraphicsPipeline {
     pub fn new(
-        device: Arc<wgpu::Device>,
+        device: &wgpu::Device,
         shader_assembly: &ShaderCompilerOutput<String, NagaWgslContext>,
         reflection: &ShaderReflection,
         render_pass_format: TextureFormat,
@@ -256,7 +253,7 @@ impl WgpuGraphicsPipeline {
         let mut render_pipelines = FastHashMap::default();
         render_pipelines.insert(
             render_pass_format,
-            layout.create_pipeline(render_pass_format, cache.as_ref()),
+            layout.create_pipeline(device, render_pass_format, cache.as_ref()),
         );
         Self {
             layout,
@@ -269,8 +266,10 @@ impl WgpuGraphicsPipeline {
         self.render_pipelines.contains_key(&format)
     }
 
-    pub fn recompile(&mut self, format: TextureFormat) {
-        let render_pipeline = self.layout.create_pipeline(format, self.cache.as_ref());
+    pub fn recompile(&mut self, device: &wgpu::Device, format: TextureFormat) {
+        let render_pipeline = self
+            .layout
+            .create_pipeline(device, format, self.cache.as_ref());
         self.render_pipelines.insert(format, render_pipeline);
     }
 

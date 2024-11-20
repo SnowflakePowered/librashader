@@ -61,6 +61,7 @@ impl LutTexture {
 
         if config.mipmap {
             mipmapper.generate_mipmaps(
+                device,
                 cmd,
                 &texture,
                 &*sampler_set.get(
