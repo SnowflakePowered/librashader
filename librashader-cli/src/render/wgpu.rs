@@ -70,8 +70,7 @@ impl RenderTest for Wgpu {
     ) -> anyhow::Result<image::RgbaImage> {
         let mut chain = FilterChain::load_from_preset(
             preset,
-            Arc::clone(&self.device),
-            Arc::clone(&self.queue),
+            (self.device.as_ref(), self.queue.as_ref()),
             Some(&FilterChainOptions {
                 force_no_mipmaps: false,
                 enable_cache: true,
