@@ -6,7 +6,7 @@ use nom::character::complete::digit1;
 use nom::combinator::{eof, map_res};
 use std::collections::VecDeque;
 
-use nom::IResult;
+use nom::{IResult, Parser};
 use num_traits::cast::ToPrimitive;
 
 use crate::parse::token::do_lex;
@@ -144,9 +144,9 @@ fn from_bool(input: Span) -> Result<bool, ParsePresetError> {
 }
 
 fn parse_indexed_key<'a>(key: &'static str, input: Span<'a>) -> IResult<Span<'a>, i32> {
-    let (input, _) = tag(key)(input)?;
-    let (input, idx) = map_res(digit1, from_int)(input)?;
-    let (input, _) = eof(input)?;
+    let (input, _) = tag(key).parse(input)?;
+    let (input, idx) = map_res(digit1, from_int).parse(input)?;
+    let (input, _) = eof.parse(input)?;
     Ok((input, idx))
 }
 
@@ -202,6 +202,7 @@ fn load_child_reference_strings(
                 .map(|value| PathBuf::from(*value.value.fragment()))
                 .collect();
 
+            // eprintln!("{:#?}", new_references);
             path.pop();
             reference_strings.push_front((path.clone(), reference_contents));
             if !new_references.is_empty() {
@@ -570,6 +571,7 @@ pub fn parse_values(
                 .iter()
                 .all(|k| !token.key.ends_with(k))
         {
+            // eprintln!("{:?}", token);
             let mut relative_path = path.to_path_buf();
             // Don't trim paths.
             relative_path.push(*token.value.fragment());

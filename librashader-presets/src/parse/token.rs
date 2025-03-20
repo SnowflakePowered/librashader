@@ -3,16 +3,12 @@ use crate::parse::Span;
 use nom::branch::alt;
 use nom::bytes::complete::{is_not, take_until};
 use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
-use std::ops::RangeFrom;
 
 use nom::combinator::{eof, map_res, value};
 use nom::error::{ErrorKind, ParseError};
 
 use nom::sequence::delimited;
-use nom::{
-    bytes::complete::tag, character::complete::multispace0, AsChar, IResult, InputIter,
-    InputLength, InputTake, Slice,
-};
+use nom::{bytes::complete::tag, character::complete::multispace0, AsChar, IResult, Input, Parser};
 
 #[derive(Debug)]
 pub struct Token<'a> {
@@ -23,14 +19,14 @@ pub struct Token<'a> {
 /// Return the input slice up to the first occurrence of the parser,
 /// and the result of the parser on match.
 /// If the parser never matches, returns an error with code `ManyTill`
-pub fn take_up_to<Input, Output, Error: ParseError<Input>, P>(
+pub fn take_up_to<I, Output, Error: ParseError<I>, P>(
     mut parser: P,
-) -> impl FnMut(Input) -> IResult<Input, (Input, Output), Error>
+) -> impl FnMut(I) -> IResult<I, (I, Output), Error>
 where
-    P: FnMut(Input) -> IResult<Input, Output, Error>,
-    Input: InputLength + InputIter + InputTake,
+    P: FnMut(I) -> IResult<I, Output, Error>,
+    I: Input,
 {
-    move |i: Input| {
+    move |i: I| {
         let input = i;
         for (index, _) in input.iter_indices() {
             let (rest, front) = input.take_split(index);
@@ -55,28 +51,28 @@ fn parse_assignment(input: Span) -> IResult<Span, ()> {
 
 fn unbalanced_quote<I>(input: I) -> IResult<I, ()>
 where
-    I: Slice<RangeFrom<usize>> + InputIter + InputLength,
-    <I as InputIter>::Item: AsChar,
+    I: Input,
+    <I as Input>::Item: AsChar,
     I: Copy,
 {
-    if let Ok((input, _)) = eof::<_, ()>(input) {
+    if let Ok((input, _)) = eof::<_, ()>.parse(input) {
         Ok((input, ()))
     } else {
-        let (input, _) = char('"')(input)?;
+        let (input, _) = char('"').parse(input)?;
         Ok((input, ()))
     }
 }
 
 fn extract_from_quotes(input: Span) -> IResult<Span, Span> {
     // Allow unbalanced quotes because some presets just leave an open quote.
-    let (input, between) = delimited(char('"'), is_not("\""), unbalanced_quote)(input)?;
+    let (input, between) = delimited(char('"'), is_not("\""), unbalanced_quote).parse(input)?;
     let (input, _) = opt_whitespace(input)?;
     let (input, _) = eof(input)?;
     Ok((input, between))
 }
 
 fn multiline_comment(i: Span) -> IResult<Span, Span> {
-    delimited(tag("/*"), take_until("*/"), tag("*/"))(i)
+    delimited(tag("/*"), take_until("*/"), tag("*/")).parse(i)
 }
 
 fn single_comment(i: Span) -> IResult<Span, Span> {
@@ -84,14 +80,16 @@ fn single_comment(i: Span) -> IResult<Span, Span> {
         alt((tag("//"), tag("#"))),
         not_line_ending,
         alt((line_ending, eof)),
-    )(i)
+    )
+    .parse(i)
 }
 
 fn opt_whitespace(i: Span) -> IResult<Span, ()> {
     value(
         (), // Output is thrown away.
         multispace0,
-    )(i)
+    )
+    .parse(i)
 }
 
 fn optional_quotes(input: Span) -> IResult<(), Span> {
@@ -106,17 +104,17 @@ fn optional_quotes(input: Span) -> IResult<(), Span> {
 fn parse_reference(input: Span) -> IResult<Span, Token> {
     let (input, key) = tag("#reference")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, (_, value)) = map_res(not_line_ending, optional_quotes)(input)?;
+    let (input, (_, value)) = map_res(not_line_ending, optional_quotes).parse(input)?;
     Ok((input, Token { key, value }))
 }
 fn parse_key_value(input: Span) -> IResult<Span, Token> {
-    let (input, (key, _)) = take_up_to(parse_assignment)(input)?;
-    let (input, (_, value)) = map_res(not_line_ending, optional_quotes)(input)?;
+    let (input, (key, _)) = take_up_to(parse_assignment).parse(input)?;
+    let (input, (_, value)) = map_res(not_line_ending, optional_quotes).parse(input)?;
     let (_, value) =
         take_until::<_, _, nom::error::Error<Span>>("//")(value).unwrap_or((input, value));
     let (_, value) =
         take_until::<_, _, nom::error::Error<Span>>("#")(value).unwrap_or((input, value));
-    let (_, (_, value)) = map_res(not_line_ending, optional_quotes)(value)?;
+    let (_, (_, value)) = map_res(not_line_ending, optional_quotes).parse(value)?;
     Ok((input, Token { key, value }))
 }
 
@@ -153,7 +151,6 @@ pub fn do_lex(input: &str) -> Result<Vec<Token>, ParsePresetError> {
     let (_, tokens) = parse_tokens(span).map_err(|e| match e {
         nom::Err::Error(e) | nom::Err::Failure(e) => {
             let input: Span = e.input;
-            println!("{:?}", input);
             ParsePresetError::LexerError {
                 offset: input.location_offset(),
                 row: input.location_line(),
