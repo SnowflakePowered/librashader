@@ -76,8 +76,8 @@ jobs:
       run: |
         sudo apt-get update || true
         sudo dpkg --add-architecture arm64
-        echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update || true
         sudo apt-get -y install g++-aarch64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorg-dev libx11-dev:arm64 libxrandr-dev:arm64
     - name: Build dynamic library
