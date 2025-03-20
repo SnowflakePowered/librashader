@@ -13,8 +13,8 @@ description = "RetroArch shaders for all."
 
 [dependencies]
 thiserror = "2"
-nom = "7.1.1"
-nom_locate = "4.0.0"
+nom = "8.0.0"
+nom_locate = "5.0.0"
 librashader-common = { path = "../librashader-common", version = "0.6.2" }
 num-traits = "0.2"
 once_cell = "1"

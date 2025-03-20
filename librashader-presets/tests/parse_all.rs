@@ -1,4 +1,5 @@
 use glob::glob;
+use librashader_common::shader_features::ShaderFeatures;
 use librashader_presets::context::{ContextItem, VideoDriver, WildcardContext};
 use librashader_presets::ShaderPreset;
 
@@ -6,7 +7,7 @@ use librashader_presets::ShaderPreset;
 fn parses_all_slang_presets() {
     for entry in glob("../test/shaders_slang/**/*.slangp").unwrap() {
         if let Ok(path) = entry {
-            if let Err(e) = ShaderPreset::try_parse(&path) {
+            if let Err(e) = ShaderPreset::try_parse(&path, ShaderFeatures::empty()) {
                 println!("Could not parse {}: {:?}", path.display(), e)
             }
         }
@@ -16,7 +17,8 @@ fn parses_all_slang_presets() {
 #[test]
 fn parses_problematic() {
     let path  = "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_NDS_DREZ/NDS-[DREZ]-[Native]-[ADV]-[Guest]-[Night].slangp";
-    ShaderPreset::try_parse(path).expect(&format!("Failed to parse {}", path));
+    ShaderPreset::try_parse(path, ShaderFeatures::empty())
+        .expect(&format!("Failed to parse {}", path));
 }
 
 #[test]
@@ -29,6 +31,6 @@ fn parses_wildcard() {
 
     context.append_item(ContextItem::CoreName(String::from("image display")));
 
-    ShaderPreset::try_parse_with_context(path, context)
+    ShaderPreset::try_parse_with_context(path, ShaderFeatures::empty(), context)
         .expect(&format!("Failed to parse {}", path));
 }

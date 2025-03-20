@@ -66,12 +66,13 @@ impl ShaderPreset {
 #[cfg(test)]
 mod test {
     use crate::ShaderPreset;
+    use librashader_common::shader_features::ShaderFeatures;
     use std::path::PathBuf;
 
     #[test]
     pub fn parse_preset() {
-        let root = PathBuf::from("../test/slang-shaders/ntsc/ntsc-256px-svideo.slangp");
-        let basic = ShaderPreset::try_parse(root);
+        let root = PathBuf::from("../test/shaders_slang/ntsc/ntsc-256px-svideo.slangp");
+        let basic = ShaderPreset::try_parse(root, ShaderFeatures::empty());
         eprintln!("{basic:#?}");
         assert!(basic.is_ok());
     }
