@@ -282,7 +282,7 @@ Building against stable Rust requires the following MSRV.
 
 When building against nightly Rust, the following MSRV policy is enforced for unstable library features.
 
-* All platforms: **1.78**
+* All platforms: **1.87**
 
 A CI job runs weekly to ensure librashader continues to build on nightly.
 
