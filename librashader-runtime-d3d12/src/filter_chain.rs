@@ -186,6 +186,7 @@ mod compile {
         Box<dyn CompileReflectShader<DXIL, SpirvCompilation, SpirvCross> + Send>,
     >;
 
+    #[cfg_attr(not(feature = "stable"), define_opaque(DxilShaderPassMeta))]
     pub fn compile_passes_dxil(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],
@@ -216,6 +217,7 @@ mod compile {
         Box<dyn CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>,
     >;
 
+    #[cfg_attr(not(feature = "stable"), define_opaque(HlslShaderPassMeta))]
     pub fn compile_passes_hlsl(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],

@@ -74,6 +74,7 @@ mod compile {
         Box<dyn CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>,
     >;
 
+    #[cfg_attr(not(feature = "stable"), define_opaque(ShaderPassMeta))]
     pub fn compile_passes(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],

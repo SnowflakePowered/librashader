@@ -50,6 +50,7 @@ mod compile {
     pub type ShaderPassMeta =
         ShaderPassArtifact<Box<dyn CompileReflectShader<WGSL, SpirvCompilation, Naga> + Send>>;
 
+    #[cfg_attr(not(feature = "stable"), define_opaque(ShaderPassMeta))]
     pub fn compile_passes(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],
