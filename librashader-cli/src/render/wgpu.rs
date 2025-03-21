@@ -8,10 +8,10 @@ use std::io::{Cursor, Write};
 use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::Arc;
-use wgpu::{Adapter, Device, Instance, Queue, Texture};
+use wgpu::{Adapter, Device, Instance, Queue, TexelCopyBufferInfo, Texture};
 use wgpu_types::{
-    BufferAddress, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, ImageCopyBuffer,
-    ImageDataLayout, Maintain, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+    BufferAddress, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Maintain,
+    TexelCopyBufferLayout, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
 };
 
 use librashader::presets::ShaderPreset;
@@ -70,8 +70,8 @@ impl RenderTest for Wgpu {
     ) -> anyhow::Result<image::RgbaImage> {
         let mut chain = FilterChain::load_from_preset(
             preset,
-            Arc::clone(&self.device),
-            Arc::clone(&self.queue),
+            &self.device,
+            &self.queue,
             Some(&FilterChainOptions {
                 force_no_mipmaps: false,
                 enable_cache: true,
@@ -126,20 +126,14 @@ impl RenderTest for Wgpu {
         });
 
         for frame in 0..=frame_count {
-            chain.frame(
-                Arc::clone(&self.texture),
-                &viewport,
-                &mut cmd,
-                frame,
-                options.as_ref(),
-            )?;
+            chain.frame(&self.texture, &viewport, &mut cmd, frame, options.as_ref())?;
         }
 
         cmd.copy_texture_to_buffer(
             output_tex.as_image_copy(),
-            ImageCopyBuffer {
+            TexelCopyBufferInfo {
                 buffer: &output_buf,
-                layout: ImageDataLayout {
+                layout: TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row as u32),
                     rows_per_image: None,
@@ -247,14 +241,14 @@ impl Wgpu {
         });
 
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &image.bytes,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * image.size.width),
                 rows_per_image: None,
