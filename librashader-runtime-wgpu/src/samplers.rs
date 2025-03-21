@@ -1,21 +1,20 @@
 use librashader_common::map::FastHashMap;
 use librashader_common::{FilterMode, WrapMode};
-use std::sync::Arc;
 use wgpu::{AddressMode, Features, Sampler, SamplerBorderColor, SamplerDescriptor};
 
 pub struct SamplerSet {
     // todo: may need to deal with differences in mip filter.
-    samplers: FastHashMap<(WrapMode, FilterMode, FilterMode), Arc<Sampler>>,
+    samplers: FastHashMap<(WrapMode, FilterMode, FilterMode), Sampler>,
 }
 
 impl SamplerSet {
     #[inline(always)]
-    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> Arc<Sampler> {
+    pub fn get(&self, wrap: WrapMode, filter: FilterMode, mipmap: FilterMode) -> Sampler {
         // eprintln!("{wrap}, {filter}, {mip}");
         // SAFETY: the sampler set is complete for the matrix
         // wrap x filter x mipmap
         unsafe {
-            Arc::clone(
+            Sampler::clone(
                 &self
                     .samplers
                     .get(&(wrap, filter, mipmap))
@@ -49,7 +48,7 @@ impl SamplerSet {
 
                     samplers.insert(
                         (*wrap_mode, *filter_mode, *mipmap_filter),
-                        Arc::new(device.create_sampler(&SamplerDescriptor {
+                        device.create_sampler(&SamplerDescriptor {
                             label: None,
                             address_mode_u: address_mode,
                             address_mode_v: address_mode,
@@ -62,7 +61,7 @@ impl SamplerSet {
                             compare: None,
                             anisotropy_clamp: 1,
                             border_color: Some(SamplerBorderColor::TransparentBlack),
-                        })),
+                        }),
                     );
                 }
             }

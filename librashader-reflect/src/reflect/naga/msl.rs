@@ -33,6 +33,7 @@ impl CompileShader<MSL> for NagaReflect {
             fake_missing_bindings: false,
             bounds_check_policies: Default::default(),
             zero_initialize_workgroup_memory: false,
+            force_loop_bounding: false,
         };
 
         let mut frag_options = vert_options.clone();
@@ -78,7 +79,6 @@ impl CompileShader<MSL> for NagaReflect {
                                 buffer: None,
                                 texture: None,
                                 sampler: Some(BindSamplerTarget::Resource(binding.binding as u8)),
-                                binding_array_size: None,
                                 mutable: false,
                             },
                         );
@@ -90,7 +90,6 @@ impl CompileShader<MSL> for NagaReflect {
                                 buffer: Some(binding.binding as u8),
                                 texture: None,
                                 sampler: None,
-                                binding_array_size: None,
                                 mutable: false,
                             },
                         );
@@ -102,7 +101,6 @@ impl CompileShader<MSL> for NagaReflect {
                                 buffer: None,
                                 texture: Some(binding.binding as u8),
                                 sampler: None,
-                                binding_array_size: None,
                                 mutable: false,
                             },
                         );

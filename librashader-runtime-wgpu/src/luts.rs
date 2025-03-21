@@ -5,7 +5,6 @@ use librashader_common::{Size, WrapMode};
 use librashader_presets::TextureMeta;
 use librashader_runtime::image::Image;
 use librashader_runtime::scaling::MipmapSize;
-use std::sync::Arc;
 use wgpu::TextureDescriptor;
 
 pub(crate) struct LutTexture(InputImage);
@@ -44,14 +43,14 @@ impl LutTexture {
         });
 
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &image.bytes,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * image.size.width),
                 rows_per_image: None,
@@ -64,7 +63,7 @@ impl LutTexture {
                 device,
                 cmd,
                 &texture,
-                &*sampler_set.get(
+                &sampler_set.get(
                     WrapMode::ClampToEdge,
                     config.filter_mode,
                     config.filter_mode,
@@ -76,8 +75,8 @@ impl LutTexture {
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let image = InputImage {
-            image: Arc::new(texture),
-            view: Arc::new(view),
+            image: texture,
+            view,
             wrap_mode: config.wrap_mode,
             filter_mode: config.filter_mode,
             mip_filter: config.filter_mode,

@@ -124,22 +124,19 @@ impl<'a> State<'a> {
         //
         // let preset = ShaderPreset::try_parse("../test/basic.slangp").unwrap();
         //
+        // let preset = ShaderPreset::try_parse(
+        //     "../test/shaders_slang/motionblur/mix_frames.slangp",
+        //     ShaderFeatures::NONE,
+        // )
+        // .unwrap();
+
         let preset = ShaderPreset::try_parse(
-            "../test/shaders_slang/motionblur/mix_frames.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             ShaderFeatures::NONE,
         )
         .unwrap();
 
-        // let preset =
-        //     ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp").unwrap();
-
-        let chain = FilterChainWgpu::load_from_preset(
-            preset,
-            Arc::clone(&device),
-            Arc::clone(&queue),
-            None,
-        )
-        .unwrap();
+        let chain = FilterChainWgpu::load_from_preset(preset, &device, &queue, None).unwrap();
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -231,7 +228,7 @@ impl<'a> State<'a> {
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
 
-        let render_output = Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
+        let render_output = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("rendertexture"),
             size: output.texture.size(),
             mip_level_count: output.texture.mip_level_count(),
@@ -243,9 +240,9 @@ impl<'a> State<'a> {
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[output.texture.format()],
-        }));
+        });
 
-        let filter_output = Arc::new(self.device.create_texture(&wgpu::TextureDescriptor {
+        let filter_output = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("filteroutput"),
             size: output.texture.size(),
             mip_level_count: output.texture.mip_level_count(),
@@ -257,7 +254,7 @@ impl<'a> State<'a> {
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[output.texture.format()],
-        }));
+        });
 
         let view = render_output.create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -291,7 +288,7 @@ impl<'a> State<'a> {
 
         self.chain
             .frame(
-                Arc::clone(&render_output),
+                &render_output,
                 &Viewport {
                     x: 100.0,
                     y: 100.0,
@@ -354,7 +351,9 @@ pub fn run() {
                                 Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                                     state.resize(state.size)
                                 }
-                                Err(wgpu::SurfaceError::OutOfMemory) => target.exit(),
+                                Err(
+                                    wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other,
+                                ) => target.exit(),
                                 Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
                             }
                         }

@@ -4,12 +4,11 @@ use crate::WgpuOutputView;
 use librashader_common::{FilterMode, GetSize, ImageFormat, Size, WrapMode};
 use librashader_presets::Scale2D;
 use librashader_runtime::scaling::{MipmapSize, ScaleFramebuffer, ViewportSize};
-use std::sync::Arc;
 use wgpu::TextureFormat;
 
 pub struct OwnedImage {
-    pub image: Arc<wgpu::Texture>,
-    pub view: Arc<wgpu::TextureView>,
+    pub image: wgpu::Texture,
+    pub view: wgpu::TextureView,
     pub max_miplevels: u32,
     pub levels: u32,
     pub size: Size<u32>,
@@ -17,8 +16,8 @@ pub struct OwnedImage {
 
 #[derive(Clone)]
 pub struct InputImage {
-    pub image: Arc<wgpu::Texture>,
-    pub view: Arc<wgpu::TextureView>,
+    pub image: wgpu::Texture,
+    pub view: wgpu::TextureView,
     pub wrap_mode: WrapMode,
     pub filter_mode: FilterMode,
     pub mip_filter: FilterMode,
@@ -55,6 +54,7 @@ impl OwnedImage {
             label: None,
             format: Some(format),
             dimension: Some(wgpu::TextureViewDimension::D2),
+            usage: None,
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,
             mip_level_count: None,
@@ -63,8 +63,8 @@ impl OwnedImage {
         });
 
         Self {
-            image: Arc::new(texture),
-            view: Arc::new(view),
+            image: texture,
+            view,
             max_miplevels,
             levels: std::cmp::min(max_miplevels, size.calculate_miplevels()),
             size,
@@ -95,8 +95,8 @@ impl OwnedImage {
 
     pub(crate) fn as_input(&self, filter: FilterMode, wrap_mode: WrapMode) -> InputImage {
         InputImage {
-            image: Arc::clone(&self.image),
-            view: Arc::clone(&self.view),
+            image: self.image.clone(),
+            view: self.view.clone(),
             wrap_mode,
             filter_mode: filter,
             mip_filter: filter,

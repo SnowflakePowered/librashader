@@ -19,7 +19,6 @@ use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage, UniformStorageAccess};
-use std::sync::Arc;
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BindingResource, BufferBinding, ShaderStages};
 
 pub struct FilterPass {
@@ -45,7 +44,7 @@ impl TextureInput for InputImage {
 
 pub struct WgpuArcBinding<T> {
     binding: u32,
-    resource: Arc<T>,
+    resource: T,
 }
 
 impl BindSemantics<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuffer> for FilterPass {
@@ -72,8 +71,8 @@ impl BindSemantics<NoUniformBinder, Option<()>, WgpuStagedBuffer, WgpuStagedBuff
         texture_binding.insert(
             binding.binding,
             WgpuArcBinding {
-                binding: binding.binding,
-                resource: Arc::clone(&texture.view),
+                binding: binding.binding.clone(),
+                resource: texture.view.clone(),
             },
         );
 
