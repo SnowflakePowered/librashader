@@ -1718,7 +1718,6 @@ version = "0.7.0"
 dependencies = [
  "array-concat",
  "array-init",
- "bitvec",
  "bytemuck",
  "d3d12-descriptor-heap",
  "gfx-maths",
