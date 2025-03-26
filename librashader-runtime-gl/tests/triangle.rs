@@ -3,6 +3,7 @@ mod hello_triangle;
 use librashader_runtime_gl::options::FilterChainOptionsGL;
 use librashader_runtime_gl::FilterChainGL;
 use std::sync::Arc;
+use librashader_common::shader_features::ShaderFeatures;
 
 #[test]
 fn triangle_gl() {
@@ -12,6 +13,7 @@ fn triangle_gl() {
         let mut filter = FilterChainGL::load_from_path(
             // "../test/basic.slangp",
             "../test/shaders_slang/crt/crt-royale.slangp",
+            ShaderFeatures::NONE,
             Arc::clone(&context),
             Some(&FilterChainOptionsGL {
                 glsl_version: 0,
@@ -35,7 +37,9 @@ fn triangle_gl46() {
             // "../test/slang-shaders/test/history.slangp",
             // "../test/basic.slangp",
             // "../test/shaders_slang/crt/crt-royale.slangp",
-            "../test/shaders_slang/crt/crt-royale.slangp",
+            // "../test/shaders_slang/crt/crt-royale.slangp",
+            "../test/shaders_slang/sonkun/slot-mask/flat-screen/1080p/test.slangp",
+            ShaderFeatures::NONE,
             Arc::clone(&context),
             Some(&FilterChainOptionsGL {
                 glsl_version: 330,

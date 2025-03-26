@@ -12,7 +12,7 @@ fn triangle_vk() {
 
     unsafe {
         let filter = FilterChainVulkan::load_from_path(
-            "../test/aspect.slangp",
+            "../test/shaders_slang/sonkun/slot-mask/curved-screen/1080p/01-1080p-crt-guest-advanced-hd-slot-mask-u-normal-rf.slangp",
             ShaderFeatures::all(),
             // "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
             // "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",

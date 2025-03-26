@@ -236,6 +236,7 @@ pub mod d3d12_hello_triangle {
     use std::mem::ManuallyDrop;
     use std::ops::Deref;
     use std::path::Path;
+    use librashader_common::shader_features::ShaderFeatures;
 
     const FRAME_COUNT: u32 = 2;
 
@@ -293,6 +294,7 @@ pub mod d3d12_hello_triangle {
             let filter = unsafe {
                 FilterChainD3D12::load_from_path(
                     filter,
+                    ShaderFeatures::NONE,
                     &device,
                     Some(
                         &librashader_runtime_d3d12::options::FilterChainOptionsD3D12 {

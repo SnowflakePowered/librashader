@@ -131,7 +131,7 @@ impl<'a> State<'a> {
         // .unwrap();
 
         let preset = ShaderPreset::try_parse(
-            "../test/shaders_slang/crt/crt-royale.slangp",
+            "../test/shaders_slang/sonkun/slot-mask/curved-screen/1080p/01-1080p-crt-guest-advanced-hd-slot-mask-u-normal-rf.slangp",
             ShaderFeatures::NONE,
         )
         .unwrap();
@@ -290,15 +290,15 @@ impl<'a> State<'a> {
             .frame(
                 &render_output,
                 &Viewport {
-                    x: 100.0,
-                    y: 100.0,
+                    x: 0.0,
+                    y: 0.0,
                     mvp: None,
                     output: librashader_runtime_wgpu::WgpuOutputView::new_from_raw(
                         &filter_view,
                         filter_output.size().into(),
                         filter_output.format(),
                     ),
-                    size: (Size::from(filter_output.size())) - 200,
+                    size: (Size::from(filter_output.size())),
                 },
                 &mut encoder,
                 self.frame_count,
