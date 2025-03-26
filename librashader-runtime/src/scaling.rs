@@ -14,8 +14,15 @@ where
     f32: AsPrimitive<T>,
 {
     /// Produce a `Size<T>` scaled with the input scaling options.
-    /// The size will at minimum be 1x1, and at a maximum 16384x16384.
-    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>, original: Size<T>) -> Size<T>;
+    /// The size will at minimum be 1x1, and at a maximum of the specified clamp
+    /// value, or 16384x16384 if the clamp value is not specified.
+    fn scale_viewport(
+        self,
+        scaling: Scale2D,
+        viewport: Size<T>,
+        original: Size<T>,
+        clamp: Option<T>,
+    ) -> Size<T>;
 }
 
 impl<T> ViewportSize<T> for Size<T>
@@ -23,12 +30,18 @@ where
     T: Mul<ScaleFactor, Output = f32> + Copy + Ord + 'static,
     f32: AsPrimitive<T>,
 {
-    fn scale_viewport(self, scaling: Scale2D, viewport: Size<T>, original: Size<T>) -> Size<T>
+    fn scale_viewport(
+        self,
+        scaling: Scale2D,
+        viewport: Size<T>,
+        original: Size<T>,
+        clamp: Option<T>,
+    ) -> Size<T>
     where
         T: Mul<ScaleFactor, Output = f32> + Copy + Ord + 'static,
         f32: AsPrimitive<T>,
     {
-        scaling::scale(scaling, self, viewport, original)
+        scaling::scale(scaling, self, viewport, original, clamp)
     }
 }
 
@@ -61,7 +74,13 @@ impl MipmapSize<u32> for Size<u32> {
     }
 }
 
-fn scale<T>(scaling: Scale2D, source: Size<T>, viewport: Size<T>, original: Size<T>) -> Size<T>
+fn scale<T>(
+    scaling: Scale2D,
+    source: Size<T>,
+    viewport: Size<T>,
+    original: Size<T>,
+    clamp: Option<T>,
+) -> Size<T>
 where
     T: Mul<ScaleFactor, Output = f32> + Copy + Ord + 'static,
     f32: AsPrimitive<T>,
@@ -107,11 +126,11 @@ where
     Size {
         width: std::cmp::min(
             std::cmp::max(width.round().as_(), 1f32.as_()),
-            MAX_TEXEL_SIZE.as_(),
+            clamp.unwrap_or(MAX_TEXEL_SIZE.as_()),
         ),
         height: std::cmp::min(
             std::cmp::max(height.round().as_(), 1f32.as_()),
-            MAX_TEXEL_SIZE.as_(),
+            clamp.unwrap_or(MAX_TEXEL_SIZE.as_()),
         ),
     }
 }

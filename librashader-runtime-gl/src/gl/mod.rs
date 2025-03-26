@@ -118,7 +118,7 @@ pub(crate) trait FramebufferInterface {
             return Ok(fb.size);
         }
 
-        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size, None);
 
         if fb.size != size
             || (mipmap && fb.max_levels == 1)

@@ -124,7 +124,7 @@ impl D3D9Texture {
         original_size: &Size<u32>,
         should_mipmap: bool,
     ) -> error::Result<Size<u32>> {
-        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size, None);
 
         if self.size()? != size || should_mipmap != self.mipmap {
             self.mipmap = should_mipmap;
