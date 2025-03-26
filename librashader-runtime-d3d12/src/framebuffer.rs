@@ -323,7 +323,7 @@ impl OwnedImage {
         original_size: &Size<u32>,
         mipmap: bool,
     ) -> error::Result<Size<u32>> {
-        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size, None);
         let format = Self::get_format_support(&self.device, format.into(), mipmap);
 
         if self.size != size

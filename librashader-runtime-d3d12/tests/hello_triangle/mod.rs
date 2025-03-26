@@ -231,12 +231,12 @@ pub mod d3d12_hello_triangle {
     use super::*;
     use crate::hello_triangle::descriptor_heap::CpuStagingHeap;
     use d3d12_descriptor_heap::D3D12DescriptorHeap;
+    use librashader_common::shader_features::ShaderFeatures;
     use librashader_common::{Size, Viewport};
     use librashader_runtime_d3d12::{D3D12InputImage, D3D12OutputView, FilterChainD3D12};
     use std::mem::ManuallyDrop;
     use std::ops::Deref;
     use std::path::Path;
-    use librashader_common::shader_features::ShaderFeatures;
 
     const FRAME_COUNT: u32 = 2;
 

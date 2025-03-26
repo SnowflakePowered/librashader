@@ -71,7 +71,7 @@ impl OwnedImage {
         original_size: &Size<u32>,
         should_mipmap: bool,
     ) -> error::Result<Size<u32>> {
-        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size, None);
 
         if self.size != size
             || (should_mipmap && self.max_mipmap == 1)

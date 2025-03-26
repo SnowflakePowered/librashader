@@ -1,9 +1,9 @@
 mod hello_triangle;
 
+use librashader_common::shader_features::ShaderFeatures;
 use librashader_runtime_gl::options::FilterChainOptionsGL;
 use librashader_runtime_gl::FilterChainGL;
 use std::sync::Arc;
-use librashader_common::shader_features::ShaderFeatures;
 
 #[test]
 fn triangle_gl() {

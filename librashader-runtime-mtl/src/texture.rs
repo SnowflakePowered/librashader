@@ -99,7 +99,7 @@ impl OwnedTexture {
         original_size: &Size<u32>,
         mipmap: bool,
     ) -> Result<Size<u32>> {
-        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size);
+        let size = source_size.scale_viewport(scaling, *viewport_size, *original_size, None);
 
         if self.size != size
             || (mipmap && self.max_miplevels == 1)
