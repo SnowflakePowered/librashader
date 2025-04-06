@@ -261,6 +261,8 @@ impl FilterPass {
                 right: output.size.width as i32,
                 bottom: output.size.height as i32,
             }]));
+            const CLEAR_COLOR: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
+            ctx.ClearRenderTargetView(output.output, &CLEAR_COLOR);
         }
 
         parent.draw_quad.draw_quad(ctx, vbo_type);
