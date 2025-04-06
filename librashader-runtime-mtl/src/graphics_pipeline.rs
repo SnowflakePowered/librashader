@@ -12,7 +12,7 @@ use objc2_metal::{
     MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor,
     MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreAction,
     MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor,
-    MTLVertexFormat, MTLVertexStepFunction, MTLViewport,
+    MTLVertexFormat, MTLVertexStepFunction, MTLViewport, MTLClearColor,
 };
 
 use librashader_common::map::FastHashMap;
@@ -193,7 +193,13 @@ impl MetalGraphicsPipeline {
 
             let descriptor = MTLRenderPassDescriptor::new();
             let ca = descriptor.colorAttachments().objectAtIndexedSubscript(0);
-            ca.setLoadAction(MTLLoadAction::DontCare);
+            ca.setLoadAction(MTLLoadAction::Clear);
+            ca.setClearColor(MTLClearColor {
+                red: 0.0,
+                green: 0.0,
+                blue: 0.0,
+                alpha: 0.0
+            });
             ca.setStoreAction(MTLStoreAction::Store);
             ca.setTexture(Some(output.output));
 
