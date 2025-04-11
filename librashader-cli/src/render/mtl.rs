@@ -160,7 +160,7 @@ impl Metal {
         let image: Image<BGRA8> = Image::load(image_path, UVDirection::TopLeft)?;
 
         unsafe {
-            let device = Retained::from_raw(MTLCreateSystemDefaultDevice())
+            let device = MTLCreateSystemDefaultDevice()
                 .ok_or_else(|| anyhow!("Unable to create default Metal device"))?;
 
             let texture_descriptor =

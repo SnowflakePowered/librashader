@@ -51,7 +51,6 @@ features = [
 [target.'cfg(target_vendor="apple")'.dependencies.objc2]
 optional = true
 workspace = true
-features = ["apple"]
 
 
 [target.'cfg(target_vendor="apple")'.dependencies.objc2-metal]

@@ -40,7 +40,7 @@ optional = true
 
 [target.'cfg(target_vendor="apple")'.dependencies]
 objc2-metal = { workspace = true, optional = true}
-objc2 = { workspace = true, features = ["apple"] , optional = true }
+objc2 = { workspace = true, optional = true }
 
 [features]
 # core features and definitions

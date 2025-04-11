@@ -25,9 +25,9 @@ impl MetalBuffer {
         label: &str,
     ) -> error::Result<Self> {
         let storage_mode = if cfg!(all(target_arch = "aarch64", target_vendor = "apple")) {
-            MTLResourceOptions::MTLResourceStorageModeShared
+            MTLResourceOptions::StorageModeShared
         } else {
-            MTLResourceOptions::MTLResourceStorageModeManaged
+            MTLResourceOptions::StorageModeManaged
         };
 
         // Can't create buffer of size 0.
@@ -50,7 +50,7 @@ impl MetalBuffer {
 
     pub fn flush(&self) {
         // We don't know what was actually written to so...
-        if self.storage_mode == MTLResourceOptions::MTLResourceStorageModeManaged {
+        if self.storage_mode == MTLResourceOptions::StorageModeManaged {
             self.buffer.didModifyRange(NSRange {
                 location: 0,
                 length: self.size,

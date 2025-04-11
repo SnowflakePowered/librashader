@@ -35,17 +35,17 @@ harness = false
 targets = ["x86_64-apple-darwin", "aarch64-apple-darwin", "aarch64-apple-ios"]
 
 [target.'cfg(target_vendor="apple")'.dependencies]
-objc2-foundation = { version = "0.2", features = ["NSError"] }
-objc2-metal = { workspace = true, features = ["all"] }
-objc2 = { workspace = true, features = ["apple"] }
+objc2-foundation = { version = "0.3", features = ["NSError"] }
+objc2-metal = { workspace = true }
+objc2 = { workspace = true }
 
 [features]
 stable = ["librashader-reflect/stable"]
 
 [target.'cfg(target_vendor="apple")'.dev-dependencies]
-objc2-metal-kit = { version = "0.2", features = ["all"]}
-objc2-foundation = { version = "0.2", features = ["all"] }
-objc2-app-kit = { version = "0.2", features = ["all"] }
-objc2-quartz-core = { version = "0.2", features = ["CAMetalLayer", "objc2-metal"]}
+objc2-metal-kit = { version = "0.3" }
+objc2-foundation = { version = "0.3" }
+objc2-app-kit = { version = "0.3" }
+objc2-quartz-core = { version = "0.3", features = ["CAMetalLayer", "objc2-metal"]}
 #[lib]
 #crate-type = ["lib", "staticlib"]
