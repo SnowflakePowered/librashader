@@ -10,8 +10,8 @@ use std::path::Path;
 use std::sync::Arc;
 use wgpu::{Adapter, Device, Instance, Queue, TexelCopyBufferInfo, Texture};
 use wgpu_types::{
-    BufferAddress, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Maintain,
-    TexelCopyBufferLayout, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+    BufferAddress, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, TexelCopyBufferLayout,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
 };
 
 use librashader::presets::ShaderPreset;
@@ -143,7 +143,8 @@ impl RenderTest for Wgpu {
         );
 
         let si = self.queue.submit([cmd.finish()]);
-        self.device.poll(Maintain::WaitForSubmissionIndex(si));
+        self.device
+            .poll(wgpu::PollType::WaitForSubmissionIndex(si))?;
 
         let capturable = Arc::clone(&output_buf);
 
@@ -170,7 +171,7 @@ impl RenderTest for Wgpu {
                 capturable.unmap();
             });
 
-        self.device.poll(Maintain::Wait);
+        self.device.poll(wgpu::PollType::Wait)?;
 
         if pixels.lock().len() == 0 {
             return Err(anyhow!("failed to copy pixels from buffer"));
@@ -197,22 +198,19 @@ impl Wgpu {
                     compatible_surface: None,
                     force_fallback_adapter: false,
                 })
-                .await
-                .ok_or(anyhow!("Couldn't request WGPU adapter"))?;
+                .await?;
 
             let (device, queue) = adapter
-                .request_device(
-                    &wgpu::DeviceDescriptor {
-                        required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
-                            | wgpu::Features::PIPELINE_CACHE
-                            | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
-                            | wgpu::Features::FLOAT32_FILTERABLE,
-                        required_limits: wgpu::Limits::default(),
-                        label: None,
-                        memory_hints: Default::default(),
-                    },
-                    None,
-                )
+                .request_device(&wgpu::DeviceDescriptor {
+                    required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
+                        | wgpu::Features::PIPELINE_CACHE
+                        | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+                        | wgpu::Features::FLOAT32_FILTERABLE,
+                    required_limits: wgpu::Limits::default(),
+                    label: None,
+                    memory_hints: Default::default(),
+                    ..Default::default()
+                })
                 .await?;
             let (image, texture) = Self::load_image(&device, &queue, image)?;
 
@@ -221,7 +219,7 @@ impl Wgpu {
                 _adapter: adapter,
                 device: Arc::new(device),
                 queue: Arc::new(queue),
-                image: image,
+                image,
                 texture: Arc::new(texture),
             })
         })
@@ -258,7 +256,7 @@ impl Wgpu {
 
         let si = queue.submit([]);
 
-        device.poll(Maintain::WaitForSubmissionIndex(si));
+        device.poll(wgpu::PollType::WaitForSubmissionIndex(si))?;
 
         Ok((image, texture))
     }
