@@ -73,7 +73,7 @@ impl FilterPass {
         output: &RenderTarget<ProtocolObject<dyn MTLTexture>>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
-        let cmd = self.graphics_pipeline.begin_rendering(output, &cmd)?;
+        let cmd = self.graphics_pipeline.begin_rendering(output, &cmd, viewport.size)?;
 
         self.build_semantics(
             pass_index,

@@ -18,6 +18,7 @@ use objc2_metal::{
 use librashader_common::map::FastHashMap;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use librashader_common::Size;
 
 /// This is only really plausible for SPIRV-Cross, for Naga we need to supply the next plausible binding.
 pub const VERTEX_BUFFER_INDEX: usize = 4;
@@ -181,6 +182,7 @@ impl MetalGraphicsPipeline {
         &self,
         output: &RenderTarget<ProtocolObject<dyn MTLTexture>>,
         buffer: &ProtocolObject<dyn MTLCommandBuffer>,
+        viewport_size: Size<u32>
     ) -> Result<Retained<ProtocolObject<dyn MTLRenderCommandEncoder>>> {
         unsafe {
             let Some(pipeline) = self
@@ -207,8 +209,8 @@ impl MetalGraphicsPipeline {
             rpass.setScissorRect(MTLScissorRect {
                 x: output.x as usize,
                 y: output.y as usize,
-                width: output.size.width as usize,
-                height: output.size.height as usize,
+                width: output.size.width.max(viewport_size.width) as usize,
+                height: output.size.height.max(viewport_size.height) as usize,
             });
 
             rpass.setViewport(MTLViewport {
