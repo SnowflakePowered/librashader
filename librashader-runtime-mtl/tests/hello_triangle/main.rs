@@ -1,4 +1,5 @@
 use core::{cell::OnceCell, ptr::NonNull};
+use librashader_presets::ShaderFeatures;
 use std::sync::RwLock;
 
 use objc2_app_kit::{
@@ -24,9 +25,10 @@ use objc2_metal_kit::{MTKView, MTKViewDelegate};
 use librashader_common::Viewport;
 use librashader_presets::ShaderPreset;
 use librashader_runtime_mtl::FilterChainMetal;
+use objc2::__framework_prelude::Retained;
 use objc2::{
-    declare_class, msg_send_id, mutability::MainThreadOnly, rc::Id, runtime::ProtocolObject,
-    ClassType, DeclaredClass,
+    declare_class, define_class, msg_send, msg_send_id, rc::Id, runtime::ProtocolObject, ClassType,
+    DeclaredClass, MainThreadOnly,
 };
 
 #[rustfmt::skip]
@@ -122,36 +124,30 @@ macro_rules! idcell {
 
 // declare the desired instance variables
 struct Ivars {
-    start_date: Id<NSDate>,
-    command_queue: OnceCell<Id<ProtocolObject<dyn MTLCommandQueue>>>,
-    pipeline_state: OnceCell<Id<ProtocolObject<dyn MTLRenderPipelineState>>>,
+    start_date: Retained<NSDate>,
+    command_queue: OnceCell<Retained<ProtocolObject<dyn MTLCommandQueue>>>,
+    pipeline_state: OnceCell<Retained<ProtocolObject<dyn MTLRenderPipelineState>>>,
     filter_chain: OnceCell<RwLock<FilterChainMetal>>,
-    window: OnceCell<Id<NSWindow>>,
+    window: OnceCell<Retained<NSWindow>>,
 }
 
 // declare the Objective-C class machinery
-declare_class!(
-    struct Delegate;
-
+define_class!(
     // SAFETY:
     // - The superclass NSObject does not have any subclassing requirements.
     // - Main thread only mutability is correct, since this is an application delegate.
     // - `Delegate` does not implement `Drop`.
-    unsafe impl ClassType for Delegate {
-        type Super = NSObject;
-        type Mutability = MainThreadOnly;
-        const NAME: &'static str = "Delegate";
-    }
-
-    impl DeclaredClass for Delegate {
-        type Ivars = Ivars;
-    }
+    #[unsafe(super = NSObject)]
+    #[name = "Delegate"]
+    #[thread_kind = MainThreadOnly]
+    #[ivars = Ivars]
+    struct Delegate;
 
     unsafe impl NSObjectProtocol for Delegate {}
 
     // define the delegate methods for the `NSApplicationDelegate` protocol
     unsafe impl NSApplicationDelegate for Delegate {
-        #[method(applicationDidFinishLaunching:)]
+        #[unsafe(method(applicationDidFinishLaunching:))]
         #[allow(non_snake_case)]
         unsafe fn applicationDidFinishLaunching(&self, _notification: &NSNotification) {
             let mtm = MainThreadMarker::from(self);
@@ -161,7 +157,7 @@ declare_class!(
                 let style = NSWindowStyleMask::Closable
                     | NSWindowStyleMask::Resizable
                     | NSWindowStyleMask::Titled;
-                let backing_store_type = NSBackingStoreType::NSBackingStoreBuffered;
+                let backing_store_type = NSBackingStoreType::Buffered;
                 let flag = false;
                 unsafe {
                     NSWindow::initWithContentRect_styleMask_backing_defer(
@@ -175,10 +171,8 @@ declare_class!(
             };
 
             // get the default device
-            let device = {
-                let ptr = unsafe { MTLCreateSystemDefaultDevice() };
-                unsafe { Id::retain(ptr) }.expect("Failed to get default system device.")
-            };
+            let device =
+                { MTLCreateSystemDefaultDevice().expect("Failed to get system default device.") };
 
             // create the command queue
             let command_queue = device
@@ -219,15 +213,14 @@ declare_class!(
                 .newRenderPipelineStateWithDescriptor_error(&pipeline_descriptor)
                 .expect("Failed to create a pipeline state.");
 
-           let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/test/feedback.slangp").unwrap();
+            let preset = ShaderPreset::try_parse(
+                "../test/shaders_slang/anti-aliasing/smaa.slangp",
+                ShaderFeatures::empty(),
+            )
+            .unwrap();
 
-        let filter_chain = FilterChainMetal::load_from_preset(
-            preset,
-            &command_queue,
-            None,
-        )
-        .unwrap();
+            let filter_chain =
+                FilterChainMetal::load_from_preset(preset, &command_queue, None).unwrap();
 
             let filter_chain = RwLock::new(filter_chain);
 
@@ -253,7 +246,7 @@ declare_class!(
 
     // define the delegate methods for the `MTKViewDelegate` protocol
     unsafe impl MTKViewDelegate for Delegate {
-        #[method(drawInMTKView:)]
+        #[unsafe(method(drawInMTKView:))]
         #[allow(non_snake_case)]
         unsafe fn drawInMTKView(&self, mtk_view: &MTKView) {
             idcell!(command_queue <= self);
@@ -263,17 +256,17 @@ declare_class!(
             unsafe {
                 mtk_view.setFramebufferOnly(false);
                 mtk_view.setClearColor(MTLClearColor {
-                            red: 0.3,
-                            blue: 0.5,
-                            green: 0.3,
-                            alpha: 0.0,
-                    });
+                    red: 0.3,
+                    blue: 0.5,
+                    green: 0.3,
+                    alpha: 0.0,
+                });
             }
 
             // FIXME: icrate `MTKView` doesn't have a generated binding for `currentDrawable` yet
             // (because it needs a definition of `CAMetalDrawable`, which we don't support yet) so
             // we have to use a raw `msg_send_id` call here instead.
-            let current_drawable: Option<Id<ProtocolObject<dyn MTLDrawable>>> =
+            let current_drawable: Option<Retained<ProtocolObject<dyn MTLDrawable>>> =
                 msg_send_id![mtk_view, currentDrawable];
 
             // prepare for drawing
@@ -355,14 +348,12 @@ declare_class!(
                 )
             };
 
-
             // configure the encoder with the pipeline and draw the triangle
             encoder.setRenderPipelineState(pipeline_state);
             unsafe {
                 encoder.drawPrimitives_vertexStart_vertexCount(MTLPrimitiveType::Triangle, 0, 3)
             };
             encoder.endEncoding();
-
 
             unsafe {
                 let mut filter_chain = filter_chain.write().unwrap();
@@ -372,12 +363,13 @@ declare_class!(
                     .texture()
                     .unwrap();
 
- let tex_desc = MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
-                    texture.pixelFormat(),
-                    texture.width(),
-                    texture.height(),
-                    false
-                );
+                let tex_desc =
+                    MTLTextureDescriptor::texture2DDescriptorWithPixelFormat_width_height_mipmapped(
+                        texture.pixelFormat(),
+                        texture.width(),
+                        texture.height(),
+                        false,
+                    );
 
                 tex_desc.setUsage(MTLTextureUsage::RenderTarget);
                 //  let frontbuffer = command_queue
@@ -386,9 +378,9 @@ declare_class!(
                 // .unwrap();
 
                 let backbuffer = command_queue
-                .device()
-                .newTextureWithDescriptor(&tex_desc)
-                .unwrap();
+                    .device()
+                    .newTextureWithDescriptor(&tex_desc)
+                    .unwrap();
 
                 //   let blit = command_buffer
                 // .blitCommandEncoder()
@@ -396,24 +388,28 @@ declare_class!(
                 // blit.copyFromTexture_toTexture(&texture, &frontbuffer);
                 // blit.endEncoding();
 
-                filter_chain.frame(&texture,
-                    &Viewport::new_render_target_sized_origin(backbuffer.as_ref(), None).expect("viewport"), &command_buffer, 1, None)
-                .expect("frame");
+                filter_chain
+                    .frame(
+                        &texture,
+                        &Viewport::new_render_target_sized_origin(backbuffer.as_ref(), None)
+                            .expect("viewport"),
+                        &command_buffer,
+                        1,
+                        None,
+                    )
+                    .expect("frame");
 
-                let blit = command_buffer
-                .blitCommandEncoder()
-                .unwrap();
+                let blit = command_buffer.blitCommandEncoder().unwrap();
                 blit.copyFromTexture_toTexture(&backbuffer, &texture);
                 blit.endEncoding();
             }
-
 
             // schedule the command buffer for display and commit
             command_buffer.presentDrawable(&current_drawable);
             command_buffer.commit();
         }
 
-        #[method(mtkView:drawableSizeWillChange:)]
+        #[unsafe(method(mtkView:drawableSizeWillChange:))]
         #[allow(non_snake_case)]
         unsafe fn mtkView_drawableSizeWillChange(&self, _view: &MTKView, _size: NSSize) {
             // println!("mtkView_drawableSizeWillChange");
@@ -422,7 +418,7 @@ declare_class!(
 );
 
 impl Delegate {
-    pub fn new(mtm: MainThreadMarker) -> Id<Self> {
+    pub fn new(mtm: MainThreadMarker) -> Retained<Self> {
         let this = mtm.alloc();
         let this = this.set_ivars(Ivars {
             start_date: unsafe { NSDate::now() },
@@ -431,7 +427,7 @@ impl Delegate {
             filter_chain: OnceCell::default(),
             window: OnceCell::default(),
         });
-        unsafe { msg_send_id![super(this), init] }
+        unsafe { msg_send![super(this), init] }
     }
 }
 

@@ -66,9 +66,9 @@ impl DrawQuad {
                     NonNull::new_unchecked(vbo_data.as_ptr() as *mut c_void),
                     vbo_data.len(),
                     if cfg!(target_os = "ios") {
-                        MTLResourceOptions::MTLResourceStorageModeShared
+                        MTLResourceOptions::StorageModeShared
                     } else {
-                        MTLResourceOptions::MTLResourceStorageModeManaged
+                        MTLResourceOptions::StorageModeManaged
                     },
                 )
                 .ok_or(FilterChainError::BufferError)?
