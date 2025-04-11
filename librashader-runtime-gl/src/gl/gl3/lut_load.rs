@@ -58,7 +58,7 @@ impl LoadLut for Gl3LutLoad {
                     image.size.height as i32,
                     glow::RGBA,
                     glow::UNSIGNED_BYTE,
-                    PixelUnpackData::Slice(&image.bytes),
+                    PixelUnpackData::Slice(Some(&image.bytes)),
                 );
 
                 let mipmap = levels > 1;
