@@ -18,7 +18,7 @@ platform-dirs = "0.3.0"
 blake3 = { version = "1.5.4" }
 thiserror = "2"
 bincode = { version = "2.0.0-rc.2", features = ["serde"] }
-persy = "1.4.7"
+persy = "1.6.0"
 
 bytemuck = "1.13.0"
 
