@@ -417,6 +417,8 @@ impl FilterChainVulkan {
         V: TryInto<VulkanObjects, Error = E>,
         FilterChainError: From<E>,
     {
+        let config = RuntimeParameters::new(&preset);
+
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
 
@@ -469,7 +471,7 @@ impl FilterChainVulkan {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 draw_quad: DrawQuad::new(&device.device, &device.alloc)?,
                 device: device.device.clone(),
                 output_textures,

@@ -171,6 +171,8 @@ impl FilterChainWgpu {
         cmd: &mut wgpu::CommandEncoder,
         options: Option<&FilterChainOptionsWgpu>,
     ) -> error::Result<FilterChainWgpu> {
+        let config = RuntimeParameters::new(&preset);
+
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures)?;
 
         // cache is opt-in for wgpu, not opt-out because of feature requirements.
@@ -229,7 +231,7 @@ impl FilterChainWgpu {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 draw_quad,
                 device: device.clone(),
                 queue: queue.clone(),

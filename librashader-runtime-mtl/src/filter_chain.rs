@@ -318,6 +318,7 @@ impl FilterChainMetal {
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
+        let config = RuntimeParameters::new(&preset);
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures)?;
 
         let filters = Self::init_passes(&device, passes, &semantics)?;
@@ -355,7 +356,7 @@ impl FilterChainMetal {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 draw_quad,
                 device,
                 output_textures,

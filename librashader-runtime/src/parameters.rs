@@ -1,6 +1,7 @@
 use arc_swap::ArcSwap;
 use librashader_common::map::{FastHashMap, ShortString};
-use librashader_presets::ParameterMeta;
+use librashader_pack::{PassResource, ShaderPresetPack};
+use librashader_presets::{ParameterMeta, PassMeta};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -22,15 +23,25 @@ pub struct RuntimeParameters {
 impl RuntimeParameters {
     /// Create a new instance of runtime parameters from a `Vec` of
     /// shader parameters from a [`ShaderPreset`](librashader_presets::ShaderPreset).
-    pub fn new(passes_enabled: usize, parameters: Vec<ParameterMeta>) -> Self {
+    pub fn new(pack: &ShaderPresetPack) -> Self {
+        let pass_count = pack.pass_count as usize;
+        let preset_params = &pack.parameters;
+        let mut map = FastHashMap::default();
+        map.reserve(preset_params.len());
+
+        for &ParameterMeta { ref name, value } in preset_params {
+            map.insert(name.clone(), value);
+        }
+
+        for pass in &pack.passes {
+            for (name, param) in &pass.data.parameters {
+                map.insert(name.clone(), param.initial);
+            }
+        }
+
         RuntimeParameters {
-            passes_enabled: AtomicUsize::new(passes_enabled),
-            parameters: ArcSwap::new(Arc::new(
-                parameters
-                    .into_iter()
-                    .map(|param| (param.name, param.value))
-                    .collect(),
-            )),
+            passes_enabled: AtomicUsize::new(pass_count),
+            parameters: ArcSwap::new(Arc::new(map)),
         }
     }
 
@@ -54,6 +65,9 @@ impl RuntimeParameters {
 
             Some(old)
         } else {
+            updated_map.insert(ShortString::from(name), new_value);
+            self.parameters.store(Arc::new(updated_map));
+
             None
         }
     }
