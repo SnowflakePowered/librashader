@@ -339,6 +339,8 @@ impl FilterChainD3D12 {
         cmd: &ID3D12GraphicsCommandList,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
+        let config = RuntimeParameters::new(&preset);
+
         let shader_count = preset.passes.len();
         let lut_count = preset.textures.len();
 
@@ -440,7 +442,7 @@ impl FilterChainD3D12 {
                 mipmap_gen,
                 root_signature,
                 draw_quad,
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 history_textures,
             },
             staging_heap,

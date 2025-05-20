@@ -237,6 +237,8 @@ impl FilterChainD3D9 {
         device: &IDirect3DDevice9,
         options: Option<&FilterChainOptionsD3D9>,
     ) -> error::Result<FilterChainD3D9> {
+        let config = RuntimeParameters::new(&preset);
+
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
@@ -278,7 +280,7 @@ impl FilterChainD3D9 {
             history_framebuffers,
             common: FilterCommon {
                 d3d9: device.clone(),
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,

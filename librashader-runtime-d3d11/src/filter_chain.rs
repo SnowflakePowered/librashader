@@ -196,6 +196,8 @@ impl FilterChainD3D11 {
     ) -> error::Result<FilterChainD3D11> {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
 
+        let config = RuntimeParameters::new(&preset);
+
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
 
         let samplers = SamplerSet::new(device)?;
@@ -240,7 +242,7 @@ impl FilterChainD3D11 {
                     _device: device.clone(),
                     immediate_context,
                 },
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,

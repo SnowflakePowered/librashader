@@ -140,6 +140,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         context: Arc<glow::Context>,
         options: Option<&FilterChainOptionsGL>,
     ) -> error::Result<Self> {
+        let config = RuntimeParameters::new(&preset);
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
         let version = options.map_or_else(
@@ -198,7 +199,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             history_framebuffers,
             draw_quad,
             common: FilterCommon {
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
                 luts,
                 samplers,

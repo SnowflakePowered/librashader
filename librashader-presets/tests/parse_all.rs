@@ -34,3 +34,18 @@ fn parses_wildcard() {
     ShaderPreset::try_parse_with_context(path, ShaderFeatures::empty(), context)
         .expect(&format!("Failed to parse {}", path));
 }
+
+#[test]
+fn newpixie_params() {
+    let path = "../test/shaders_slang/crt/newpixie-crt.slangp";
+    let mut context = WildcardContext::new();
+
+    context.add_video_driver_defaults(VideoDriver::Vulkan);
+
+    context.append_item(ContextItem::CoreName(String::from("image display")));
+
+    let parsed = ShaderPreset::try_parse_with_context(path, ShaderFeatures::empty(), context)
+        .expect(&format!("Failed to parse {}", path));
+
+    println!("{:?}", parsed.parameters)
+}
