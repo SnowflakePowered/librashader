@@ -1,5 +1,7 @@
+use std::panic::RefUnwindSafe;
+
 /// Trait for objects that can be used as part of a key for a cached object.
-pub trait CacheKey {
+pub trait CacheKey: RefUnwindSafe {
     /// Get a byte representation of the object that
     /// will be fed into the hash.
     fn hash_bytes(&self) -> &[u8];
