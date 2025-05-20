@@ -1551,7 +1551,7 @@ dependencies = [
  "encoding_rs",
  "glob",
  "librashader-common",
- "nom 7.1.3",
+ "nom 8.0.0",
  "rayon",
  "serde",
  "thiserror 2.0.12",
