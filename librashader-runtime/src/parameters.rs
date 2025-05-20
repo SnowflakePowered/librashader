@@ -1,7 +1,7 @@
 use arc_swap::ArcSwap;
 use librashader_common::map::{FastHashMap, ShortString};
-use librashader_pack::{PassResource, ShaderPresetPack};
-use librashader_presets::{ParameterMeta, PassMeta};
+use librashader_pack::ShaderPresetPack;
+use librashader_presets::ParameterMeta;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -29,13 +29,16 @@ impl RuntimeParameters {
         let mut map = FastHashMap::default();
         map.reserve(preset_params.len());
 
-        for &ParameterMeta { ref name, value } in preset_params {
-            map.insert(name.clone(), value);
-        }
-
         for pass in &pack.passes {
             for (name, param) in &pass.data.parameters {
                 map.insert(name.clone(), param.initial);
+            }
+        }
+
+        // slangp takes precedence
+        for &ParameterMeta { ref name, value } in preset_params {
+            if let Some(entry) = map.get_mut(name) {
+                *entry = value;
             }
         }
 
