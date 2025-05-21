@@ -36,11 +36,9 @@ rayon = { version = "1.10.0"}
 
 
 [workspace.dependencies.image]
-version = "0.25.2"
+version = "0.25.6"
 features = [
-    "gif", "jpeg", "png",
-    "tga", "pnm", "tiff",
-    "webp", "bmp", "dds",
+    "tga", "jpeg", "png", "bmp",
 ]
 default-features = false
 
