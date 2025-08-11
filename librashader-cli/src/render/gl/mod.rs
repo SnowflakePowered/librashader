@@ -185,7 +185,7 @@ impl OpenGl {
                 image.size.height as i32,
                 glow::RGBA,
                 glow::UNSIGNED_BYTE,
-                PixelUnpackData::Slice(&image.bytes),
+                PixelUnpackData::Slice(Some(&image.bytes)),
             );
 
             context.gl.bind_texture(glow::TEXTURE_2D, None);
@@ -254,7 +254,7 @@ impl OpenGl {
                 0,
                 glow::RGBA,
                 glow::UNSIGNED_BYTE,
-                PixelPackData::Slice(&mut data),
+                PixelPackData::Slice(Some(&mut data)),
             )
         }
         Ok(

@@ -27,7 +27,7 @@ use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use librashader_runtime::uniforms::UniformStorage;
-use objc2::rc::Id;
+use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::{
@@ -103,7 +103,7 @@ pub(crate) struct FilterCommon {
     pub samplers: SamplerSet,
     pub config: RuntimeParameters,
     pub(crate) draw_quad: DrawQuad,
-    device: Id<ProtocolObject<dyn MTLDevice>>,
+    device: Retained<ProtocolObject<dyn MTLDevice>>,
 }
 
 impl FilterChainMetal {
@@ -174,7 +174,7 @@ impl FilterChainMetal {
     }
 
     fn init_passes(
-        device: &Id<ProtocolObject<dyn MTLDevice>>,
+        device: &Retained<ProtocolObject<dyn MTLDevice>>,
         passes: Vec<ShaderPassMeta>,
         semantics: &ShaderSemantics,
     ) -> error::Result<Box<[FilterPass]>> {
@@ -314,10 +314,11 @@ impl FilterChainMetal {
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
     fn load_from_pack_deferred_internal(
         preset: ShaderPresetPack,
-        device: Id<ProtocolObject<dyn MTLDevice>>,
+        device: Retained<ProtocolObject<dyn MTLDevice>>,
         cmd: &ProtocolObject<dyn MTLCommandBuffer>,
         options: Option<&FilterChainOptionsMetal>,
     ) -> error::Result<FilterChainMetal> {
+        let config = RuntimeParameters::new(&preset);
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures)?;
 
         let filters = Self::init_passes(&device, passes, &semantics)?;
@@ -355,7 +356,7 @@ impl FilterChainMetal {
             common: FilterCommon {
                 luts,
                 samplers,
-                config: RuntimeParameters::new(preset.pass_count as usize, preset.parameters),
+                config,
                 draw_quad,
                 device,
                 output_textures,

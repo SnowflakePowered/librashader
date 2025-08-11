@@ -1,6 +1,7 @@
 use crate::{PreprocessError, ShaderParameter};
 use librashader_common::ImageFormat;
 use nom::bytes::complete::{is_not, tag, take_while};
+use nom::Parser;
 
 use librashader_common::map::ShortString;
 use nom::character::complete::{multispace0, multispace1};
@@ -22,7 +23,7 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
         let (input, _) = tag("#pragma parameter ")(input)?;
         let (input, name) = take_while(|c| c != ' ' && c != '\t')(input)?;
         let (input, _) = multispace1(input)?;
-        let (input, description) = delimited(tag("\""), is_not("\""), tag("\""))(input)?;
+        let (input, description) = delimited(tag("\""), is_not("\""), tag("\"")).parse(input)?;
         let (input, _) = multispace1(input)?;
         Ok((input, (name, description)))
     }
@@ -46,7 +47,7 @@ fn parse_parameter_string(input: &str) -> Result<ShaderParameter, PreprocessErro
 
         // https://github.com/libretro/slang-shaders/blob/0e2939787076e4a8a83be89175557fde23abe837/crt/shaders/crt-slangtest/parameters.inc#L1
         let (input, _) = multispace0(input)?;
-        let (input, step) = opt(float)(input)?;
+        let (input, step) = opt(float).parse(input)?;
         Ok((
             input,
             ShaderParameter {

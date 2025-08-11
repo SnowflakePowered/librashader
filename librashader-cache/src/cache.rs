@@ -1,5 +1,6 @@
 use crate::cacheable::Cacheable;
 use crate::key::CacheKey;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 
 pub(crate) mod internal {
     #[derive(Debug, Error)]
@@ -52,6 +53,14 @@ pub(crate) mod internal {
     //     Ok(conn)
     // }
 
+    pub(crate) fn remove_cache() {
+        let Ok(cache_dir) = get_cache_dir() else {
+            return;
+        };
+        let path = &cache_dir.join("librashader.db.1");
+        let _ = std::fs::remove_file(path).ok();
+    }
+
     pub(crate) fn get_cache() -> Result<Persy, Box<dyn Error>> {
         let cache_dir = get_cache_dir()?;
         match catch_unwind(|| {
@@ -67,13 +76,11 @@ pub(crate) mod internal {
         }) {
             Ok(Ok(conn)) => Ok(conn),
             Ok(Err(e)) => {
-                let path = &cache_dir.join("librashader.db.1");
-                let _ = std::fs::remove_file(path).ok();
+                remove_cache();
                 Err(e)?
             }
             Err(e) => {
-                let path = &cache_dir.join("librashader.db.1");
-                let _ = std::fs::remove_file(path).ok();
+                remove_cache();
                 Err(CatchPanicError::Panic(e))?
             }
         }
@@ -117,51 +124,57 @@ pub(crate) mod internal {
 pub fn cache_shader_object<E, T, R, H, const KEY_SIZE: usize>(
     index: &str,
     keys: &[H; KEY_SIZE],
-    factory: impl FnOnce(&[H; KEY_SIZE]) -> Result<T, E>,
-    load: impl Fn(T) -> Result<R, E>,
+    factory: impl Fn(&[H; KEY_SIZE]) -> Result<T, E> + std::panic::RefUnwindSafe,
+    load: impl Fn(T) -> Result<R, E> + std::panic::RefUnwindSafe,
     bypass_cache: bool,
 ) -> Result<R, E>
 where
-    H: CacheKey,
+    H: CacheKey + std::panic::RefUnwindSafe,
     T: Cacheable,
 {
     if bypass_cache {
         return Ok(load(factory(keys)?)?);
     }
 
-    let cache = internal::get_cache();
+    catch_unwind(|| {
+        let cache = internal::get_cache();
 
-    let Ok(cache) = cache else {
-        return Ok(load(factory(keys)?)?);
-    };
+        let Ok(cache) = cache else {
+            return Ok(load(factory(keys)?)?);
+        };
 
-    let hashkey = {
-        let mut hasher = blake3::Hasher::new();
-        for subkeys in keys {
-            hasher.update(subkeys.hash_bytes());
-        }
-        let hash = hasher.finalize();
-        hash
-    };
-
-    'attempt: {
-        if let Ok(Some(blob)) = internal::get_blob(&cache, index, hashkey.as_bytes()) {
-            let cached = T::from_bytes(&blob).map(&load);
-
-            match cached {
-                None => break 'attempt,
-                Some(Err(_)) => break 'attempt,
-                Some(Ok(res)) => return Ok(res),
+        let hashkey = {
+            let mut hasher = blake3::Hasher::new();
+            for subkeys in keys {
+                hasher.update(subkeys.hash_bytes());
             }
+            let hash = hasher.finalize();
+            hash
+        };
+
+        'attempt: {
+            if let Ok(Some(blob)) = internal::get_blob(&cache, index, hashkey.as_bytes()) {
+                let cached = T::from_bytes(&blob).map(&load);
+
+                match cached {
+                    None => break 'attempt,
+                    Some(Err(_)) => break 'attempt,
+                    Some(Ok(res)) => return Ok(res),
+                }
+            }
+        };
+
+        let blob = factory(keys)?;
+
+        if let Some(slice) = T::to_bytes(&blob) {
+            let _ = internal::set_blob(&cache, index, hashkey.as_bytes(), &slice);
         }
-    };
-
-    let blob = factory(keys)?;
-
-    if let Some(slice) = T::to_bytes(&blob) {
-        let _ = internal::set_blob(&cache, index, hashkey.as_bytes(), &slice);
-    }
-    Ok(load(blob)?)
+        Ok(load(blob)?)
+    })
+    .unwrap_or_else(|_| {
+        internal::remove_cache();
+        Ok(load(factory(keys)?)?)
+    })
 }
 
 /// Cache a pipeline state object.
@@ -175,7 +188,7 @@ pub fn cache_pipeline<E, T, R, const KEY_SIZE: usize>(
     index: &str,
     keys: &[&dyn CacheKey; KEY_SIZE],
     restore_pipeline: impl Fn(Option<Vec<u8>>) -> Result<R, E>,
-    fetch_pipeline_state: impl FnOnce(&R) -> Result<T, E>,
+    fetch_pipeline_state: impl Fn(&R) -> Result<T, E>,
     bypass_cache: bool,
 ) -> Result<R, E>
 where
@@ -185,42 +198,48 @@ where
         return Ok(restore_pipeline(None)?);
     }
 
-    let cache = internal::get_cache();
+    catch_unwind(AssertUnwindSafe(|| {
+        let cache = internal::get_cache();
 
-    let Ok(cache) = cache else {
-        return Ok(restore_pipeline(None)?);
-    };
+        let Ok(cache) = cache else {
+            return Ok(restore_pipeline(None)?);
+        };
 
-    let hashkey = {
-        let mut hasher = blake3::Hasher::new();
-        for subkeys in keys {
-            hasher.update(subkeys.hash_bytes());
-        }
-        let hash = hasher.finalize();
-        hash
-    };
+        let hashkey = {
+            let mut hasher = blake3::Hasher::new();
+            for subkeys in keys {
+                hasher.update(subkeys.hash_bytes());
+            }
+            let hash = hasher.finalize();
+            hash
+        };
 
-    let pipeline = 'attempt: {
-        if let Ok(Some(blob)) = internal::get_blob(&cache, index, hashkey.as_bytes()) {
-            let cached = restore_pipeline(Some(blob));
-            match cached {
-                Ok(res) => {
-                    break 'attempt res;
+        let pipeline = 'attempt: {
+            if let Ok(Some(blob)) = internal::get_blob(&cache, index, hashkey.as_bytes()) {
+                let cached = restore_pipeline(Some(blob));
+                match cached {
+                    Ok(res) => {
+                        break 'attempt res;
+                    }
+                    _ => (),
                 }
-                _ => (),
+            }
+
+            restore_pipeline(None)?
+        };
+
+        // update the pso every time just in case.
+        if let Ok(state) = fetch_pipeline_state(&pipeline) {
+            if let Some(slice) = T::to_bytes(&state) {
+                // We don't really care if the transaction fails, just try again next time.
+                let _ = internal::set_blob(&cache, index, hashkey.as_bytes(), &slice);
             }
         }
 
-        restore_pipeline(None)?
-    };
-
-    // update the pso every time just in case.
-    if let Ok(state) = fetch_pipeline_state(&pipeline) {
-        if let Some(slice) = T::to_bytes(&state) {
-            // We don't really care if the transaction fails, just try again next time.
-            let _ = internal::set_blob(&cache, index, hashkey.as_bytes(), &slice);
-        }
-    }
-
-    Ok(pipeline)
+        Ok(pipeline)
+    }))
+    .unwrap_or_else(|_| {
+        internal::remove_cache();
+        Ok(restore_pipeline(None)?)
+    })
 }

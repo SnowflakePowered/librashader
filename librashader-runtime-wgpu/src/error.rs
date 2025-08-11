@@ -19,6 +19,8 @@ pub enum FilterChainError {
     ShaderReflectError(#[from] ShaderReflectError),
     #[error("lut loading error")]
     LutLoadError(#[from] ImageError),
+    #[error("poll error: {0}")]
+    PollError(#[from] wgpu::PollError),
     #[error("unreachable")]
     Infallible(#[from] std::convert::Infallible),
 }
