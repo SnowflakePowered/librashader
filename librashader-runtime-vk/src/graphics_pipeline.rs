@@ -48,7 +48,7 @@ impl PipelineDescriptors<'_> {
 
             self.pool_sizes.push(vk::DescriptorPoolSize {
                 ty: vk::DescriptorType::UNIFORM_BUFFER,
-                descriptor_count: self.replicas,
+                descriptor_count: self.replicas * 2,
             })
         }
     }
@@ -67,7 +67,7 @@ impl PipelineDescriptors<'_> {
 
             self.pool_sizes.push(vk::DescriptorPoolSize {
                 ty: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
-                descriptor_count: self.replicas,
+                descriptor_count: self.replicas * 2,
             })
         }
     }
