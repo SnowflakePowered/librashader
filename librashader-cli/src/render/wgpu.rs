@@ -144,7 +144,10 @@ impl RenderTest for Wgpu {
 
         let si = self.queue.submit([cmd.finish()]);
         self.device
-            .poll(wgpu::PollType::WaitForSubmissionIndex(si))?;
+            .poll(wgpu::PollType::Wait {
+                submission_index: Some(si),
+                timeout: None,
+            })?;
 
         let capturable = Arc::clone(&output_buf);
 
@@ -171,7 +174,10 @@ impl RenderTest for Wgpu {
                 capturable.unmap();
             });
 
-        self.device.poll(wgpu::PollType::Wait)?;
+        self.device.poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })?;
 
         if pixels.lock().len() == 0 {
             return Err(anyhow!("failed to copy pixels from buffer"));
@@ -256,7 +262,10 @@ impl Wgpu {
 
         let si = queue.submit([]);
 
-        device.poll(wgpu::PollType::WaitForSubmissionIndex(si))?;
+        device.poll(wgpu::PollType::Wait {
+            submission_index: Some(si),
+            timeout: None,
+        })?;
 
         Ok((image, texture))
     }

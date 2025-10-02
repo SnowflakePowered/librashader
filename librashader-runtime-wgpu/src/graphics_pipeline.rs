@@ -290,6 +290,7 @@ impl WgpuGraphicsPipeline {
             label: Some("librashader"),
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: &output.output.view,
+                depth_slice: None,
                 resolve_target: None,
                 ops: Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
