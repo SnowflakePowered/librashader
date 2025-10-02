@@ -100,8 +100,9 @@ impl<'a> State<'a> {
                     required_limits: wgpu::Limits::default(),
                     label: None,
                     memory_hints: Default::default(),
+                    experimental_features: Default::default(),
+                    trace: Default::default(),
                 },
-                None,
             )
             .await
             .unwrap();
@@ -271,6 +272,7 @@ impl<'a> State<'a> {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(self.clear_color),

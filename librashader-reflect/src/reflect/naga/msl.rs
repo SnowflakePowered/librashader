@@ -47,6 +47,7 @@ impl CompileShader<MSL> for NagaReflect {
             let info = valid.validate(&module)?;
 
             let pipeline_options = PipelineOptions {
+                entry_point: None,
                 allow_and_force_point_size: false,
                 vertex_pulling_transform: false,
                 vertex_buffer_mappings: vec![],
@@ -79,6 +80,7 @@ impl CompileShader<MSL> for NagaReflect {
                                 buffer: None,
                                 texture: None,
                                 sampler: Some(BindSamplerTarget::Resource(binding.binding as u8)),
+                                external_texture: None,
                                 mutable: false,
                             },
                         );
@@ -90,6 +92,7 @@ impl CompileShader<MSL> for NagaReflect {
                                 buffer: Some(binding.binding as u8),
                                 texture: None,
                                 sampler: None,
+                                external_texture: None,
                                 mutable: false,
                             },
                         );
@@ -101,6 +104,7 @@ impl CompileShader<MSL> for NagaReflect {
                                 buffer: None,
                                 texture: Some(binding.binding as u8),
                                 sampler: None,
+                                external_texture: None,
                                 mutable: false,
                             },
                         );

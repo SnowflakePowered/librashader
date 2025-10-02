@@ -28,8 +28,8 @@ objc2 = { version = "0.6" }
 glow = { version = "0.16.0" }
 glfw = { version = "0.59.0" }
 
-wgpu = { version = "25", default-features = false }
-wgpu-types = { version = "25" }
+wgpu = { version = "27", default-features = false }
+wgpu-types = { version = "27" }
 
 clap = { version = "=4.3.0", features = ["derive"] }
 rayon = { version = "1.10.0"}
