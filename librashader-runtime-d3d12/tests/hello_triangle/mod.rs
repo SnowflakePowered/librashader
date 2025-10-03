@@ -104,7 +104,7 @@ where
             window_rect.bottom - window_rect.top,
             None, // no parent window
             None, // no menus
-            instance,
+            Some(HINSTANCE::from(instance)),
             Some(&mut sample as *mut _ as _),
         )
     };

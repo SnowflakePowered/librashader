@@ -20,7 +20,8 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-windows = "0.58.0"
+windows = ">=0.58, <=0.62"
+windows-core = ">=0.58, <=0.62"
 ash = "0.38"
 spirv-cross2 = { version = "0.4", default-features = false }
 objc2-metal = { version = "0.3" }
@@ -33,7 +34,7 @@ wgpu-types = { version = "27" }
 
 clap = { version = "=4.3.0", features = ["derive"] }
 rayon = { version = "1.10.0"}
-
+gpu-allocator = { version = "0.28.0", default-features = false, features = ["hashbrown"] }
 
 [workspace.dependencies.image]
 version = "0.25.6"

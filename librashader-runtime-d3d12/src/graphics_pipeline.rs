@@ -12,7 +12,6 @@ use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use widestring::u16cstr;
 use windows::core::Interface;
-use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::Dxc::{
     CLSID_DxcLibrary, DxcCreateInstance, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
 };
@@ -185,8 +184,8 @@ impl D3D12GraphicsPipeline {
                 BlendState: D3D12_BLEND_DESC {
                     RenderTarget: [
                         D3D12_RENDER_TARGET_BLEND_DESC {
-                            BlendEnable: BOOL::from(false),
-                            LogicOpEnable: BOOL::from(false),
+                            BlendEnable: false.into(),
+                            LogicOpEnable: false.into(),
                             SrcBlend: D3D12_BLEND_SRC_ALPHA,
                             DestBlend: D3D12_BLEND_INV_SRC_ALPHA,
                             BlendOp: D3D12_BLEND_OP_ADD,

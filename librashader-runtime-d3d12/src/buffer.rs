@@ -81,7 +81,7 @@ impl D3D12Buffer {
         unsafe { self.resource.resource().GetGPUVirtualAddress() }
     }
 
-    pub fn map(&mut self, range: Option<Range<usize>>) -> error::Result<D3D12BufferMapHandle> {
+    pub fn map(&mut self, range: Option<Range<usize>>) -> error::Result<D3D12BufferMapHandle<'_>> {
         let (range, size) = range.map_or((D3D12_RANGE { Begin: 0, End: 0 }, self.size), |range| {
             (
                 D3D12_RANGE {

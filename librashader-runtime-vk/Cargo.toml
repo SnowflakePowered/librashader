@@ -24,7 +24,7 @@ librashader-cache = { path = "../librashader-cache", version = "0.8.1" }
 
 bytemuck = { version = "1.12.3", features = ["derive"] }
 thiserror = "2"
-gpu-allocator = { version = "0.27.0", default-features = false, features = ["vulkan"] }
+gpu-allocator = { workspace = true, features = ["vulkan"] }
 parking_lot = "0.12.1"
 rayon = { workspace = true }
 array-concat = "0.5.2"
