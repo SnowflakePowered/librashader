@@ -12,15 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     container: opensuse/leap:15.6
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
       - name: Install OSC and dependencies
         env:
           OBS_CONFIG: ${{ secrets.OBS_CONFIG }}
         run: |
-          sudo zypper install --non-interactive osc obs-service-obs_scm obs-service-cargo cargo python-zstandard
+          zypper install --non-interactive osc obs-service-obs_scm obs-service-cargo cargo python-zstandard cargo-packaging sudo tar git
           mkdir -p ~/.config/osc
           echo "$OBS_CONFIG" > ~/.config/osc/oscrc
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Checkout Open Build Service repository
         run: |
           osc co home:chyyran:librashader/librashader
