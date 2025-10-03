@@ -7,12 +7,12 @@ use librashader_runtime::quad::VertexInput;
 use librashader_runtime::render_target::RenderTarget;
 use objc2_foundation::NSString;
 use objc2_metal::{
-    MTLBlendFactor, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLFunction, MTLLibrary,
-    MTLLoadAction, MTLPixelFormat, MTLPrimitiveTopologyClass, MTLRenderCommandEncoder,
+    MTLBlendFactor, MTLClearColor, MTLCommandBuffer, MTLCommandEncoder, MTLDevice, MTLFunction,
+    MTLLibrary, MTLLoadAction, MTLPixelFormat, MTLPrimitiveTopologyClass, MTLRenderCommandEncoder,
     MTLRenderPassDescriptor, MTLRenderPipelineColorAttachmentDescriptor,
     MTLRenderPipelineDescriptor, MTLRenderPipelineState, MTLScissorRect, MTLStoreAction,
     MTLTexture, MTLVertexAttributeDescriptor, MTLVertexBufferLayoutDescriptor, MTLVertexDescriptor,
-    MTLVertexFormat, MTLVertexStepFunction, MTLViewport, MTLClearColor,
+    MTLVertexFormat, MTLVertexStepFunction, MTLViewport,
 };
 
 use librashader_common::map::FastHashMap;
@@ -198,7 +198,7 @@ impl MetalGraphicsPipeline {
                 red: 0.0,
                 green: 0.0,
                 blue: 0.0,
-                alpha: 0.0
+                alpha: 0.0,
             });
             ca.setStoreAction(MTLStoreAction::Store);
             ca.setTexture(Some(output.output));

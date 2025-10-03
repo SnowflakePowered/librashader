@@ -58,7 +58,7 @@ impl D3D11State {
                 DepthBiasClamp: 0.0,
                 SlopeScaledDepthBias: 0.0,
                 DepthClipEnable: false.into(),
-                ScissorEnable:false.into(),
+                ScissorEnable: false.into(),
                 MultisampleEnable: false.into(),
                 AntialiasedLineEnable: false.into(),
             };
