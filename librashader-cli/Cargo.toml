@@ -30,7 +30,7 @@ gfx-maths = "0.2.8"
 pollster = "0.4.0"
 parking_lot = "0.12.3"
 image-compare = "0.4.1"
-gpu-allocator = "0.27.0"
+gpu-allocator = { workspace = true, features = ["d3d12", "vulkan"] }
 bitvec = "1.0.1"
 d3d12-descriptor-heap = { version = "0.2", optional = true }
 glow = {  workspace = true, optional = true }

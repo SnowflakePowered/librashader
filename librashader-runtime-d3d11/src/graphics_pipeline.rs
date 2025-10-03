@@ -1,6 +1,5 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
-use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11BlendState, ID3D11Device, ID3D11DeviceContext, ID3D11RasterizerState, D3D11_BLEND_DESC,
     D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD, D3D11_BLEND_SRC_ALPHA,
@@ -26,13 +25,13 @@ impl D3D11State {
     pub fn new(device: &ID3D11Device) -> error::Result<D3D11State> {
         let blend = unsafe {
             let mut blend_desc = D3D11_BLEND_DESC {
-                AlphaToCoverageEnable: BOOL::from(false),
-                IndependentBlendEnable: BOOL::from(false),
+                AlphaToCoverageEnable: false.into(),
+                IndependentBlendEnable: false.into(),
                 ..Default::default()
             };
 
             let rtv_blend_desc = D3D11_RENDER_TARGET_BLEND_DESC {
-                BlendEnable: BOOL::from(false),
+                BlendEnable: false.into(),
                 SrcBlend: D3D11_BLEND_ONE,
                 DestBlend: D3D11_BLEND_ONE,
                 BlendOp: D3D11_BLEND_OP_ADD,
@@ -54,14 +53,14 @@ impl D3D11State {
             let rs_desc = D3D11_RASTERIZER_DESC {
                 FillMode: D3D11_FILL_SOLID,
                 CullMode: D3D11_CULL_NONE,
-                FrontCounterClockwise: BOOL::from(false),
+                FrontCounterClockwise: false.into(),
                 DepthBias: 0,
                 DepthBiasClamp: 0.0,
                 SlopeScaledDepthBias: 0.0,
-                DepthClipEnable: BOOL::from(false),
-                ScissorEnable: BOOL::from(false),
-                MultisampleEnable: BOOL::from(false),
-                AntialiasedLineEnable: BOOL::from(false),
+                DepthClipEnable: false.into(),
+                ScissorEnable:false.into(),
+                MultisampleEnable: false.into(),
+                AntialiasedLineEnable: false.into(),
             };
             let mut rs = None;
             device.CreateRasterizerState(&rs_desc, Some(&mut rs))?;

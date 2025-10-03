@@ -139,7 +139,7 @@ where
             window_rect.bottom - window_rect.top,
             None, // no parent window
             None, // no menus
-            instance,
+            Some(HINSTANCE::from(instance)),
             Some(&sample as *const _ as _),
         )
     };

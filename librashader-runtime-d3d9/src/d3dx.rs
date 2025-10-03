@@ -1,9 +1,10 @@
 use std::ffi::c_void;
-use windows::core::imp::BOOL;
 use windows::core::{Param, HRESULT, PCSTR};
 use windows::Win32::Graphics::Direct3D::{ID3DBlob, ID3DInclude, D3D_SHADER_MACRO};
 
 const D3DERR_INVALIDCALL: u32 = 0x8876086c;
+
+type BOOL = i32;
 
 #[allow(dead_code)]
 pub mod raw {
@@ -288,53 +289,53 @@ pub struct ID3DXConstantTable_Vtbl {
     pub SetVector: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        pvector: *const ::windows::Foundation::Numerics::Vector4,
+        pvector: *const ::windows_numerics::Vector4,
     ) -> windows::core::HRESULT,
     #[allow(non_snake_case)]
     pub SetVectorArray: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        pvector: *const ::windows::Foundation::Numerics::Vector4,
+        pvector: *const ::windows_numerics::Vector4,
         count: u32,
     ) -> HRESULT,
     #[allow(non_snake_case)]
     pub SetMatrix: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        pmatrix: *const ::windows::Foundation::Numerics::Matrix4x4,
+        pmatrix: *const ::windows_numerics::Matrix4x4,
     ) -> HRESULT,
     #[allow(non_snake_case)]
     pub SetMatrixArray: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        pmatrix: *const ::windows::Foundation::Numerics::Matrix4x4,
+        pmatrix: *const ::windows_numerics::Matrix4x4,
         count: u32,
     ) -> HRESULT,
     #[allow(non_snake_case)]
     pub SetMatrixPointerArray: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        ppmatrix: *const *const ::windows::Foundation::Numerics::Matrix4x4,
+        ppmatrix: *const *const ::windows_numerics::Matrix4x4,
         count: u32,
     ) -> HRESULT,
     #[allow(non_snake_case)]
     pub SetMatrixTranspose: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        pmatrix: *const ::windows::Foundation::Numerics::Matrix4x4,
+        pmatrix: *const ::windows_numerics::Matrix4x4,
     ) -> HRESULT,
     #[allow(non_snake_case)]
     pub SetMatrixTransposeArray: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        pmatrix: *const ::windows::Foundation::Numerics::Matrix4x4,
+        pmatrix: *const ::windows_numerics::Matrix4x4,
         count: u32,
     ) -> HRESULT,
     #[allow(non_snake_case)]
     pub SetMatrixTransposePointerArray: unsafe extern "system" fn(
         this: *mut c_void,
         pdevice: *mut c_void,
-        ppmatrix: *const *const ::windows::Foundation::Numerics::Matrix4x4,
+        ppmatrix: *const *const ::windows_numerics::Matrix4x4,
         count: u32,
     ) -> HRESULT,
 }

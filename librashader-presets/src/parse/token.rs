@@ -146,7 +146,7 @@ fn parse_tokens(mut span: Span) -> IResult<Span, Vec<Token>> {
     Ok((span, values))
 }
 
-pub fn do_lex(input: &str) -> Result<Vec<Token>, ParsePresetError> {
+pub fn do_lex(input: &str) -> Result<Vec<Token<'_>>, ParsePresetError> {
     let span = Span::new(input.trim_end());
     let (_, tokens) = parse_tokens(span).map_err(|e| match e {
         nom::Err::Error(e) | nom::Err::Failure(e) => {

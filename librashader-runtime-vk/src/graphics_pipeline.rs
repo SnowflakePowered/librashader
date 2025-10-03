@@ -72,7 +72,7 @@ impl PipelineDescriptors<'_> {
         }
     }
 
-    pub fn bindings(&self) -> &[vk::DescriptorSetLayoutBinding] {
+    pub fn bindings(&self) -> &[vk::DescriptorSetLayoutBinding<'_>] {
         self.layout_bindings.as_ref()
     }
 
