@@ -143,11 +143,10 @@ impl RenderTest for Wgpu {
         );
 
         let si = self.queue.submit([cmd.finish()]);
-        self.device
-            .poll(wgpu::PollType::Wait {
-                submission_index: Some(si),
-                timeout: None,
-            })?;
+        self.device.poll(wgpu::PollType::Wait {
+            submission_index: Some(si),
+            timeout: None,
+        })?;
 
         let capturable = Arc::clone(&output_buf);
 

@@ -91,19 +91,17 @@ impl<'a> State<'a> {
             .unwrap();
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
-                        | wgpu::Features::PIPELINE_CACHE
-                        | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
-                        | wgpu::Features::FLOAT32_FILTERABLE,
-                    required_limits: wgpu::Limits::default(),
-                    label: None,
-                    memory_hints: Default::default(),
-                    experimental_features: Default::default(),
-                    trace: Default::default(),
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
+                    | wgpu::Features::PIPELINE_CACHE
+                    | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+                    | wgpu::Features::FLOAT32_FILTERABLE,
+                required_limits: wgpu::Limits::default(),
+                label: None,
+                memory_hints: Default::default(),
+                experimental_features: Default::default(),
+                trace: Default::default(),
+            })
             .await
             .unwrap();
         let swapchain_capabilities = surface.get_capabilities(&adapter);
