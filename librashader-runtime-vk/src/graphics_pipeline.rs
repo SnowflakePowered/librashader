@@ -452,10 +452,15 @@ impl VulkanGraphicsPipeline {
             Ok(Some(framebuffer))
         } else {
             let attachments = [vk::RenderingAttachmentInfo::default()
-                .load_op(vk::AttachmentLoadOp::DONT_CARE)
+                .load_op(vk::AttachmentLoadOp::CLEAR)
                 .store_op(vk::AttachmentStoreOp::STORE)
                 .image_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-                .image_view(output.output.image_view)];
+                .image_view(output.output.image_view)
+                .clear_value(vk::ClearValue {
+                    color: vk::ClearColorValue {
+                        float32: [0.0, 0.0, 0.0, 0.0],
+                    },
+                })];
 
             let rendering_info = vk::RenderingInfo::default()
                 .layer_count(1)
