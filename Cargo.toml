@@ -20,8 +20,8 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-windows = ">=0.58, <=0.62"
-windows-core = ">=0.58, <=0.62"
+windows = "0.62"
+windows-core = "0.62"
 ash = "0.38"
 spirv-cross2 = { version = "0.4", default-features = false }
 objc2-metal = { version = "0.3" }

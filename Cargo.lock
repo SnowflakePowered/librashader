@@ -1444,7 +1444,7 @@ dependencies = [
  "rayon",
  "wgpu",
  "wgpu-types",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1469,7 +1469,7 @@ dependencies = [
  "platform-dirs",
  "serde",
  "thiserror 2.0.17",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1485,7 +1485,7 @@ dependencies = [
  "rustc-hash 2.1.1",
  "sptr",
  "thiserror 2.0.17",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1515,7 +1515,7 @@ dependencies = [
  "spq-spvasm",
  "wgpu",
  "wgpu-types",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1533,7 +1533,7 @@ dependencies = [
  "serde",
  "smartstring",
  "wgpu-types",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1635,7 +1635,7 @@ dependencies = [
  "librashader-runtime",
  "rayon",
  "thiserror 2.0.17",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1660,7 +1660,7 @@ dependencies = [
  "rayon",
  "thiserror 2.0.17",
  "widestring",
- "windows 0.58.0",
+ "windows 0.62.1",
 ]
 
 [[package]]
@@ -1680,8 +1680,8 @@ dependencies = [
  "num-traits",
  "rayon",
  "thiserror 2.0.17",
- "windows 0.58.0",
- "windows-core 0.58.0",
+ "windows 0.62.1",
+ "windows-core 0.62.1",
  "windows-numerics",
 ]
 
