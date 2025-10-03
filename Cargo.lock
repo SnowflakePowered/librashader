@@ -1419,7 +1419,7 @@ checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "librashader"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ash",
  "glob",
@@ -1444,7 +1444,7 @@ dependencies = [
  "rayon",
  "wgpu",
  "wgpu-types",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
@@ -1458,7 +1458,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-cache"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "bincode",
  "blake3",
@@ -1469,12 +1469,12 @@ dependencies = [
  "platform-dirs",
  "serde",
  "thiserror 2.0.17",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
 name = "librashader-capi"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ash",
  "glow",
@@ -1485,12 +1485,12 @@ dependencies = [
  "rustc-hash 2.1.1",
  "sptr",
  "thiserror 2.0.17",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
 name = "librashader-cli"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "ash",
@@ -1515,12 +1515,12 @@ dependencies = [
  "spq-spvasm",
  "wgpu",
  "wgpu-types",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
 name = "librashader-common"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ash",
  "bitflags 2.9.4",
@@ -1533,12 +1533,12 @@ dependencies = [
  "serde",
  "smartstring",
  "wgpu-types",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
 name = "librashader-pack"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -1555,7 +1555,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "encoding_rs",
  "glob",
@@ -1568,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "glob",
  "librashader-common",
@@ -1584,7 +1584,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "bitflags 2.9.4",
  "bytemuck",
@@ -1605,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "arc-swap",
  "array-concat",
@@ -1621,7 +1621,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1635,12 +1635,12 @@ dependencies = [
  "librashader-runtime",
  "rayon",
  "thiserror 2.0.17",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-concat",
  "array-init",
@@ -1660,12 +1660,12 @@ dependencies = [
  "rayon",
  "thiserror 2.0.17",
  "widestring",
- "windows 0.62.1",
+ "windows 0.58.0",
 ]
 
 [[package]]
 name = "librashader-runtime-d3d9"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1680,14 +1680,14 @@ dependencies = [
  "num-traits",
  "rayon",
  "thiserror 2.0.17",
- "windows 0.62.1",
- "windows-core 0.62.1",
+ "windows 0.58.0",
+ "windows-core 0.58.0",
  "windows-numerics",
 ]
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-init",
  "bytemuck",
@@ -1707,7 +1707,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-mtl"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1729,7 +1729,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-concat",
  "ash",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-wgpu"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "array-concat",
  "bytemuck",
