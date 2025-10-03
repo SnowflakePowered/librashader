@@ -202,6 +202,12 @@ impl FilterPass {
                 },
             }];
 
+            cmd.ClearRenderTargetView(
+                *output.output.descriptor.as_ref(),
+                &[0.0, 0.0, 0.0, 0.0],
+                None,
+            );
+
             cmd.BeginRenderPass(Some(&pass), None, D3D12_RENDER_PASS_FLAG_NONE)
         }
 

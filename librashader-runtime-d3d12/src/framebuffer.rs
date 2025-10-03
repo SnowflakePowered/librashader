@@ -18,7 +18,7 @@ use std::mem::ManuallyDrop;
 use std::sync::Arc;
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX,
+    ID3D12Device, ID3D12GraphicsCommandList, ID3D12Resource, D3D12_BOX, D3D12_CLEAR_VALUE,
     D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, D3D12_FEATURE_DATA_FORMAT_SUPPORT,
     D3D12_FORMAT_SUPPORT1_MIP, D3D12_FORMAT_SUPPORT1_RENDER_TARGET,
     D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE, D3D12_FORMAT_SUPPORT1_TEXTURE2D,
@@ -121,7 +121,11 @@ impl OwnedImage {
             resource_category: ResourceCategory::RtvDsvTexture,
             resource_desc: &desc,
             castable_formats: &[],
-            clear_value: None,
+            clear_value: Some(&D3D12_CLEAR_VALUE {
+                Format: desc.Format,
+                // Default is fine since its just zeroes.
+                Anonymous: Default::default(),
+            }),
             initial_state_or_layout: ResourceStateOrBarrierLayout::ResourceState(
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             ),
