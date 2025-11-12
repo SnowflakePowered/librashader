@@ -37,7 +37,7 @@ rayon = { version = "1.10.0"}
 gpu-allocator = { version = "0.28.0", default-features = false, features = ["hashbrown"] }
 
 [workspace.dependencies.image]
-version = "0.25.6"
+version = "0.25.8"
 features = [
     "tga", "jpeg", "png", "bmp",
 ]
