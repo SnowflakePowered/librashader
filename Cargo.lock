@@ -1420,7 +1420,7 @@ checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "librashader"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "ash",
  "glob",
@@ -1459,7 +1459,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-cache"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "bincode",
  "blake3",
@@ -1475,7 +1475,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-capi"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "ash",
  "glow",
@@ -1491,7 +1491,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-cli"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "anyhow",
  "ash",
@@ -1521,7 +1521,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-common"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "ash",
  "bitflags 2.10.0",
@@ -1539,7 +1539,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-pack"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -1556,7 +1556,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-preprocess"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "encoding_rs",
  "glob",
@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-presets"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "glob",
  "librashader-common",
@@ -1585,7 +1585,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-reflect"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "bitflags 2.10.0",
  "bytemuck",
@@ -1606,7 +1606,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "arc-swap",
  "array-concat",
@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d11"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1641,7 +1641,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d12"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-concat",
  "array-init",
@@ -1666,7 +1666,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-d3d9"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1688,7 +1688,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-gl"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-init",
  "bytemuck",
@@ -1708,7 +1708,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-mtl"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-concat",
  "bytemuck",
@@ -1730,7 +1730,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-vk"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-concat",
  "ash",
@@ -1754,7 +1754,7 @@ dependencies = [
 
 [[package]]
 name = "librashader-runtime-wgpu"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "array-concat",
  "bytemuck",
