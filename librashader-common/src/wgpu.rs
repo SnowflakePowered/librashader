@@ -103,6 +103,15 @@ impl From<FilterMode> for wgpu_types::FilterMode {
     }
 }
 
+impl From<FilterMode> for wgpu_types::MipmapFilterMode {
+    fn from(value: FilterMode) -> Self {
+        match value {
+            FilterMode::Linear => wgpu_types::MipmapFilterMode::Linear,
+            FilterMode::Nearest => wgpu_types::MipmapFilterMode::Nearest,
+        }
+    }
+}
+
 impl From<WrapMode> for wgpu_types::AddressMode {
     fn from(value: WrapMode) -> Self {
         match value {

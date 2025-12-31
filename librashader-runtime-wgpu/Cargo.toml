@@ -45,3 +45,4 @@ raw-window-handle = "0.6.0"
 winit = "0.29.10"
 pollster = "0.3"
 log = "0.4.20"
+wgpu = { workspace = true, default-features = true }
