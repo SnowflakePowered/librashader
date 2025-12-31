@@ -189,9 +189,11 @@ where
 mod test {
     use crate::front::{Glslang, ShaderInputCompiler};
     use librashader_preprocess::ShaderSource;
+    use librashader_presets::ShaderFeatures;
 
+    #[test]
     pub fn test() {
-        let result = ShaderSource::load("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang", ShaderFeatures::empty()).unwrap();
         let _cross = Glslang::compile(&result).unwrap();
     }
 }

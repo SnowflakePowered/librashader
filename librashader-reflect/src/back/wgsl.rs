@@ -50,14 +50,17 @@ mod test {
     use crate::reflect::naga::NagaLoweringOptions;
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use crate::reflect::ReflectShader;
-    use bitflags::Flags;
     use librashader_common::map::{FastHashMap, ShortString};
     use librashader_preprocess::ShaderSource;
+    use librashader_presets::ShaderFeatures;
 
     #[test]
     pub fn test_into() {
-        let result =
-            ShaderSource::load("../test/shaders_slang/crt/shaders/slotmask.slang").unwrap();
+        let result = ShaderSource::load(
+            "../test/shaders_slang/crt/shaders/slotmask.slang",
+            ShaderFeatures::empty(),
+        )
+        .unwrap();
 
         // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
         // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();

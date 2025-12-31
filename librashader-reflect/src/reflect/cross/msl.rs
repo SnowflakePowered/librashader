@@ -112,22 +112,22 @@ impl CompileShader<MSL> for CrossReflect<targets::Msl> {
 
 #[cfg(test)]
 mod test {
-    use crate::back::targets::{MSL, WGSL};
+    use crate::back::targets::MSL;
     use crate::back::{CompileShader, FromCompilation};
     use crate::reflect::cross::SpirvCross;
     use crate::reflect::semantics::{Semantic, ShaderSemantics, UniformSemantic, UniqueSemantics};
     use crate::reflect::ReflectShader;
-    use bitflags::Flags;
     use librashader_common::map::{FastHashMap, ShortString};
     use librashader_preprocess::ShaderSource;
 
+    use librashader_presets::ShaderFeatures;
     use spirv_cross2::compile::msl::MslVersion;
 
     #[test]
     pub fn test_into() {
         // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
         // let result = ShaderSource::load("../test/shaders_slang/crt/shaders/crt-royale/src/crt-royale-scanlines-horizontal-apply-mask.slang").unwrap();
-        let result = ShaderSource::load("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang", ShaderFeatures::empty()).unwrap();
 
         let mut uniform_semantics: FastHashMap<ShortString, UniformSemantic> = Default::default();
 
