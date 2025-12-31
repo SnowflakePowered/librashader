@@ -11,8 +11,8 @@ use std::borrow::Cow;
 use std::convert::Infallible;
 use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType,
-    BufferBindingType, BufferSize, CommandEncoder, Operations, PipelineLayout, PushConstantRange,
-    RenderPass, RenderPassColorAttachment, RenderPassDescriptor, SamplerBindingType, ShaderModule,
+    BufferBindingType, BufferSize, CommandEncoder, Operations, PipelineLayout, RenderPass,
+    RenderPassColorAttachment, RenderPassDescriptor, SamplerBindingType, ShaderModule,
     ShaderSource, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
     VertexBufferLayout,
 };
@@ -51,34 +51,6 @@ impl PipelineLayoutObjects {
 
         let mut main_bindings = Vec::new();
         let mut sampler_bindings = Vec::new();
-
-        let mut push_constant_range = Vec::new();
-
-        if let Some(push_meta) = reflection
-            .push_constant
-            .as_ref()
-            .filter(|push_meta| !push_meta.stage_mask.is_empty())
-        {
-            let push_mask = util::binding_stage_to_wgpu_stage(push_meta.stage_mask);
-
-            if let Some(binding) = push_meta.binding {
-                main_bindings.push(BindGroupLayoutEntry {
-                    binding,
-                    visibility: push_mask,
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: BufferSize::new(push_meta.size as u64),
-                    },
-                    count: None,
-                });
-            } else {
-                push_constant_range.push(PushConstantRange {
-                    stages: push_mask,
-                    range: 0..push_meta.size,
-                })
-            }
-        }
 
         if let Some(ubo_meta) = reflection
             .ubo
@@ -132,7 +104,7 @@ impl PipelineLayoutObjects {
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("shader pipeline layout"),
             bind_group_layouts: &bind_group_layout_refs,
-            push_constant_ranges: &push_constant_range.as_ref(),
+            immediate_size: 0,
         });
 
         Self {
@@ -205,7 +177,7 @@ impl PipelineLayoutObjects {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache,
         })
     }
@@ -305,6 +277,7 @@ impl WgpuGraphicsPipeline {
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
 
         render_pass.set_scissor_rect(
