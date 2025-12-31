@@ -57,19 +57,19 @@ impl NagaReflect {
     pub fn do_lowering(&mut self, options: &NagaLoweringOptions) {
         if options.write_pcb_as_ubo {
             for (_, gv) in self.fragment.global_variables.iter_mut() {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     gv.space = AddressSpace::Uniform;
                 }
             }
 
             for (_, gv) in self.vertex.global_variables.iter_mut() {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     gv.space = AddressSpace::Uniform;
                 }
             }
         } else {
             for (_, gv) in self.fragment.global_variables.iter_mut() {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     gv.binding = None;
                 }
             }
@@ -545,7 +545,7 @@ impl NagaReflect {
                 .vertex
                 .global_variables
                 .iter()
-                .filter(|(_, gv)| gv.space == AddressSpace::PushConstant)
+                .filter(|(_, gv)| gv.space == AddressSpace::Immediate)
                 .count();
 
             if push_buffer_count > 1 {
@@ -598,7 +598,7 @@ impl NagaReflect {
                 .fragment
                 .global_variables
                 .iter()
-                .filter(|(_, gv)| gv.space == AddressSpace::PushConstant)
+                .filter(|(_, gv)| gv.space == AddressSpace::Immediate)
                 .count();
 
             if push_buffer_count > 1 {
@@ -920,7 +920,7 @@ impl ReflectShader for NagaReflect {
             .global_variables
             .iter()
             .find_map(|(handle, gv)| {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     Some(handle)
                 } else {
                     None
@@ -932,7 +932,7 @@ impl ReflectShader for NagaReflect {
             .global_variables
             .iter()
             .find_map(|(handle, gv)| {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     Some(handle)
                 } else {
                     None
@@ -1024,7 +1024,7 @@ impl ReflectShader for NagaReflect {
             .global_variables
             .iter()
             .find_map(|(handle, gv)| {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     Some(handle)
                 } else {
                     None
@@ -1036,7 +1036,7 @@ impl ReflectShader for NagaReflect {
             .global_variables
             .iter()
             .find_map(|(handle, gv)| {
-                if gv.space == AddressSpace::PushConstant {
+                if gv.space == AddressSpace::Immediate {
                     Some(handle)
                 } else {
                     None

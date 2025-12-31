@@ -1648,7 +1648,7 @@ dependencies = [
  "librashader-pack",
  "librashader-preprocess",
  "librashader-presets",
- "naga 27.0.3",
+ "naga",
  "rspirv",
  "rustc-hash 2.1.1",
  "serde",
@@ -1956,32 +1956,6 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "27.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "066cf25f0e8b11ee0df221219010f213ad429855f57c494f995590c861a9a7d8"
-dependencies = [
- "arrayvec",
- "bit-set",
- "bitflags 2.10.0",
- "cfg-if",
- "cfg_aliases 0.2.1",
- "codespan-reporting",
- "half",
- "hashbrown 0.16.0",
- "indexmap",
- "libm",
- "log",
- "num-traits",
- "once_cell",
- "petgraph",
- "pp-rs",
- "rustc-hash 1.1.0",
- "spirv",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "naga"
 version = "28.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "618f667225063219ddfc61251087db8a9aec3c3f0950c916b614e403486f1135"
@@ -2000,6 +1974,8 @@ dependencies = [
  "log",
  "num-traits",
  "once_cell",
+ "petgraph",
+ "pp-rs",
  "rustc-hash 1.1.0",
  "spirv",
  "thiserror 2.0.17",
@@ -3812,7 +3788,7 @@ dependencies = [
  "hashbrown 0.16.0",
  "js-sys",
  "log",
- "naga 28.0.0",
+ "naga",
  "parking_lot",
  "portable-atomic",
  "profiling",
@@ -3843,7 +3819,7 @@ dependencies = [
  "hashbrown 0.16.0",
  "indexmap",
  "log",
- "naga 28.0.0",
+ "naga",
  "once_cell",
  "parking_lot",
  "portable-atomic",
@@ -3913,7 +3889,7 @@ dependencies = [
  "libloading",
  "log",
  "metal",
- "naga 28.0.0",
+ "naga",
  "ndk-sys 0.6.0+11769913",
  "objc",
  "once_cell",

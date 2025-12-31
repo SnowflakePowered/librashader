@@ -63,9 +63,10 @@ pub(crate) fn compile_spirv(source: &ShaderSource) -> Result<SpirvCompilation, S
 mod test {
     use crate::front::glslang::compile_spirv;
     use librashader_preprocess::ShaderSource;
+    use librashader_presets::ShaderFeatures;
     #[test]
     pub fn compile_shader() {
-        let result = ShaderSource::load("../test/basic.slang").unwrap();
+        let result = ShaderSource::load("../test/basic.slang", ShaderFeatures::empty()).unwrap();
         let _spirv = compile_spirv(&result).unwrap();
     }
 }
