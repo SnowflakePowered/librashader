@@ -46,6 +46,10 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     draw_last_pass_feedback: bool,
 }
 
+pub(crate) struct GLCaps {
+    pub framebuffer_srgb: bool,
+}
+
 pub(crate) struct FilterCommon {
     // semantics: ReflectSemantics,
     pub config: RuntimeParameters,
@@ -55,6 +59,7 @@ pub(crate) struct FilterCommon {
     pub feedback_textures: Box<[InputTexture]>,
     pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
+    pub caps: GLCaps,
     pub context: Arc<glow::Context>,
 }
 
@@ -157,6 +162,16 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .map(|f| f.meta.wrap_mode)
             .unwrap_or_default();
 
+        let gl_version = context.version();
+        let extensions = context.supported_extensions();
+        let caps = GLCaps {
+            framebuffer_srgb: if !gl_version.is_embedded {
+                gl_version.major >= 3
+            } else {
+                extensions.contains("GL_EXT_sRGB_write_control")
+            },
+        };
+
         let samplers = SamplerSet::new(&context)?;
 
         // load luts
@@ -206,6 +221,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 output_textures,
                 feedback_textures,
                 history_textures,
+                caps,
                 context,
             },
             default_options: Default::default(),

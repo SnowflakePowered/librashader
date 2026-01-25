@@ -138,10 +138,12 @@ impl<T: GLInterface> FilterPass<T> {
                 output.size.height as i32,
             );
 
-            if framebuffer.format == glow::SRGB8_ALPHA8 {
-                parent.context.enable(glow::FRAMEBUFFER_SRGB);
-            } else {
-                parent.context.disable(glow::FRAMEBUFFER_SRGB);
+            if parent.caps.framebuffer_srgb {
+                if framebuffer.format == glow::SRGB8_ALPHA8 {
+                    parent.context.enable(glow::FRAMEBUFFER_SRGB);
+                } else {
+                    parent.context.disable(glow::FRAMEBUFFER_SRGB);
+                }
             }
 
             parent.context.disable(glow::CULL_FACE);
@@ -149,7 +151,9 @@ impl<T: GLInterface> FilterPass<T> {
             parent.context.disable(glow::DEPTH_TEST);
 
             parent.context.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
-            parent.context.disable(glow::FRAMEBUFFER_SRGB);
+            if parent.caps.framebuffer_srgb {
+                parent.context.disable(glow::FRAMEBUFFER_SRGB);
+            }
             parent.context.bind_framebuffer(glow::FRAMEBUFFER, None);
         }
 
