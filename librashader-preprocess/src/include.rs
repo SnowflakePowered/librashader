@@ -114,7 +114,13 @@ fn preprocess(
     }
 
     for (line_no, line) in lines.enumerate() {
-        if let Some(include_file) = line.strip_prefix("#include ") {
+        if let Some(mut include_file) = line.strip_prefix("#include ") {
+            // Handle comments in include pragma
+            // (ref: #185, https://github.com/kokoko3k/koko-aio-slang/blob/619ad630422991606bc70751f084045c62863034/shaders-ng/config.inc#L765)
+            if let Some((file_path, _comment)) = include_file.split_once("//") {
+                include_file = file_path;
+            }
+
             let include_file = include_file.trim().trim_matches('"');
             if include_file.is_empty() {
                 return Err(PreprocessError::UnexpectedEol(line_no));

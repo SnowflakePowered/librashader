@@ -133,6 +133,18 @@ mod test {
     use crate::ShaderParameter;
 
     #[test]
+    fn parses_parameter_pragma_with_comment() {
+        assert_eq!(ShaderParameter {
+            id: "exc".into(),
+            description: "orizontal correction hack (games where players stay at center)".to_string(),
+            initial: 0.0,
+            minimum: -10.0,
+            maximum: 10.0,
+            step: 0.25
+        }, parse_parameter_string(r#"#pragma parameter exc "orizontal correction hack (games where players stay at center)" 0.0 -10.0 10.0 0.25 // some comment"#).unwrap())
+    }
+
+    #[test]
     fn parses_parameter_pragma() {
         assert_eq!(ShaderParameter {
             id: "exc".into(),
