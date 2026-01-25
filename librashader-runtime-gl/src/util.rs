@@ -33,13 +33,24 @@ pub fn gl_get_version(context: &glow::Context) -> GlslVersion {
     let min_ver = version.minor;
 
     match maj_ver {
-        3 => match min_ver {
-            3 => GlslVersion::Glsl330,
-            2 => GlslVersion::Glsl150,
-            1 => GlslVersion::Glsl140,
-            0 => GlslVersion::Glsl130,
-            _ => GlslVersion::Glsl150,
-        },
+        3 => {
+            if version.is_embedded {
+                match min_ver {
+                    2 => GlslVersion::Glsl320Es,
+                    1 => GlslVersion::Glsl310Es,
+                    0 => GlslVersion::Glsl300Es,
+                    _ => GlslVersion::Glsl300Es,
+                }
+            } else {
+                match min_ver {
+                    3 => GlslVersion::Glsl330,
+                    2 => GlslVersion::Glsl150,
+                    1 => GlslVersion::Glsl140,
+                    0 => GlslVersion::Glsl130,
+                    _ => GlslVersion::Glsl150,
+                }
+            }
+        }
         4 => match min_ver {
             6 => GlslVersion::Glsl460,
             5 => GlslVersion::Glsl450,
@@ -57,9 +68,9 @@ pub fn gl_get_version(context: &glow::Context) -> GlslVersion {
 pub fn gl_u16_to_version(context: &glow::Context, version: u16) -> GlslVersion {
     match version {
         0 => gl_get_version(context),
-        300 => GlslVersion::Glsl130,
-        310 => GlslVersion::Glsl140,
-        320 => GlslVersion::Glsl150,
+        300 => GlslVersion::Glsl300Es,
+        310 => GlslVersion::Glsl310Es,
+        320 => GlslVersion::Glsl320Es,
         330 => GlslVersion::Glsl330,
         400 => GlslVersion::Glsl400,
         410 => GlslVersion::Glsl410,
