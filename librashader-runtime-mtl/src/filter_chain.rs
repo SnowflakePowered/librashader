@@ -144,7 +144,7 @@ impl FilterChainMetal {
             Self::load_from_pack_deferred_internal(preset, queue.device(), &cmd, options)?;
 
         cmd.commit();
-        unsafe { cmd.waitUntilCompleted() };
+        cmd.waitUntilCompleted();
 
         Ok(filter_chain)
     }
@@ -386,7 +386,7 @@ impl FilterChainMetal {
     ) -> error::Result<()> {
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         if let Some(options) = &options {
-            let clear_desc = unsafe { MTLRenderPassDescriptor::new() };
+            let clear_desc = MTLRenderPassDescriptor::new();
             if options.clear_history {
                 for (index, history) in self.history_framebuffers.iter().enumerate() {
                     unsafe {

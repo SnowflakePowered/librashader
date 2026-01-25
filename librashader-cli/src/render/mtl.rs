@@ -116,9 +116,7 @@ impl RenderTest for Metal {
         }
 
         cmd.commit();
-        unsafe {
-            cmd.waitUntilCompleted();
-        }
+        cmd.waitUntilCompleted();
 
         let region = MTLRegion {
             origin: MTLOrigin { x: 0, y: 0, z: 0 },
