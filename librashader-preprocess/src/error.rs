@@ -10,24 +10,24 @@ pub enum PreprocessError {
     #[error("the version header was missing")]
     MissingVersionHeader,
     /// An IO error occurred when reading the source file.
-    #[error("the file was not found during resolution")]
+    #[error("the file {0:?} was not found during resolution {1:?}")]
     IOError(PathBuf, std::io::Error),
     /// A known encoding was not found for the file.
     #[error(
-        "a known encoding was not found for the file. supported encodings are UTF-8 and Latin-1"
+        "a known encoding was not found for the file {0:?}. supported encodings are UTF-8 and Latin-1"
     )]
     EncodingError(PathBuf),
     /// Unexpected EOF when reading the source file.
     #[error("unexpected end of file")]
     UnexpectedEof,
     /// Unexpected end of line when reading the source file.
-    #[error("unexpected end of line")]
+    #[error("unexpected end of line at line {0}")]
     UnexpectedEol(usize),
     /// An error occurred when parsing a pragma statement.
-    #[error("error parsing pragma")]
+    #[error("error parsing pragma {0}")]
     PragmaParseError(String),
     /// The given pragma was declared multiple times with differing values.
-    #[error("duplicate pragma found")]
+    #[error("duplicate pragma {0} found")]
     DuplicatePragmaError(ShortString),
     /// The image format requested by the shader was unknown or not supported.
     #[error("shader format is unknown or not found")]
