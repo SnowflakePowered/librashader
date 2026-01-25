@@ -131,6 +131,10 @@ impl FramebufferInterface for Gl3Framebuffer {
             );
 
             fb.ctx.read_buffer(glow::COLOR_ATTACHMENT0);
+
+            // GLES 3.0 does not support `glDrawBuffer`, only `glDrawBuffers`.
+            // GLES requires that `GL_DRAW_BUFFERi` points to `GL_COLOR_ATTACHMENTi` or `GL_NONE`.
+            // So we must use `glDrawBuffers` and pad the first entry with `GL_NONE` to write to `GL_COLOR_ATTACHMENT1`.
             fb.ctx.draw_buffers(&[glow::NONE, glow::COLOR_ATTACHMENT1]);
 
             fb.ctx.blit_framebuffer(
