@@ -131,7 +131,7 @@ impl FramebufferInterface for Gl3Framebuffer {
             );
 
             fb.ctx.read_buffer(glow::COLOR_ATTACHMENT0);
-            fb.ctx.draw_buffer(glow::COLOR_ATTACHMENT1);
+            fb.ctx.draw_buffers(&[glow::COLOR_ATTACHMENT1]);
 
             fb.ctx.blit_framebuffer(
                 0,
