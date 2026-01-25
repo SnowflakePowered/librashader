@@ -57,10 +57,16 @@ impl SamplerSet {
                             .create_sampler()
                             .map_err(|_| FilterChainError::GlSamplerError)?;
 
+                        let mut gl_wrap_mode = *wrap_mode;
+                        if context.version().is_embedded && gl_wrap_mode == WrapMode::ClampToBorder
+                        {
+                            gl_wrap_mode = WrapMode::ClampToEdge;
+                        }
+
                         SamplerSet::make_sampler(
                             context,
                             sampler,
-                            *wrap_mode,
+                            gl_wrap_mode,
                             *filter_mode,
                             *mip_filter,
                         );
