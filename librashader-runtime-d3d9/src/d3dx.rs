@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 use windows::core::{Param, HRESULT, PCSTR};
-use windows::Win32::Graphics::Direct3D::{ID3DBlob, ID3DInclude, D3D_SHADER_MACRO};
+use windows::Win32::Graphics::Direct3D::D3D_SHADER_MACRO;
 
 const D3DERR_INVALIDCALL: u32 = 0x8876086c;
 
@@ -32,41 +32,6 @@ pub mod raw {
             ppconstantable: *mut *mut c_void,
         ) -> windows::core::HRESULT;
     }
-}
-
-#[allow(dead_code)]
-#[allow(non_snake_case)]
-#[inline]
-pub unsafe fn D3DXCompileShader<P1, P2, P3>(
-    psrcdata: *const c_void,
-    srcdatasize: usize,
-    pdefines: Option<*const D3D_SHADER_MACRO>,
-    pinclude: P1,
-    pfunctioname: P2,
-    pprofile: P3,
-    flags: u32,
-    ppcode: *mut Option<ID3DBlob>,
-    pperrormsgs: Option<*mut Option<ID3DBlob>>,
-    ppconstanttable: Option<*mut Option<ID3DXConstantTable>>,
-) -> ::windows::core::Result<()>
-where
-    P1: Param<ID3DInclude>,
-    P2: Param<PCSTR>,
-    P3: Param<PCSTR>,
-{
-    raw::D3DXCompileShader(
-        psrcdata,
-        srcdatasize,
-        ::core::mem::transmute(pdefines.unwrap_or(::std::ptr::null())),
-        pinclude.param().abi(),
-        pfunctioname.param().abi(),
-        pprofile.param().abi(),
-        flags,
-        ::core::mem::transmute(ppcode),
-        ::core::mem::transmute(pperrormsgs.unwrap_or(::std::ptr::null_mut())),
-        ::core::mem::transmute(ppconstanttable.unwrap_or(::std::ptr::null_mut())),
-    )
-    .ok()
 }
 
 windows::core::imp::define_interface!(

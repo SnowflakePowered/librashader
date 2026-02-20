@@ -120,7 +120,8 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
     unsafe {
         let mut blob = None;
         let mut errs = None;
-        let res = D3DCompile(
+
+        let mut res = D3DCompile(
             source.as_ptr().cast(),
             source.len(),
             None,
@@ -134,6 +135,22 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             Some(&mut errs),
         );
 
+        if res.is_err() {
+            res = D3DCompile(
+                source.as_ptr().cast(),
+                source.len(),
+                None,
+                None,
+                None,
+                PCSTR(entry.as_ptr()),
+                PCSTR(version.as_ptr()),
+                0,
+                0,
+                &mut blob,
+                Some(&mut errs),
+            );
+        }
+        
         // let res = D3DXCompileShader(
         //     source.as_ptr().cast(),
         //     source.len(),

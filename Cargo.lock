@@ -3203,9 +3203,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-cross-sys"
-version = "0.4.3+e670b39"
+version = "0.6.1+bf6bb5c"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85a1966fed47a227b129a34440657270dd1b47c7771f2b2637b82ff6dfcbde0b"
+checksum = "9f62cba64200088a7458bb700a2622d440420cb84c7c347e2b25f65850bbded3"
 dependencies = [
  "bytemuck",
  "cc",
@@ -3215,9 +3215,9 @@ dependencies = [
 
 [[package]]
 name = "spirv-cross2"
-version = "0.4.6"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c248b63ebea5a3153214091875d63cc0bacbe4743c13e20dc54bd73ba847972"
+checksum = "696259e05494c2b1dad12286cf545071af01a3802ab44e069e2d33bb9b393b58"
 dependencies = [
  "bitflags 2.10.0",
  "bytemuck",
