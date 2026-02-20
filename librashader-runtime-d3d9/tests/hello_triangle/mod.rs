@@ -84,7 +84,7 @@ where
             window_rect.bottom - window_rect.top,
             None, // no parent window
             None, // no menus
-            instance,
+            Some(HINSTANCE::from(instance)),
             Some(&sample as *const _ as _),
         )
     };
@@ -199,6 +199,7 @@ pub mod d3d9_hello_triangle {
     use librashader_runtime_d3d9::options::FilterChainOptionsD3D9;
     use librashader_runtime_d3d9::FilterChainD3D9;
     use std::time::Instant;
+    use librashader_common::shader_features::ShaderFeatures;
 
     pub struct Sample {
         pub direct3d: IDirect3D9,
@@ -259,6 +260,7 @@ pub mod d3d9_hello_triangle {
             let filter = unsafe {
                 FilterChainD3D9::load_from_path(
                     &self.filter,
+                    ShaderFeatures::empty(),
                     &device,
                     Some(&FilterChainOptionsD3D9 {
                         force_no_mipmaps: false,
@@ -457,7 +459,7 @@ pub mod d3d9_hello_triangle {
                 resources.device.Present(
                     std::ptr::null_mut(),
                     std::ptr::null_mut(),
-                    None,
+                    HWND::default(),
                     std::ptr::null_mut(),
                 )?;
             }

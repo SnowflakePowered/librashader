@@ -23,7 +23,7 @@ resolver = "2"
 windows = "0.62"
 windows-core = "0.62"
 ash = "0.38"
-spirv-cross2 = { version = "0.4", default-features = false }
+spirv-cross2 = { version = "0.6", default-features = false }
 objc2-metal = { version = "0.3" }
 objc2 = { version = "0.6" }
 glow = { version = "0.16.0" }
