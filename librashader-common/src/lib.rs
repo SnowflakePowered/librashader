@@ -36,6 +36,7 @@ mod viewport;
 #[doc(hidden)]
 pub mod map;
 pub mod shader_features;
+pub mod string;
 
 pub use viewport::Viewport;
 
