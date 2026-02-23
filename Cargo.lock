@@ -1257,6 +1257,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8588661a8607108a5ca69cab034063441a0413a0b041c13618a7dd348021ef6f"
 dependencies = [
  "hashbrown 0.14.5",
+]
+
+[[package]]
+name = "halfbrown"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c7ed2f2edad8a14c8186b847909a41fbb9c3eafa44f88bd891114ed5019da09"
+dependencies = [
+ "hashbrown 0.16.1",
  "serde",
 ]
 
@@ -1501,7 +1510,7 @@ version = "0.10.1"
 dependencies = [
  "ash",
  "glob",
- "halfbrown",
+ "halfbrown 0.2.5",
  "librashader-cache",
  "librashader-common",
  "librashader-pack",
@@ -1603,13 +1612,13 @@ dependencies = [
  "ash",
  "bitflags 2.10.0",
  "glow",
- "halfbrown",
+ "halfbrown 0.4.0",
  "num-traits",
  "objc2 0.6.3",
  "objc2-metal",
  "rustc-hash 2.1.1",
  "serde",
- "smartstring",
+ "strumbra",
  "wgpu-types",
  "windows",
 ]
@@ -3140,7 +3149,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fb72c633efbaa2dd666986505016c32c3044395ceaf881518399d2f4127ee29"
 dependencies = [
  "autocfg",
- "serde",
  "static_assertions",
  "version_check",
 ]
@@ -3318,6 +3326,15 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "strumbra"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b498044485e2789b38e047fdb4c7ac827bd72d66407af9e5d15626f9c45364e"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "syn"

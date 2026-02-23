@@ -21,12 +21,13 @@ dxgi = ["windows"]
 vulkan = ["ash"]
 wgpu = ["wgpu-types"]
 metal = ["objc2", "objc2-metal"]
-serde = ["dep:serde", "serde/derive", "smartstring/serde", "halfbrown/serde"]
+serde = ["dep:serde", "serde/derive", "strumbra/serde", "halfbrown/serde"]
 [dependencies]
 num-traits = "0.2.15"
 rustc-hash = "2.0.0"
-halfbrown = "0.2.4"
-smartstring = "1.0"
+halfbrown = "0.4.0"
+strumbra = "0.6.0"
+
 bitflags = { version = "2", features = ["serde"] }
 
 glow = { workspace = true, optional = true }
