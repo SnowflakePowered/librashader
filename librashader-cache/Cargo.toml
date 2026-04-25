@@ -20,6 +20,7 @@ thiserror = "2"
 bincode = { version = "2.0.0-rc.2", features = ["serde"] }
 persy = "1.6.0"
 
+parking_lot = "0.12.5"
 bytemuck = "1.13.0"
 
 [target.x86_64-win7-windows-msvc.dependencies.blake3]

@@ -12,13 +12,13 @@ use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 // const FILTER_PATH: &str =
 //     "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID].slangp";
 
-// const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
 
 // const FILTER_PATH: &str = "../test/slang-shaders/test/history.slangp";
 // const FILTER_PATH: &str = "../test/shaders_slang/test/feedback.slangp";
 
 // const FILTER_PATH: &str = "../test/aspect.slangp";
-const FILTER_PATH: &str = "../test/shaders_slang/sonkun/slot-mask/flat-screen/1080p/test.slangp";
+// const FILTER_PATH: &str = "../test/shaders_slang/sonkun/slot-mask/flat-screen/1080p/test.slangp";
 
 const IMAGE_PATH: &str = "../triangle.png";
 #[test]
@@ -43,13 +43,7 @@ fn triangle_d3d11_args() {
         Some(image),
     )
     .unwrap();
-    // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new(
-    //     "../test/slang-shaders/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
-    //     Some(&FilterChainOptions {
-    //         use_deferred_context: true,
-    //     })
-    // )
-    // .unwrap();
+
 
     // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
 
@@ -59,10 +53,10 @@ fn triangle_d3d11_args() {
 #[test]
 fn triangle_d3d11() {
     let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
-        FILTER_PATH,
+        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
-            disable_cache: true,
+            disable_cache: false,
         }),
         // replace below with 'None' for the triangle
         None,

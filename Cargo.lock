@@ -1552,6 +1552,7 @@ dependencies = [
  "bytemuck",
  "librashader-preprocess",
  "librashader-reflect",
+ "parking_lot",
  "persy",
  "platform-dirs",
  "serde",
