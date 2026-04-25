@@ -14,7 +14,7 @@ pub(crate) mod internal {
     use std::error::Error;
     use std::panic::catch_unwind;
     use std::path::PathBuf;
-
+    use std::sync::OnceLock;
     use persy::{ByteVec, Config, Persy, ValueMode};
     use thiserror::Error;
 
@@ -63,7 +63,13 @@ pub(crate) mod internal {
 
     pub(crate) fn get_cache() -> Result<Persy, Box<dyn Error>> {
         let cache_dir = get_cache_dir()?;
-        match catch_unwind(|| {
+        static CACHE: OnceLock<Persy> = OnceLock::new();
+
+        if let Some(persy) = CACHE.get() {
+            return Ok(persy.clone());
+        }
+
+        let persy = match catch_unwind(|| {
             Persy::open_or_create_with(
                 &cache_dir.join("librashader.db.1"),
                 Config::new(),
@@ -74,7 +80,7 @@ pub(crate) mod internal {
                 },
             )
         }) {
-            Ok(Ok(conn)) => Ok(conn),
+            Ok(Ok(conn)) => Ok::<_, Box<dyn Error>>(conn),
             Ok(Err(e)) => {
                 remove_cache();
                 Err(e)?
@@ -83,7 +89,9 @@ pub(crate) mod internal {
                 remove_cache();
                 Err(CatchPanicError::Panic(e))?
             }
-        }
+        }?;
+
+        Ok(CACHE.get_or_init(move || persy).clone())
     }
 
     pub(crate) fn get_blob(
