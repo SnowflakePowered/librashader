@@ -145,7 +145,14 @@ impl CompileShader<GLSL> for CrossReflect<targets::Glsl> {
             )?;
             self.fragment
                 .set_decoration(res.id, Decoration::Binding, DecorationValue::unset())?;
-            let name = res.name.to_string();
+
+            // The SPIR-V name may collide with a GLSL reserved keyword (e.g. `noise1`,
+            // `texture2D`), in which case spirv-cross would prefix it with `_` in the
+            // emitted GLSL. That breaks the later `glGetUniformLocation` lookup which
+            // uses this name verbatim. Prefix with `LIBRA_TEXTURE_` so the identifier
+            // won't collide with any reserved words.
+            let name = format!("LIBRA_TEXTURE_{}", res.name);
+            self.fragment.set_name(res.id, name.as_str())?;
             texture_fixups.push((name, binding));
         }
 
