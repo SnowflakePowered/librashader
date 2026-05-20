@@ -362,12 +362,14 @@ pub fn parse_values(
         })
         .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
 
+        // For LUTs, only, defaults LUT filtering to LINEAR when `<Texture>_linear` is absent.
+        // This matches RetroArch LUT filtering behaviour
         let linear = remove_if(&mut tokens, |(_, t)| {
             t.key.starts_with(*texture)
                 && t.key.ends_with("_linear")
                 && t.key.len() == texture.len() + "_linear".len()
         })
-        .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
+        .map_or_else(|| Ok(true), |(_, v)| from_bool(v.value))?;
 
         let wrap_mode = remove_if(&mut tokens, |(_, t)| {
             t.key.starts_with(*texture)
@@ -598,7 +600,7 @@ pub fn parse_values(
                 && t.key.ends_with("_linear")
                 && t.key.len() == texture.len() + "_linear".len()
         })
-        .map_or_else(|| Ok(false), |(_, v)| from_bool(v.value))?;
+        .map_or_else(|| Ok(true), |(_, v)| from_bool(v.value))?;
 
         let wrap_mode = remove_if(&mut rest_tokens, |(_, t)| {
             t.key.starts_with(*texture)
