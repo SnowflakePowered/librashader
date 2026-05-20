@@ -34,8 +34,8 @@ pub(crate) struct FilterPass {
     pub(crate) uniform_bindings: FastHashMap<UniformBinding, MemberOffset>,
     pub uniform_storage:
         UniformStorage<NoUniformBinder, Option<()>, RawD3D12Buffer, RawD3D12Buffer>,
-    pub(crate) texture_heap: [D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16],
-    pub(crate) sampler_heap: [D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16],
+    pub(crate) texture_heap: Box<[[D3D12DescriptorHeapSlot<ResourceWorkHeap>; 16]]>,
+    pub(crate) sampler_heap: Box<[[D3D12DescriptorHeapSlot<SamplerWorkHeap>; 16]]>,
     pub source: ShaderSource,
 }
 
@@ -96,11 +96,15 @@ impl FilterPass {
         original: &InputTexture,
         source: &InputTexture,
     ) {
+        let frame_idx = parent.internal_frame_count % self.texture_heap.len();
         Self::bind_semantics(
             &(),
             &parent.samplers,
             &mut self.uniform_storage,
-            &mut (&mut self.texture_heap, &mut self.sampler_heap),
+            &mut (
+                &mut self.texture_heap[frame_idx],
+                &mut self.sampler_heap[frame_idx],
+            ),
             UniformInputs {
                 mvp,
                 frame_count,
@@ -151,6 +155,9 @@ impl FilterPass {
             cmd.SetPipelineState(self.pipeline.pipeline_state(output.output.format));
         }
 
+        // texture and sampler heap must have the same size.
+        let frame_idx = parent.internal_frame_count % self.texture_heap.len();
+
         self.build_semantics(
             pass_index,
             parent,
@@ -182,8 +189,8 @@ impl FilterPass {
         }
 
         unsafe {
-            cmd.SetGraphicsRootDescriptorTable(0, *self.texture_heap[0].as_ref());
-            cmd.SetGraphicsRootDescriptorTable(1, *self.sampler_heap[0].as_ref());
+            cmd.SetGraphicsRootDescriptorTable(0, *self.texture_heap[frame_idx][0].as_ref());
+            cmd.SetGraphicsRootDescriptorTable(1, *self.sampler_heap[frame_idx][0].as_ref());
         }
 
         // todo: check for non-renderpass.

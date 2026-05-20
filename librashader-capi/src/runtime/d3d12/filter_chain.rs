@@ -132,11 +132,15 @@ pub struct filter_chain_d3d12_opt_t {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+
+    /// The number of frames in flight to keep. If zero, defaults to three.
+    pub frames_in_flight: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d12_opt_t {
         0 =>  [force_hlsl_pipeline, force_no_mipmaps, disable_cache];
+        3 =>  [frames_in_flight];
     }
 }
 
