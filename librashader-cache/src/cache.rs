@@ -15,6 +15,7 @@ pub(crate) mod internal {
     use std::panic::catch_unwind;
     use std::path::PathBuf;
     use std::sync::OnceLock;
+    use parking_lot::Mutex;
     use persy::{ByteVec, Config, Persy, ValueMode};
     use thiserror::Error;
 
@@ -113,6 +114,10 @@ pub(crate) mod internal {
         key: &[u8],
         value: &[u8],
     ) -> Result<(), Box<dyn Error>> {
+        static WRITE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        let write_lock = WRITE_LOCK.get_or_init(|| Mutex::new(()));
+        let _guard = write_lock.lock();
+
         let mut tx = conn.begin()?;
         if !tx.exists_index(index)? {
             tx.create_index::<ByteVec, ByteVec>(index, ValueMode::Replace)?;
