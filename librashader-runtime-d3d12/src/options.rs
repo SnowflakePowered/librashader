@@ -18,4 +18,7 @@ pub struct FilterChainOptionsD3D12 {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+
+    /// The number of frames in flight to keep. If zero, defaults to three.
+    pub frames_in_flight: u32,
 }

@@ -21,7 +21,9 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 /// - API version 2: 0.6.0
 ///     - Added original aspect uniforms
 ///     - Added frame time uniforms
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 2;
+/// - API version 3: 0.10.0
+///     - Added frames_in_flight to Direct3D 12 filter chain options
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 3;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.

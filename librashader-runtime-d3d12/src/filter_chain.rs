@@ -1,5 +1,5 @@
 use crate::buffer::{D3D12Buffer, RawD3D12Buffer};
-use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap, ResourceWorkHeap};
+use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap, ResourceWorkHeap, SamplerWorkHeap};
 use crate::draw_quad::DrawQuad;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
@@ -89,6 +89,7 @@ pub(crate) struct FilterCommon {
     pub feedback_textures: Box<[Option<InputTexture>]>,
     pub history_textures: Box<[Option<InputTexture>]>,
     pub config: RuntimeParameters,
+    pub internal_frame_count: usize,
     // pub disable_mipmaps: bool,
     pub luts: FastHashMap<usize, LutTexture>,
     pub mipmap_gen: D3D12MipmapGen,
@@ -339,6 +340,11 @@ impl FilterChainD3D12 {
         cmd: &ID3D12GraphicsCommandList,
         options: Option<&FilterChainOptionsD3D12>,
     ) -> error::Result<FilterChainD3D12> {
+        let mut frames_in_flight = options.map_or(0, |o| o.frames_in_flight);
+        if frames_in_flight == 0 {
+            frames_in_flight = 3;
+        }
+
         let config = RuntimeParameters::new(&preset);
 
         let shader_count = preset.passes.len();
@@ -390,6 +396,7 @@ impl FilterChainD3D12 {
             &semantics,
             options.map_or(false, |o| o.force_hlsl_pipeline),
             disable_cache,
+            frames_in_flight as usize,
         )?;
 
         let mut residuals = FrameResiduals::new();
@@ -444,6 +451,7 @@ impl FilterChainD3D12 {
                 draw_quad,
                 config,
                 history_textures,
+                internal_frame_count: 0,
             },
             staging_heap,
             rtv_heap,
@@ -521,6 +529,7 @@ impl FilterChainD3D12 {
         semantics: &ShaderSemantics,
         force_hlsl: bool,
         disable_cache: bool,
+        frames_in_flight: usize,
     ) -> error::Result<(
         ID3D12DescriptorHeap,
         ID3D12DescriptorHeap,
@@ -528,6 +537,7 @@ impl FilterChainD3D12 {
         D3D12DescriptorHeap<ResourceWorkHeap>,
     )> {
         let shader_count = passes.len();
+
         let D3D12PartitionedHeap {
             partitioned: work_heaps,
             reserved: mipmap_heap,
@@ -535,7 +545,8 @@ impl FilterChainD3D12 {
         } = unsafe {
             let work_heap = D3D12PartitionableHeap::<ResourceWorkHeap>::new(
                 device,
-                (MAX_BINDINGS_COUNT as usize) * shader_count + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
+                (MAX_BINDINGS_COUNT as usize) * shader_count * frames_in_flight
+                    + MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS,
             )?;
 
             work_heap.into_partitioned(
@@ -549,16 +560,33 @@ impl FilterChainD3D12 {
             reserved: _,
             handle: sampler_heap_handle,
         } = unsafe {
-            let sampler_heap =
-                D3D12PartitionableHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
+            let sampler_heap = D3D12PartitionableHeap::new(
+                device,
+                (MAX_BINDINGS_COUNT as usize) * shader_count * frames_in_flight,
+            )?;
             sampler_heap.into_partitioned(MAX_BINDINGS_COUNT as usize, 0)?
+        };
+
+        // Group the per-pass partitions: each shader pass takes `frames_in_flight`
+        // contiguous partitions so it can rotate descriptor tables per in-flight frame.
+        let work_heap_chunks: Vec<Vec<D3D12DescriptorHeap<ResourceWorkHeap>>> = {
+            let mut iter = work_heaps.into_iter();
+            (0..shader_count)
+                .map(|_| iter.by_ref().take(frames_in_flight).collect())
+                .collect()
+        };
+        let sampler_heap_chunks: Vec<Vec<D3D12DescriptorHeap<SamplerWorkHeap>>> = {
+            let mut iter = sampler_work_heaps.into_iter();
+            (0..shader_count)
+                .map(|_| iter.by_ref().take(frames_in_flight).collect())
+                .collect()
         };
 
         let filters: Vec<error::Result<_>> = passes
             .into_par_iter()
             .zip(hlsl_passes)
-            .zip(work_heaps)
-            .zip(sampler_work_heaps)
+            .zip(work_heap_chunks)
+            .zip(sampler_heap_chunks)
             .enumerate()
             .map_init(
                 || {
@@ -571,7 +599,7 @@ impl FilterChainD3D12 {
                 |dxc,
                  (
                     index,
-                    ((((config, mut dxil), (_, mut hlsl)), mut texture_heap), mut sampler_heap),
+                    ((((config, mut dxil), (_, mut hlsl)), texture_heap_chunk), sampler_heap_chunk),
                 )| {
                     let Ok((validator, library, compiler)) = dxc else {
                         return Err(FilterChainError::Direct3DOperationError(
@@ -645,8 +673,16 @@ impl FilterChainD3D12 {
                     let uniform_bindings =
                         reflection.meta.create_binding_map(|param| param.offset());
 
-                    let texture_heap = texture_heap.allocate_descriptor_range()?;
-                    let sampler_heap = sampler_heap.allocate_descriptor_range()?;
+                    let texture_heap = texture_heap_chunk
+                        .into_iter()
+                        .map(|mut p| p.allocate_descriptor_range::<16>().map_err(Into::into))
+                        .collect::<error::Result<Vec<_>>>()?
+                        .into_boxed_slice();
+                    let sampler_heap = sampler_heap_chunk
+                        .into_iter()
+                        .map(|mut p| p.allocate_descriptor_range::<16>().map_err(Into::into))
+                        .collect::<error::Result<Vec<_>>>()?
+                        .into_boxed_slice();
 
                     Ok(FilterPass {
                         reflection,
@@ -976,6 +1012,8 @@ impl FilterChainD3D12 {
         }
 
         self.push_history(cmd, &original)?;
+
+        self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
 
         Ok(())
     }

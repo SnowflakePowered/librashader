@@ -89,6 +89,7 @@ impl RenderTest for Direct3D12 {
                     force_hlsl_pipeline: false,
                     force_no_mipmaps: false,
                     disable_cache: false,
+                    frames_in_flight: 3,
                 }),
             )?;
 
