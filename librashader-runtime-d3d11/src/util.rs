@@ -112,7 +112,8 @@ pub fn d3d11_get_closest_format(
 pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error::Result<ID3DBlob> {
     unsafe {
         let mut blob = None;
-        D3DCompile(
+        let mut error_blob = None;
+        let result = D3DCompile(
             source.as_ptr().cast(),
             source.len(),
             None,
@@ -127,8 +128,21 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             },
             0,
             &mut blob,
-            None,
-        )?;
+            Some(&mut error_blob),
+        );
+
+        if let Err(e) = result {
+            if let Some(eb) = error_blob {
+                let ptr = eb.GetBufferPointer() as *const u8;
+                let len = eb.GetBufferSize();
+                let bytes = std::slice::from_raw_parts(ptr, len);
+                // D3DCompile error blobs are NUL-terminated ASCII; strip the trailing NUL if present.
+                let bytes = bytes.strip_suffix(b"\0").unwrap_or(bytes);
+                let msg = String::from_utf8_lossy(bytes).into_owned();
+                return Err(crate::error::FilterChainError::D3DCompileError(msg));
+            }
+            return Err(e.into());
+        }
 
         assume_d3d11_init!(blob, "D3DCompile");
         Ok(blob)
