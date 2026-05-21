@@ -107,7 +107,7 @@ mod test {
 
     fn do_test<T: RenderTest>() -> anyhow::Result<()> {
         let mut test = T::new(IMAGE_PATH.as_ref())?;
-        let image = test.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100)?;
+        let image = test.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100, None)?;
 
         let out = File::create("out.png")?;
         image.write_with_encoder(PngEncoder::new(out))?;
@@ -166,8 +166,8 @@ mod test {
         let mut a = A::new(IMAGE_PATH.as_ref())?;
         let mut b = B::new(IMAGE_PATH.as_ref())?;
 
-        let a_image = a.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100)?;
-        let b_image = b.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100)?;
+        let a_image = a.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100, None)?;
+        let b_image = b.render(FILTER_PATH.as_ref(), ShaderFeatures::NONE, 100, None)?;
 
         let similarity = image_compare::rgba_hybrid_compare(&a_image, &b_image)?;
         assert!(similarity.score > 0.95);
