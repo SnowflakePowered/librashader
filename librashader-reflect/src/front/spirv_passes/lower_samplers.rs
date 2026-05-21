@@ -425,7 +425,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
 
                     // load the sampler
                     instructions.push(Instruction {
-                        class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::Load),
+                        class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::Load),
                         result_type: Some(op_type_sampler),
                         result_id: Some(op_load_sampler_id),
                         operands: vec![Operand::IdRef(combined_image_sampler.sampler_variable)],
@@ -433,7 +433,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
 
                     // reuse the old id for the OpSampleImage
                     instructions.push(Instruction {
-                        class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::SampledImage),
+                        class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::SampledImage),
                         result_type: combined_image_sampler.original_uniform_type.result_id,
                         result_id: instr.result_id,
 
@@ -602,7 +602,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
 
                     // load the sampler
                     instructions.push(Instruction {
-                        class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::AccessChain),
+                        class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::AccessChain),
                         result_type: Some(op_type_sampler_pointer),
                         result_id: Some(op_access_chain_sampler_id),
                         operands: vec![
@@ -612,7 +612,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
                     });
 
                     instructions.push(Instruction {
-                        class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::Load),
+                        class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::Load),
                         result_type: Some(op_type_sampler),
                         result_id: Some(op_load_sampler_id),
                         operands: vec![Operand::IdRef(op_access_chain_sampler_id)],
@@ -620,7 +620,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
 
                     // reuse the old id for the OpSampleImage
                     instructions.push(Instruction {
-                        class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::SampledImage),
+                        class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::SampledImage),
                         result_type: Some(op_type_sampled_image),
                         result_id: instr.result_id,
 
@@ -771,7 +771,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
                         let op_access_chain_sampler_id = self.builder.id();
                         // access chain the sampler
                         instructions.push(Instruction {
-                            class: rspirv::grammar::CoreInstructionTable::get(
+                            class: rspirv::grammar::INSTRUCTION_TABLE.get(
                                 spirv::Op::AccessChain,
                             ),
                             result_type: Some(op_type_sampler_pointer),
@@ -915,14 +915,14 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
                 let op_function_parameter_sampler_id = self.builder.id();
 
                 parameters.push(Instruction {
-                    class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::FunctionParameter),
+                    class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::FunctionParameter),
                     result_type: Some(sampled_image.target_texture_pointer_type_id),
                     result_id: param.result_id,
                     operands: vec![],
                 });
 
                 parameters.push(Instruction {
-                    class: rspirv::grammar::CoreInstructionTable::get(spirv::Op::FunctionParameter),
+                    class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::FunctionParameter),
                     result_type: Some(sampled_image.sampler_pointer_type),
                     result_id: Some(op_function_parameter_sampler_id),
                     operands: vec![],

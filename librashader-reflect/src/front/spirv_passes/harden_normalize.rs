@@ -176,7 +176,7 @@ impl<'a> HardenNormalize<'a> {
 
                     let fadd_id = self.builder.id();
                     new_instructions.push(Instruction {
-                        class: rspirv::grammar::CoreInstructionTable::get(Op::FAdd),
+                        class: rspirv::grammar::INSTRUCTION_TABLE.get(Op::FAdd),
                         result_type: Some(result_type),
                         result_id: Some(fadd_id),
                         operands: vec![Operand::IdRef(input_id), Operand::IdRef(eps_id)],
@@ -207,5 +207,5 @@ fn is_normalize(instr: &Instruction, ext_set: Word) -> bool {
     let Some(Operand::LiteralExtInstInteger(opc)) = instr.operands.get(1) else {
         return false;
     };
-    *opc == spirv::GLOp::Normalize as u32
+    *opc == spirv::GlslStd450Op::Normalize as u32
 }

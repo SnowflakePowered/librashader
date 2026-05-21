@@ -23,14 +23,14 @@ resolver = "2"
 windows = "0.62"
 windows-core = "0.62"
 ash = "0.38"
-spirv-cross2 = { version = "0.6", default-features = false }
+spirv-cross2 = { version = "0.7.0", default-features = false }
 objc2-metal = { version = "0.3" }
 objc2 = { version = "0.6" }
-glow = { version = "0.16.0" }
+glow = { version = "0.17.0" }
 glfw = { version = "0.59.0" }
 
-wgpu = { version = "28", default-features = false }
-wgpu-types = { version = "28" }
+wgpu = { version = "29.0.3", default-features = false }
+wgpu-types = { version = "29.0.3" }
 
 clap = { version = "=4.3.0", features = ["derive"] }
 rayon = { version = "1.10.0"}

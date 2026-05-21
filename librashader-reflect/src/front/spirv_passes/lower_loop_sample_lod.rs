@@ -322,7 +322,7 @@ impl<'a> LowerLoopSampleLod<'a> {
                 }
             }
         }
-        self.builder.type_float(32)
+        self.builder.type_float(32, None)
     }
 }
 
@@ -555,11 +555,11 @@ fn is_per_thread_op(op: Op) -> bool {
 fn convert_implicit_to_explicit(instr: &mut Instruction, lod_zero: Word) {
     match instr.class.opcode {
         Op::ImageSampleImplicitLod => {
-            instr.class = rspirv::grammar::CoreInstructionTable::get(Op::ImageSampleExplicitLod);
+            instr.class = rspirv::grammar::INSTRUCTION_TABLE.get(Op::ImageSampleExplicitLod);
         }
         Op::ImageSparseSampleImplicitLod => {
             instr.class =
-                rspirv::grammar::CoreInstructionTable::get(Op::ImageSparseSampleExplicitLod);
+                rspirv::grammar::INSTRUCTION_TABLE.get(Op::ImageSparseSampleExplicitLod);
         }
         _ => return,
     }
