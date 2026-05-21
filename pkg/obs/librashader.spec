@@ -33,14 +33,13 @@ RUSTC_BOOTSTRAP=1 cargo run --ignore-rust-version -p librashader-build-script --
 mkdir -p %{buildroot}/%{_libdir}
 mkdir -p %{buildroot}/%{_includedir}/librashader
 patchelf --set-soname librashader.so.2 target/%{profile}/librashader.so
-install -m 0755 target/%{profile}/librashader.so %{buildroot}%{_libdir}/librashader.so
-cp target/%{profile}/librashader.h %{buildroot}%{_includedir}/librashader/librashader.h 
-cp include/librashader_ld.h %{buildroot}%{_includedir}/librashader/librashader_ld.h 
+install -m 0755 target/%{profile}/librashader.so %{buildroot}%{_libdir}/librashader.so.2
+ln -s librashader.so.2 %{buildroot}%{_libdir}/librashader.so
+cp target/%{profile}/librashader.h %{buildroot}%{_includedir}/librashader/librashader.h
+cp include/librashader_ld.h %{buildroot}%{_includedir}/librashader/librashader_ld.h
 
 
-%files 
+%files
 %{_libdir}/librashader.so
-%if !0%{?suse_version}
 %{_libdir}/librashader.so.2
-%endif
 %{_includedir}/librashader/
