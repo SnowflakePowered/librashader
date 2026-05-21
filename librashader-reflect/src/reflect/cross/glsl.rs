@@ -30,17 +30,29 @@ impl CompileShader<GLSL> for CrossReflect<targets::Glsl> {
         let vertex_resources = self.vertex.shader_resources()?;
         let fragment_resources = self.fragment.shader_resources()?;
 
+        // Vertex outputs and fragment inputs link by name once the explicit
+        // `layout(location = N)` decoration is stripped. Shaders are free to give
+        // them different identifiers (e.g. `vTexCoord_out` / `vTexCoord_in`),
+        // which links fine in Vulkan via the location but fails in GL with
+        // "not declared as an output from the previous stage". Rename both sides
+        // to `LIBRA_VARYING_{location}` so they always match.
         for res in vertex_resources.resources_for_type(ResourceType::StageOutput)? {
-            // let location = self.vertex.get_decoration(res.id, Decoration::Location)?;
-            // self.vertex
-            //     .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
+            if let Some(DecorationValue::Literal(location)) =
+                self.vertex.decoration(res.id, Decoration::Location)?
+            {
+                self.vertex
+                    .set_name(res.id, format!("LIBRA_VARYING_{location}").as_str())?;
+            }
             self.vertex
                 .set_decoration(res.id, Decoration::Location, DecorationValue::unset())?;
         }
         for res in fragment_resources.resources_for_type(ResourceType::StageInput)? {
-            // let location = self.fragment.get_decoration(res.id, Decoration::Location)?;
-            // self.fragment
-            //     .set_name(res.id, &format!("LIBRA_VARYING_{location}"))?;
+            if let Some(DecorationValue::Literal(location)) =
+                self.fragment.decoration(res.id, Decoration::Location)?
+            {
+                self.fragment
+                    .set_name(res.id, format!("LIBRA_VARYING_{location}").as_str())?;
+            }
             self.fragment
                 .set_decoration(res.id, Decoration::Location, DecorationValue::unset())?;
         }

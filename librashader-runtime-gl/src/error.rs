@@ -26,14 +26,14 @@ pub enum FilterChainError {
     LutLoadError(#[from] ImageError),
     #[error("opengl was not initialized")]
     GLLoadError,
-    #[error("opengl could not link program")]
-    GLLinkError,
-    #[error("opengl could not compile program")]
-    GlCompileError,
+    #[error("opengl could not link program: {0}")]
+    GLLinkError(String),
+    #[error("opengl could not compile program: {0}")]
+    GlCompileError(String),
     #[error("opengl could not create samplers")]
     GlSamplerError,
-    #[error("opengl could not create samplers")]
-    GlProgramError,
+    #[error("opengl could not create program: {0}")]
+    GlProgramError(String),
     #[error("an invalid framebuffer was provided to frame")]
     GlInvalidFramebuffer,
     #[error("opengl error: {0}")]

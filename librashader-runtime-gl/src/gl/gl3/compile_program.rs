@@ -47,7 +47,8 @@ impl CompileProgram for Gl3CompileProgram {
             ctx.delete_shader(fragment);
 
             if !ctx.get_program_link_status(program) {
-                return Err(FilterChainError::GLLinkError);
+                let log = ctx.get_program_info_log(program);
+                return Err(FilterChainError::GLLinkError(log));
             }
 
             ctx.use_program(Some(program));

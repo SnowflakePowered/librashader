@@ -25,10 +25,10 @@ impl Cacheable for GlProgramBinary {
             return None;
         };
 
-        return Some(GlProgramBinary(Some(glow::ProgramBinary {
+        Some(GlProgramBinary(Some(glow::ProgramBinary {
             buffer: cached,
             format: *format,
-        })));
+        })))
     }
 
     fn to_bytes(&self) -> Option<Vec<u8>> {
@@ -59,7 +59,7 @@ impl CompileProgram for Gl4CompileProgram {
 
                 let program = context
                     .create_program()
-                    .map_err(|_| FilterChainError::GlProgramError)?;
+                    .map_err(|e| FilterChainError::GlProgramError(e))?;
 
                 context.attach_shader(program, vertex);
                 context.attach_shader(program, fragment);
@@ -82,7 +82,8 @@ impl CompileProgram for Gl4CompileProgram {
                 context.delete_shader(fragment);
 
                 if !context.get_program_link_status(program) {
-                    return Err(FilterChainError::GLLinkError);
+                    let log = context.get_program_info_log(program);
+                    return Err(FilterChainError::GLLinkError(log));
                 }
                 Ok(program)
             }
@@ -100,7 +101,7 @@ impl CompileProgram for Gl4CompileProgram {
             |binary| unsafe {
                 let program = context
                     .create_program()
-                    .map_err(|_| FilterChainError::GlProgramError)?;
+                    .map_err(|e| FilterChainError::GlProgramError(e))?;
 
                 if let Some(binary) = &binary.0 {
                     context.program_binary(program, binary);

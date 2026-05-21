@@ -12,14 +12,15 @@ pub fn gl_compile_shader(
     unsafe {
         let shader = context
             .create_shader(stage)
-            .map_err(|_| FilterChainError::GlCompileError)?;
+            .map_err(FilterChainError::GlCompileError)?;
 
         context.shader_source(shader, &source);
         context.compile_shader(shader);
         let compile_status = context.get_shader_compile_status(shader);
 
         if !compile_status {
-            Err(FilterChainError::GlCompileError)
+            let log = context.get_shader_info_log(shader);
+            Err(FilterChainError::GlCompileError(log))
         } else {
             Ok(shader)
         }
