@@ -1,8 +1,15 @@
 use crate::back::hlsl::{CrossHlslContext, HlslBufferAssignment, HlslBufferAssignments};
 use crate::back::targets::HLSL;
 use crate::back::{CompileShader, ShaderCompilerOutput};
-use crate::error::ShaderCompileError;
+use crate::error::{ShaderCompileError, ShaderReflectError};
+use crate::front::spirv_passes::harden_normalize::HardenNormalize;
+use crate::front::spirv_passes::load_module;
+use crate::front::SpirvCompilation;
 use crate::reflect::cross::{CompiledProgram, CrossReflect};
+use crate::reflect::semantics::{ShaderReflection, ShaderSemantics};
+use crate::reflect::ReflectShader;
+use rspirv::binary::Assemble;
+use rspirv::dr::Builder;
 use spirv::Decoration;
 
 use spirv_cross2::compile::hlsl::HlslShaderModel;
@@ -11,6 +18,89 @@ use spirv_cross2::reflect::{DecorationValue, ResourceType};
 use spirv_cross2::{targets, SpirvCrossError};
 
 pub(crate) type HlslReflect = CrossReflect<targets::Hlsl>;
+
+/// Wraps `HlslReflect` so we can defer the choice of shader model until
+/// `compile()` time and re-build the spirv-cross compiler from a hardened
+/// SPIR-V module when SM3 is targeted.
+///
+/// FXC SM3 rejects NaN/Inf constants that its own folder can synthesize from
+/// idioms like `normalize((0,0))`. The fix lives in
+/// `spirv_passes::harden_normalize`; we only pay the cost when actually
+/// targeting SM3, keeping the cached SPIR-V (and the reflection used by
+/// SM5+ targets) untouched.
+pub(crate) struct HlslCompileShader {
+    backend: HlslReflect,
+    spirv: SpirvCompilation,
+}
+
+impl HlslCompileShader {
+    pub(crate) fn new(spirv: SpirvCompilation) -> Result<Self, ShaderReflectError> {
+        let backend = HlslReflect::try_from(&spirv)?;
+        Ok(Self { backend, spirv })
+    }
+}
+
+impl ReflectShader for HlslCompileShader {
+    fn reflect(
+        &mut self,
+        pass_number: usize,
+        semantics: &ShaderSemantics,
+    ) -> Result<ShaderReflection, ShaderReflectError> {
+        // The hardening pass only adds an OpFAdd before each Normalize; it
+        // doesn't add/remove resources, interfaces, or semantics. Reflecting
+        // against the un-hardened module yields the same result.
+        self.backend.reflect(pass_number, semantics)
+    }
+
+    fn validate(&mut self) -> Result<(), ShaderReflectError> {
+        self.backend.validate()
+    }
+}
+
+impl CompileShader<HLSL> for HlslCompileShader {
+    type Options = Option<HlslShaderModel>;
+    type Context = CrossHlslContext;
+
+    fn compile(
+        self,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<String, CrossHlslContext>, ShaderCompileError> {
+        let sm = options.unwrap_or(HlslShaderModel::ShaderModel5_0);
+
+        // Path to work around FXC bugs in shader model 3.0
+        if sm == HlslShaderModel::ShaderModel3_0 {
+            // Re-parse with hardened SPIR-V so spirv-cross emits HLSL that
+            // can't be folded into a NaN constant during FXC compilation.
+            let harden = |words: &[u32]| {
+                let mut builder = Builder::new_from_module(load_module(words));
+                HardenNormalize::new(&mut builder).do_pass();
+                builder.module().assemble()
+            };
+            let hardened = SpirvCompilation {
+                vertex: harden(&self.spirv.vertex),
+                fragment: harden(&self.spirv.fragment),
+            };
+            let backend = HlslReflect::try_from(&hardened).map_err(|e| match e {
+                ShaderReflectError::SpirvCrossError(e) => {
+                    ShaderCompileError::SpirvCrossCompileError(e)
+                }
+                e => ShaderCompileError::SpirvCrossCompileError(
+                    SpirvCrossError::InvalidArgument(e.to_string()),
+                ),
+            })?;
+            return backend.compile(options);
+        }
+
+        self.backend.compile(options)
+    }
+
+    fn compile_boxed(
+        self: Box<Self>,
+        options: Self::Options,
+    ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
+        <Self as CompileShader<HLSL>>::compile(*self, options)
+    }
+}
 
 impl CompileShader<HLSL> for CrossReflect<targets::Hlsl> {
     type Options = Option<HlslShaderModel>;
