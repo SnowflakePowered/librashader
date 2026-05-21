@@ -226,9 +226,8 @@ impl<'a> State<'a> {
     fn update(&mut self) {}
     fn render(&mut self) -> RenderOutcome {
         let output = match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(t) | wgpu::CurrentSurfaceTexture::Suboptimal(t) => {
-                t
-            }
+            wgpu::CurrentSurfaceTexture::Success(t)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
             wgpu::CurrentSurfaceTexture::Lost | wgpu::CurrentSurfaceTexture::Outdated => {
                 return RenderOutcome::NeedsResize;
             }

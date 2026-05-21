@@ -771,9 +771,7 @@ impl<'a> LowerCombinedImageSamplerPass<'a> {
                         let op_access_chain_sampler_id = self.builder.id();
                         // access chain the sampler
                         instructions.push(Instruction {
-                            class: rspirv::grammar::INSTRUCTION_TABLE.get(
-                                spirv::Op::AccessChain,
-                            ),
+                            class: rspirv::grammar::INSTRUCTION_TABLE.get(spirv::Op::AccessChain),
                             result_type: Some(op_type_sampler_pointer),
                             result_id: Some(op_access_chain_sampler_id),
                             operands: vec![

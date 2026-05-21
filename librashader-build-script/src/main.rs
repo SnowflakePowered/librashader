@@ -57,7 +57,10 @@ pub fn main() -> ExitCode {
     }
 
     if args.nightly {
-        carlog_info!("Building", "with nightly `impl_trait_in_assoc_type` code path");
+        carlog_info!(
+            "Building",
+            "with nightly `impl_trait_in_assoc_type` code path"
+        );
         cmd.args(["--features", "nightly"]);
     } else {
         carlog_warning!("building librashader with stable Rust compatibility");
