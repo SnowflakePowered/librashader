@@ -50,6 +50,7 @@ impl RenderTest for Direct3D9 {
                 Some(&FilterChainOptions {
                     force_no_mipmaps: false,
                     disable_cache: false,
+                    ..Default::default()
                 }),
             )?;
 
@@ -99,6 +100,7 @@ impl RenderTest for Direct3D9 {
                 aspect_ratio: options.aspect_ratio,
                 frametime_delta: options.frametime_delta,
                 frames_per_second: options.frames_per_second,
+                ..Default::default()
             });
 
             let viewport = Viewport::new_render_target_sized_origin(&surface, None)?;

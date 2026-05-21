@@ -190,7 +190,6 @@ Please report an issue if you run into a shader that works in RetroArch, but not
     It is the caller's responsibility to blit the surface back to the backbuffer.
 * Shaders are compiled in parallel where possible. This should noticeably decrease preset compile times. 
   Parallel shader compilation is not available to OpenGL. 
-* HDR10 support is not part of any shader runtime and is not supported by librashader.
 * For performance reasons, mipmaps are never generated for the input texture. In theory, this means that 
   presets with `mipmap_input0 = "true"` will not get a mipmapped input. In practice, no known shader presets set 
   `mipmap_input0 = "true"`.
@@ -232,6 +231,19 @@ Please report an issue if you run into a shader that works in RetroArch, but not
 
 Most, if not all shader presets should work fine on librashader. The runtime specific differences should not affect the output,
 and are more a heads-up for integrating librashader into your project.
+
+### HDR Support
+librashader supports shaders that output to a native HDR format, if the host is able to drive HDR support. 
+
+After loading a preset, the caller can determine the color space expected
+by the shader preset, which will be SRGB, HDR10, scRGB, or scRGB PQ to create the HDR compatible swapchain on the host. 
+
+The `HDRMode` and `SubpixelLayout` layout uniforms can be set during filter chain creation, and the 
+`BrightnessNits` and `ExpandGamut` uniforms are bound per-frame. 
+
+RetroArch's internal inverse tonemapper HDR shader nor its internal scanline shaders are not supported. The `Scanline`,
+`HDR10`, and `InverseTonemap` uniforms will always be bound as `0`. The host is responsible for implementing SDR to HDR
+inverse tonemapping if desired.
 
 ## Versioning
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader)

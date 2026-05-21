@@ -51,6 +51,7 @@ impl RenderTest for OpenGl3 {
                     use_dsa: false,
                     force_no_mipmaps: false,
                     disable_cache: false,
+                    ..Default::default()
                 }),
             )
         }?;
@@ -73,6 +74,7 @@ impl RenderTest for OpenGl3 {
                     aspect_ratio: options.aspect_ratio,
                     frametime_delta: options.frametime_delta,
                     frames_per_second: options.frames_per_second,
+                    ..Default::default()
                 })
                 .as_ref(),
         )?)
@@ -108,6 +110,7 @@ impl RenderTest for OpenGl4 {
                     use_dsa: true,
                     force_no_mipmaps: false,
                     disable_cache: true,
+                    ..Default::default()
                 }),
             )
         }?;
@@ -130,6 +133,7 @@ impl RenderTest for OpenGl4 {
                     aspect_ratio: options.aspect_ratio,
                     frametime_delta: options.frametime_delta,
                     frames_per_second: options.frames_per_second,
+                    ..Default::default()
                 })
                 .as_ref(),
         )?)

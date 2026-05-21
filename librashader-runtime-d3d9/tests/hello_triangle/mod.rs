@@ -265,6 +265,7 @@ pub mod d3d9_hello_triangle {
                     Some(&FilterChainOptionsD3D9 {
                         force_no_mipmaps: false,
                         disable_cache: true,
+                        ..Default::default()
                     }),
                 )
                 .unwrap()

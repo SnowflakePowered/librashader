@@ -245,7 +245,7 @@ pub mod reflect {
 #[cfg(feature = "runtime")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "runtime")))]
 pub mod runtime {
-    pub use librashader_common::{Size, Viewport};
+    pub use librashader_common::{ColorSpace, ImageFormat, Size, Viewport};
     pub use librashader_runtime::parameters::FilterChainParameters;
     pub use librashader_runtime::parameters::RuntimeParameters;
 

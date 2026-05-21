@@ -15,7 +15,7 @@ use librashader_reflect::reflect::semantics::{
     BindingStage, MemberOffset, TextureBinding, UniformBinding,
 };
 use librashader_reflect::reflect::ShaderReflection;
-use librashader_runtime::binding::{BindSemantics, TextureInput, UniformInputs};
+use librashader_runtime::binding::{BindSemantics, HdrUniformInputs, TextureInput, UniformInputs};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -227,6 +227,11 @@ impl FilterPass {
                 frametime_delta: options.frametime_delta,
                 framebuffer_size: fb_size,
                 viewport_size,
+                hdr_inputs: Some(HdrUniformInputs {
+                    hdr_mode: parent.hdr_mode,
+                    brightness_nits: options.brightness_nits,
+                    expand_gamut: options.expand_gamut,
+                }),
             },
             original,
             source,

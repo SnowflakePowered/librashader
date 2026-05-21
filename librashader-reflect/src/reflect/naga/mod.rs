@@ -172,7 +172,10 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
             | UniqueSemantics::Rotation
             | UniqueSemantics::CurrentSubFrame
             | UniqueSemantics::TotalSubFrames
-            | UniqueSemantics::FrameTimeDelta => {
+            | UniqueSemantics::FrameTimeDelta
+            | UniqueSemantics::HDRMode
+            | UniqueSemantics::SubpixelLayout
+            | UniqueSemantics::ExpandGamut => {
                 // Uint32 == width 4
                 if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Uint && *width == 4)
                 {
@@ -195,7 +198,11 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
             UniqueSemantics::FloatParameter
             | UniqueSemantics::OriginalFPS
             | UniqueSemantics::OriginalAspectRotated
-            | UniqueSemantics::OriginalAspect => {
+            | UniqueSemantics::OriginalAspect
+            | UniqueSemantics::BrightnessNits
+            | UniqueSemantics::Scanlines
+            | UniqueSemantics::InverseTonemap
+            | UniqueSemantics::HDR10 => {
                 // Float32 == width 4
                 if matches!(ty, TypeInner::Scalar( Scalar { kind, width }) if *kind == ScalarKind::Float && *width == 4)
                 {

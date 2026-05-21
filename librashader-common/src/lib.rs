@@ -131,6 +131,56 @@ impl FromStr for FilterMode {
     }
 }
 
+/// The color space domain shared by the host's configured HDR target and the
+/// shader's declared output.
+///
+/// The host configures the desired target via `FilterChainOptions::hdr_mode`
+/// (this is plumbed to the shader as the `HDRMode` uniform — must match the
+/// swapchain the host actually configured). The shader's effective output
+/// color space is queried via `ShaderPreset::output_color_space` so the host
+/// can pick a matching swapchain. Both directions use the same enum since
+/// they describe the same set of possible color spaces.
+///
+/// `Srgb` indicates standard dynamic range (no HDR).
+#[repr(u32)]
+#[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ColorSpace {
+    /// Standard dynamic range / sRGB nonlinear (no HDR).
+    #[default]
+    Srgb = 0,
+    /// HDR10: BT.2020 primaries with PQ (ST.2084) transfer, stored as
+    /// 10-bit unorm (A2R10G10B10).
+    Hdr10 = 1,
+    /// scRGB: BT.709 primaries, linear, extended range. Typically stored as
+    /// FP16 (R16G16B16A16Sfloat) where 1.0 corresponds to 80 nits.
+    ScRgb = 2,
+    /// PQ-encoded data stored in an scRGB FP16 surface.
+    PqScRgb = 3,
+}
+
+impl ColorSpace {
+    /// Whether this color space is an HDR color space
+    pub fn is_hdr(&self) -> bool {
+        !matches!(*self, ColorSpace::Srgb)
+    }
+}
+
+impl From<u32> for ColorSpace {
+    /// Convert a raw `u32` (e.g. from the C API) into a `ColorSpace`.
+    /// Out-of-range values are wrapped via modulo so any input maps to a
+    /// defined variant.
+    fn from(value: u32) -> Self {
+        match value % 4 {
+            0 => ColorSpace::Srgb,
+            1 => ColorSpace::Hdr10,
+            2 => ColorSpace::ScRgb,
+            3 => ColorSpace::PqScRgb,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[repr(i32)]
 #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

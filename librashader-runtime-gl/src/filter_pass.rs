@@ -6,7 +6,9 @@ use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_preprocess::ShaderSource;
 use librashader_presets::PassMeta;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
-use librashader_runtime::binding::{BindSemantics, ContextOffset, TextureInput, UniformInputs};
+use librashader_runtime::binding::{
+    BindSemantics, ContextOffset, HdrUniformInputs, TextureInput, UniformInputs,
+};
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::render_target::RenderTarget;
 
@@ -203,6 +205,11 @@ impl<T: GLInterface> FilterPass<T> {
                 frametime_delta: options.frametime_delta,
                 framebuffer_size: fb_size,
                 viewport_size: viewport.output.size,
+                hdr_inputs: Some(HdrUniformInputs {
+                    hdr_mode: parent.hdr_mode,
+                    brightness_nits: options.brightness_nits,
+                    expand_gamut: options.expand_gamut,
+                }),
             },
             original,
             source,

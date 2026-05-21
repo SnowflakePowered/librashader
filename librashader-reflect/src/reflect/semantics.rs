@@ -63,9 +63,29 @@ pub enum UniqueSemantics {
     TotalSubFrames = 10,
     /// The current subframe (default 1)
     CurrentSubFrame = 11,
+    /// The HDR output mode.
+    ///
+    /// 0 = SDR, 1 = HDR10 (PQ/BT.2020), 2 = scRGB (FP16, BT.709 linear),
+    /// 3 = PQ-encoded scRGB. Sourced from `FilterChainOptions`.
+    HDRMode = 12,
+    /// The SDR reference white in nits (default 200).
+    BrightnessNits = 13,
+    /// Enable/disable scanline overlay in HDR composition.
+    ///
+    /// librashader does not implement the scanline overlay.
+    Scanlines = 14,
+    /// Display subpixel layout used by some HDR scanline shaders.
+    SubpixelLayout = 15,
+    /// Gamut expansion mode (0 = Rec.709 -> 2020, etc.).
+    ExpandGamut = 16,
+    /// Enable/disable the inverse tonemapper that converts SDR linear
+    /// content to HDR linear.
+    InverseTonemap = 17,
+    /// Enable/disable HDR10 PQ encoding in the final pass.
+    HDR10 = 18,
     /// A user defined float parameter.
     // float, user defined parameter, array
-    FloatParameter = 12,
+    FloatParameter = 19,
 }
 
 impl UniqueSemantics {
@@ -93,6 +113,13 @@ impl UniqueSemantics {
             UniqueSemantics::OriginalFPS => UniformType::Float,
             UniqueSemantics::OriginalAspect => UniformType::Float,
             UniqueSemantics::OriginalAspectRotated => UniformType::Float,
+            UniqueSemantics::HDRMode => UniformType::Unsigned,
+            UniqueSemantics::SubpixelLayout => UniformType::Unsigned,
+            UniqueSemantics::ExpandGamut => UniformType::Unsigned,
+            UniqueSemantics::BrightnessNits => UniformType::Float,
+            UniqueSemantics::Scanlines => UniformType::Float,
+            UniqueSemantics::InverseTonemap => UniformType::Float,
+            UniqueSemantics::HDR10 => UniformType::Float,
         }
     }
 
@@ -112,6 +139,13 @@ impl UniqueSemantics {
             UniqueSemantics::OriginalFPS => "OriginalFPS",
             UniqueSemantics::OriginalAspect => "OriginalAspect",
             UniqueSemantics::OriginalAspectRotated => "OriginalAspectRotated",
+            UniqueSemantics::HDRMode => "HDRMode",
+            UniqueSemantics::BrightnessNits => "BrightnessNits",
+            UniqueSemantics::Scanlines => "Scanlines",
+            UniqueSemantics::SubpixelLayout => "SubpixelLayout",
+            UniqueSemantics::ExpandGamut => "ExpandGamut",
+            UniqueSemantics::InverseTonemap => "InverseTonemap",
+            UniqueSemantics::HDR10 => "HDR10",
         }
     }
 }
@@ -495,6 +529,34 @@ impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
                     semantics: UniqueSemantics::FrameTimeDelta,
                     index: (),
                 }),
+                "HDRMode" => Some(Semantic {
+                    semantics: UniqueSemantics::HDRMode,
+                    index: (),
+                }),
+                "BrightnessNits" => Some(Semantic {
+                    semantics: UniqueSemantics::BrightnessNits,
+                    index: (),
+                }),
+                "Scanlines" => Some(Semantic {
+                    semantics: UniqueSemantics::Scanlines,
+                    index: (),
+                }),
+                "SubpixelLayout" => Some(Semantic {
+                    semantics: UniqueSemantics::SubpixelLayout,
+                    index: (),
+                }),
+                "ExpandGamut" => Some(Semantic {
+                    semantics: UniqueSemantics::ExpandGamut,
+                    index: (),
+                }),
+                "InverseTonemap" => Some(Semantic {
+                    semantics: UniqueSemantics::InverseTonemap,
+                    index: (),
+                }),
+                "HDR10" => Some(Semantic {
+                    semantics: UniqueSemantics::HDR10,
+                    index: (),
+                }),
                 _ => None,
             },
             Some(UniformSemantic::Unique(variable)) => Some(*variable),
@@ -685,6 +747,34 @@ mod serde_impl {
                 },
                 "CurrentSubFrame" => Semantic {
                     semantics: UniqueSemantics::CurrentSubFrame,
+                    index: (),
+                },
+                "HDRMode" => Semantic {
+                    semantics: UniqueSemantics::HDRMode,
+                    index: (),
+                },
+                "BrightnessNits" => Semantic {
+                    semantics: UniqueSemantics::BrightnessNits,
+                    index: (),
+                },
+                "Scanlines" => Semantic {
+                    semantics: UniqueSemantics::Scanlines,
+                    index: (),
+                },
+                "SubpixelLayout" => Semantic {
+                    semantics: UniqueSemantics::SubpixelLayout,
+                    index: (),
+                },
+                "ExpandGamut" => Semantic {
+                    semantics: UniqueSemantics::ExpandGamut,
+                    index: (),
+                },
+                "InverseTonemap" => Semantic {
+                    semantics: UniqueSemantics::InverseTonemap,
+                    index: (),
+                },
+                "HDR10" => Semantic {
+                    semantics: UniqueSemantics::HDR10,
                     index: (),
                 },
                 _ => return Err(E::custom(format!("unknown unique semantic {v}"))),

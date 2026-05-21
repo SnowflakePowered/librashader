@@ -1,5 +1,6 @@
 //! Vulkan shader runtime options.
 
+use librashader_common::ColorSpace;
 use librashader_runtime::impl_default_frame_options;
 impl_default_frame_options!(FrameOptionsVulkan);
 
@@ -18,4 +19,7 @@ pub struct FilterChainOptionsVulkan {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+    /// HDR output mode bound to the shader `HDRMode` uniform. Must match the
+    /// color space of the swapchain the host configured.
+    pub hdr_mode: ColorSpace,
 }

@@ -147,6 +147,38 @@ use librashader::runtime::mtl::FilterChain as FilterChainMetal;
 ))]
 pub type libra_mtl_filter_chain_t = Option<NonNull<FilterChainMetal>>;
 
+/// The target color space for the final pass output as reported by
+/// `libra_*_filter_chain_color_space`.
+///
+/// Derived from the final pass's declared output format. Use this to decide
+/// which swapchain color space to request on the host side; the host already
+/// knows the native format that matches each color space for its own backend
+/// (e.g. HDR10 -> `R10G10B10A2_UNORM`, scRGB -> `R16G16B16A16_FLOAT`).
+#[repr(u32)]
+#[derive(Default, Copy, Clone, Debug)]
+pub enum LIBRA_COLOR_SPACE {
+    /// Standard dynamic range / sRGB nonlinear.
+    #[default]
+    Srgb = 0,
+    /// HDR10: BT.2020 primaries with PQ (ST.2084) transfer.
+    Hdr10 = 1,
+    /// scRGB: BT.709 primaries, linear, extended range (FP16).
+    ScRgb = 2,
+    /// PQ-encoded data stored in an scRGB FP16 surface.
+    PqScRgb = 3,
+}
+
+impl From<librashader::runtime::ColorSpace> for LIBRA_COLOR_SPACE {
+    fn from(value: librashader::runtime::ColorSpace) -> Self {
+        match value {
+            librashader::runtime::ColorSpace::Srgb => LIBRA_COLOR_SPACE::Srgb,
+            librashader::runtime::ColorSpace::Hdr10 => LIBRA_COLOR_SPACE::Hdr10,
+            librashader::runtime::ColorSpace::ScRgb => LIBRA_COLOR_SPACE::ScRgb,
+            librashader::runtime::ColorSpace::PqScRgb => LIBRA_COLOR_SPACE::PqScRgb,
+        }
+    }
+}
+
 /// Defines the output origin for a rendered frame.
 #[repr(C)]
 pub struct libra_viewport_t {
@@ -171,10 +203,10 @@ where
 
 macro_rules! config_set_field {
     (@POINTER $options:ident.$field:ident <- $ptr:ident) => {
-        $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+        $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read().into() };
     };
     (@POINTER @NEGATIVE $options:ident.$field:ident <- $ptr:ident) => {
-        $options.$field = unsafe { !::std::ptr::addr_of!((*$ptr).$field).read() };
+        $options.$field = unsafe { (!::std::ptr::addr_of!((*$ptr).$field).read()).into() };
     };
     (@LITERAL $options:ident.$field:ident <- $value:literal) => {
         $options.$field = $value;

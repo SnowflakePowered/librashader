@@ -6,9 +6,12 @@
 //!
 use image::{ImageError, RgbaImage};
 use librashader_preprocess::{PreprocessError, ShaderSource};
-use librashader_presets::{ParameterMeta, PassMeta, ShaderFeatures, ShaderPreset, TextureMeta};
+use librashader_presets::{
+    ParameterMeta, PassMeta, PresetColorSpace, ShaderFeatures, ShaderPreset, TextureMeta,
+};
 use std::path::Path;
 
+use librashader_common::ColorSpace;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
@@ -159,6 +162,24 @@ impl ShaderPresetPack {
                 })
                 .collect::<Result<Vec<_>, _>>()?,
             parameters: preset.parameters,
+        })
+    }
+}
+
+impl PresetColorSpace for ShaderPresetPack {
+    /// Pack-level implementation: the shader source is already loaded so this
+    /// is infallible — but we still return `Result` to share the trait
+    /// signature with [`ShaderPreset`].
+    fn color_space(&self) -> Result<ColorSpace, PreprocessError> {
+        let Some(last) = self.passes.last() else {
+            return Ok(ColorSpace::Srgb);
+        };
+        let effective_format = last.meta.get_format_override().unwrap_or(last.data.format);
+
+        Ok(match effective_format {
+            librashader_common::ImageFormat::A2B10G10R10UnormPack32 => ColorSpace::Hdr10,
+            librashader_common::ImageFormat::R16G16B16A16Sfloat => ColorSpace::ScRgb,
+            _ => ColorSpace::Srgb,
         })
     }
 }

@@ -1617,6 +1617,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "image",
+ "librashader-common",
  "librashader-preprocess",
  "librashader-presets",
  "rayon",
@@ -1646,6 +1647,7 @@ version = "0.10.1"
 dependencies = [
  "glob",
  "librashader-common",
+ "librashader-preprocess",
  "nom 8.0.0",
  "nom_locate",
  "num-traits",

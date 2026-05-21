@@ -2,7 +2,8 @@ Name:     librashader
 %define lname librashader0
 %define profile optimized
 Summary:  RetroArch shaders for all
-License:  MPL-2.0Version: 0.8.1
+License:  MPL-2.0
+Version: 0.8.1
 Release: 0
 URL:      https://github.com/SnowflakePowered/%{name}
 Source0:  librashader-%{version}.tar.xz
@@ -23,7 +24,7 @@ Summary:        RetroArch shader runtime
 Provides:       librashader
 
 %prep
-%setup -qa1 
+%setup -qa1
 mkdir .cargo                # cargo automatically uses this dir
 cp %{SOURCE2} .cargo/config # and automatically uses this config
 

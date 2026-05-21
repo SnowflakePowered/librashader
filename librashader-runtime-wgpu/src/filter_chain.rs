@@ -89,6 +89,7 @@ pub(crate) struct FilterCommon {
     pub(crate) draw_quad: DrawQuad,
     pub(crate) device: wgpu::Device,
     pub(crate) queue: wgpu::Queue,
+    pub(crate) hdr_mode: librashader_common::ColorSpace,
 }
 
 impl FilterChainWgpu {
@@ -241,6 +242,7 @@ impl FilterChainWgpu {
                 output_textures,
                 feedback_textures,
                 history_textures,
+                hdr_mode: options.map_or(Default::default(), |o| o.hdr_mode),
             },
             passes: filters,
             output_framebuffers,

@@ -88,6 +88,7 @@ impl From<FrameOptionsArgs> for CommonFrameOptions {
             aspect_ratio: value.aspect_ratio.unwrap_or(0.0),
             frametime_delta: value.frametime_delta.unwrap_or(0),
             frames_per_second: value.frames_per_second.unwrap_or(1.0),
+            ..Default::default()
         }
     }
 }

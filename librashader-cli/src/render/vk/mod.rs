@@ -53,6 +53,7 @@ impl RenderTest for Vulkan {
                     force_no_mipmaps: false,
                     use_dynamic_rendering: false,
                     disable_cache: false,
+                    ..Default::default()
                 }),
             )?;
 
@@ -156,6 +157,7 @@ impl RenderTest for Vulkan {
                     aspect_ratio: options.aspect_ratio,
                     frametime_delta: options.frametime_delta,
                     frames_per_second: options.frames_per_second,
+                    ..Default::default()
                 });
 
                 let viewport = Viewport::new_render_target_sized_origin(
