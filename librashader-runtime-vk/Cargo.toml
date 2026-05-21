@@ -32,7 +32,9 @@ array-concat = "0.5.2"
 ash = { workspace = true, features = ["debug"] }
 
 [features]
-stable = ["librashader-reflect/stable"]
+nightly = ["librashader-reflect/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 
 [dev-dependencies]
 num = "0.4.0"

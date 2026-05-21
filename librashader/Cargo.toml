@@ -48,15 +48,18 @@ runtime = []
 reflect = []
 preprocess = []
 presets = []
-stable = [ "librashader-reflect/stable",
-           "librashader-runtime-d3d9?/stable",
-           "librashader-runtime-d3d11?/stable",
-           "librashader-runtime-d3d12?/stable",
-           "librashader-runtime-gl?/stable",
-           "librashader-runtime-vk?/stable",
-           "librashader-runtime-mtl?/stable",
-           "librashader-runtime-wgpu?/stable"
+nightly = [ "librashader-reflect/nightly",
+            "librashader-runtime-d3d9?/nightly",
+            "librashader-runtime-d3d11?/nightly",
+            "librashader-runtime-d3d12?/nightly",
+            "librashader-runtime-gl?/nightly",
+            "librashader-runtime-vk?/nightly",
+            "librashader-runtime-mtl?/nightly",
+            "librashader-runtime-wgpu?/nightly"
 ]
+# Backwards-compatible no-op; stable is the default code path. Kept so older
+# consumers that pass `features = ["stable"]` continue to build.
+stable = []
 # runtimes
 
 runtime-gl = [ "runtime", "reflect-cross", "librashader-common/opengl", "librashader-runtime-gl" ]

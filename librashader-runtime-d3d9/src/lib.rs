@@ -1,5 +1,5 @@
 #![cfg(target_os = "windows")]
-#![cfg_attr(not(feature = "stable"), feature(type_alias_impl_trait))]
+#![cfg_attr(feature = "nightly", feature(type_alias_impl_trait))]
 
 mod binding;
 mod d3dx;

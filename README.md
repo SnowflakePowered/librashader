@@ -143,27 +143,25 @@ While librashader has no build-time dependencies, using `librashader_ld.h` may r
 the relevant runtime graphics API.
 
 
-### Building against stable Rust
-While librashader is intended to be used with nightly Rust until [required features](https://github.com/SnowflakePowered/librashader/issues/55) are stabilized, it supports being
-built with stable Rust with the `stable` feature.
+### Building against nightly Rust
+As of librashader 0.11, building on the stable MSRV is the default behaviour.
 
-```toml 
-librashader = { features = ["stable"] }
+To opt in to minor optimizations with `impl_trait_in_assoc_type` enabled by nightly and C header generation, enable the `nightly` feature.
+
+```toml
+librashader = { version = "0.11", features = ["nightly"] }
 ```
 
-If building the C API, the `--stable` flag in the build script will enable the `stable` feature.
+When building the C API with `librashader-build-script`, to build with nightly features on, pass the `--nightly` flag 
+when using a nightly toolchain.
 
 ```
-cargo +stable run -p librashader-build-script -- --profile optimized --stable 
+cargo run -p librashader-build-script -- --profile optimized --nightly
 ```
+The `stable` feature and `--stable` flag remain for backwards compatibility but no longer do anything. 
 
-There are some caveats when building against stable Rust, such that building librashader against nightly Rust is still highly encouraged.
-
-* C headers will not be regenerated when building with the `stable` feature.
-* There is a minor performance hit in initial shader compilation when building against stable Rust. This is due to boxed trait objects being used instead of `impl Trait`.
-* A higher MSRV is required when building against stable Rust.
-
-When the `trait_alias_impl_trait` feature is stabilized, the `stable` feature will be removed. 
+Using `nightly` to generate the C headers is no longer encouraged due to `cargo expand` breaking feature flags. Please 
+use the provided `librashader.h` in the `include` folder.
 
 ## Examples
 
@@ -274,18 +272,7 @@ for migration instructions.
 
 ### MSRV Policy
 
-Building against stable Rust requires the following MSRV.
-
-* All platforms: **1.78**
-
-When building against nightly Rust, the following MSRV policy is enforced for unstable library features.
-
-* All platforms: **1.87**
-
-A CI job runs weekly to ensure librashader continues to build on nightly.
-
-Note that the MSRV is only intended to ease distribution on Linux when building against nightly Rust or with `RUSTC_BOOTSTRAP=1`, and is allowed to change any time. 
-It generally tracks the latest version of Rust available in the latest version of Ubuntu, but this may change with no warning in a patch release.
+Building against stable Rust requires Rust **1.78**. No guarantees are provided for nightly MSRVs. 
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 

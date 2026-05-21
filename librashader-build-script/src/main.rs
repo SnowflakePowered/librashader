@@ -13,7 +13,13 @@ struct Args {
     profile: String,
     #[arg(long, global = true)]
     target: Option<String>,
+    /// Build with the nightly `impl_trait_in_assoc_type` code path and regenerate C headers.
+    /// Requires a nightly Rust toolchain.
     #[arg(long, default_value_t = false, global = true)]
+    nightly: bool,
+    /// Deprecated. The stable code path is the default since librashader 0.11; this flag is accepted for
+    /// backwards compatibility with existing packaging scripts and does nothing.
+    #[arg(long, default_value_t = false, global = true, hide = true)]
     stable: bool,
     #[arg(last = true)]
     cargoflags: Vec<String>,
@@ -42,20 +48,22 @@ pub fn main() -> ExitCode {
         if profile == "debug" { "dev" } else { &profile }
     ));
 
-    // If we're on RUSTC_BOOTSTRAP, it's likely because we're building for a package..
-    if env::var("RUSTC_BOOTSTRAP").is_ok() {
-        cmd.arg("--ignore-rust-version");
-    }
-
     if let Some(target) = &args.target {
         cmd.arg(format!("--target={}", &target));
     }
 
     if args.stable {
+        carlog_warning!("--stable is deprecated and does nothing; stable is now the default");
+    }
+
+    if args.nightly {
+        carlog_info!("Building", "with nightly `impl_trait_in_assoc_type` code path");
+        cmd.args(["--features", "nightly"]);
+    } else {
         carlog_warning!("building librashader with stable Rust compatibility");
         carlog_warning!("C headers will not be generated");
-        cmd.args(["--features", "stable"]);
     }
+
     if !args.cargoflags.is_empty() {
         cmd.args(args.cargoflags);
     }
@@ -82,7 +90,9 @@ pub fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    if args.stable {
+    // cbindgen's macro expansion requires a nightly toolchain; only run it when
+    // the user opts in with --nightly.
+    if !args.nightly {
         carlog_warning!("generating C headers is not supported when building for stable Rust");
     } else {
         carlog_info!("Generating", "librashader C API headers");

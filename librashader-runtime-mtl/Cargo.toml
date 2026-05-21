@@ -40,7 +40,9 @@ objc2-metal = { workspace = true }
 objc2 = { workspace = true }
 
 [features]
-stable = ["librashader-reflect/stable"]
+nightly = ["librashader-reflect/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 
 [target.'cfg(target_vendor="apple")'.dev-dependencies]
 objc2-metal-kit = { version = "0.3" }

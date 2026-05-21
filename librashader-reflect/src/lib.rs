@@ -43,7 +43,7 @@
 //! librashader-reflect is designed to be compiler-agnostic. [naga](https://docs.rs/naga/latest/naga/index.html),
 //! a pure-Rust shader compiler, as well as SPIRV-Cross via [SpirvCompilation](crate::front::SpirvCompilation)
 //! is supported.
-#![cfg_attr(not(feature = "stable"), feature(impl_trait_in_assoc_type))]
+#![cfg_attr(feature = "nightly", feature(impl_trait_in_assoc_type))]
 /// Shader codegen backends.
 pub mod back;
 /// Error types.

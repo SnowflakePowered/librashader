@@ -17,7 +17,7 @@ impl OutputTarget for DXIL {
     type Output = DxilObject;
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     type Target = DXIL;
     type Options = Option<ShaderModel>;
@@ -39,7 +39,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for DXIL {
     type Target = DXIL;
     type Options = Option<ShaderModel>;

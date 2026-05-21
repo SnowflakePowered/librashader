@@ -29,8 +29,7 @@ Provides:       librashader
 {{{ git_dir_setup_macro }}}
 
 %build
-# need to use stable compiler, but enable nightly features
-RUSTC_BOOTSTRAP=1 cargo run -p librashader-build-script -- --profile %{profile}
+cargo run -p librashader-build-script -- --profile %{profile}
 
 %install
 mkdir -p %{buildroot}/%{_libdir}
@@ -38,7 +37,7 @@ mkdir -p %{buildroot}/%{_includedir}/librashader
 patchelf --set-soname librashader.so.2 target/%{profile}/librashader.so
 install -m 0755 target/%{profile}/librashader.so %{buildroot}%{_libdir}/librashader.so.2
 ln -s librashader.so.2 %{buildroot}%{_libdir}/librashader.so
-cp target/%{profile}/librashader.h %{buildroot}%{_includedir}/librashader/librashader.h
+cp include/librashader.h %{buildroot}%{_includedir}/librashader/librashader.h
 cp include/librashader_ld.h %{buildroot}%{_includedir}/librashader/librashader_ld.h
 
 

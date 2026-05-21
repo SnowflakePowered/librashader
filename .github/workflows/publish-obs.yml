@@ -14,10 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Install nightly Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
       - name: Install OSC and dependencies
         env:
           OBS_CONFIG: ${{ secrets.OBS_CONFIG }}
