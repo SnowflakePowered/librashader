@@ -521,6 +521,8 @@ typedef struct filter_chain_d3d12_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
+  /// The number of frames in flight to keep. If zero, defaults to three.
+  uint32_t frames_in_flight;
 } filter_chain_d3d12_opt_t;
 #endif
 
@@ -1186,7 +1188,9 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 /// - API version 2: 0.6.0
 ///     - Added original aspect uniforms
 ///     - Added frame time uniforms
-#define LIBRASHADER_CURRENT_VERSION 2
+/// - API version 3: 0.10.0
+///     - Added frames_in_flight to Direct3D 12 filter chain options
+#define LIBRASHADER_CURRENT_VERSION 3
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.
