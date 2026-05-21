@@ -21,25 +21,30 @@ impl Deref for ParamString {
 impl From<&str> for ParamString {
     #[inline]
     fn from(s: &str) -> Self {
-        ParamString(SharedString::try_from(s)
-            .expect("ParamString with more than 4294967295 characters. Parameter too large."))
+        ParamString(
+            SharedString::try_from(s)
+                .expect("ParamString with more than 4294967295 characters. Parameter too large."),
+        )
     }
 }
 
 impl From<&String> for ParamString {
     #[inline]
     fn from(s: &String) -> Self {
-        ParamString(SharedString::try_from(s)
-            .expect("ParamString with more than 4294967295 characters. Parameter too large."))
+        ParamString(
+            SharedString::try_from(s)
+                .expect("ParamString with more than 4294967295 characters. Parameter too large."),
+        )
     }
 }
-
 
 impl From<String> for ParamString {
     #[inline]
     fn from(s: String) -> Self {
-        ParamString(SharedString::try_from(s)
-            .expect("ParamString with more than 4294967295 characters. Parameter too large."))
+        ParamString(
+            SharedString::try_from(s)
+                .expect("ParamString with more than 4294967295 characters. Parameter too large."),
+        )
     }
 }
 
@@ -99,7 +104,6 @@ impl PartialEq<ParamString> for &String {
     }
 }
 
-
 impl Eq for ParamString {}
 
 impl PartialOrd<String> for ParamString {
@@ -120,15 +124,14 @@ impl PartialOrd<&str> for ParamString {
     }
 }
 
-
 impl ParamString {
     /// Pushes a new string onto the `ParamString`.
     ///
     /// This could incur up to two allocations.
     pub fn push_str(&mut self, s: &str) {
-        let new= format!("{self}{s}");
-        self.0 = SharedString::try_from(new)
-            .expect("ParamString with more than 4294967295 characters.");
+        let new = format!("{self}{s}");
+        self.0 =
+            SharedString::try_from(new).expect("ParamString with more than 4294967295 characters.");
     }
 
     // Extracts a string slice containing the entire `ParamString`.

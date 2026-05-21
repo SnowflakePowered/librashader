@@ -9,14 +9,14 @@ pub(crate) mod internal {
         Panic(Box<dyn Any + Send + 'static>),
     }
 
+    use parking_lot::Mutex;
+    use persy::{ByteVec, Config, Persy, ValueMode};
     use platform_dirs::AppDirs;
     use std::any::Any;
     use std::error::Error;
     use std::panic::catch_unwind;
     use std::path::PathBuf;
     use std::sync::OnceLock;
-    use parking_lot::Mutex;
-    use persy::{ByteVec, Config, Persy, ValueMode};
     use thiserror::Error;
 
     pub(crate) fn get_cache_dir() -> Result<PathBuf, Box<dyn Error>> {

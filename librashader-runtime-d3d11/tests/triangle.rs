@@ -44,7 +44,6 @@ fn triangle_d3d11_args() {
     )
     .unwrap();
 
-
     // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
 
     hello_triangle::main(sample).unwrap();
