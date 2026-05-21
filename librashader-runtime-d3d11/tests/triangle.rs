@@ -73,10 +73,7 @@ fn triangle_d3d11_hdr() {
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
             .unwrap();
-    assert_eq!(
-        preset.color_space().unwrap(),
-        ColorSpace::ScRgb
-    );
+    assert_eq!(preset.color_space().unwrap(), ColorSpace::ScRgb);
 
     // Headless device creation — no swapchain needed.
     let mut device = None;

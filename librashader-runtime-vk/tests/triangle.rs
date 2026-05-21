@@ -18,10 +18,7 @@ fn triangle_vk_hdr() {
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
             .unwrap();
-    assert_eq!(
-        preset.color_space().unwrap(),
-        ColorSpace::ScRgb
-    );
+    assert_eq!(preset.color_space().unwrap(), ColorSpace::ScRgb);
 
     let entry = unsafe { ash::Entry::load().unwrap() };
     let base = VulkanBase::new(entry).unwrap();

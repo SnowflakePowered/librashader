@@ -7,7 +7,8 @@ use librashader_preprocess::ShaderSource;
 use librashader_presets::PassMeta;
 use librashader_reflect::reflect::semantics::{MemberOffset, TextureBinding, UniformBinding};
 use librashader_runtime::binding::{
-    BindSemantics, ContextOffset, HdrUniformInputs, TextureInput, UniformInputs,
+    BindSemantics, ContextOffset, HdrUniformInputs, SensorUniformInputs, TextureInput,
+    UniformInputs,
 };
 use librashader_runtime::filter_pass::FilterPassMeta;
 use librashader_runtime::render_target::RenderTarget;
@@ -210,6 +211,11 @@ impl<T: GLInterface> FilterPass<T> {
                     brightness_nits: options.brightness_nits,
                     expand_gamut: options.expand_gamut,
                 }),
+                sensor_inputs: SensorUniformInputs {
+                    gyroscope: options.gyroscope,
+                    accelerometer: options.accelerometer,
+                    accelerometer_rest: options.accelerometer_rest,
+                },
             },
             original,
             source,

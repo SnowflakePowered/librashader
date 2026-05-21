@@ -113,6 +113,19 @@ impl ValidateTypeSemantics<TypeInner<'_>> for UniqueSemantics {
                     });
                 }
             }
+            UniqueSemantics::Gyroscope
+            | UniqueSemantics::Accelerometer
+            | UniqueSemantics::AccelerometerRest => {
+                // vec3 of float32
+                if matches!(ty, TypeInner::Vector { scalar: Scalar { size, kind }, width: vecwidth, .. }
+                    if *kind == ScalarKind::Float && *size == BitWidth::Word && *vecwidth == 3)
+                {
+                    return Some(TypeInfo {
+                        size: 3,
+                        columns: 1,
+                    });
+                }
+            }
             _ => {
                 if matches!(ty, TypeInner::Vector { scalar: Scalar { size, kind }, width: vecwidth, .. }
                     if *kind == ScalarKind::Float && *size == BitWidth::Word && *vecwidth == 4)

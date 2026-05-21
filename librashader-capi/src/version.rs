@@ -24,13 +24,13 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 /// - API version 3: 0.10.0
 ///     - Added frames_in_flight to Direct3D 12 filter chain options
 /// - API version 4: 0.10.x
-///     - Added HDR static options (hdr_mode, subpixel_layout) to filter chain options
-///       for all backends.
-///     - Added HDR dynamic options (brightness_nits, scanlines, expand_gamut,
-///       inverse_tonemap, hdr10) to frame options for all backends.
-///     - Added libra_*_filter_chain_hdr_info per backend so the host can detect
-///       whether a preset wants an HDR swapchain.
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 4;
+///     - Added support for HDR uniforms. Filter chain options get `hdr_mode` to
+///       enable HDR, and frame options should be passed in brightness_nits, expand_gamut
+///     - Added libra_preset_color_space to query the preferred HDR color space (if any) of
+///       a shader preset.
+/// - API version 5: 0.10.x
+///     - Added sensor uniform inputs
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 5;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.

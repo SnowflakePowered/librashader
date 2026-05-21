@@ -26,5 +26,4 @@ pub struct FilterChainOptionsD3D12 {
     /// HDR output mode bound to the shader `HDRMode` uniform. Must match the
     /// color space of the swapchain the host configured.
     pub hdr_mode: ColorSpace,
-
 }

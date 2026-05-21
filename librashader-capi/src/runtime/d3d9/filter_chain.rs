@@ -65,6 +65,15 @@ pub struct frame_d3d9_opt_t {
     pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
+    /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+    /// uniform. Default `{0, 0, 0}`.
+    pub gyroscope: [f32; 3],
+    /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+    /// (vec3) uniform. Default `{0, 0, 0}`.
+    pub accelerometer: [f32; 3],
+    /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+    /// (vec3) uniform. Default `{0, 0, 0}`.
+    pub accelerometer_rest: [f32; 3],
 }
 
 config_struct! {
@@ -72,6 +81,7 @@ config_struct! {
         0 => [clear_history, frame_direction];
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
+        5 => [gyroscope, accelerometer, accelerometer_rest];
     }
 }
 

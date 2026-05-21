@@ -212,6 +212,18 @@ impl ValidateTypeSemantics<&TypeInner> for UniqueSemantics {
                     });
                 }
             }
+            UniqueSemantics::Gyroscope
+            | UniqueSemantics::Accelerometer
+            | UniqueSemantics::AccelerometerRest => {
+                // vec3 of float32
+                if matches!(ty, TypeInner::Vector { scalar: Scalar { width, kind }, size } if *kind == ScalarKind::Float && *width == 4 && *size == VectorSize::Tri)
+                {
+                    return Some(TypeInfo {
+                        size: 3,
+                        columns: 1,
+                    });
+                }
+            }
             _ => {
                 if matches!(ty, TypeInner::Vector { scalar: Scalar { width, kind }, size } if *kind == ScalarKind::Float && *width == 4 && *size == VectorSize::Quad)
                 {

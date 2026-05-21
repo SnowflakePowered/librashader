@@ -183,6 +183,44 @@ impl BindUniform<ConstantRegister, &[f32; 4], IDirect3DDevice9> for D3D9UniformB
     }
 }
 
+impl BindUniform<ConstantRegister, &[f32; 3], IDirect3DDevice9> for D3D9UniformBinder {
+    fn bind_uniform(
+        _block: UniformMemberBlock,
+        vec3: &[f32; 3],
+        context: ConstantRegister,
+        device: &IDirect3DDevice9,
+    ) -> Option<()> {
+        let location = &context.register;
+        // Pad the vec3 with 0
+        let vec3 = [vec3[0], vec3[1], vec3[2], 0.0];
+        unsafe {
+            if let Some(location) = location.vs {
+                if let Err(err) =
+                    device.SetVertexShaderConstantF(location.index, vec3.as_ptr(), location.count)
+                {
+                    println!(
+                        "[librashader-runtime-d3d9] unable to bind vertex {}: {err}",
+                        location.index
+                    );
+                }
+            }
+        }
+        unsafe {
+            if let Some(location) = location.ps {
+                if let Err(err) =
+                    device.SetPixelShaderConstantF(location.index, vec3.as_ptr(), location.count)
+                {
+                    println!(
+                        "[librashader-runtime-d3d9] unable to bind fragment {}: {err}",
+                        location.index
+                    );
+                }
+            }
+        }
+        Some(())
+    }
+}
+
 impl BindUniform<ConstantRegister, &[f32; 16], IDirect3DDevice9> for D3D9UniformBinder {
     fn bind_uniform(
         _block: UniformMemberBlock,
