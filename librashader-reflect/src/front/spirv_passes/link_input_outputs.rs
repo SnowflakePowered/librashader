@@ -214,7 +214,7 @@ impl<'a> LinkInputs<'a> {
                 // downgrade the OpVariable if it's in dead_outputs
                 global.operands[0] = Operand::StorageClass(StorageClass::Private);
 
-                // Get the result type. If there's no result type it's invalid anyways
+                // Get the result type. If there's no result type it's invalid anyway
                 // so it doesn't matter that we downgraded early (better downgraded than unmatched)
                 let Some(result_type) = &mut global.result_type else {
                     continue;
@@ -236,7 +236,22 @@ impl<'a> LinkInputs<'a> {
                 return true;
             }
 
-            let Some(Operand::Decoration(Decoration::Location)) = op.operands.get(1) else {
+            // IO decorations are not permitted on private members.
+            let Some(Operand::Decoration(
+                Decoration::Location
+                | Decoration::Component
+                | Decoration::Index
+                | Decoration::NoPerspective
+                | Decoration::Flat
+                | Decoration::Centroid
+                | Decoration::Sample
+                | Decoration::Patch
+                | Decoration::Invariant
+                | Decoration::Stream
+                | Decoration::XfbBuffer
+                | Decoration::XfbStride,
+            )) = op.operands.get(1)
+            else {
                 return true;
             };
 
