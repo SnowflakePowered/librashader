@@ -1,5 +1,6 @@
 pub mod harden_normalize;
 pub mod link_input_outputs;
+pub mod lower_loop_sample_lod;
 pub mod lower_samplers;
 
 // Load SPIR-V as an rspirv module

@@ -26,7 +26,6 @@
 //!
 //! Shader compatibility is not guaranteed on render APIs with secondary support.
 //!
-//! wgpu has restrictions on shaders that can not be converted to WGSL, such as those that use `inverse`.
 //! Direct3D 9 does not support shaders that need Direct3D 10+ only features, or shaders that can not be
 //! compiled to [Shader Model 3.0](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/shader-model-3).
 //!

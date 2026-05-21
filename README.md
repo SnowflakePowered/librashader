@@ -21,25 +21,21 @@ Direct3D 11, Direct3D 12, and Metal.
 librashader does not support legacy render APIs such as older versions of OpenGL or Direct3D, except for limited
 support for Direct3D 9.
 
-| **API**     | **Status**  | **`librashader` feature** |
-|-------------|-------------|---------------------------|
-| OpenGL 3.3+ | ✅          | `gl`                      |
-| OpenGL 4.6  | ✅          | `gl`                      |
-| Vulkan      | ✅          | `vk`                      |
-| Direct3D 9  | 🆗️          | `d3d9`                    |
-| Direct3D 11 | ✅          | `d3d11`                   |
-| Direct3D 12 | ✅          | `d3d12`                   |
-| Metal       | ✅          | `metal`                   |
-| wgpu        | ✅†         | `wgpu`                    |
+| **API**     | **Status** | **`librashader` feature** |
+|-------------|------------|---------------------------|
+| OpenGL 3.3+ | ✅         | `gl`                      |
+| OpenGL 4.6  | ✅         | `gl`                      |
+| Vulkan      | ✅         | `vk`                      |
+| Direct3D 9  | 🆗️         | `d3d9`                    |
+| Direct3D 11 | ✅         | `d3d11`                   |
+| Direct3D 12 | ✅         | `d3d12`                   |
+| Metal       | ✅         | `metal`                   |
+| wgpu        | ✅         | `wgpu`                    |
 
 ✅ Full Support &mdash; 🆗 Secondary Support 
 
 Shader compatibility is not guaranteed on render APIs with secondary support. In particular, Direct3D 9 does not support
 shaders that need Direct3D 10+ only features, or shaders that can not be compiled to [Shader Model 3.0](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/shader-model-3).
-
-†wgpu does not support [FSR shaders](https://github.com/libretro/slang-shaders/tree/master/edge-smoothing/fsr). This is blocking on 
-support for [parsing `ImageGather` operations](https://github.com/gfx-rs/wgpu/issues/4538) in wgpu. Some shaders also require [`FLOAT32_FILTERABLE`](https://docs.rs/wgpu/latest/wgpu/struct.Features.html#associatedconstant.FLOAT32_FILTERABLE)
-to be enabled.
 
 ## Usage
 
@@ -224,6 +220,8 @@ Please report an issue if you run into a shader that works in RetroArch, but not
   * Allocations within the runtime are done through [gpu-allocator](https://github.com/Traverse-Research/gpu-allocator) rather than handled manually.
 * Direct3D 11
   * Framebuffer copies are done via `ID3D11DeviceContext::CopySubresourceRegion` rather than a CPU conversion + copy.
+  * Shader Model 4.0 to 5.1 do not support `sample` calls in a non-uniform loop. These are lowered to `sampleLod` before being
+    passed to the DirectX Shader Compiler. These shaders would usually fail to compile in RetroArch.
 * Direct3D 12
   * The Direct3D 12 runtime uses [render passes](https://learn.microsoft.com/en-us/windows/win32/direct3d12/direct3d-12-render-passes). This feature has been available since Windows 10 version 1809,
     which was released in late 2018.
