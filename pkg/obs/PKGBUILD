@@ -15,11 +15,11 @@ profile="optimized"
 
 build() {
   cd $pkgname-$pkgver
-  mkdir .cargo               
+  mkdir .cargo
   cp "$srcdir/cargo_config" .cargo/config
   cp -r "$srcdir/vendor" "vendor"
   cp "$srcdir/Cargo.lock" "Cargo.lock"
-  RUSTC_BOOTSTRAP=1 cargo run -p librashader-build-script -- --profile ${profile}
+  cargo run -p librashader-build-script -- --profile ${profile}
 
 }
 
@@ -29,6 +29,6 @@ package() {
   patchelf --set-soname librashader.so.2 $srcdir/$pkgname-$pkgver/target/$profile/librashader.so
   install -m 0755 $srcdir/$pkgname-$pkgver/target/${profile}/librashader.so $pkgdir/usr/lib/librashader.so.2
   ln -s librashader.so.2 $pkgdir/usr/lib/librashader.so
-  cp $srcdir/$pkgname-$pkgver/target/${profile}/librashader.h $pkgdir/usr/include/librashader/librashader.h
+  cp $srcdir/$pkgname-$pkgver/include/librashader.h $pkgdir/usr/include/librashader/librashader.h
   cp $srcdir/$pkgname-$pkgver/include/librashader_ld.h $pkgdir/usr/include/librashader/librashader_ld.h
 }

@@ -33,7 +33,9 @@ wgpu_dx12 = ["wgpu/dx12"]
 wgpu_metal = ["wgpu/metal"]
 wgpu_webgpu = ["wgpu/webgpu"]
 
-stable = ["librashader-reflect/stable"]
+nightly = ["librashader-reflect/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 rayon = { workspace = true }

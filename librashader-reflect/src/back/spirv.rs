@@ -18,7 +18,7 @@ pub(crate) struct WriteSpirV {
     pub(crate) fragment: Vec<u32>,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
@@ -41,7 +41,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
@@ -111,7 +111,7 @@ pub struct NagaSpirvContext {
     pub vertex: Module,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
     type Target = SPIRV;
     type Options = NagaSpirvOptions;
@@ -127,7 +127,7 @@ impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, Naga> for SPIRV {
     type Target = SPIRV;
     type Options = NagaSpirvOptions;

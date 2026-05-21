@@ -35,7 +35,9 @@ d3d12-descriptor-heap = "0.2"
 rayon = { workspace = true }
 
 [features]
-stable = ["librashader-reflect/stable"]
+nightly = ["librashader-reflect/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true

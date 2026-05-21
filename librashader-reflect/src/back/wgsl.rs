@@ -11,7 +11,7 @@ pub struct NagaWgslContext {
     pub vertex: Module,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     type Target = WGSL;
     type Options = NagaLoweringOptions;
@@ -27,7 +27,7 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     type Target = WGSL;
     type Options = NagaLoweringOptions;

@@ -17,7 +17,7 @@ pub struct CrossGlslContext {
     pub artifact: CompiledProgram<spirv_cross2::targets::Glsl>,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {
     type Target = GLSL;
     type Options = GlslVersion;
@@ -33,7 +33,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for GLSL {
     type Target = GLSL;
     type Options = GlslVersion;

@@ -103,7 +103,7 @@ pub struct CrossHlslContext {
     pub fragment_buffers: HlslBufferAssignments,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
     type Target = HLSL;
     type Options = Option<HlslShaderModel>;
@@ -119,7 +119,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
     type Target = HLSL;
     type Options = Option<HlslShaderModel>;

@@ -178,16 +178,16 @@ mod compile {
     use super::*;
     use librashader_pack::PassResource;
 
-    #[cfg(not(feature = "stable"))]
+    #[cfg(feature = "nightly")]
     pub type DxilShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<DXIL, SpirvCompilation, SpirvCross> + Send>;
 
-    #[cfg(feature = "stable")]
+    #[cfg(not(feature = "nightly"))]
     pub type DxilShaderPassMeta = ShaderPassArtifact<
         Box<dyn CompileReflectShader<DXIL, SpirvCompilation, SpirvCross> + Send>,
     >;
 
-    #[cfg_attr(not(feature = "stable"), define_opaque(DxilShaderPassMeta))]
+    #[cfg_attr(feature = "nightly", define_opaque(DxilShaderPassMeta))]
     pub fn compile_passes_dxil(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],
@@ -209,16 +209,16 @@ mod compile {
         Ok((passes, semantics))
     }
 
-    #[cfg(not(feature = "stable"))]
+    #[cfg(feature = "nightly")]
     pub type HlslShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>;
 
-    #[cfg(feature = "stable")]
+    #[cfg(not(feature = "nightly"))]
     pub type HlslShaderPassMeta = ShaderPassArtifact<
         Box<dyn CompileReflectShader<HLSL, SpirvCompilation, SpirvCross> + Send>,
     >;
 
-    #[cfg_attr(not(feature = "stable"), define_opaque(HlslShaderPassMeta))]
+    #[cfg_attr(feature = "nightly", define_opaque(HlslShaderPassMeta))]
     pub fn compile_passes_hlsl(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],

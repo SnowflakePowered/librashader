@@ -4,7 +4,7 @@
 //! See [`librashader::runtime::mtl`](https://docs.rs/librashader/latest/aarch64-apple-darwin/librashader/runtime/mtl/index.html) instead.
 
 #![cfg(target_vendor = "apple")]
-#![cfg_attr(not(feature = "stable"), feature(type_alias_impl_trait))]
+#![cfg_attr(feature = "nightly", feature(type_alias_impl_trait))]
 
 mod buffer;
 mod draw_quad;

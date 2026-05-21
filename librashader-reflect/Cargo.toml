@@ -45,6 +45,9 @@ naga = [ "dep:rspirv", "dep:spirv", "dep:naga", "naga/spv-in", "naga/spv-out", "
 serde = ["dep:serde", "serde/derive", "librashader-common/serde", "bitflags/serde"]
 msl = [ "cross", "spirv-cross2/msl", "naga?/msl-out" ]
 
+nightly = []
+# No-op alias for backwards compatibility with older consumers that opted into `stable`.
+# The stable code path is now the default; this feature is intentionally empty.
 stable = []
 
 unstable-naga-in = ["naga/glsl-in"]

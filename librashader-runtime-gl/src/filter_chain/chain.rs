@@ -103,16 +103,16 @@ impl<T: GLInterface> FilterChainImpl<T> {
 mod compile {
     use super::*;
 
-    #[cfg(not(feature = "stable"))]
+    #[cfg(feature = "nightly")]
     pub type ShaderPassMeta =
         ShaderPassArtifact<impl CompileReflectShader<GLSL, SpirvCompilation, SpirvCross>>;
 
-    #[cfg(feature = "stable")]
+    #[cfg(not(feature = "nightly"))]
     pub type ShaderPassMeta = ShaderPassArtifact<
         Box<dyn CompileReflectShader<GLSL, SpirvCompilation, SpirvCross> + Send>,
     >;
 
-    #[cfg_attr(not(feature = "stable"), define_opaque(ShaderPassMeta))]
+    #[cfg_attr(feature = "nightly", define_opaque(ShaderPassMeta))]
     pub fn compile_passes(
         shaders: Vec<PassResource>,
         textures: &[TextureResource],

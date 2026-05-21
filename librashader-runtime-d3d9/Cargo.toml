@@ -29,7 +29,9 @@ windows-numerics = "0.3.0"
 windows-core = { workspace = true }
 
 [features]
-stable = ["librashader-reflect/stable"]
+nightly = ["librashader-reflect/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true

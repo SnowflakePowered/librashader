@@ -24,7 +24,7 @@ pub struct CrossMslContext {
     pub artifact: CompiledProgram<spirv_cross2::targets::Msl>,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, SpirvCross> for MSL {
     type Target = MSL;
     type Options = Option<self::MslVersion>;
@@ -40,7 +40,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for MSL {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for MSL {
     type Target = MSL;
     type Options = Option<self::MslVersion>;
@@ -68,7 +68,7 @@ pub struct NagaMslContext {
     pub next_free_binding: u32,
 }
 
-#[cfg(not(feature = "stable"))]
+#[cfg(feature = "nightly")]
 impl FromCompilation<SpirvCompilation, Naga> for MSL {
     type Target = MSL;
     type Options = Option<self::MslVersion>;
@@ -84,7 +84,7 @@ impl FromCompilation<SpirvCompilation, Naga> for MSL {
     }
 }
 
-#[cfg(feature = "stable")]
+#[cfg(not(feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, Naga> for MSL {
     type Target = MSL;
     type Options = Option<self::MslVersion>;

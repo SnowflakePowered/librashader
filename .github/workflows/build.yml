@@ -41,12 +41,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Install nightly Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
       - name: Build dynamic library
         run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }}
+      - name: Stage C header for upload
+        shell: bash
+        run: cp include/librashader.h target/${{ matrix.profile }}/librashader.h
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.0
         with:
@@ -76,10 +77,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Install nightly Rust
-        uses: dtolnay/rust-toolchain@master
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
           targets: aarch64-unknown-linux-gnu
       - name: Install ARM64 cross-compilation dependencies
         continue-on-error: true
@@ -92,6 +92,8 @@ jobs:
           sudo apt-get -y install g++-aarch64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorg-dev libx11-dev:arm64 libxrandr-dev:arm64
       - name: Build dynamic library
         run: CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/aarch64-linux-gnu-gcc cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target aarch64-unknown-linux-gnu
+      - name: Stage C header for upload
+        run: cp include/librashader.h target/aarch64-unknown-linux-gnu/${{ matrix.profile }}/librashader.h
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.0
         with:
@@ -116,13 +118,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Install nightly Rust
-        uses: dtolnay/rust-toolchain@master
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
           targets: aarch64-pc-windows-msvc
       - name: Build dynamic library
         run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target aarch64-pc-windows-msvc
+      - name: Stage C header for upload
+        shell: bash
+        run: cp include/librashader.h target/aarch64-pc-windows-msvc/${{ matrix.profile }}/librashader.h
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.0
         with:
@@ -147,6 +151,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      # Tier 3 target; -Zbuild-std requires nightly. The build itself stays on the
+      # stable code path because we do not pass --nightly to the build script.
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -154,6 +160,9 @@ jobs:
           components: rust-src
       - name: Build dynamic library
         run: cargo run -p librashader-build-script -- --profile ${{ matrix.profile }} --target x86_64-win7-windows-msvc -- -Zbuild-std
+      - name: Stage C header for upload
+        shell: bash
+        run: cp include/librashader.h target/x86_64-win7-windows-msvc/${{ matrix.profile }}/librashader.h
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4.4.0
         with:

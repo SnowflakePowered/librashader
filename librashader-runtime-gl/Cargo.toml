@@ -28,7 +28,9 @@ rayon = { workspace = true }
 array-init = "2.1.0"
 
 [features]
-stable = ["librashader-reflect/stable"]
+nightly = ["librashader-reflect/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 
 [dev-dependencies]
 glfw = { workspace = true }

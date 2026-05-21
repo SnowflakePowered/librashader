@@ -15,7 +15,7 @@ description = "RetroArch shaders for all."
 crate-type = [ "cdylib", "staticlib" ]
 
 [features]
-default = ["runtime-all" ]
+default = ["runtime-all"]
 runtime-all = ["runtime-opengl", "runtime-d3d9", "runtime-d3d11", "runtime-d3d12", "runtime-vulkan", "runtime-metal"]
 runtime-opengl = ["glow", "librashader/runtime-gl"]
 runtime-d3d11 = ["windows", "librashader/runtime-d3d11", "windows/Win32_Graphics_Direct3D11"]
@@ -26,7 +26,9 @@ runtime-vulkan = ["ash", "librashader/runtime-vk"]
 runtime-metal = ["__cbindgen_internal_objc", "librashader/runtime-metal"]
 
 reflect-unstable = []
-stable = ["librashader/stable"]
+nightly = ["librashader/nightly"]
+# Backwards-compatible no-op; stable is the default code path.
+stable = []
 docsrs = []
 
 __cbindgen_internal = ["runtime-all"]
