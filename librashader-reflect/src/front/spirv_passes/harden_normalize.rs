@@ -87,10 +87,12 @@ impl<'a> HardenNormalize<'a> {
                 continue;
             };
 
-            let eps_scalar = *scalar_eps_by_float_type.entry(float_type).or_insert_with(|| {
-                self.builder
-                    .constant_bit32(float_type, NORMALIZE_EPSILON.to_bits())
-            });
+            let eps_scalar = *scalar_eps_by_float_type
+                .entry(float_type)
+                .or_insert_with(|| {
+                    self.builder
+                        .constant_bit32(float_type, NORMALIZE_EPSILON.to_bits())
+                });
 
             let composite = if component_count == 1 {
                 eps_scalar
