@@ -70,6 +70,26 @@ impl PipelineLayoutObjects {
             });
         }
 
+        if let Some(pcb_meta) = reflection
+            .push_constant
+            .as_ref()
+            .filter(|pcb_meta| !pcb_meta.stage_mask.is_empty())
+        {
+            if let Some(binding) = pcb_meta.binding {
+                let pcb_mask = util::binding_stage_to_wgpu_stage(pcb_meta.stage_mask);
+                main_bindings.push(BindGroupLayoutEntry {
+                    binding,
+                    visibility: pcb_mask,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: BufferSize::new(pcb_meta.size as u64),
+                    },
+                    count: None,
+                });
+            }
+        }
+
         for texture in reflection.meta.texture_meta.values() {
             main_bindings.push(BindGroupLayoutEntry {
                 binding: texture.binding,

@@ -130,7 +130,7 @@ impl<'a> State<'a> {
         // .unwrap();
 
         let preset = ShaderPreset::try_parse(
-            "../test/shaders_slang/sonkun/slot-mask/curved-screen/1080p/01-1080p-crt-guest-advanced-hd-slot-mask-u-normal-rf.slangp",
+            "../test/shaders_slang/crt/crt-royale.slangp",
             ShaderFeatures::NONE,
         )
         .unwrap();
@@ -224,8 +224,21 @@ impl<'a> State<'a> {
         false
     }
     fn update(&mut self) {}
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let output = self.surface.get_current_texture()?;
+    fn render(&mut self) -> RenderOutcome {
+        let output = match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(t) | wgpu::CurrentSurfaceTexture::Suboptimal(t) => {
+                t
+            }
+            wgpu::CurrentSurfaceTexture::Lost | wgpu::CurrentSurfaceTexture::Outdated => {
+                return RenderOutcome::NeedsResize;
+            }
+            wgpu::CurrentSurfaceTexture::Validation => return RenderOutcome::Exit,
+            wgpu::CurrentSurfaceTexture::Timeout => {
+                log::warn!("Surface timeout");
+                return RenderOutcome::Skip;
+            }
+            wgpu::CurrentSurfaceTexture::Occluded => return RenderOutcome::Skip,
+        };
 
         let render_output = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("rendertexture"),
@@ -317,8 +330,15 @@ impl<'a> State<'a> {
         output.present();
 
         self.frame_count += 1;
-        Ok(())
+        RenderOutcome::Done
     }
+}
+
+pub enum RenderOutcome {
+    Done,
+    NeedsResize,
+    Exit,
+    Skip,
 }
 
 pub fn run() {
@@ -348,14 +368,9 @@ pub fn run() {
                         WindowEvent::RedrawRequested => {
                             state.update();
                             match state.render() {
-                                Ok(_) => {}
-                                Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                                    state.resize(state.size)
-                                }
-                                Err(
-                                    wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other,
-                                ) => target.exit(),
-                                Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
+                                RenderOutcome::Done | RenderOutcome::Skip => {}
+                                RenderOutcome::NeedsResize => state.resize(state.size),
+                                RenderOutcome::Exit => target.exit(),
                             }
                         }
                         WindowEvent::CloseRequested => target.exit(),
