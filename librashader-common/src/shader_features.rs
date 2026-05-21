@@ -19,5 +19,10 @@ bitflags! {
         /// Note that this flag only enables the `_HAS_FRAMETIME_UNIFORMS` define.
         /// The uniforms will be bound unconditionally if found in reflection.
         const FRAMETIME_UNIFORMS = 0b00000010;
+        /// Enable `Gyroscope` and `Accelerometer` and `AccelerometerRest` uniforms.
+        ///
+        /// Note that this flag only enables the `_HAS_SENSOR_UNIFORMS` define.
+        /// The uniforms will be bound unconditionally if found in reflection.
+        const SENSOR_UNIFORMS = 0b00000100;
     }
 }

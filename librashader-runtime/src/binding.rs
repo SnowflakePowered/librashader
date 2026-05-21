@@ -22,6 +22,7 @@ where
     H: BindUniform<C, f32, D>,
     H: BindUniform<C, u32, D>,
     H: BindUniform<C, i32, D>,
+    H: for<'a> BindUniform<C, &'a [f32; 3], D>,
     H: for<'a> BindUniform<C, &'a [f32; 4], D>,
     H: for<'a> BindUniform<C, &'a [f32; 16], D>,
 {
@@ -37,6 +38,7 @@ where
     H: BindUniform<Option<()>, f32, D>,
     H: BindUniform<Option<()>, u32, D>,
     H: BindUniform<Option<()>, i32, D>,
+    H: for<'a> BindUniform<Option<()>, &'a [f32; 3], D>,
     H: for<'a> BindUniform<Option<()>, &'a [f32; 4], D>,
     H: for<'a> BindUniform<Option<()>, &'a [f32; 16], D>,
 {
@@ -74,7 +76,19 @@ pub struct UniformInputs<'a> {
     /// FinalViewportSize
     pub viewport_size: Size<u32>,
     // Grouped HDR inputs
-    pub hdr_inputs: Option<HdrUniformInputs>
+    pub hdr_inputs: Option<HdrUniformInputs>,
+    /// Grouped sensor (gyroscope/accelerometer) inputs.
+    pub sensor_inputs: SensorUniformInputs,
+}
+
+/// Three-axis sensor readings bound to the shader as `vec3` uniforms.
+pub struct SensorUniformInputs {
+    /// Gyroscope (x, y, z)
+    pub gyroscope: [f32; 3],
+    /// Accelerometer (x, y, z)
+    pub accelerometer: [f32; 3],
+    /// AccelerometerRest (Device position at launch / resume) (x, y, z)
+    pub accelerometer_rest: [f32; 3],
 }
 
 pub struct HdrUniformInputs {
@@ -95,6 +109,7 @@ where
     H: BindUniform<C, f32, Self::DeviceContext>,
     H: BindUniform<C, u32, Self::DeviceContext>,
     H: BindUniform<C, i32, Self::DeviceContext>,
+    H: for<'b> BindUniform<C, &'b [f32; 3], Self::DeviceContext>,
     H: for<'b> BindUniform<C, &'b [f32; 4], Self::DeviceContext>,
     H: for<'b> BindUniform<C, &'b [f32; 16], Self::DeviceContext>,
 {
@@ -292,7 +307,6 @@ where
                     device,
                 );
             }
-
         }
 
         // Scanlines, InverseTonemap, HDR10, and SubpixelLayout are RA-internal
@@ -311,6 +325,32 @@ where
         }
         if let Some(offset) = uniform_bindings.get(&UniqueSemantics::SubpixelLayout.into()) {
             uniform_storage.bind_scalar(offset.offset(), 0u32, offset.context(), device);
+        }
+
+        let sensors = uniform_inputs.sensor_inputs;
+        // bind Gyroscope
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::Gyroscope.into()) {
+            uniform_storage.bind_vec3(offset.offset(), sensors.gyroscope, offset.context(), device);
+        }
+
+        // bind Accelerometer
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::Accelerometer.into()) {
+            uniform_storage.bind_vec3(
+                offset.offset(),
+                sensors.accelerometer,
+                offset.context(),
+                device,
+            );
+        }
+
+        // bind AccelerometerRest
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::AccelerometerRest.into()) {
+            uniform_storage.bind_vec3(
+                offset.offset(),
+                sensors.accelerometer_rest,
+                offset.context(),
+                device,
+            );
         }
 
         // bind Original sampler
@@ -592,6 +632,12 @@ macro_rules! impl_default_frame_options {
             pub brightness_nits: f32,
             /// Gamut expansion mode bound to the shader `ExpandGamut` uniform. Default is 0.
             pub expand_gamut: u32,
+            /// Bound to the shader `Gyroscope` (vec3) uniform. Default is [0, 0, 0].
+            pub gyroscope: [f32; 3],
+            /// Bound to the shader `Accelerometer` (vec3) uniform. Default is [0, 0, 0].
+            pub accelerometer: [f32; 3],
+            /// Bound to the shader `AccelerometerRest` (vec3) uniform. Default is [0, 0, 0].
+            pub accelerometer_rest: [f32; 3],
         }
 
         impl Default for $ty {
@@ -607,6 +653,9 @@ macro_rules! impl_default_frame_options {
                     frames_per_second: 1.0,
                     brightness_nits: 200.0,
                     expand_gamut: 0,
+                    gyroscope: [0.0, 0.0, 0.0],
+                    accelerometer: [0.0, 0.0, 0.0],
+                    accelerometer_rest: [0.0, 0.0, 0.0],
                 }
             }
         }

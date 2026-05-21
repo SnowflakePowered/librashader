@@ -38,8 +38,7 @@ impl VulkanBase {
             .application_version(0)
             .api_version(vk::make_api_version(0, 1, 0, 0));
 
-        let create_info = vk::InstanceCreateInfo::default()
-            .application_info(&app_info);
+        let create_info = vk::InstanceCreateInfo::default().application_info(&app_info);
 
         let instance = unsafe { entry.create_instance(&create_info, None) }?;
 
@@ -92,8 +91,7 @@ impl VulkanBase {
             .queue_family_index(indices.graphics_family()?)
             .queue_priorities(&[1.0f32])];
 
-        let device_create_info = vk::DeviceCreateInfo::default()
-            .queue_create_infos(&queue_info);
+        let device_create_info = vk::DeviceCreateInfo::default().queue_create_infos(&queue_info);
 
         let device =
             unsafe { instance.create_device(*physical_device, &device_create_info, None)? };

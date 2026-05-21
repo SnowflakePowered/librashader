@@ -227,6 +227,44 @@ where
     C: Copy,
     U: Deref<Target = [u8]> + DerefMut,
     P: Deref<Target = [u8]> + DerefMut,
+    H: for<'a> BindUniform<C, &'a [f32; 3], D>,
+{
+    #[inline(always)]
+    fn write_vec3_inner(buffer: &mut [u8], vec3: &[f32; 3]) {
+        let vec3 = bytemuck::cast_slice(vec3);
+        buffer.copy_from_slice(vec3);
+    }
+    /// Bind a `vec3` to the given offset.
+    #[inline(always)]
+    pub fn bind_vec3(
+        &mut self,
+        offset: MemberOffset,
+        value: impl Into<[f32; 3]>,
+        ctx: C,
+        device: &D,
+    ) {
+        let vec3 = value.into();
+
+        for ty in UniformMemberBlock::TYPES {
+            if H::bind_uniform(ty, &vec3, ctx, device).is_some() {
+                continue;
+            }
+            if let Some(offset) = offset.offset(ty) {
+                let buffer = self.buffer(ty);
+                Self::write_vec3_inner(
+                    &mut buffer[offset..][..3 * std::mem::size_of::<f32>()],
+                    &vec3,
+                );
+            }
+        }
+    }
+}
+
+impl<H, C, U, P, D> UniformStorage<H, C, U, P, D>
+where
+    C: Copy,
+    U: Deref<Target = [u8]> + DerefMut,
+    P: Deref<Target = [u8]> + DerefMut,
     H: for<'a> BindUniform<C, &'a [f32; 16], D>,
 {
     #[inline(always)]

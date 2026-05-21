@@ -16,6 +16,8 @@ pub enum UniformType {
     Mat4,
     /// A vector of 4 floats (`vec4`).
     Vec4,
+    /// A vector of 3 floats (`vec3`).
+    Vec3,
     /// An unsigned integer (`uint`).
     Unsigned,
     /// A signed integer (`int`).
@@ -83,9 +85,15 @@ pub enum UniqueSemantics {
     InverseTonemap = 17,
     /// Enable/disable HDR10 PQ encoding in the final pass.
     HDR10 = 18,
+    /// Three-axis gyroscope reading (vec3).
+    Gyroscope = 19,
+    /// Three-axis accelerometer reading (vec3).
+    Accelerometer = 20,
+    /// Accelerometer reading when the device is at rest (vec3).
+    AccelerometerRest = 21,
     /// A user defined float parameter.
     // float, user defined parameter, array
-    FloatParameter = 19,
+    FloatParameter = 22,
 }
 
 impl UniqueSemantics {
@@ -120,6 +128,9 @@ impl UniqueSemantics {
             UniqueSemantics::Scanlines => UniformType::Float,
             UniqueSemantics::InverseTonemap => UniformType::Float,
             UniqueSemantics::HDR10 => UniformType::Float,
+            UniqueSemantics::Gyroscope => UniformType::Vec3,
+            UniqueSemantics::Accelerometer => UniformType::Vec3,
+            UniqueSemantics::AccelerometerRest => UniformType::Vec3,
         }
     }
 
@@ -146,6 +157,9 @@ impl UniqueSemantics {
             UniqueSemantics::ExpandGamut => "ExpandGamut",
             UniqueSemantics::InverseTonemap => "InverseTonemap",
             UniqueSemantics::HDR10 => "HDR10",
+            UniqueSemantics::Gyroscope => "Gyroscope",
+            UniqueSemantics::Accelerometer => "Accelerometer",
+            UniqueSemantics::AccelerometerRest => "AccelerometerRest",
         }
     }
 }
@@ -557,6 +571,18 @@ impl UniqueSemanticMap for FastHashMap<ShortString, UniformSemantic> {
                     semantics: UniqueSemantics::HDR10,
                     index: (),
                 }),
+                "Gyroscope" => Some(Semantic {
+                    semantics: UniqueSemantics::Gyroscope,
+                    index: (),
+                }),
+                "Accelerometer" => Some(Semantic {
+                    semantics: UniqueSemantics::Accelerometer,
+                    index: (),
+                }),
+                "AccelerometerRest" => Some(Semantic {
+                    semantics: UniqueSemantics::AccelerometerRest,
+                    index: (),
+                }),
                 _ => None,
             },
             Some(UniformSemantic::Unique(variable)) => Some(*variable),
@@ -775,6 +801,18 @@ mod serde_impl {
                 },
                 "HDR10" => Semantic {
                     semantics: UniqueSemantics::HDR10,
+                    index: (),
+                },
+                "Gyroscope" => Semantic {
+                    semantics: UniqueSemantics::Gyroscope,
+                    index: (),
+                },
+                "Accelerometer" => Semantic {
+                    semantics: UniqueSemantics::Accelerometer,
+                    index: (),
+                },
+                "AccelerometerRest" => Semantic {
+                    semantics: UniqueSemantics::AccelerometerRest,
                     index: (),
                 },
                 _ => return Err(E::custom(format!("unknown unique semantic {v}"))),

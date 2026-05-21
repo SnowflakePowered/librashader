@@ -14,6 +14,8 @@ const DEFINE_HAS_ORIGINALASPECT_UNIFORM: &str = "#define _HAS_ORIGINALASPECT_UNI
 
 const DEFINE_HAS_FRAMETIME_UNIFORMS: &str = "#define _HAS_FRAMETIME_UNIFORMS";
 
+const DEFINE_HAS_SENSOR_UNIFORMS: &str = "#define _HAS_SENSOR_UNIFORMS";
+
 fn read_file(path: impl AsRef<Path>) -> Result<String, PreprocessError> {
     let path = path.as_ref();
     let mut buf = Vec::new();
@@ -76,6 +78,10 @@ pub fn read_source(
 
     if features.contains(ShaderFeatures::FRAMETIME_UNIFORMS) {
         output.push_line(DEFINE_HAS_FRAMETIME_UNIFORMS);
+    }
+
+    if features.contains(ShaderFeatures::SENSOR_UNIFORMS) {
+        output.push_line(DEFINE_HAS_SENSOR_UNIFORMS);
     }
 
     output.mark_line(2, path.file_name().and_then(|f| f.to_str()).unwrap_or(""));

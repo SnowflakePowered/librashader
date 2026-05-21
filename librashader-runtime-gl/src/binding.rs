@@ -121,6 +121,32 @@ impl BindUniform<VariableLocation, &[f32; 4], glow::Context> for GlUniformBinder
     }
 }
 
+impl BindUniform<VariableLocation, &[f32; 3], glow::Context> for GlUniformBinder {
+    fn bind_uniform(
+        block: UniformMemberBlock,
+        vec3: &[f32; 3],
+        location: VariableLocation,
+        device: &glow::Context,
+    ) -> Option<()> {
+        if let Some(location) = location
+            .location(block)
+            .filter(|location| location.bindable())
+        {
+            unsafe {
+                if location.is_valid(BindingStage::VERTEX) {
+                    device.uniform_3_f32_slice(location.vertex.as_ref(), vec3);
+                }
+                if location.is_valid(BindingStage::FRAGMENT) {
+                    device.uniform_3_f32_slice(location.fragment.as_ref(), vec3);
+                }
+            }
+            Some(())
+        } else {
+            None
+        }
+    }
+}
+
 impl BindUniform<VariableLocation, &[f32; 16], glow::Context> for GlUniformBinder {
     fn bind_uniform(
         block: UniformMemberBlock,

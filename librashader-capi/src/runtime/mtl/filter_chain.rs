@@ -61,6 +61,15 @@ pub struct frame_mtl_opt_t {
     /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
     /// Default 0.
     pub expand_gamut: u32,
+    /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+    /// uniform. Default `{0, 0, 0}`. 
+    pub gyroscope: [f32; 3],
+    /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+    /// (vec3) uniform. Default `{0, 0, 0}`.
+    pub accelerometer: [f32; 3],
+    /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+    /// (vec3) uniform. Default `{0, 0, 0}`.
+    pub accelerometer_rest: [f32; 3],
 }
 
 config_struct! {
@@ -69,6 +78,7 @@ config_struct! {
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
         4 => [brightness_nits, expand_gamut];
+        5 => [gyroscope, accelerometer, accelerometer_rest];
     }
 }
 

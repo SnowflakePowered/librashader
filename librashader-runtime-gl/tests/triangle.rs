@@ -21,10 +21,7 @@ fn triangle_gl_hdr() {
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
             .unwrap();
-    assert_eq!(
-        preset.color_space().unwrap(),
-        ColorSpace::ScRgb
-    );
+    assert_eq!(preset.color_space().unwrap(), ColorSpace::ScRgb);
 
     let mut glfw = glfw::init(fail_on_errors!()).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));

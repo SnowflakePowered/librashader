@@ -61,6 +61,13 @@ pub struct libra_preset_opt_t {
     ///
     /// This is only supported on API 2 and above, otherwise this has no effect.
     pub frametime_uniforms: bool,
+    /// Enables `_HAS_SENSOR_UNIFORMS` behaviour.
+    ///
+    /// If this is true, then `frame_options.gyroscope`, `frame_options.accelerometer`, and
+    /// `frame_options.accelerometer_rest` must be set for correct behaviour of shaders.
+    ///
+    /// This is only supported on API 5 and above, otherwise this has no effect.
+    pub sensor_uniforms: bool,
 }
 
 extern_fn! {
@@ -208,6 +215,15 @@ extern_fn! {
 
                 if frametime_uniforms {
                     flags |= ShaderFeatures::FRAMETIME_UNIFORMS;
+                }
+            }
+
+            // Sensor Uniforms are an API 5 feature.
+            if api_version >= 5 {
+                let sensor_uniforms = unsafe { addr_of_mut!((*opt_ptr).sensor_uniforms).read() };
+
+                if sensor_uniforms {
+                    flags |= ShaderFeatures::SENSOR_UNIFORMS;
                 }
             }
 

@@ -18,10 +18,7 @@ fn triangle_wgpu_hdr10() {
         ShaderFeatures::NONE,
     )
     .unwrap();
-    assert_eq!(
-        preset.color_space().unwrap(),
-        ColorSpace::Hdr10
-    );
+    assert_eq!(preset.color_space().unwrap(), ColorSpace::Hdr10);
 
     pollster::block_on(async {
         let instance = wgpu::Instance::default();
