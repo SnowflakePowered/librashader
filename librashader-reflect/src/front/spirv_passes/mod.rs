@@ -1,3 +1,4 @@
+pub mod harden_normalize;
 pub mod link_input_outputs;
 pub mod lower_samplers;
 

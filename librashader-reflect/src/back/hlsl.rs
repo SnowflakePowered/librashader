@@ -2,7 +2,7 @@ use crate::back::targets::HLSL;
 use crate::back::{CompileReflectShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
 use crate::front::SpirvCompilation;
-use crate::reflect::cross::hlsl::HlslReflect;
+use crate::reflect::cross::hlsl::HlslCompileShader;
 use crate::reflect::cross::{CompiledProgram, SpirvCross};
 
 /// The HLSL shader model version to target.
@@ -114,7 +114,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: HlslReflect::try_from(&compile)?,
+            backend: HlslCompileShader::new(compile)?,
         })
     }
 }
@@ -130,7 +130,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for HLSL {
         compile: SpirvCompilation,
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
-            backend: Box::new(HlslReflect::try_from(&compile)?),
+            backend: Box::new(HlslCompileShader::new(compile)?),
         })
     }
 }
