@@ -150,7 +150,7 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
                 Some(&mut errs),
             );
         }
-        
+
         // let res = D3DXCompileShader(
         //     source.as_ptr().cast(),
         //     source.len(),
