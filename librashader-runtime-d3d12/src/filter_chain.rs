@@ -1,5 +1,5 @@
 use crate::buffer::{D3D12Buffer, RawD3D12Buffer};
-use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap, ResourceWorkHeap, SamplerWorkHeap};
+use crate::descriptor_heap::{CpuStagingHeap, RenderTargetHeap, ResourceWorkHeap};
 use crate::draw_quad::DrawQuad;
 use crate::error::FilterChainError;
 use crate::filter_pass::FilterPass;
@@ -555,28 +555,21 @@ impl FilterChainD3D12 {
             )?
         };
 
+        // Samplers stay constant as we create the full set and don't create any dynamic samplers.
         let D3D12PartitionedHeap {
             partitioned: sampler_work_heaps,
             reserved: _,
             handle: sampler_heap_handle,
         } = unsafe {
-            let sampler_heap = D3D12PartitionableHeap::new(
-                device,
-                (MAX_BINDINGS_COUNT as usize) * shader_count * frames_in_flight,
-            )?;
+            let sampler_heap =
+                D3D12PartitionableHeap::new(device, (MAX_BINDINGS_COUNT as usize) * shader_count)?;
             sampler_heap.into_partitioned(MAX_BINDINGS_COUNT as usize, 0)?
         };
 
-        // Group the per-pass partitions: each shader pass takes `frames_in_flight`
+        // Group the per-pass texture partitions: each shader pass takes `frames_in_flight`
         // contiguous partitions so it can rotate descriptor tables per in-flight frame.
         let work_heap_chunks: Vec<Vec<D3D12DescriptorHeap<ResourceWorkHeap>>> = {
             let mut iter = work_heaps.into_iter();
-            (0..shader_count)
-                .map(|_| iter.by_ref().take(frames_in_flight).collect())
-                .collect()
-        };
-        let sampler_heap_chunks: Vec<Vec<D3D12DescriptorHeap<SamplerWorkHeap>>> = {
-            let mut iter = sampler_work_heaps.into_iter();
             (0..shader_count)
                 .map(|_| iter.by_ref().take(frames_in_flight).collect())
                 .collect()
@@ -586,7 +579,7 @@ impl FilterChainD3D12 {
             .into_par_iter()
             .zip(hlsl_passes)
             .zip(work_heap_chunks)
-            .zip(sampler_heap_chunks)
+            .zip(sampler_work_heaps)
             .enumerate()
             .map_init(
                 || {
@@ -599,7 +592,7 @@ impl FilterChainD3D12 {
                 |dxc,
                  (
                     index,
-                    ((((config, mut dxil), (_, mut hlsl)), texture_heap_chunk), sampler_heap_chunk),
+                    ((((config, mut dxil), (_, mut hlsl)), texture_heap_chunk), mut sampler_heap),
                 )| {
                     let Ok((validator, library, compiler)) = dxc else {
                         return Err(FilterChainError::Direct3DOperationError(
@@ -678,11 +671,7 @@ impl FilterChainD3D12 {
                         .map(|mut p| p.allocate_descriptor_range::<16>().map_err(Into::into))
                         .collect::<error::Result<Vec<_>>>()?
                         .into_boxed_slice();
-                    let sampler_heap = sampler_heap_chunk
-                        .into_iter()
-                        .map(|mut p| p.allocate_descriptor_range::<16>().map_err(Into::into))
-                        .collect::<error::Result<Vec<_>>>()?
-                        .into_boxed_slice();
+                    let sampler_heap = sampler_heap.allocate_descriptor_range::<16>()?;
 
                     Ok(FilterPass {
                         reflection,
