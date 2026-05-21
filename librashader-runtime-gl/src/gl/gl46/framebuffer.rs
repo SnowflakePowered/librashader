@@ -233,6 +233,9 @@ impl FramebufferInterface for Gl46Framebuffer {
                     _ => return Err(FilterChainError::FramebufferInit(status)),
                 }
             }
+
+            // Zero-initialize the texture storage.
+            Self::clear::<false>(fb);
         }
         Ok(())
     }

@@ -288,6 +288,9 @@ impl FramebufferInterface for Gl3Framebuffer {
                 }
             }
 
+            // Zero-initialize the texture storage.
+            Self::clear::<false>(fb);
+
             fb.ctx.bind_framebuffer(glow::FRAMEBUFFER, None);
             fb.ctx.bind_texture(glow::TEXTURE_2D, None);
         }
