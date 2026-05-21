@@ -558,8 +558,7 @@ fn convert_implicit_to_explicit(instr: &mut Instruction, lod_zero: Word) {
             instr.class = rspirv::grammar::INSTRUCTION_TABLE.get(Op::ImageSampleExplicitLod);
         }
         Op::ImageSparseSampleImplicitLod => {
-            instr.class =
-                rspirv::grammar::INSTRUCTION_TABLE.get(Op::ImageSparseSampleExplicitLod);
+            instr.class = rspirv::grammar::INSTRUCTION_TABLE.get(Op::ImageSparseSampleExplicitLod);
         }
         _ => return,
     }
