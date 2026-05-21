@@ -61,6 +61,7 @@ pub(crate) struct FilterCommon {
     pub disable_mipmaps: bool,
     pub caps: GLCaps,
     pub context: Arc<glow::Context>,
+    pub hdr_mode: librashader_common::ColorSpace,
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
@@ -223,6 +224,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 history_textures,
                 caps,
                 context,
+                hdr_mode: options.map_or(Default::default(), |o| o.hdr_mode),
             },
             default_options: Default::default(),
             render_target: output,

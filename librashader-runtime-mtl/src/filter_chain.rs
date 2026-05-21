@@ -104,6 +104,7 @@ pub(crate) struct FilterCommon {
     pub config: RuntimeParameters,
     pub(crate) draw_quad: DrawQuad,
     device: Retained<ProtocolObject<dyn MTLDevice>>,
+    pub(crate) hdr_mode: librashader_common::ColorSpace,
 }
 
 impl FilterChainMetal {
@@ -362,6 +363,7 @@ impl FilterChainMetal {
                 output_textures,
                 feedback_textures,
                 history_textures,
+                hdr_mode: options.map_or(Default::default(), |o| o.hdr_mode),
             },
             passes: filters,
             output_framebuffers,

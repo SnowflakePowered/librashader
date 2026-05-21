@@ -7,6 +7,7 @@ use winit::{
 use librashader_common::shader_features::ShaderFeatures;
 use librashader_common::{Size, Viewport};
 use librashader_presets::ShaderPreset;
+use librashader_runtime_wgpu::options::FilterChainOptionsWgpu;
 use librashader_runtime_wgpu::FilterChainWgpu;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -129,13 +130,20 @@ impl<'a> State<'a> {
         // )
         // .unwrap();
 
-        let preset = ShaderPreset::try_parse(
-            "../test/shaders_slang/crt/crt-royale.slangp",
-            ShaderFeatures::NONE,
+        let preset =
+            ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
+                .unwrap();
+
+        let chain = FilterChainWgpu::load_from_preset(
+            preset,
+            &device,
+            &queue,
+            Some(&FilterChainOptionsWgpu {
+                hdr_mode: librashader_common::ColorSpace::Hdr10,
+                ..Default::default()
+            }),
         )
         .unwrap();
-
-        let chain = FilterChainWgpu::load_from_preset(preset, &device, &queue, None).unwrap();
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),

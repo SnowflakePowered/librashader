@@ -1,9 +1,11 @@
 //! librashader preset C API (`libra_preset_*`).
-use crate::ctypes::{libra_preset_ctx_t, libra_shader_preset_t};
+use crate::ctypes::{libra_preset_ctx_t, libra_shader_preset_t, LIBRA_COLOR_SPACE};
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
 use crate::LIBRASHADER_API_VERSION;
-use librashader::presets::{ShaderFeatures, ShaderPreset, WildcardContext};
+use librashader::presets::{
+    PresetColorSpace, ShaderFeatures, ShaderPreset, ShaderPresetPack, WildcardContext,
+};
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
 use std::ptr::{addr_of_mut, NonNull};
@@ -215,6 +217,34 @@ extern_fn! {
                     preset,
                 )))))
             }
+        }
+    }
+}
+
+extern_fn! {
+    /// Query the target color space of the preset's final pass.
+    ///
+    /// The target color space is derived from the last pass's declared output
+    /// format. Use this before creating a filter chain to decide which
+    /// swapchain color space to request to support HDR shaders.
+    ///
+    /// If `out` returns `LIBRA_COLOR_SPACE_SRGB`, the preset does not have a
+    /// final HDR pass and can be treated as an SDR/SRGB shader.
+    ///
+    /// If the host intends PQ-scRGB, then the preset should return `LIBRA_COLOR_SPACE_SCRGB`
+    /// for successful promotion.
+    ///
+    /// ## Safety
+    /// - `preset` must be null or a valid and aligned pointer to a `libra_shader_preset_t`.
+    /// - `out` must be aligned, but may be uninitialized.
+    fn libra_preset_color_space(
+        preset: *mut libra_shader_preset_t,
+        out: *mut MaybeUninit<LIBRA_COLOR_SPACE>
+    ) |preset| {
+        assert_some_ptr!(preset);
+        let cs: LIBRA_COLOR_SPACE = preset.color_space()?.into();
+        unsafe {
+            out.write(MaybeUninit::new(cs));
         }
     }
 }

@@ -56,6 +56,11 @@ pub struct frame_mtl_opt_t {
     pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
+    /// HDR SDR reference white in nits. Default 200.0.
+    pub brightness_nits: f32,
+    /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+    /// Default 0.
+    pub expand_gamut: u32,
 }
 
 config_struct! {
@@ -63,6 +68,7 @@ config_struct! {
         0 => [clear_history, frame_direction];
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
+        4 => [brightness_nits, expand_gamut];
     }
 }
 
@@ -74,11 +80,16 @@ pub struct filter_chain_mtl_opt_t {
     pub version: LIBRASHADER_API_VERSION,
     /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
     pub force_no_mipmaps: bool,
+    /// HDR output mode bound to the shader `HDRMode` uniform.
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB. Must match the
+    /// host swapchain color space. Requires API version 4.
+    pub hdr_mode: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_mtl_opt_t {
         0 => [force_no_mipmaps];
+        4 => [hdr_mode];
     }
 }
 

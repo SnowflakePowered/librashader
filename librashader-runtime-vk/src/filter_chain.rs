@@ -182,6 +182,7 @@ pub(crate) struct FilterCommon {
     pub config: RuntimeParameters,
     pub device: Arc<ash::Device>,
     pub(crate) internal_frame_count: usize,
+    pub(crate) hdr_mode: librashader_common::ColorSpace,
 }
 
 /// Contains residual intermediate `VkImageView` and `VkImage` objects created
@@ -478,6 +479,7 @@ impl FilterChainVulkan {
                 feedback_textures,
                 history_textures,
                 internal_frame_count: 0,
+                hdr_mode: options.map_or(Default::default(), |o| o.hdr_mode),
             },
             passes: filters,
             vulkan: device,

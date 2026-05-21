@@ -73,6 +73,17 @@ pub struct UniformInputs<'a> {
     pub framebuffer_size: Size<u32>,
     /// FinalViewportSize
     pub viewport_size: Size<u32>,
+    // Grouped HDR inputs
+    pub hdr_inputs: Option<HdrUniformInputs>
+}
+
+pub struct HdrUniformInputs {
+    /// HDRMode
+    pub hdr_mode: librashader_common::ColorSpace,
+    /// BrightnessNits
+    pub brightness_nits: f32,
+    /// ExpandGamut
+    pub expand_gamut: u32,
 }
 
 /// Trait that abstracts binding of semantics to shader uniforms.
@@ -249,6 +260,57 @@ where
             };
 
             uniform_storage.bind_scalar(offset.offset(), rotated_aspect, offset.context(), device);
+        }
+
+        if let Some(hdr) = uniform_inputs.hdr_inputs {
+            // bind HDRMode
+            if let Some(offset) = uniform_bindings.get(&UniqueSemantics::HDRMode.into()) {
+                uniform_storage.bind_scalar(
+                    offset.offset(),
+                    hdr.hdr_mode as u32,
+                    offset.context(),
+                    device,
+                );
+            }
+
+            // bind BrightnessNits
+            if let Some(offset) = uniform_bindings.get(&UniqueSemantics::BrightnessNits.into()) {
+                uniform_storage.bind_scalar(
+                    offset.offset(),
+                    hdr.brightness_nits,
+                    offset.context(),
+                    device,
+                );
+            }
+
+            // bind ExpandGamut
+            if let Some(offset) = uniform_bindings.get(&UniqueSemantics::ExpandGamut.into()) {
+                uniform_storage.bind_scalar(
+                    offset.offset(),
+                    hdr.expand_gamut,
+                    offset.context(),
+                    device,
+                );
+            }
+
+        }
+
+        // Scanlines, InverseTonemap, HDR10, and SubpixelLayout are RA-internal
+        // hdr.frag uniforms that librashader does not expose for user
+        // configuration (RA drives them from its own swapchain mastering
+        // pipeline). Bind 0 whenever a shader declares them so the slot is
+        // deterministic.
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::Scanlines.into()) {
+            uniform_storage.bind_scalar(offset.offset(), 0.0f32, offset.context(), device);
+        }
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::InverseTonemap.into()) {
+            uniform_storage.bind_scalar(offset.offset(), 0.0f32, offset.context(), device);
+        }
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::HDR10.into()) {
+            uniform_storage.bind_scalar(offset.offset(), 0.0f32, offset.context(), device);
+        }
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::SubpixelLayout.into()) {
+            uniform_storage.bind_scalar(offset.offset(), 0u32, offset.context(), device);
         }
 
         // bind Original sampler
@@ -525,6 +587,11 @@ macro_rules! impl_default_frame_options {
             pub frames_per_second: f32,
             /// Time in milliseconds between the current and previous frame. Default is 0.
             pub frametime_delta: u32,
+            /// HDR SDR reference white in nits, bound to the shader `BrightnessNits` uniform.
+            /// Default is 200.0. Only meaningful when the chain's HDR mode is non-zero.
+            pub brightness_nits: f32,
+            /// Gamut expansion mode bound to the shader `ExpandGamut` uniform. Default is 0.
+            pub expand_gamut: u32,
         }
 
         impl Default for $ty {
@@ -538,6 +605,8 @@ macro_rules! impl_default_frame_options {
                     aspect_ratio: 0.0,
                     frametime_delta: 0,
                     frames_per_second: 1.0,
+                    brightness_nits: 200.0,
+                    expand_gamut: 0,
                 }
             }
         }

@@ -38,6 +38,7 @@ impl RenderTest for Direct3D11 {
                 Some(&FilterChainOptions {
                     force_no_mipmaps: false,
                     disable_cache: false,
+                    ..Default::default()
                 }),
             )?;
 
@@ -54,6 +55,7 @@ impl RenderTest for Direct3D11 {
                 aspect_ratio: options.aspect_ratio,
                 frametime_delta: options.frametime_delta,
                 frames_per_second: options.frames_per_second,
+                ..Default::default()
             });
 
             for frame in 0..=frame_count {

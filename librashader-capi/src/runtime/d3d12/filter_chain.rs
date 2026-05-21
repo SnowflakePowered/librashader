@@ -104,6 +104,11 @@ pub struct frame_d3d12_opt_t {
     pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
+    /// HDR SDR reference white in nits. Default 200.0.
+    pub brightness_nits: f32,
+    /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+    /// Default is 0.
+    pub expand_gamut: u32,
 }
 
 config_struct! {
@@ -111,6 +116,7 @@ config_struct! {
         0 => [clear_history, frame_direction];
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
+        4 => [brightness_nits, expand_gamut];
     }
 }
 
@@ -135,12 +141,18 @@ pub struct filter_chain_d3d12_opt_t {
 
     /// The number of frames in flight to keep. If zero, defaults to three.
     pub frames_in_flight: u32,
+
+    /// HDR output mode bound to the shader `HDRMode` uniform.
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB. Must match the
+    /// host swapchain color space. Requires API version 4.
+    pub hdr_mode: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d12_opt_t {
         0 =>  [force_hlsl_pipeline, force_no_mipmaps, disable_cache];
         3 =>  [frames_in_flight];
+        4 =>  [hdr_mode];
     }
 }
 

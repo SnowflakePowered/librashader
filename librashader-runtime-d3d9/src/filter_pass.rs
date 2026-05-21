@@ -124,6 +124,7 @@ impl FilterPass {
                 frametime_delta: options.frametime_delta,
                 framebuffer_size: fb_size,
                 viewport_size,
+                hdr_inputs: None
             },
             original,
             source,

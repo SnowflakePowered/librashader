@@ -10,8 +10,11 @@
 
 pub mod context;
 mod error;
+mod hdr;
 mod parse;
 mod preset;
+
+pub use hdr::PresetColorSpace;
 
 pub use context::WildcardContext;
 pub use error::*;

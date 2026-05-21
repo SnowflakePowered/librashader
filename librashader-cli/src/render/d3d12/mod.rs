@@ -90,6 +90,7 @@ impl RenderTest for Direct3D12 {
                     force_no_mipmaps: false,
                     disable_cache: false,
                     frames_in_flight: 3,
+                    ..Default::default()
                 }),
             )?;
 
@@ -156,6 +157,7 @@ impl RenderTest for Direct3D12 {
                 aspect_ratio: options.aspect_ratio,
                 frametime_delta: options.frametime_delta,
                 frames_per_second: options.frames_per_second,
+                ..Default::default()
             });
 
             let image = self.texture.to_ref();

@@ -76,6 +76,7 @@ impl RenderTest for Wgpu {
                 force_no_mipmaps: false,
                 enable_cache: true,
                 adapter_info: None,
+                ..Default::default()
             }),
         )?;
         if let Some(setter) = param_setter {
@@ -123,6 +124,7 @@ impl RenderTest for Wgpu {
             aspect_ratio: options.aspect_ratio,
             frametime_delta: options.frametime_delta,
             frames_per_second: options.frames_per_second,
+            ..Default::default()
         });
 
         for frame in 0..=frame_count {

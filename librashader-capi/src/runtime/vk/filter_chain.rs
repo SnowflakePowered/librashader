@@ -111,6 +111,12 @@ pub struct frame_vk_opt_t {
     pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
+    /// HDR SDR reference white in nits. Bound to the shader `BrightnessNits`
+    /// uniform. Default is 200.0.
+    pub brightness_nits: f32,
+    /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+    /// Default is 0.
+    pub expand_gamut: u32,
 }
 
 config_struct! {
@@ -118,6 +124,7 @@ config_struct! {
         0 => [clear_history, frame_direction];
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
+        4 => [brightness_nits, expand_gamut];
     }
 }
 
@@ -138,11 +145,16 @@ pub struct filter_chain_vk_opt_t {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+    /// HDR output mode bound to the shader `HDRMode` uniform.
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB. Must match the
+    /// host swapchain color space. Requires API version 4.
+    pub hdr_mode: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_vk_opt_t {
         0 => [frames_in_flight, force_no_mipmaps, use_dynamic_rendering, disable_cache];
+        4 => [hdr_mode];
     }
 }
 

@@ -1,5 +1,6 @@
 //! Direct3D 12 shader runtime options.
 
+use librashader_common::ColorSpace;
 use librashader_runtime::impl_default_frame_options;
 impl_default_frame_options!(FrameOptionsD3D12);
 
@@ -21,4 +22,9 @@ pub struct FilterChainOptionsD3D12 {
 
     /// The number of frames in flight to keep. If zero, defaults to three.
     pub frames_in_flight: u32,
+
+    /// HDR output mode bound to the shader `HDRMode` uniform. Must match the
+    /// color space of the swapchain the host configured.
+    pub hdr_mode: ColorSpace,
+
 }
