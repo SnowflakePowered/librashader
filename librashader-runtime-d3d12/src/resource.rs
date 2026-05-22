@@ -31,6 +31,7 @@ impl ObtainResourceHandle for ManuallyDrop<ID3D12Resource> {
 }
 
 // this isn't actually used anymore but keep it around just in case.
+#[allow(dead_code)]
 pub struct IncrementRefcount;
 
 impl ResourceHandleStrategy<ManuallyDrop<ID3D12Resource>> for IncrementRefcount {

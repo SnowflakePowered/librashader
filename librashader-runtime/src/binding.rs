@@ -75,8 +75,8 @@ pub struct UniformInputs<'a> {
     pub framebuffer_size: Size<u32>,
     /// FinalViewportSize
     pub viewport_size: Size<u32>,
-    // Grouped HDR inputs
-    pub hdr_inputs: Option<HdrUniformInputs>,
+    /// Grouped HDR inputs.
+    pub hdr_inputs: HdrUniformInputs,
     /// Grouped sensor (gyroscope/accelerometer) inputs.
     pub sensor_inputs: SensorUniformInputs,
 }
@@ -93,7 +93,7 @@ pub struct SensorUniformInputs {
 
 pub struct HdrUniformInputs {
     /// HDRMode
-    pub hdr_mode: librashader_common::ColorSpace,
+    pub color_space: librashader_common::ColorSpace,
     /// BrightnessNits
     pub brightness_nits: f32,
     /// ExpandGamut
@@ -277,36 +277,35 @@ where
             uniform_storage.bind_scalar(offset.offset(), rotated_aspect, offset.context(), device);
         }
 
-        if let Some(hdr) = uniform_inputs.hdr_inputs {
-            // bind HDRMode
-            if let Some(offset) = uniform_bindings.get(&UniqueSemantics::HDRMode.into()) {
-                uniform_storage.bind_scalar(
-                    offset.offset(),
-                    hdr.hdr_mode as u32,
-                    offset.context(),
-                    device,
-                );
-            }
+        let hdr = uniform_inputs.hdr_inputs;
+        // bind HDRMode
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::HDRMode.into()) {
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                hdr.color_space as u32,
+                offset.context(),
+                device,
+            );
+        }
 
-            // bind BrightnessNits
-            if let Some(offset) = uniform_bindings.get(&UniqueSemantics::BrightnessNits.into()) {
-                uniform_storage.bind_scalar(
-                    offset.offset(),
-                    hdr.brightness_nits,
-                    offset.context(),
-                    device,
-                );
-            }
+        // bind BrightnessNits
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::BrightnessNits.into()) {
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                hdr.brightness_nits,
+                offset.context(),
+                device,
+            );
+        }
 
-            // bind ExpandGamut
-            if let Some(offset) = uniform_bindings.get(&UniqueSemantics::ExpandGamut.into()) {
-                uniform_storage.bind_scalar(
-                    offset.offset(),
-                    hdr.expand_gamut,
-                    offset.context(),
-                    device,
-                );
-            }
+        // bind ExpandGamut
+        if let Some(offset) = uniform_bindings.get(&UniqueSemantics::ExpandGamut.into()) {
+            uniform_storage.bind_scalar(
+                offset.offset(),
+                hdr.expand_gamut,
+                offset.context(),
+                device,
+            );
         }
 
         // Scanlines, InverseTonemap, HDR10, and SubpixelLayout are RA-internal

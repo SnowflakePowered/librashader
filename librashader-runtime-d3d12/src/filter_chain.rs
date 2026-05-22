@@ -96,7 +96,7 @@ pub(crate) struct FilterCommon {
     pub root_signature: D3D12RootSignature,
     pub draw_quad: DrawQuad,
     allocator: Arc<Mutex<Allocator>>,
-    pub(crate) hdr_mode: librashader_common::ColorSpace,
+    pub(crate) color_space: librashader_common::ColorSpace,
 }
 
 pub(crate) struct FrameResiduals {
@@ -453,7 +453,7 @@ impl FilterChainD3D12 {
                 config,
                 history_textures,
                 internal_frame_count: 0,
-                hdr_mode: options.map_or(ColorSpace::Srgb, |o| o.hdr_mode),
+                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             staging_heap,
             rtv_heap,

@@ -139,7 +139,7 @@ impl<'a> State<'a> {
             &device,
             &queue,
             Some(&FilterChainOptionsWgpu {
-                hdr_mode: librashader_common::ColorSpace::Hdr10,
+                color_space: librashader_common::ColorSpace::Hdr10,
                 ..Default::default()
             }),
         )

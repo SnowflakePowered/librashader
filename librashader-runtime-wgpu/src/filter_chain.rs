@@ -19,7 +19,7 @@ use rayon::ThreadPoolBuilder;
 
 use crate::buffer::WgpuStagedBuffer;
 use crate::draw_quad::DrawQuad;
-use librashader_common::{FilterMode, Size, Viewport, WrapMode};
+use librashader_common::{ColorSpace, FilterMode, Size, Viewport, WrapMode};
 use librashader_reflect::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader_runtime::framebuffer::FramebufferInit;
 use librashader_runtime::render_target::RenderTarget;
@@ -89,7 +89,7 @@ pub(crate) struct FilterCommon {
     pub(crate) draw_quad: DrawQuad,
     pub(crate) device: wgpu::Device,
     pub(crate) queue: wgpu::Queue,
-    pub(crate) hdr_mode: librashader_common::ColorSpace,
+    pub(crate) color_space: librashader_common::ColorSpace,
 }
 
 impl FilterChainWgpu {
@@ -242,7 +242,7 @@ impl FilterChainWgpu {
                 output_textures,
                 feedback_textures,
                 history_textures,
-                hdr_mode: options.map_or(Default::default(), |o| o.hdr_mode),
+                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             passes: filters,
             output_framebuffers,

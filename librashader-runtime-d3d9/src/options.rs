@@ -14,8 +14,13 @@ pub struct FilterChainOptionsD3D9 {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
-    /// HDR output mode bound to the shader `HDRMode` uniform. D3D9 has no
-    /// HDR surface formats, so this is plumbed to the shader uniform but
-    /// `output_color_space()` always reports `Srgb` for D3D9 chains.
-    pub hdr_mode: ColorSpace,
+    /// If HDR is enabled, the HDR color space of the final output pass.
+    /// For non-HDR shaders, this should always be [`ColorSpace::Sdr`].
+    ///
+    /// Use [`ShaderPreset::color_space`](librashader_presets::PresetColorSpace::color_space)
+    /// to determine if an HDR color space is required.
+    ///
+    /// D3D9 has no HDR surface formats, so HDR shaders will not display
+    /// correctly on D3D9.
+    pub color_space: ColorSpace,
 }

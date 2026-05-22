@@ -10,7 +10,7 @@ use crate::texture::{D3D9InputTexture, D3D9Texture};
 use crate::{error, util};
 use librashader_cache::{cache_shader_object, CachedCompilation};
 use librashader_common::map::FastHashMap;
-use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_common::{ColorSpace, ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
 use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::hlsl::HlslShaderModel;
@@ -48,6 +48,7 @@ pub(crate) struct FilterCommon {
     pub config: RuntimeParameters,
     pub disable_mipmaps: bool,
     pub(crate) draw_quad: DrawQuad,
+    pub(crate) color_space: ColorSpace,
 }
 
 /// A Direct3D 9 filter chain.
@@ -288,6 +289,7 @@ impl FilterChainD3D9 {
                 feedback_textures,
                 history_textures,
                 draw_quad,
+                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             default_options: Default::default(),
         })

@@ -1,5 +1,6 @@
 use crate::ctypes::{
-    config_struct, libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t, FromUninit,
+    config_struct, libra_shader_preset_t, libra_viewport_t, libra_vk_filter_chain_t, FromPrimitive,
+    FromUninit, LIBRA_COLOR_SPACE,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -155,16 +156,17 @@ pub struct filter_chain_vk_opt_t {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
-    /// HDR output mode bound to the shader `HDRMode` uniform.
-    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB. Must match the
-    /// host swapchain color space. Requires API version 4.
-    pub hdr_mode: u32,
+    /// For HDR shaders, the HDR color space the swapchain is in.
+    ///
+    /// For non-HDR output this should be 0 (SDR).
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+    pub color_space: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_vk_opt_t {
         0 => [frames_in_flight, force_no_mipmaps, use_dynamic_rendering, disable_cache];
-        4 => [hdr_mode];
+        4 => [(color_space: LIBRA_COLOR_SPACE)];
     }
 }
 

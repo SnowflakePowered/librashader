@@ -23,7 +23,10 @@ pub struct FilterChainOptionsD3D12 {
     /// The number of frames in flight to keep. If zero, defaults to three.
     pub frames_in_flight: u32,
 
-    /// HDR output mode bound to the shader `HDRMode` uniform. Must match the
-    /// color space of the swapchain the host configured.
-    pub hdr_mode: ColorSpace,
+    /// If HDR is enabled, the HDR color space of the final output pass.
+    /// For non-HDR shaders, this should always be [`ColorSpace::Sdr`].
+    ///
+    /// Use [`ShaderPreset::color_space`](librashader_presets::PresetColorSpace::color_space)
+    /// to determine if an HDR color space is required.
+    pub color_space: ColorSpace,
 }

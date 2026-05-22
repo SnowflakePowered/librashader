@@ -168,13 +168,37 @@ pub enum LIBRA_COLOR_SPACE {
     PqScRgb = 3,
 }
 
+impl FromPrimitive<u32> for LIBRA_COLOR_SPACE {
+    fn from_primitive(value: u32, _version: usize) -> LIBRA_COLOR_SPACE {
+        // In a future API, we may need to add more, this way we can keep old API behaviour
+        match value % 4 {
+            0 => LIBRA_COLOR_SPACE::Srgb,
+            1 => LIBRA_COLOR_SPACE::Hdr10,
+            2 => LIBRA_COLOR_SPACE::ScRgb,
+            3 => LIBRA_COLOR_SPACE::PqScRgb,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl From<librashader::runtime::ColorSpace> for LIBRA_COLOR_SPACE {
     fn from(value: librashader::runtime::ColorSpace) -> Self {
         match value {
-            librashader::runtime::ColorSpace::Srgb => LIBRA_COLOR_SPACE::Srgb,
+            librashader::runtime::ColorSpace::Sdr => LIBRA_COLOR_SPACE::Srgb,
             librashader::runtime::ColorSpace::Hdr10 => LIBRA_COLOR_SPACE::Hdr10,
             librashader::runtime::ColorSpace::ScRgb => LIBRA_COLOR_SPACE::ScRgb,
             librashader::runtime::ColorSpace::PqScRgb => LIBRA_COLOR_SPACE::PqScRgb,
+        }
+    }
+}
+
+impl From<LIBRA_COLOR_SPACE> for librashader::runtime::ColorSpace {
+    fn from(value: LIBRA_COLOR_SPACE) -> Self {
+        match value {
+            LIBRA_COLOR_SPACE::Srgb => librashader::runtime::ColorSpace::Sdr,
+            LIBRA_COLOR_SPACE::Hdr10 => librashader::runtime::ColorSpace::Hdr10,
+            LIBRA_COLOR_SPACE::ScRgb => librashader::runtime::ColorSpace::ScRgb,
+            LIBRA_COLOR_SPACE::PqScRgb => librashader::runtime::ColorSpace::PqScRgb,
         }
     }
 }
@@ -201,12 +225,25 @@ where
     fn from_uninit(value: MaybeUninit<Self>) -> T;
 }
 
+/// Trait to trampoline from a primitive to a C enum with mod
+pub(crate) trait FromPrimitive<T>
+where
+    Self: Sized,
+{
+    fn from_primitive(value: T, version: usize) -> Self;
+}
+
 macro_rules! config_set_field {
     (@POINTER $options:ident.$field:ident <- $ptr:ident) => {
-        $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read().into() };
+        $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+    };
+    (@POINTER $options:ident.$field:ident <- $ptr:ident as $trampoline:ty[$realver:expr]) => {
+        let primitive = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+        let ctype = <$trampoline as FromPrimitive<_>>::from_primitive(primitive, $realver);
+        $options.$field = ctype.into();
     };
     (@POINTER @NEGATIVE $options:ident.$field:ident <- $ptr:ident) => {
-        $options.$field = unsafe { (!::std::ptr::addr_of!((*$ptr).$field).read()).into() };
+        $options.$field = unsafe { (!::std::ptr::addr_of!((*$ptr).$field).read()) };
     };
     (@LITERAL $options:ident.$field:ident <- $value:literal) => {
         $options.$field = $value;
@@ -232,6 +269,14 @@ macro_rules! config_version_set {
         #[allow(unused_comparisons)]
         if $realver >= $version {
             $crate::ctypes::config_set_field!(@LITERAL $options.$field <- $value);
+        }
+    };
+
+    // Allow safe enums by looping through a type
+    (@SINGLE $realver:ident $version:literal => [($field:ident: $trampoline:ty)] ($options:ident <- $ptr:ident)) => {
+        #[allow(unused_comparisons)]
+        if $realver >= $version {
+            $crate::ctypes::config_set_field!(@POINTER $options.$field <- $ptr as $trampoline[$realver]);
         }
     };
 
