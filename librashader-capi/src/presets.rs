@@ -48,21 +48,24 @@ pub struct libra_preset_opt_t {
     pub version: LIBRASHADER_API_VERSION,
     /// Enables `_HAS_ORIGINALASPECT_UNIFORMS` behaviour.
     ///
-    /// If this is true, then `frame_options.aspect_ratio` must be set for correct behaviour of shaders.
+    /// If this is true, then `frame_options.aspect_ratio` must be set for correct behaviour of shaders
+    /// that take the `AspectRatio` uniform.
     ///
     /// This is only supported on API 2 and above, otherwise this has no effect.
     pub original_aspect_uniforms: bool,
     /// Enables `_HAS_FRAMETIME_UNIFORMS` behaviour.
     ///
     /// If this is true, then `frame_options.frames_per_second` and `frame_options.frametime_delta`
-    /// must be set for correct behaviour of shaders.
+    /// must be set for correct behaviour of shaders that take the `OriginalFPS` and
+    /// `FrametimeDelta` uniforms.
     ///
     /// This is only supported on API 2 and above, otherwise this has no effect.
     pub frametime_uniforms: bool,
     /// Enables `_HAS_SENSOR_UNIFORMS` behaviour.
     ///
-    /// If this is true, then `frame_options.gyroscope`, `frame_options.accelerometer`, and
-    /// `frame_options.accelerometer_rest` must be set for correct behaviour of shaders.
+    /// If this is true, then the host should set `frame_options.gyroscope`, `frame_options.accelerometer`, and
+    /// `frame_options.accelerometer_rest` must be set for correct behaviour of shaders that take the `Gyroscope`,
+    /// `Accelerometer`, and `AccelerometerRest` uniforms.
     ///
     /// This is only supported on API 5 and above, otherwise this has no effect.
     pub sensor_uniforms: bool,
