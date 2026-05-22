@@ -394,6 +394,7 @@ impl FilterChainD3D9 {
                 &original,
                 &source,
                 RenderTarget::identity(&target_rtv)?,
+                None,
                 QuadType::Offscreen,
             )?;
 
@@ -415,9 +416,16 @@ impl FilterChainD3D9 {
             source.wrap = pass.meta.wrap_mode;
             source.is_srgb = pass.meta.srgb_framebuffer;
 
-            if self.draw_last_pass_feedback {
+            // When feedback is enabled, render the last pass to the intermediate
+            // framebuffer first then render to the viewport with the OutputSize semantic
+            // overridden to the FB scale.
+            //
+            // Shaders need to see the pass's declared scale rather than the viewport size,
+            // or they won't render correctly for feedback.
+            let output_size_override = if self.draw_last_pass_feedback {
                 let feedback_target = &self.output_framebuffers[index];
                 let feedback_target_rtv = feedback_target.as_output()?;
+                let feedback_size: Size<u32> = feedback_target.handle.size()?;
 
                 pass.draw(
                     &self.common.d3d9,
@@ -429,9 +437,13 @@ impl FilterChainD3D9 {
                     &original,
                     &source,
                     RenderTarget::viewport_with_output(&feedback_target_rtv, viewport),
+                    None,
                     QuadType::Final,
                 )?;
-            }
+                Some(feedback_size)
+            } else {
+                None
+            };
 
             pass.draw(
                 &self.common.d3d9,
@@ -443,6 +455,7 @@ impl FilterChainD3D9 {
                 &original,
                 &source,
                 RenderTarget::viewport(viewport),
+                output_size_override,
                 QuadType::Final,
             )?;
         }

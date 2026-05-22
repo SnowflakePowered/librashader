@@ -494,6 +494,7 @@ impl FilterChainWgpu {
                 &original,
                 &source,
                 &out,
+                None,
                 QuadType::Offscreen,
             )?;
 
@@ -525,7 +526,13 @@ impl FilterChainWgpu {
             source.wrap_mode = pass.meta.wrap_mode;
             source.mip_filter = pass.meta.filter;
 
-            if self.draw_last_pass_feedback {
+            // When feedback is enabled, render the last pass to the intermediate
+            // framebuffer first then render to the viewport with the OutputSize semantic
+            // overridden to the FB scale.
+            //
+            // Shaders need to see the pass's declared scale rather than the viewport size,
+            // or they won't render correctly for feedback.
+            let output_size_override = if self.draw_last_pass_feedback {
                 let target = &self.output_framebuffers[index];
                 let output_image = WgpuOutputView::from(target);
                 let out = RenderTarget::viewport_with_output(&output_image, viewport);
@@ -540,9 +547,13 @@ impl FilterChainWgpu {
                     &original,
                     &source,
                     &out,
+                    None,
                     QuadType::Final,
                 )?;
-            }
+                Some(target.size)
+            } else {
+                None
+            };
 
             let out = RenderTarget::viewport(viewport);
             pass.draw(
@@ -555,6 +566,7 @@ impl FilterChainWgpu {
                 &original,
                 &source,
                 &out,
+                output_size_override,
                 QuadType::Final,
             )?;
         }

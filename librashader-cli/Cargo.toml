@@ -77,6 +77,28 @@ features = [
     "Win32_UI",
 ]
 
+# Enable wgpu backend features per-target so the CLI's wgpu test path has a
+# usable platform backend at runtime. Without these, `wgpu::Instance::default()`
+# panics with "No wgpu backend feature that is implemented for the target
+# platform was enabled."
+[target.'cfg(windows)'.dependencies.wgpu]
+workspace = true
+default-features = false
+optional = true
+features = ["dx12", "vulkan"]
+
 [target.'cfg(target_vendor="apple")'.dependencies]
 objc2-metal = { workspace = true, optional = true }
 objc2 = { workspace = true, optional = true }
+
+[target.'cfg(target_vendor="apple")'.dependencies.wgpu]
+workspace = true
+default-features = false
+optional = true
+features = ["metal"]
+
+[target.'cfg(all(unix, not(target_vendor="apple")))'.dependencies.wgpu]
+workspace = true
+default-features = false
+optional = true
+features = ["vulkan", "gles"]

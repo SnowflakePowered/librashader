@@ -395,6 +395,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 &original,
                 &source,
                 RenderTarget::identity(target)?,
+                None,
             )?;
 
             let target = target.as_texture(pass.meta.filter, pass.meta.wrap_mode);
@@ -416,7 +417,13 @@ impl<T: GLInterface> FilterChainImpl<T> {
             source.mip_filter = pass.meta.filter;
             source.wrap_mode = pass.meta.wrap_mode;
 
-            if self.draw_last_pass_feedback {
+            // When feedback is enabled, render the last pass to the intermediate
+            // framebuffer first then render to the viewport with the OutputSize semantic
+            // overridden to the FB scale.
+            //
+            // Shaders need to see the pass's declared scale rather than the viewport size,
+            // or they won't render correctly for feedback.
+            let output_size_override = if self.draw_last_pass_feedback {
                 let target = &self.output_framebuffers[index];
                 pass.draw(
                     index,
@@ -427,8 +434,12 @@ impl<T: GLInterface> FilterChainImpl<T> {
                     &original,
                     &source,
                     RenderTarget::viewport_with_output(target, viewport),
+                    None,
                 )?;
-            }
+                Some(target.size)
+            } else {
+                None
+            };
 
             pass.draw(
                 index,
@@ -439,6 +450,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 &original,
                 &source,
                 RenderTarget::viewport_with_output(final_viewport, viewport),
+                output_size_override,
             )?;
             self.common.output_textures[passes_len - 1] = viewport
                 .output

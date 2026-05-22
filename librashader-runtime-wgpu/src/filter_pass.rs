@@ -96,6 +96,7 @@ impl FilterPass {
         original: &InputImage,
         source: &InputImage,
         output: &RenderTarget<WgpuOutputView>,
+        output_size_override: Option<Size<u32>>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         let mut main_heap = FastHashMap::default();
@@ -107,7 +108,7 @@ impl FilterPass {
             output.mvp,
             frame_count,
             options,
-            output.output.size,
+            output_size_override.unwrap_or(output.output.size),
             viewport.output.size,
             original,
             source,
