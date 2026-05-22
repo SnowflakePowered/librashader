@@ -25,6 +25,9 @@ pub mod ringbuffer;
 /// Generic implementation of semantics binding.
 pub mod binding;
 
+#[doc(hidden)]
+pub use librashader_common::ColorSpace as __ColorSpace;
+
 /// VBO helper utilities.
 pub mod quad;
 

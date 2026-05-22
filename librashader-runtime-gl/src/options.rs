@@ -1,6 +1,5 @@
 //! OpenGL shader runtime options.
 
-use librashader_common::ColorSpace;
 use librashader_runtime::impl_default_frame_options;
 impl_default_frame_options!(FrameOptionsGL);
 
@@ -17,10 +16,4 @@ pub struct FilterChainOptionsGL {
     pub force_no_mipmaps: bool,
     /// Disable the shader object cache. Shaders will be recompiled rather than loaded from the cache.
     pub disable_cache: bool,
-    /// If HDR is enabled, the HDR color space of the final output pass.
-    /// For non-HDR shaders, this should always be [`ColorSpace::Sdr`].
-    ///
-    /// Use [`ShaderPreset::color_space`](librashader_presets::PresetColorSpace::color_space)
-    /// to determine if an HDR color space is required.
-    pub color_space: ColorSpace,
 }

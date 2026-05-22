@@ -17,7 +17,7 @@ use d3d12_descriptor_heap::{
 };
 use gpu_allocator::d3d12::{Allocator, AllocatorCreateDesc, ID3D12DeviceVersion};
 use librashader_common::map::FastHashMap;
-use librashader_common::{ColorSpace, ImageFormat, Size, Viewport};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::targets::{DXIL, HLSL};
 use librashader_reflect::back::{CompileReflectShader, CompileShader};
@@ -96,7 +96,6 @@ pub(crate) struct FilterCommon {
     pub root_signature: D3D12RootSignature,
     pub draw_quad: DrawQuad,
     allocator: Arc<Mutex<Allocator>>,
-    pub(crate) color_space: librashader_common::ColorSpace,
 }
 
 pub(crate) struct FrameResiduals {
@@ -453,7 +452,6 @@ impl FilterChainD3D12 {
                 config,
                 history_textures,
                 internal_frame_count: 0,
-                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             staging_heap,
             rtv_heap,

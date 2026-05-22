@@ -14,7 +14,6 @@ fn triangle_vk_hdr() {
     use librashader_common::ColorSpace;
     use librashader_presets::{PresetColorSpace, ShaderPreset};
 
-    let color_space = ColorSpace::ScRgb;
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
             .unwrap();
@@ -28,7 +27,6 @@ fn triangle_vk_hdr() {
             preset,
             &base,
             Some(&FilterChainOptionsVulkan {
-                color_space,
                 disable_cache: true,
                 ..Default::default()
             }),

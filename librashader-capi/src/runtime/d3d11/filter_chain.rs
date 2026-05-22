@@ -31,17 +31,11 @@ pub struct filter_chain_d3d11_opt_t {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
-    /// For HDR shaders, the HDR color space the swapchain is in.
-    ///
-    /// For non-HDR output this should be 0 (SDR).
-    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-    pub color_space: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d11_opt_t {
         0 => [force_no_mipmaps, disable_cache];
-        4 => [(color_space: LIBRA_COLOR_SPACE)];
     }
 }
 
@@ -74,6 +68,11 @@ pub struct frame_d3d11_opt_t {
     pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
+    /// Target color space bound to the shader `HDRMode` uniform. Must match
+    /// the host swapchain color space.
+    ///
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+    pub color_space: u32,
     /// HDR SDR reference white in nits. Default is 200.0.
     pub brightness_nits: f32,
     /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -95,7 +94,7 @@ config_struct! {
         0 => [clear_history, frame_direction];
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
-        4 => [brightness_nits, expand_gamut];
+        4 => [(color_space: LIBRA_COLOR_SPACE), brightness_nits, expand_gamut];
         5 => [gyroscope, accelerometer, accelerometer_rest];
     }
 }

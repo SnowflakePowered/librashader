@@ -68,8 +68,6 @@ fn triangle_d3d11_hdr() {
     // Match the preset's `#pragma format R16G16B16A16_SFLOAT` last pass: scRGB
     // (linear FP16). The host swapchain must be in the matching color space
     // for the shader output to display correctly.
-    let color_space = ColorSpace::ScRgb;
-
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
             .unwrap();
@@ -100,7 +98,6 @@ fn triangle_d3d11_hdr() {
             preset,
             &device,
             Some(&FilterChainOptionsD3D11 {
-                color_space,
                 disable_cache: true,
                 ..Default::default()
             }),

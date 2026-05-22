@@ -1,6 +1,5 @@
 //! wgpu shader runtime options.
 
-use librashader_common::ColorSpace;
 use librashader_runtime::impl_default_frame_options;
 impl_default_frame_options!(FrameOptionsWgpu);
 
@@ -17,10 +16,4 @@ pub struct FilterChainOptionsWgpu {
     /// If this is not provided, then it will fallback to a default "wgpu" index, which
     /// may clobber the cache for a different device using WGPU.
     pub adapter_info: Option<wgpu::AdapterInfo>,
-    /// If HDR is enabled, the HDR color space of the final output pass.
-    /// For non-HDR shaders, this should always be [`ColorSpace::Sdr`].
-    ///
-    /// Use [`ShaderPreset::color_space`](librashader_presets::PresetColorSpace::color_space)
-    /// to determine if an HDR color space is required.
-    pub color_space: ColorSpace,
 }

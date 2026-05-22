@@ -236,10 +236,7 @@ and are more a heads-up for integrating librashader into your project.
 librashader supports shaders that output to a native HDR format, if the host is able to drive HDR support. 
 
 After loading a preset, the caller can determine the color space expected
-by the shader preset, which will be SRGB, HDR10, scRGB, or scRGB PQ to create the HDR compatible swapchain on the host. 
-
-The `HDRMode` uniform can be set during filter chain creation by setting the `color_space` filter chain option, and the 
-`BrightnessNits` and `ExpandGamut` uniforms are bound per-frame. 
+by the shader preset, which will be SRGB, HDR10, scRGB, or scRGB PQ to create the HDR compatible swapchain on the host.
 
 RetroArch's internal inverse tonemapper HDR shader nor its internal scanline shaders are not supported. The `Scanline`, 
 `SubpixelLayout`, `HDR10`, and `InverseTonemap` uniforms will always be bound as `0`. 
