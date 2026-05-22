@@ -238,12 +238,12 @@ librashader supports shaders that output to a native HDR format, if the host is 
 After loading a preset, the caller can determine the color space expected
 by the shader preset, which will be SRGB, HDR10, scRGB, or scRGB PQ to create the HDR compatible swapchain on the host. 
 
-The `HDRMode` and `SubpixelLayout` layout uniforms can be set during filter chain creation, and the 
+The `HDRMode` uniform can be set during filter chain creation by setting the `color_space` filter chain option, and the 
 `BrightnessNits` and `ExpandGamut` uniforms are bound per-frame. 
 
-RetroArch's internal inverse tonemapper HDR shader nor its internal scanline shaders are not supported. The `Scanline`,
-`HDR10`, and `InverseTonemap` uniforms will always be bound as `0`. The host is responsible for implementing SDR to HDR
-inverse tonemapping if desired.
+RetroArch's internal inverse tonemapper HDR shader nor its internal scanline shaders are not supported. The `Scanline`, 
+`SubpixelLayout`, `HDR10`, and `InverseTonemap` uniforms will always be bound as `0`. 
+The host is responsible for implementing SDR to HDR inverse tonemapping if desired.
 
 ## Versioning
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader)
@@ -285,7 +285,10 @@ for migration instructions.
 
 ### MSRV Policy
 
-Building against stable Rust requires Rust **1.78**. No guarantees are provided for nightly MSRVs. 
+Building against stable Rust requires Rust **1.78** when building without WGPU. When building with WGPU, librashader
+adopts WGPU's MSRV.
+
+No guarantees are provided for nightly MSRVs. 
 
 ## License
 The core parts of librashader such as the preprocessor, the preset parser, 
