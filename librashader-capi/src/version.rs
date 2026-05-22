@@ -24,7 +24,7 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 /// - API version 3: 0.10.0
 ///     - Added frames_in_flight to Direct3D 12 filter chain options
 /// - API version 4: 0.10.x
-///     - Added support for HDR uniforms. Filter chain options get `hdr_mode` to
+///     - Added support for HDR uniforms. Filter chain can set `color_space` to
 ///       enable HDR, and frame options should be passed in brightness_nits, expand_gamut
 ///     - Added libra_preset_color_space to query the preferred HDR color space (if any) of
 ///       a shader preset.
