@@ -1,6 +1,7 @@
 use crate::draw_quad::DrawQuad;
 use crate::error::assume_d3d12_init;
 use crate::error::FilterChainError::Direct3DOperationError;
+use crate::util::DxcCreateInstance;
 use crate::{error, util};
 use librashader_cache::{cache_pipeline, cache_shader_object};
 use librashader_common::map::FastHashMap;
@@ -13,7 +14,7 @@ use std::ops::Deref;
 use widestring::u16cstr;
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D::Dxc::{
-    CLSID_DxcLibrary, DxcCreateInstance, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
+    CLSID_DxcLibrary, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
 };
 use windows::Win32::Graphics::Direct3D12::{
     D3D12SerializeVersionedRootSignature, ID3D12Device, ID3D12PipelineState, ID3D12RootSignature,

@@ -48,6 +48,7 @@ runtime = []
 reflect = []
 preprocess = []
 presets = []
+
 nightly = [ "librashader-reflect/nightly",
             "librashader-runtime-d3d9?/nightly",
             "librashader-runtime-d3d11?/nightly",
@@ -65,6 +66,8 @@ stable = []
 runtime-gl = [ "runtime", "reflect-cross", "librashader-common/opengl", "librashader-runtime-gl" ]
 runtime-d3d11 = [ "runtime", "reflect-cross","librashader-common/d3d11", "librashader-runtime-d3d11", "windows/Win32_Graphics_Direct3D11" ]
 runtime-d3d12 = [ "runtime", "reflect-cross", "reflect-dxil", "librashader-common/d3d12", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
+runtime-d3d12-static = [ "librashader-runtime-d3d12?/static"]
+
 runtime-d3d9 = [ "runtime", "reflect-cross", "librashader-common/d3d9", "librashader-runtime-d3d9", "windows/Win32_Graphics_Direct3D9" ]
 
 runtime-vk = ["runtime", "reflect-cross", "librashader-common/vulkan", "librashader-runtime-vk", "ash" ]
