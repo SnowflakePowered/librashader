@@ -17,7 +17,7 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.10.1
 platform-dirs = "0.3.0"
 blake3 = { version = "1.5.4" }
 thiserror = "2"
-bincode = { version = "2.0.0-rc.2", features = ["serde"] }
+bincode = { version = "2.0.0", features = ["serde"] }
 persy = "1.6.0"
 
 parking_lot = "0.12.5"
@@ -36,8 +36,13 @@ features = [
 ]
 optional = true
 
+[target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies.mach-dxcompiler-rs]
+workspace = true
+optional = true
+
 [features]
 d3d = ["windows", "librashader-reflect/dxil"]
+dxcompiler-static = ["mach-dxcompiler-rs"]
 
 # hack to get building on docsrs
 docsrs = ["blake3/pure"]

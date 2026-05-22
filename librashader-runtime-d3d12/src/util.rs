@@ -1,7 +1,7 @@
 use crate::error;
 use std::mem::ManuallyDrop;
 use widestring::{u16cstr, U16CStr};
-use windows::core::{Interface, PCWSTR};
+use windows::core::{Interface, HRESULT, PCWSTR};
 use windows::Win32::Graphics::Direct3D::Dxc::{
     DxcValidatorFlags_InPlaceEdit, IDxcBlob, IDxcCompiler, IDxcUtils, IDxcValidator, DXC_CP,
     DXC_CP_UTF8,
@@ -229,3 +229,25 @@ fn d3d12_resource_transition_subresource<S: ResourceHandleStrategy<T>, T>(
     unsafe { cmd.ResourceBarrier(&barrier) }
     barrier
 }
+
+#[cfg(all(feature = "static", target_arch = "x86_64"))]
+#[inline]
+#[allow(non_snake_case)]
+pub unsafe fn DxcCreateInstance<T>(rclsid: *const windows::core::GUID) -> windows::core::Result<T>
+where
+    T: windows::core::Interface,
+{
+    let mut result__ = core::ptr::null_mut();
+    unsafe {
+        let hresult = mach_dxcompiler_rs::DxcCreateInstance(
+            rclsid as *const core::ffi::c_void,
+            &T::IID as *const _ as *const core::ffi::c_void,
+            &mut result__,
+        );
+        let hresult = HRESULT(hresult);
+        hresult.and_then(|| windows::core::Type::from_abi(result__))
+    }
+}
+
+#[cfg(not(all(feature = "static", target_arch = "x86_64")))]
+pub use windows::Win32::Graphics::Direct3D::Dxc::DxcCreateInstance;

@@ -4,6 +4,28 @@
 use crate::{CacheKey, Cacheable};
 use windows::core::Interface;
 
+#[cfg(not(all(feature = "dxcompiler-static", target_arch = "x86_64")))]
+use windows::Win32::Graphics::Direct3D::Dxc::DxcCreateInstance;
+
+#[cfg(all(feature = "dxcompiler-static", target_arch = "x86_64"))]
+#[inline]
+#[allow(non_snake_case)]
+unsafe fn DxcCreateInstance<T>(rclsid: *const windows::core::GUID) -> windows::core::Result<T>
+where
+    T: windows::core::Interface,
+{
+    let mut result__ = core::ptr::null_mut();
+    unsafe {
+        let hresult = mach_dxcompiler_rs::DxcCreateInstance(
+            rclsid as *const core::ffi::c_void,
+            &T::IID as *const _ as *const core::ffi::c_void,
+            &mut result__,
+        );
+        let hresult = windows::core::HRESULT(hresult);
+        hresult.and_then(|| windows::core::Type::from_abi(result__))
+    }
+}
+
 impl CacheKey for windows::Win32::Graphics::Direct3D::ID3DBlob {
     fn hash_bytes(&self) -> &[u8] {
         unsafe { std::slice::from_raw_parts(self.GetBufferPointer().cast(), self.GetBufferSize()) }
@@ -45,19 +67,17 @@ impl Cacheable for windows::Win32::Graphics::Direct3D::ID3DBlob {
 impl Cacheable for windows::Win32::Graphics::Direct3D::Dxc::IDxcBlob {
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let Some(blob) = (unsafe {
-            windows::Win32::Graphics::Direct3D::Dxc::DxcCreateInstance(
-                &windows::Win32::Graphics::Direct3D::Dxc::CLSID_DxcLibrary,
-            )
-            .and_then(
-                |library: windows::Win32::Graphics::Direct3D::Dxc::IDxcUtils| {
-                    library.CreateBlob(
-                        bytes.as_ptr().cast(),
-                        bytes.len() as u32,
-                        windows::Win32::Graphics::Direct3D::Dxc::DXC_CP(0),
-                    )
-                },
-            )
-            .ok()
+            DxcCreateInstance(&windows::Win32::Graphics::Direct3D::Dxc::CLSID_DxcLibrary)
+                .and_then(
+                    |library: windows::Win32::Graphics::Direct3D::Dxc::IDxcUtils| {
+                        library.CreateBlob(
+                            bytes.as_ptr().cast(),
+                            bytes.len() as u32,
+                            windows::Win32::Graphics::Direct3D::Dxc::DXC_CP(0),
+                        )
+                    },
+                )
+                .ok()
         }) else {
             return None;
         };

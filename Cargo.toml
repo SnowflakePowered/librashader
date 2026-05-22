@@ -35,6 +35,7 @@ wgpu-types = { version = "29.0.3" }
 clap = { version = "=4.3.0", features = ["derive"] }
 rayon = { version = "1.10.0"}
 gpu-allocator = { version = "0.28.0", default-features = false, features = ["hashbrown"] }
+mach-dxcompiler-rs = { version = "0.1.4+2024.11.22-df583a3.1" }
 
 [workspace.dependencies.image]
 version = "0.25.8"

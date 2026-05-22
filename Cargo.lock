@@ -1537,6 +1537,7 @@ dependencies = [
  "bytemuck",
  "librashader-preprocess",
  "librashader-reflect",
+ "mach-dxcompiler-rs",
  "parking_lot",
  "persy",
  "platform-dirs",
@@ -1728,6 +1729,7 @@ dependencies = [
  "librashader-presets",
  "librashader-reflect",
  "librashader-runtime",
+ "mach-dxcompiler-rs",
  "mach-siegbert-vogt-dxcsa",
  "parking_lot",
  "rayon",
@@ -1897,6 +1899,15 @@ name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
+
+[[package]]
+name = "mach-dxcompiler-rs"
+version = "0.1.4+2024.11.22-df583a3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e3cd67e8ea2ba061339150970542cf1c60ba44c6d17e31279cbc133a4b018f8"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "mach-siegbert-vogt-dxcsa"

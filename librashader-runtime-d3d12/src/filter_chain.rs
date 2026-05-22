@@ -10,6 +10,7 @@ use crate::mipmap::D3D12MipmapGen;
 use crate::options::{FilterChainOptionsD3D12, FrameOptionsD3D12};
 use crate::samplers::SamplerSet;
 use crate::texture::{D3D12InputImage, D3D12OutputView, InputTexture, OutputDescriptor};
+use crate::util::DxcCreateInstance;
 use crate::{error, util};
 use d3d12_descriptor_heap::{
     D3D12DescriptorHeap, D3D12DescriptorHeapSlot, D3D12PartitionableHeap, D3D12PartitionedHeap,
@@ -36,8 +37,7 @@ use std::sync::Arc;
 use windows::core::Interface;
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Graphics::Direct3D::Dxc::{
-    CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, DxcCreateInstance, IDxcCompiler,
-    IDxcUtils, IDxcValidator,
+    CLSID_DxcCompiler, CLSID_DxcLibrary, CLSID_DxcValidator, IDxcCompiler, IDxcUtils, IDxcValidator,
 };
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device, ID3D12Fence,

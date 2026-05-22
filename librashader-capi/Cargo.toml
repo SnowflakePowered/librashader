@@ -25,6 +25,8 @@ runtime-d3d9 = ["windows", "librashader/runtime-d3d9", "windows/Win32_Graphics_D
 runtime-vulkan = ["ash", "librashader/runtime-vk"]
 runtime-metal = ["__cbindgen_internal_objc", "librashader/runtime-metal"]
 
+runtime-d3d12-static = [ "runtime-d3d12", "librashader/runtime-d3d12-static"]
+
 reflect-unstable = []
 nightly = ["librashader/nightly"]
 # Backwards-compatible no-op; stable is the default code path.

@@ -819,8 +819,7 @@ impl FilterChainVulkan {
             let output_size_override = if self.draw_last_pass_feedback {
                 let target = &self.output_framebuffers[index];
 
-                let output_image =
-                    OutputImage::new(&self.vulkan.device, target.image.clone())?;
+                let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
                 let out = RenderTarget::viewport_with_output(&output_image, viewport);
 
                 let residual_fb = pass.draw(

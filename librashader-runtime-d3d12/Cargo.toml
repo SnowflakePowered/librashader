@@ -39,6 +39,12 @@ nightly = ["librashader-reflect/nightly"]
 # Backwards-compatible no-op; stable is the default code path.
 stable = []
 
+static = ["mach-dxcompiler-rs", "librashader-cache/dxcompiler-static"]
+
+[target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies.mach-dxcompiler-rs]
+workspace = true
+optional = true
+
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
 features = [
