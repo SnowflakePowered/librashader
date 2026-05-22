@@ -11,6 +11,9 @@ pub struct VulkanBase {
     allocator: Arc<Mutex<Allocator>>,
     cmd_buffer: vk::CommandBuffer,
     pool: vk::CommandPool,
+
+    _instance: ash::Instance,
+    _entry: ash::Entry,
 }
 
 impl From<&VulkanBase> for VulkanObjects {
@@ -23,24 +26,20 @@ impl From<&VulkanBase> for VulkanObjects {
     }
 }
 
-const KHRONOS_VALIDATION: &[u8] = b"VK_LAYER_KHRONOS_validation\0";
 const LIBRASHADER_VULKAN: &[u8] = b"librashader Vulkan\0";
 
 impl VulkanBase {
     pub fn new() -> anyhow::Result<Self> {
         let entry = unsafe { ash::Entry::load() }?;
-        let layers = [KHRONOS_VALIDATION.as_ptr().cast()];
         let app_info = vk::ApplicationInfo::default()
             .application_name(unsafe { CStr::from_bytes_with_nul_unchecked(LIBRASHADER_VULKAN) })
             .engine_name(unsafe { CStr::from_bytes_with_nul_unchecked(LIBRASHADER_VULKAN) })
             .engine_version(0)
             .application_version(0)
-            .api_version(vk::make_api_version(0, 1, 3, 0));
+            .api_version(vk::make_api_version(0, 1, 0, 0));
 
         let create_info = vk::InstanceCreateInfo::default()
-            .application_info(&app_info)
-            .enabled_layer_names(&layers)
-            .enabled_extension_names(&[]);
+            .application_info(&app_info);
 
         let instance = unsafe { entry.create_instance(&create_info, None) }?;
 
@@ -71,6 +70,8 @@ impl VulkanBase {
             allocator: alloc,
             pool: cmd_pool,
             cmd_buffer: buffers,
+            _instance: instance,
+            _entry: entry,
         })
     }
 
@@ -85,22 +86,14 @@ impl VulkanBase {
         instance: &ash::Instance,
         physical_device: &vk::PhysicalDevice,
     ) -> anyhow::Result<(ash::Device, vk::Queue, vk::CommandPool)> {
-        let _debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
         let indices = super::physical_device::find_queue_family(&instance, *physical_device);
 
         let queue_info = [vk::DeviceQueueCreateInfo::default()
             .queue_family_index(indices.graphics_family()?)
             .queue_priorities(&[1.0f32])];
 
-        let mut physical_device_features =
-            vk::PhysicalDeviceVulkan13Features::default().dynamic_rendering(true);
-
-        let extensions = [ash::khr::dynamic_rendering::NAME.as_ptr()];
-
         let device_create_info = vk::DeviceCreateInfo::default()
-            .queue_create_infos(&queue_info)
-            .enabled_extension_names(&extensions)
-            .push_next(&mut physical_device_features);
+            .queue_create_infos(&queue_info);
 
         let device =
             unsafe { instance.create_device(*physical_device, &device_create_info, None)? };
