@@ -247,7 +247,7 @@ inverse tonemapping if desired.
 ## Versioning
 [![Latest Version](https://img.shields.io/crates/v/librashader.svg)](https://crates.io/crates/librashader)
 ![C ABI](https://img.shields.io/badge/ABI%20version-2-yellowgreen)
-![C API](https://img.shields.io/badge/API%20version-2-blue)
+![C API](https://img.shields.io/badge/API%20version-5-blue)
 
 
 librashader typically follows [Semantic Versioning](https://semver.org/) with respect to the Rust API, where a minor version
