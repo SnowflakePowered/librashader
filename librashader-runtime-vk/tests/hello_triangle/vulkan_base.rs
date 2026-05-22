@@ -42,11 +42,11 @@ impl VulkanBase {
             ash::ext::debug_utils::NAME.as_ptr(),
         ];
 
-        let layers = [KHRONOS_VALIDATION.as_ptr().cast()];
+        // let layers = [KHRONOS_VALIDATION.as_ptr().cast()];
 
         let create_info = vk::InstanceCreateInfo::default()
             .application_info(&app_info)
-            .enabled_layer_names(&layers)
+            // .enabled_layer_names(&layers)
             .enabled_extension_names(&extensions);
 
         let instance = unsafe { entry.create_instance(&create_info, None)? };
@@ -81,7 +81,7 @@ impl VulkanBase {
         instance: &ash::Instance,
         physical_device: &vk::PhysicalDevice,
     ) -> VkResult<(ash::Device, vk::Queue)> {
-        let _debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
+        // let _debug = [unsafe { CStr::from_bytes_with_nul_unchecked(KHRONOS_VALIDATION).as_ptr() }];
 
         let indices = find_queue_family(instance, *physical_device);
         let queue_info = [vk::DeviceQueueCreateInfo::default()
