@@ -177,6 +177,11 @@ libra_error_t __librashader__noop_preset_create(const char *filename,
     return NULL;
 }
 
+libra_error_t __librashader__noop_preset_color_space(libra_shader_preset_t *preset,
+                                                      LIBRA_COLOR_SPACE *out) {
+    return NULL;
+}
+
 libra_error_t __librashader__noop_preset_free(libra_shader_preset_t *preset) {
     return NULL;
 }
@@ -712,6 +717,23 @@ typedef struct libra_instance_t {
     /// ## Returns
     ///  - If any parameters are null, `out` is unchanged, and this function returns `LIBRA_ERR_INVALID_PARAMETER`.
     PFN_libra_preset_create_with_options preset_create_with_options;
+
+    /// Query the target color space of the preset's final pass.
+    ///
+    /// The target color space is derived from the last pass's declared output
+    /// format. Use this before creating a filter chain to decide which
+    /// swapchain color space to request to support HDR shaders.
+    ///
+    /// If `out` returns `LIBRA_COLOR_SPACE_SDR`, the preset does not have a
+    /// final HDR pass and can be treated as an SDR shader.
+    ///
+    /// If the host intends PQ-scRGB, then the preset should return `LIBRA_COLOR_SPACE_SC_RGB`
+    /// for successful promotion.
+    ///
+    /// ## Safety
+    /// - `preset` must be null or a valid and aligned pointer to a `libra_shader_preset_t`.
+    /// - `out` must be aligned, but may be uninitialized.
+    PFN_libra_preset_color_space preset_color_space;
 
     /// Free the preset.
     ///
@@ -1452,6 +1474,8 @@ libra_instance_t __librashader_make_null_instance(void) {
         __librashader__noop_preset_create_with_context;
     instance.preset_create_with_options =
                 __librashader__noop_preset_create_with_options;
+    instance.preset_color_space =
+                __librashader__noop_preset_color_space;
     instance.preset_free = __librashader__noop_preset_free;
     instance.preset_set_param = __librashader__noop_preset_set_param;
     instance.preset_get_param = __librashader__noop_preset_get_param;
@@ -1628,6 +1652,7 @@ libra_instance_t librashader_load_instance(void) {
     _LIBRASHADER_ASSIGN(librashader, instance, preset_create);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_create_with_context);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_create_with_options);
+    _LIBRASHADER_ASSIGN(librashader, instance, preset_color_space);
 
     _LIBRASHADER_ASSIGN(librashader, instance, preset_free);
     _LIBRASHADER_ASSIGN(librashader, instance, preset_set_param);

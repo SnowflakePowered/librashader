@@ -242,10 +242,10 @@ extern_fn! {
     /// format. Use this before creating a filter chain to decide which
     /// swapchain color space to request to support HDR shaders.
     ///
-    /// If `out` returns `LIBRA_COLOR_SPACE_SRGB`, the preset does not have a
-    /// final HDR pass and can be treated as an SDR/SRGB shader.
+    /// If `out` returns `LIBRA_COLOR_SPACE_SDR`, the preset does not have a
+    /// final HDR pass and can be treated as an SDR shader.
     ///
-    /// If the host intends PQ-scRGB, then the preset should return `LIBRA_COLOR_SPACE_SCRGB`
+    /// If the host intends PQ-scRGB, then the preset should return `LIBRA_COLOR_SPACE_SC_RGB`
     /// for successful promotion.
     ///
     /// ## Safety

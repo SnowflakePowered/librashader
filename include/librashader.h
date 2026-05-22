@@ -103,6 +103,26 @@ enum LIBRA_ERRNO
 typedef int32_t LIBRA_ERRNO;
 #endif // __cplusplus
 
+/// The target color space for the final pass output as reported by
+/// `libra_*_preset_color_space`.
+enum LIBRA_COLOR_SPACE
+#ifdef __cplusplus
+  : uint32_t
+#endif // __cplusplus
+ {
+  /// Standard dynamic range / sRGB nonlinear.
+  LIBRA_COLOR_SPACE_SDR = 0,
+  /// HDR10: BT.2020 primaries with PQ (ST.2084) transfer.
+  LIBRA_COLOR_SPACE_HDR10 = 1,
+  /// scRGB: BT.709 primaries, linear, extended range (FP16).
+  LIBRA_COLOR_SPACE_SC_RGB = 2,
+  /// PQ-encoded data stored in an scRGB FP16 surface.
+  LIBRA_COLOR_SPACE_PQ_SC_RGB = 3,
+};
+#ifndef __cplusplus
+typedef uint32_t LIBRA_COLOR_SPACE;
+#endif // __cplusplus
+
 /// An enum representing orientation for use in preset contexts.
 enum LIBRA_PRESET_CTX_ORIENTATION
 #ifdef __cplusplus
@@ -202,6 +222,13 @@ typedef struct libra_preset_opt_t {
   ///
   /// This is only supported on API 2 and above, otherwise this has no effect.
   bool frametime_uniforms;
+  /// Enables `_HAS_SENSOR_UNIFORMS` behaviour.
+  ///
+  /// If this is true, then `frame_options.gyroscope`, `frame_options.accelerometer`, and
+  /// `frame_options.accelerometer_rest` must be set for correct behaviour of shaders.
+  ///
+  /// This is only supported on API 5 and above, otherwise this has no effect.
+  bool sensor_uniforms;
 } libra_preset_opt_t;
 
 /// A preset parameter.
@@ -251,6 +278,11 @@ typedef struct filter_chain_gl_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
+  /// For HDR shaders, the HDR color space the swapchain is in.
+  ///
+  /// For non-HDR output this should be 0 (SDR).
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
 } filter_chain_gl_opt_t;
 #endif
 
@@ -315,6 +347,20 @@ typedef struct frame_gl_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// HDR SDR reference white in nits. Default is 200.0.
+  float brightness_nits;
+  /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+  /// Default 0.
+  uint32_t expand_gamut;
+  /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+  /// uniform. Default `{0, 0, 0}`.
+  float gyroscope[3];
+  /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer[3];
+  /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer_rest[3];
 } frame_gl_opt_t;
 #endif
 
@@ -354,6 +400,11 @@ typedef struct filter_chain_vk_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
+  /// For HDR shaders, the HDR color space the swapchain is in.
+  ///
+  /// For non-HDR output this should be 0 (SDR).
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
 } filter_chain_vk_opt_t;
 #endif
 
@@ -404,6 +455,20 @@ typedef struct frame_vk_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// HDR SDR reference white in nits. Default is 200.0.
+  float brightness_nits;
+  /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+  /// Default 0.
+  uint32_t expand_gamut;
+  /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+  /// uniform. Default `{0, 0, 0}`.
+  float gyroscope[3];
+  /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer[3];
+  /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer_rest[3];
 } frame_vk_opt_t;
 #endif
 
@@ -418,6 +483,11 @@ typedef struct filter_chain_d3d11_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
+  /// For HDR shaders, the HDR color space the swapchain is in.
+  ///
+  /// For non-HDR output this should be 0 (SDR).
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
 } filter_chain_d3d11_opt_t;
 #endif
 
@@ -454,6 +524,20 @@ typedef struct frame_d3d11_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// HDR SDR reference white in nits. Default is 200.0.
+  float brightness_nits;
+  /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+  /// Default 0.
+  uint32_t expand_gamut;
+  /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+  /// uniform. Default `{0, 0, 0}`.
+  float gyroscope[3];
+  /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer[3];
+  /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer_rest[3];
 } frame_d3d11_opt_t;
 #endif
 
@@ -468,6 +552,11 @@ typedef struct filter_chain_d3d9_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
+  /// For HDR shaders, the HDR color space the swapchain is in.
+  ///
+  /// For non-HDR output this should be 0 (SDR).
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
 } filter_chain_d3d9_opt_t;
 #endif
 
@@ -504,6 +593,20 @@ typedef struct frame_d3d9_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// HDR SDR reference white in nits. Default is 200.0.
+  float brightness_nits;
+  /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+  /// Default 0.
+  uint32_t expand_gamut;
+  /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+  /// uniform. Default `{0, 0, 0}`.
+  float gyroscope[3];
+  /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer[3];
+  /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer_rest[3];
 } frame_d3d9_opt_t;
 #endif
 
@@ -523,6 +626,11 @@ typedef struct filter_chain_d3d12_opt_t {
   bool disable_cache;
   /// The number of frames in flight to keep. If zero, defaults to three.
   uint32_t frames_in_flight;
+  /// For HDR shaders, the HDR color space the swapchain is in.
+  ///
+  /// For non-HDR output this should be 0 (SDR).
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
 } filter_chain_d3d12_opt_t;
 #endif
 
@@ -608,6 +716,20 @@ typedef struct frame_d3d12_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// HDR SDR reference white in nits. Default is 200.0.
+  float brightness_nits;
+  /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+  /// Default 0.
+  uint32_t expand_gamut;
+  /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+  /// uniform. Default `{0, 0, 0}`.
+  float gyroscope[3];
+  /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer[3];
+  /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer_rest[3];
 } frame_d3d12_opt_t;
 #endif
 
@@ -618,6 +740,11 @@ typedef struct filter_chain_mtl_opt_t {
   LIBRASHADER_API_VERSION version;
   /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
   bool force_no_mipmaps;
+  /// For HDR shaders, the HDR color space the swapchain is in.
+  ///
+  /// For non-HDR output this should be 0 (SDR).
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
 } filter_chain_mtl_opt_t;
 #endif
 
@@ -654,6 +781,20 @@ typedef struct frame_mtl_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// HDR SDR reference white in nits. Default is 200.0.
+  float brightness_nits;
+  /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+  /// Default 0.
+  uint32_t expand_gamut;
+  /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
+  /// uniform. Default `{0, 0, 0}`.
+  float gyroscope[3];
+  /// Three-axis accelerometer reading bound to the shader `Accelerometer`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer[3];
+  /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
+  /// (vec3) uniform. Default `{0, 0, 0}`.
+  float accelerometer_rest[3];
 } frame_mtl_opt_t;
 #endif
 
@@ -711,6 +852,11 @@ typedef libra_error_t (*PFN_libra_preset_create_with_options)(const char *filena
                                                               libra_preset_ctx_t *context,
                                                               struct libra_preset_opt_t *options,
                                                               libra_shader_preset_t *out);
+
+/// Function pointer definition for
+///libra_preset_color_space
+typedef libra_error_t (*PFN_libra_preset_color_space)(libra_shader_preset_t *preset,
+                                                      LIBRA_COLOR_SPACE *out);
 
 /// Function pointer definition for
 ///libra_preset_ctx_create
@@ -1188,9 +1334,16 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 /// - API version 2: 0.6.0
 ///     - Added original aspect uniforms
 ///     - Added frame time uniforms
-/// - API version 3: 0.10.0
+/// - API version 3: 0.11.0
 ///     - Added frames_in_flight to Direct3D 12 filter chain options
-#define LIBRASHADER_CURRENT_VERSION 3
+/// - API version 4: 0.11.0
+///     - Added support for HDR uniforms. Filter chain can set `color_space` to
+///       enable HDR, and frame options should be passed in brightness_nits, expand_gamut
+///     - Added libra_preset_color_space to query the preferred HDR color space (if any) of
+///       a shader preset.
+/// - API version 5: 0.11.0
+///     - Added sensor uniform inputs
+#define LIBRASHADER_CURRENT_VERSION 5
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.
@@ -1308,6 +1461,22 @@ libra_error_t libra_preset_create_with_options(const char *filename,
                                                libra_preset_ctx_t *context,
                                                struct libra_preset_opt_t *options,
                                                libra_shader_preset_t *out);
+/// Query the target color space of the preset's final pass.
+///
+/// The target color space is derived from the last pass's declared output
+/// format. Use this before creating a filter chain to decide which
+/// swapchain color space to request to support HDR shaders.
+///
+/// If `out` returns `LIBRA_COLOR_SPACE_SDR`, the preset does not have a
+/// final HDR pass and can be treated as an SDR shader.
+///
+/// If the host intends PQ-scRGB, then the preset should return `LIBRA_COLOR_SPACE_SC_RGB`
+/// for successful promotion.
+///
+/// ## Safety
+/// - `preset` must be null or a valid and aligned pointer to a `libra_shader_preset_t`.
+/// - `out` must be aligned, but may be uninitialized.
+libra_error_t libra_preset_color_space(libra_shader_preset_t *preset, LIBRA_COLOR_SPACE *out);
 
 /// Free the preset.
 ///

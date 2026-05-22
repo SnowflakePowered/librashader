@@ -148,18 +148,13 @@ use librashader::runtime::mtl::FilterChain as FilterChainMetal;
 pub type libra_mtl_filter_chain_t = Option<NonNull<FilterChainMetal>>;
 
 /// The target color space for the final pass output as reported by
-/// `libra_*_filter_chain_color_space`.
-///
-/// Derived from the final pass's declared output format. Use this to decide
-/// which swapchain color space to request on the host side; the host already
-/// knows the native format that matches each color space for its own backend
-/// (e.g. HDR10 -> `R10G10B10A2_UNORM`, scRGB -> `R16G16B16A16_FLOAT`).
+/// `libra_*_preset_color_space`.
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug)]
 pub enum LIBRA_COLOR_SPACE {
     /// Standard dynamic range / sRGB nonlinear.
     #[default]
-    Srgb = 0,
+    Sdr = 0,
     /// HDR10: BT.2020 primaries with PQ (ST.2084) transfer.
     Hdr10 = 1,
     /// scRGB: BT.709 primaries, linear, extended range (FP16).
@@ -172,7 +167,7 @@ impl FromPrimitive<u32> for LIBRA_COLOR_SPACE {
     fn from_primitive(value: u32, _version: usize) -> LIBRA_COLOR_SPACE {
         // In a future API, we may need to add more, this way we can keep old API behaviour
         match value % 4 {
-            0 => LIBRA_COLOR_SPACE::Srgb,
+            0 => LIBRA_COLOR_SPACE::Sdr,
             1 => LIBRA_COLOR_SPACE::Hdr10,
             2 => LIBRA_COLOR_SPACE::ScRgb,
             3 => LIBRA_COLOR_SPACE::PqScRgb,
@@ -184,7 +179,7 @@ impl FromPrimitive<u32> for LIBRA_COLOR_SPACE {
 impl From<librashader::runtime::ColorSpace> for LIBRA_COLOR_SPACE {
     fn from(value: librashader::runtime::ColorSpace) -> Self {
         match value {
-            librashader::runtime::ColorSpace::Sdr => LIBRA_COLOR_SPACE::Srgb,
+            librashader::runtime::ColorSpace::Sdr => LIBRA_COLOR_SPACE::Sdr,
             librashader::runtime::ColorSpace::Hdr10 => LIBRA_COLOR_SPACE::Hdr10,
             librashader::runtime::ColorSpace::ScRgb => LIBRA_COLOR_SPACE::ScRgb,
             librashader::runtime::ColorSpace::PqScRgb => LIBRA_COLOR_SPACE::PqScRgb,
@@ -195,7 +190,7 @@ impl From<librashader::runtime::ColorSpace> for LIBRA_COLOR_SPACE {
 impl From<LIBRA_COLOR_SPACE> for librashader::runtime::ColorSpace {
     fn from(value: LIBRA_COLOR_SPACE) -> Self {
         match value {
-            LIBRA_COLOR_SPACE::Srgb => librashader::runtime::ColorSpace::Sdr,
+            LIBRA_COLOR_SPACE::Sdr => librashader::runtime::ColorSpace::Sdr,
             LIBRA_COLOR_SPACE::Hdr10 => librashader::runtime::ColorSpace::Hdr10,
             LIBRA_COLOR_SPACE::ScRgb => librashader::runtime::ColorSpace::ScRgb,
             LIBRA_COLOR_SPACE::PqScRgb => librashader::runtime::ColorSpace::PqScRgb,
