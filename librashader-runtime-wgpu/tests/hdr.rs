@@ -12,7 +12,6 @@ fn triangle_wgpu_hdr10() {
     // The Sony Megatron HDR preset's final pass declares
     // `#pragma format A2B10G10R10_UNORM_PACK32` — the canonical HDR10
     // (BT.2020 PQ) surface format.
-    let color_space = ColorSpace::Hdr10;
     let preset = ShaderPreset::try_parse(
         "../test/shaders_slang/hdr/crt-sony-megatron-default-hdr.slangp",
         ShaderFeatures::NONE,
@@ -53,7 +52,6 @@ fn triangle_wgpu_hdr10() {
                 force_no_mipmaps: false,
                 enable_cache: false,
                 adapter_info: None,
-                color_space,
             }),
         )
         .unwrap();

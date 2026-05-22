@@ -626,6 +626,10 @@ macro_rules! impl_default_frame_options {
             pub frames_per_second: f32,
             /// Time in milliseconds between the current and previous frame. Default is 0.
             pub frametime_delta: u32,
+            /// Target color space bound to the shader `HDRMode` uniform. Must
+            /// match the host swapchain color space. Default is
+            /// `ColorSpace::Sdr`.
+            pub color_space: $crate::__ColorSpace,
             /// HDR SDR reference white in nits, bound to the shader `BrightnessNits` uniform.
             /// Default is 200.0. Only meaningful when the chain's HDR mode is non-zero.
             pub brightness_nits: f32,
@@ -650,6 +654,7 @@ macro_rules! impl_default_frame_options {
                     aspect_ratio: 0.0,
                     frametime_delta: 0,
                     frames_per_second: 1.0,
+                    color_space: $crate::__ColorSpace::Sdr,
                     brightness_nits: 200.0,
                     expand_gamut: 0,
                     gyroscope: [0.0, 0.0, 0.0],

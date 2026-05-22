@@ -138,10 +138,7 @@ impl<'a> State<'a> {
             preset,
             &device,
             &queue,
-            Some(&FilterChainOptionsWgpu {
-                color_space: librashader_common::ColorSpace::Hdr10,
-                ..Default::default()
-            }),
+            Some(&FilterChainOptionsWgpu::default()),
         )
         .unwrap();
 

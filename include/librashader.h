@@ -281,11 +281,6 @@ typedef struct filter_chain_gl_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
-  /// For HDR shaders, the HDR color space the swapchain is in.
-  ///
-  /// For non-HDR output this should be 0 (SDR).
-  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-  LIBRA_COLOR_SPACE color_space;
 } filter_chain_gl_opt_t;
 #endif
 
@@ -350,6 +345,11 @@ typedef struct frame_gl_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// Target color space bound to the shader `HDRMode` uniform. Must match
+  /// the host swapchain color space.
+  ///
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
   /// HDR SDR reference white in nits. Default is 200.0.
   float brightness_nits;
   /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -403,11 +403,6 @@ typedef struct filter_chain_vk_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
-  /// For HDR shaders, the HDR color space the swapchain is in.
-  ///
-  /// For non-HDR output this should be 0 (SDR).
-  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-  LIBRA_COLOR_SPACE color_space;
 } filter_chain_vk_opt_t;
 #endif
 
@@ -458,6 +453,11 @@ typedef struct frame_vk_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// Target color space bound to the shader `HDRMode` uniform. Must match
+  /// the host swapchain color space.
+  ///
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
   /// HDR SDR reference white in nits. Default is 200.0.
   float brightness_nits;
   /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -486,11 +486,6 @@ typedef struct filter_chain_d3d11_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
-  /// For HDR shaders, the HDR color space the swapchain is in.
-  ///
-  /// For non-HDR output this should be 0 (SDR).
-  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-  LIBRA_COLOR_SPACE color_space;
 } filter_chain_d3d11_opt_t;
 #endif
 
@@ -527,6 +522,11 @@ typedef struct frame_d3d11_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// Target color space bound to the shader `HDRMode` uniform. Must match
+  /// the host swapchain color space.
+  ///
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
   /// HDR SDR reference white in nits. Default is 200.0.
   float brightness_nits;
   /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -555,11 +555,6 @@ typedef struct filter_chain_d3d9_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
-  /// For HDR shaders, the HDR color space the swapchain is in.
-  ///
-  /// For non-HDR output this should be 0 (SDR).
-  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-  LIBRA_COLOR_SPACE color_space;
 } filter_chain_d3d9_opt_t;
 #endif
 
@@ -596,6 +591,11 @@ typedef struct frame_d3d9_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// Target color space bound to the shader `HDRMode` uniform. Must match
+  /// the host swapchain color space.
+  ///
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
   /// HDR SDR reference white in nits. Default is 200.0.
   float brightness_nits;
   /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -629,11 +629,6 @@ typedef struct filter_chain_d3d12_opt_t {
   bool disable_cache;
   /// The number of frames in flight to keep. If zero, defaults to three.
   uint32_t frames_in_flight;
-  /// For HDR shaders, the HDR color space the swapchain is in.
-  ///
-  /// For non-HDR output this should be 0 (SDR).
-  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-  LIBRA_COLOR_SPACE color_space;
 } filter_chain_d3d12_opt_t;
 #endif
 
@@ -719,6 +714,11 @@ typedef struct frame_d3d12_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// Target color space bound to the shader `HDRMode` uniform. Must match
+  /// the host swapchain color space.
+  ///
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
   /// HDR SDR reference white in nits. Default is 200.0.
   float brightness_nits;
   /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -743,11 +743,6 @@ typedef struct filter_chain_mtl_opt_t {
   LIBRASHADER_API_VERSION version;
   /// Whether or not to explicitly disable mipmap generation regardless of shader preset settings.
   bool force_no_mipmaps;
-  /// For HDR shaders, the HDR color space the swapchain is in.
-  ///
-  /// For non-HDR output this should be 0 (SDR).
-  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
-  LIBRA_COLOR_SPACE color_space;
 } filter_chain_mtl_opt_t;
 #endif
 
@@ -784,6 +779,11 @@ typedef struct frame_mtl_opt_t {
   float frames_per_second;
   /// Time in milliseconds between the current and previous frame. Default is 0.
   uint32_t frametime_delta;
+  /// Target color space bound to the shader `HDRMode` uniform. Must match
+  /// the host swapchain color space.
+  ///
+  /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+  LIBRA_COLOR_SPACE color_space;
   /// HDR SDR reference white in nits. Default is 200.0.
   float brightness_nits;
   /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
@@ -1340,7 +1340,7 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 /// - API version 3: 0.11.0
 ///     - Added frames_in_flight to Direct3D 12 filter chain options
 /// - API version 4: 0.11.0
-///     - Added support for HDR uniforms. Filter chain can set `color_space` to
+///     - Added support for HDR uniforms. Frame options can set `color_space` to
 ///       enable HDR, and frame options should be passed in brightness_nits, expand_gamut
 ///     - Added libra_preset_color_space to query the preferred HDR color space (if any) of
 ///       a shader preset.

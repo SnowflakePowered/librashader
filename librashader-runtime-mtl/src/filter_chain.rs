@@ -9,7 +9,7 @@ use crate::options::{FilterChainOptionsMetal, FrameOptionsMetal};
 use crate::samplers::SamplerSet;
 use crate::texture::{get_texture_size, InputTexture, MetalTextureRef, OwnedTexture};
 use librashader_common::map::FastHashMap;
-use librashader_common::{ColorSpace, ImageFormat, Size, Viewport};
+use librashader_common::{ImageFormat, Size, Viewport};
 use librashader_presets::context::VideoDriver;
 use librashader_presets::{ShaderFeatures, ShaderPreset};
 use librashader_reflect::back::msl::MslVersion;
@@ -104,7 +104,6 @@ pub(crate) struct FilterCommon {
     pub config: RuntimeParameters,
     pub(crate) draw_quad: DrawQuad,
     device: Retained<ProtocolObject<dyn MTLDevice>>,
-    pub(crate) color_space: librashader_common::ColorSpace,
 }
 
 impl FilterChainMetal {
@@ -363,7 +362,6 @@ impl FilterChainMetal {
                 output_textures,
                 feedback_textures,
                 history_textures,
-                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             passes: filters,
             output_framebuffers,

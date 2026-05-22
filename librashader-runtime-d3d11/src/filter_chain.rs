@@ -71,7 +71,6 @@ pub(crate) struct FilterCommon {
     pub config: RuntimeParameters,
     pub disable_mipmaps: bool,
     pub(crate) draw_quad: DrawQuad,
-    pub(crate) color_space: librashader_common::ColorSpace,
 }
 
 mod compile {
@@ -251,7 +250,6 @@ impl FilterChainD3D11 {
                 feedback_textures,
                 history_textures,
                 draw_quad,
-                color_space: options.map_or(librashader_common::ColorSpace::Sdr, |o| o.color_space),
             },
             state,
             default_options: Default::default(),

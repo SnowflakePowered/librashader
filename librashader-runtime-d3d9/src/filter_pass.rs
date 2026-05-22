@@ -127,7 +127,7 @@ impl FilterPass {
                 framebuffer_size: fb_size,
                 viewport_size,
                 hdr_inputs: HdrUniformInputs {
-                    color_space: parent.color_space,
+                    color_space: options.color_space,
                     brightness_nits: options.brightness_nits,
                     expand_gamut: options.expand_gamut,
                 },

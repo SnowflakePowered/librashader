@@ -10,7 +10,7 @@ use crate::samplers::SamplerSet;
 use crate::texture::InputTexture;
 use crate::util::{gl_get_version, gl_u16_to_version};
 use crate::{error, GLImage};
-use librashader_common::{ColorSpace, Viewport};
+use librashader_common::Viewport;
 
 use librashader_reflect::back::glsl::GlslVersion;
 use librashader_reflect::back::targets::GLSL;
@@ -61,7 +61,6 @@ pub(crate) struct FilterCommon {
     pub disable_mipmaps: bool,
     pub caps: GLCaps,
     pub context: Arc<glow::Context>,
-    pub color_space: librashader_common::ColorSpace,
 }
 
 impl<T: GLInterface> FilterChainImpl<T> {
@@ -224,7 +223,6 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 history_textures,
                 caps,
                 context,
-                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             default_options: Default::default(),
             render_target: output,

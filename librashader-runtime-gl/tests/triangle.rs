@@ -17,7 +17,6 @@ fn triangle_gl_hdr() {
     use librashader_common::ColorSpace;
     use librashader_presets::{PresetColorSpace, ShaderPreset};
 
-    let color_space = ColorSpace::ScRgb;
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
             .unwrap();
@@ -48,7 +47,6 @@ fn triangle_gl_hdr() {
                 use_dsa: false,
                 force_no_mipmaps: false,
                 disable_cache: true,
-                color_space,
             }),
         )
     }
