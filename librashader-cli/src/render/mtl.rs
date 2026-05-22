@@ -57,6 +57,7 @@ impl RenderTest for Metal {
             &queue,
             Some(&FilterChainOptions {
                 force_no_mipmaps: false,
+                ..Default::default()
             }),
         )?;
 
@@ -103,6 +104,7 @@ impl RenderTest for Metal {
             aspect_ratio: options.aspect_ratio,
             frametime_delta: options.frametime_delta,
             frames_per_second: options.frames_per_second,
+            ..Default::default()
         });
 
         for frame in 0..=frame_count {

@@ -1,5 +1,6 @@
 use crate::ctypes::{
-    config_struct, libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+    config_struct, libra_d3d12_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
+    FromPrimitive, FromUninit, LIBRA_COLOR_SPACE,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -116,7 +117,7 @@ pub struct frame_d3d12_opt_t {
     /// (vec3) uniform. Default `{0, 0, 0}`.
     pub accelerometer: [f32; 3],
     /// Accelerometer-at-rest reference bound to the shader `AccelerometerRest`
-    /// (vec3) uniform. Default `{0, 0, 0}`. 
+    /// (vec3) uniform. Default `{0, 0, 0}`.
     pub accelerometer_rest: [f32; 3],
 }
 
@@ -152,17 +153,18 @@ pub struct filter_chain_d3d12_opt_t {
     /// The number of frames in flight to keep. If zero, defaults to three.
     pub frames_in_flight: u32,
 
-    /// HDR output mode bound to the shader `HDRMode` uniform.
-    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB. Must match the
-    /// host swapchain color space. Requires API version 4.
-    pub hdr_mode: u32,
+    /// For HDR shaders, the HDR color space the swapchain is in.
+    ///
+    /// For non-HDR output this should be 0 (SDR).
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+    pub color_space: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d12_opt_t {
         0 =>  [force_hlsl_pipeline, force_no_mipmaps, disable_cache];
         3 =>  [frames_in_flight];
-        4 =>  [hdr_mode];
+        4 => [(color_space: LIBRA_COLOR_SPACE)];
     }
 }
 

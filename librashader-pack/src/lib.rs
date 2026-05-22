@@ -172,14 +172,14 @@ impl PresetColorSpace for ShaderPresetPack {
     /// signature with [`ShaderPreset`].
     fn color_space(&self) -> Result<ColorSpace, PreprocessError> {
         let Some(last) = self.passes.last() else {
-            return Ok(ColorSpace::Srgb);
+            return Ok(ColorSpace::Sdr);
         };
         let effective_format = last.meta.get_format_override().unwrap_or(last.data.format);
 
         Ok(match effective_format {
             librashader_common::ImageFormat::A2B10G10R10UnormPack32 => ColorSpace::Hdr10,
             librashader_common::ImageFormat::R16G16B16A16Sfloat => ColorSpace::ScRgb,
-            _ => ColorSpace::Srgb,
+            _ => ColorSpace::Sdr,
         })
     }
 }

@@ -16,7 +16,7 @@ fn triangle_d3d12_hdr() {
     use windows::Win32::Graphics::Direct3D12::{D3D12CreateDevice, ID3D12Device};
     use windows::Win32::Graphics::Dxgi::{CreateDXGIFactory2, IDXGIFactory4};
 
-    let hdr_mode = ColorSpace::ScRgb;
+    let color_space = ColorSpace::ScRgb;
 
     let preset =
         ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
@@ -36,7 +36,7 @@ fn triangle_d3d12_hdr() {
             preset,
             &device,
             Some(&FilterChainOptionsD3D12 {
-                hdr_mode,
+                color_space,
                 disable_cache: true,
                 ..Default::default()
             }),

@@ -11,7 +11,7 @@ use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage, OwnedImageLayout, VulkanImage};
 use crate::{error, memory, util};
 use ash::vk;
-use librashader_common::{ImageFormat, Size, Viewport};
+use librashader_common::{ColorSpace, ImageFormat, Size, Viewport};
 
 use ash::vk::Handle;
 use gpu_allocator::vulkan::Allocator;
@@ -182,7 +182,7 @@ pub(crate) struct FilterCommon {
     pub config: RuntimeParameters,
     pub device: Arc<ash::Device>,
     pub(crate) internal_frame_count: usize,
-    pub(crate) hdr_mode: librashader_common::ColorSpace,
+    pub(crate) color_space: librashader_common::ColorSpace,
 }
 
 /// Contains residual intermediate `VkImageView` and `VkImage` objects created
@@ -479,7 +479,7 @@ impl FilterChainVulkan {
                 feedback_textures,
                 history_textures,
                 internal_frame_count: 0,
-                hdr_mode: options.map_or(Default::default(), |o| o.hdr_mode),
+                color_space: options.map_or(ColorSpace::Sdr, |o| o.color_space),
             },
             passes: filters,
             vulkan: device,

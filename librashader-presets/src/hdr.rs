@@ -10,7 +10,7 @@ pub trait PresetColorSpace {
     /// Returns:
     /// - [`ColorSpace::Hdr10`] if the final pass writes `A2B10G10R10_UNORM_PACK32`,
     /// - [`ColorSpace::ScRgb`] if the final pass writes `R16G16B16A16_SFLOAT`,
-    /// - [`ColorSpace::Srgb`] otherwise (or for empty presets).
+    /// - [`ColorSpace::Sdr`] otherwise (or for empty presets).
     ///
     /// If the host intends a [`ColorSpace::PqScRgb`] swapchain, the preset color space must be
     /// [`ColorSpace::ScRgb`] for successful promotion.
@@ -20,7 +20,7 @@ pub trait PresetColorSpace {
 impl PresetColorSpace for ShaderPreset {
     fn color_space(&self) -> Result<ColorSpace, PreprocessError> {
         let Some(last) = self.passes.last() else {
-            return Ok(ColorSpace::Srgb);
+            return Ok(ColorSpace::Sdr);
         };
 
         let effective_format = if let Some(over) = last.meta.get_format_override() {
@@ -32,7 +32,7 @@ impl PresetColorSpace for ShaderPreset {
         Ok(match effective_format {
             ImageFormat::A2B10G10R10UnormPack32 => ColorSpace::Hdr10,
             ImageFormat::R16G16B16A16Sfloat => ColorSpace::ScRgb,
-            _ => ColorSpace::Srgb,
+            _ => ColorSpace::Sdr,
         })
     }
 }

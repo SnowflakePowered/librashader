@@ -131,24 +131,14 @@ impl FromStr for FilterMode {
     }
 }
 
-/// The color space domain shared by the host's configured HDR target and the
-/// shader's declared output.
-///
-/// The host configures the desired target via `FilterChainOptions::hdr_mode`
-/// (this is plumbed to the shader as the `HDRMode` uniform — must match the
-/// swapchain the host actually configured). The shader's effective output
-/// color space is queried via `ShaderPreset::output_color_space` so the host
-/// can pick a matching swapchain. Both directions use the same enum since
-/// they describe the same set of possible color spaces.
-///
-/// `Srgb` indicates standard dynamic range (no HDR).
+/// Supported HDR (and SDR) color spaces for HDR shaders.
 #[repr(u32)]
 #[derive(Default, Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ColorSpace {
     /// Standard dynamic range / sRGB nonlinear (no HDR).
     #[default]
-    Srgb = 0,
+    Sdr = 0,
     /// HDR10: BT.2020 primaries with PQ (ST.2084) transfer, stored as
     /// 10-bit unorm (A2R10G10B10).
     Hdr10 = 1,
@@ -160,24 +150,9 @@ pub enum ColorSpace {
 }
 
 impl ColorSpace {
-    /// Whether this color space is an HDR color space
+    /// Whether this color space is an HDR color space or not.
     pub fn is_hdr(&self) -> bool {
-        !matches!(*self, ColorSpace::Srgb)
-    }
-}
-
-impl From<u32> for ColorSpace {
-    /// Convert a raw `u32` (e.g. from the C API) into a `ColorSpace`.
-    /// Out-of-range values are wrapped via modulo so any input maps to a
-    /// defined variant.
-    fn from(value: u32) -> Self {
-        match value % 4 {
-            0 => ColorSpace::Srgb,
-            1 => ColorSpace::Hdr10,
-            2 => ColorSpace::ScRgb,
-            3 => ColorSpace::PqScRgb,
-            _ => unreachable!(),
-        }
+        !matches!(*self, ColorSpace::Sdr)
     }
 }
 

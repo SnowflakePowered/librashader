@@ -1,5 +1,6 @@
 use crate::ctypes::{
-    config_struct, libra_d3d9_filter_chain_t, libra_shader_preset_t, libra_viewport_t, FromUninit,
+    config_struct, libra_d3d9_filter_chain_t, libra_shader_preset_t, libra_viewport_t,
+    FromPrimitive, FromUninit, LIBRA_COLOR_SPACE,
 };
 use crate::error::{assert_non_null, assert_some_ptr, LibrashaderError};
 use crate::ffi::extern_fn;
@@ -28,11 +29,17 @@ pub struct filter_chain_d3d9_opt_t {
     /// Disable the shader object cache. Shaders will be
     /// recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+    /// For HDR shaders, the HDR color space the swapchain is in.
+    ///
+    /// For non-HDR output this should be 0 (SDR).
+    /// 0 = SDR (default), 1 = HDR10, 2 = scRGB, 3 = PQ-in-scRGB.
+    pub color_space: u32,
 }
 
 config_struct! {
     impl FilterChainOptions => filter_chain_d3d9_opt_t {
         0 => [force_no_mipmaps, disable_cache];
+        4 => [(color_space: LIBRA_COLOR_SPACE)];
     }
 }
 
@@ -65,6 +72,11 @@ pub struct frame_d3d9_opt_t {
     pub frames_per_second: f32,
     /// Time in milliseconds between the current and previous frame. Default is 0.
     pub frametime_delta: u32,
+    /// HDR SDR reference white in nits. Default 200.0.
+    pub brightness_nits: f32,
+    /// Gamut expansion mode bound to the shader `ExpandGamut` uniform.
+    /// Default is 0.
+    pub expand_gamut: u32,
     /// Three-axis gyroscope reading bound to the shader `Gyroscope` (vec3)
     /// uniform. Default `{0, 0, 0}`.
     pub gyroscope: [f32; 3],
@@ -81,6 +93,7 @@ config_struct! {
         0 => [clear_history, frame_direction];
         1 => [rotation, total_subframes, current_subframe];
         2 => [aspect_ratio, frames_per_second, frametime_delta];
+        4 => [brightness_nits, expand_gamut];
         5 => [gyroscope, accelerometer, accelerometer_rest];
     }
 }
