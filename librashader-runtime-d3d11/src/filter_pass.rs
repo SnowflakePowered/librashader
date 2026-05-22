@@ -158,6 +158,7 @@ impl FilterPass {
         original: &InputTexture,
         source: &InputTexture,
         output: RenderTarget<ID3D11RenderTargetView>,
+        output_size_override: Option<Size<u32>>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         if self.meta.mipmap_input && !parent.disable_mipmaps {
@@ -175,7 +176,9 @@ impl FilterPass {
         let mut samplers: [Option<ID3D11SamplerState>; 16] = std::array::from_fn(|_| None);
         let descriptors = (&mut textures, &mut samplers);
 
-        let output_size = output.output.size()?;
+        let output_size = output_size_override
+            .map(Ok)
+            .unwrap_or_else(|| output.output.size())?;
         let viewport_size = viewport.output.size()?;
 
         self.build_semantics(

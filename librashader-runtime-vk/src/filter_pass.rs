@@ -96,6 +96,7 @@ impl FilterPass {
         original: &InputImage,
         source: &InputImage,
         output: &RenderTarget<OutputImage>,
+        output_size_override: Option<Size<u32>>,
         vbo_type: QuadType,
         use_alt_descriptors: bool,
     ) -> error::Result<Option<vk::Framebuffer>> {
@@ -113,7 +114,7 @@ impl FilterPass {
             output.mvp,
             frame_count,
             options,
-            output.output.size,
+            output_size_override.unwrap_or(output.output.size),
             viewport.output.size,
             &mut descriptor,
             original,

@@ -151,6 +151,7 @@ impl FilterPass {
         original: &D3D9InputTexture,
         source: &D3D9InputTexture,
         output: RenderTarget<IDirect3DSurface9>,
+        output_size_override: Option<Size<u32>>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         if self.meta.mipmap_input && !parent.disable_mipmaps {
@@ -172,7 +173,7 @@ impl FilterPass {
             output.mvp,
             frame_count,
             options,
-            output_size,
+            output_size_override.unwrap_or(output_size),
             viewport.output.size()?,
             original,
             source,

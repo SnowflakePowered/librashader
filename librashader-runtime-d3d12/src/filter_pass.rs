@@ -146,6 +146,7 @@ impl FilterPass {
         original: &InputTexture,
         source: &InputTexture,
         output: &RenderTarget<D3D12OutputView>,
+        output_size_override: Option<Size<u32>>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         unsafe {
@@ -161,7 +162,7 @@ impl FilterPass {
             output.mvp,
             frame_count,
             options,
-            output.output.size,
+            output_size_override.unwrap_or(output.output.size),
             viewport.output.size,
             original,
             source,

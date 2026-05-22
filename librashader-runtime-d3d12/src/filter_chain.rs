@@ -893,6 +893,7 @@ impl FilterChainD3D12 {
                 &original,
                 &source,
                 &out,
+                None,
                 QuadType::Offscreen,
             )?;
 
@@ -934,7 +935,13 @@ impl FilterChainD3D12 {
             source.filter = pass.meta.filter;
             source.wrap_mode = pass.meta.wrap_mode;
 
-            if self.draw_last_pass_feedback {
+            // When feedback is enabled, render the last pass to the intermediate
+            // framebuffer first then render to the viewport with the OutputSize semantic
+            // overridden to the FB scale.
+            //
+            // Shaders need to see the pass's declared scale rather than the viewport size,
+            // or they won't render correctly for feedback.
+            let output_size_override = if self.draw_last_pass_feedback {
                 let feedback_target = &self.output_framebuffers[index];
 
                 if !pass.pipeline.has_format(feedback_target.format) {
@@ -954,7 +961,7 @@ impl FilterChainD3D12 {
                 );
 
                 let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
-                let out = RenderTarget::viewport_with_output(&view, viewport);
+                let out = RenderTarget::identity(&view)?;
                 pass.draw(
                     cmd,
                     index,
@@ -965,7 +972,8 @@ impl FilterChainD3D12 {
                     &original,
                     &source,
                     &out,
-                    QuadType::Final,
+                    None,
+                    QuadType::Offscreen,
                 )?;
 
                 util::d3d12_resource_transition::<OutlivesFrame, _>(
@@ -974,7 +982,11 @@ impl FilterChainD3D12 {
                     D3D12_RESOURCE_STATE_RENDER_TARGET,
                     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                 );
-            }
+
+                Some(feedback_target.size)
+            } else {
+                None
+            };
 
             if !pass.pipeline.has_format(viewport.output.format) {
                 // eprintln!("recompiling final pipeline");
@@ -996,6 +1008,7 @@ impl FilterChainD3D12 {
                 &original,
                 &source,
                 &out,
+                output_size_override,
                 QuadType::Final,
             )?;
         }

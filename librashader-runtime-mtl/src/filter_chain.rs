@@ -490,6 +490,7 @@ impl FilterChainMetal {
                 &original,
                 &source,
                 &out,
+                None,
                 QuadType::Offscreen,
             )?;
 
@@ -523,9 +524,15 @@ impl FilterChainMetal {
             source.mip_filter = pass.meta.filter;
             let index = passes_len - 1;
 
-            if self.draw_last_pass_feedback {
-                let output_image = &self.output_framebuffers[index].texture;
-                let out = RenderTarget::viewport_with_output(output_image.as_ref(), viewport);
+            // When feedback is enabled, render the last pass to the intermediate
+            // framebuffer first then render to the viewport with the OutputSize semantic
+            // overridden to the FB scale.
+            //
+            // Shaders need to see the pass's declared scale rather than the viewport size,
+            // or they won't render correctly for feedback.
+            let output_size_override = if self.draw_last_pass_feedback {
+                let target = &self.output_framebuffers[index];
+                let out = RenderTarget::viewport_with_output(target.texture.as_ref(), viewport);
                 pass.draw(
                     &cmd,
                     passes_len - 1,
@@ -536,9 +543,13 @@ impl FilterChainMetal {
                     &original,
                     &source,
                     &out,
+                    None,
                     QuadType::Final,
                 )?;
-            }
+                Some(get_texture_size(target.texture.as_ref()))
+            } else {
+                None
+            };
 
             let out = RenderTarget::viewport(viewport);
             pass.draw(
@@ -551,6 +562,7 @@ impl FilterChainMetal {
                 &original,
                 &source,
                 &out,
+                output_size_override,
                 QuadType::Final,
             )?;
         }

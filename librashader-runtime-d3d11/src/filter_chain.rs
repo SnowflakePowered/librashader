@@ -535,6 +535,7 @@ impl FilterChainD3D11 {
                 &original,
                 &source,
                 RenderTarget::identity(&target.create_render_target_view()?)?,
+                None,
                 QuadType::Offscreen,
             )?;
 
@@ -553,10 +554,14 @@ impl FilterChainD3D11 {
             source.filter = pass.meta.filter;
             source.wrap_mode = pass.meta.wrap_mode;
 
-            // Draw to output_framebuffers for proper handling of feedback.
-
+            // When feedback is enabled, render the last pass to the intermediate
+            // framebuffer first then render to the viewport with the OutputSize semantic
+            // overridden to the FB scale.
+            //
+            // Shaders need to see the pass's declared scale rather than the viewport size,
+            // or they won't render correctly for feedback.
             let feedback_target = &self.output_framebuffers[index];
-            if self.draw_last_pass_feedback {
+            let output_size_override = if self.draw_last_pass_feedback {
                 pass.draw(
                     &ctx,
                     index,
@@ -566,13 +571,14 @@ impl FilterChainD3D11 {
                     viewport,
                     &original,
                     &source,
-                    RenderTarget::viewport_with_output(
-                        &feedback_target.create_render_target_view()?,
-                        viewport,
-                    ),
-                    QuadType::Final,
+                    RenderTarget::identity(&feedback_target.create_render_target_view()?)?,
+                    None,
+                    QuadType::Offscreen,
                 )?;
-            }
+                Some(feedback_target.size)
+            } else {
+                None
+            };
 
             pass.draw(
                 &ctx,
@@ -584,6 +590,7 @@ impl FilterChainD3D11 {
                 &original,
                 &source,
                 RenderTarget::viewport(viewport),
+                output_size_override,
                 QuadType::Final,
             )?;
         }

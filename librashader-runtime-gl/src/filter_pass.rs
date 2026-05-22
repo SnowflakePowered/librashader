@@ -86,6 +86,7 @@ impl<T: GLInterface> FilterPass<T> {
         original: &InputTexture,
         source: &InputTexture,
         output: RenderTarget<GLFramebuffer, i32>,
+        output_size_override: Option<Size<u32>>,
     ) -> error::Result<()> {
         let framebuffer = output.output;
 
@@ -104,7 +105,7 @@ impl<T: GLInterface> FilterPass<T> {
             output.mvp,
             frame_count,
             options,
-            framebuffer.size,
+            output_size_override.unwrap_or(framebuffer.size),
             viewport,
             original,
             source,

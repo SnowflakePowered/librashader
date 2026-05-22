@@ -71,6 +71,7 @@ impl FilterPass {
         original: &InputTexture,
         source: &InputTexture,
         output: &RenderTarget<ProtocolObject<dyn MTLTexture>>,
+        output_size_override: Option<Size<u32>>,
         vbo_type: QuadType,
     ) -> error::Result<()> {
         let cmd = self.graphics_pipeline.begin_rendering(output, &cmd)?;
@@ -81,7 +82,7 @@ impl FilterPass {
             output.mvp,
             frame_count,
             options,
-            get_texture_size(output.output),
+            output_size_override.unwrap_or_else(|| get_texture_size(output.output)),
             get_texture_size(viewport.output),
             original,
             source,
