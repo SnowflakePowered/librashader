@@ -2,7 +2,7 @@
 //!
 //! This crate contains facilities to load shader preset resources from a [`ShaderPreset`].
 //!
-//! Also defines abstractly the `.slangpkg` shader format implemented via serde derives on [`ShaderPresetPack`].
+//! Also defines abstractly the `.slangpkg` shader preset format implemented via serde derives on [`ShaderPresetPack`].
 //!
 use image::{ImageError, RgbaImage};
 use librashader_preprocess::{PreprocessError, ShaderSource};

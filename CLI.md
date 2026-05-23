@@ -1036,10 +1036,10 @@ Options:
 
 ```
 
-The `pack` command can be used to create a "preset pack", a format to store an entire shader preset, including files and preprocessed source code, 
+The `pack` command can be used to create a "preset pack" (`slangpkg`), a format to store an entire shader preset, including files and preprocessed source code, 
 into a JSON or MessagePack representation where it can be loaded into memory without filesystem access. 
 
-This file format is experimental, and may be used in the future as a way to cache shader presets, or for usages in environments without a filesystem, 
-such as on the web. Note that packs are only supported by the librashader Rust API, and are not portable across other implementations of "slang" shaders.
+This file format is unstable, and is mostly intended for use in environments without a filesystem, such as on the web.
+Note that packs are only supported by the librashader Rust API, and are not portable across other implementations of "slang" shaders.
 
 It is unlikely that the librashader C API will ever support loading shader packs.
