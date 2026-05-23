@@ -230,15 +230,15 @@ where
 
 macro_rules! config_set_field {
     (@POINTER $options:ident.$field:ident <- $ptr:ident) => {
-        $options.$field = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+        $options.$field = unsafe { (&raw const (*$ptr).$field).read() };
     };
     (@POINTER $options:ident.$field:ident <- $ptr:ident as $trampoline:ty[$realver:expr]) => {
-        let primitive = unsafe { ::std::ptr::addr_of!((*$ptr).$field).read() };
+        let primitive = unsafe { (&raw const (*$ptr).$field).read() };
         let ctype = <$trampoline as FromPrimitive<_>>::from_primitive(primitive, $realver);
         $options.$field = ctype.into();
     };
     (@POINTER @NEGATIVE $options:ident.$field:ident <- $ptr:ident) => {
-        $options.$field = unsafe { (!::std::ptr::addr_of!((*$ptr).$field).read()) };
+        $options.$field = unsafe { (!(&raw const (*$ptr).$field).read()) };
     };
     (@LITERAL $options:ident.$field:ident <- $value:literal) => {
         $options.$field = $value;
@@ -316,7 +316,7 @@ macro_rules! config_struct {
         impl $crate::ctypes::FromUninit<$rust> for $capi {
             fn from_uninit(value: ::std::mem::MaybeUninit<Self>) -> $rust {
                 let ptr = value.as_ptr();
-                let version = unsafe { ::std::ptr::addr_of!((*ptr).version).read() };
+                let version = unsafe { (&raw const (*ptr).version).read() };
 
                 let mut options = <$rust>::default();
                 $(
