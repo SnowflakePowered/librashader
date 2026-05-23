@@ -62,7 +62,40 @@ mod compile {
     }
 }
 
+#[cfg(feature = "wgsl_preset_pack")]
+mod compile_wgsl {
+    use super::*;
+    use librashader_pack::{PassResource, TextureResource};
+    use librashader_reflect::front::WgslCompilation;
+
+    #[cfg(feature = "nightly")]
+    pub type ShaderPassMeta =
+        ShaderPassArtifact<impl CompileReflectShader<WGSL, WgslCompilation, Naga> + Send>;
+
+    #[cfg(not(feature = "nightly"))]
+    pub type ShaderPassMeta =
+        ShaderPassArtifact<Box<dyn CompileReflectShader<WGSL, WgslCompilation, Naga> + Send>>;
+
+    #[cfg_attr(feature = "nightly", define_opaque(ShaderPassMeta))]
+    pub fn compile_passes(
+        shaders: Vec<PassResource>,
+        textures: &[TextureResource],
+    ) -> Result<(Vec<ShaderPassMeta>, ShaderSemantics), FilterChainError> {
+        let (passes, semantics) = WGSL::compile_preset_passes::<
+            WgslCompilation,
+            Naga,
+            FilterChainError,
+        >(shaders, textures.iter().map(|t| &t.meta))?;
+        Ok((passes, semantics))
+    }
+}
+
+#[cfg(all(feature = "native", not(feature = "wgsl_preset_pack")))]
 use compile::{compile_passes, ShaderPassMeta};
+
+#[cfg(any(not(feature = "native"), feature = "wgsl_preset_pack"))]
+use compile_wgsl::{compile_passes, ShaderPassMeta};
+
 use librashader_pack::{ShaderPresetPack, TextureResource};
 use librashader_runtime::parameters::RuntimeParameters;
 
@@ -93,6 +126,7 @@ pub(crate) struct FilterCommon {
 
 impl FilterChainWgpu {
     /// Load the shader preset at the given path into a filter chain.
+    #[cfg(feature = "native")]
     pub fn load_from_path(
         path: impl AsRef<Path>,
         features: ShaderFeatures,
@@ -107,6 +141,7 @@ impl FilterChainWgpu {
     }
 
     /// Load a filter chain from a pre-parsed `ShaderPreset`.
+    #[cfg(feature = "native")]
     pub fn load_from_preset(
         preset: ShaderPreset,
         device: &wgpu::Device,
@@ -149,6 +184,7 @@ impl FilterChainWgpu {
     /// The provided command buffer must be ready for recording and contain no prior commands.
     /// The caller is responsible for ending the command buffer and immediately submitting it to a
     /// graphics queue. The command buffer must be completely executed before calling [`frame`](Self::frame).
+    #[cfg(feature = "native")]
     pub fn load_from_preset_deferred(
         preset: ShaderPreset,
         device: &wgpu::Device,

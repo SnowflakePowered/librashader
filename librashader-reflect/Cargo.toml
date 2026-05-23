@@ -12,7 +12,7 @@ keywords = ["shader", "retroarch", "SPIR-V"]
 description = "RetroArch shaders for all."
 
 [dependencies]
-glslang = "0.8.1"
+glslang = {  version = "0.8.1", optional = true }
 bytemuck = "1.13.0"
 
 thiserror = "2"
@@ -37,7 +37,7 @@ version = "0.4.7"
 optional = true
 
 [features]
-default = ["cross", "naga", "wgsl", "msl"]
+default = ["cross", "naga", "wgsl", "msl", "glslang-in", "naga-in"]
 dxil = [ "spirv-cross2?/hlsl", "dep:spirv-to-dxil" ]
 wgsl = [ "cross", "naga", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
 cross = [ "spirv-cross2", "spirv-cross2/glsl", "spirv-cross2/hlsl", "spirv-cross2/msl" ]
@@ -50,4 +50,5 @@ nightly = []
 # The stable code path is now the default; this feature is intentionally empty.
 stable = []
 
-unstable-naga-in = ["naga/glsl-in"]
+glslang-in = ["glslang"]
+naga-in = ["naga/wgsl-in", "naga/serialize", "naga/deserialize"]

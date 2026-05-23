@@ -18,16 +18,13 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.10.1
 thiserror = "2"
 serde = { version = "1.0", features = ["derive"], optional = true }
 rayon = { workspace = true }
-image = {workspace = true}
+image = { workspace = true }
 base64 = {  version = "0.22.1", optional = true }
 serde_bytes = { version = "0.11.15", optional = true }
 
 [features]
 parse_legacy_glsl = ["librashader-presets/parse_legacy_glsl"]
 serde = ["dep:serde", "dep:base64", "dep:serde_bytes"]
-
-[target.'cfg(not(target_arch="wasm32"))'.dependencies]
-rayon = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1.0.89"

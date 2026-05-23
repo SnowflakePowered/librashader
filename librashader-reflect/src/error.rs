@@ -6,19 +6,22 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ShaderCompileError {
     /// Compile error from naga.
-    #[cfg(feature = "unstable-naga-in")]
-    #[error("shader")]
-    NagaCompileError(Vec<naga::front::glsl::Error>),
+    #[cfg(feature = "naga-in")]
+    #[error("error when parsing wgsl: {0}")]
+    NagaCompileError(#[from] naga::front::wgsl::ParseError),
 
     /// Compilation error from glslang.
+    #[cfg(feature = "glslang-in")]
     #[error("error when compiling with glslang: {0}")]
     GlslangError(#[from] glslang::error::GlslangError),
 
     /// Error when initializing the glslang compiler.
+    #[cfg(feature = "glslang-in")]
     #[error("error when initializing glslang")]
     CompilerInitError,
 
     /// Error when transpiling from spirv-cross.
+    #[cfg(feature = "cross")]
     #[error("spirv-cross error: {0:?}")]
     SpirvCrossCompileError(#[from] spirv_cross2::SpirvCrossError),
 
@@ -86,6 +89,7 @@ pub enum SemanticsErrorKind {
 #[derive(Error, Debug)]
 pub enum ShaderReflectError {
     /// Reflection error from spirv-cross.
+    #[cfg(feature = "cross")]
     #[error("spirv cross error: {0}")]
     SpirvCrossError(#[from] spirv_cross2::SpirvCrossError),
     /// Error when validating vertex shader semantics.
@@ -129,11 +133,4 @@ pub enum ShaderReflectError {
     #[cfg(feature = "naga")]
     #[error("naga validation error: {0}")]
     NagaReflectError(#[from] naga::WithSpan<naga::valid::ValidationError>),
-}
-
-#[cfg(feature = "unstable-naga-in")]
-impl From<Vec<naga::front::glsl::Error>> for ShaderCompileError {
-    fn from(err: Vec<naga::front::glsl::Error>) -> Self {
-        ShaderCompileError::NagaCompileError(err)
-    }
 }

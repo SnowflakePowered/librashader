@@ -20,7 +20,7 @@ librashader-preprocess = { path = "../librashader-preprocess", version = "0.10.1
 librashader-pack = { path = "../librashader-pack", version = "0.10.1" }
 librashader-reflect = { path = "../librashader-reflect", version = "0.10.1", features = ["wgsl"], default-features = false }
 librashader-runtime = { path = "../librashader-runtime" , version = "0.10.1" }
-librashader-cache = { path = "../librashader-cache", version = "0.10.1" }
+librashader-cache = { path = "../librashader-cache", version = "0.10.1", optional = true }
 
 wgpu = { workspace = true, default-features = false, features = ["wgsl"] }
 thiserror = "2"
@@ -28,10 +28,16 @@ bytemuck = { version = "1.14.0", features = ["derive"] }
 array-concat = "0.5.2"
 
 [features]
+default = ["native"]
+
+native = ["librashader-cache", "librashader-reflect/glslang", "librashader-reflect/glslang-in", "librashader-reflect/wgsl"]
+
 # workaround for docsrs to not build metal-rs.
 wgpu_dx12 = ["wgpu/dx12"]
 wgpu_metal = ["wgpu/metal"]
 wgpu_webgpu = ["wgpu/webgpu"]
+
+wgsl_preset_pack = ["librashader-reflect/naga-in"]
 
 nightly = ["librashader-reflect/nightly"]
 # Backwards-compatible no-op; stable is the default code path.

@@ -11,7 +11,7 @@ use crate::error::{SemanticsErrorKind, ShaderReflectError};
 use std::fmt::Debug;
 
 use crate::front::spirv_passes::lower_samplers;
-use crate::front::SpirvCompilation;
+use crate::front::{SpirvCompilation, WgslCompilation};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
     BindingMeta, BindingStage, BufferReflection, MemberOffset, ShaderSemantics, TextureBinding,
@@ -115,6 +115,15 @@ impl NagaReflect {
                     }
                 }
             });
+    }
+}
+
+impl From<WgslCompilation> for NagaReflect {
+    fn from(compilation: WgslCompilation) -> Self {
+        Self {
+            vertex: compilation.vertex,
+            fragment: compilation.fragment
+        }
     }
 }
 

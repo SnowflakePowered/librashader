@@ -5,10 +5,23 @@ use rspirv::binary::Assemble;
 use rspirv::dr::Builder;
 
 use crate::front::spirv_passes::{link_input_outputs, load_module};
-use crate::front::{ShaderInputCompiler, SpirvCompilation};
+use crate::front::{ShaderInputCompiler, ShaderReflectObject, SpirvCompilation};
 
 /// glslang compiler
 pub struct Glslang;
+
+impl ShaderReflectObject for SpirvCompilation {
+    type Compiler = Glslang;
+}
+
+impl TryFrom<&ShaderSource> for SpirvCompilation {
+    type Error = ShaderCompileError;
+
+    /// Tries to compile SPIR-V from the provided shader source.
+    fn try_from(source: &ShaderSource) -> Result<Self, Self::Error> {
+        Glslang::compile(source)
+    }
+}
 
 impl ShaderInputCompiler<SpirvCompilation> for Glslang {
     fn compile(source: &ShaderSource) -> Result<SpirvCompilation, ShaderCompileError> {

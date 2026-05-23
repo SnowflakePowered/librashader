@@ -1,6 +1,5 @@
 use crate::framebuffer::WgpuOutputView;
 use crate::util;
-use librashader_cache::cache_pipeline;
 use librashader_common::map::FastHashMap;
 use librashader_reflect::back::wgsl::NagaWgslContext;
 use librashader_reflect::back::ShaderCompilerOutput;
@@ -212,6 +211,7 @@ impl WgpuGraphicsPipeline {
         adapter_info: Option<&wgpu::AdapterInfo>,
         bypass_cache: bool,
     ) -> Self {
+        #[cfg(feature = "native")]
         let cache = if bypass_cache {
             None
         } else {
@@ -219,7 +219,7 @@ impl WgpuGraphicsPipeline {
                 .and_then(|o| wgpu::util::pipeline_cache_key(o))
                 .unwrap_or_else(|| String::from("wgpu"));
 
-            cache_pipeline(
+            librashader_cache::cache_pipeline(
                 &name,
                 &[
                     &shader_assembly.vertex.as_str(),
@@ -240,6 +240,9 @@ impl WgpuGraphicsPipeline {
             )
             .ok()
         };
+
+        #[cfg(not(feature = "native"))]
+        let cache: Option<wgpu::PipelineCache> = None;
 
         let layout = PipelineLayoutObjects::new(reflection, shader_assembly, device);
         let mut render_pipelines = FastHashMap::default();
