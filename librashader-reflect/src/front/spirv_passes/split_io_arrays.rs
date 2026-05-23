@@ -162,9 +162,9 @@ impl<'a> SplitArrayIo<'a> {
         // Pre-create all new IO pointer / variable types up front so subsequent
         // mutations of types_global_values don't invalidate the iteration we'd
         // need to do otherwise.
-        let scalar_io_ptr =
-            self.builder
-                .type_pointer(None, self.io_class, arr.element_type_id);
+        let scalar_io_ptr = self
+            .builder
+            .type_pointer(None, self.io_class, arr.element_type_id);
 
         let mut scalar_vars = Vec::with_capacity(arr.array_length as usize);
         for i in 0..arr.array_length {

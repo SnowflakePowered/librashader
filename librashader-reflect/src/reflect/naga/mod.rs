@@ -11,7 +11,7 @@ pub mod wgsl;
 use crate::error::{SemanticsErrorKind, ShaderReflectError};
 use std::fmt::Debug;
 
-use crate::front::spirv_passes::lower_samplers;
+use crate::front::spirv_passes::{lower_samplers, split_io_arrays};
 use crate::front::{SpirvCompilation, WgslCompilation};
 use crate::reflect::helper::{SemanticErrorBlame, TextureData, UboData};
 use crate::reflect::semantics::{
@@ -21,9 +21,12 @@ use crate::reflect::semantics::{
     MAX_PUSH_BUFFER_SIZE,
 };
 use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
+use ::spirv::StorageClass;
 use librashader_common::map::ShortString;
-use naga::{AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar, ScalarKind, Span, StructMember, TypeInner, VectorSize};
-use naga::diagnostic_filter::{DiagnosticFilter, DiagnosticFilterNode, FilterableTriggeringRule, Severity, StandardFilterableTriggeringRule};
+use naga::{
+    AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding,
+    Scalar, ScalarKind, Span, StructMember, TypeInner, VectorSize,
+};
 use rspirv::binary::Assemble;
 use rspirv::dr::Builder;
 use rustc_hash::FxHashSet;
@@ -129,7 +132,7 @@ impl From<WgslCompilation> for NagaReflect {
     fn from(compilation: WgslCompilation) -> Self {
         Self {
             vertex: compilation.vertex,
-            fragment: compilation.fragment
+            fragment: compilation.fragment,
         }
     }
 }
@@ -153,10 +156,16 @@ impl TryFrom<&SpirvCompilation> for NagaReflect {
         let vertex = crate::front::spirv_passes::load_module(&compile.vertex);
         let fragment = crate::front::spirv_passes::load_module(&compile.fragment);
 
+        let mut vertex = Builder::new_from_module(vertex);
         let mut fragment = Builder::new_from_module(fragment);
         lower_fragment_shader(&mut fragment);
 
-        let vertex = vertex.assemble();
+        // WGSL/MSL forbid aggregate types at the user-defined I/O interface.
+        // Split any array-typed varyings into per-location scalar/vector pairs.
+        split_io_arrays::SplitArrayIo::new(&mut vertex, StorageClass::Output).do_pass();
+        split_io_arrays::SplitArrayIo::new(&mut fragment, StorageClass::Input).do_pass();
+
+        let vertex = vertex.module().assemble();
         let fragment = fragment.module().assemble();
 
         let vertex = naga::front::spv::parse_u8_slice(bytemuck::cast_slice(&vertex), &options)?;
@@ -476,6 +485,7 @@ impl NagaReflect {
                 TypeInner::Scalar { .. }
                 | TypeInner::Vector { .. }
                 | TypeInner::Matrix { .. }
+                | TypeInner::Array { .. }
                 | TypeInner::Struct { .. } => false,
                 _ => true,
             }
@@ -492,6 +502,7 @@ impl NagaReflect {
                 | TypeInner::Vector { .. }
                 | TypeInner::Matrix { .. }
                 | TypeInner::Struct { .. }
+                | TypeInner::Array { .. }
                 | TypeInner::Image { .. }
                 | TypeInner::Sampler { .. } => false,
                 TypeInner::BindingArray { base, .. } => {
