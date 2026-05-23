@@ -6,7 +6,7 @@ use crate::LIBRASHADER_API_VERSION;
 use librashader::presets::{ShaderFeatures, ShaderPreset, WildcardContext};
 use std::ffi::{c_char, CStr, CString};
 use std::mem::MaybeUninit;
-use std::ptr::{addr_of_mut, NonNull};
+use std::ptr::NonNull;
 
 const _: () = crate::assert_thread_safe::<ShaderPreset>();
 
@@ -179,7 +179,7 @@ extern_fn! {
             let mut options = unsafe { options.read() };
             let opt_ptr = options.as_mut_ptr();
 
-            let api_version = unsafe { addr_of_mut!((*opt_ptr).version).read() };
+            let api_version = unsafe { (&raw mut (*opt_ptr).version).read() };
 
             let mut context = if context.is_null() {
                 Box::new(WildcardContext::new())
@@ -197,8 +197,8 @@ extern_fn! {
 
             // Original Aspect and Frametime Uniforms are an API 2 feature.
             if api_version >= 2 {
-                let original_aspect_uniforms = unsafe { addr_of_mut!((*opt_ptr).original_aspect_uniforms).read() };
-                let frametime_uniforms = unsafe { addr_of_mut!((*opt_ptr).frametime_uniforms).read() };
+                let original_aspect_uniforms = unsafe { (&raw mut (*opt_ptr).original_aspect_uniforms).read() };
+                let frametime_uniforms = unsafe { (&raw mut (*opt_ptr).frametime_uniforms).read() };
 
                 if original_aspect_uniforms {
                     flags |= ShaderFeatures::ORIGINAL_ASPECT_UNIFORMS;
