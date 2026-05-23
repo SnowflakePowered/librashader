@@ -25,7 +25,7 @@ use ::spirv::StorageClass;
 use librashader_common::map::ShortString;
 use naga::{
     AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding,
-    Scalar, ScalarKind, Span, StructMember, TypeInner, VectorSize,
+    Scalar, ScalarKind, StructMember, TypeInner, VectorSize,
 };
 use rspirv::binary::Assemble;
 use rspirv::dr::Builder;

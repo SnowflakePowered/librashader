@@ -195,7 +195,7 @@ enum Commands {
         format: PackFormat,
 
         #[arg(value_enum, short, long, default_value_t = PackShaderLanguage::GLSL)]
-        language: PackShaderLanguage
+        language: PackShaderLanguage,
     },
     /// Get the raw GLSL output of a preprocessed shader.
     Preprocess {
@@ -681,7 +681,7 @@ pub fn main() -> Result<(), anyhow::Error> {
             flags,
             out,
             format,
-            language
+            language,
         } => {
             let PresetArgs { preset, wildcards } = preset;
             let preset = get_shader_preset(preset, wildcards, flags.into())?;

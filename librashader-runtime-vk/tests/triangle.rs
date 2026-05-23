@@ -14,9 +14,11 @@ fn triangle_vk_hdr() {
     use librashader_common::ColorSpace;
     use librashader_presets::{PresetColorSpace, ShaderPreset};
 
-    let preset =
-        ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
-            .unwrap();
+    let preset = ShaderPreset::try_parse(
+        "../test/shaders_slang/bezel/koko-aio/koko-aio-ng.slangp",
+        ShaderFeatures::NONE,
+    )
+    .unwrap();
     assert_eq!(preset.color_space().unwrap(), ColorSpace::ScRgb);
 
     let entry = unsafe { ash::Entry::load().unwrap() };
@@ -42,7 +44,7 @@ fn triangle_vk() {
 
     unsafe {
         let filter = FilterChainVulkan::load_from_path(
-            "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+            "../test/shaders_slang/bezel/koko-aio/Presets-ng/Monitor-crt-regale.slangp",
             // "../test/shaders_slang/sonkun/slot-mask/curved-screen/1080p/01-1080p-crt-guest-advanced-hd-slot-mask-u-normal-rf.slangp",
             ShaderFeatures::all(),
             // "../test/Mega_Bezel_Packs/Duimon-Mega-Bezel/Presets/Advanced/Nintendo_GBA_SP/GBA_SP-[ADV]-[LCD-GRID]-[Night].slangp",
