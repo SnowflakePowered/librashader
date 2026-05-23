@@ -12,19 +12,19 @@ use thiserror::Error;
 pub enum FilterChainError {
     #[error("invariant assumption about d3d11 did not hold. report this as an issue.")]
     Direct3DOperationError(&'static str),
-    #[error("direct3d driver error")]
+    #[error("direct3d driver error: {0}")]
     Direct3DError(#[from] windows::core::Error),
     #[error("d3d11 could not compile shader: {0}")]
     D3DCompileError(String),
-    #[error("shader preset parse error")]
+    #[error("shader preset parse error: {0}")]
     ShaderPresetError(#[from] ParsePresetError),
-    #[error("shader preprocess error")]
+    #[error("shader preprocess error: {0}")]
     ShaderPreprocessError(#[from] PreprocessError),
-    #[error("shader compile error")]
+    #[error("shader compile error: {0}")]
     ShaderCompileError(#[from] ShaderCompileError),
-    #[error("shader reflect error")]
+    #[error("shader reflect error: {0}")]
     ShaderReflectError(#[from] ShaderReflectError),
-    #[error("lut loading error")]
+    #[error("lut loading error: {0}")]
     LutLoadError(#[from] ImageError),
 }
 

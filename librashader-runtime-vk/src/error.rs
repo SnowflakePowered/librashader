@@ -12,21 +12,21 @@ use thiserror::Error;
 pub enum FilterChainError {
     #[error("a vulkan handle that is required to be not null is null")]
     HandleIsNull,
-    #[error("shader preset parse error")]
+    #[error("shader preset parse error: {0}")]
     ShaderPresetError(#[from] ParsePresetError),
-    #[error("shader preprocess error")]
+    #[error("shader preprocess error: {0}")]
     ShaderPreprocessError(#[from] PreprocessError),
-    #[error("shader compile error")]
+    #[error("shader compile error: {0}")]
     ShaderCompileError(#[from] ShaderCompileError),
-    #[error("shader reflect error")]
+    #[error("shader reflect error: {0}")]
     ShaderReflectError(#[from] ShaderReflectError),
-    #[error("lut loading error")]
+    #[error("lut loading error: {0}")]
     LutLoadError(#[from] ImageError),
-    #[error("vulkan error")]
+    #[error("vulkan error: {0}")]
     VulkanResult(#[from] ash::vk::Result),
     #[error("could not find a valid vulkan memory type")]
     VulkanMemoryError(u32),
-    #[error("could not allocate gpu memory")]
+    #[error("could not allocate gpu memory: {0}")]
     AllocationError(#[from] AllocationError),
     #[error("allocation is already freed")]
     AllocationDoesNotExist,
