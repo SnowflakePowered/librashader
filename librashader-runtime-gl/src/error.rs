@@ -12,17 +12,17 @@ use thiserror::Error;
 pub enum FilterChainError {
     #[error("fbo initialization error {0:x}")]
     FramebufferInit(u32),
-    #[error("SPIRV reflection error")]
+    #[error("SPIRV reflection error: {0}")]
     SpirvCrossReflectError(#[from] spirv_cross2::SpirvCrossError),
-    #[error("shader preset parse error")]
+    #[error("shader preset parse error: {0}")]
     ShaderPresetError(#[from] ParsePresetError),
-    #[error("shader preprocess error")]
+    #[error("shader preprocess error: {0}")]
     ShaderPreprocessError(#[from] PreprocessError),
-    #[error("shader compile error")]
+    #[error("shader compile error: {0}")]
     ShaderCompileError(#[from] ShaderCompileError),
-    #[error("shader reflect error")]
+    #[error("shader reflect error: {0}")]
     ShaderReflectError(#[from] ShaderReflectError),
-    #[error("lut loading error")]
+    #[error("lut loading error: {0}")]
     LutLoadError(#[from] ImageError),
     #[error("opengl was not initialized")]
     GLLoadError,

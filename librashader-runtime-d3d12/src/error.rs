@@ -11,21 +11,21 @@ use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_DIMENSION;
 pub enum FilterChainError {
     #[error("invariant assumption about d3d12 did not hold. report this as an issue.")]
     Direct3DOperationError(&'static str),
-    #[error("direct3d driver error")]
+    #[error("direct3d driver error: {0}")]
     Direct3DError(#[from] windows::core::Error),
-    #[error("shader preset parse error")]
+    #[error("shader preset parse error: {0}")]
     ShaderPresetError(#[from] ParsePresetError),
-    #[error("shader preprocess error")]
+    #[error("shader preprocess error: {0}")]
     ShaderPreprocessError(#[from] PreprocessError),
-    #[error("shader compile error")]
+    #[error("shader compile error: {0}")]
     ShaderCompileError(#[from] ShaderCompileError),
-    #[error("shader reflect error")]
+    #[error("shader reflect error: {0}")]
     ShaderReflectError(#[from] ShaderReflectError),
-    #[error("lut loading error")]
+    #[error("lut loading error: {0}")]
     LutLoadError(#[from] ImageError),
-    #[error("heap error")]
+    #[error("heap error: {0}")]
     HeapError(#[from] D3D12DescriptorHeapError),
-    #[error("allocation error")]
+    #[error("allocation error: {0}")]
     AllocationError(#[from] gpu_allocator::AllocationError),
     #[error("invalid resource dimension {0:?}")]
     InvalidDimensionError(D3D12_RESOURCE_DIMENSION),

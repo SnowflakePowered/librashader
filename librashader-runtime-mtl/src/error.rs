@@ -12,21 +12,21 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum FilterChainError {
-    #[error("shader preset parse error")]
+    #[error("shader preset parse error: {0}")]
     ShaderPresetError(#[from] ParsePresetError),
-    #[error("shader preprocess error")]
+    #[error("shader preprocess error: {0}")]
     ShaderPreprocessError(#[from] PreprocessError),
-    #[error("shader compile error")]
+    #[error("shader compile error: {0}")]
     ShaderCompileError(#[from] ShaderCompileError),
-    #[error("shader reflect error")]
+    #[error("shader reflect error: {0}")]
     ShaderReflectError(#[from] ShaderReflectError),
-    #[error("lut loading error")]
+    #[error("lut loading error: {0}")]
     LutLoadError(#[from] ImageError),
     #[error("sampler create error")]
     SamplerError(WrapMode, FilterMode, FilterMode),
     #[error("buffer creation error")]
     BufferError,
-    #[error("metal error")]
+    #[error("metal error: {0}")]
     MetalError(#[from] Retained<NSError>),
     #[error("couldn't find entry for shader")]
     ShaderWrongEntryName,
