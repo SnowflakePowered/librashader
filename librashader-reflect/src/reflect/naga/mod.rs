@@ -22,10 +22,8 @@ use crate::reflect::semantics::{
 };
 use crate::reflect::{align_uniform_size, ReflectShader, ShaderReflection};
 use librashader_common::map::ShortString;
-use naga::{
-    AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding,
-    Scalar, ScalarKind, StructMember, TypeInner, VectorSize,
-};
+use naga::{AddressSpace, Binding, Expression, GlobalVariable, Handle, ImageClass, Module, ResourceBinding, Scalar, ScalarKind, Span, StructMember, TypeInner, VectorSize};
+use naga::diagnostic_filter::{DiagnosticFilter, DiagnosticFilterNode, FilterableTriggeringRule, Severity, StandardFilterableTriggeringRule};
 use rspirv::binary::Assemble;
 use rspirv::dr::Builder;
 use rustc_hash::FxHashSet;
@@ -52,6 +50,8 @@ pub struct NagaLoweringOptions {
     /// The bind group to assign samplers to. This is to ensure that samplers will
     /// maintain the same bindings as textures.
     pub sampler_bind_group: u32,
+    /// Whether to emit derivative uniformity suppression directives
+    pub suppress_derivative_uniformity: bool,
 }
 
 impl NagaReflect {
@@ -69,7 +69,13 @@ impl NagaReflect {
                 }
             }
         } else {
+            // Strip binding locations from PCB variables
             for (_, gv) in self.fragment.global_variables.iter_mut() {
+                if gv.space == AddressSpace::Immediate {
+                    gv.binding = None;
+                }
+            }
+            for (_, gv) in self.vertex.global_variables.iter_mut() {
                 if gv.space == AddressSpace::Immediate {
                     gv.binding = None;
                 }

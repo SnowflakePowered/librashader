@@ -16,7 +16,8 @@ members = [
     "librashader-cache",
     "librashader-capi",
     "librashader-build-script",
-    "librashader-cli", "librashader-pack"]
+    "librashader-cli", "librashader-pack",
+    "web-demo"]
 resolver = "2"
 
 [workspace.dependencies]

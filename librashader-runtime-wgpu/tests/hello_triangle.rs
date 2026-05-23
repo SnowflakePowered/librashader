@@ -131,7 +131,7 @@ impl<'a> State<'a> {
         // .unwrap();
 
         let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/hdr/hdr.slangp", ShaderFeatures::NONE)
+            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp", ShaderFeatures::NONE)
                 .unwrap();
 
         let chain = FilterChainWgpu::load_from_preset(

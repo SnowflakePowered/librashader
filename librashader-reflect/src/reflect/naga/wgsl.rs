@@ -15,20 +15,38 @@ impl CompileShader<WGSL> for NagaReflect {
         mut self,
         options: Self::Options,
     ) -> Result<ShaderCompilerOutput<String, Self::Context>, ShaderCompileError> {
-        fn write_wgsl(module: &Module, info: &ModuleInfo) -> Result<String, ShaderCompileError> {
+        let suppress = options.suppress_derivative_uniformity;
+        fn write_wgsl(
+            module: &Module,
+            info: &ModuleInfo,
+            suppress: bool,
+        ) -> Result<String, ShaderCompileError> {
             let wgsl = naga::back::wgsl::write_string(&module, &info, WriterFlags::empty())?;
-            Ok(wgsl)
+            // Naga doesn't re-emit diagnostics
+            if suppress {
+                Ok(format!(
+                    "diagnostic(off, derivative_uniformity);\n{wgsl}"
+                ))
+            } else {
+                Ok(wgsl)
+            }
         }
 
         self.do_lowering(&options);
 
-        let mut valid = Validator::new(ValidationFlags::all(), Capabilities::empty());
+        // If we keep PCBs around we need the IMMEDIATES capability
+        let capabilities = if options.write_pcb_as_ubo {
+            Capabilities::empty()
+        } else {
+            Capabilities::IMMEDIATES
+        };
+        let mut valid = Validator::new(ValidationFlags::all(), capabilities);
 
         let vertex_info = valid.validate(&self.vertex)?;
         let fragment_info = valid.validate(&self.fragment)?;
 
-        let fragment = write_wgsl(&self.fragment, &fragment_info)?;
-        let vertex = write_wgsl(&self.vertex, &vertex_info)?;
+        let fragment = write_wgsl(&self.fragment, &fragment_info, suppress)?;
+        let vertex = write_wgsl(&self.vertex, &vertex_info, suppress)?;
         Ok(ShaderCompilerOutput {
             vertex,
             fragment,
