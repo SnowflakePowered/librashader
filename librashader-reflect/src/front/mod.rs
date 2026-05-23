@@ -7,6 +7,7 @@ mod glslang;
 
 #[cfg(feature = "glslang-in")]
 pub use crate::front::glslang::Glslang;
+use crate::reflect::semantics::ShaderSemantics;
 
 #[cfg(feature = "naga-in")]
 mod naga;
@@ -21,6 +22,9 @@ pub trait ShaderReflectObject: Sized {
 pub trait ShaderInputCompiler<O: ShaderReflectObject>: Sized {
     /// Compile the input shader source file into a compilation unit.
     fn compile(source: &ShaderSource) -> Result<O, ShaderCompileError>;
+
+    /// Apply the mangled semantics if needed for the outputs
+    fn apply_mangled_semantics(_semantics: &mut ShaderSemantics) {}
 }
 
 /// A reflectable shader compilation via glslang.
