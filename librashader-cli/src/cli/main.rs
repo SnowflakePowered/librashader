@@ -583,6 +583,7 @@ pub fn main() -> Result<(), anyhow::Error> {
                     let output = compilation.compile(NagaLoweringOptions {
                         write_pcb_as_ubo: true,
                         sampler_bind_group: 1,
+                        suppress_derivative_uniformity: false,
                     })?;
                     TranspileOutput {
                         vertex: output.vertex,
@@ -687,19 +688,18 @@ pub fn main() -> Result<(), anyhow::Error> {
             let mut preset = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset)?;
 
             if matches!(language, PackShaderLanguage::WGSL) {
-                // Reuse the same reflection pipeline as the `Transpile` command so the
-                // packed WGSL has gone through every lowering pass the runtime expects
-                // (sampler splitting, push-constant-as-UBO, etc). The result is written
-                // back into `ShaderSource.vertex`/`.fragment` in place so the pack
-                // shape stays identical aside from the new `language` discriminator.
                 for pass in preset.passes.iter_mut() {
                     let compilation = SpirvCompilation::try_from(&pass.data)?;
                     let mut wgsl =
                         librashader::reflect::targets::WGSL::from_compilation(compilation)?;
                     wgsl.validate()?;
                     let output = wgsl.compile(NagaLoweringOptions {
-                        write_pcb_as_ubo: true,
+                        // Don't lower PCBs at this point yet or it will fail validation.
+                        // When we re-load it, librashader will revalidate and do the WGSL-side lowering
+                        // after validation.
+                        write_pcb_as_ubo: false,
                         sampler_bind_group: 1,
+                        suppress_derivative_uniformity: false,
                     })?;
                     pass.data.vertex = output.vertex;
                     pass.data.fragment = output.fragment;

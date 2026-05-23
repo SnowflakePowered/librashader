@@ -119,6 +119,7 @@ impl CompileShader<MSL> for NagaReflect {
         self.do_lowering(&NagaLoweringOptions {
             write_pcb_as_ubo: true,
             sampler_bind_group: 1,
+            suppress_derivative_uniformity: false,
         });
 
         frag_options

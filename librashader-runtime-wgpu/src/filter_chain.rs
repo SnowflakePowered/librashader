@@ -357,6 +357,7 @@ impl FilterChainWgpu {
                     let wgsl = reflect.compile(NagaLoweringOptions {
                         write_pcb_as_ubo: true,
                         sampler_bind_group: 1,
+                        suppress_derivative_uniformity: true,
                     })?;
 
                     let ubo_size = reflection.ubo.as_ref().map_or(0, |ubo| ubo.size as usize);
