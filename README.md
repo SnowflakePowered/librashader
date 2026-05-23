@@ -178,6 +178,11 @@ Some basic examples on using the C API are also provided.
 * [Direct3D 11](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/librashader-capi-tests)
 * [Metal with Objective-C](https://github.com/SnowflakePowered/librashader/tree/master/test/capi-tests/objctest)
 
+Since librashader `0.11.0`, a restricted subset of librashader can run on the web via WebGPU by building a minimal
+subset of librashader's WGPU runtime, and pre-compiling shader presets to WGSL.
+
+* [WebGPU Demo](https://github.com/SnowflakePowered/librashader/tree/master/test/webgpu-example)
+
 ## Compatibility
 
 librashader implements the entire RetroArch shader pipeline and is highly compatible with existing shaders.

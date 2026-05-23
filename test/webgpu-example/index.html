@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>librashader-runtime-wgpu WebGPU demo</title>
+    <style>
+      html, body {
+        margin: 0;
+        background: #111;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+      header {
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      header code { color: #9cf; }
+      main {
+        display: flex;
+        justify-content: center;
+        padding: 16px;
+      }
+      #status {
+        margin: 12px 16px;
+        color: #fa6;
+        font-size: 13px;
+      }
+      #gfx {
+        width: 800px;
+        height: 600px;
+        background: #000;
+        border: 1px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="status">Loading…</div>
+    <main>
+      <canvas id="gfx" width="800" height="600"></canvas>
+    </main>
+
+    <script type="module">
+      const status = document.getElementById("status");
+      try {
+        if (!("gpu" in navigator)) {
+          throw new Error("WebGPU is not available in this browser.");
+        }
+        const wasm = await import("./pkg/librashader_web_demo.js");
+        await wasm.default();
+        status.textContent = "Compiling and uploading filter chain…";
+        await wasm.run("gfx");
+        status.textContent = "Running.";
+      } catch (err) {
+        status.textContent = "Failed: " + err;
+        console.error(err);
+      }
+    </script>
+  </body>
+</html>
