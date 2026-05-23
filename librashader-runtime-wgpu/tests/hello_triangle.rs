@@ -91,13 +91,16 @@ impl<'a> State<'a> {
             .await
             .unwrap();
 
+        let mut limits = wgpu::Limits::default();
+        limits.max_inter_stage_shader_variables = adapter.limits().max_inter_stage_shader_variables;
+
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 required_features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
                     | wgpu::Features::PIPELINE_CACHE
                     | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
                     | wgpu::Features::FLOAT32_FILTERABLE,
-                required_limits: wgpu::Limits::default(),
+                required_limits: limits,
                 label: None,
                 memory_hints: Default::default(),
                 experimental_features: Default::default(),
@@ -130,9 +133,11 @@ impl<'a> State<'a> {
         // )
         // .unwrap();
 
-        let preset =
-            ShaderPreset::try_parse("../test/shaders_slang/crt/crt-royale.slangp", ShaderFeatures::NONE)
-                .unwrap();
+        let preset = ShaderPreset::try_parse(
+            "../test/shaders_slang/bezel/koko-aio/koko-aio-ng.slangp",
+            ShaderFeatures::NONE,
+        )
+        .unwrap();
 
         let chain = FilterChainWgpu::load_from_preset(
             preset,

@@ -3,14 +3,12 @@ use std::sync::Arc;
 use bytemuck::{Pod, Zeroable};
 use librashader_common::{Size, Viewport};
 use librashader_pack::ShaderPresetPack;
-use librashader_runtime_wgpu::{
-    options::FilterChainOptionsWgpu, FilterChainWgpu, WgpuOutputView,
-};
+use librashader_runtime_wgpu::{options::FilterChainOptionsWgpu, FilterChainWgpu, WgpuOutputView};
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
 use wgpu::util::DeviceExt;
 
-const CRT_ROYALE_PACK: &[u8] = include_bytes!("../assets/crt-royale.wgsl.slangpkg");
+const CRT_ROYALE_PACK: &[u8] = include_bytes!("../assets/koko-aio.wgsl.slangpkg");
 
 const OFFSCREEN_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
@@ -81,13 +79,18 @@ pub async fn run(canvas_id: String) -> Result<(), JsValue> {
         .await
         .map_err(|e| JsValue::from_str(&format!("request_adapter: {e:?}")))?;
 
+    let mut limits = wgpu::Limits::default()
+        .using_resolution(adapter.limits());
+
+    limits.max_inter_stage_shader_variables =
+        adapter.limits().max_inter_stage_shader_variables;
+
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor {
             label: Some("librashader web-demo device"),
             required_features: wgpu::Features::empty(),
             experimental_features: wgpu::ExperimentalFeatures::disabled(),
-            required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                .using_resolution(adapter.limits()),
+            required_limits: limits,
             memory_hints: wgpu::MemoryHints::default(),
             trace: wgpu::Trace::Off,
         })
@@ -326,13 +329,9 @@ impl Demo {
             size: viewport_size,
         };
 
-        let _ = self.filter_chain.frame(
-            &self.offscreen,
-            &viewport,
-            &mut cmd,
-            self.frame_count,
-            None,
-        );
+        let _ =
+            self.filter_chain
+                .frame(&self.offscreen, &viewport, &mut cmd, self.frame_count, None);
         self.frame_count = self.frame_count.wrapping_add(1);
 
         self.queue.submit([cmd.finish()]);

@@ -24,9 +24,7 @@ impl CompileShader<WGSL> for NagaReflect {
             let wgsl = naga::back::wgsl::write_string(&module, &info, WriterFlags::empty())?;
             // Naga doesn't re-emit diagnostics
             if suppress {
-                Ok(format!(
-                    "diagnostic(off, derivative_uniformity);\n{wgsl}"
-                ))
+                Ok(format!("diagnostic(off, derivative_uniformity);\n{wgsl}"))
             } else {
                 Ok(wgsl)
             }

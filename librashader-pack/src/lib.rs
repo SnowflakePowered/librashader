@@ -104,7 +104,7 @@ pub enum ShaderSourceLanguage {
     /// GLSL
     Glsl,
     /// WGSL (only produced when creating a .wgsl.slangpkg
-    Wgsl
+    Wgsl,
 }
 
 /// A fully loaded-in-memory shader preset, with all paths resolved to data.
