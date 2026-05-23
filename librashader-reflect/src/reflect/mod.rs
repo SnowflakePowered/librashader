@@ -2,7 +2,12 @@ use crate::error::ShaderReflectError;
 use semantics::ShaderSemantics;
 
 /// Reflection via spirv-cross.
+#[cfg(feature = "cross")]
 pub mod cross;
+
+/// Reflection via naga.
+#[cfg(feature = "naga")]
+pub mod naga;
 
 /// Shader semantics and reflection information.
 pub mod semantics;
@@ -11,10 +16,6 @@ pub mod semantics;
 pub mod presets;
 
 mod helper;
-
-/// Reflection via naga.
-#[cfg(feature = "naga")]
-pub mod naga;
 
 /// A trait for compilation outputs that can provide reflection information.
 pub trait ReflectShader {

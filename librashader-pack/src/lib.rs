@@ -4,6 +4,7 @@
 //!
 //! Also defines abstractly the `.slangpack` shader format implemented via serde derives on [`ShaderPresetPack`].
 //!
+
 use image::{ImageError, RgbaImage};
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{
@@ -53,9 +54,9 @@ impl From<RgbaImage> for TextureBuffer {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LoadedResource<M: LoadableResource> {
-    /// The fully qualified path to the texture.
+    /// The fully qualified path to the resource.
     pub data: M::ResourceType,
-    /// Meta information about the texture.
+    /// Meta information about the resource.
     pub meta: M,
 }
 
@@ -97,10 +98,27 @@ pub type PassResource = LoadedResource<PassMeta>;
 /// The loaded texture resource for a shader preset.
 pub type TextureResource = LoadedResource<TextureMeta>;
 
+/// The language that the shader sources are in.
+///
+/// In the vast majority of cases, this will always be GLSL.
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ShaderSourceLanguage {
+    /// GLSL
+    Glsl,
+    /// WGSL (only produced when creating a .wgsl.slangpkg
+    Wgsl
+}
+
 /// A fully loaded-in-memory shader preset, with all paths resolved to data.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaderPresetPack {
+    /// The language that the pass shader sources are in.
+    ///
+    /// Almost always GLSL, unless created from a .wgsl.slangpkg
+    pub language: ShaderSourceLanguage,
+
     /// Used in legacy GLSL shader semantics. If < 0, no feedback pass is used.
     /// Otherwise, the FBO after pass #N is passed a texture to next frame
     #[cfg(feature = "parse_legacy_glsl")]
@@ -127,19 +145,13 @@ impl ShaderPresetPack {
         E: From<ImageError>,
         E: Send,
     {
-        #[cfg(not(target_arch = "wasm32"))]
         let shaders_iter = preset.passes.into_par_iter();
 
-        #[cfg(target_arch = "wasm32")]
-        let shaders_iter = preset.shaders.into_iter();
-
-        #[cfg(not(target_arch = "wasm32"))]
         let textures_iter = preset.textures.into_par_iter();
 
-        #[cfg(target_arch = "wasm32")]
-        let textures_iter = preset.textures.into_iter();
-
         Ok(ShaderPresetPack {
+            language: ShaderSourceLanguage::Glsl,
+            
             #[cfg(feature = "parse_legacy_glsl")]
             feedback_pass: preset.feedback_pass,
 
@@ -147,6 +159,7 @@ impl ShaderPresetPack {
             passes: shaders_iter
                 .map(|v| {
                     Ok::<_, E>(PassResource {
+                        // The default PassMeta::load function is always GLSL.
                         data: PassMeta::load(v.path.as_path(), preset.features)?,
                         meta: v.meta,
                     })

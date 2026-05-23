@@ -1,7 +1,7 @@
 use crate::back::targets::WGSL;
 use crate::back::{CompileReflectShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
-use crate::front::SpirvCompilation;
+use crate::front::{SpirvCompilation, WgslCompilation};
 use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
 use naga::Module;
 
@@ -39,6 +39,38 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
     ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
         Ok(CompilerBackend {
             backend: Box::new(NagaReflect::try_from(&compile)?),
+        })
+    }
+}
+
+#[cfg(all(feature = "nightly", feature = "naga-in"))]
+impl FromCompilation<WgslCompilation, Naga> for WGSL {
+    type Target = WGSL;
+    type Options = NagaLoweringOptions;
+    type Context = NagaWgslContext;
+    type Output = impl CompileReflectShader<Self::Target, WgslCompilation, Naga>;
+
+    fn from_compilation(
+        compile: WgslCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: NagaReflect::try_from(&compile)?,
+        })
+    }
+}
+
+#[cfg(all(not(feature = "nightly"), feature = "naga-in"))]
+impl FromCompilation<WgslCompilation, Naga> for WGSL {
+    type Target = WGSL;
+    type Options = NagaLoweringOptions;
+    type Context = NagaWgslContext;
+    type Output = Box<dyn CompileReflectShader<Self::Target, WgslCompilation, Naga> + Send>;
+
+    fn from_compilation(
+        compile: WgslCompilation,
+    ) -> Result<CompilerBackend<Self::Output>, ShaderReflectError> {
+        Ok(CompilerBackend {
+            backend: Box::new(NagaReflect::from(compile)),
         })
     }
 }
