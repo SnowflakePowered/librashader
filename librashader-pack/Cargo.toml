@@ -15,14 +15,16 @@ librashader-common = { path = "../librashader-common", version = "0.10.1" }
 librashader-presets = { path = "../librashader-presets", version = "0.10.1", features = ["serde"] }
 librashader-preprocess = { path = "../librashader-preprocess", version = "0.10.1", features = ["serde"] }
 
-thiserror = "2"
 serde = { version = "1.0", features = ["derive"], optional = true }
-rayon = { workspace = true }
-image = { workspace = true }
+rayon = { workspace = true, optional = true }
+image = { workspace = true, optional = true }
 base64 = {  version = "0.22.1", optional = true }
 serde_bytes = { version = "0.11.15", optional = true }
 
 [features]
+default = ["load"]
+load = ["rayon", "image"]
+
 parse_legacy_glsl = ["librashader-presets/parse_legacy_glsl"]
 serde = ["dep:serde", "dep:base64", "dep:serde_bytes"]
 
