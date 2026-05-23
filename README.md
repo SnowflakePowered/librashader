@@ -282,7 +282,7 @@ for migration instructions.
 
 ### MSRV Policy
 
-Building against stable Rust requires Rust **1.78** when building without WGPU. When building with WGPU, librashader
+Building against stable Rust requires Rust **1.88** when building without WGPU. When building with WGPU, librashader
 adopts WGPU's MSRV.
 
 No guarantees are provided for nightly MSRVs. 
