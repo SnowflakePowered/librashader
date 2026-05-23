@@ -1,9 +1,7 @@
-//! Workaround for an FXC limitation: in HLSL Shader Model 5 (and earlier),
-//! a gradient-emitting texture sample (`Sample`, `SampleBias`, `SampleCmp`)
-//! is illegal inside a loop whose iteration count is non-uniform — and the
-//! compiler refuses to unroll loops whose worst-case bound is too large
-//! (error X3511). The slang-shaders blur passes in `crt-yah` trip this
-//! because the loop bounds are interpolated vertex outputs.
+//! In HLSL Shader Model 5 (and earlier), a gradient-emitting texture sample
+//! (`Sample`, `SampleBias`, `SampleCmp`) is illegal inside a loop whose iteration
+//! count is non-uniform — and the compiler refuses to unroll loops whose worst-case
+//! bound is too large (error X3511).
 //!
 //! SPIRV-Cross emits `OpImageSampleImplicitLod` (implicit gradient) from
 //! `texture(s, uv)` calls. This pass walks the SPIR-V CFG, finds every
@@ -17,11 +15,9 @@
 //! depends on a value sourced from an `Input` storage variable (interpolated
 //! vertex output / fragment-stage input), a previous texture sample, or a
 //! derivative op. Loops bounded by constants or uniform/push-constant values
-//! are left alone — FXC unrolls those fine and we don't want to spuriously
-//! lose mipmap selection on a uniform loop that just happens to contain a
-//! sample.
+//! are left alone.
 //!
-//! Trade-off: samples inside non-uniform loops lose mipmap selection on
+//! Downgrading these samples inside non-uniform loops lose mipmap selection on
 //! this path. Practically this affects only previous-pass outputs (rarely
 //! mipmapped) and LUTs (almost never sampled inside a loop), so the visual
 //! impact is negligible — and strictly better than the shader failing to
