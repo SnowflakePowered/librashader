@@ -1,4 +1,5 @@
 #[doc(hidden)]
+#[cfg(feature = "msl")]
 pub mod msl;
 
 #[doc(hidden)]

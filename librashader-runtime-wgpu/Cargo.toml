@@ -30,7 +30,7 @@ array-concat = "0.5.2"
 [features]
 default = ["native"]
 
-native = ["librashader-cache", "librashader-reflect/glslang", "librashader-reflect/glslang-in", "librashader-reflect/wgsl"]
+native = ["librashader-cache",  "librashader-reflect/cross", "librashader-reflect/glslang", "librashader-reflect/glslang-in", "librashader-reflect/wgsl"]
 
 # workaround for docsrs to not build metal-rs.
 wgpu_dx12 = ["wgpu/dx12"]

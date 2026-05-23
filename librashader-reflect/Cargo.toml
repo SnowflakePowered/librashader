@@ -37,13 +37,15 @@ version = "0.4.7"
 optional = true
 
 [features]
-default = ["cross", "naga", "wgsl", "msl", "glslang-in", "naga-in"]
+default = ["cross", "naga", "wgsl", "msl", "glsl", "hlsl", "glslang-in", "naga-in"]
 dxil = [ "spirv-cross2?/hlsl", "dep:spirv-to-dxil" ]
-wgsl = [ "cross", "naga", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
+wgsl = [ "naga", "naga/wgsl-out", "dep:spirv", "dep:rspirv"]
 cross = [ "spirv-cross2", "spirv-cross2/glsl", "spirv-cross2/hlsl", "spirv-cross2/msl" ]
 naga = [ "dep:rspirv", "dep:spirv", "dep:naga", "naga/spv-in", "naga/spv-out", "naga/wgsl-out", "naga/msl-out" ]
 serde = ["dep:serde", "serde/derive", "librashader-common/serde", "bitflags/serde"]
 msl = [ "cross", "spirv-cross2/msl", "naga?/msl-out" ]
+hlsl = [ "cross", "spirv-cross2/hlsl" ]
+glsl = [ "cross", "spirv-cross2/glsl" ]
 
 nightly = []
 # No-op alias for backwards compatibility with older consumers that opted into `stable`.

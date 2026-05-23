@@ -2,9 +2,8 @@
 //!
 //! This crate contains facilities to load shader preset resources from a [`ShaderPreset`].
 //!
-//! Also defines abstractly the `.slangpack` shader format implemented via serde derives on [`ShaderPresetPack`].
+//! Also defines abstractly the `.slangpkg` shader format implemented via serde derives on [`ShaderPresetPack`].
 //!
-
 use image::{ImageError, RgbaImage};
 use librashader_preprocess::{PreprocessError, ShaderSource};
 use librashader_presets::{
@@ -13,8 +12,6 @@ use librashader_presets::{
 use std::path::Path;
 
 use librashader_common::ColorSpace;
-#[cfg(not(target_arch = "wasm32"))]
-use rayon::prelude::*;
 
 /// A buffer holding RGBA image bytes.
 #[derive(Debug, Clone)]
@@ -137,6 +134,7 @@ pub struct ShaderPresetPack {
     pub parameters: Vec<ParameterMeta>,
 }
 
+#[cfg(feature = "load")]
 impl ShaderPresetPack {
     /// Load a `ShaderPack` from a [`ShaderPreset`].
     pub fn load_from_preset<E>(preset: ShaderPreset) -> Result<ShaderPresetPack, E>
@@ -145,13 +143,14 @@ impl ShaderPresetPack {
         E: From<ImageError>,
         E: Send,
     {
-        let shaders_iter = preset.passes.into_par_iter();
+        use rayon::prelude::*;
 
+        let shaders_iter = preset.passes.into_par_iter();
         let textures_iter = preset.textures.into_par_iter();
 
         Ok(ShaderPresetPack {
             language: ShaderSourceLanguage::Glsl,
-            
+
             #[cfg(feature = "parse_legacy_glsl")]
             feedback_pass: preset.feedback_pass,
 

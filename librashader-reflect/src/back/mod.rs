@@ -1,7 +1,10 @@
 #[cfg(all(target_os = "windows", feature = "dxil"))]
 pub mod dxil;
+#[cfg(feature = "glsl")]
 pub mod glsl;
+#[cfg(feature = "hlsl")]
 pub mod hlsl;
+#[cfg(feature = "msl")]
 pub mod msl;
 pub mod spirv;
 pub mod targets;

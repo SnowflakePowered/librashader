@@ -193,6 +193,9 @@ enum Commands {
         /// The file format to output.
         #[arg(value_enum, short, long)]
         format: PackFormat,
+
+        #[arg(value_enum, short, long, default_value_t = PackShaderLanguage::GLSL)]
+        language: PackShaderLanguage
     },
     /// Get the raw GLSL output of a preprocessed shader.
     Preprocess {
@@ -295,6 +298,14 @@ enum PackFormat {
     JSON,
     #[clap(name = "msgpack")]
     MsgPack,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum PackShaderLanguage {
+    #[clap(name = "glsl")]
+    GLSL,
+    #[clap(name = "wgsl")]
+    WGSL,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]
@@ -669,10 +680,33 @@ pub fn main() -> Result<(), anyhow::Error> {
             flags,
             out,
             format,
+            language
         } => {
             let PresetArgs { preset, wildcards } = preset;
             let preset = get_shader_preset(preset, wildcards, flags.into())?;
-            let preset = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset)?;
+            let mut preset = ShaderPresetPack::load_from_preset::<anyhow::Error>(preset)?;
+
+            if matches!(language, PackShaderLanguage::WGSL) {
+                // Reuse the same reflection pipeline as the `Transpile` command so the
+                // packed WGSL has gone through every lowering pass the runtime expects
+                // (sampler splitting, push-constant-as-UBO, etc). The result is written
+                // back into `ShaderSource.vertex`/`.fragment` in place so the pack
+                // shape stays identical aside from the new `language` discriminator.
+                for pass in preset.passes.iter_mut() {
+                    let compilation = SpirvCompilation::try_from(&pass.data)?;
+                    let mut wgsl =
+                        librashader::reflect::targets::WGSL::from_compilation(compilation)?;
+                    wgsl.validate()?;
+                    let output = wgsl.compile(NagaLoweringOptions {
+                        write_pcb_as_ubo: true,
+                        sampler_bind_group: 1,
+                    })?;
+                    pass.data.vertex = output.vertex;
+                    pass.data.fragment = output.fragment;
+                }
+                preset.language = librashader::presets::ShaderSourceLanguage::Wgsl;
+            }
+
             let output_bytes = match format {
                 PackFormat::JSON => serde_json::to_vec_pretty(&preset)?,
                 PackFormat::MsgPack => rmp_serde::to_vec(&preset)?,

@@ -15,6 +15,7 @@ use rayon::prelude::*;
 use std::collections::VecDeque;
 use std::path::Path;
 
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::ThreadPoolBuilder;
 
 use crate::buffer::WgpuStagedBuffer;
@@ -36,6 +37,7 @@ use crate::options::{FilterChainOptionsWgpu, FrameOptionsWgpu};
 use crate::samplers::SamplerSet;
 use crate::texture::{InputImage, OwnedImage};
 
+#[cfg(feature = "native")]
 mod compile {
     use super::*;
     use librashader_pack::{PassResource, TextureResource};
@@ -342,8 +344,8 @@ impl FilterChainWgpu {
         adapter_info: Option<&wgpu::AdapterInfo>,
         disable_cache: bool,
     ) -> error::Result<Box<[FilterPass]>> {
-        #[cfg(not(target_arch = "wasm32"))]
         let filter_creation_fn = || {
+            #[cfg(not(target_arch = "wasm32"))]
             let passes_iter = passes.into_par_iter();
             #[cfg(target_arch = "wasm32")]
             let passes_iter = passes.into_iter();

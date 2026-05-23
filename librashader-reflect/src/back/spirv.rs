@@ -4,13 +4,18 @@ use crate::back::{
 };
 use crate::error::{ShaderCompileError, ShaderReflectError};
 use crate::front::SpirvCompilation;
+#[cfg(feature = "cross")]
 use crate::reflect::cross::glsl::GlslReflect;
+#[cfg(feature = "cross")]
 use crate::reflect::cross::SpirvCross;
 use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
+#[cfg(feature = "cross")]
 use crate::reflect::semantics::ShaderSemantics;
+#[cfg(feature = "cross")]
 use crate::reflect::{ReflectShader, ShaderReflection};
 use naga::Module;
 
+#[cfg(feature = "cross")]
 pub(crate) struct WriteSpirV {
     // rely on GLSL to provide out reflection but we don't actually need the AST.
     pub(crate) reflect: GlslReflect,
@@ -18,7 +23,7 @@ pub(crate) struct WriteSpirV {
     pub(crate) fragment: Vec<u32>,
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(all(feature = "cross", feature = "nightly"))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
@@ -41,7 +46,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     }
 }
 
-#[cfg(not(feature = "nightly"))]
+#[cfg(all(feature = "cross", not(feature = "nightly")))]
 impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     type Target = SPIRV;
     type Options = Option<()>;
@@ -64,6 +69,7 @@ impl FromCompilation<SpirvCompilation, SpirvCross> for SPIRV {
     }
 }
 
+#[cfg(feature = "cross")]
 impl ReflectShader for WriteSpirV {
     fn reflect(
         &mut self,
@@ -78,6 +84,7 @@ impl ReflectShader for WriteSpirV {
     }
 }
 
+#[cfg(feature = "cross")]
 impl CompileShader<SPIRV> for WriteSpirV {
     type Options = Option<()>;
     type Context = ();
