@@ -122,11 +122,12 @@ where
 
     insert_lut_semantics(textures, &mut uniform_semantics, &mut texture_semantics);
 
-    let semantics = ShaderSemantics {
+    let mut semantics = ShaderSemantics {
         uniform_semantics,
         texture_semantics,
     };
 
+    I::Compiler::apply_mangled_semantics(&mut semantics);
     Ok((artifacts, semantics))
 }
 
