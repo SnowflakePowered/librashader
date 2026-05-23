@@ -103,7 +103,7 @@ impl VulkanBuffer {
         let Some(allocation) = self.allocation.mapped_slice_mut() else {
             return Err(FilterChainError::AllocationDoesNotExist);
         };
-        Ok(allocation)
+        Ok(&mut allocation[..self.size as usize])
     }
 }
 
