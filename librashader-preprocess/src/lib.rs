@@ -88,6 +88,20 @@ pub(crate) fn load_shader_source(
     path: impl AsRef<Path>,
     features: ShaderFeatures,
 ) -> Result<ShaderSource, PreprocessError> {
+    let path = path.as_ref();
+    load_shader_source_inner(path, features).map_err(|e| match e {
+        PreprocessError::InFile { .. } | PreprocessError::IOError(..) => e,
+        _ => PreprocessError::InFile {
+            path: path.to_path_buf(),
+            source: Box::new(e),
+        },
+    })
+}
+
+fn load_shader_source_inner(
+    path: &Path,
+    features: ShaderFeatures,
+) -> Result<ShaderSource, PreprocessError> {
     let source = read_source(path, features)?;
     let meta = pragma::parse_pragma_meta(&source)?;
 

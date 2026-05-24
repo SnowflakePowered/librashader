@@ -15,7 +15,7 @@ pub enum FilterChainError {
     #[error("direct3d driver error: {0}")]
     Direct3DError(#[from] windows::core::Error),
     #[error("d3d11 could not compile shader: {0}")]
-    D3DCompileError(String),
+    D3DCompileError(windows::core::Error, String),
     #[error("shader preset parse error: {0}")]
     ShaderPresetError(#[from] ParsePresetError),
     #[error("shader preprocess error: {0}")]

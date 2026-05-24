@@ -6,6 +6,13 @@ use thiserror::Error;
 /// Error type for source preprocessing.
 #[derive(Error, Debug)]
 pub enum PreprocessError {
+    /// Wraps another error with the file it originated from.
+    #[error("in file {path:?}: {source}")]
+    InFile {
+        path: PathBuf,
+        #[source]
+        source: Box<PreprocessError>,
+    },
     /// The version header was not found in the source file.
     #[error("the version header was missing")]
     MissingVersionHeader,

@@ -4,11 +4,18 @@ use thiserror::Error;
 /// Error type for preset parsing.
 #[derive(Error, Debug)]
 pub enum ParsePresetError {
+    /// Wraps another error with the file it originated from.
+    #[error("in file {path:?}: {source}")]
+    InFile {
+        path: PathBuf,
+        #[source]
+        source: Box<ParsePresetError>,
+    },
     /// An error occurred when tokenizing the preset file.
-    #[error("shader preset lexing error")]
+    #[error("shader preset lexing error at line {row}, column {col} (offset {offset})")]
     LexerError { offset: usize, row: u32, col: usize },
     /// An error occurred when parsing the preset file.
-    #[error("shader preset parse error")]
+    #[error("shader preset parse error ({kind:?}) at line {row}, column {col} (offset {offset})")]
     ParserError {
         offset: usize,
         row: u32,

@@ -194,7 +194,12 @@ fn load_child_reference_strings(
                 .read_to_string(&mut reference_contents)
                 .map_err(|e| ParsePresetError::IOError(path.clone(), e))?;
 
-            let mut new_tokens = do_lex(&reference_contents)?;
+            let mut new_tokens = do_lex(&reference_contents).map_err(|e| {
+                ParsePresetError::InFile {
+                    path: path.clone(),
+                    source: Box::new(e),
+                }
+            })?;
             let new_references: Vec<PathBuf> =
                 MakeExtractIf::extract_if(&mut new_tokens, |token| {
                     *token.key.fragment() == "#reference"
@@ -233,8 +238,14 @@ pub(crate) fn parse_preset(
         .and_then(|mut f| f.read_to_string(&mut contents))
         .map_err(|e| ParsePresetError::IOError(path.to_path_buf(), e))?;
 
-    let tokens = super::token::do_lex(&contents)?;
-    parse_values(tokens, path, context)
+    let tokens = super::token::do_lex(&contents).map_err(|e| ParsePresetError::InFile {
+        path: path.clone(),
+        source: Box::new(e),
+    })?;
+    parse_values(tokens, &path, context).map_err(|e| ParsePresetError::InFile {
+        path: path.clone(),
+        source: Box::new(e),
+    })
 }
 
 // prereq: root_path must be contextualized
@@ -266,7 +277,10 @@ pub fn parse_values(
 
     for (path, string) in child_strings.iter() {
         // lex the child tokens
-        let mut tokens = do_lex(string.as_ref())?;
+        let mut tokens = do_lex(string.as_ref()).map_err(|e| ParsePresetError::InFile {
+            path: path.clone(),
+            source: Box::new(e),
+        })?;
         tokens.retain(|token| *token.key.fragment() != "#reference");
         all_tokens.push((path.as_path(), tokens))
     }

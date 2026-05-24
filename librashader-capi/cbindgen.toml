@@ -113,6 +113,14 @@ include = [
     "PFN_libra_error_free",
     "PFN_libra_error_write",
     "PFN_libra_error_free_string",
+    "PFN_libra_error_get_details",
+    "PFN_libra_error_free_details",
+    "LIBRA_ERROR_SOURCE",
+    "LIBRA_ERROR_META_KIND",
+    "LIBRA_SPVC_RESULT",
+    "libra_error_details_t",
+    "libra_error_meta_t",
+    "libra_file_location_error_t",
 
     # gl
     "PFN_libra_gl_init_context",

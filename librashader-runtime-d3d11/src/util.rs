@@ -139,7 +139,7 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
                 // D3DCompile error blobs are NUL-terminated ASCII; strip the trailing NUL if present.
                 let bytes = bytes.strip_suffix(b"\0").unwrap_or(bytes);
                 let msg = String::from_utf8_lossy(bytes).into_owned();
-                return Err(crate::error::FilterChainError::D3DCompileError(msg));
+                return Err(crate::error::FilterChainError::D3DCompileError(e, msg));
             }
             return Err(e.into());
         }
