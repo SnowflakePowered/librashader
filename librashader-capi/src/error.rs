@@ -120,6 +120,12 @@ pub enum LIBRA_ERRNO {
 
     /// Error code for a runtime error.
     RUNTIME_ERROR = 7,
+
+    /// Error code for when a LUT fails to load at runtime.
+    LUT_LOAD_ERROR = 8,
+
+    /// Error code when a shader fails to be compiled by the graphics driver.
+    COMPILE_ERROR = 9,
 }
 
 // Nothing here can use extern_fn because they are lower level than libra_error_t.
@@ -136,7 +142,17 @@ pub unsafe extern "C" fn libra_error_errno(error: libra_error_t) -> LIBRA_ERRNO 
         return LIBRA_ERRNO::UNKNOWN_ERROR;
     };
 
-    unsafe { error.as_ref().get_code() }
+    unsafe {
+        let code = error.as_ref().get_code();
+
+        // Unwrap inner runtime codes if the parsing was done in the
+        // runtime crate
+        if matches!(code, LIBRA_ERRNO::RUNTIME_ERROR) {
+            error.as_ref().get_runtime_code()
+        } else {
+            code
+        }
+    }
 }
 
 /// Function pointer definition for libra_error_print
@@ -260,6 +276,189 @@ impl LibrashaderError {
             LibrashaderError::Infallible(_) => LIBRA_ERRNO::UNKNOWN_ERROR,
         }
     }
+
+    /// Get the inner code of the runtime error
+    pub(crate) const fn get_runtime_code(&self) -> LIBRA_ERRNO {
+        match self {
+            #[cfg(feature = "runtime-opengl")]
+            LibrashaderError::OpenGlFilterError(ogl) => match ogl {
+                librashader::runtime::gl::error::FilterChainError::FramebufferInit(_) => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::SpirvCrossReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::ShaderPresetError(_) => {
+                    LIBRA_ERRNO::PRESET_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::ShaderPreprocessError(_) => {
+                    LIBRA_ERRNO::PREPROCESS_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::ShaderCompileError(_)
+                | librashader::runtime::gl::error::FilterChainError::ShaderReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::LutLoadError(_) => {
+                    LIBRA_ERRNO::LUT_LOAD_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::GLLoadError => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::GLLinkError(_)
+                | librashader::runtime::gl::error::FilterChainError::GlCompileError(_)
+                | librashader::runtime::gl::error::FilterChainError::GlProgramError(_) => {
+                    LIBRA_ERRNO::COMPILE_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::GlSamplerError
+                | librashader::runtime::gl::error::FilterChainError::GlInvalidFramebuffer
+                | librashader::runtime::gl::error::FilterChainError::GlError(_) => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::gl::error::FilterChainError::Infallible(_) => {
+                    LIBRA_ERRNO::UNKNOWN_ERROR
+                }
+                _ => LIBRA_ERRNO::RUNTIME_ERROR,
+            },
+            #[cfg(all(target_os = "windows", feature = "runtime-d3d11"))]
+            LibrashaderError::D3D11FilterError(d3d) => match d3d {
+                librashader::runtime::d3d11::error::FilterChainError::Direct3DOperationError(_)
+                | librashader::runtime::d3d11::error::FilterChainError::Direct3DError(_) => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::d3d11::error::FilterChainError::D3DCompileError(_) => {
+                    LIBRA_ERRNO::COMPILE_ERROR
+                }
+                librashader::runtime::d3d11::error::FilterChainError::ShaderPresetError(_) => {
+                    LIBRA_ERRNO::PRESET_ERROR
+                }
+                librashader::runtime::d3d11::error::FilterChainError::ShaderPreprocessError(_) => {
+                    LIBRA_ERRNO::PREPROCESS_ERROR
+                }
+                librashader::runtime::d3d11::error::FilterChainError::ShaderCompileError(_)
+                | librashader::runtime::d3d11::error::FilterChainError::ShaderReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::d3d11::error::FilterChainError::LutLoadError(_) => {
+                    LIBRA_ERRNO::LUT_LOAD_ERROR
+                }
+                _ => LIBRA_ERRNO::RUNTIME_ERROR,
+            },
+            #[cfg(all(target_os = "windows", feature = "runtime-d3d12"))]
+            LibrashaderError::D3D12FilterError(d3d) => match d3d {
+                librashader::runtime::d3d12::error::FilterChainError::Direct3DOperationError(_)
+                | librashader::runtime::d3d12::error::FilterChainError::Direct3DError(_) => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::d3d12::error::FilterChainError::ShaderPresetError(_) => {
+                    LIBRA_ERRNO::PRESET_ERROR
+                }
+                librashader::runtime::d3d12::error::FilterChainError::ShaderPreprocessError(_) => {
+                    LIBRA_ERRNO::PREPROCESS_ERROR
+                }
+                librashader::runtime::d3d12::error::FilterChainError::ShaderCompileError(_)
+                | librashader::runtime::d3d12::error::FilterChainError::ShaderReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::d3d12::error::FilterChainError::LutLoadError(_) => {
+                    LIBRA_ERRNO::LUT_LOAD_ERROR
+                }
+                librashader::runtime::d3d12::error::FilterChainError::HeapError(_)
+                | librashader::runtime::d3d12::error::FilterChainError::AllocationError(_)
+                | librashader::runtime::d3d12::error::FilterChainError::InvalidDimensionError(_) => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::d3d12::error::FilterChainError::Infallible(_) => {
+                    LIBRA_ERRNO::UNKNOWN_ERROR
+                }
+                _ => LIBRA_ERRNO::RUNTIME_ERROR,
+            },
+            #[cfg(all(target_os = "windows", feature = "runtime-d3d9"))]
+            LibrashaderError::D3D9FilterError(d3d) => match d3d {
+                librashader::runtime::d3d9::error::FilterChainError::Direct3DOperationError(_)
+                | librashader::runtime::d3d9::error::FilterChainError::Direct3DError(_) => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::d3d9::error::FilterChainError::ShaderPresetError(_) => {
+                    LIBRA_ERRNO::PRESET_ERROR
+                }
+                librashader::runtime::d3d9::error::FilterChainError::ShaderPreprocessError(_) => {
+                    LIBRA_ERRNO::PREPROCESS_ERROR
+                }
+                librashader::runtime::d3d9::error::FilterChainError::ShaderCompileError(_)
+                | librashader::runtime::d3d9::error::FilterChainError::ShaderReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::d3d9::error::FilterChainError::LutLoadError(_) => {
+                    LIBRA_ERRNO::LUT_LOAD_ERROR
+                }
+                librashader::runtime::d3d9::error::FilterChainError::UniformNameError(_) => {
+                    LIBRA_ERRNO::INVALID_STRING
+                }
+                _ => LIBRA_ERRNO::RUNTIME_ERROR,
+            },
+            #[cfg(feature = "runtime-vulkan")]
+            LibrashaderError::VulkanFilterError(vk) => match vk {
+                librashader::runtime::vk::error::FilterChainError::HandleIsNull => {
+                    LIBRA_ERRNO::INVALID_PARAMETER
+                }
+                librashader::runtime::vk::error::FilterChainError::ShaderPresetError(_) => {
+                    LIBRA_ERRNO::PRESET_ERROR
+                }
+                librashader::runtime::vk::error::FilterChainError::ShaderPreprocessError(_) => {
+                    LIBRA_ERRNO::PREPROCESS_ERROR
+                }
+                librashader::runtime::vk::error::FilterChainError::ShaderCompileError(_)
+                | librashader::runtime::vk::error::FilterChainError::ShaderReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::vk::error::FilterChainError::LutLoadError(_) => {
+                    LIBRA_ERRNO::LUT_LOAD_ERROR
+                }
+                librashader::runtime::vk::error::FilterChainError::VulkanResult(_)
+                | librashader::runtime::vk::error::FilterChainError::VulkanMemoryError(_)
+                | librashader::runtime::vk::error::FilterChainError::AllocationError(_)
+                | librashader::runtime::vk::error::FilterChainError::AllocationDoesNotExist => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::vk::error::FilterChainError::Infallible(_) => {
+                    LIBRA_ERRNO::UNKNOWN_ERROR
+                }
+                _ => LIBRA_ERRNO::RUNTIME_ERROR,
+            },
+            #[cfg(all(target_vendor = "apple", feature = "runtime-metal"))]
+            LibrashaderError::MetalFilterError(mtl) => match mtl {
+                librashader::runtime::mtl::error::FilterChainError::ShaderPresetError(_) => {
+                    LIBRA_ERRNO::PRESET_ERROR
+                }
+                librashader::runtime::mtl::error::FilterChainError::ShaderPreprocessError(_) => {
+                    LIBRA_ERRNO::PREPROCESS_ERROR
+                }
+                librashader::runtime::mtl::error::FilterChainError::ShaderCompileError(_)
+                | librashader::runtime::mtl::error::FilterChainError::ShaderReflectError(_) => {
+                    LIBRA_ERRNO::REFLECT_ERROR
+                }
+                librashader::runtime::mtl::error::FilterChainError::LutLoadError(_) => {
+                    LIBRA_ERRNO::LUT_LOAD_ERROR
+                }
+                librashader::runtime::mtl::error::FilterChainError::SamplerError(_, _, _)
+                | librashader::runtime::mtl::error::FilterChainError::BufferError
+                | librashader::runtime::mtl::error::FilterChainError::MetalError(_)
+                | librashader::runtime::mtl::error::FilterChainError::ShaderWrongEntryName
+                | librashader::runtime::mtl::error::FilterChainError::FailedToCreateRenderPass
+                | librashader::runtime::mtl::error::FilterChainError::FailedToCreateTexture
+                | librashader::runtime::mtl::error::FilterChainError::FailedToCreateCommandBuffer => {
+                    LIBRA_ERRNO::RUNTIME_ERROR
+                }
+                librashader::runtime::mtl::error::FilterChainError::Infallible(_) => {
+                    LIBRA_ERRNO::UNKNOWN_ERROR
+                }
+                _ => LIBRA_ERRNO::RUNTIME_ERROR,
+            },
+            LibrashaderError::Infallible(_) => LIBRA_ERRNO::UNKNOWN_ERROR,
+            _ => self.get_code(),
+        }
+    }
+
     pub(crate) const fn ok() -> libra_error_t {
         None
     }
