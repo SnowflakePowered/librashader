@@ -29,7 +29,6 @@ librashader-runtime-mtl = { path = "../librashader-runtime-mtl", version = "0.10
 librashader-runtime-wgpu = { path = "../librashader-runtime-wgpu", version = "0.10.1", optional = true }
 
 ash = { version = "0.38", optional = true }
-halfbrown = "0.2.4"
 
 wgpu = { workspace = true, default-features = false, optional = true }
 wgpu-types = {  workspace = true, optional = true }
@@ -77,7 +76,7 @@ runtime-metal = [ "runtime", "reflect-naga",  "reflect-cross", "librashader-comm
 # reflection
 reflect-cross = ["reflect", "librashader-reflect/cross"]
 reflect-dxil = ["reflect", "librashader-reflect/dxil"]
-reflect-naga = ["reflect", "librashader-reflect/naga"]
+reflect-naga = ["reflect", "librashader-reflect/naga", "librashader-reflect/naga-in"]
 
 runtime-all = ["runtime-gl", "runtime-d3d11", "runtime-d3d12", "runtime-vk", "runtime-wgpu", "runtime-metal"]
 reflect-all = ["reflect-cross", "reflect-dxil", "reflect-naga"]

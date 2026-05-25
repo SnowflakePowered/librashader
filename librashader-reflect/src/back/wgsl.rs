@@ -1,7 +1,7 @@
 use crate::back::targets::WGSL;
 use crate::back::{CompileReflectShader, CompilerBackend, FromCompilation};
 use crate::error::ShaderReflectError;
-use crate::front::{SpirvCompilation, WgslCompilation};
+use crate::front::SpirvCompilation;
 use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
 use naga::Module;
 
@@ -42,6 +42,9 @@ impl FromCompilation<SpirvCompilation, Naga> for WGSL {
         })
     }
 }
+
+#[cfg(feature = "naga-in")]
+use crate::front::WgslCompilation;
 
 #[cfg(all(feature = "nightly", feature = "naga-in"))]
 impl FromCompilation<WgslCompilation, Naga> for WGSL {

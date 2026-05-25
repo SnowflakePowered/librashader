@@ -5,7 +5,10 @@ use librashader_preprocess::ShaderSource;
 use crate::front::{ShaderInputCompiler, ShaderReflectObject, WgslCompilation};
 use crate::reflect::semantics::ShaderSemantics;
 
-/// glslang compiler
+/// Naga wgsl-in compiler.
+///
+/// Compiles from WGSL to Naga IR, mainly for
+/// use when using WGSL shader packs.
 pub struct NagaWgsl;
 
 impl ShaderReflectObject for WgslCompilation {

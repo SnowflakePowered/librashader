@@ -7,10 +7,14 @@ mod glslang;
 
 #[cfg(feature = "glslang-in")]
 pub use crate::front::glslang::Glslang;
+
 use crate::reflect::semantics::ShaderSemantics;
 
 #[cfg(feature = "naga-in")]
 mod naga;
+
+#[cfg(feature = "naga-in")]
+pub use crate::front::naga::NagaWgsl;
 
 /// The output of a shader compiler that is reflectable.
 pub trait ShaderReflectObject: Sized {
@@ -37,7 +41,7 @@ pub struct SpirvCompilation {
 
 /// A reflectable shader compilation via naga, where the input is WGSL, and not GLSL.
 ///
-/// This is only used for the
+/// This is only used for .wgsl.slangpacks when running in `wasm32-unknown-unknown`.
 #[derive(Debug, Clone)]
 #[cfg(feature = "naga-in")]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

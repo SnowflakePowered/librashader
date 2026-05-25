@@ -151,7 +151,7 @@ pub mod preprocess {
 ///
 /// ## What's with all the traits?
 /// librashader-reflect is designed to be compiler-agnostic. [naga](https://docs.rs/naga/latest/naga/index.html),
-/// a pure-Rust shader compiler, as well as SPIRV-Cross via [SpirvCompilation](crate::front::SpirvCompilation)
+/// a pure-Rust shader compiler, as well as SPIRV-Cross via [SpirvCompilation](crate::reflect::SpirvCompilation)
 /// is supported.
 pub mod reflect {
     /// Supported shader compiler targets.
@@ -223,6 +223,7 @@ pub mod reflect {
         pub use librashader_reflect::back::wgsl::NagaWgslContext;
         pub use librashader_reflect::reflect::naga::Naga;
         pub use librashader_reflect::reflect::naga::NagaLoweringOptions;
+        pub use librashader_reflect::front::WgslCompilation;
     }
 
     pub use librashader_reflect::reflect::semantics::BindingMeta;

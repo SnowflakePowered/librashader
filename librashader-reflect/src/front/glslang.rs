@@ -8,6 +8,8 @@ use crate::front::spirv_passes::{link_input_outputs, load_module};
 use crate::front::{ShaderInputCompiler, ShaderReflectObject, SpirvCompilation};
 
 /// glslang compiler
+///
+/// The most common path, to compile GLSL to SPIR-V.
 pub struct Glslang;
 
 impl ShaderReflectObject for SpirvCompilation {

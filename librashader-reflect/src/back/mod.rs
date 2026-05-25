@@ -8,6 +8,8 @@ pub mod hlsl;
 pub mod msl;
 pub mod spirv;
 pub mod targets;
+
+#[cfg(feature = "wgsl")]
 pub mod wgsl;
 
 use crate::back::targets::OutputTarget;
