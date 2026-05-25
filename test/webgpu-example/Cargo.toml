@@ -12,9 +12,9 @@ description = "Rotating triangle in a browser, with the crt-royale shader pack a
 crate-type = ["cdylib"]
 
 [dependencies]
-librashader-common = { path = "../../librashader-common", version = "0.10.1", features = ["wgpu"] }
-librashader-pack = { path = "../../librashader-pack", version = "0.10.1", default-features = false, features = ["serde"] }
-librashader-runtime-wgpu = { path = "../../librashader-runtime-wgpu", version = "0.10.1", default-features = false, features = ["wgsl_preset_pack", "wgpu_webgpu"] }
+librashader-common = { path = "../../librashader-common", version = "0.11.0", features = ["wgpu"] }
+librashader-pack = { path = "../../librashader-pack", version = "0.11.0", default-features = false, features = ["serde"] }
+librashader-runtime-wgpu = { path = "../../librashader-runtime-wgpu", version = "0.11.0", default-features = false, features = ["wgsl_preset_pack", "wgpu_webgpu"] }
 
 wgpu = { version = "29", default-features = false, features = ["wgsl", "webgpu"] }
 bytemuck = { version = "1.14", features = ["derive"] }
