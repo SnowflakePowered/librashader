@@ -17,6 +17,7 @@ pub use compilation::CachedCompilation;
 
 pub use cache::cache_pipeline;
 pub use cache::cache_shader_object;
+pub use cache::cache_shader_object_deferred;
 
 #[cfg(all(target_os = "windows", feature = "d3d"))]
 mod d3d;

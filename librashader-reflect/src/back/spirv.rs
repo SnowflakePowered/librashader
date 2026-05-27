@@ -49,7 +49,8 @@ mod cross {
         type Target = SPIRV;
         type Options = Option<()>;
         type Context = ();
-        type Output = Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross> + Send>;
+        type Output =
+            Box<dyn CompileReflectShader<Self::Target, SpirvCompilation, SpirvCross> + Send>;
 
         fn from_compilation(
             compile: SpirvCompilation,
@@ -115,8 +116,8 @@ pub(crate) use cross::*;
 #[cfg(feature = "naga")]
 mod naga {
     use super::*;
-    use ::naga::Module;
     use crate::reflect::naga::{Naga, NagaLoweringOptions, NagaReflect};
+    use ::naga::Module;
 
     /// The context for a SPIRV compilation via Naga
     pub struct NagaSpirvContext {
