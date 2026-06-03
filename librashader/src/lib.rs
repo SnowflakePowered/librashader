@@ -221,9 +221,9 @@ pub mod reflect {
     #[cfg_attr(feature = "docsrs", doc(cfg(feature = "reflect-naga")))]
     pub mod naga {
         pub use librashader_reflect::back::wgsl::NagaWgslContext;
+        pub use librashader_reflect::front::WgslCompilation;
         pub use librashader_reflect::reflect::naga::Naga;
         pub use librashader_reflect::reflect::naga::NagaLoweringOptions;
-        pub use librashader_reflect::front::WgslCompilation;
     }
 
     pub use librashader_reflect::reflect::semantics::BindingMeta;

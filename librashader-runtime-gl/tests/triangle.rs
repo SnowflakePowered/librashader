@@ -47,6 +47,7 @@ fn triangle_gl_hdr() {
                 use_dsa: false,
                 force_no_mipmaps: false,
                 disable_cache: true,
+                save_gl_state: false,
             }),
         )
     }

@@ -21,16 +21,18 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 /// - API version 2: 0.6.0
 ///     - Added original aspect uniforms
 ///     - Added frame time uniforms
-/// - API version 3: 0.10.0
+/// - API version 3: 0.11.0
 ///     - Added frames_in_flight to Direct3D 12 filter chain options
-/// - API version 4: 0.10.x
+/// - API version 4: 0.11.x
 ///     - Added support for HDR uniforms. Filter chain can set `color_space` to
 ///       enable HDR, and frame options should be passed in brightness_nits, expand_gamut
 ///     - Added libra_preset_color_space to query the preferred HDR color space (if any) of
 ///       a shader preset.
-/// - API version 5: 0.10.x
+/// - API version 5: 0.11.x
 ///     - Added sensor uniform inputs
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 5;
+/// - API version 6: 0.12.x
+///     - Added `save_gl_state` for OpenGL to do a full state save.
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 6;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.

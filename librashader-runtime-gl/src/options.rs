@@ -16,4 +16,11 @@ pub struct FilterChainOptionsGL {
     pub force_no_mipmaps: bool,
     /// Disable the shader object cache. Shaders will be recompiled rather than loaded from the cache.
     pub disable_cache: bool,
+    /// Do a full state GL save and restore before rendering. This defaults to false, but
+    /// should be enabled if the host application is sensitive to GL state.
+    ///
+    /// Even if this setting is false, `SCISSOR_TEST`, `CULL_FACE`, `BLEND`,
+    /// `DEPTH_TEST`, and `STENCIL_TEST` will be disabled during the duration of
+    /// the call to `frame` and restored after `frame` returns.
+    pub save_gl_state: bool,
 }

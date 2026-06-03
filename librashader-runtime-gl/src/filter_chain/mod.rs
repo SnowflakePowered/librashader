@@ -12,7 +12,7 @@ mod chain;
 mod inner;
 mod parameters;
 
-pub(crate) use chain::FilterCommon;
+pub(crate) use chain::{FilterCommon, GLCaps};
 use librashader_common::Viewport;
 use librashader_pack::ShaderPresetPack;
 use librashader_presets::context::VideoDriver;

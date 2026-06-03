@@ -1,6 +1,7 @@
 use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::{FilterPass, UniformOffset};
+use crate::gl::state::{EnterFixedFunctionState, StateBackup};
 use crate::gl::{
     CompileProgram, DrawQuad, FramebufferInterface, GLFramebuffer, GLInterface, LoadLut,
     OutputFramebuffer, UboRing,
@@ -44,10 +45,17 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     render_target: OutputFramebuffer,
     default_options: FrameOptionsGL,
     draw_last_pass_feedback: bool,
+    max_texture_units: u32,
 }
 
+#[derive(Copy, Clone)]
 pub(crate) struct GLCaps {
     pub framebuffer_srgb: bool,
+    pub sampler: bool,
+    pub vertex_array: bool,
+    pub polygon_mode: bool,
+    pub primitive_restart: bool,
+    pub separate_framebuffer: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -60,6 +68,7 @@ pub(crate) struct FilterCommon {
     pub history_textures: Box<[InputTexture]>,
     pub disable_mipmaps: bool,
     pub caps: GLCaps,
+    pub save_state: bool,
     pub context: Arc<glow::Context>,
 }
 
@@ -156,11 +165,24 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // initialize passes
         let filters = Self::init_passes(&context, version, passes, &semantics, disable_cache)?;
 
+        // The highest texture binding across all passes determines how many texture
+        // image units the chain may clobber and therefore need to save/restore.
+        let texture_units = filters
+            .iter()
+            .flat_map(|f| f.reflection.meta.texture_meta.values())
+            .map(|binding| binding.binding)
+            .max()
+            .map_or(0, |max| max + 1);
+
         let default_filter = filters.first().map(|f| f.meta.filter).unwrap_or_default();
         let default_wrap = filters
             .first()
             .map(|f| f.meta.wrap_mode)
             .unwrap_or_default();
+
+        fn version_at_least(version: &glow::Version, major: u32, minor: u32) -> bool {
+            version.major > major || (version.major == major && version.minor >= minor)
+        }
 
         let gl_version = context.version();
         let extensions = context.supported_extensions();
@@ -170,6 +192,15 @@ impl<T: GLInterface> FilterChainImpl<T> {
             } else {
                 extensions.contains("GL_EXT_sRGB_write_control")
             },
+            sampler: if gl_version.is_embedded {
+                version_at_least(gl_version, 3, 0)
+            } else {
+                version_at_least(gl_version, 3, 3)
+            },
+            vertex_array: version_at_least(gl_version, 3, 0),
+            polygon_mode: !gl_version.is_embedded,
+            primitive_restart: !gl_version.is_embedded && version_at_least(gl_version, 3, 1),
+            separate_framebuffer: version_at_least(gl_version, 3, 0),
         };
 
         let samplers = SamplerSet::new(&context)?;
@@ -222,10 +253,12 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 feedback_textures,
                 history_textures,
                 caps,
+                save_state: options.map_or(false, |o| o.save_gl_state),
                 context,
             },
             default_options: Default::default(),
             render_target: output,
+            max_texture_units: texture_units,
         })
     }
 
@@ -307,6 +340,21 @@ impl<T: GLInterface> FilterChainImpl<T> {
         input: &GLImage,
         options: Option<&FrameOptionsGL>,
     ) -> error::Result<()> {
+        let state_gl = Arc::clone(&self.common.context);
+
+        // Flags guard
+        let flags = EnterFixedFunctionState::new(&state_gl, &self.common.caps);
+
+        let mut state_save = None;
+        if self.common.save_state {
+            state_save = Some(StateBackup::new(
+                &state_gl,
+                self.common.caps,
+                glow::TEXTURE0,
+                self.max_texture_units,
+            ))
+        }
+
         // limit number of passes to those enabled.
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         let passes = &mut self.passes[0..max];
@@ -322,6 +370,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if passes.is_empty() {
             return Ok(());
         }
+
         let options = options.unwrap_or(&self.default_options);
 
         // do not need to rebind FBO 0 here since first `draw` will
@@ -466,6 +515,9 @@ impl<T: GLInterface> FilterChainImpl<T> {
         self.push_history(input)?;
 
         self.draw_quad.unbind_vertices(&self.common.context);
+
+        drop(flags);
+        drop(state_save);
 
         Ok(())
     }
