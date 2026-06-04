@@ -24,6 +24,8 @@ use windows::core::Interface;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
     ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4, D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    D3D12_RENDER_PASS_BEGINNING_ACCESS_0, D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS,
+    D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0,
     D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR, D3D12_RENDER_PASS_ENDING_ACCESS,
     D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE, D3D12_RENDER_PASS_FLAG_NONE,
     D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT,
@@ -206,12 +208,25 @@ impl FilterPass {
         // todo: check for non-renderpass.
 
         let cmd = cmd.cast::<ID3D12GraphicsCommandList4>()?;
+
+        // Define the clear color
+        let clear_value = D3D12_CLEAR_VALUE {
+            Format: output.output.format,
+            Anonymous: D3D12_CLEAR_VALUE_0 {
+                Color: [0.0, 0.0, 0.0, 1.0],
+            },
+        };
+
         unsafe {
             let pass = [D3D12_RENDER_PASS_RENDER_TARGET_DESC {
                 cpuDescriptor: *output.output.descriptor.as_ref(),
                 BeginningAccess: D3D12_RENDER_PASS_BEGINNING_ACCESS {
                     Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR,
-                    ..Default::default()
+                    Anonymous: D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
+                        Clear: D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+                            ClearValue: clear_value,
+                        },
+                    },
                 },
                 EndingAccess: D3D12_RENDER_PASS_ENDING_ACCESS {
                     Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
@@ -219,6 +234,8 @@ impl FilterPass {
                 },
             }];
 
+            // This isn't compatible with TYPE_DISCARD and shouldn't be used
+            // May work with PRESERVED, but for optimized clear use param above
             /*
             cmd.ClearRenderTargetView(
                 *output.output.descriptor.as_ref(),
