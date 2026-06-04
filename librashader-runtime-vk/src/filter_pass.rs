@@ -190,9 +190,18 @@ impl FilterPass {
                 }],
             );
 
+            let viewport = vk::Viewport {
+                x: output.x as f32,
+                y: output.y as f32,
+                width: output.size.width as f32,
+                height: output.size.height as f32,
+                min_depth: 0.0,
+                max_depth: 1.0,
+            };
+
             parent
                 .device
-                .cmd_set_viewport(cmd, 0, &[output.size.into()]);
+                .cmd_set_viewport(cmd, 0, &[viewport]);
             parent.draw_quad.draw_quad(&parent.device, cmd, vbo_type);
             self.graphics_pipeline.end_rendering(cmd);
         }
