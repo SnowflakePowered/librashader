@@ -209,7 +209,7 @@ impl FilterPass {
 
         let cmd = cmd.cast::<ID3D12GraphicsCommandList4>()?;
 
-        // Define the clear color
+        // Define the clear color here instead of ClearRenderTargetView
         let clear_value = D3D12_CLEAR_VALUE {
             Format: output.output.format,
             Anonymous: D3D12_CLEAR_VALUE_0 {
@@ -233,17 +233,7 @@ impl FilterPass {
                     Anonymous: Default::default(),
                 },
             }];
-
-            // This isn't compatible with TYPE_DISCARD and shouldn't be used
-            // May work with PRESERVED, but for optimized clear use param above
-            /*
-            cmd.ClearRenderTargetView(
-                *output.output.descriptor.as_ref(),
-                &[0.0, 0.0, 0.0, 0.0],
-                None,
-            );
-            */
-
+            
             cmd.BeginRenderPass(Some(&pass), None, D3D12_RENDER_PASS_FLAG_NONE)
         }
 
