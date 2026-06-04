@@ -1,6 +1,7 @@
 use crate::binding::{GlUniformStorage, UniformLocation, VariableLocation};
 use crate::error::FilterChainError;
 use crate::filter_pass::{FilterPass, UniformOffset};
+use crate::gl::state::EnterFixedFunctionState;
 use crate::gl::{
     CompileProgram, DrawQuad, FramebufferInterface, GLFramebuffer, GLInterface, LoadLut,
     OutputFramebuffer, UboRing,
@@ -46,8 +47,10 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     draw_last_pass_feedback: bool,
 }
 
+#[derive(Copy, Clone)]
 pub(crate) struct GLCaps {
     pub framebuffer_srgb: bool,
+    pub primitive_restart: bool,
 }
 
 pub(crate) struct FilterCommon {
@@ -162,6 +165,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
             .map(|f| f.meta.wrap_mode)
             .unwrap_or_default();
 
+        fn version_at_least(version: &glow::Version, major: u32, minor: u32) -> bool {
+            version.major > major || (version.major == major && version.minor >= minor)
+        }
+
         let gl_version = context.version();
         let extensions = context.supported_extensions();
         let caps = GLCaps {
@@ -170,6 +177,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
             } else {
                 extensions.contains("GL_EXT_sRGB_write_control")
             },
+            primitive_restart: !gl_version.is_embedded && version_at_least(gl_version, 3, 1),
         };
 
         let samplers = SamplerSet::new(&context)?;
@@ -307,6 +315,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
         input: &GLImage,
         options: Option<&FrameOptionsGL>,
     ) -> error::Result<()> {
+        let state_gl = Arc::clone(&self.common.context);
+        // Flags guard
+        let flags = EnterFixedFunctionState::new(&state_gl, &self.common.caps);
+
         // limit number of passes to those enabled.
         let max = std::cmp::min(self.passes.len(), self.common.config.passes_enabled());
         let passes = &mut self.passes[0..max];
@@ -322,6 +334,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
         if passes.is_empty() {
             return Ok(());
         }
+
         let options = options.unwrap_or(&self.default_options);
 
         // do not need to rebind FBO 0 here since first `draw` will
@@ -466,6 +479,8 @@ impl<T: GLInterface> FilterChainImpl<T> {
         self.push_history(input)?;
 
         self.draw_quad.unbind_vertices(&self.common.context);
+
+        drop(flags);
 
         Ok(())
     }

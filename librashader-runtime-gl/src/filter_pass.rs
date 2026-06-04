@@ -150,10 +150,6 @@ impl<T: GLInterface> FilterPass<T> {
                 }
             }
 
-            parent.context.disable(glow::CULL_FACE);
-            parent.context.disable(glow::BLEND);
-            parent.context.disable(glow::DEPTH_TEST);
-
             parent.context.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
             if parent.caps.framebuffer_srgb {
                 parent.context.disable(glow::FRAMEBUFFER_SRGB);

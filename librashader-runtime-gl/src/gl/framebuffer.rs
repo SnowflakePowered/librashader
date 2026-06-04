@@ -123,13 +123,7 @@ impl OutputFramebuffer {
             "Somehow an internal image got into the renderbuffer!"
         );
 
-        if framebuffer.image == texture && framebuffer.size == size && framebuffer.format == format
-        {
-            // Problem Case #3 :cry:
-            return Ok(self.framebuffer.as_ref().unwrap());
-        };
-
-        // Replace with a new framebuffer.
+        // The host can do anything to the input GL image so we can't cache the FBO.
         let new = T::new_raw(&self.ctx, texture, size, format, 1)?;
         std::mem::swap(&mut self.framebuffer, &mut Some(new));
         Ok(self.framebuffer.as_ref().unwrap())

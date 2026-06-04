@@ -1,6 +1,7 @@
 mod framebuffer;
 pub(crate) mod gl3;
 pub(crate) mod gl46;
+pub(crate) mod state;
 
 use crate::binding::UniformLocation;
 use crate::error::Result;
