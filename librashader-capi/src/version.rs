@@ -30,9 +30,7 @@ pub type LIBRASHADER_ABI_VERSION = usize;
 ///       a shader preset.
 /// - API version 5: 0.11.x
 ///     - Added sensor uniform inputs
-/// - API version 6: 0.12.x
-///     - Added `save_gl_state` for OpenGL to do a full state save.
-pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 6;
+pub const LIBRASHADER_CURRENT_VERSION: LIBRASHADER_API_VERSION = 5;
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.

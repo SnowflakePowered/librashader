@@ -281,13 +281,6 @@ typedef struct filter_chain_gl_opt_t {
   /// Disable the shader object cache. Shaders will be
   /// recompiled rather than loaded from the cache.
   bool disable_cache;
-  /// Do a full state GL save and restore before rendering. This defaults to false, but
-  /// should be enabled if the host application is sensitive to GL state.
-  ///
-  /// Even if this setting is false, `SCISSOR_TEST`, `CULL_FACE`, `BLEND`,
-  /// `DEPTH_TEST`, and `STENCIL_TEST` will be disabled during the duration of
-  /// the call to `frame` and restored after `frame` returns.
-  bool save_gl_state;
 } filter_chain_gl_opt_t;
 #endif
 
@@ -1353,9 +1346,7 @@ typedef libra_error_t (*PFN_libra_mtl_filter_chain_free)(libra_mtl_filter_chain_
 ///       a shader preset.
 /// - API version 5: 0.11.0
 ///     - Added sensor uniform inputs
-/// - API version 6: 0.12.x
-///     - Added `save_gl_state` for OpenGL to do a full state save.
-#define LIBRASHADER_CURRENT_VERSION 6
+#define LIBRASHADER_CURRENT_VERSION 5
 
 /// The current version of the librashader ABI.
 /// Used by the loader to check ABI compatibility.
