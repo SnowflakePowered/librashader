@@ -190,6 +190,66 @@ where
     })
 }
 
+/// Cache a shader object (usually bytecode) created by the keyed objects, deferring the load step.
+///
+/// This behaves like [`cache_shader_object`], except that `load` is not executed immediately.
+/// Instead, the compiled (or cached) shader object is curried into the returned closure, which can
+/// be invoked later to produce the driver-specialized result. This allows shader objects to be
+/// compiled in parallel via `factory`, then have their driver resources created sequentially by the
+/// returned closures, for drivers whose object creation is not safe to call concurrently.
+///
+/// Because `load` is deferred, a cached shader object can not be validated by `load` at fetch time:
+/// unlike [`cache_shader_object`], a cached object that fails to load will not be transparently
+/// recompiled.
+pub fn cache_shader_object_deferred<'a, E, T, R, H, const KEY_SIZE: usize>(
+    index: &str,
+    keys: &[H; KEY_SIZE],
+    factory: impl Fn(&[H; KEY_SIZE]) -> Result<T, E> + std::panic::RefUnwindSafe,
+    load: impl FnOnce(T) -> Result<R, E> + Send + 'a,
+    bypass_cache: bool,
+) -> Result<Box<dyn FnOnce() -> Result<R, E> + Send + 'a>, E>
+where
+    H: CacheKey + std::panic::RefUnwindSafe,
+    T: Cacheable + Send + 'a,
+{
+    let object = if bypass_cache {
+        factory(keys)
+    } else {
+        catch_unwind(|| {
+            let Ok(cache) = internal::get_cache() else {
+                return factory(keys);
+            };
+
+            let hashkey = {
+                let mut hasher = blake3::Hasher::new();
+                for subkeys in keys {
+                    hasher.update(subkeys.hash_bytes());
+                }
+                hasher.finalize()
+            };
+
+            if let Ok(Some(blob)) = internal::get_blob(&cache, index, hashkey.as_bytes()) {
+                if let Some(cached) = T::from_bytes(&blob) {
+                    return Ok(cached);
+                }
+            }
+
+            let blob = factory(keys)?;
+
+            if let Some(slice) = T::to_bytes(&blob) {
+                let _ = internal::set_blob(&cache, index, hashkey.as_bytes(), &slice);
+            }
+            Ok(blob)
+        })
+        .unwrap_or_else(|_| {
+            internal::remove_cache();
+            factory(keys)
+        })
+    }?;
+
+    Ok(Box::new(move || load(object)))
+}
+
 /// Cache a pipeline state object.
 ///
 /// Keys are not used to create the object and are only used to uniquely identify the pipeline state.
