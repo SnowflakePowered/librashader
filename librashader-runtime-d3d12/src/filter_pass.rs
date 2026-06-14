@@ -23,9 +23,9 @@ use librashader_runtime::uniforms::{NoUniformBinder, UniformStorage};
 use windows::core::Interface;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4, D3D12_RENDER_PASS_BEGINNING_ACCESS,
-    D3D12_RENDER_PASS_BEGINNING_ACCESS_0, D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS,
-    D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0,
+    ID3D12GraphicsCommandList, ID3D12GraphicsCommandList4, D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0,
+    D3D12_RENDER_PASS_BEGINNING_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_0,
+    D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS,
     D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR, D3D12_RENDER_PASS_ENDING_ACCESS,
     D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE, D3D12_RENDER_PASS_FLAG_NONE,
     D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_VIEWPORT,
@@ -233,7 +233,7 @@ impl FilterPass {
                     Anonymous: Default::default(),
                 },
             }];
-            
+
             cmd.BeginRenderPass(Some(&pass), None, D3D12_RENDER_PASS_FLAG_NONE)
         }
 
