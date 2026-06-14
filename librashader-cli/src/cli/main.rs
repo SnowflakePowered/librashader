@@ -7,7 +7,7 @@ use librashader::reflect::cross::{GlslVersion, HlslShaderModel, MslVersion, Spir
 use librashader::reflect::naga::{Naga, NagaLoweringOptions};
 use librashader::reflect::semantics::ShaderSemantics;
 use librashader::reflect::{CompileShader, FromCompilation, ReflectShader, SpirvCompilation};
-use librashader::runtime::Size;
+use librashader::runtime::{ColorSpace, Size};
 use librashader::{FastHashMap, ShortString};
 use librashader_runtime::parameters::RuntimeParameters;
 use librashader_test::render::{CommonFrameOptions, RenderTest};
@@ -88,9 +88,30 @@ impl From<FrameOptionsArgs> for CommonFrameOptions {
             aspect_ratio: value.aspect_ratio.unwrap_or(0.0),
             frametime_delta: value.frametime_delta.unwrap_or(0),
             frames_per_second: value.frames_per_second.unwrap_or(1.0),
+            color_space: value.color_space.into(),
+            brightness_nits: value.brightness_nits.unwrap_or(200.0),
+            expand_gamut: value.expand_gamut.unwrap_or(0),
+            gyroscope: value.gyroscope.map(vec3_from_args).unwrap_or([0.0; 3]),
+            accelerometer: value.accelerometer.map(vec3_from_args).unwrap_or([0.0; 3]),
+            accelerometer_rest: value
+                .accelerometer_rest
+                .map(vec3_from_args)
+                .unwrap_or([0.0; 3]),
             ..Default::default()
         }
     }
+}
+
+/// Collapse a `num_args = 3` value list into a fixed `[f32; 3]`.
+///
+/// clap guarantees exactly three values are present, so any missing
+/// component falls back to 0.
+fn vec3_from_args(values: Vec<f32>) -> [f32; 3] {
+    [
+        values.first().copied().unwrap_or(0.0),
+        values.get(1).copied().unwrap_or(0.0),
+        values.get(2).copied().unwrap_or(0.0),
+    ]
 }
 
 impl From<ShaderFeatureArgs> for ShaderFeatures {
@@ -134,6 +155,50 @@ struct FrameOptionsArgs {
     /// The time between the previous and current frame. The default is 0.
     #[arg(long)]
     pub frametime_delta: Option<u32>,
+    /// The target color space for HDR shaders. The default is `sdr`.
+    #[arg(long, value_enum, default_value_t = ColorSpaceArg::Sdr)]
+    pub color_space: ColorSpaceArg,
+    /// The HDR SDR reference white in nits. The default is 200.
+    #[arg(long)]
+    pub brightness_nits: Option<f32>,
+    /// The gamut expansion mode for HDR shaders. The default is 0.
+    #[arg(long)]
+    pub expand_gamut: Option<u32>,
+    /// The three-axis gyroscope reading for shaders that use gyroscope data.
+    /// The default is 0 0 0.
+    #[arg(long, num_args = 3, value_names = ["X", "Y", "Z"])]
+    pub gyroscope: Option<Vec<f32>>,
+    /// The three-axis accelerometer reading for shaders that use accelerometer data.
+    /// The default is 0 0 0.
+    #[arg(long, num_args = 3, value_names = ["X", "Y", "Z"])]
+    pub accelerometer: Option<Vec<f32>>,
+    /// The accelerometer reading at for shaders that use accelerometer data.
+    /// The default is 0 0 0.
+    #[arg(long, num_args = 3, value_names = ["X", "Y", "Z"])]
+    pub accelerometer_rest: Option<Vec<f32>>,
+}
+
+#[derive(clap::ValueEnum, Clone, Copy, Debug)]
+enum ColorSpaceArg {
+    #[clap(name = "sdr")]
+    Sdr,
+    #[clap(name = "hdr10")]
+    Hdr10,
+    #[clap(name = "scrgb")]
+    ScRgb,
+    #[clap(name = "pq-scrgb")]
+    PqScRgb,
+}
+
+impl From<ColorSpaceArg> for ColorSpace {
+    fn from(value: ColorSpaceArg) -> Self {
+        match value {
+            ColorSpaceArg::Sdr => ColorSpace::Sdr,
+            ColorSpaceArg::Hdr10 => ColorSpace::Hdr10,
+            ColorSpaceArg::ScRgb => ColorSpace::ScRgb,
+            ColorSpaceArg::PqScRgb => ColorSpace::PqScRgb,
+        }
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -421,6 +486,14 @@ pub fn main() -> Result<(), anyhow::Error> {
                 features |= ShaderFeatures::FRAMETIME_UNIFORMS;
             }
 
+            if options.as_ref().is_some_and(|args| {
+                args.gyroscope.is_some()
+                    || args.accelerometer.is_some()
+                    || args.accelerometer_rest.is_some()
+            }) {
+                features |= ShaderFeatures::SENSOR_UNIFORMS;
+            }
+
             let preset = get_shader_preset(preset, wildcards, features)?;
             let params = parse_params(params)?;
 
@@ -475,6 +548,14 @@ pub fn main() -> Result<(), anyhow::Error> {
                     .is_some_and(|args| args.frametime_delta.is_some())
             {
                 features |= ShaderFeatures::FRAMETIME_UNIFORMS;
+            }
+
+            if options.as_ref().is_some_and(|args| {
+                args.gyroscope.is_some()
+                    || args.accelerometer.is_some()
+                    || args.accelerometer_rest.is_some()
+            }) {
+                features |= ShaderFeatures::SENSOR_UNIFORMS;
             }
 
             let dimensions = parse_dimension(dimensions, left.image_size())?;
