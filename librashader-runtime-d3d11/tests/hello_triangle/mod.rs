@@ -612,6 +612,7 @@ pub mod d3d11_hello_triangle {
                     .Present(0, DXGI_PRESENT::default())
                     .ok()?;
             }
+
             resources.frame_count += 1;
             Ok(())
         }

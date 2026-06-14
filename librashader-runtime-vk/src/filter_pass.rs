@@ -199,9 +199,7 @@ impl FilterPass {
                 max_depth: 1.0,
             };
 
-            parent
-                .device
-                .cmd_set_viewport(cmd, 0, &[viewport]);
+            parent.device.cmd_set_viewport(cmd, 0, &[viewport]);
             parent.draw_quad.draw_quad(&parent.device, cmd, vbo_type);
             self.graphics_pipeline.end_rendering(cmd);
         }

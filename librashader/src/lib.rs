@@ -66,6 +66,7 @@ pub use librashader_common::map::ShortString;
 /// to the preset file. The handful of shaders that fail to parse due to this or other reasons are
 /// listed at [`BROKEN_SHADERS.md`](https://github.com/SnowflakePowered/librashader/blob/master/BROKEN_SHADERS.md).
 pub mod presets {
+    use librashader_common::map::{FastHashMap, ShortString};
     use librashader_preprocess::{PreprocessError, ShaderParameter, ShaderSource};
     pub use librashader_presets::*;
 
@@ -75,16 +76,32 @@ pub mod presets {
     pub fn get_parameter_meta(
         preset: &ShaderPreset,
     ) -> Result<impl Iterator<Item = ShaderParameter>, PreprocessError> {
-        let iters: Result<Vec<Vec<ShaderParameter>>, PreprocessError> = preset
-            .passes
-            .iter()
-            .map(|s| {
-                ShaderSource::load(&s.path, preset.features)
-                    .map(|s| s.parameters.into_iter().map(|(_, v)| v).collect())
-            })
-            .collect();
-        let iters = iters?;
-        Ok(iters.into_iter().flatten())
+        let mut map: FastHashMap<ShortString, ShaderParameter> = FastHashMap::default();
+        for pass in &preset.passes {
+            let source = ShaderSource::load(&pass.path, preset.features)?;
+            for (key, value) in source.parameters {
+                map.insert(key, value);
+            }
+        }
+        Ok(map.into_iter().map(|(_, v)| v))
+    }
+
+    #[cfg(test)]
+    mod test {
+        use librashader_common::shader_features::ShaderFeatures;
+        use librashader_presets::ShaderPreset;
+
+        #[test]
+        pub fn get_param_meta_dedupes_params() {
+            const FILTER_PATH: &str = "../test/shaders_slang/crt/crt-royale.slangp";
+
+            let preset = ShaderPreset::try_parse(FILTER_PATH, ShaderFeatures::NONE)
+                .expect("Failed to parse shaders slang crt");
+            let meta = super::get_parameter_meta(&preset)
+                .expect("Failed to parse parameters slang crt")
+                .collect::<Vec<_>>();
+            assert_eq!(meta.len(), 46);
+        }
     }
 }
 

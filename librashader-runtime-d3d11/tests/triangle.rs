@@ -1,6 +1,7 @@
 mod hello_triangle;
 
 use librashader_runtime::image::{Image, UVDirection};
+use librashader_runtime::parameters::FilterChainParameters;
 use librashader_runtime_d3d11::options::FilterChainOptionsD3D11;
 use librashader_runtime_d3d11::FilterChainD3D11;
 
@@ -109,7 +110,7 @@ fn triangle_d3d11_hdr() {
 #[test]
 fn triangle_d3d11() {
     let sample = hello_triangle::d3d11_hello_triangle::Sample::new(
-        "../test/shaders_slang/bezel/Mega_Bezel/Presets/MBZ__0__SMOOTH-ADV.slangp",
+        FILTER_PATH,
         Some(&FilterChainOptionsD3D11 {
             force_no_mipmaps: false,
             disable_cache: false,
@@ -129,6 +130,7 @@ fn triangle_d3d11() {
     // .unwrap();
 
     // let sample = hello_triangle_old::d3d11_hello_triangle::Sample::new("../test/basic.slangp").unwrap();
+    println!("{:?}", sample.filter.parameters().parameters());
 
     hello_triangle::main(sample).unwrap();
 }
