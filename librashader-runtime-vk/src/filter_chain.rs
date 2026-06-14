@@ -588,7 +588,7 @@ impl FilterChainVulkan {
                 // old back will get dropped.. do we need to defer?
                 let old_back = std::mem::replace(
                     &mut back,
-                    OwnedImage::new(&self.vulkan, input.size, input.format.into(), 1)?,
+                    OwnedImage::with_format(&self.vulkan, input.size, input.format, 1)?,
                 );
                 self.residuals[self.common.internal_frame_count % self.residuals.len()]
                     .dispose_owned(old_back);
