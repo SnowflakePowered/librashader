@@ -117,6 +117,33 @@ impl RenderTest for Vulkan {
                 )?
             };
 
+            let options = frame_options.map(|options| FrameOptions {
+                clear_history: options.clear_history,
+                frame_direction: options.frame_direction,
+                rotation: options.rotation,
+                total_subframes: options.total_subframes,
+                current_subframe: options.current_subframe,
+                aspect_ratio: options.aspect_ratio,
+                frametime_delta: options.frametime_delta,
+                frames_per_second: options.frames_per_second,
+                ..Default::default()
+            });
+
+            let viewport = Viewport::new_render_target_sized_origin(
+                VulkanImage {
+                    image: render_texture,
+                    size: self.image_bytes.size.into(),
+                    format: vk::Format::B8G8R8A8_UNORM,
+                },
+                None,
+            )?;
+
+            let input = VulkanImage {
+                image: self.image,
+                size: self.image_bytes.size,
+                format: vk::Format::B8G8R8A8_UNORM,
+            };
+
             self.vk.queue_work(|cmd| {
                 util::vulkan_image_layout_transition_levels(
                     &self.vk.device(),
@@ -147,58 +174,30 @@ impl RenderTest for Vulkan {
                     vk::QUEUE_FAMILY_IGNORED,
                     vk::QUEUE_FAMILY_IGNORED,
                 );
+            })?;
+            
+            for frame in 0..=frame_count {
+                self.vk.queue_work(|cmd| {
+                    filter_chain.frame(&input, &viewport, cmd, frame, options.as_ref())?;
+                    Ok::<_, anyhow::Error>(())
+                })??;
+            }
 
-                let options = frame_options.map(|options| FrameOptions {
-                    clear_history: options.clear_history,
-                    frame_direction: options.frame_direction,
-                    rotation: options.rotation,
-                    total_subframes: options.total_subframes,
-                    current_subframe: options.current_subframe,
-                    aspect_ratio: options.aspect_ratio,
-                    frametime_delta: options.frametime_delta,
-                    frames_per_second: options.frames_per_second,
-                    ..Default::default()
-                });
-
-                let viewport = Viewport::new_render_target_sized_origin(
-                    VulkanImage {
-                        image: render_texture,
-                        size: self.image_bytes.size.into(),
-                        format: vk::Format::B8G8R8A8_UNORM,
-                    },
-                    None,
-                )?;
-
-                for frame in 0..=frame_count {
-                    filter_chain.frame(
-                        &VulkanImage {
-                            image: self.image,
-                            size: self.image_bytes.size,
-                            format: vk::Format::B8G8R8A8_UNORM,
-                        },
-                        &viewport,
-                        cmd,
-                        frame,
-                        options.as_ref(),
-                    )?;
-                }
-
-                {
-                    util::vulkan_image_layout_transition_levels(
-                        &self.vk.device(),
-                        cmd,
-                        render_texture,
-                        vk::REMAINING_MIP_LEVELS,
-                        vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                        vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                        vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
-                        vk::AccessFlags::TRANSFER_READ,
-                        vk::PipelineStageFlags::ALL_GRAPHICS,
-                        vk::PipelineStageFlags::TRANSFER,
-                        vk::QUEUE_FAMILY_IGNORED,
-                        vk::QUEUE_FAMILY_IGNORED,
-                    )
-                }
+            self.vk.queue_work(|cmd| {
+                util::vulkan_image_layout_transition_levels(
+                    &self.vk.device(),
+                    cmd,
+                    render_texture,
+                    vk::REMAINING_MIP_LEVELS,
+                    vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                    vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+                    vk::AccessFlags::TRANSFER_READ,
+                    vk::PipelineStageFlags::ALL_GRAPHICS,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::QUEUE_FAMILY_IGNORED,
+                    vk::QUEUE_FAMILY_IGNORED,
+                );
 
                 let offsets = [
                     vk::Offset3D { x: 0, y: 0, z: 0 },
@@ -247,12 +246,23 @@ impl RenderTest for Vulkan {
             );
             memory = &mut memory[layout.offset as usize..];
 
-            // let mut pixels = Vec::with_capacity(layout.size as usize);
+            // The linear transfer image may have a row pitch larger than the
+            // tightly-packed row size, so repack row-by-row to drop the padding.
+            let width = self.image_bytes.size.width as usize;
+            let height = self.image_bytes.size.height as usize;
+            let row_bytes = width * 4;
+            let row_pitch = layout.row_pitch as usize;
+
+            let mut pixels = Vec::with_capacity(row_bytes * height);
+            for row in 0..height {
+                let start = row * row_pitch;
+                pixels.extend_from_slice(&memory[start..start + row_bytes]);
+            }
 
             let image = RgbaImage::from_raw(
                 self.image_bytes.size.width,
                 self.image_bytes.size.height,
-                Vec::from(memory),
+                pixels,
             )
             .ok_or(anyhow!("failed to create image from slice"));
 
