@@ -35,16 +35,16 @@ impl OwnedImage {
         device: Arc<ash::Device>,
         alloc: &Arc<Mutex<Allocator>>,
         size: Size<u32>,
-        mut format: ImageFormat,
+        mut format: vk::Format,
         max_miplevels: u32,
     ) -> error::Result<OwnedImage> {
         // default to something sane
-        if format == ImageFormat::Unknown {
-            format = ImageFormat::R8G8B8A8Unorm
+        if format == vk::Format::UNDEFINED {
+            format = vk::Format::R8G8B8A8_UNORM
         }
         let image_create_info = vk::ImageCreateInfo::default()
             .image_type(vk::ImageType::TYPE_2D)
-            .format(format.into())
+            .format(format)
             .extent(size.into())
             .mip_levels(std::cmp::min(max_miplevels, size.calculate_miplevels()))
             .array_layers(1)
@@ -79,7 +79,7 @@ impl OwnedImage {
 
         let view_info = vk::ImageViewCreateInfo::default()
             .view_type(vk::ImageViewType::TYPE_2D)
-            .format(format.into())
+            .format(format)
             .image(image)
             .subresource_range(image_subresource)
             .components(swizzle_components);
@@ -93,7 +93,7 @@ impl OwnedImage {
             image: VulkanImage {
                 image,
                 size,
-                format: format.into(),
+                format,
             },
             _memory: memory,
             max_miplevels,
@@ -105,6 +105,22 @@ impl OwnedImage {
         vulkan: &VulkanObjects,
         size: Size<u32>,
         format: ImageFormat,
+        max_miplevels: u32,
+    ) -> error::Result<OwnedImage> {
+        Self::new_internal(
+            vulkan.device.clone(),
+            &vulkan.alloc,
+            size,
+            format.into(),
+            max_miplevels,
+        )
+    }
+
+    /// Create an owned image with an explicit `vk::Format`.
+    pub fn with_format(
+        vulkan: &VulkanObjects,
+        size: Size<u32>,
+        format: vk::Format,
         max_miplevels: u32,
     ) -> error::Result<OwnedImage> {
         Self::new_internal(
@@ -139,9 +155,9 @@ impl OwnedImage {
                 &self.allocator,
                 size,
                 if format == ImageFormat::Unknown {
-                    ImageFormat::R8G8B8A8Unorm
+                    vk::Format::R8G8B8A8_UNORM
                 } else {
-                    format
+                    format.into()
                 },
                 max_levels,
             )?;
