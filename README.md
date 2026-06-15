@@ -122,6 +122,12 @@ Options:
 
 For more information, see [`CLI.md`](https://github.com/SnowflakePowered/librashader/blob/master/CLI.md).
 
+The CLI is also accessible through `cargo xtask`
+
+```
+$ cargo xtask cli
+```
+
 ## Building
 
 For Rust projects, simply add the crate to your `Cargo.toml`. 
@@ -133,8 +139,15 @@ cargo add librashader
 To build the C compatible dynamic library, run the build script.
 
 ```
-cargo run -p librashader-build-script -- --profile optimized
+$ cargo xtask build --profile optimized
 ```
+
+The build script can also be run directly without `cargo xtask`
+
+```
+$ cargo run -p librashader-build-script -- --profile optimized
+```
+
 
 This will output a `librashader.dll` or `librashader.so` in the target folder. Profile can be `debug`, `release`, or 
 `optimized` for full LTO.
@@ -156,7 +169,7 @@ When building the C API with `librashader-build-script`, to build with nightly f
 when using a nightly toolchain.
 
 ```
-cargo run -p librashader-build-script -- --profile optimized --nightly
+cargo xtask build --profile optimized --nightly
 ```
 The `stable` feature and `--stable` flag remain for backwards compatibility but no longer do anything. 
 
