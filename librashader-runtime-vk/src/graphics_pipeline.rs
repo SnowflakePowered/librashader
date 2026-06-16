@@ -213,6 +213,7 @@ impl VulkanGraphicsPipeline {
         fragment_module: &VulkanShaderModule,
         render_pass: Option<&VulkanRenderPass>,
         use_dynamic_rendering: bool,
+        format: vk::Format,
     ) -> error::Result<vk::Pipeline> {
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP);
@@ -288,6 +289,10 @@ impl VulkanGraphicsPipeline {
                 .module(fragment_module.shader),
         ];
 
+        let color_attachment_formats = [format];
+        let mut pipeline_rendering_info = vk::PipelineRenderingCreateInfo::default()
+            .color_attachment_formats(&color_attachment_formats);
+
         let mut pipeline_info = vk::GraphicsPipelineCreateInfo::default()
             .stages(&shader_stages)
             .vertex_input_state(&pipeline_input_state)
@@ -302,6 +307,8 @@ impl VulkanGraphicsPipeline {
 
         if let Some(render_pass) = render_pass {
             pipeline_info = pipeline_info.render_pass(render_pass.handle)
+        } else if use_dynamic_rendering {
+            pipeline_info = pipeline_info.push_next(&mut pipeline_rendering_info);
         }
 
         let pipeline = unsafe {
@@ -320,6 +327,7 @@ impl VulkanGraphicsPipeline {
         reflection: &ShaderReflection,
         replicas: u32,
         render_pass_format: vk::Format,
+        use_dynamic_rendering: bool,
         bypass_cache: bool,
     ) -> error::Result<VulkanGraphicsPipeline> {
         let pipeline_layout = PipelineLayoutObjects::new(reflection, replicas, device)?;
@@ -362,6 +370,7 @@ impl VulkanGraphicsPipeline {
                     &fragment_module,
                     render_pass.as_ref(),
                     use_dynamic_rendering,
+                    render_pass_format,
                 )?;
                 Ok::<_, FilterChainError>((pipeline, pipeline_cache))
             },
@@ -402,6 +411,7 @@ impl VulkanGraphicsPipeline {
             &self.fragment,
             new_renderpass.as_ref(),
             !self.use_render_pass,
+            format,
         )?;
 
         self.render_passes.insert(format, new_renderpass);
