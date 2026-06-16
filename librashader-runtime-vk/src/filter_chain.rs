@@ -446,7 +446,7 @@ impl FilterChainVulkan {
             passes,
             &semantics,
             frames_in_flight,
-            options.map_or(false, |o| o.use_dynamic_rendering),
+            use_dynamic_rendering,
             disable_cache,
         )?;
 
@@ -534,9 +534,11 @@ impl FilterChainVulkan {
 
                 let uniform_bindings = reflection.meta.create_binding_map(|param| param.offset());
 
-                let render_pass_format = if use_dynamic_rendering {
-                    vk::Format::UNDEFINED
-                } else if let Some(format) = config.meta.get_format_override() {
+                // The pipeline is always created against a concrete attachment format,
+                // even in dynamic rendering mode, where it is supplied via
+                // `VkPipelineRenderingCreateInfo` rather than a render pass. The final
+                // pass is recompiled against the viewport format on first use.
+                let render_pass_format = if let Some(format) = config.meta.get_format_override() {
                     format.into()
                 } else if config.data.format != ImageFormat::Unknown {
                     config.data.format.into()
