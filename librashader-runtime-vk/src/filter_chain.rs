@@ -158,6 +158,14 @@ impl TryFrom<(vk::PhysicalDevice, ash::Instance, ash::Device, vk::Queue)> for Vu
     }
 }
 
+impl VulkanObjects {
+    /// Check if the vulkan device supports dynamic rendering
+    fn supports_dynamic_rendering(&self) -> bool {
+        let unresolved = ash::DeviceFnV1_3::load(|_| std::ptr::null());
+        self.device.fp_v1_3().cmd_begin_rendering as usize != unresolved.cmd_begin_rendering as usize
+    }
+}
+
 /// A Vulkan filter chain.
 pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
@@ -422,7 +430,10 @@ impl FilterChainVulkan {
         let disable_cache = options.map_or(false, |o| o.disable_cache);
         let (passes, semantics) = compile_passes(preset.passes, &preset.textures, disable_cache)?;
 
-        let device = vulkan.try_into().map_err(From::from)?;
+        let device: VulkanObjects = vulkan.try_into().map_err(From::from)?;
+
+        let use_dynamic_rendering = options.map_or(false, |o| o.use_dynamic_rendering)
+            && device.supports_dynamic_rendering();
 
         let mut frames_in_flight = options.map_or(0, |o| o.frames_in_flight);
         if frames_in_flight == 0 {
@@ -539,6 +550,7 @@ impl FilterChainVulkan {
                     &reflection,
                     frames_in_flight,
                     render_pass_format,
+                    use_dynamic_rendering,
                     disable_cache,
                 )?;
 

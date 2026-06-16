@@ -212,6 +212,7 @@ impl VulkanGraphicsPipeline {
         vertex_module: &VulkanShaderModule,
         fragment_module: &VulkanShaderModule,
         render_pass: Option<&VulkanRenderPass>,
+        use_dynamic_rendering: bool,
     ) -> error::Result<vk::Pipeline> {
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo::default()
             .topology(vk::PrimitiveTopology::TRIANGLE_STRIP);
@@ -331,15 +332,15 @@ impl VulkanGraphicsPipeline {
         let vertex_module = VulkanShaderModule::new(device, &vertex_info)?;
         let fragment_module = VulkanShaderModule::new(device, &fragment_info)?;
 
-        let mut render_pass = None;
-        let mut use_render_pass = false;
-        if render_pass_format != vk::Format::UNDEFINED {
-            render_pass = Some(VulkanRenderPass::create_render_pass(
+        let use_render_pass = !use_dynamic_rendering;
+        let render_pass = if use_render_pass {
+            Some(VulkanRenderPass::create_render_pass(
                 device,
                 render_pass_format,
-            )?);
-            use_render_pass = true;
-        }
+            )?)
+        } else {
+            None
+        };
 
         let (pipeline, pipeline_cache) = cache_pipeline(
             "vulkan",
@@ -360,6 +361,7 @@ impl VulkanGraphicsPipeline {
                     &vertex_module,
                     &fragment_module,
                     render_pass.as_ref(),
+                    use_dynamic_rendering,
                 )?;
                 Ok::<_, FilterChainError>((pipeline, pipeline_cache))
             },
@@ -399,6 +401,7 @@ impl VulkanGraphicsPipeline {
             &self.vertex,
             &self.fragment,
             new_renderpass.as_ref(),
+            !self.use_render_pass,
         )?;
 
         self.render_passes.insert(format, new_renderpass);
