@@ -219,6 +219,10 @@ impl FrameResiduals {
         self.image_views.push(output_framebuffer.image_view);
     }
 
+    pub(crate) fn dispose_image_view(&mut self, image_view: vk::ImageView) {
+        self.image_views.push(image_view);
+    }
+
     pub(crate) fn dispose_owned(&mut self, owned: OwnedImage) {
         self.owned.push(owned)
     }
@@ -881,6 +885,8 @@ impl FilterChainVulkan {
             intermediates.dispose_outputs(output_image);
             intermediates.dispose_framebuffers(residual_fb);
         }
+
+        intermediates.dispose_image_view(original_image_view);
 
         self.push_history(input, cmd)?;
         self.common.internal_frame_count = self.common.internal_frame_count.wrapping_add(1);
