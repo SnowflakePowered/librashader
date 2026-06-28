@@ -175,7 +175,7 @@ impl RenderTest for Vulkan {
                     vk::QUEUE_FAMILY_IGNORED,
                 );
             })?;
-            
+
             for frame in 0..=frame_count {
                 self.vk.queue_work(|cmd| {
                     filter_chain.frame(&input, &viewport, cmd, frame, options.as_ref())?;
