@@ -1,6 +1,6 @@
 use crate::error;
 use crate::error::assume_d3d11_init;
-use std::slice;
+use std::{mem, slice};
 use windows::core::PCSTR;
 use windows::Win32::Graphics::Direct3D::Fxc::{
     D3DCompile, D3DCOMPILE_DEBUG, D3DCOMPILE_OPTIMIZATION_LEVEL3, D3DCOMPILE_SKIP_OPTIMIZATION,
@@ -113,23 +113,53 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
     unsafe {
         let mut blob = None;
         let mut error_blob = None;
-        let result = D3DCompile(
-            source.as_ptr().cast(),
-            source.len(),
-            None,
-            None,
-            None,
-            PCSTR(entry.as_ptr()),
-            PCSTR(version.as_ptr()),
-            if cfg!(feature = "debug-shader") {
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-            } else {
-                D3DCOMPILE_OPTIMIZATION_LEVEL3
-            },
-            0,
-            &mut blob,
-            Some(&mut error_blob),
-        );
+        let result = microseh::try_seh(|| unsafe {
+            D3DCompile(
+                source.as_ptr().cast(),
+                source.len(),
+                None,
+                None,
+                None,
+                PCSTR(entry.as_ptr()),
+                PCSTR(version.as_ptr()),
+                if cfg!(feature = "debug-shader") {
+                    D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+                } else {
+                    D3DCOMPILE_OPTIMIZATION_LEVEL3
+                },
+                0,
+                &mut blob,
+                Some(&mut error_blob),
+            )
+        });
+
+        // If SEH was caught here, then it's likely a stack overflow from the optimizer.
+        // Retry the compilation unoptimized.
+        let result = result.unwrap_or_else(|_| unsafe {
+            // Reset the stack guard page since SEH exception above consumes it.
+            extern "C" {
+                fn _resetstkoflw() -> core::ffi::c_int;
+            }
+            _resetstkoflw();
+
+            D3DCompile(
+                source.as_ptr().cast(),
+                source.len(),
+                None,
+                None,
+                None,
+                PCSTR(entry.as_ptr()),
+                PCSTR(version.as_ptr()),
+                if cfg!(feature = "debug-shader") {
+                    D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+                } else {
+                    D3DCOMPILE_SKIP_OPTIMIZATION
+                },
+                0,
+                &mut blob,
+                Some(&mut error_blob),
+            )
+        });
 
         if let Err(e) = result {
             if let Some(eb) = error_blob {
