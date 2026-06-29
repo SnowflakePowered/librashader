@@ -20,8 +20,6 @@ librashader-reflect = { path = "../librashader-reflect", version = "0.11.2" }
 librashader-runtime = { path = "../librashader-runtime", version = "0.11.2" }
 librashader-cache = { path = "../librashader-cache", version = "0.11.2", features = ["d3d"] }
 
-microseh = "1.2.0"
-
 thiserror = "2"
 bytemuck = "1.12.3"
 array-concat = "0.5.2"
@@ -31,8 +29,10 @@ rayon = { workspace = true }
 [features]
 debug-shader = []
 nightly = ["librashader-reflect/nightly"]
-# Backwards-compatible no-op; stable is the default code path.
 stable = []
+
+[target.'cfg(target_env = "msvc")'.dependencies]
+microseh = "1.2.0"
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true
