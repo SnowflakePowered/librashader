@@ -1,5 +1,6 @@
 use crate::parameters::RuntimeParameters;
 use crate::uniforms::{BindUniform, NoUniformBinder, UniformStorage};
+use bit_set::BitSet;
 use librashader_common::map::{FastHashMap, ShortString};
 use librashader_common::Size;
 use librashader_preprocess::ShaderParameter;
@@ -496,8 +497,17 @@ where
 
 #[derive(Debug)]
 pub struct BindingRequirements {
+    /// The number of `OriginalHistory` frames that must be kept.
     pub(crate) required_history: usize,
+    /// Whether the final pass's output must be retained for feedback.
     pub(crate) uses_final_pass_as_feedback: bool,
+    /// Pass indices whose output is referenced as `PassFeedback`.
+    /// Always a subset of `retained_output_mask`.
+    pub(crate) feedback_mask: BitSet,
+    /// Pass indices whose output must occupy a dedicated framebuffer for the whole
+    /// frame. These passes are referenced via `PassFeedback`, or via `PassOutput`
+    /// beyond their immediate successor.
+    pub(crate) retained_output_mask: BitSet,
 }
 
 /// Trait for objects that can be used to create a binding map.
@@ -544,42 +554,59 @@ impl BindingUtil for BindingMeta {
         let mut len: i64 = 0;
         let mut latest_feedback_pass: i64 = -1;
 
-        for pass in pass_meta {
+        let mut feedback_mask = BitSet::new();
+        let mut retained_output_mask = BitSet::new();
+
+        for (pass_index, pass) in pass_meta.enumerate() {
             len += 1;
 
             // If a shader uses history size, but not history, we still need to keep the texture.
             let history_texture_max_index = pass
                 .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .map(|(semantic, _)| semantic.index)
+                .keys()
+                .filter(|semantics| semantics.semantics == TextureSemantics::OriginalHistory)
+                .map(|semantic| semantic.index)
                 .fold(0, std::cmp::max);
             let history_texture_size_max_index = pass
                 .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::OriginalHistory)
-                .map(|(semantic, _)| semantic.index)
+                .keys()
+                .filter(|semantics| semantics.semantics == TextureSemantics::OriginalHistory)
+                .map(|semantic| semantic.index)
                 .fold(0, std::cmp::max);
 
-            let feedback_max_index = pass
+            // A pass output referenced by a future pass as PassFeedback needs its
+            // previous-frame output preserved.
+            for semantic in pass
                 .texture_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::PassFeedback)
-                .map(|(semantic, _)| semantic.index as i64)
-                .fold(-1, std::cmp::max);
-            let feedback_max_size_index = pass
-                .texture_size_meta
-                .iter()
-                .filter(|(semantics, _)| semantics.semantics == TextureSemantics::PassFeedback)
-                .map(|(semantic, _)| semantic.index as i64)
-                .fold(-1, std::cmp::max);
+                .keys()
+                .chain(pass.texture_size_meta.keys())
+                .filter(|semantics| semantics.semantics == TextureSemantics::PassFeedback)
+            {
+                feedback_mask.insert(semantic.index);
+                latest_feedback_pass = std::cmp::max(latest_feedback_pass, semantic.index as i64);
+            }
 
-            latest_feedback_pass = std::cmp::max(latest_feedback_pass, feedback_max_index);
-            latest_feedback_pass = std::cmp::max(latest_feedback_pass, feedback_max_size_index);
+            // PassOutput read beyond the immediate successor must be retained for the frame.
+            // The immediate-successor (`Source`-equivalent, index == pass_index - 1) case is
+            // already kept as the previous frame.
+            for semantic in pass
+                .texture_meta
+                .keys()
+                .chain(pass.texture_size_meta.keys())
+                .filter(|semantics| semantics.semantics == TextureSemantics::PassOutput)
+            {
+                // overflow safe
+                if semantic.index + 1 < pass_index {
+                    retained_output_mask.insert(semantic.index);
+                }
+            }
 
             required_images = std::cmp::max(required_images, history_texture_max_index);
             required_images = std::cmp::max(required_images, history_texture_size_max_index);
         }
+
+        // Feedback needs a dedicated image to double-buffer against.
+        retained_output_mask.union_with(&feedback_mask);
 
         let uses_feedback = if latest_feedback_pass.is_negative() {
             false
@@ -593,6 +620,8 @@ impl BindingUtil for BindingMeta {
         BindingRequirements {
             required_history: required_images,
             uses_final_pass_as_feedback: uses_feedback,
+            feedback_mask,
+            retained_output_mask,
         }
     }
 }

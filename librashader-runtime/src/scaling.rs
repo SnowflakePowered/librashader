@@ -1,4 +1,5 @@
 use crate::filter_pass::FilterPassMeta;
+use crate::framebuffer::{FeedbackFramebuffers, OutputFramebuffers};
 use crate::scaling;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, ScaleFactor, ScaleType, Scaling};
@@ -206,6 +207,60 @@ pub trait ScaleFramebuffer<T = ()> {
             callback,
         )
     }
+
+    /// Scale the sparse feedback framebuffers, invoking `callback` for each pass that is
+    /// referenced as feedback so the runtime can refresh its bound feedback texture.
+    #[inline(always)]
+    fn scale_feedback_framebuffers<P>(
+        source_size: Size<u32>,
+        viewport_size: Size<u32>,
+        original_size: Size<u32>,
+        feedback: &mut FeedbackFramebuffers<Self>,
+        passes: &[P],
+        callback: impl FnMut(usize, &P, &Self) -> Result<(), Self::Error>,
+    ) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        Self::Context: Default,
+        P: FilterPassMeta,
+    {
+        scale_feedback_framebuffers_callback::<T, Self, Self::Error, Self::Context, P, _>(
+            source_size,
+            viewport_size,
+            original_size,
+            feedback,
+            passes,
+            &Self::Context::default(),
+            callback,
+        )
+    }
+
+    /// Scale the pooled output framebuffers, invoking `callback` for each pass with its
+    /// routed render target and scaled output size so the runtime can draw it.
+    #[inline(always)]
+    fn scale_output_framebuffers<P>(
+        source_size: Size<u32>,
+        viewport_size: Size<u32>,
+        original_size: Size<u32>,
+        output: &mut OutputFramebuffers<Self>,
+        passes: &mut [P],
+        callback: impl FnMut(usize, &mut P, &Self, Size<u32>) -> Result<(), Self::Error>,
+    ) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        Self::Context: Default,
+        P: FilterPassMeta,
+    {
+        scale_output_framebuffers_callback::<T, Self, Self::Error, Self::Context, P, _>(
+            source_size,
+            viewport_size,
+            original_size,
+            output,
+            passes,
+            &Self::Context::default(),
+            callback,
+        )
+    }
 }
 
 /// Scale framebuffers according to the pass configs, source and viewport size
@@ -258,6 +313,96 @@ where
         if let Some(callback) = callback.as_mut() {
             callback(index, pass, &output[index], &feedback[index])?;
         }
+    }
+
+    Ok(())
+}
+
+#[inline(always)]
+fn scale_feedback_framebuffers_callback<T, F, E, C, P, CB>(
+    source_size: Size<u32>,
+    viewport_size: Size<u32>,
+    original_size: Size<u32>,
+    feedback: &mut FeedbackFramebuffers<F>,
+    passes: &[P],
+    context: &C,
+    mut callback: CB,
+) -> Result<(), E>
+where
+    F: ScaleFramebuffer<T, Context = C, Error = E>,
+    P: FilterPassMeta,
+    CB: FnMut(usize, &P, &F) -> Result<(), E>,
+{
+    let mut iterator = passes.iter().enumerate().peekable();
+    let mut target_size = source_size;
+    while let Some((index, pass)) = iterator.next() {
+        let should_mipmap = iterator
+            .peek()
+            .map_or(false, |(_, p)| p.meta().mipmap_input);
+
+        let next_size = target_size.scale_viewport(
+            pass.meta().scaling.clone(),
+            viewport_size,
+            original_size,
+            None,
+        );
+
+        if feedback.contains(index) {
+            feedback[index].scale(
+                pass.meta().scaling.clone(),
+                pass.get_format(),
+                &viewport_size,
+                &target_size,
+                &original_size,
+                should_mipmap,
+                context,
+            )?;
+            callback(index, pass, &feedback[index])?;
+        }
+
+        target_size = next_size;
+    }
+
+    Ok(())
+}
+
+#[inline(always)]
+fn scale_output_framebuffers_callback<T, F, E, C, P, CB>(
+    source_size: Size<u32>,
+    viewport_size: Size<u32>,
+    original_size: Size<u32>,
+    output: &mut OutputFramebuffers<F>,
+    passes: &mut [P],
+    context: &C,
+    mut callback: CB,
+) -> Result<(), E>
+where
+    F: ScaleFramebuffer<T, Context = C, Error = E>,
+    P: FilterPassMeta,
+    CB: FnMut(usize, &mut P, &F, Size<u32>) -> Result<(), E>,
+{
+    let len = passes.len();
+    let mut target_size = source_size;
+    for index in 0..len {
+        let scaling = passes[index].meta().scaling.clone();
+        let format = passes[index].get_format();
+        let should_mipmap = passes
+            .get(index + 1)
+            .map_or(false, |p| p.meta().mipmap_input);
+
+        let next_size = output[index].scale(
+            scaling,
+            format,
+            &viewport_size,
+            &target_size,
+            &original_size,
+            should_mipmap,
+            context,
+        )?;
+
+        callback(index, &mut passes[index], &output[index], next_size)?;
+
+        target_size = next_size;
     }
 
     Ok(())
