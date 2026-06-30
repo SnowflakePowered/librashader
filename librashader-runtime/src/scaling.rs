@@ -224,13 +224,39 @@ pub trait ScaleFramebuffer<T = ()> {
         Self::Context: Default,
         P: FilterPassMeta,
     {
-        scale_feedback_framebuffers_callback::<T, Self, Self::Error, Self::Context, P, _>(
+        Self::scale_feedback_framebuffers_with_context(
             source_size,
             viewport_size,
             original_size,
             feedback,
             passes,
             &Self::Context::default(),
+            callback,
+        )
+    }
+
+    /// Scale the sparse feedback framebuffers with a user provided context.
+    #[inline(always)]
+    fn scale_feedback_framebuffers_with_context<P>(
+        source_size: Size<u32>,
+        viewport_size: Size<u32>,
+        original_size: Size<u32>,
+        feedback: &mut FeedbackFramebuffers<Self>,
+        passes: &[P],
+        context: &Self::Context,
+        callback: impl FnMut(usize, &P, &Self) -> Result<(), Self::Error>,
+    ) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        P: FilterPassMeta,
+    {
+        scale_feedback_framebuffers_callback::<T, Self, Self::Error, Self::Context, P, _>(
+            source_size,
+            viewport_size,
+            original_size,
+            feedback,
+            passes,
+            context,
             callback,
         )
     }
@@ -251,13 +277,39 @@ pub trait ScaleFramebuffer<T = ()> {
         Self::Context: Default,
         P: FilterPassMeta,
     {
-        scale_output_framebuffers_callback::<T, Self, Self::Error, Self::Context, P, _>(
+        Self::scale_output_framebuffers_with_context(
             source_size,
             viewport_size,
             original_size,
             output,
             passes,
             &Self::Context::default(),
+            callback,
+        )
+    }
+
+    /// Scale the pooled output framebuffers with a user provided context.
+    #[inline(always)]
+    fn scale_output_framebuffers_with_context<P>(
+        source_size: Size<u32>,
+        viewport_size: Size<u32>,
+        original_size: Size<u32>,
+        output: &mut OutputFramebuffers<Self>,
+        passes: &mut [P],
+        context: &Self::Context,
+        callback: impl FnMut(usize, &mut P, &Self, Size<u32>) -> Result<(), Self::Error>,
+    ) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        P: FilterPassMeta,
+    {
+        scale_output_framebuffers_callback::<T, Self, Self::Error, Self::Context, P, _>(
+            source_size,
+            viewport_size,
+            original_size,
+            output,
+            passes,
+            context,
             callback,
         )
     }
