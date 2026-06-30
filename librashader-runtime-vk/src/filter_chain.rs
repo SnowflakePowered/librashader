@@ -27,7 +27,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::framebuffer::FramebufferInit;
+use librashader_runtime::framebuffer::{FeedbackFramebuffers, FramebufferInit, OutputFramebuffers};
 use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -172,8 +172,8 @@ pub struct FilterChainVulkan {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
     vulkan: VulkanObjects,
-    output_framebuffers: Box<[OwnedImage]>,
-    feedback_framebuffers: Box<[OwnedImage]>,
+    output: OutputFramebuffers<OwnedImage>,
+    feedback: FeedbackFramebuffers<OwnedImage>,
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
     residuals: Box<[FrameResiduals]>,
@@ -468,11 +468,10 @@ impl FilterChainVulkan {
         );
 
         // initialize output framebuffers
-        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
+        let (output, output_textures) = framebuffer_init.init_pooled_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) =
-            framebuffer_init.init_output_framebuffers()?;
+        let (feedback, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -497,8 +496,8 @@ impl FilterChainVulkan {
             },
             passes: filters,
             vulkan: device,
-            output_framebuffers,
-            feedback_framebuffers,
+            output,
+            feedback,
             history_framebuffers,
             residuals: intermediates.into_boxed_slice(),
             disable_mipmaps: options.map_or(false, |o| o.force_no_mipmaps),
@@ -733,159 +732,158 @@ impl FilterChainVulkan {
 
         let mut source = original.clone();
 
-        // swap output and feedback **before** recording command buffers
-        std::mem::swap(
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-        );
+        let passes_len = passes.len();
+        let options = options.unwrap_or(&self.default_options);
 
-        // rescale render buffers to ensure all bindings are valid.
-        OwnedImage::scale_framebuffers_with_context(
+        // swap output and feedback **before** recording command buffers
+        for index in 0..passes_len {
+            if self.feedback.contains(index) {
+                std::mem::swap(&mut self.output[index], &mut self.feedback[index]);
+            }
+        }
+
+        let scale_context = Some(OwnedImageLayout {
+            dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+            dst_access: vk::AccessFlags::SHADER_READ,
+            src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
+            dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
+            cmd,
+        });
+
+        // rescale feedback buffers and refresh their bound textures.
+        OwnedImage::scale_feedback_framebuffers_with_context(
             source.image.size,
             viewport.output.size,
             original.image.size,
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
+            &mut self.feedback,
             passes,
-            &Some(OwnedImageLayout {
-                dst_layout: vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                dst_access: vk::AccessFlags::SHADER_READ,
-                src_stage: vk::PipelineStageFlags::TOP_OF_PIPE,
-                dst_stage: vk::PipelineStageFlags::FRAGMENT_SHADER,
-                cmd,
-            }),
-            Some(&mut |index: usize,
-                       pass: &FilterPass,
-                       output: &OwnedImage,
-                       feedback: &OwnedImage| {
-                // refresh inputs
+            &scale_context,
+            |index, pass, feedback| {
                 self.common.feedback_textures[index] =
                     Some(feedback.as_input(pass.meta.filter, pass.meta.wrap_mode));
-                self.common.output_textures[index] =
-                    Some(output.as_input(pass.meta.filter, pass.meta.wrap_mode));
                 Ok(())
-            }),
+            },
         )?;
-
-        let passes_len = passes.len();
-        let (pass, last) = passes.split_at_mut(passes_len - 1);
-
-        let options = options.unwrap_or(&self.default_options);
 
         self.common
             .draw_quad
             .bind_vbo_for_frame(&self.vulkan.device, cmd);
-        for (index, pass) in pass.iter_mut().enumerate() {
-            let target = &self.output_framebuffers[index];
-            source.filter_mode = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
-            source.mip_filter = pass.meta.filter;
 
-            let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
-            let out = RenderTarget::identity(&output_image)?;
+        OwnedImage::scale_output_framebuffers_with_context(
+            source.image.size,
+            viewport.output.size,
+            original.image.size,
+            &mut self.output,
+            passes,
+            &scale_context,
+            |index, pass, target, _size| {
+                source.filter_mode = pass.meta.filter;
+                source.wrap_mode = pass.meta.wrap_mode;
+                source.mip_filter = pass.meta.filter;
+                let frame_count_pass = pass.meta.get_frame_count(frame_count);
 
-            let residual_fb = pass.draw(
-                cmd,
-                target.image.format,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                None,
-                QuadType::Offscreen,
-                false,
-            )?;
+                if index != passes_len - 1 {
+                    let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
+                    let out = RenderTarget::identity(&output_image)?;
 
-            if target.max_miplevels > 1 && !self.disable_mipmaps {
-                target.generate_mipmaps_and_end_pass(cmd);
-            } else {
-                out.output.end_pass(&self.vulkan.device, cmd);
-            }
+                    let residual_fb = pass.draw(
+                        cmd,
+                        target.image.format,
+                        index,
+                        &self.common,
+                        frame_count_pass,
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        &out,
+                        None,
+                        QuadType::Offscreen,
+                        false,
+                    )?;
 
-            source = self.common.output_textures[index].clone().unwrap();
-            intermediates.dispose_outputs(output_image);
-            intermediates.dispose_framebuffers(residual_fb);
-        }
+                    if target.max_miplevels > 1 && !self.disable_mipmaps {
+                        target.generate_mipmaps_and_end_pass(cmd);
+                    } else {
+                        out.output.end_pass(&self.vulkan.device, cmd);
+                    }
 
-        // try to hint the optimizer
-        assert_eq!(last.len(), 1);
-        if let Some(pass) = last.iter_mut().next() {
-            let index = passes_len - 1;
-            if pass
-                .graphics_pipeline
-                .render_passes
-                .get(&viewport.output.format)
-                .is_none()
-            {
-                // need to recompile
-                pass.graphics_pipeline.recompile(viewport.output.format)?;
-            }
+                    self.common.output_textures[index] =
+                        Some(target.as_input(pass.meta.filter, pass.meta.wrap_mode));
+                    source = self.common.output_textures[index].clone().unwrap();
+                    intermediates.dispose_outputs(output_image);
+                    intermediates.dispose_framebuffers(residual_fb);
+                    return Ok(());
+                }
 
-            source.filter_mode = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
-            source.mip_filter = pass.meta.filter;
+                if pass
+                    .graphics_pipeline
+                    .render_passes
+                    .get(&viewport.output.format)
+                    .is_none()
+                {
+                    // need to recompile
+                    pass.graphics_pipeline.recompile(viewport.output.format)?;
+                }
 
-            // When feedback is enabled, render the last pass to the intermediate
-            // framebuffer first then render to the viewport with the OutputSize semantic
-            // overridden to the FB scale.
-            //
-            // Shaders need to see the pass's declared scale rather than the viewport size,
-            // or they won't render correctly for feedback.
-            let output_size_override = if self.draw_last_pass_feedback {
-                let target = &self.output_framebuffers[index];
+                // When feedback is enabled, render the last pass to the intermediate
+                // framebuffer first then render to the viewport with the OutputSize semantic
+                // overridden to the FB scale.
+                //
+                // Shaders need to see the pass's declared scale rather than the viewport size,
+                // or they won't render correctly for feedback.
+                let output_size_override = if self.draw_last_pass_feedback {
+                    let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
+                    let out = RenderTarget::viewport_with_output(&output_image, viewport);
 
-                let output_image = OutputImage::new(&self.vulkan.device, target.image.clone())?;
+                    let residual_fb = pass.draw(
+                        cmd,
+                        target.image.format,
+                        index,
+                        &self.common,
+                        frame_count_pass,
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        &out,
+                        None,
+                        QuadType::Final,
+                        true,
+                    )?;
+                    out.output.end_pass(&self.vulkan.device, cmd);
+                    intermediates.dispose_outputs(output_image);
+                    intermediates.dispose_framebuffers(residual_fb);
+                    Some(target.image.size)
+                } else {
+                    None
+                };
+
+                let output_image =
+                    OutputImage::new(&self.vulkan.device, viewport.output.clone())?;
                 let out = RenderTarget::viewport_with_output(&output_image, viewport);
 
                 let residual_fb = pass.draw(
                     cmd,
-                    target.image.format,
+                    viewport.output.format,
                     index,
                     &self.common,
-                    pass.meta.get_frame_count(frame_count),
+                    frame_count_pass,
                     options,
                     viewport,
                     &original,
                     &source,
                     &out,
-                    None,
+                    output_size_override,
                     QuadType::Final,
-                    true,
+                    false,
                 )?;
-                out.output.end_pass(&self.vulkan.device, cmd);
+
                 intermediates.dispose_outputs(output_image);
                 intermediates.dispose_framebuffers(residual_fb);
-                Some(target.image.size)
-            } else {
-                None
-            };
-
-            let output_image = OutputImage::new(&self.vulkan.device, viewport.output.clone())?;
-            let out = RenderTarget::viewport_with_output(&output_image, viewport);
-
-            let residual_fb = pass.draw(
-                cmd,
-                viewport.output.format,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                output_size_override,
-                QuadType::Final,
-                false,
-            )?;
-
-            intermediates.dispose_outputs(output_image);
-            intermediates.dispose_framebuffers(residual_fb);
-        }
+                Ok(())
+            },
+        )?;
 
         intermediates.dispose_image_view(original_image_view);
 
