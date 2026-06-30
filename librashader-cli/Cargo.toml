@@ -52,7 +52,7 @@ vulkan = ["librashader/runtime-vk", "dep:ash"]
 opengl = ["librashader/runtime-gl", "dep:glow", "dep:glfw"]
 wgpu = ["librashader/runtime-wgpu", "dep:wgpu", "dep:wgpu-types"]
 
-d3d11 = ["librashader/runtime-d3d11", "dep:windows"]
+d3d11 = ["librashader/runtime-d3d11", "librashader/runtime-d3d11-seh", "dep:windows"]
 d3d12 = ["librashader/runtime-d3d12", "librashader/runtime-d3d12-static", "dep:windows", "dep:d3d12-descriptor-heap"]
 d3d9 = ["librashader/runtime-d3d9", "dep:windows"]
 

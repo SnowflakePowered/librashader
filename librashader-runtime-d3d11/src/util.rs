@@ -113,23 +113,47 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
     unsafe {
         let mut blob = None;
         let mut error_blob = None;
-        let result = D3DCompile(
-            source.as_ptr().cast(),
-            source.len(),
-            None,
-            None,
-            None,
-            PCSTR(entry.as_ptr()),
-            PCSTR(version.as_ptr()),
-            if cfg!(feature = "debug-shader") {
-                D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-            } else {
-                D3DCOMPILE_OPTIMIZATION_LEVEL3
-            },
-            0,
-            &mut blob,
-            Some(&mut error_blob),
-        );
+
+        let opt_flags = if cfg!(feature = "debug-shader") {
+            D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+        } else {
+            D3DCOMPILE_OPTIMIZATION_LEVEL3
+        };
+
+        let mut fxc_compile = |flags| {
+            D3DCompile(
+                source.as_ptr().cast(),
+                source.len(),
+                None,
+                None,
+                None,
+                PCSTR(entry.as_ptr()),
+                PCSTR(version.as_ptr()),
+                flags,
+                0,
+                &mut blob,
+                Some(&mut error_blob),
+            )
+        };
+
+        // Wrap call in SEH in case of stack overflow (MSVC + microseh feature only).
+        #[cfg(all(target_env = "msvc", feature = "microseh"))]
+        let result = {
+            let result = microseh::try_seh(|| fxc_compile(opt_flags));
+
+            // If SEH was caught here, then it's likely a stack overflow from the optimizer.
+            // Need to re-arm the stack guard.
+            result.unwrap_or_else(|_| {
+                extern "C" {
+                    fn _resetstkoflw() -> core::ffi::c_int;
+                }
+                _resetstkoflw();
+                fxc_compile(D3DCOMPILE_SKIP_OPTIMIZATION)
+            })
+        };
+
+        #[cfg(not(all(target_env = "msvc", feature = "microseh")))]
+        let result = fxc_compile(opt_flags);
 
         if let Err(e) = result {
             if let Some(eb) = error_blob {

@@ -171,13 +171,14 @@ pub fn main() -> ExitCode {
             "librashader_capi.dll.lib",
         ];
 
-
         for artifact in artifacts {
             let ext = artifact.replace("_capi", "");
-            if let Ok(_) = fs::rename(output_dir.join(artifact), output_dir.join(&ext)).inspect_err(|err| {
-                carlog_warning!(format!("Unable to rename {artifact} to {}", &ext));
-                carlog_warning!(format!("{err}"));
-            }) {
+            if let Ok(_) =
+                fs::rename(output_dir.join(artifact), output_dir.join(&ext)).inspect_err(|err| {
+                    carlog_warning!(format!("Unable to rename {artifact} to {}", &ext));
+                    carlog_warning!(format!("{err}"));
+                })
+            {
                 carlog_ok!("Renamed", format!("{artifact} to {}", &ext));
             } else {
                 // There's only one critical artifact, Clang doesn't generate .exp/.lib so we don't really care about that.

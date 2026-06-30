@@ -27,10 +27,16 @@ array-concat = "0.5.2"
 rayon = { workspace = true }
 
 [features]
+default = ["microseh"]
 debug-shader = []
 nightly = ["librashader-reflect/nightly"]
-# Backwards-compatible no-op; stable is the default code path.
 stable = []
+
+
+microseh = ["dep:microseh"]
+
+[target.'cfg(target_env = "msvc")'.dependencies]
+microseh = { version = "1.2.0", optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 workspace = true

@@ -162,7 +162,8 @@ impl VulkanObjects {
     /// Check if the vulkan device supports dynamic rendering
     fn supports_dynamic_rendering(&self) -> bool {
         let unresolved = ash::DeviceFnV1_3::load(|_| std::ptr::null());
-        self.device.fp_v1_3().cmd_begin_rendering as usize != unresolved.cmd_begin_rendering as usize
+        self.device.fp_v1_3().cmd_begin_rendering as usize
+            != unresolved.cmd_begin_rendering as usize
     }
 }
 
