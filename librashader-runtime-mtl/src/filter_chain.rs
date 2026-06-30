@@ -21,7 +21,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::framebuffer::FramebufferInit;
+use librashader_runtime::framebuffer::{FramebufferInit, FramebufferPool};
 use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -73,8 +73,8 @@ use librashader_runtime::parameters::RuntimeParameters;
 pub struct FilterChainMetal {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
-    output_framebuffers: Box<[OwnedTexture]>,
-    feedback_framebuffers: Box<[OwnedTexture]>,
+    output_framebuffers: FramebufferPool<OwnedTexture>,
+    feedback_framebuffers: FramebufferPool<OwnedTexture>,
     history_framebuffers: VecDeque<OwnedTexture>,
     /// Metal does not allow us to push the input texture to history
     /// before recording framebuffers, so we double-buffer it.
@@ -342,8 +342,7 @@ impl FilterChainMetal {
         let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
         //
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) =
-            framebuffer_init.init_output_framebuffers()?;
+        let (feedback_framebuffers, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
         //
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -441,101 +440,120 @@ impl FilterChainMetal {
             .texture
             .setLabel(Some(&*NSString::from_str("librashader_sourcetex")));
 
-        // swap output and feedback **before** recording command buffers
-        std::mem::swap(
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-        );
-
-        // rescale render buffers to ensure all bindings are valid.
-        OwnedTexture::scale_framebuffers_with_context(
-            get_texture_size(&source.texture).into(),
-            get_texture_size(viewport.output),
-            get_texture_size(&original.texture).into(),
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-            passes,
-            &self.common.device,
-            Some(&mut |index: usize,
-                       pass: &FilterPass,
-                       output: &OwnedTexture,
-                       feedback: &OwnedTexture| {
-                // refresh inputs
-                self.common.feedback_textures[index] =
-                    Some(feedback.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
-                self.common.output_textures[index] =
-                    Some(output.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
-                Ok(())
-            }),
-        )?;
-
         let passes_len = passes.len();
-        let (pass, last) = passes.split_at_mut(passes_len - 1);
         let options = options.unwrap_or(&self.default_options);
 
-        for (index, pass) in pass.iter_mut().enumerate() {
-            let target = &self.output_framebuffers[index];
-            source.filter_mode = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
-            source.mip_filter = pass.meta.filter;
-
-            let out = RenderTarget::identity(target.texture.as_ref())?;
-            pass.draw(
-                &cmd,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                None,
-                QuadType::Offscreen,
-            )?;
-
-            if target.max_miplevels > 1 && !self.disable_mipmaps {
-                target.generate_mipmaps(&cmd)?;
+        // swap output and feedback **before** recording command buffers
+        for index in 0..passes_len {
+            if self.feedback_framebuffers.contains(index) {
+                std::mem::swap(&mut self.output_framebuffers[index], &mut self.feedback_framebuffers[index]);
             }
-
-            self.common.output_textures[index] =
-                Some(target.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
-            source = self.common.output_textures[index]
-                .as_ref()
-                .map(InputTexture::try_clone)
-                .unwrap()?;
         }
 
-        // try to hint the optimizer
-        assert_eq!(last.len(), 1);
+        let source_size: Size<u32> = get_texture_size(&source.texture).into();
+        let viewport_size = get_texture_size(viewport.output);
+        let original_size: Size<u32> = get_texture_size(&original.texture).into();
 
-        if let Some(pass) = last.iter_mut().next() {
-            if !pass
-                .graphics_pipeline
-                .has_format(viewport.output.pixelFormat())
-            {
-                // need to recompile
-                pass.graphics_pipeline
-                    .recompile(&self.common.device, viewport.output.pixelFormat())?;
-            }
+        // The device acts as the scaling context. Clone it into a local so the
+        // context borrow stays disjoint from the `&mut self.common` borrows taken
+        // by the callbacks below.
+        let scale_context = self.common.device.clone();
 
-            source.filter_mode = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
-            source.mip_filter = pass.meta.filter;
-            let index = passes_len - 1;
+        // rescale feedback buffers and refresh their bound textures.
+        OwnedTexture::scale_feedback_framebuffers_with_context(
+            source_size,
+            viewport_size,
+            original_size,
+            &mut self.feedback_framebuffers,
+            passes,
+            &scale_context,
+            |index, pass, feedback| {
+                self.common.feedback_textures[index] =
+                    Some(feedback.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
+                Ok(())
+            },
+        )?;
 
-            // When feedback is enabled, render the last pass to the intermediate
-            // framebuffer first then render to the viewport with the OutputSize semantic
-            // overridden to the FB scale.
-            //
-            // Shaders need to see the pass's declared scale rather than the viewport size,
-            // or they won't render correctly for feedback.
-            let output_size_override = if self.draw_last_pass_feedback {
-                let target = &self.output_framebuffers[index];
-                let out = RenderTarget::viewport_with_output(target.texture.as_ref(), viewport);
+        OwnedTexture::scale_output_framebuffers_with_context(
+            source_size,
+            viewport_size,
+            original_size,
+            &mut self.output_framebuffers,
+            passes,
+            &scale_context,
+            |index, pass, target, size| {
+                source.filter_mode = pass.meta.filter;
+                source.wrap_mode = pass.meta.wrap_mode;
+                source.mip_filter = pass.meta.filter;
+
+                if index != passes_len - 1 {
+                    let out = RenderTarget::identity(target.texture.as_ref())?;
+                    pass.draw(
+                        &cmd,
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        &out,
+                        None,
+                        QuadType::Offscreen,
+                    )?;
+
+                    if target.max_miplevels > 1 && !self.disable_mipmaps {
+                        target.generate_mipmaps(&cmd)?;
+                    }
+
+                    self.common.output_textures[index] =
+                        Some(target.as_input(pass.meta.filter, pass.meta.wrap_mode)?);
+                    source = self.common.output_textures[index]
+                        .as_ref()
+                        .map(InputTexture::try_clone)
+                        .unwrap()?;
+                    return Ok(());
+                }
+
+                if !pass
+                    .graphics_pipeline
+                    .has_format(viewport.output.pixelFormat())
+                {
+                    // need to recompile
+                    pass.graphics_pipeline
+                        .recompile(&self.common.device, viewport.output.pixelFormat())?;
+                }
+
+                // When feedback is enabled, render the last pass to the intermediate
+                // framebuffer first then render to the viewport with the OutputSize semantic
+                // overridden to the FB scale.
+                //
+                // Shaders need to see the pass's declared scale rather than the viewport size,
+                // or they won't render correctly for feedback.
+                let output_size_override = if self.draw_last_pass_feedback {
+                    let out = RenderTarget::viewport_with_output(target.texture.as_ref(), viewport);
+                    pass.draw(
+                        &cmd,
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        &out,
+                        None,
+                        QuadType::Final,
+                    )?;
+                    Some(size)
+                } else {
+                    None
+                };
+
+                let out = RenderTarget::viewport(viewport);
                 pass.draw(
                     &cmd,
-                    passes_len - 1,
+                    index,
                     &self.common,
                     pass.meta.get_frame_count(frame_count),
                     options,
@@ -543,29 +561,12 @@ impl FilterChainMetal {
                     &original,
                     &source,
                     &out,
-                    None,
+                    output_size_override,
                     QuadType::Final,
                 )?;
-                Some(get_texture_size(target.texture.as_ref()))
-            } else {
-                None
-            };
-
-            let out = RenderTarget::viewport(viewport);
-            pass.draw(
-                &cmd,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                output_size_override,
-                QuadType::Final,
-            )?;
-        }
+                Ok(())
+            },
+        )?;
 
         Ok(())
     }
