@@ -22,7 +22,7 @@ use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtif
 use librashader_reflect::reflect::semantics::ShaderSemantics;
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::{BindingUtil, TextureInput};
-use librashader_runtime::framebuffer::FramebufferInit;
+use librashader_runtime::framebuffer::{FeedbackFramebuffers, FramebufferInit, OutputFramebuffers};
 use librashader_runtime::image::{ImageError, LoadedTexture, UVDirection, BGRA8};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
@@ -54,8 +54,8 @@ pub(crate) struct FilterCommon {
 pub struct FilterChainD3D9 {
     pub(crate) common: FilterCommon,
     passes: Vec<FilterPass>,
-    output_framebuffers: Box<[D3D9Texture]>,
-    feedback_framebuffers: Box<[D3D9Texture]>,
+    output: OutputFramebuffers<D3D9Texture>,
+    feedback: FeedbackFramebuffers<D3D9Texture>,
     history_framebuffers: VecDeque<D3D9Texture>,
     default_options: FrameOptionsD3D9,
     draw_last_pass_feedback: bool,
@@ -261,11 +261,10 @@ impl FilterChainD3D9 {
         );
 
         // initialize output framebuffers
-        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
+        let (output, output_textures) = framebuffer_init.init_pooled_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) =
-            framebuffer_init.init_output_framebuffers()?;
+        let (feedback, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -275,8 +274,8 @@ impl FilterChainD3D9 {
         Ok(FilterChainD3D9 {
             draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
-            output_framebuffers,
-            feedback_framebuffers,
+            output,
+            feedback,
             history_framebuffers,
             common: FilterCommon {
                 d3d9: device.clone(),
@@ -351,81 +350,97 @@ impl FilterChainD3D9 {
 
         let mut source = original.clone();
 
-        // rescale render buffers to ensure all bindings are valid.
-        D3D9Texture::scale_framebuffers(
-            source.size(),
-            viewport.output.size()?,
-            original.size(),
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-            passes,
-            None,
-        )?;
+        let viewport_size = viewport.output.size()?;
+        let original_size = original.size();
+        let source_size = source.size();
+        let passes_len = passes.len();
 
+        // rescale feedback render buffers to ensure all bindings are valid.
         // Refresh inputs for feedback textures.
         // Don't need to do this for outputs because they are yet to be bound.
-        for ((texture, fbo), pass) in self
-            .common
-            .feedback_textures
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter())
-            .zip(passes.iter())
-        {
-            *texture = Some(fbo.as_input(pass.meta.filter, pass.meta.filter, pass.meta.wrap_mode));
-        }
+        D3D9Texture::scale_feedback_framebuffers(
+            source_size,
+            viewport_size,
+            original_size,
+            &mut self.feedback,
+            passes,
+            |index, pass, feedback| {
+                self.common.feedback_textures[index] = Some(feedback.as_input(
+                    pass.meta.filter,
+                    pass.meta.filter,
+                    pass.meta.wrap_mode,
+                ));
+                Ok(())
+            },
+        )?;
 
-        let passes_len = passes.len();
-        let (pass, last) = passes.split_at_mut(passes_len - 1);
         let state_guard = D3D9State::new(&self.common.d3d9)?;
 
-        for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter = pass.meta.filter;
-            source.wrap = pass.meta.wrap_mode;
-            source.is_srgb = pass.meta.srgb_framebuffer;
-            let target = &self.output_framebuffers[index];
-            let target_rtv = target.as_output()?;
-            pass.draw(
-                &self.common.d3d9,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::identity(&target_rtv)?,
-                None,
-                QuadType::Offscreen,
-            )?;
+        D3D9Texture::scale_output_framebuffers(
+            source_size,
+            viewport_size,
+            original_size,
+            &mut self.output,
+            passes,
+            |index, pass, target, size| {
+                source.filter = pass.meta.filter;
+                source.wrap = pass.meta.wrap_mode;
+                source.is_srgb = pass.meta.srgb_framebuffer;
+                let is_last = index == passes_len - 1;
 
-            source = D3D9InputTexture {
-                handle: target.handle.clone(),
-                filter: pass.meta.filter,
-                wrap: pass.meta.wrap_mode,
-                mipmode: pass.meta.filter,
-                is_srgb: pass.meta.srgb_framebuffer,
-            };
-            self.common.output_textures[index] = Some(source.clone());
-        }
+                if !is_last {
+                    let target_rtv = target.as_output()?;
+                    pass.draw(
+                        &self.common.d3d9,
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        RenderTarget::identity(&target_rtv)?,
+                        None,
+                        QuadType::Offscreen,
+                    )?;
 
-        // try to hint the optimizer
-        assert_eq!(last.len(), 1);
-        if let Some(pass) = last.iter_mut().next() {
-            let index = passes_len - 1;
-            source.filter = pass.meta.filter;
-            source.wrap = pass.meta.wrap_mode;
-            source.is_srgb = pass.meta.srgb_framebuffer;
+                    source = D3D9InputTexture {
+                        handle: target.handle.clone(),
+                        filter: pass.meta.filter,
+                        wrap: pass.meta.wrap_mode,
+                        mipmode: pass.meta.filter,
+                        is_srgb: pass.meta.srgb_framebuffer,
+                    };
+                    self.common.output_textures[index] = Some(source.clone());
+                    return Ok(());
+                }
 
-            // When feedback is enabled, render the last pass to the intermediate
-            // framebuffer first then render to the viewport with the OutputSize semantic
-            // overridden to the FB scale.
-            //
-            // Shaders need to see the pass's declared scale rather than the viewport size,
-            // or they won't render correctly for feedback.
-            let output_size_override = if self.draw_last_pass_feedback {
-                let feedback_target = &self.output_framebuffers[index];
-                let feedback_target_rtv = feedback_target.as_output()?;
-                let feedback_size: Size<u32> = feedback_target.handle.size()?;
+                // When feedback is enabled, render the last pass to the intermediate
+                // framebuffer first then render to the viewport with the OutputSize semantic
+                // overridden to the FB scale.
+                //
+                // Shaders need to see the pass's declared scale rather than the viewport size,
+                // or they won't render correctly for feedback.
+                let output_size_override = if self.draw_last_pass_feedback {
+                    let feedback_target_rtv = target.as_output()?;
+
+                    pass.draw(
+                        &self.common.d3d9,
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        RenderTarget::viewport_with_output(&feedback_target_rtv, viewport),
+                        None,
+                        QuadType::Final,
+                    )?;
+                    Some(size)
+                } else {
+                    None
+                };
 
                 pass.draw(
                     &self.common.d3d9,
@@ -436,34 +451,19 @@ impl FilterChainD3D9 {
                     viewport,
                     &original,
                     &source,
-                    RenderTarget::viewport_with_output(&feedback_target_rtv, viewport),
-                    None,
+                    RenderTarget::viewport(viewport),
+                    output_size_override,
                     QuadType::Final,
                 )?;
-                Some(feedback_size)
-            } else {
-                None
-            };
+                Ok(())
+            },
+        )?;
 
-            pass.draw(
-                &self.common.d3d9,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::viewport(viewport),
-                output_size_override,
-                QuadType::Final,
-            )?;
+        for index in 0..passes_len {
+            if self.feedback.contains(index) {
+                std::mem::swap(&mut self.output[index], &mut self.feedback[index]);
+            }
         }
-
-        std::mem::swap(
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-        );
 
         drop(state_guard);
 
