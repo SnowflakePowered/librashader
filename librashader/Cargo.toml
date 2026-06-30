@@ -20,7 +20,7 @@ librashader-reflect = { path = "../librashader-reflect", version = "0.11.2" }
 librashader-cache = { path = "../librashader-cache", version = "0.11.2" }
 librashader-runtime  = { path = "../librashader-runtime", version = "0.11.2" }
 librashader-pack  = { path = "../librashader-pack", version = "0.11.2" }
-librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.11.2", optional = true }
+librashader-runtime-d3d11  = { path = "../librashader-runtime-d3d11", version = "0.11.2", optional = true, default-features = false }
 librashader-runtime-d3d12  = { path = "../librashader-runtime-d3d12", version = "0.11.2", optional = true }
 librashader-runtime-d3d9  = { path = "../librashader-runtime-d3d9", version = "0.11.2", optional = true }
 librashader-runtime-gl = { path = "../librashader-runtime-gl", version = "0.11.2", optional = true }
@@ -64,6 +64,8 @@ stable = []
 
 runtime-gl = [ "runtime", "reflect-cross", "librashader-common/opengl", "librashader-runtime-gl" ]
 runtime-d3d11 = [ "runtime", "reflect-cross","librashader-common/d3d11", "librashader-runtime-d3d11", "windows/Win32_Graphics_Direct3D11" ]
+
+runtime-d3d11-seh = [ "librashader-runtime-d3d11?/microseh" ]
 runtime-d3d12 = [ "runtime", "reflect-cross", "reflect-dxil", "librashader-common/d3d12", "librashader-runtime-d3d12", "windows/Win32_Graphics_Direct3D12" ]
 runtime-d3d12-static = [ "librashader-runtime-d3d12?/static"]
 
@@ -82,7 +84,7 @@ runtime-all = ["runtime-gl", "runtime-d3d11", "runtime-d3d12", "runtime-vk", "ru
 reflect-all = ["reflect-cross", "reflect-dxil", "reflect-naga"]
 
 # enable all features by default
-default = [ "full" ]
+default = [ "full", "runtime-d3d11-seh" ]
 internal = []
 
 full = ["runtime-all", "reflect-all", "preprocess", "presets"]
@@ -108,5 +110,9 @@ targets = [ "x86_64-pc-windows-msvc",
             "aarch64-apple-ios",
             "i686-pc-windows-msvc",
             "i686-unknown-linux-gnu", ]
-features = ["docsrs"]
+# `runtime-d3d11-seh` is in the default feature set, but microseh's MSVC-only C build
+# script can not run in the docs.rs cross-build environment, so disable default features
+# and re-enable the doc surface explicitly (without seh) here.
+no-default-features = true
+features = ["docsrs", "full"]
 rustdoc-args = ["--cfg", "docsrs"]

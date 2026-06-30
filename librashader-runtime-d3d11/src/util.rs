@@ -136,8 +136,8 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             )
         };
 
-        // Wrap call in SEH in case of stack overflow (MSVC only)
-        #[cfg(target_env = "msvc")]
+        // Wrap call in SEH in case of stack overflow (MSVC + microseh feature only).
+        #[cfg(all(target_env = "msvc", feature = "microseh"))]
         let result = {
             let result = microseh::try_seh(|| fxc_compile(opt_flags));
 
@@ -152,7 +152,7 @@ pub fn d3d_compile_shader(source: &[u8], entry: &[u8], version: &[u8]) -> error:
             })
         };
 
-        #[cfg(not(target_env = "msvc"))]
+        #[cfg(not(all(target_env = "msvc", feature = "microseh")))]
         let result = fxc_compile(opt_flags);
 
         if let Err(e) = result {
