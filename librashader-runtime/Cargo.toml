@@ -21,6 +21,7 @@ bytemuck = {  version = "1.12.3", features = ["derive"] }
 num-traits = "0.2.15"
 array-concat = "0.5.2"
 arc-swap = "1.7.1"
+bit-set = "0.8"
 
 image = { workspace = true }
 

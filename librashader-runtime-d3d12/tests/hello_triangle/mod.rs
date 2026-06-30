@@ -494,7 +494,7 @@ pub mod d3d12_hello_triangle {
         }
 
         fn window_size(&self) -> (i32, i32) {
-            (800, 600)
+            (3840 , 2160 )
         }
 
         fn render(&mut self) {

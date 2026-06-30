@@ -232,6 +232,12 @@ impl<T> Size<T> {
     }
 }
 
+impl AsPrimitive<u64> for Size<u32> {
+    fn as_(self) -> u64 {
+        ((self.width as u64) << 32) | (self.height as u64)
+    }
+}
+
 impl<T: AsPrimitive<f32>> Size<T> {
     /// Get the aspect ratio of the size.
     #[inline(always)]

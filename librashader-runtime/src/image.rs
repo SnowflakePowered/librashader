@@ -187,38 +187,34 @@ mod test {
     #[test]
     pub fn generate_normal_swizzle() {
         let swizzle = generate_swizzle::<32>([0, 1, 2, 3]);
-        assert_eq!(
-            swizzle,
-            #[rustfmt::skip]
-            [
-                0, 1, 2, 3,
-                4, 5, 6, 7,
-                8, 9, 10, 11,
-                12, 13, 14, 15,
-                16, 17, 18, 19,
-                20, 21, 22, 23,
-                24, 25, 26, 27,
-                28, 29, 30, 31
-            ]
-        )
+        #[rustfmt::skip]
+        let expected = [
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            8, 9, 10, 11,
+            12, 13, 14, 15,
+            16, 17, 18, 19,
+            20, 21, 22, 23,
+            24, 25, 26, 27,
+            28, 29, 30, 31
+        ];
+        assert_eq!(swizzle, expected)
     }
 
     #[test]
     pub fn generate_argb_swizzle() {
         let swizzle = generate_swizzle::<32>([3, 0, 1, 2]);
-        assert_eq!(
-            swizzle,
-            #[rustfmt::skip]
-            [
-                3, 0, 1, 2,
-                7, 4, 5, 6,
-                11, 8, 9, 10,
-                15, 12, 13, 14,
-                19, 16, 17, 18,
-                23, 20, 21, 22,
-                27, 24, 25, 26,
-                31, 28, 29, 30
-            ]
-        )
+        #[rustfmt::skip]
+        let expected = [
+            3, 0, 1, 2,
+            7, 4, 5, 6,
+            11, 8, 9, 10,
+            15, 12, 13, 14,
+            19, 16, 17, 18,
+            23, 20, 21, 22,
+            27, 24, 25, 26,
+            31, 28, 29, 30
+        ];
+        assert_eq!(swizzle, expected)
     }
 }
