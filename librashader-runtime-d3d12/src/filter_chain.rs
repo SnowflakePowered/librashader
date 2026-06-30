@@ -53,7 +53,7 @@ use windows::Win32::System::Threading::{CreateEventA, WaitForSingleObject, INFIN
 use librashader_cache::CachedCompilation;
 use librashader_presets::context::VideoDriver;
 use librashader_reflect::reflect::cross::SpirvCross;
-use librashader_runtime::framebuffer::FramebufferInit;
+use librashader_runtime::framebuffer::{FramebufferInit, FramebufferPool};
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
 use rayon::prelude::*;
@@ -64,8 +64,8 @@ const MIPMAP_RESERVED_WORKHEAP_DESCRIPTORS: usize = 4096;
 pub struct FilterChainD3D12 {
     pub(crate) common: FilterCommon,
     pub(crate) passes: Vec<FilterPass>,
-    pub(crate) output_framebuffers: Box<[OwnedImage]>,
-    pub(crate) feedback_framebuffers: Box<[OwnedImage]>,
+    pub(crate) output_framebuffers: FramebufferPool<OwnedImage>,
+    pub(crate) feedback_framebuffers: FramebufferPool<OwnedImage>,
     pub(crate) history_framebuffers: VecDeque<OwnedImage>,
     pub(crate) staging_heap: D3D12DescriptorHeap<CpuStagingHeap>,
     pub(crate) rtv_heap: D3D12DescriptorHeap<RenderTargetHeap>,
@@ -431,8 +431,7 @@ impl FilterChainD3D12 {
         let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) =
-            framebuffer_init.init_output_framebuffers()?;
+        let (feedback_framebuffers, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -770,20 +769,6 @@ impl FilterChainD3D12 {
         let filter = passes[0].meta.filter;
         let wrap_mode = passes[0].meta.wrap_mode;
 
-        for ((texture, fbo), pass) in self
-            .common
-            .feedback_textures
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter())
-            .zip(passes.iter())
-        {
-            *texture = Some(fbo.create_shader_resource_view(
-                &mut self.staging_heap,
-                pass.meta.filter,
-                pass.meta.wrap_mode,
-            )?);
-        }
-
         for (texture, fbo) in self
             .common
             .history_textures
@@ -812,39 +797,31 @@ impl FilterChainD3D12 {
 
         let mut source = original.clone();
 
-        // swap output and feedback **before** recording command buffers
-        std::mem::swap(
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-        );
+        let passes_len = passes.len();
 
-        // rescale render buffers to ensure all bindings are valid.
-        OwnedImage::scale_framebuffers(
+        // swap output and feedback **before** recording command buffers
+        for index in 0..passes_len {
+            if self.feedback_framebuffers.contains(index) {
+                std::mem::swap(&mut self.output_framebuffers[index], &mut self.feedback_framebuffers[index]);
+            }
+        }
+
+        // rescale feedback buffers and refresh their bound textures.
+        OwnedImage::scale_feedback_framebuffers(
             source.size(),
             viewport.output.size,
             original.size(),
-            &mut self.output_framebuffers,
             &mut self.feedback_framebuffers,
             passes,
-            Some(&mut |index, pass, output, feedback| {
-                // refresh inputs
+            |index, pass, feedback| {
                 self.common.feedback_textures[index] = Some(feedback.create_shader_resource_view(
                     &mut self.staging_heap,
                     pass.meta.filter,
                     pass.meta.wrap_mode,
                 )?);
-                self.common.output_textures[index] = Some(output.create_shader_resource_view(
-                    &mut self.staging_heap,
-                    pass.meta.filter,
-                    pass.meta.wrap_mode,
-                )?);
-
                 Ok(())
-            }),
+            },
         )?;
-
-        let passes_len = passes.len();
-        let (pass, last) = passes.split_at_mut(passes_len - 1);
 
         unsafe {
             let heaps = [
@@ -858,113 +835,155 @@ impl FilterChainD3D12 {
 
         self.common.draw_quad.bind_vertices_for_frame(cmd);
 
-        for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
+        // rescale output buffers and draw each pass.
+        OwnedImage::scale_output_framebuffers(
+            source.size(),
+            viewport.output.size,
+            original.size(),
+            &mut self.output_framebuffers,
+            passes,
+            |index, pass, target, size| {
+                source.filter = pass.meta.filter;
+                source.wrap_mode = pass.meta.wrap_mode;
 
-            let target = &self.output_framebuffers[index];
-
-            if !pass.pipeline.has_format(target.format) {
-                // eprintln!("recompiling final pipeline");
-                pass.pipeline.recompile(
-                    target.format,
-                    &self.common.root_signature,
-                    &self.common.d3d12,
-                )?;
-            }
-
-            util::d3d12_resource_transition::<OutlivesFrame, _>(
-                cmd,
-                &target.resource,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                D3D12_RESOURCE_STATE_RENDER_TARGET,
-            );
-
-            let view = target.create_render_target_view(&mut self.rtv_heap)?;
-            let out = RenderTarget::identity(&view)?;
-
-            pass.draw(
-                cmd,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                None,
-                QuadType::Offscreen,
-            )?;
-
-            util::d3d12_resource_transition::<OutlivesFrame, _>(
-                cmd,
-                &target.resource,
-                D3D12_RESOURCE_STATE_RENDER_TARGET,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            );
-
-            if target.max_mipmap > 1 && !self.disable_mipmaps {
-                // barriers don't get disposed because the context is OutlivesFrame
-                let (residuals, _residual_barriers) = self.common.mipmap_gen.mipmapping_context(
-                    cmd,
-                    &mut self.mipmap_heap,
-                    |ctx| {
-                        ctx.generate_mipmaps::<OutlivesFrame, _>(
-                            &target.resource,
-                            target.max_mipmap,
-                            target.size,
-                            target.format.into(),
+                if index != passes_len - 1 {
+                    if !pass.pipeline.has_format(target.format) {
+                        // eprintln!("recompiling final pipeline");
+                        pass.pipeline.recompile(
+                            target.format,
+                            &self.common.root_signature,
+                            &self.common.d3d12,
                         )?;
-                        Ok::<(), FilterChainError>(())
-                    },
-                )?;
+                    }
 
-                self.residuals.dispose_mipmap_handles(residuals);
-            }
+                    util::d3d12_resource_transition::<OutlivesFrame, _>(
+                        cmd,
+                        &target.resource,
+                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                        D3D12_RESOURCE_STATE_RENDER_TARGET,
+                    );
 
-            self.residuals.dispose_output(view.descriptor);
-            source = self.common.output_textures[index].as_ref().unwrap().clone()
-        }
+                    let view = target.create_render_target_view(&mut self.rtv_heap)?;
+                    let out = RenderTarget::identity(&view)?;
 
-        // try to hint the optimizer
-        assert_eq!(last.len(), 1);
-        if let Some(pass) = last.iter_mut().next() {
-            let index = passes_len - 1;
+                    pass.draw(
+                        cmd,
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        &out,
+                        None,
+                        QuadType::Offscreen,
+                    )?;
 
-            source.filter = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
+                    util::d3d12_resource_transition::<OutlivesFrame, _>(
+                        cmd,
+                        &target.resource,
+                        D3D12_RESOURCE_STATE_RENDER_TARGET,
+                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    );
 
-            // When feedback is enabled, render the last pass to the intermediate
-            // framebuffer first then render to the viewport with the OutputSize semantic
-            // overridden to the FB scale.
-            //
-            // Shaders need to see the pass's declared scale rather than the viewport size,
-            // or they won't render correctly for feedback.
-            let output_size_override = if self.draw_last_pass_feedback {
-                let feedback_target = &self.output_framebuffers[index];
+                    if target.max_mipmap > 1 && !self.disable_mipmaps {
+                        // barriers don't get disposed because the context is OutlivesFrame
+                        let (residuals, _residual_barriers) =
+                            self.common.mipmap_gen.mipmapping_context(
+                                cmd,
+                                &mut self.mipmap_heap,
+                                |ctx| {
+                                    ctx.generate_mipmaps::<OutlivesFrame, _>(
+                                        &target.resource,
+                                        target.max_mipmap,
+                                        target.size,
+                                        target.format.into(),
+                                    )?;
+                                    Ok::<(), FilterChainError>(())
+                                },
+                            )?;
 
-                if !pass.pipeline.has_format(feedback_target.format) {
+                        self.residuals.dispose_mipmap_handles(residuals);
+                    }
+
+                    self.residuals.dispose_output(view.descriptor);
+                    self.common.output_textures[index] =
+                        Some(target.create_shader_resource_view(
+                            &mut self.staging_heap,
+                            pass.meta.filter,
+                            pass.meta.wrap_mode,
+                        )?);
+                    source = self.common.output_textures[index].as_ref().unwrap().clone();
+                    return Ok(());
+                }
+
+                // When feedback is enabled, render the last pass to the intermediate
+                // framebuffer first then render to the viewport with the OutputSize semantic
+                // overridden to the FB scale.
+                //
+                // Shaders need to see the pass's declared scale rather than the viewport size,
+                // or they won't render correctly for feedback.
+                let output_size_override = if self.draw_last_pass_feedback {
+                    let feedback_target = target;
+
+                    if !pass.pipeline.has_format(feedback_target.format) {
+                        // eprintln!("recompiling final pipeline");
+                        pass.pipeline.recompile(
+                            feedback_target.format,
+                            &self.common.root_signature,
+                            &self.common.d3d12,
+                        )?;
+                    }
+
+                    util::d3d12_resource_transition::<OutlivesFrame, _>(
+                        cmd,
+                        &feedback_target.resource,
+                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                        D3D12_RESOURCE_STATE_RENDER_TARGET,
+                    );
+
+                    let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
+                    let out = RenderTarget::identity(&view)?;
+                    pass.draw(
+                        cmd,
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        &out,
+                        None,
+                        QuadType::Offscreen,
+                    )?;
+
+                    util::d3d12_resource_transition::<OutlivesFrame, _>(
+                        cmd,
+                        &feedback_target.resource,
+                        D3D12_RESOURCE_STATE_RENDER_TARGET,
+                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    );
+
+                    Some(size)
+                } else {
+                    None
+                };
+
+                if !pass.pipeline.has_format(viewport.output.format) {
                     // eprintln!("recompiling final pipeline");
                     pass.pipeline.recompile(
-                        feedback_target.format,
+                        viewport.output.format,
                         &self.common.root_signature,
                         &self.common.d3d12,
                     )?;
                 }
 
-                util::d3d12_resource_transition::<OutlivesFrame, _>(
-                    cmd,
-                    &feedback_target.resource,
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                    D3D12_RESOURCE_STATE_RENDER_TARGET,
-                );
-
-                let view = feedback_target.create_render_target_view(&mut self.rtv_heap)?;
-                let out = RenderTarget::identity(&view)?;
+                let out = RenderTarget::viewport(viewport);
                 pass.draw(
                     cmd,
-                    index,
+                    passes_len - 1,
                     &self.common,
                     pass.meta.get_frame_count(frame_count),
                     options,
@@ -972,46 +991,13 @@ impl FilterChainD3D12 {
                     &original,
                     &source,
                     &out,
-                    None,
-                    QuadType::Offscreen,
+                    output_size_override,
+                    QuadType::Final,
                 )?;
 
-                util::d3d12_resource_transition::<OutlivesFrame, _>(
-                    cmd,
-                    &feedback_target.resource,
-                    D3D12_RESOURCE_STATE_RENDER_TARGET,
-                    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                );
-
-                Some(feedback_target.size)
-            } else {
-                None
-            };
-
-            if !pass.pipeline.has_format(viewport.output.format) {
-                // eprintln!("recompiling final pipeline");
-                pass.pipeline.recompile(
-                    viewport.output.format,
-                    &self.common.root_signature,
-                    &self.common.d3d12,
-                )?;
-            }
-
-            let out = RenderTarget::viewport(viewport);
-            pass.draw(
-                cmd,
-                passes_len - 1,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                &out,
-                output_size_override,
-                QuadType::Final,
-            )?;
-        }
+                Ok(())
+            },
+        )?;
 
         self.push_history(cmd, &original)?;
 
