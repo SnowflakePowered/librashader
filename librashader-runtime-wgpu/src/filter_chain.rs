@@ -105,8 +105,8 @@ use librashader_runtime::parameters::RuntimeParameters;
 pub struct FilterChainWgpu {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass]>,
-    output: FramebufferPool<OwnedImage>,
-    feedback: FramebufferPool<OwnedImage>,
+    output_framebuffers: FramebufferPool<OwnedImage>,
+    feedback_framebuffers: FramebufferPool<OwnedImage>,
     history_framebuffers: VecDeque<OwnedImage>,
     disable_mipmaps: bool,
     mipmapper: MipmapGen,
@@ -256,10 +256,10 @@ impl FilterChainWgpu {
 
         //
         // // initialize output framebuffers
-        let (output, output_textures) = framebuffer_init.init_output_framebuffers()?;
+        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
         //
         // initialize feedback framebuffers
-        let (feedback, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
+        let (feedback_framebuffers, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
         //
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -280,8 +280,8 @@ impl FilterChainWgpu {
                 history_textures,
             },
             passes: filters,
-            output,
-            feedback,
+            output_framebuffers,
+            feedback_framebuffers,
             history_framebuffers,
             disable_mipmaps: options.map(|f| f.force_no_mipmaps).unwrap_or(false),
             mipmapper,
@@ -485,8 +485,8 @@ impl FilterChainWgpu {
 
         // swap output and feedback **before** recording command buffers
         for index in 0..passes_len {
-            if self.feedback.contains(index) {
-                std::mem::swap(&mut self.output[index], &mut self.feedback[index]);
+            if self.feedback_framebuffers.contains(index) {
+                std::mem::swap(&mut self.output_framebuffers[index], &mut self.feedback_framebuffers[index]);
             }
         }
 
@@ -497,7 +497,7 @@ impl FilterChainWgpu {
             source.image.size().into(),
             viewport.output.size,
             original.image.size().into(),
-            &mut self.feedback,
+            &mut self.feedback_framebuffers,
             passes,
             &scale_context,
             |index, pass, feedback| {
@@ -511,7 +511,7 @@ impl FilterChainWgpu {
             source.image.size().into(),
             viewport.output.size,
             original.image.size().into(),
-            &mut self.output,
+            &mut self.output_framebuffers,
             passes,
             &scale_context,
             |index, pass, target, size| {
