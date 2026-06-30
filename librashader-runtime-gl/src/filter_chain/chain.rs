@@ -27,7 +27,7 @@ use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_reflect::reflect::ReflectShader;
 use librashader_runtime::binding::BindingUtil;
-use librashader_runtime::framebuffer::FramebufferInit;
+use librashader_runtime::framebuffer::{FeedbackFramebuffers, FramebufferInit, OutputFramebuffers};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -39,8 +39,8 @@ pub(crate) struct FilterChainImpl<T: GLInterface> {
     pub(crate) common: FilterCommon,
     passes: Box<[FilterPass<T>]>,
     draw_quad: T::DrawQuad,
-    output_framebuffers: Box<[GLFramebuffer]>,
-    feedback_framebuffers: Box<[GLFramebuffer]>,
+    output: OutputFramebuffers<GLFramebuffer>,
+    feedback: FeedbackFramebuffers<GLFramebuffer>,
     history_framebuffers: VecDeque<GLFramebuffer>,
     render_target: OutputFramebuffer,
     default_options: FrameOptionsGL,
@@ -200,11 +200,10 @@ impl<T: GLInterface> FilterChainImpl<T> {
         );
 
         // initialize output framebuffers
-        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
+        let (output, output_textures) = framebuffer_init.init_pooled_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) =
-            framebuffer_init.init_output_framebuffers()?;
+        let (feedback, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -212,13 +211,13 @@ impl<T: GLInterface> FilterChainImpl<T> {
         // create vertex objects
         let draw_quad = T::DrawQuad::new(&context)?;
 
-        let output = OutputFramebuffer::new(&context);
+        let render_target = OutputFramebuffer::new(&context);
 
         Ok(FilterChainImpl {
             draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
-            output_framebuffers,
-            feedback_framebuffers,
+            output,
+            feedback,
             history_framebuffers,
             draw_quad,
             common: FilterCommon {
@@ -233,7 +232,7 @@ impl<T: GLInterface> FilterChainImpl<T> {
                 context,
             },
             default_options: Default::default(),
-            render_target: output,
+            render_target,
         })
     }
 
@@ -365,79 +364,92 @@ impl<T: GLInterface> FilterChainImpl<T> {
 
         let mut source = original;
 
-        // rescale render buffers to ensure all bindings are valid.
-        <GLFramebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_framebuffers(
-            source.image.size,
-            viewport.output.size,
-            original.image.size,
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-            passes,
-            None,
-        )?;
+        let passes_len = passes.len();
 
         // Refresh inputs for feedback textures.
         // Don't need to do this for outputs because they are yet to be bound.
-        for ((texture, fbo), pass) in self
-            .common
-            .feedback_textures
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter())
-            .zip(passes.iter())
-        {
-            texture.image = fbo.as_texture(pass.meta.filter, pass.meta.wrap_mode).image;
-        }
-
-        let passes_len = passes.len();
-        let (pass, last) = passes.split_at_mut(passes_len - 1);
+        //
+        // Feedback scaling + refresh must complete before drawing any pass, because
+        // a pass may sample any pass's feedback image.
+        <GLFramebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_feedback_framebuffers(
+            source.image.size,
+            viewport.output.size,
+            original.image.size,
+            &mut self.feedback,
+            passes,
+            |index, pass, fbo| {
+                self.common.feedback_textures[index].image =
+                    fbo.as_texture(pass.meta.filter, pass.meta.wrap_mode).image;
+                Ok(())
+            },
+        )?;
 
         self.draw_quad
             .bind_vertices(&self.common.context, QuadType::Offscreen);
-        for (index, pass) in pass.iter_mut().enumerate() {
-            let target = &self.output_framebuffers[index];
-            source.filter = pass.meta.filter;
-            source.mip_filter = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
 
-            pass.draw(
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::identity(target)?,
-                None,
-            )?;
+        // rescale render buffers to ensure all bindings are valid, then draw each pass.
+        <GLFramebuffer as ScaleFramebuffer<T::FramebufferInterface>>::scale_output_framebuffers(
+            source.image.size,
+            viewport.output.size,
+            original.image.size,
+            &mut self.output,
+            passes,
+            |index, pass, target, size| {
+                source.filter = pass.meta.filter;
+                source.mip_filter = pass.meta.filter;
+                source.wrap_mode = pass.meta.wrap_mode;
 
-            let target = target.as_texture(pass.meta.filter, pass.meta.wrap_mode);
-            self.common.output_textures[index] = target;
-            source = target;
-        }
+                let is_last = index == passes_len - 1;
 
-        self.draw_quad
-            .bind_vertices(&self.common.context, QuadType::Final);
-        // try to hint the optimizer
-        assert_eq!(last.len(), 1);
-        if let Some(pass) = last.iter_mut().next() {
-            let index = passes_len - 1;
-            let final_viewport = self
-                .render_target
-                .ensure::<T::FramebufferInterface>(viewport.output)?;
+                if !is_last {
+                    pass.draw(
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        RenderTarget::identity(target)?,
+                        None,
+                    )?;
 
-            source.filter = pass.meta.filter;
-            source.mip_filter = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
+                    let target = target.as_texture(pass.meta.filter, pass.meta.wrap_mode);
+                    self.common.output_textures[index] = target;
+                    source = target;
+                    return Ok(());
+                }
 
-            // When feedback is enabled, render the last pass to the intermediate
-            // framebuffer first then render to the viewport with the OutputSize semantic
-            // overridden to the FB scale.
-            //
-            // Shaders need to see the pass's declared scale rather than the viewport size,
-            // or they won't render correctly for feedback.
-            let output_size_override = if self.draw_last_pass_feedback {
-                let target = &self.output_framebuffers[index];
+                self.draw_quad
+                    .bind_vertices(&self.common.context, QuadType::Final);
+
+                let final_viewport = self
+                    .render_target
+                    .ensure::<T::FramebufferInterface>(viewport.output)?;
+
+                // When feedback is enabled, render the last pass to the intermediate
+                // framebuffer first then render to the viewport with the OutputSize semantic
+                // overridden to the FB scale.
+                //
+                // Shaders need to see the pass's declared scale rather than the viewport size,
+                // or they won't render correctly for feedback.
+                let output_size_override = if self.draw_last_pass_feedback {
+                    pass.draw(
+                        index,
+                        &self.common,
+                        pass.meta.get_frame_count(frame_count),
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        RenderTarget::viewport_with_output(target, viewport),
+                        None,
+                    )?;
+                    Some(size)
+                } else {
+                    None
+                };
+
                 pass.draw(
                     index,
                     &self.common,
@@ -446,35 +458,22 @@ impl<T: GLInterface> FilterChainImpl<T> {
                     viewport,
                     &original,
                     &source,
-                    RenderTarget::viewport_with_output(target, viewport),
-                    None,
+                    RenderTarget::viewport_with_output(final_viewport, viewport),
+                    output_size_override,
                 )?;
-                Some(target.size)
-            } else {
-                None
-            };
-
-            pass.draw(
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::viewport_with_output(final_viewport, viewport),
-                output_size_override,
-            )?;
-            self.common.output_textures[passes_len - 1] = viewport
-                .output
-                .as_texture(pass.meta.filter, pass.meta.wrap_mode);
-        }
+                self.common.output_textures[index] = viewport
+                    .output
+                    .as_texture(pass.meta.filter, pass.meta.wrap_mode);
+                Ok(())
+            },
+        )?;
 
         // swap feedback framebuffers with output
-        std::mem::swap(
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-        );
+        for index in 0..passes_len {
+            if self.feedback.contains(index) {
+                std::mem::swap(&mut self.output[index], &mut self.feedback[index]);
+            }
+        }
 
         self.push_history(input)?;
 
