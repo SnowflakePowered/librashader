@@ -30,7 +30,7 @@ use librashader_presets::context::VideoDriver;
 use librashader_reflect::reflect::cross::SpirvCross;
 use librashader_reflect::reflect::presets::{CompilePresetTarget, ShaderPassArtifact};
 use librashader_runtime::binding::{BindingUtil, TextureInput};
-use librashader_runtime::framebuffer::FramebufferInit;
+use librashader_runtime::framebuffer::{FeedbackFramebuffers, FramebufferInit, OutputFramebuffers};
 use librashader_runtime::quad::QuadType;
 use librashader_runtime::render_target::RenderTarget;
 use librashader_runtime::scaling::ScaleFramebuffer;
@@ -48,8 +48,8 @@ use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT_R8G8B8A8_UNORM;
 pub struct FilterChainD3D11 {
     pub(crate) common: FilterCommon,
     passes: Vec<FilterPass>,
-    output_framebuffers: Box<[OwnedImage]>,
-    feedback_framebuffers: Box<[OwnedImage]>,
+    output: OutputFramebuffers<OwnedImage>,
+    feedback: FeedbackFramebuffers<OwnedImage>,
     history_framebuffers: VecDeque<OwnedImage>,
     state: D3D11State,
     default_options: FrameOptionsD3D11,
@@ -220,11 +220,10 @@ impl FilterChainD3D11 {
         );
 
         // initialize output framebuffers
-        let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
+        let (output, output_textures) = framebuffer_init.init_pooled_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) =
-            framebuffer_init.init_output_framebuffers()?;
+        let (feedback, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -234,8 +233,8 @@ impl FilterChainD3D11 {
         Ok(FilterChainD3D11 {
             draw_last_pass_feedback: framebuffer_init.uses_final_pass_as_feedback(),
             passes: filters,
-            output_framebuffers,
-            feedback_framebuffers,
+            output,
+            feedback,
             history_framebuffers,
             common: FilterCommon {
                 d3d11: Direct3D11 {
@@ -493,117 +492,105 @@ impl FilterChainD3D11 {
 
         let mut source = original.clone();
 
-        // rescale render buffers to ensure all bindings are valid.
-        OwnedImage::scale_framebuffers(
-            source.size(),
-            viewport.output.size()?,
-            original.view.size()?,
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-            passes,
-            None,
-        )?;
-
-        // Refresh inputs for feedback textures.
-        // Don't need to do this for outputs because they are yet to be bound.
-        for ((texture, fbo), pass) in self
-            .common
-            .feedback_textures
-            .iter_mut()
-            .zip(self.feedback_framebuffers.iter())
-            .zip(passes.iter())
-        {
-            *texture = Some(InputTexture::from_framebuffer(
-                fbo,
-                pass.meta.wrap_mode,
-                pass.meta.filter,
-            )?);
-        }
-
+        let viewport_size = viewport.output.size()?;
+        let original_size = original.view.size()?;
+        let source_size = source.size();
         let passes_len = passes.len();
-        let (pass, last) = passes.split_at_mut(passes_len - 1);
+
+        OwnedImage::scale_feedback_framebuffers(
+            source_size,
+            viewport_size,
+            original_size,
+            &mut self.feedback,
+            passes,
+            |index, pass, fb| {
+                self.common.feedback_textures[index] = Some(InputTexture::from_framebuffer(
+                    fb,
+                    pass.meta.wrap_mode,
+                    pass.meta.filter,
+                )?);
+                Ok(())
+            },
+        )?;
 
         let state_guard = self.state.enter_filter_state(ctx);
         self.common.draw_quad.bind_vbo_for_frame(ctx);
 
-        for (index, pass) in pass.iter_mut().enumerate() {
-            source.filter = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
-            let target = &self.output_framebuffers[index];
-            pass.draw(
-                ctx,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::identity(&target.create_render_target_view()?)?,
-                None,
-                QuadType::Offscreen,
-            )?;
+        OwnedImage::scale_output_framebuffers(
+            source_size,
+            viewport_size,
+            original_size,
+            &mut self.output,
+            passes,
+            |index, pass, target, size| {
+                source.filter = pass.meta.filter;
+                source.wrap_mode = pass.meta.wrap_mode;
+                let is_last = index == passes_len - 1;
+                let frame_count_pass = pass.meta.get_frame_count(frame_count);
 
-            source = InputTexture {
-                view: target.create_shader_resource_view()?,
-                filter: pass.meta.filter,
-                wrap_mode: pass.meta.wrap_mode,
-            };
-            self.common.output_textures[index] = Some(source.clone());
-        }
+                if is_last && !self.draw_last_pass_feedback {
+                    pass.draw(
+                        ctx,
+                        index,
+                        &self.common,
+                        frame_count_pass,
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        RenderTarget::viewport(viewport),
+                        None,
+                        QuadType::Final,
+                    )?;
+                    return Ok(());
+                }
 
-        // try to hint the optimizer
-        assert_eq!(last.len(), 1);
-        if let Some(pass) = last.iter_mut().next() {
-            let index = passes_len - 1;
-            source.filter = pass.meta.filter;
-            source.wrap_mode = pass.meta.wrap_mode;
-
-            // When feedback is enabled, render the last pass to the intermediate
-            // framebuffer first then render to the viewport with the OutputSize semantic
-            // overridden to the FB scale.
-            //
-            // Shaders need to see the pass's declared scale rather than the viewport size,
-            // or they won't render correctly for feedback.
-            let feedback_target = &self.output_framebuffers[index];
-            let output_size_override = if self.draw_last_pass_feedback {
+                let target_rtv = target.create_render_target_view()?;
                 pass.draw(
-                    &ctx,
+                    ctx,
                     index,
                     &self.common,
-                    pass.meta.get_frame_count(frame_count),
+                    frame_count_pass,
                     options,
                     viewport,
                     &original,
                     &source,
-                    RenderTarget::identity(&feedback_target.create_render_target_view()?)?,
+                    RenderTarget::identity(&target_rtv)?,
                     None,
                     QuadType::Offscreen,
                 )?;
-                Some(feedback_target.size)
-            } else {
-                None
-            };
 
-            pass.draw(
-                &ctx,
-                index,
-                &self.common,
-                pass.meta.get_frame_count(frame_count),
-                options,
-                viewport,
-                &original,
-                &source,
-                RenderTarget::viewport(viewport),
-                output_size_override,
-                QuadType::Final,
-            )?;
+                if is_last {
+                    pass.draw(
+                        ctx,
+                        index,
+                        &self.common,
+                        frame_count_pass,
+                        options,
+                        viewport,
+                        &original,
+                        &source,
+                        RenderTarget::viewport(viewport),
+                        Some(size),
+                        QuadType::Final,
+                    )?;
+                } else {
+                    source = InputTexture {
+                        view: target.create_shader_resource_view()?,
+                        filter: pass.meta.filter,
+                        wrap_mode: pass.meta.wrap_mode,
+                    };
+                    self.common.output_textures[index] = Some(source.clone());
+                }
+                Ok(())
+            },
+        )?;
+
+        for index in 0..passes_len {
+            if self.feedback.contains(index) {
+                std::mem::swap(&mut self.output[index], &mut self.feedback[index]);
+            }
         }
-
-        std::mem::swap(
-            &mut self.output_framebuffers,
-            &mut self.feedback_framebuffers,
-        );
 
         drop(state_guard);
 
