@@ -1,11 +1,17 @@
 use crate::binding::{BindingRequirements, BindingUtil};
 use bit_set::BitSet;
 use librashader_common::map::FastHashMap;
-use librashader_common::Size;
+use librashader_common::{ImageFormat, Size};
 use librashader_reflect::reflect::semantics::BindingMeta;
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
-use num_traits::AsPrimitive;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub(crate) struct FramebufferKey {
+    pub size: Size<u32>,
+    pub format: ImageFormat,
+    pub mipmap: bool,
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Slot(i32);
@@ -37,18 +43,18 @@ pub struct FramebufferPool<F> {
 }
 
 impl<F> FramebufferPool<F> {
-    /// Calculate liveness assignments based on pass sizes.
-    pub(crate) fn prepare(&mut self, sizes: &[Size<u32>]) {
+    /// Calculate liveness assignments based on pass allocation requirements.
+    pub(crate) fn prepare(&mut self, keys: &[FramebufferKey]) {
         struct Event {
             slot: usize,
-            size: u64,
+            key: FramebufferKey,
             next_slot: usize,
         }
 
-        let n = sizes.len();
+        let n = keys.len();
 
-        // `free[size]` holds slots currently free and of that size.
-        let mut free: FastHashMap<u64, Vec<usize>> = FastHashMap::default();
+        // `free[key]` holds slots currently free and allocation-compatible.
+        let mut free: FastHashMap<FramebufferKey, Vec<usize>> = FastHashMap::default();
 
         let mut freed_at = vec![usize::MAX; n + 1];
         let mut events: Vec<Event> = Vec::with_capacity(n);
@@ -57,13 +63,13 @@ impl<F> FramebufferPool<F> {
         for pass in 0..n {
             let mut event = freed_at[pass];
             while event != usize::MAX {
-                let Event { slot, size, next_slot } = events[event];
-                free.entry(size).or_default().push(slot);
+                let Event { slot, key, next_slot } = events[event];
+                free.entry(key).or_default().push(slot);
                 event = next_slot;
             }
 
-            let size = sizes[pass].as_();
-            let slot = free.get_mut(&size).and_then(Vec::pop).unwrap_or_else(|| {
+            let key = keys[pass];
+            let slot = free.get_mut(&key).and_then(Vec::pop).unwrap_or_else(|| {
                 let slot = slot_count;
                 slot_count += 1;
                 slot
@@ -71,7 +77,7 @@ impl<F> FramebufferPool<F> {
 
             self.slots[pass] = Slot::new(slot);
             let free_at = self.last_use[pass] + 1;
-            events.push(Event { slot, size, next_slot: freed_at[free_at] });
+            events.push(Event { slot, key, next_slot: freed_at[free_at] });
             freed_at[free_at] = events.len() - 1;
         }
     }
@@ -254,8 +260,8 @@ fn init_feedback_framebuffers<F, I, E>(
 
 #[cfg(test)]
 mod tests {
-    use super::{FramebufferPool, Slot};
-    use librashader_common::Size;
+    use super::{FramebufferKey, FramebufferPool, Slot};
+    use librashader_common::{ImageFormat, Size};
     use std::collections::HashSet;
 
     fn fb(last_use: Vec<usize>) -> FramebufferPool<()> {
@@ -267,6 +273,14 @@ mod tests {
         }
     }
 
+    fn key(size: Size<u32>) -> FramebufferKey {
+        FramebufferKey {
+            size,
+            format: ImageFormat::R8G8B8A8Unorm,
+            mipmap: false,
+        }
+    }
+
     fn distinct(slots: &[Slot]) -> usize {
         slots.iter().copied().collect::<HashSet<_>>().len()
     }
@@ -275,42 +289,79 @@ mod tests {
     fn liveness_pools_chain() {
         let size = |w, h| Size::<u32>::new(w, h);
         let last_use = vec![1, 2, 10, 4, 5, 6, 7, 8, 9, 10, 10];
-        let sizes = vec![
-            size(1280, 960),  // p0
-            size(1280, 960),  // p1
-            size(1280, 3360), // p2 (retained, read by p3..p10)
-            size(1280, 1680), // p3
-            size(1280, 1680), // p4
-            size(1280, 1680), // p5
-            size(1280, 1680), // p6
-            size(1280, 1680), // p7
-            size(1280, 1680), // p8
-            size(3840, 1680), // p9
-            size(1280, 720),  // p10 (final / viewport)
+        let keys = vec![
+            key(size(1280, 960)),  // p0
+            key(size(1280, 960)),  // p1
+            key(size(1280, 3360)), // p2 (retained, read by p3..p10)
+            key(size(1280, 1680)), // p3
+            key(size(1280, 1680)), // p4
+            key(size(1280, 1680)), // p5
+            key(size(1280, 1680)), // p6
+            key(size(1280, 1680)), // p7
+            key(size(1280, 1680)), // p8
+            key(size(3840, 1680)), // p9
+            key(size(1280, 720)),  // p10 (final / viewport)
         ];
 
         let mut output = fb(last_use);
-        output.prepare(&sizes);
+        output.prepare(&keys);
 
         // p3..=p8 (six same-size passes, each live only into the next) collapse onto two
         // ping-pong buffers.
         assert_eq!(distinct(&output.slots[3..=8]), 2);
 
         // The whole chain needs 7 physical buffers instead of 11, and no buffer is ever
-        // assigned two different sizes (the invariant that keeps it deferred-safe).
+        // assigned two different allocation keys (the invariant that keeps it deferred-safe).
         assert_eq!(distinct(&output.slots), 7);
-        let mut seen: std::collections::HashMap<Slot, Size<u32>> = Default::default();
+        let mut seen: std::collections::HashMap<Slot, FramebufferKey> = Default::default();
         for (pass, &slot) in output.slots.iter().enumerate() {
-            assert_eq!(*seen.entry(slot).or_insert(sizes[pass]), sizes[pass]);
+            assert_eq!(*seen.entry(slot).or_insert(keys[pass]), keys[pass]);
         }
     }
 
     // A uniform-size linear chain (the common case) collapses to a 2-buffer ping-pong.
     #[test]
     fn liveness_pools_uniform_chain() {
-        let sizes = vec![Size::<u32>::new(1920, 1080); 8];
+        let keys = vec![key(Size::<u32>::new(1920, 1080)); 8];
         let mut output = fb(vec![1, 2, 3, 4, 5, 6, 7, 7]);
-        output.prepare(&sizes);
+        output.prepare(&keys);
         assert_eq!(distinct(&output.slots), 2);
+    }
+
+    // Same-size passes with different formats or mipmap requirements must never share a
+    // buffer: a pooled `scale` would recreate it mid-frame and destroy an image still
+    // referenced by a deferred command buffer (koko-aio's bloom chain hit this).
+    #[test]
+    fn liveness_respects_format_and_mipmap() {
+        let size = Size::<u32>::new(960, 540);
+        let keys = vec![
+            FramebufferKey {
+                size,
+                format: ImageFormat::R8G8B8A8Unorm,
+                mipmap: false,
+            },
+            FramebufferKey {
+                size,
+                format: ImageFormat::R8G8B8A8Unorm,
+                mipmap: true,
+            },
+            FramebufferKey {
+                size,
+                format: ImageFormat::R16G16B16A16Sfloat,
+                mipmap: false,
+            },
+            FramebufferKey {
+                size,
+                format: ImageFormat::R8G8B8A8Unorm,
+                mipmap: false,
+            },
+        ];
+
+        let mut output = fb(vec![1, 2, 3, 3]);
+        output.prepare(&keys);
+
+        // p3 may only reuse p0's buffer (same key); p1 and p2 differ in mipmap/format.
+        assert_eq!(output.slots[3], output.slots[0]);
+        assert_eq!(distinct(&output.slots), 3);
     }
 }

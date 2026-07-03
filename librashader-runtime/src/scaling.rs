@@ -1,5 +1,5 @@
 use crate::filter_pass::FilterPassMeta;
-use crate::framebuffer::FramebufferPool;
+use crate::framebuffer::{FramebufferKey, FramebufferPool};
 use crate::scaling;
 use librashader_common::{ImageFormat, Size};
 use librashader_presets::{Scale2D, ScaleFactor, ScaleType, Scaling};
@@ -324,11 +324,12 @@ where
 {
     let len = passes.len();
 
-    // Compute every pass's output size up front so the pool can be colored by liveness
-    // before any buffer is touched.
+    // Compute every pass's allocation requirements up front so the pool can be colored
+    // by liveness before any buffer is touched.
     let mut sizes = Vec::with_capacity(len);
+    let mut keys = Vec::with_capacity(len);
     let mut target_size = source_size;
-    for pass in passes.iter() {
+    for (index, pass) in passes.iter().enumerate() {
         target_size = target_size.scale_viewport(
             pass.meta().scaling.clone(),
             viewport_size,
@@ -336,9 +337,16 @@ where
             None,
         );
         sizes.push(target_size);
+        keys.push(FramebufferKey {
+            size: target_size,
+            format: pass.get_format(),
+            mipmap: passes
+                .get(index + 1)
+                .map_or(false, |p| p.meta().mipmap_input),
+        });
     }
 
-    output.prepare(&sizes);
+    output.prepare(&keys);
 
     for index in 0..len {
         let scaling = passes[index].meta().scaling.clone();

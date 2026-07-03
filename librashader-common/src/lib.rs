@@ -218,7 +218,7 @@ impl FromStr for ImageFormat {
 }
 
 /// A size with a width and height.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Size<T> {
     pub width: T,
