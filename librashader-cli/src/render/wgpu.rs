@@ -159,18 +159,19 @@ impl RenderTest for Wgpu {
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |r| {
                 if r.is_ok() {
-                    let buffer = capturable.slice(..).get_mapped_range();
-                    let mut pixels = pixels_async.lock();
-                    pixels.resize(buffer.len(), 0);
+                    if let Ok(buffer) = capturable.slice(..).get_mapped_range() {
+                        let mut pixels = pixels_async.lock();
+                        pixels.resize(buffer.len(), 0);
 
-                    let mut cursor = Cursor::new(pixels.deref_mut());
-                    for chunk in buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
-                        cursor
-                            .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
-                            .unwrap()
+                        let mut cursor = Cursor::new(pixels.deref_mut());
+                        for chunk in buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
+                            cursor
+                                .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
+                                .unwrap()
+                        }
+
+                        cursor.into_inner();
                     }
-
-                    cursor.into_inner();
                 }
                 capturable.unmap();
             });
@@ -204,6 +205,7 @@ impl Wgpu {
                     power_preference: wgpu::PowerPreference::default(),
                     compatible_surface: None,
                     force_fallback_adapter: false,
+                    apply_limit_buckets: false,
                 })
                 .await?;
 
