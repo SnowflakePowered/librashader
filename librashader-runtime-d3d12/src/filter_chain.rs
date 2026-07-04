@@ -431,7 +431,8 @@ impl FilterChainD3D12 {
         let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
+        let (feedback_framebuffers, feedback_textures) =
+            framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -802,7 +803,10 @@ impl FilterChainD3D12 {
         // swap output and feedback **before** recording command buffers
         for index in 0..passes_len {
             if self.feedback_framebuffers.contains(index) {
-                std::mem::swap(&mut self.output_framebuffers[index], &mut self.feedback_framebuffers[index]);
+                std::mem::swap(
+                    &mut self.output_framebuffers[index],
+                    &mut self.feedback_framebuffers[index],
+                );
             }
         }
 
@@ -889,31 +893,28 @@ impl FilterChainD3D12 {
 
                     if target.max_mipmap > 1 && !self.disable_mipmaps {
                         // barriers don't get disposed because the context is OutlivesFrame
-                        let (residuals, _residual_barriers) =
-                            self.common.mipmap_gen.mipmapping_context(
-                                cmd,
-                                &mut self.mipmap_heap,
-                                |ctx| {
-                                    ctx.generate_mipmaps::<OutlivesFrame, _>(
-                                        &target.resource,
-                                        target.max_mipmap,
-                                        target.size,
-                                        target.format.into(),
-                                    )?;
-                                    Ok::<(), FilterChainError>(())
-                                },
-                            )?;
+                        let (residuals, _residual_barriers) = self
+                            .common
+                            .mipmap_gen
+                            .mipmapping_context(cmd, &mut self.mipmap_heap, |ctx| {
+                                ctx.generate_mipmaps::<OutlivesFrame, _>(
+                                    &target.resource,
+                                    target.max_mipmap,
+                                    target.size,
+                                    target.format.into(),
+                                )?;
+                                Ok::<(), FilterChainError>(())
+                            })?;
 
                         self.residuals.dispose_mipmap_handles(residuals);
                     }
 
                     self.residuals.dispose_output(view.descriptor);
-                    self.common.output_textures[index] =
-                        Some(target.create_shader_resource_view(
-                            &mut self.staging_heap,
-                            pass.meta.filter,
-                            pass.meta.wrap_mode,
-                        )?);
+                    self.common.output_textures[index] = Some(target.create_shader_resource_view(
+                        &mut self.staging_heap,
+                        pass.meta.filter,
+                        pass.meta.wrap_mode,
+                    )?);
                     source = self.common.output_textures[index].as_ref().unwrap().clone();
                     return Ok(());
                 }

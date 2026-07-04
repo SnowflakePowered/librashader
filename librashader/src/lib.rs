@@ -82,7 +82,7 @@ pub mod presets {
             for (key, value) in source.parameters {
                 map.insert(key, value);
             }
-        } 
+        }
         for parameter in &preset.parameters {
             if let Some(meta) = map.get_mut(&parameter.name) {
                 meta.initial = parameter.value;

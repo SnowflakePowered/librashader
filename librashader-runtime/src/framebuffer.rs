@@ -63,7 +63,11 @@ impl<F> FramebufferPool<F> {
         for pass in 0..n {
             let mut event = freed_at[pass];
             while event != usize::MAX {
-                let Event { slot, key, next_slot } = events[event];
+                let Event {
+                    slot,
+                    key,
+                    next_slot,
+                } = events[event];
                 free.entry(key).or_default().push(slot);
                 event = next_slot;
             }
@@ -77,7 +81,11 @@ impl<F> FramebufferPool<F> {
 
             self.slots[pass] = Slot::new(slot);
             let free_at = self.last_use[pass] + 1;
-            events.push(Event { slot, key, next_slot: freed_at[free_at] });
+            events.push(Event {
+                slot,
+                key,
+                next_slot: freed_at[free_at],
+            });
             freed_at[free_at] = events.len() - 1;
         }
     }
@@ -222,7 +230,6 @@ fn init_feedback_framebuffers<F, I, E>(
     owned_generator: impl Fn() -> Result<F, E>,
     input_generator: impl Fn() -> I,
 ) -> Result<(FramebufferPool<F>, Box<[I]>), E> {
-
     // assign feedback slots according to the usage mask
     fn assign_slots(mask: &BitSet, filters_count: usize) -> (usize, Box<[Slot]>) {
         let mut slot_of_pass = vec![Slot::NONE; filters_count];

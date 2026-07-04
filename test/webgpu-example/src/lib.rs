@@ -75,6 +75,7 @@ pub async fn run(canvas_id: String) -> Result<(), JsValue> {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
+            apply_limit_buckets: false,
         })
         .await
         .map_err(|e| JsValue::from_str(&format!("request_adapter: {e:?}")))?;
@@ -115,6 +116,7 @@ pub async fn run(canvas_id: String) -> Result<(), JsValue> {
             present_mode: wgpu::PresentMode::Fifo,
             desired_maximum_frame_latency: 2,
             alpha_mode: surface_caps.alpha_modes[0],
+            color_space: wgpu::SurfaceColorSpace::Auto,
             view_formats: vec![],
         },
     );
@@ -335,7 +337,7 @@ impl Demo {
         self.frame_count = self.frame_count.wrapping_add(1);
 
         self.queue.submit([cmd.finish()]);
-        frame.present();
+        self.queue.present(frame);
     }
 }
 

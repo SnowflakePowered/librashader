@@ -223,7 +223,8 @@ impl FilterChainD3D11 {
         let (output_framebuffers, output_textures) = framebuffer_init.init_output_framebuffers()?;
 
         // initialize feedback framebuffers
-        let (feedback_framebuffers, feedback_textures) = framebuffer_init.init_feedback_framebuffers()?;
+        let (feedback_framebuffers, feedback_textures) =
+            framebuffer_init.init_feedback_framebuffers()?;
 
         // initialize history
         let (history_framebuffers, history_textures) = framebuffer_init.init_history()?;
@@ -588,7 +589,10 @@ impl FilterChainD3D11 {
 
         for index in 0..passes_len {
             if self.feedback_framebuffers.contains(index) {
-                std::mem::swap(&mut self.output_framebuffers[index], &mut self.feedback_framebuffers[index]);
+                std::mem::swap(
+                    &mut self.output_framebuffers[index],
+                    &mut self.feedback_framebuffers[index],
+                );
             }
         }
 

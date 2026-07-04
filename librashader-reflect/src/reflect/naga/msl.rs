@@ -34,6 +34,10 @@ impl CompileShader<MSL> for NagaReflect {
             bounds_check_policies: Default::default(),
             zero_initialize_workgroup_memory: false,
             force_loop_bounding: false,
+            task_dispatch_limits: None,
+            mesh_shader_primitive_indices_clamp: false,
+            emit_int_div_checks: true,
+            ray_query_initialization_tracking: false,
         };
 
         let mut frag_options = vert_options.clone();
@@ -51,6 +55,7 @@ impl CompileShader<MSL> for NagaReflect {
                 allow_and_force_point_size: false,
                 vertex_pulling_transform: false,
                 vertex_buffer_mappings: vec![],
+                binding_array_length_map: Default::default(),
             };
 
             let msl = naga::back::msl::write_string(&module, &info, &options, &pipeline_options)?;

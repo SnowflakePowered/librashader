@@ -16,7 +16,7 @@ librashader-common = { path = "../../librashader-common", version = "0.11.0", fe
 librashader-pack = { path = "../../librashader-pack", version = "0.11.0", default-features = false, features = ["serde"] }
 librashader-runtime-wgpu = { path = "../../librashader-runtime-wgpu", version = "0.11.0", default-features = false, features = ["wgsl_preset_pack", "wgpu_webgpu"] }
 
-wgpu = { version = "29", default-features = false, features = ["wgsl", "webgpu"] }
+wgpu = { version = "30", default-features = false, features = ["wgsl", "webgpu"] }
 bytemuck = { version = "1.14", features = ["derive"] }
 rmp-serde = "1.3"
 
