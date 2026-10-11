@@ -176,9 +176,21 @@ extern_fn! {
         let filename = unsafe { CStr::from_ptr(filename) };
         let filename = filename.to_str()?;
 
+        let mut context = if context.is_null() {
+            Box::new(WildcardContext::new())
+        } else {
+            unsafe {
+                let context_ptr = &mut *context;
+                let context = context_ptr.take();
+                Box::from_raw(context.unwrap().as_ptr())
+            }
+        };
+
+        context.add_path_defaults(filename);
+
         // This control flow is like this because the wrapper makes it hard to return early..
         if options.is_null() {
-            let preset = ShaderPreset::try_parse(filename, ShaderFeatures::NONE)?;
+            let preset = ShaderPreset::try_parse_with_context(filename, ShaderFeatures::NONE, *context)?;
             unsafe {
                 out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                     preset,
@@ -190,18 +202,6 @@ extern_fn! {
             let opt_ptr = options.as_mut_ptr();
 
             let api_version = unsafe { (&raw mut (*opt_ptr).version).read() };
-
-            let mut context = if context.is_null() {
-                Box::new(WildcardContext::new())
-            } else {
-                unsafe {
-                    let context_ptr = &mut *context;
-                    let context = context_ptr.take();
-                    Box::from_raw(context.unwrap().as_ptr())
-                }
-            };
-
-            context.add_path_defaults(filename);
 
             let mut flags = ShaderFeatures::NONE;
 
@@ -228,7 +228,7 @@ extern_fn! {
                 }
             }
 
-            let preset = ShaderPreset::try_parse(filename, flags)?;
+            let preset = ShaderPreset::try_parse_with_context(filename, flags, *context)?;
             unsafe {
                 out.write(MaybeUninit::new(NonNull::new(Box::into_raw(Box::new(
                     preset,
