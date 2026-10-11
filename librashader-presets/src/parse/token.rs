@@ -1,7 +1,7 @@
 use crate::error::ParsePresetError;
 use crate::parse::Span;
 use nom::branch::alt;
-use nom::bytes::complete::{is_not, take_until};
+use nom::bytes::complete::{is_not, take_until, take_while};
 use nom::character::complete::{char, line_ending, multispace1, not_line_ending};
 
 use nom::combinator::{eof, map_res, value};
@@ -66,6 +66,9 @@ where
 fn extract_from_quotes(input: Span) -> IResult<Span, Span> {
     // Allow unbalanced quotes because some presets just leave an open quote.
     let (input, between) = delimited(char('"'), is_not("\""), unbalanced_quote).parse(input)?;
+    // Swallow any extra trailing quotes, as in `"path""`.
+    // Ref: https://github.com/Duimon/Duimon-koko-aio/blob/main/zzz_global_params/Base_Shader/MONITOR.slangp
+    let (input, _) = take_while(|c| c == '"').parse(input)?;
     let (input, _) = opt_whitespace(input)?;
     let (input, _) = eof(input)?;
     Ok((input, between))
@@ -168,12 +171,19 @@ pub fn do_lex(input: &str) -> Result<Vec<Token<'_>>, ParsePresetError> {
 
 #[cfg(test)]
 mod test {
-    use crate::parse::token::single_comment;
+    use crate::parse::token::{do_lex, single_comment};
 
     #[test]
     fn parses_single_line_comment() {
         let parsed =
             single_comment("// Define textures to be used by the different passes\ntetx=n".into());
         eprintln!("{parsed:?}")
+    }
+
+    #[test]
+    fn strips_extra_trailing_quote_in_reference() {
+        let tokens = do_lex("#reference \"../a/b.slangp\"\"
+").unwrap();
+        assert_eq!(*tokens[0].value.fragment(), "../a/b.slangp");
     }
 }
