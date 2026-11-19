@@ -510,8 +510,20 @@ impl Drop for VulkanGraphicsPipeline {
                 }
             }
 
+            for render_pass in self.render_passes.values().flatten() {
+                self.device.destroy_render_pass(render_pass.handle, None)
+            }
+
             if self.cache != vk::PipelineCache::null() {
                 self.device.destroy_pipeline_cache(self.cache, None)
+            }
+
+            // Destroying the pool frees its descriptor sets.
+            self.device
+                .destroy_pipeline_layout(self.layout.layout, None);
+            self.device.destroy_descriptor_pool(self.layout._pool, None);
+            for set_layout in self.layout._descriptor_set_layout {
+                self.device.destroy_descriptor_set_layout(set_layout, None)
             }
         }
     }
